@@ -36,8 +36,9 @@ pub const DEFAULT_GPU_MIN_POINTS: usize = 500_000;
 /// Default minimum point count before GPU approximate-first downsampling is selected.
 ///
 /// Approximate-first pays a higher gather/readback cost than centroid. End-to-end
-/// benches at 500k still favor CPU (~23 ms vs ~37 ms); GPU wins from ~750k upward.
-pub const DEFAULT_GPU_MIN_POINTS_APPROXIMATE: usize = 750_000;
+/// benches through 1M still favor CPU (~45 ms vs ~50 ms at 1M); auto-GPU is deferred
+/// until a crossover is measured above that range.
+pub const DEFAULT_GPU_MIN_POINTS_APPROXIMATE: usize = 2_000_000;
 
 /// Configuration for voxel-grid downsampling.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -53,7 +54,7 @@ pub struct VoxelGridDownsampleConfig {
     /// Minimum input point count before GPU execution is considered worthwhile.
     ///
     /// `None` always uses GPU when requested. Defaults follow local bench results:
-    /// centroid ~500k, approximate-first ~750k.
+    /// centroid ~500k, approximate-first ~2M (1M end-to-end still CPU-favored).
     pub gpu_min_points: Option<usize>,
 }
 

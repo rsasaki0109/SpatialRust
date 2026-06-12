@@ -55,4 +55,5 @@ cargo test -p spatialrust --features mvp mvp_load_voxel_normals_plane_cluster
 
 ## 次アクション
 
-1. 1M 点 filter ベンチ再計測（centroid 含む）
+1. 2M 点 approximate-first GPU クロスオーバー計測
+2. 属性多数点群での end-to-end 時間

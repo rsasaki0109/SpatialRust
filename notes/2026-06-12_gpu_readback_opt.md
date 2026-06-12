@@ -24,10 +24,10 @@ GPU filter の staging/readback まわりを整理し、属性 reduce の GPU su
 
 ## 未確認/要確認項目
 
-- 500k 点 end-to-end ベンチの改善率（再計測要）
+- 500k 点 end-to-end ベンチの改善率（Epic 30 で再計測済み: centroid GPU ~51 ms vs CPU ~94 ms）
 - xyz reduce と属性 reduce の readback 完全統合（1 staging）
 
 ## 次アクション
 
-1. 500k/1M ベンチ再計測して notes 更新
-2. COPC 空間クエリ付き MVP smoke
+1. 2M 点 approximate-first クロスオーバー計測
+2. xyz + 属性 readback 完全統合
