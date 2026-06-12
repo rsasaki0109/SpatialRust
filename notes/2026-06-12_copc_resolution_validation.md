@@ -39,6 +39,5 @@
 
 ## 次アクション
 
-1. xyzinormal / 複合スキーマ MVP end-to-end 計測
-2. approximate-first × 属性多数ベンチ
-3. 実ファイル COPC での `--resolution` ベンチ（点数・読み込み時間）
+1. approximate-first × 属性多数ベンチ
+2. 実スキャン規模（数百万点）end-to-end

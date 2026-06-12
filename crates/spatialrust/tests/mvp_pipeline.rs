@@ -624,6 +624,133 @@ fn parse_cli_input_points(stderr: &[u8]) -> usize {
 }
 
 #[cfg(feature = "mvp")]
+fn sample_xyzinormal_plane_cloud() -> spatialrust::PointCloud {
+    use spatialrust::{PointCloudBuilder, StandardSchemas};
+
+    let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzinormal());
+    for x in 0..10 {
+        for y in 0..10 {
+            builder
+                .push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0, 0.2, 0.0, 0.0, 1.0])
+                .unwrap();
+        }
+    }
+    builder
+        .push_point([0.0, 0.0, 0.5, 0.9, 0.0, 0.0, 1.0])
+        .unwrap();
+    builder
+        .push_point([0.1, 0.0, 0.5, 0.8, 0.0, 0.0, 1.0])
+        .unwrap();
+    builder.build().unwrap()
+}
+
+#[cfg(feature = "mvp")]
+fn mvp_xyzinormal_base_config() -> spatialrust::MvpPipelineConfig {
+    use spatialrust::{
+        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig,
+        Vec3,
+    };
+
+    MvpPipelineConfig {
+        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(0.2).without_gpu_min_points(),
+        normals: NormalEstimationConfig {
+            k_neighbors: 8,
+            min_neighbors: 3,
+            viewpoint: Some(Vec3::new(0.0, 0.0, 10.0)),
+            ..NormalEstimationConfig::default()
+        },
+        plane: RansacPlaneConfig {
+            distance_threshold: 0.05,
+            max_iterations: 500,
+            min_inliers: 10,
+            seed: 17,
+        },
+        cluster: EuclideanClusterConfig {
+            cluster_tolerance: 0.3,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+        },
+        icp: None,
+        ..MvpPipelineConfig::default()
+    }
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_xyzinormal_pcd_pipeline_roundtrip() {
+    use spatialrust::{
+        HasIntensity, HasNormals3, HasPositions3, MvpPipeline, PcdWriteFormat, read_pcd,
+        write_pcd,
+    };
+    use std::io::Cursor;
+
+    let cloud = sample_xyzinormal_plane_cloud();
+    let mut input_bytes = Vec::new();
+    write_pcd(&mut input_bytes, &cloud, PcdWriteFormat::Ascii).unwrap();
+    let loaded = read_pcd(&mut Cursor::new(input_bytes)).unwrap();
+
+    assert!(loaded.field("normal_x").is_ok());
+    assert!(loaded.intensity().is_ok());
+
+    let result = MvpPipeline::new(mvp_xyzinormal_base_config())
+        .run(&loaded)
+        .unwrap();
+
+    assert!(!result.downsampled.is_empty());
+    assert!(result.downsampled.field("normal_x").is_ok());
+    assert!(result.downsampled.intensity().is_ok());
+    assert!(result.with_normals.field("normal_x").is_ok());
+    assert!(result.plane.inlier_count >= 10);
+    assert!(result.output.field("label").is_ok());
+
+    let (_, _, down_nz) = result.downsampled.normals3().unwrap();
+    assert!(down_nz.iter().all(|value| value.is_finite()));
+
+    let mut output_bytes = Vec::new();
+    write_pcd(&mut output_bytes, &result.output, PcdWriteFormat::Binary).unwrap();
+    let saved = read_pcd(&mut Cursor::new(output_bytes)).unwrap();
+    assert_eq!(saved.len(), result.output.len());
+    let (x, y, z) = saved.positions3().unwrap();
+    assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+#[test]
+fn mvp_xyzinormal_gpu_voxel_matches_cpu() {
+    use spatialrust::{DeviceKind, ExecutionPolicy, HasIntensity, HasNormals3, HasPositions3, MvpPipeline};
+
+    let cloud = sample_xyzinormal_plane_cloud();
+    let mut cpu_config = mvp_xyzinormal_base_config();
+    cpu_config.voxel_policy = ExecutionPolicy::CpuSingle;
+    let mut gpu_config = mvp_xyzinormal_base_config();
+    gpu_config.voxel_policy = ExecutionPolicy::Gpu(DeviceKind::Wgpu);
+
+    let cpu = MvpPipeline::new(cpu_config).run(&cloud).unwrap();
+    let gpu = MvpPipeline::new(gpu_config).run(&cloud).unwrap();
+
+    assert_eq!(cpu.downsampled.len(), gpu.downsampled.len());
+    let (cpu_x, cpu_y, cpu_z) = cpu.downsampled.positions3().unwrap();
+    let (gpu_x, gpu_y, gpu_z) = gpu.downsampled.positions3().unwrap();
+    for index in 0..cpu.downsampled.len() {
+        assert!((cpu_x[index] - gpu_x[index]).abs() < 1e-4);
+        assert!((cpu_y[index] - gpu_y[index]).abs() < 1e-4);
+        assert!((cpu_z[index] - gpu_z[index]).abs() < 1e-4);
+    }
+
+    let cpu_i = cpu.downsampled.intensity().unwrap();
+    let gpu_i = gpu.downsampled.intensity().unwrap();
+    for (left, right) in cpu_i.iter().zip(gpu_i) {
+        assert!((left - right).abs() < 1e-4);
+    }
+
+    let (_, _, cpu_nz) = cpu.downsampled.normals3().unwrap();
+    let (_, _, gpu_nz) = gpu.downsampled.normals3().unwrap();
+    for (left, right) in cpu_nz.iter().zip(gpu_nz) {
+        assert!((left - right).abs() < 1e-4);
+    }
+}
+
+#[cfg(feature = "mvp")]
 #[test]
 fn mvp_approximate_voxel_mode_pipeline() {
     use spatialrust::{

@@ -9,11 +9,11 @@ MVP チェーン（PCD/LAS → voxel → normals → RANSAC plane → Euclidean 
 | 項目 | 結果 |
 |------|------|
 | 実行日 | 2026-06-12 |
-| テスト | `cargo test -p spatialrust --features mvp --test mvp_pipeline` → **11 passed** |
+| テスト | `cargo test -p spatialrust --features mvp --test mvp_pipeline` → **13 passed** |
 | CLI テスト | `cargo test -p spatialrust --features mvp --bin spatialrust-mvp` → **10 passed** |
 | パイプライン段 | voxel downsample → normal estimate → plane segment → cluster → optional ICP |
 | 出力 | `label` フィールド付き `PointCloud`（plane inlier=0, cluster id≥1） |
-| IO 検証 | PCD roundtrip、LAS roundtrip、COPC roundtrip、**COPC bounds query → MVP**、**COPC resolution query → MVP**、**CLI `--bounds` / `--resolution`**、**多解像度 COPC resolution 点数検証（Epic 36）** |
+| IO 検証 | PCD/LAS/COPC roundtrip、COPC query/resolution、**xyzinormal PCD → MVP（Epic 37）** |
 | CLI voxel | **`--voxel-mode centroid\|approximate`**（Epic 34）、`--voxel-policy auto\|cpu\|gpu` |
 | 修正 | `extract_indices([])` が空 buffers を返していた問題を修正（平面のみ点群で plane segmentation 後にクラッシュ） |
 | デフォルト policy | `MvpPipelineConfig.voxel_policy = Auto`（点数 ≥ `gpu_min_points` で GPU） |
@@ -60,5 +60,5 @@ cargo test -p spatialrust --features mvp mvp_load_voxel_normals_plane_cluster
 
 ## 次アクション
 
-1. xyzinormal / 複合スキーマ MVP end-to-end 計測
-2. approximate-first × 属性多数ベンチ
+1. approximate-first × 属性多数ベンチ
+2. 実スキャン規模（数百万点）end-to-end

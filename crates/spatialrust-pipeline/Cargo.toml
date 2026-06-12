@@ -23,3 +23,8 @@ spatialrust-registration = { workspace = true, features = ["register-icp"] }
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "mvp_xyzinormal"
+harness = false
