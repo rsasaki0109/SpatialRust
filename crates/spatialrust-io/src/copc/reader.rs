@@ -185,7 +185,7 @@ async fn read_query_points<S: ByteSource>(
 
 #[cfg(test)]
 mod tests {
-    use super::{read_copc_file, read_copc_file_with_query, CopcQuery};
+    use super::{read_copc_file, read_copc_file_info, read_copc_file_with_query, CopcQuery};
     use crate::copc::{copc_level_for_resolution, CopcBounds};
     use crate::copc::writer::write_copc_file;
     use crate::{write_las_file, LasWriteFormat};
@@ -237,5 +237,77 @@ mod tests {
     #[test]
     fn resolution_level_helper_is_usable_from_reader_tests() {
         assert_eq!(copc_level_for_resolution(4.0, 1.0), 2);
+    }
+
+    #[test]
+    fn multi_resolution_copc_resolution_query_reduces_point_count() {
+        use copc_writer::CopcWriterParams;
+
+        use crate::copc::writer::write_copc_file_with_params;
+
+        let cloud = dense_grid_cloud(7_000);
+        let path = std::env::temp_dir().join(format!(
+            "spatialrust_copc_multires_{}.copc.laz",
+            std::process::id()
+        ));
+        write_copc_file_with_params(
+            &path,
+            &cloud,
+            &CopcWriterParams {
+                max_points_per_node: 96,
+                max_depth: 8,
+            },
+        )
+        .unwrap();
+
+        let info = read_copc_file_info(&path).unwrap();
+        let full = read_copc_file(&path).unwrap();
+        assert_eq!(full.len(), cloud.len());
+
+        let coarse = read_copc_file_with_query(
+            &path,
+            &CopcQuery::with_resolution(info.root_bounds, info.spacing * 4.0),
+        )
+        .unwrap();
+        let medium = read_copc_file_with_query(
+            &path,
+            &CopcQuery::with_resolution(info.root_bounds, info.spacing),
+        )
+        .unwrap();
+        let fine = read_copc_file_with_query(
+            &path,
+            &CopcQuery::with_resolution(info.root_bounds, info.spacing / 4.0),
+        )
+        .unwrap();
+
+        assert!(coarse.len() <= medium.len());
+        assert!(medium.len() <= fine.len());
+        assert!(fine.len() <= full.len());
+        assert!(
+            coarse.len() < full.len(),
+            "coarse resolution should load fewer points than full detail"
+        );
+
+        let level0 = read_copc_file_with_query(&path, &CopcQuery::with_level(info.root_bounds, 0))
+            .unwrap();
+        let level2 = read_copc_file_with_query(&path, &CopcQuery::with_level(info.root_bounds, 2))
+            .unwrap();
+        assert!(level0.len() <= level2.len());
+        assert!(level2.len() <= full.len());
+
+        let _ = std::fs::remove_file(path);
+    }
+
+    fn dense_grid_cloud(count: usize) -> spatialrust_core::PointCloud {
+        use spatialrust_core::PointCloudBuilder;
+
+        let mut builder = PointCloudBuilder::xyz();
+        for index in 0..count {
+            let x = (index % 31) as f32 - 15.0;
+            let y = ((index / 31) % 29) as f32 - 14.0;
+            let z = ((index / (31 * 29)) % 23) as f32 - 11.0;
+            builder.push_point([x, y, z]).unwrap();
+        }
+        builder.build().unwrap()
     }
 }

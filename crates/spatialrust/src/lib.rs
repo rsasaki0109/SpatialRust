@@ -48,8 +48,8 @@ pub use spatialrust_io::{read_e57, read_e57_file, write_e57, write_e57_file};
 #[cfg(feature = "io-copc")]
 pub use spatialrust_io::{
     copc_level_for_resolution, read_copc, read_copc_file, read_copc_file_in_bounds,
-    read_copc_file_info, read_copc_file_with_query, write_copc, write_copc_file, CopcBounds,
-    CopcFileInfo, CopcQuery,
+    read_copc_file_info, read_copc_file_with_query, write_copc, write_copc_file,
+    write_copc_file_with_params, CopcBounds, CopcFileInfo, CopcQuery, CopcWriterParams,
 };
 
 #[cfg(feature = "io-copc-http")]

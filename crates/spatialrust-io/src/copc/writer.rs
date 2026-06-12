@@ -31,6 +31,15 @@ pub fn write_copc(path: impl AsRef<Path>, cloud: &PointCloud) -> Result<(), IoEr
 
 /// Writes a point cloud to a COPC file on disk.
 pub fn write_copc_file(path: impl AsRef<Path>, cloud: &PointCloud) -> Result<(), IoError> {
+    write_copc_file_with_params(path, cloud, &CopcWriterParams::default())
+}
+
+/// Writes a point cloud to a COPC file using custom octree builder parameters.
+pub fn write_copc_file_with_params(
+    path: impl AsRef<Path>,
+    cloud: &PointCloud,
+    params: &CopcWriterParams,
+) -> Result<(), IoError> {
     validate_copc_output_path(path.as_ref())?;
     cloud.validate()?;
     if cloud.is_empty() {
@@ -49,7 +58,7 @@ pub fn write_copc_file(path: impl AsRef<Path>, cloud: &PointCloud) -> Result<(),
         &source,
         has_color,
         bounds,
-        &CopcWriterParams::default(),
+        params,
     )
     .map_err(map_copc_writer_error)
 }

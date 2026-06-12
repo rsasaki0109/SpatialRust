@@ -13,7 +13,8 @@ pub use reader::{
     read_copc, read_copc_file, read_copc_file_in_bounds, read_copc_file_info,
     read_copc_file_with_query, CopcReader,
 };
-pub use writer::{write_copc, write_copc_file, CopcWriter};
+pub use writer::{write_copc, write_copc_file, write_copc_file_with_params, CopcWriter};
+pub use copc_writer::CopcWriterParams;
 
 #[cfg(feature = "io-copc-http")]
 pub use http::{read_copc_url, read_copc_url_info, read_copc_url_with_query, HttpByteSource};

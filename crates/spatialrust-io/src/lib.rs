@@ -68,8 +68,9 @@ pub use e57::{
 #[cfg(feature = "io-copc")]
 pub use copc::{
     copc_level_for_resolution, read_copc, read_copc_file, read_copc_file_in_bounds,
-    read_copc_file_info, read_copc_file_with_query, write_copc, write_copc_file, CopcBounds,
-    CopcFileInfo, CopcQuery, CopcReader, CopcWriter,
+    read_copc_file_info, read_copc_file_with_query, write_copc, write_copc_file,
+    write_copc_file_with_params, CopcBounds, CopcFileInfo, CopcQuery, CopcReader, CopcWriter,
+    CopcWriterParams,
 };
 
 #[cfg(feature = "io-copc-http")]

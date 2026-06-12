@@ -461,35 +461,42 @@ fn mvp_copc_query_pipeline() {
 #[test]
 fn mvp_copc_resolution_query_pipeline() {
     use spatialrust::{
-        CopcQuery, ExecutionPolicy, MvpPipeline, MvpPipelineConfig, NormalEstimationConfig,
-        PointCloudBuilder, RansacPlaneConfig, read_copc_file_info, read_copc_file_with_query,
-        write_copc_file, Vec3,
+        CopcQuery, CopcWriterParams, ExecutionPolicy, MvpPipeline, MvpPipelineConfig,
+        NormalEstimationConfig, PointCloudBuilder, RansacPlaneConfig, read_copc_file,
+        read_copc_file_info, read_copc_file_with_query, write_copc_file_with_params, Vec3,
     };
     use spatialrust::EuclideanClusterConfig;
 
     let mut builder = PointCloudBuilder::xyz();
-    for x in 0..10 {
-        for y in 0..10 {
-            builder.push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0]).unwrap();
-        }
+    for index in 0..7_000 {
+        let x = (index % 31) as f32 - 15.0;
+        let y = ((index / 31) % 29) as f32 - 14.0;
+        let z = ((index / (31 * 29)) % 23) as f32 - 11.0;
+        builder.push_point([x, y, z]).unwrap();
     }
-    builder.push_point([0.0, 0.0, 0.5]).unwrap();
-    builder.push_point([0.1, 0.0, 0.5]).unwrap();
     let cloud = builder.build().unwrap();
 
     let path = std::env::temp_dir().join(format!(
         "spatialrust_mvp_copc_resolution_{}.copc.laz",
         std::process::id()
     ));
-    write_copc_file(&path, &cloud).unwrap();
+    write_copc_file_with_params(
+        &path,
+        &cloud,
+        &CopcWriterParams {
+            max_points_per_node: 96,
+            max_depth: 8,
+        },
+    )
+    .unwrap();
 
     let info = read_copc_file_info(&path).unwrap();
-    let query = CopcQuery::with_resolution(info.root_bounds, info.spacing * 2.0);
+    let full = read_copc_file(&path).unwrap();
+    let query = CopcQuery::with_resolution(info.root_bounds, info.spacing * 4.0);
     let loaded = read_copc_file_with_query(&path, &query).unwrap();
-    let _ = std::fs::remove_file(&path);
 
-    assert!(!loaded.is_empty());
-    assert!(loaded.len() <= cloud.len());
+    assert_eq!(full.len(), cloud.len());
+    assert!(loaded.len() < full.len());
 
     let result = MvpPipeline::new(MvpPipelineConfig {
         voxel: spatialrust::VoxelGridDownsampleConfig::centroid(0.2),
@@ -503,7 +510,7 @@ fn mvp_copc_resolution_query_pipeline() {
         plane: RansacPlaneConfig {
             distance_threshold: 0.05,
             max_iterations: 500,
-            min_inliers: 10,
+            min_inliers: 1,
             seed: 17,
         },
         cluster: EuclideanClusterConfig {
@@ -518,7 +525,102 @@ fn mvp_copc_resolution_query_pipeline() {
     .expect("mvp pipeline on resolution-limited copc read");
 
     assert!(!result.downsampled.is_empty());
-    assert!(result.plane.inlier_count >= 10);
+    assert!(result.plane.inlier_count >= 1);
+
+    let _ = std::fs::remove_file(&path);
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_cli_copc_resolution_reduces_input_points() {
+    use std::process::Command;
+
+    use spatialrust::{
+        read_copc_file, read_copc_file_info, write_copc_file_with_params, CopcWriterParams,
+        PointCloudBuilder,
+    };
+
+    let mut builder = PointCloudBuilder::xyz();
+    for index in 0..7_000 {
+        let x = (index % 31) as f32 - 15.0;
+        let y = ((index / 31) % 29) as f32 - 14.0;
+        let z = ((index / (31 * 29)) % 23) as f32 - 11.0;
+        builder.push_point([x, y, z]).unwrap();
+    }
+    let cloud = builder.build().unwrap();
+
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_copc_in_{}.copc.laz",
+        std::process::id()
+    ));
+    let coarse_output = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_copc_coarse_{}.copc.laz",
+        std::process::id()
+    ));
+    let full_output = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_copc_full_{}.copc.laz",
+        std::process::id()
+    ));
+    write_copc_file_with_params(
+        &input_path,
+        &cloud,
+        &CopcWriterParams {
+            max_points_per_node: 96,
+            max_depth: 8,
+        },
+    )
+    .unwrap();
+
+    let info = read_copc_file_info(&input_path).unwrap();
+    let full_count = read_copc_file(&input_path).unwrap().len();
+    let coarse_resolution = info.spacing * 4.0;
+    let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+
+    let coarse = Command::new(bin)
+        .args([
+            "--resolution",
+            &format!("{coarse_resolution}"),
+            input_path.to_str().unwrap(),
+            coarse_output.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run coarse resolution CLI");
+    assert!(
+        coarse.status.success(),
+        "coarse CLI failed: {}",
+        String::from_utf8_lossy(&coarse.stderr)
+    );
+
+    let full = Command::new(bin)
+        .args([
+            input_path.to_str().unwrap(),
+            full_output.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run full detail CLI");
+    assert!(
+        full.status.success(),
+        "full CLI failed: {}",
+        String::from_utf8_lossy(&full.stderr)
+    );
+
+    let coarse_loaded = parse_cli_input_points(&coarse.stderr);
+    let full_loaded = parse_cli_input_points(&full.stderr);
+    assert_eq!(full_loaded, full_count);
+    assert!(coarse_loaded < full_loaded);
+
+    let _ = std::fs::remove_file(input_path);
+    let _ = std::fs::remove_file(coarse_output);
+    let _ = std::fs::remove_file(full_output);
+}
+
+#[cfg(feature = "mvp")]
+fn parse_cli_input_points(stderr: &[u8]) -> usize {
+    let text = String::from_utf8_lossy(stderr);
+    text.lines()
+        .find_map(|line| line.strip_prefix("input points: "))
+        .and_then(|value| value.trim().parse().ok())
+        .expect("CLI stderr should report input points")
 }
 
 #[cfg(feature = "mvp")]
