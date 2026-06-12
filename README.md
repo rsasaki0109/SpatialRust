@@ -38,6 +38,10 @@ cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
   --leaf-size 0.2 --voxel-policy auto scan.copc.laz out.copc.laz
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
   --bounds 0,0,-1,100,100,1 scan.copc.laz roi.copc.laz
+cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+  --bounds 0,0,-1,100,100,1 --resolution 0.5 scan.copc.laz roi.copc.laz
+cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+  --resolution 0.5 scan.copc.laz coarse.copc.laz
 ```
 
 ### Library

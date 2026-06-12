@@ -4,15 +4,29 @@
 //! cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- input.pcd output.pcd
 //! cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
 //!   --bounds 0,0,-1,100,100,1 scan.copc.laz roi.copc.laz
+//! cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+//!   --resolution 0.5 scan.copc.laz coarse.copc.laz
 //! ```
 
 use std::{env, path::Path, process::ExitCode, time::Instant};
 
 use spatialrust::{
-    detect_point_cloud_format, read_copc_file_with_query, read_point_cloud_file,
-    write_point_cloud_file, CopcBounds, CopcQuery, ExecutionPolicy, MvpPipeline,
-    MvpPipelineConfig, PointCloudFileFormat,
+    detect_point_cloud_format, read_copc_file_info, read_copc_file_with_query,
+    read_point_cloud_file, write_point_cloud_file, CopcBounds, CopcQuery, ExecutionPolicy,
+    MvpPipeline, MvpPipelineConfig, PointCloudFileFormat,
 };
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+struct CopcQueryOptions {
+    bounds: Option<CopcBounds>,
+    resolution: Option<f64>,
+}
+
+impl CopcQueryOptions {
+    const fn is_active(self) -> bool {
+        self.bounds.is_some() || self.resolution.is_some()
+    }
+}
 
 fn print_usage(program: &str) {
     eprintln!(
@@ -26,6 +40,8 @@ Options:
   --voxel-policy <POLICY>    auto | cpu | gpu (default: auto)
   --bounds <MINX,MINY,MINZ,MAXX,MAXY,MAXZ>
                              COPC spatial query bounds (requires .copc.laz/.copc.las input)
+  --resolution <METERS>      COPC max point spacing LOD (requires COPC input; uses root bounds
+                             when --bounds is omitted)
   -h, --help                 Show this help
 "
     );
@@ -80,34 +96,80 @@ fn parse_bounds(value: &str) -> Result<CopcBounds, String> {
     Ok(bounds)
 }
 
+fn parse_resolution(value: &str) -> Result<f64, String> {
+    let resolution = value
+        .trim()
+        .parse()
+        .map_err(|_| format!("invalid resolution `{value}`"))?;
+    CopcQuery::with_resolution(CopcBounds::new([0.0; 3], [1.0; 3]), resolution)
+        .validate()
+        .map_err(|error| format!("invalid COPC resolution: {error}"))?;
+    Ok(resolution)
+}
+
+fn ensure_copc_input(input_path: &str, option: &str) -> Result<(), String> {
+    let format = detect_point_cloud_format(input_path)
+        .ok_or_else(|| format!("cannot detect input format for {option}: {input_path}"))?;
+    if format != PointCloudFileFormat::Copc {
+        return Err(format!(
+            "{option} requires a COPC input (.copc.laz or .copc.las)"
+        ));
+    }
+    Ok(())
+}
+
+fn build_copc_query(
+    input_path: &str,
+    options: CopcQueryOptions,
+) -> Result<CopcQuery, Box<dyn std::error::Error>> {
+    let bounds = match options.bounds {
+        Some(bounds) => bounds,
+        None => read_copc_file_info(input_path)?.root_bounds,
+    };
+
+    let query = match options.resolution {
+        Some(resolution) => CopcQuery::with_resolution(bounds, resolution),
+        None => CopcQuery::bounds(bounds),
+    };
+    query.validate()?;
+    Ok(query)
+}
+
+fn log_copc_query(query: &CopcQuery) {
+    eprintln!(
+        "COPC query: x=[{}, {}] y=[{}, {}] z=[{}, {}]",
+        query.bounds.min[0],
+        query.bounds.max[0],
+        query.bounds.min[1],
+        query.bounds.max[1],
+        query.bounds.min[2],
+        query.bounds.max[2],
+    );
+    if let Some(resolution) = query.max_resolution {
+        eprintln!("COPC max resolution: {resolution} m");
+    }
+}
+
 fn load_input(
     input_path: &str,
-    bounds: Option<CopcBounds>,
+    copc: CopcQueryOptions,
 ) -> Result<spatialrust::PointCloud, Box<dyn std::error::Error>> {
-    match bounds {
-        Some(bounds) => {
-            let format = detect_point_cloud_format(input_path).ok_or_else(|| {
-                format!("cannot detect input format for --bounds: {input_path}")
-            })?;
-            if format != PointCloudFileFormat::Copc {
-                return Err(
-                    "--bounds requires a COPC input (.copc.laz or .copc.las)".into(),
-                );
-            }
-
-            eprintln!(
-                "COPC bounds query: x=[{}, {}] y=[{}, {}] z=[{}, {}]",
-                bounds.min[0],
-                bounds.max[0],
-                bounds.min[1],
-                bounds.max[1],
-                bounds.min[2],
-                bounds.max[2],
-            );
-            Ok(read_copc_file_with_query(input_path, &CopcQuery::bounds(bounds))?)
-        }
-        None => Ok(read_point_cloud_file(input_path)?),
+    if !copc.is_active() {
+        return Ok(read_point_cloud_file(input_path)?);
     }
+
+    let option = if copc.bounds.is_some() && copc.resolution.is_some() {
+        "--bounds/--resolution"
+    } else if copc.bounds.is_some() {
+        "--bounds"
+    } else {
+        "--resolution"
+    };
+    ensure_copc_input(input_path, option)?;
+
+    let query = build_copc_query(input_path, copc)?;
+    log_copc_query(&query);
+    Ok(read_copc_file_with_query(input_path, &query)?)
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
@@ -118,7 +180,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut leaf_size = 0.05_f32;
     let mut voxel_policy = ExecutionPolicy::Auto;
-    let mut copc_bounds = None;
+    let mut copc = CopcQueryOptions::default();
     let mut input_path = None;
     let mut output_path = None;
 
@@ -144,7 +206,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--bounds" => {
                 let value = args.next().ok_or("--bounds requires 6 comma-separated values")?;
-                copc_bounds = Some(parse_bounds(&value)?);
+                copc.bounds = Some(parse_bounds(&value)?);
+            }
+            "--resolution" => {
+                let value = args.next().ok_or("--resolution requires a numeric value")?;
+                copc.resolution = Some(parse_resolution(&value)?);
             }
             value if value.starts_with('-') => {
                 return Err(format!("unknown option `{value}`").into());
@@ -169,7 +235,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     eprintln!("loading {input_path}");
-    let input = load_input(&input_path, copc_bounds)?;
+    let input = load_input(&input_path, copc)?;
     let input_points = input.len();
     eprintln!("input points: {input_points}");
 
@@ -214,7 +280,8 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_bounds;
+    use super::{parse_bounds, parse_resolution, CopcQueryOptions};
+    use spatialrust::CopcQuery;
 
     #[test]
     fn parse_bounds_accepts_six_values() {
@@ -231,5 +298,39 @@ mod tests {
     #[test]
     fn parse_bounds_rejects_inverted_axis() {
         assert!(parse_bounds("10,0,0,0,1,1").is_err());
+    }
+
+    #[test]
+    fn parse_resolution_accepts_positive_value() {
+        assert_eq!(parse_resolution("0.5").unwrap(), 0.5);
+    }
+
+    #[test]
+    fn parse_resolution_rejects_non_positive() {
+        assert!(parse_resolution("0").is_err());
+        assert!(parse_resolution("-1").is_err());
+    }
+
+    #[test]
+    fn copc_query_options_active_when_bounds_or_resolution_set() {
+        let bounds = parse_bounds("0,0,0,1,1,1").unwrap();
+        assert!(!CopcQueryOptions::default().is_active());
+        assert!(CopcQueryOptions {
+            bounds: Some(bounds),
+            resolution: None,
+        }
+        .is_active());
+        assert!(CopcQueryOptions {
+            bounds: None,
+            resolution: Some(0.5),
+        }
+        .is_active());
+    }
+
+    #[test]
+    fn resolution_query_sets_max_resolution_field() {
+        let bounds = parse_bounds("0,0,0,10,10,10").unwrap();
+        let query = CopcQuery::with_resolution(bounds, 0.25);
+        assert_eq!(query.max_resolution, Some(0.25));
     }
 }

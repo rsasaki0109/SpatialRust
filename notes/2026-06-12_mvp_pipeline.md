@@ -9,10 +9,10 @@ MVP チェーン（PCD/LAS → voxel → normals → RANSAC plane → Euclidean 
 | 項目 | 結果 |
 |------|------|
 | 実行日 | 2026-06-12 |
-| テスト | `cargo test -p spatialrust --features mvp` → **8 passed**（`mvp_pipeline.rs`） |
+| テスト | `cargo test -p spatialrust --features mvp` → **9 passed**（`mvp_pipeline.rs`） |
 | パイプライン段 | voxel downsample → normal estimate → plane segment → cluster → optional ICP |
 | 出力 | `label` フィールド付き `PointCloud`（plane inlier=0, cluster id≥1） |
-| IO 検証 | PCD roundtrip、LAS roundtrip、COPC roundtrip、**COPC bounds query → MVP**（`mvp_copc_query_pipeline`）、**CLI `--bounds`** |
+| IO 検証 | PCD roundtrip、LAS roundtrip、COPC roundtrip、**COPC bounds query → MVP**、**COPC resolution query → MVP**、**CLI `--bounds` / `--resolution`** |
 | 修正 | `extract_indices([])` が空 buffers を返していた問題を修正（平面のみ点群で plane segmentation 後にクラッシュ） |
 | デフォルト policy | `MvpPipelineConfig.voxel_policy = Auto`（点数 ≥ `gpu_min_points` で GPU） |
 
@@ -30,6 +30,8 @@ cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- input.copc.laz 
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- --leaf-size 0.2 --voxel-policy auto scan.las out.las
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
   --bounds 0,0,-0.01,0.85,0.85,0.01 scan.copc.laz roi.copc.laz
+cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+  --resolution 0.5 scan.copc.laz coarse.copc.laz
 
 # GPU voxel 込み pipeline crate
 cargo test -p spatialrust-pipeline --features pipeline-mvp,pipeline-mvp-gpu
@@ -49,9 +51,8 @@ cargo test -p spatialrust --features mvp mvp_load_voxel_normals_plane_cluster
 ## 未確認/要確認項目
 
 - 実スキャン規模（数百万点）での end-to-end 時間
-- 多解像度 COPC（`CopcQuery::with_resolution`）→ MVP
+- 多解像度 COPC 実ファイルでの `--resolution` 点数削減効果
 
 ## 次アクション
 
 1. 1M 点 filter ベンチ再計測（centroid 含む）
-2. 多解像度 COPC（`CopcQuery::with_resolution`）→ MVP / CLI
