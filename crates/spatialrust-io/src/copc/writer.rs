@@ -431,4 +431,39 @@ mod tests {
             assert!((out_z[index] - src_z[index]).abs() < 1e-3);
         }
     }
+
+    #[test]
+    fn bounds_query_excludes_out_of_region_points() {
+        use crate::copc::{read_copc_file_with_query, CopcBounds, CopcQuery};
+
+        let mut builder = PointCloudBuilder::xyz();
+        for x in 0..10 {
+            for y in 0..10 {
+                builder.push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0]).unwrap();
+            }
+        }
+        builder.push_point([0.0, 0.0, 0.5]).unwrap();
+        let cloud = builder.build().unwrap();
+
+        let path = std::env::temp_dir().join(format!(
+            "spatialrust_copc_bounds_query_{}.copc.laz",
+            std::process::id()
+        ));
+        write_copc_file(&path, &cloud).expect("write copc");
+
+        let bounds = CopcBounds::from_ranges((0.0, 0.85), (0.0, 0.85), (-0.01, 0.01));
+        let loaded = read_copc_file_with_query(&path, &CopcQuery::bounds(bounds)).expect("query");
+        let _ = std::fs::remove_file(&path);
+
+        assert!(loaded.len() < cloud.len());
+        assert!(loaded.len() >= 10);
+        assert!(
+            loaded
+                .schema()
+                .find_semantic(spatialrust_core::FieldSemantic::PositionX)
+                .is_some()
+        );
+        let (x, _, _) = loaded.positions3().expect("positions3");
+        assert_eq!(x.len(), loaded.len());
+    }
 }

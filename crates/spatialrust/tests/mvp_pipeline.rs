@@ -393,3 +393,66 @@ fn mvp_copc_pipeline_roundtrip() {
     let (x, y, z) = saved.positions3().unwrap();
     assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
 }
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_copc_query_pipeline() {
+    use spatialrust::{
+        CopcBounds, CopcQuery, ExecutionPolicy, HasPositions3, MvpPipeline, MvpPipelineConfig,
+        NormalEstimationConfig, PointCloudBuilder, RansacPlaneConfig, read_copc_file_with_query,
+        write_copc_file, Vec3,
+    };
+    use spatialrust::EuclideanClusterConfig;
+
+    let mut builder = PointCloudBuilder::xyz();
+    for x in 0..10 {
+        for y in 0..10 {
+            builder.push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0]).unwrap();
+        }
+    }
+    builder.push_point([0.0, 0.0, 0.5]).unwrap();
+    builder.push_point([0.1, 0.0, 0.5]).unwrap();
+    let cloud = builder.build().unwrap();
+
+    let path =
+        std::env::temp_dir().join(format!("spatialrust_mvp_copc_query_{}.copc.laz", std::process::id()));
+    write_copc_file(&path, &cloud).unwrap();
+
+    let bounds = CopcBounds::from_ranges((0.0, 0.85), (0.0, 0.85), (-0.01, 0.01));
+    let loaded = read_copc_file_with_query(&path, &CopcQuery::bounds(bounds)).unwrap();
+    let _ = std::fs::remove_file(&path);
+
+    assert!(loaded.len() < cloud.len());
+    assert!(loaded.len() >= 10);
+
+    let result = MvpPipeline::new(MvpPipelineConfig {
+        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(0.2),
+        voxel_policy: ExecutionPolicy::CpuSingle,
+        normals: NormalEstimationConfig {
+            k_neighbors: 8,
+            min_neighbors: 3,
+            viewpoint: Some(Vec3::new(0.0, 0.0, 10.0)),
+            ..NormalEstimationConfig::default()
+        },
+        plane: RansacPlaneConfig {
+            distance_threshold: 0.05,
+            max_iterations: 500,
+            min_inliers: 10,
+            seed: 17,
+        },
+        cluster: EuclideanClusterConfig {
+            cluster_tolerance: 0.3,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+        },
+        icp: None,
+        ..MvpPipelineConfig::default()
+    })
+    .run(&loaded)
+    .expect("mvp pipeline on queried copc subset");
+
+    assert!(!result.downsampled.is_empty());
+    assert!(result.plane.inlier_count >= 10);
+    assert_eq!(result.clusters.cluster_count, 0);
+    assert!(result.output.is_empty());
+}

@@ -9,10 +9,11 @@ MVP チェーン（PCD/LAS → voxel → normals → RANSAC plane → Euclidean 
 | 項目 | 結果 |
 |------|------|
 | 実行日 | 2026-06-12 |
-| テスト | `cargo test -p spatialrust --features mvp` → **6 passed**（`mvp_pipeline.rs`） |
+| テスト | `cargo test -p spatialrust --features mvp` → **8 passed**（`mvp_pipeline.rs`） |
 | パイプライン段 | voxel downsample → normal estimate → plane segment → cluster → optional ICP |
 | 出力 | `label` フィールド付き `PointCloud`（plane inlier=0, cluster id≥1） |
-| IO 検証 | PCD roundtrip、LAS roundtrip、**COPC roundtrip**（`mvp_copc_pipeline_roundtrip`） |
+| IO 検証 | PCD roundtrip、LAS roundtrip、COPC roundtrip、**COPC bounds query → MVP**（`mvp_copc_query_pipeline`） |
+| 修正 | `extract_indices([])` が空 buffers を返していた問題を修正（平面のみ点群で plane segmentation 後にクラッシュ） |
 | デフォルト policy | `MvpPipelineConfig.voxel_policy = Auto`（点数 ≥ `gpu_min_points` で GPU） |
 
 ### 実行例
@@ -21,8 +22,8 @@ MVP チェーン（PCD/LAS → voxel → normals → RANSAC plane → Euclidean 
 # MVP integration tests
 cargo test -p spatialrust --features mvp
 
-# COPC → MVP → COPC
-cargo test -p spatialrust --features mvp mvp_copc_pipeline_roundtrip
+# COPC bounds query → MVP
+cargo test -p spatialrust --features mvp mvp_copc_query_pipeline
 
 # CLI（PCD/LAS/COPC 等 → ラベル付き出力）
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- input.copc.laz output.copc.laz
@@ -46,11 +47,10 @@ cargo test -p spatialrust --features mvp mvp_load_voxel_normals_plane_cluster
 ## 未確認/要確認項目
 
 - 実スキャン規模（数百万点）での end-to-end 時間
-- `Auto` policy が 200k–500k 点で GPU を選ぶ場合の実測メリット（属性チャンネル数依存）
-- COPC 入力を MVP パイプラインに直接つなぐ smoke
+- 多解像度 COPC（`CopcQuery::with_resolution`）→ MVP
 
 ## 次アクション
 
-1. GPU filter の staging/readback 最適化
-2. approximate_first モード向け別閾値の検討（500k でも CPU 優位）
-3. COPC 空間クエリ付き MVP smoke（bounds / resolution）
+1. MVP CLI に COPC query オプション（`--bounds`）
+2. approximate_first モード向け別閾値の検討
+3. 1M 点 filter ベンチ再計測

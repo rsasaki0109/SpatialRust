@@ -5,11 +5,11 @@ use spatialrust_core::{
 /// Extracts a sub-cloud containing only the selected point indices.
 pub fn extract_indices(input: &PointCloud, indices: &[usize]) -> SpatialResult<PointCloud> {
     if indices.is_empty() {
-        return PointCloud::try_from_parts(
-            input.schema().clone(),
-            PointBufferSet::new(),
-            input.metadata().clone(),
-        );
+        let mut buffers = PointBufferSet::new();
+        for field in input.schema().fields() {
+            buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, 0));
+        }
+        return PointCloud::try_from_parts(input.schema().clone(), buffers, input.metadata().clone());
     }
 
     let mut buffers = PointBufferSet::new();
