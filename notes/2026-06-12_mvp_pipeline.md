@@ -2,17 +2,19 @@
 
 ## 結論
 
-MVP チェーン（PCD/LAS → voxel → normals → RANSAC plane → Euclidean cluster → 任意 ICP → ラベル付き PCD/LAS 出力）は **`feature = "mvp"`** で integration test 6 件すべて通過。centroid voxel の GPU 優位は **500k 点以上**で確認されたため **`gpu_min_points` デフォルトを 500_000** に設定した。
+MVP チェーン（PCD/LAS → voxel → normals → RANSAC plane → Euclidean cluster → 任意 ICP → ラベル付き PCD/LAS 出力）は **`feature = "mvp"`** で integration test 10 件すべて通過。centroid voxel の GPU 優位は **500k 点以上**で確認されたため **`gpu_min_points` デフォルトを 500_000** に設定した。**Epic 34:** CLI `--voxel-mode approximate` を追加（デフォルトは `centroid`）。
 
 ## 確認済み事実
 
 | 項目 | 結果 |
 |------|------|
 | 実行日 | 2026-06-12 |
-| テスト | `cargo test -p spatialrust --features mvp` → **9 passed**（`mvp_pipeline.rs`） |
+| テスト | `cargo test -p spatialrust --features mvp` → **10 passed**（`mvp_pipeline.rs`） |
+| CLI テスト | `cargo test -p spatialrust --features mvp --bin spatialrust-mvp` → **10 passed** |
 | パイプライン段 | voxel downsample → normal estimate → plane segment → cluster → optional ICP |
 | 出力 | `label` フィールド付き `PointCloud`（plane inlier=0, cluster id≥1） |
 | IO 検証 | PCD roundtrip、LAS roundtrip、COPC roundtrip、**COPC bounds query → MVP**、**COPC resolution query → MVP**、**CLI `--bounds` / `--resolution`** |
+| CLI voxel | **`--voxel-mode centroid\|approximate`**（Epic 34）、`--voxel-policy auto\|cpu\|gpu` |
 | 修正 | `extract_indices([])` が空 buffers を返していた問題を修正（平面のみ点群で plane segmentation 後にクラッシュ） |
 | デフォルト policy | `MvpPipelineConfig.voxel_policy = Auto`（点数 ≥ `gpu_min_points` で GPU） |
 
@@ -28,6 +30,8 @@ cargo test -p spatialrust --features mvp mvp_copc_query_pipeline
 # CLI（PCD/LAS/COPC 等 → ラベル付き出力）
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- input.copc.laz output.copc.laz
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- --leaf-size 0.2 --voxel-policy auto scan.las out.las
+cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+  --voxel-mode approximate --leaf-size 0.2 scan.las out.las
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
   --bounds 0,0,-0.01,0.85,0.85,0.01 scan.copc.laz roi.copc.laz
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
@@ -46,6 +50,7 @@ cargo test -p spatialrust --features mvp mvp_load_voxel_normals_plane_cluster
 | API | パス |
 |-----|------|
 | `MvpPipeline::run` | `SpatialRust/crates/spatialrust-pipeline/src/mvp.rs` |
+| MVP CLI | `SpatialRust/crates/spatialrust/src/bin/spatialrust_mvp.rs` |
 | 公開 re-export | `spatialrust` crate（`feature = "mvp"`） |
 
 ## 未確認/要確認項目
@@ -55,5 +60,5 @@ cargo test -p spatialrust --features mvp mvp_load_voxel_normals_plane_cluster
 
 ## 次アクション
 
-1. xyz + 属性 readback 完全統合
-2. 多解像度 COPC 実ファイルでの `--resolution` 点数削減効果
+1. 多解像度 COPC 実ファイルでの `--resolution` 点数削減効果
+2. U8 RGB 専用 reduce kernel

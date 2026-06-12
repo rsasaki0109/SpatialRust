@@ -52,3 +52,17 @@ pub(crate) fn split_xyz_blocks(mut flat: Vec<f32>, cells: usize) -> (Vec<f32>, V
     let out_x = flat;
     (out_x, out_y, out_z)
 }
+
+pub(crate) fn split_xyz_and_attribute_blocks(
+    flat: Vec<f32>,
+    attribute_count: usize,
+    cells: usize,
+) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<Vec<f32>>) {
+    let blocks = split_channel_blocks(flat, 3 + attribute_count, cells);
+    let mut iter = blocks.into_iter();
+    let out_x = iter.next().unwrap_or_default();
+    let out_y = iter.next().unwrap_or_default();
+    let out_z = iter.next().unwrap_or_default();
+    let attributes = iter.collect();
+    (out_x, out_y, out_z, attributes)
+}

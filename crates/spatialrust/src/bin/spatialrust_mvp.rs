@@ -6,6 +6,8 @@
 //!   --bounds 0,0,-1,100,100,1 scan.copc.laz roi.copc.laz
 //! cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
 //!   --resolution 0.5 scan.copc.laz coarse.copc.laz
+//! cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+//!   --voxel-mode approximate --leaf-size 0.2 scan.las out.las
 //! ```
 
 use std::{env, path::Path, process::ExitCode, time::Instant};
@@ -13,7 +15,8 @@ use std::{env, path::Path, process::ExitCode, time::Instant};
 use spatialrust::{
     detect_point_cloud_format, read_copc_file_info, read_copc_file_with_query,
     read_point_cloud_file, write_point_cloud_file, CopcBounds, CopcQuery, ExecutionPolicy,
-    MvpPipeline, MvpPipelineConfig, PointCloudFileFormat,
+    MvpPipeline, MvpPipelineConfig, PointCloudFileFormat, VoxelAggregationMode,
+    VoxelGridDownsampleConfig,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -37,6 +40,7 @@ Run the MVP pipeline (voxel → normals → plane → cluster) and write labeled
 
 Options:
   --leaf-size <METERS>       Voxel leaf size (default: 0.05)
+  --voxel-mode <MODE>        centroid | approximate (default: centroid)
   --voxel-policy <POLICY>    auto | cpu | gpu (default: auto)
   --bounds <MINX,MINY,MINZ,MAXX,MAXY,MAXZ>
                              COPC spatial query bounds (requires .copc.laz/.copc.las input)
@@ -65,6 +69,34 @@ fn parse_voxel_policy(value: &str) -> Result<ExecutionPolicy, String> {
             }
         }
         other => Err(format!("unknown voxel policy `{other}` (expected auto, cpu, or gpu)")),
+    }
+}
+
+fn parse_voxel_mode(value: &str) -> Result<VoxelAggregationMode, String> {
+    match value.to_ascii_lowercase().as_str() {
+        "centroid" => Ok(VoxelAggregationMode::Centroid),
+        "approximate" | "approximate-first" | "approx" => {
+            Ok(VoxelAggregationMode::ApproximateFirst)
+        }
+        other => Err(format!(
+            "unknown voxel mode `{other}` (expected centroid or approximate)"
+        )),
+    }
+}
+
+fn build_voxel_config(leaf_size: f32, mode: VoxelAggregationMode) -> VoxelGridDownsampleConfig {
+    match mode {
+        VoxelAggregationMode::Centroid => VoxelGridDownsampleConfig::centroid(leaf_size),
+        VoxelAggregationMode::ApproximateFirst => {
+            VoxelGridDownsampleConfig::approximate(leaf_size)
+        }
+    }
+}
+
+fn voxel_mode_label(mode: VoxelAggregationMode) -> &'static str {
+    match mode {
+        VoxelAggregationMode::Centroid => "centroid",
+        VoxelAggregationMode::ApproximateFirst => "approximate",
     }
 }
 
@@ -179,6 +211,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| "spatialrust-mvp".to_string());
 
     let mut leaf_size = 0.05_f32;
+    let mut voxel_mode = VoxelAggregationMode::Centroid;
     let mut voxel_policy = ExecutionPolicy::Auto;
     let mut copc = CopcQueryOptions::default();
     let mut input_path = None;
@@ -197,6 +230,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 leaf_size = value
                     .parse()
                     .map_err(|_| format!("invalid leaf size `{value}`"))?;
+            }
+            "--voxel-mode" => {
+                let value = args
+                    .next()
+                    .ok_or("--voxel-mode requires centroid or approximate")?;
+                voxel_mode = parse_voxel_mode(&value)?;
             }
             "--voxel-policy" => {
                 let value = args
@@ -240,13 +279,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("input points: {input_points}");
 
     let config = MvpPipelineConfig {
-        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(leaf_size),
+        voxel: build_voxel_config(leaf_size, voxel_mode),
         voxel_policy,
         ..MvpPipelineConfig::default()
     };
 
     eprintln!(
-        "running MVP pipeline (leaf_size={leaf_size}, voxel_policy={voxel_policy:?})"
+        "running MVP pipeline (leaf_size={leaf_size}, voxel_mode={}, voxel_policy={voxel_policy:?})",
+        voxel_mode_label(voxel_mode),
     );
     let started = Instant::now();
     let result = MvpPipeline::new(config).run(&input)?;
@@ -280,8 +320,8 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_bounds, parse_resolution, CopcQueryOptions};
-    use spatialrust::CopcQuery;
+    use super::{build_voxel_config, parse_bounds, parse_resolution, parse_voxel_mode, CopcQueryOptions};
+    use spatialrust::{CopcQuery, VoxelAggregationMode};
 
     #[test]
     fn parse_bounds_accepts_six_values() {
@@ -332,5 +372,37 @@ mod tests {
         let bounds = parse_bounds("0,0,0,10,10,10").unwrap();
         let query = CopcQuery::with_resolution(bounds, 0.25);
         assert_eq!(query.max_resolution, Some(0.25));
+    }
+
+    #[test]
+    fn parse_voxel_mode_accepts_centroid_and_approximate() {
+        assert_eq!(
+            parse_voxel_mode("centroid").unwrap(),
+            VoxelAggregationMode::Centroid
+        );
+        assert_eq!(
+            parse_voxel_mode("approximate").unwrap(),
+            VoxelAggregationMode::ApproximateFirst
+        );
+        assert_eq!(
+            parse_voxel_mode("approximate-first").unwrap(),
+            VoxelAggregationMode::ApproximateFirst
+        );
+    }
+
+    #[test]
+    fn parse_voxel_mode_rejects_unknown_value() {
+        assert!(parse_voxel_mode("fast").is_err());
+    }
+
+    #[test]
+    fn build_voxel_config_selects_mode_specific_defaults() {
+        let centroid = build_voxel_config(0.2, VoxelAggregationMode::Centroid);
+        assert_eq!(centroid.mode, VoxelAggregationMode::Centroid);
+        assert_eq!(centroid.leaf_size, 0.2);
+
+        let approximate = build_voxel_config(0.2, VoxelAggregationMode::ApproximateFirst);
+        assert_eq!(approximate.mode, VoxelAggregationMode::ApproximateFirst);
+        assert_eq!(approximate.leaf_size, 0.2);
     }
 }

@@ -11,11 +11,11 @@
 | 500k | xyz | ~63 ms | ~26 ms | **~2.4×** |
 | 500k | xyzi | ~80 ms | ~35 ms | **~2.3×** |
 | 500k | xyzrgb | ~82 ms | ~59 ms | **~1.4×** |
-| 500k | xyzinormal | ~124 ms | ~64 ms | **~1.9×** |
+| 500k | xyzinormal | ~124 ms | **~49 ms** (Epic 33) | **~2.5×** |
 | 1M | xyz | ~119 ms | ~32 ms | **~3.7×** |
 | 1M | xyzi | ~120 ms | ~46 ms | **~2.6×** |
-| 1M | xyzrgb | ~143 ms | ~94 ms | **~1.5×** |
-| 1M | xyzinormal | ~193 ms | ~99 ms | **~2.0×** |
+| 1M | xyzrgb | ~143 ms | **~89 ms** (Epic 33) | **~1.6×** |
+| 1M | xyzinormal | ~193 ms | ~99 ms (Epic 31) | **~2.0×** |
 
 | 項目 | 結果 |
 |------|------|
@@ -32,5 +32,5 @@
 
 ## 次アクション
 
-1. xyz + 属性 readback 完全統合（U8 RGB 含む）
+1. U8 RGB 専用 reduce kernel（Epic 33 後も xyzrgb GPU 優位は ~1.6× にとどまる）
 2. MVP end-to-end で xyzinormal 入力の計測

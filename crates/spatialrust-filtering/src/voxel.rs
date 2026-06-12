@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use spatialrust_core::{
     DType, DeviceKind, ExecutionPolicy, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet,
-    PointCloud, PointField, SpatialError, SpatialResult,
+    PointCloud, PointField, PointSchema, SpatialError, SpatialResult,
 };
 use spatialrust_math::Vec3;
 
@@ -305,47 +305,67 @@ fn build_voxel_cells_gpu(
 }
 
 #[cfg(feature = "filter-voxel-gpu")]
-fn gpu_aggregate_attribute_fields(
-    runtime: &spatialrust_gpu::WgpuRuntime,
+fn gpu_non_position_fields(schema: &PointSchema) -> Vec<PointField> {
+    schema
+        .fields()
+        .iter()
+        .filter(|field| {
+            !matches!(
+                field.semantic,
+                FieldSemantic::PositionX | FieldSemantic::PositionY | FieldSemantic::PositionZ
+            )
+        })
+        .cloned()
+        .collect()
+}
+
+#[cfg(feature = "filter-voxel-gpu")]
+fn collect_attribute_f32_sources(
     input: &PointCloud,
-    fields: &[&PointField],
-    segments: &spatialrust_gpu::GpuVoxelSegments,
-    policy: AttributeAggregation,
+    fields: &[PointField],
 ) -> SpatialResult<Vec<Vec<f32>>> {
-    use spatialrust_gpu::{gather_voxel_first_f32_multi_gpu, reduce_voxel_average_f32_multi_gpu};
+    let mut sources = Vec::with_capacity(fields.len());
+    for field in fields {
+        let mut values = Vec::with_capacity(input.len());
+        for index in 0..input.len() {
+            values.push(read_field_f32(input, field, index)?);
+        }
+        sources.push(values);
+    }
+    Ok(sources)
+}
 
-    if fields.is_empty() {
-        return Ok(Vec::new());
+#[cfg(feature = "filter-voxel-gpu")]
+fn assemble_gpu_voxel_output(
+    input: &PointCloud,
+    out_x: Vec<f32>,
+    out_y: Vec<f32>,
+    out_z: Vec<f32>,
+    attribute_fields: &[PointField],
+    attribute_values: Vec<Vec<f32>>,
+) -> SpatialResult<PointCloud> {
+    let schema = input.schema().clone();
+    let mut buffers = PointBufferSet::new();
+
+    let x_field = schema
+        .find_semantic(FieldSemantic::PositionX)
+        .ok_or_else(|| SpatialError::MissingField("x".to_owned()))?;
+    let y_field = schema
+        .find_semantic(FieldSemantic::PositionY)
+        .ok_or_else(|| SpatialError::MissingField("y".to_owned()))?;
+    let z_field = schema
+        .find_semantic(FieldSemantic::PositionZ)
+        .ok_or_else(|| SpatialError::MissingField("z".to_owned()))?;
+
+    set_field_from_f32(&mut buffers, x_field, out_x)?;
+    set_field_from_f32(&mut buffers, y_field, out_y)?;
+    set_field_from_f32(&mut buffers, z_field, out_z)?;
+
+    for (field, values) in attribute_fields.iter().zip(attribute_values) {
+        set_field_from_f32(&mut buffers, field, values)?;
     }
 
-    match policy {
-        AttributeAggregation::First => {
-            let mut sources = Vec::with_capacity(fields.len());
-            for field in fields {
-                let mut source_values = Vec::with_capacity(input.len());
-                for index in 0..input.len() {
-                    source_values.push(read_field_f32(input, field, index)?);
-                }
-                sources.push(source_values);
-            }
-
-            let refs: Vec<&[f32]> = sources.iter().map(Vec::as_slice).collect();
-            gather_voxel_first_f32_multi_gpu(runtime, &refs, segments)
-        }
-        AttributeAggregation::Average => {
-            let mut sources = Vec::with_capacity(fields.len());
-            for field in fields {
-                let mut source_values = Vec::with_capacity(input.len());
-                for index in 0..input.len() {
-                    source_values.push(read_field_f32(input, field, index)?);
-                }
-                sources.push(source_values);
-            }
-
-            let refs: Vec<&[f32]> = sources.iter().map(Vec::as_slice).collect();
-            reduce_voxel_average_f32_multi_gpu(runtime, &refs, segments)
-        }
-    }
+    PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
 }
 
 #[cfg(feature = "filter-voxel-gpu")]
@@ -358,10 +378,35 @@ fn filter_gpu_centroid(
     inv_leaf: f32,
     attribute_policy: AttributeAggregation,
 ) -> SpatialResult<PointCloud> {
-    use spatialrust_gpu::{downsample_voxel_centroid_gpu, WgpuRuntime};
+    use spatialrust_gpu::{
+        build_voxel_segments_gpu_from_keys_buffer, compute_voxel_keys_gpu_buffers,
+        downsample_voxel_centroid_gpu, reduce_voxel_centroids_xyz_and_average_multi_gpu,
+        reduce_voxel_centroids_xyz_and_gather_first_multi_gpu, WgpuRuntime,
+    };
+
+    let attribute_fields = gpu_non_position_fields(input.schema());
+    if attribute_fields.is_empty() {
+        let runtime = WgpuRuntime::shared()?;
+        let pipeline = downsample_voxel_centroid_gpu(
+            &runtime,
+            x,
+            y,
+            z,
+            [origin.x, origin.y, origin.z],
+            inv_leaf,
+        )?;
+        return assemble_gpu_voxel_output(
+            input,
+            pipeline.out_x,
+            pipeline.out_y,
+            pipeline.out_z,
+            &[],
+            Vec::new(),
+        );
+    }
 
     let runtime = WgpuRuntime::shared()?;
-    let pipeline = downsample_voxel_centroid_gpu(
+    let positions = compute_voxel_keys_gpu_buffers(
         &runtime,
         x,
         y,
@@ -369,49 +414,42 @@ fn filter_gpu_centroid(
         [origin.x, origin.y, origin.z],
         inv_leaf,
     )?;
-    let segments = &pipeline.segments;
-    let (out_x, out_y, out_z) = (pipeline.out_x, pipeline.out_y, pipeline.out_z);
-
-    let schema = input.schema().clone();
-    let mut buffers = PointBufferSet::new();
-
-    let x_field = schema
-        .find_semantic(FieldSemantic::PositionX)
-        .ok_or_else(|| SpatialError::MissingField("x".to_owned()))?;
-    let y_field = schema
-        .find_semantic(FieldSemantic::PositionY)
-        .ok_or_else(|| SpatialError::MissingField("y".to_owned()))?;
-    let z_field = schema
-        .find_semantic(FieldSemantic::PositionZ)
-        .ok_or_else(|| SpatialError::MissingField("z".to_owned()))?;
-
-    set_field_from_f32(&mut buffers, x_field, out_x)?;
-    set_field_from_f32(&mut buffers, y_field, out_y)?;
-    set_field_from_f32(&mut buffers, z_field, out_z)?;
-
-    let attribute_fields: Vec<_> = schema
-        .fields()
-        .iter()
-        .filter(|field| {
-            !matches!(
-                field.semantic,
-                FieldSemantic::PositionX | FieldSemantic::PositionY | FieldSemantic::PositionZ
-            )
-        })
-        .collect();
-    let attribute_refs: Vec<_> = attribute_fields.to_vec();
-    let attribute_values = gpu_aggregate_attribute_fields(
+    let point_count = positions.point_count();
+    let segments = build_voxel_segments_gpu_from_keys_buffer(
         &runtime,
-        input,
-        &attribute_refs,
-        segments,
-        attribute_policy,
+        positions.keys_buffer(),
+        point_count,
+        point_count.next_power_of_two(),
     )?;
-    for (field, values) in attribute_fields.iter().zip(attribute_values) {
-        set_field_from_f32(&mut buffers, field, values)?;
-    }
+    let attribute_sources = collect_attribute_f32_sources(input, &attribute_fields)?;
+    let attribute_refs: Vec<&[f32]> = attribute_sources.iter().map(Vec::as_slice).collect();
+    let (out_x, out_y, out_z, attribute_values) = match attribute_policy {
+        AttributeAggregation::Average => reduce_voxel_centroids_xyz_and_average_multi_gpu(
+            &runtime,
+            positions.x_buffer(),
+            positions.y_buffer(),
+            positions.z_buffer(),
+            &attribute_refs,
+            &segments,
+        )?,
+        AttributeAggregation::First => reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
+            &runtime,
+            positions.x_buffer(),
+            positions.y_buffer(),
+            positions.z_buffer(),
+            &attribute_refs,
+            &segments,
+        )?,
+    };
 
-    PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
+    assemble_gpu_voxel_output(
+        input,
+        out_x,
+        out_y,
+        out_z,
+        &attribute_fields,
+        attribute_values,
+    )
 }
 
 #[cfg(feature = "filter-voxel-gpu")]
@@ -424,10 +462,35 @@ fn filter_gpu_approximate_first(
     inv_leaf: f32,
     attribute_policy: AttributeAggregation,
 ) -> SpatialResult<PointCloud> {
-    use spatialrust_gpu::{downsample_voxel_approximate_first_gpu, WgpuRuntime};
+    use spatialrust_gpu::{
+        build_voxel_segments_gpu_from_keys_buffer, compute_voxel_keys_gpu_buffers,
+        downsample_voxel_approximate_first_gpu, gather_voxel_first_xyz_and_average_multi_gpu,
+        gather_voxel_first_xyz_and_multi_gpu, WgpuRuntime,
+    };
+
+    let attribute_fields = gpu_non_position_fields(input.schema());
+    if attribute_fields.is_empty() {
+        let runtime = WgpuRuntime::shared()?;
+        let pipeline = downsample_voxel_approximate_first_gpu(
+            &runtime,
+            x,
+            y,
+            z,
+            [origin.x, origin.y, origin.z],
+            inv_leaf,
+        )?;
+        return assemble_gpu_voxel_output(
+            input,
+            pipeline.out_x,
+            pipeline.out_y,
+            pipeline.out_z,
+            &[],
+            Vec::new(),
+        );
+    }
 
     let runtime = WgpuRuntime::shared()?;
-    let pipeline = downsample_voxel_approximate_first_gpu(
+    let positions = compute_voxel_keys_gpu_buffers(
         &runtime,
         x,
         y,
@@ -435,49 +498,42 @@ fn filter_gpu_approximate_first(
         [origin.x, origin.y, origin.z],
         inv_leaf,
     )?;
-    let segments = &pipeline.segments;
-    let (out_x, out_y, out_z) = (pipeline.out_x, pipeline.out_y, pipeline.out_z);
-
-    let schema = input.schema().clone();
-    let mut buffers = PointBufferSet::new();
-
-    let x_field = schema
-        .find_semantic(FieldSemantic::PositionX)
-        .ok_or_else(|| SpatialError::MissingField("x".to_owned()))?;
-    let y_field = schema
-        .find_semantic(FieldSemantic::PositionY)
-        .ok_or_else(|| SpatialError::MissingField("y".to_owned()))?;
-    let z_field = schema
-        .find_semantic(FieldSemantic::PositionZ)
-        .ok_or_else(|| SpatialError::MissingField("z".to_owned()))?;
-
-    set_field_from_f32(&mut buffers, x_field, out_x)?;
-    set_field_from_f32(&mut buffers, y_field, out_y)?;
-    set_field_from_f32(&mut buffers, z_field, out_z)?;
-
-    let attribute_fields: Vec<_> = schema
-        .fields()
-        .iter()
-        .filter(|field| {
-            !matches!(
-                field.semantic,
-                FieldSemantic::PositionX | FieldSemantic::PositionY | FieldSemantic::PositionZ
-            )
-        })
-        .collect();
-    let attribute_refs: Vec<_> = attribute_fields.to_vec();
-    let attribute_values = gpu_aggregate_attribute_fields(
+    let point_count = positions.point_count();
+    let segments = build_voxel_segments_gpu_from_keys_buffer(
         &runtime,
-        input,
-        &attribute_refs,
-        segments,
-        attribute_policy,
+        positions.keys_buffer(),
+        point_count,
+        point_count.next_power_of_two(),
     )?;
-    for (field, values) in attribute_fields.iter().zip(attribute_values) {
-        set_field_from_f32(&mut buffers, field, values)?;
-    }
+    let attribute_sources = collect_attribute_f32_sources(input, &attribute_fields)?;
+    let attribute_refs: Vec<&[f32]> = attribute_sources.iter().map(Vec::as_slice).collect();
+    let (out_x, out_y, out_z, attribute_values) = match attribute_policy {
+        AttributeAggregation::Average => gather_voxel_first_xyz_and_average_multi_gpu(
+            &runtime,
+            positions.x_buffer(),
+            positions.y_buffer(),
+            positions.z_buffer(),
+            &attribute_refs,
+            &segments,
+        )?,
+        AttributeAggregation::First => gather_voxel_first_xyz_and_multi_gpu(
+            &runtime,
+            positions.x_buffer(),
+            positions.y_buffer(),
+            positions.z_buffer(),
+            &attribute_refs,
+            &segments,
+        )?,
+    };
 
-    PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
+    assemble_gpu_voxel_output(
+        input,
+        out_x,
+        out_y,
+        out_z,
+        &attribute_fields,
+        attribute_values,
+    )
 }
 
 #[cfg(not(feature = "filter-voxel-gpu"))]

@@ -520,3 +520,57 @@ fn mvp_copc_resolution_query_pipeline() {
     assert!(!result.downsampled.is_empty());
     assert!(result.plane.inlier_count >= 10);
 }
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_approximate_voxel_mode_pipeline() {
+    use spatialrust::{
+        HasPositions3, MvpPipeline, MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder,
+        RansacPlaneConfig, VoxelAggregationMode, Vec3,
+    };
+    use spatialrust::EuclideanClusterConfig;
+
+    let mut builder = PointCloudBuilder::xyz();
+    for x in 0..10 {
+        for y in 0..10 {
+            builder.push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0]).unwrap();
+        }
+    }
+    builder.push_point([0.0, 0.0, 0.5]).unwrap();
+    builder.push_point([0.1, 0.0, 0.5]).unwrap();
+    let cloud = builder.build().unwrap();
+
+    let result = MvpPipeline::new(MvpPipelineConfig {
+        voxel: spatialrust::VoxelGridDownsampleConfig::approximate(0.2),
+        normals: NormalEstimationConfig {
+            k_neighbors: 8,
+            min_neighbors: 3,
+            viewpoint: Some(Vec3::new(0.0, 0.0, 10.0)),
+            ..NormalEstimationConfig::default()
+        },
+        plane: RansacPlaneConfig {
+            distance_threshold: 0.05,
+            max_iterations: 500,
+            min_inliers: 10,
+            seed: 17,
+        },
+        cluster: EuclideanClusterConfig {
+            cluster_tolerance: 0.3,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+        },
+        icp: None,
+        ..MvpPipelineConfig::default()
+    })
+    .run(&cloud)
+    .expect("mvp pipeline with approximate voxel mode");
+
+    assert_eq!(
+        spatialrust::VoxelGridDownsampleConfig::approximate(0.2).mode,
+        VoxelAggregationMode::ApproximateFirst
+    );
+    assert!(!result.downsampled.is_empty());
+    assert!(result.plane.inlier_count >= 10);
+    let (x, _, _) = result.downsampled.positions3().unwrap();
+    assert!(x.iter().all(|value| value.is_finite()));
+}

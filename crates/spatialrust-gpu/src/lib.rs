@@ -30,11 +30,16 @@ pub use kernels::{
     compact_voxel_segments_from_sorted, compute_voxel_keys, compute_voxel_keys_gpu_buffers,
     downsample_voxel_approximate_first_gpu, downsample_voxel_centroid_gpu, gather_voxel_first_f32,
     gather_voxel_first_f32_gpu, gather_voxel_first_f32_gpu_buffers, gather_voxel_first_f32_multi_gpu,
+    gather_voxel_first_xyz_and_average_multi_gpu,
+    gather_voxel_first_xyz_and_multi_gpu,
     gather_voxel_first_xyz_gpu_buffers,
     reduce_voxel_average_f32, reduce_voxel_average_f32_gpu, reduce_voxel_average_f32_gpu_buffers,
     reduce_voxel_average_f32_multi_gpu,
-    reduce_voxel_centroids_xyz, reduce_voxel_centroids_xyz_gpu_buffers, GpuVoxelKeyBuffers,
+    reduce_voxel_centroids_xyz, reduce_voxel_centroids_xyz_and_average_multi_gpu,
+    reduce_voxel_centroids_xyz_and_gather_first_multi_gpu,
+    reduce_voxel_centroids_xyz_gpu_buffers, GpuVoxelKeyBuffers,
     GpuVoxelSegments, VoxelApproximateFirstGpuResult, VoxelCentroidGpuResult, VoxelSegments,
+    build_voxel_segments_gpu_from_keys_buffer,
 };
 
 #[cfg(feature = "gpu-wgpu")]
