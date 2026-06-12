@@ -1,0 +1,247 @@
+//! MVP point cloud processing pipeline.
+//!
+//! Chains voxel downsampling, normal estimation, plane segmentation, clustering,
+//! and optional ICP registration.
+
+use spatialrust_core::{ExecutionPolicy, PointCloud, SpatialResult};
+use spatialrust_features::{FeatureEstimator, NormalEstimationConfig, NormalEstimator};
+use spatialrust_filtering::{VoxelGridDownsample, VoxelGridDownsampleConfig};
+use spatialrust_math::Isometry3;
+use spatialrust_registration::{
+    transform_point_cloud, IcpConfig, IcpRegistration, PointCloudRegistration, RegistrationResult,
+};
+use spatialrust_segmentation::{
+    EuclideanClusterConfig, EuclideanClusterExtractor, RansacPlaneConfig,
+    RansacPlaneSegmentation, RansacPlaneSegmenter, EuclideanClusterResult,
+};
+
+/// Configuration for optional ICP in the MVP pipeline.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MvpIcpConfig {
+    /// ICP algorithm settings.
+    pub icp: IcpConfig,
+    /// Optional transform applied to the downsampled cloud to synthesize a source scan.
+    pub source_transform: Option<Isometry3<f32>>,
+}
+
+/// Full configuration for the MVP pipeline.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MvpPipelineConfig {
+    /// Voxel downsampling settings.
+    pub voxel: VoxelGridDownsampleConfig,
+    /// Normal estimation settings.
+    pub normals: NormalEstimationConfig,
+    /// Dominant plane segmentation settings.
+    pub plane: RansacPlaneConfig,
+    /// Euclidean clustering settings for non-plane points.
+    pub cluster: EuclideanClusterConfig,
+    /// Optional ICP registration against the downsampled reference cloud.
+    pub icp: Option<MvpIcpConfig>,
+    /// Execution policy for the voxel downsampling stage.
+    pub voxel_policy: ExecutionPolicy,
+}
+
+impl Default for MvpPipelineConfig {
+    fn default() -> Self {
+        Self {
+            voxel: VoxelGridDownsampleConfig::centroid(0.05),
+            normals: NormalEstimationConfig::default(),
+            plane: RansacPlaneConfig::default(),
+            cluster: EuclideanClusterConfig::default(),
+            icp: None,
+            voxel_policy: ExecutionPolicy::Auto,
+        }
+    }
+}
+
+impl MvpPipelineConfig {
+    /// Creates a config with the given voxel leaf size.
+    #[must_use]
+    pub fn with_voxel_leaf_size(leaf_size: f32) -> Self {
+        Self {
+            voxel: VoxelGridDownsampleConfig::centroid(leaf_size),
+            ..Self::default()
+        }
+    }
+}
+
+/// Output of a completed MVP pipeline run.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MvpPipelineResult {
+    /// Cloud after voxel downsampling.
+    pub downsampled: PointCloud,
+    /// Cloud with estimated normals and curvature.
+    pub with_normals: PointCloud,
+    /// Plane segmentation result.
+    pub plane: RansacPlaneSegmentation,
+    /// Clustering result on plane outliers.
+    pub clusters: EuclideanClusterResult,
+    /// Optional ICP registration result.
+    pub registration: Option<RegistrationResult>,
+    /// Primary pipeline output (labeled cluster cloud).
+    pub output: PointCloud,
+}
+
+/// Builder-style MVP pipeline runner.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MvpPipeline {
+    config: MvpPipelineConfig,
+}
+
+impl MvpPipeline {
+    /// Creates a pipeline from config.
+    #[must_use]
+    pub fn new(config: MvpPipelineConfig) -> Self {
+        Self { config }
+    }
+
+    /// Returns the pipeline config.
+    #[must_use]
+    pub fn config(&self) -> &MvpPipelineConfig {
+        &self.config
+    }
+
+    /// Runs the full MVP pipeline on the input cloud.
+    pub fn run(&self, input: &PointCloud) -> SpatialResult<MvpPipelineResult> {
+        let downsampled = VoxelGridDownsample::new(self.config.voxel)
+            .filter_with_policy(input, self.config.voxel_policy)?;
+
+        let with_normals =
+            NormalEstimator::new(self.config.normals).estimate(&downsampled)?;
+
+        let plane = RansacPlaneSegmenter::new(self.config.plane).segment(&with_normals)?;
+
+        let clusters =
+            EuclideanClusterExtractor::new(self.config.cluster).extract(&plane.outliers)?;
+
+        let registration = if let Some(icp_config) = &self.config.icp {
+            let source = if let Some(transform) = icp_config.source_transform {
+                transform_point_cloud(&downsampled, transform)?
+            } else {
+                downsampled.clone()
+            };
+            Some(IcpRegistration::new(icp_config.icp).align(&source, &downsampled)?)
+        } else {
+            None
+        };
+
+        Ok(MvpPipelineResult {
+            output: clusters.cloud.clone(),
+            downsampled,
+            with_normals,
+            plane,
+            clusters,
+            registration,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MvpIcpConfig, MvpPipeline, MvpPipelineConfig};
+    use spatialrust_core::{PointCloudBuilder, StandardSchemas};
+    use spatialrust_math::{Isometry3, Quat, Vec3};
+    use spatialrust_registration::IcpConfig;
+    use spatialrust_segmentation::{EuclideanClusterConfig, RansacPlaneConfig};
+
+    fn sample_cloud() -> spatialrust_core::PointCloud {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for x in 0..10 {
+            for y in 0..10 {
+                builder.push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0]).unwrap();
+            }
+        }
+        builder.push_point([0.0, 0.0, 0.5]).unwrap();
+        builder.push_point([0.1, 0.0, 0.5]).unwrap();
+        builder.build().unwrap()
+    }
+
+    #[test]
+    fn runs_voxel_normals_plane_and_cluster() {
+        let pipeline = MvpPipeline::new(MvpPipelineConfig {
+            voxel: spatialrust_filtering::VoxelGridDownsampleConfig::centroid(0.2),
+            normals: spatialrust_features::NormalEstimationConfig {
+                k_neighbors: 8,
+                min_neighbors: 3,
+                viewpoint: Some(Vec3::new(0.0, 0.0, 10.0)),
+                ..Default::default()
+            },
+            plane: RansacPlaneConfig {
+                distance_threshold: 0.05,
+                max_iterations: 500,
+                min_inliers: 10,
+                seed: 17,
+            },
+            cluster: EuclideanClusterConfig {
+                cluster_tolerance: 0.3,
+                min_cluster_size: 1,
+                max_cluster_size: usize::MAX,
+            },
+            icp: None,
+            ..Default::default()
+        });
+
+        let result = pipeline.run(&sample_cloud()).unwrap();
+        assert!(!result.downsampled.is_empty());
+        assert!(result.with_normals.field("normal_x").is_ok());
+        assert!(result.plane.inlier_count >= 10);
+        assert!(result.clusters.cluster_count >= 1);
+        assert!(result.output.field("label").is_ok());
+        assert!(result.registration.is_none());
+    }
+
+    #[test]
+    fn runs_optional_icp_step() {
+        let pipeline = MvpPipeline::new(MvpPipelineConfig {
+            voxel: spatialrust_filtering::VoxelGridDownsampleConfig::centroid(0.2),
+            normals: spatialrust_features::NormalEstimationConfig {
+                k_neighbors: 8,
+                min_neighbors: 3,
+                viewpoint: Some(Vec3::new(0.0, 0.0, 10.0)),
+                ..Default::default()
+            },
+            plane: RansacPlaneConfig {
+                distance_threshold: 0.05,
+                max_iterations: 500,
+                min_inliers: 10,
+                seed: 17,
+            },
+            cluster: EuclideanClusterConfig {
+                cluster_tolerance: 0.3,
+                min_cluster_size: 1,
+                max_cluster_size: usize::MAX,
+            },
+            icp: Some(MvpIcpConfig {
+                icp: IcpConfig {
+                    max_correspondence_distance: 0.2,
+                    max_iterations: 30,
+                    ..Default::default()
+                },
+                source_transform: Some(Isometry3::new(
+                    Quat::<f32>::identity(),
+                    Vec3::new(0.03, -0.01, 0.0),
+                )),
+            }),
+            ..Default::default()
+        });
+
+        let result = pipeline.run(&sample_cloud()).unwrap();
+        let registration = result.registration.expect("expected icp result");
+        assert!(registration.converged);
+    }
+
+    #[cfg(feature = "pipeline-mvp-gpu")]
+    #[test]
+    fn runs_with_gpu_voxel_policy() {
+        use spatialrust_core::{DeviceKind, ExecutionPolicy};
+
+        let pipeline = MvpPipeline::new(MvpPipelineConfig {
+            voxel: spatialrust_filtering::VoxelGridDownsampleConfig::centroid(0.2),
+            voxel_policy: ExecutionPolicy::Gpu(DeviceKind::Wgpu),
+            ..Default::default()
+        });
+
+        let result = pipeline.run(&sample_cloud()).unwrap();
+        assert!(!result.downsampled.is_empty());
+    }
+}

@@ -1,0 +1,496 @@
+use std::cmp::Ordering;
+
+use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
+
+use crate::{NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex};
+
+const LEAF_SIZE: usize = 32;
+const AXIS_LEAF: u8 = u8::MAX;
+const INVALID_NODE: u32 = u32::MAX;
+
+/// Cache-friendly KD-tree for 3D point clouds.
+#[derive(Clone, Debug)]
+pub struct KdTree {
+    x: Vec<f32>,
+    y: Vec<f32>,
+    z: Vec<f32>,
+    points_order: Vec<u32>,
+    nodes_axis: Vec<u8>,
+    nodes_split: Vec<f32>,
+    nodes_left: Vec<u32>,
+    nodes_right: Vec<u32>,
+    nodes_start: Vec<u32>,
+    nodes_end: Vec<u32>,
+    root: u32,
+}
+
+impl KdTree {
+    /// Builds a KD-tree from coordinate slices.
+    #[must_use]
+    pub fn from_slices(x: &[f32], y: &[f32], z: &[f32]) -> Self {
+        assert_eq!(x.len(), y.len());
+        assert_eq!(x.len(), z.len());
+
+        let len = x.len();
+        let mut points_order: Vec<u32> = (0..len as u32).collect();
+        let mut nodes_axis = Vec::new();
+        let mut nodes_split = Vec::new();
+        let mut nodes_left = Vec::new();
+        let mut nodes_right = Vec::new();
+        let mut nodes_start = Vec::new();
+        let mut nodes_end = Vec::new();
+
+        let root = if len == 0 {
+            INVALID_NODE
+        } else {
+            build_node(
+                x,
+                y,
+                z,
+                &mut points_order,
+                0,
+                len,
+                &mut nodes_axis,
+                &mut nodes_split,
+                &mut nodes_left,
+                &mut nodes_right,
+                &mut nodes_start,
+                &mut nodes_end,
+            )
+        };
+
+        Self {
+            x: x.to_vec(),
+            y: y.to_vec(),
+            z: z.to_vec(),
+            points_order,
+            nodes_axis,
+            nodes_split,
+            nodes_left,
+            nodes_right,
+            nodes_start,
+            nodes_end,
+            root,
+        }
+    }
+
+    /// Builds a KD-tree from any point cloud with XYZ positions.
+    pub fn from_point_cloud(cloud: &PointCloud) -> SpatialResult<Self> {
+        let (x, y, z) = cloud.positions3()?;
+        Ok(Self::from_slices(x, y, z))
+    }
+
+    fn point(&self, point_index: u32) -> (f32, f32, f32) {
+        let idx = point_index as usize;
+        (self.x[idx], self.y[idx], self.z[idx])
+    }
+
+    fn ordered_point(&self, order_index: u32) -> (u32, f32, f32, f32) {
+        let point_index = self.points_order[order_index as usize];
+        let (x, y, z) = self.point(point_index);
+        (point_index, x, y, z)
+    }
+
+    fn is_leaf(&self, node: u32) -> bool {
+        self.nodes_axis[node as usize] == AXIS_LEAF
+    }
+
+    fn nearest_k_recursive(
+        &self,
+        node: u32,
+        qx: f32,
+        qy: f32,
+        qz: f32,
+        k: usize,
+        best: &mut Vec<Neighbor>,
+    ) {
+        if node == INVALID_NODE {
+            return;
+        }
+
+        if self.is_leaf(node) {
+            let start = self.nodes_start[node as usize] as usize;
+            let end = self.nodes_end[node as usize] as usize;
+            for order_index in start..end {
+                let (index, px, py, pz) = self.ordered_point(order_index as u32);
+                insert_neighbor(
+                    best,
+                    k,
+                    Neighbor {
+                        index: index as usize,
+                        distance_squared: squared_distance(px, py, pz, qx, qy, qz),
+                    },
+                );
+            }
+            return;
+        }
+
+        let axis = self.nodes_axis[node as usize];
+        let split = self.nodes_split[node as usize];
+        let diff = match axis {
+            0 => qx - split,
+            1 => qy - split,
+            _ => qz - split,
+        };
+
+        let (near, far) = if diff <= 0.0 {
+            (self.nodes_left[node as usize], self.nodes_right[node as usize])
+        } else {
+            (self.nodes_right[node as usize], self.nodes_left[node as usize])
+        };
+
+        self.nearest_k_recursive(near, qx, qy, qz, k, best);
+
+        let worst = best.last().map(|n| n.distance_squared).unwrap_or(f32::INFINITY);
+        if diff * diff < worst || best.len() < k {
+            self.nearest_k_recursive(far, qx, qy, qz, k, best);
+        }
+    }
+
+    fn radius_recursive(
+        &self,
+        node: u32,
+        qx: f32,
+        qy: f32,
+        qz: f32,
+        radius_sq: f32,
+        out: &mut Vec<Neighbor>,
+    ) {
+        if node == INVALID_NODE {
+            return;
+        }
+
+        if self.is_leaf(node) {
+            let start = self.nodes_start[node as usize] as usize;
+            let end = self.nodes_end[node as usize] as usize;
+            for order_index in start..end {
+                let (index, px, py, pz) = self.ordered_point(order_index as u32);
+                let distance_squared = squared_distance(px, py, pz, qx, qy, qz);
+                if distance_squared <= radius_sq {
+                    out.push(Neighbor { index: index as usize, distance_squared });
+                }
+            }
+            return;
+        }
+
+        let axis = self.nodes_axis[node as usize];
+        let split = self.nodes_split[node as usize];
+        let diff = match axis {
+            0 => qx - split,
+            1 => qy - split,
+            _ => qz - split,
+        };
+
+        let (near, far) = if diff <= 0.0 {
+            (self.nodes_left[node as usize], self.nodes_right[node as usize])
+        } else {
+            (self.nodes_right[node as usize], self.nodes_left[node as usize])
+        };
+
+        self.radius_recursive(near, qx, qy, qz, radius_sq, out);
+        if diff * diff <= radius_sq {
+            self.radius_recursive(far, qx, qy, qz, radius_sq, out);
+        }
+    }
+}
+
+impl SpatialIndex for KdTree {
+    fn len(&self) -> usize {
+        self.x.len()
+    }
+}
+
+impl NearestNeighborIndex for KdTree {
+    fn nearest_one(&self, x: f32, y: f32, z: f32) -> Option<Neighbor> {
+        self.nearest_k(x, y, z, 1).into_iter().next()
+    }
+
+    fn nearest_k(&self, x: f32, y: f32, z: f32, k: usize) -> Vec<Neighbor> {
+        if self.is_empty() || k == 0 {
+            return Vec::new();
+        }
+
+        let mut best = Vec::with_capacity(k.min(self.len()));
+        self.nearest_k_recursive(self.root, x, y, z, k, &mut best);
+        best.sort_by(|a, b| {
+            a.distance_squared.partial_cmp(&b.distance_squared).unwrap_or(Ordering::Equal)
+        });
+        best
+    }
+}
+
+impl RadiusSearchIndex for KdTree {
+    fn radius_search(&self, x: f32, y: f32, z: f32, radius: f32) -> Vec<Neighbor> {
+        if self.is_empty() || radius < 0.0 {
+            return Vec::new();
+        }
+
+        let radius_sq = radius * radius;
+        let mut out = Vec::new();
+        self.radius_recursive(self.root, x, y, z, radius_sq, &mut out);
+        out.sort_by(|a, b| {
+            a.distance_squared.partial_cmp(&b.distance_squared).unwrap_or(Ordering::Equal)
+        });
+        out
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn build_node(
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    points_order: &mut [u32],
+    start: usize,
+    end: usize,
+    nodes_axis: &mut Vec<u8>,
+    nodes_split: &mut Vec<f32>,
+    nodes_left: &mut Vec<u32>,
+    nodes_right: &mut Vec<u32>,
+    nodes_start: &mut Vec<u32>,
+    nodes_end: &mut Vec<u32>,
+) -> u32 {
+    let node_index = nodes_axis.len() as u32;
+    nodes_axis.push(0);
+    nodes_split.push(0.0);
+    nodes_left.push(INVALID_NODE);
+    nodes_right.push(INVALID_NODE);
+    nodes_start.push(start as u32);
+    nodes_end.push(end as u32);
+
+    let count = end - start;
+    if count <= LEAF_SIZE {
+        nodes_axis[node_index as usize] = AXIS_LEAF;
+        return node_index;
+    }
+
+    let axis = select_axis(x, y, z, points_order, start, end);
+    let mid = start + count / 2;
+    select_nth_by_axis(x, y, z, points_order, start, end, axis, mid);
+
+    let split_point = points_order[mid];
+    let split_value = coordinate(x, y, z, split_point, axis);
+    nodes_axis[node_index as usize] = axis;
+    nodes_split[node_index as usize] = split_value;
+
+    let left = build_node(
+        x,
+        y,
+        z,
+        points_order,
+        start,
+        mid,
+        nodes_axis,
+        nodes_split,
+        nodes_left,
+        nodes_right,
+        nodes_start,
+        nodes_end,
+    );
+    let right = build_node(
+        x,
+        y,
+        z,
+        points_order,
+        mid,
+        end,
+        nodes_axis,
+        nodes_split,
+        nodes_left,
+        nodes_right,
+        nodes_start,
+        nodes_end,
+    );
+
+    nodes_left[node_index as usize] = left;
+    nodes_right[node_index as usize] = right;
+    node_index
+}
+
+fn select_axis(
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    points_order: &[u32],
+    start: usize,
+    end: usize,
+) -> u8 {
+    let mut min = [f32::INFINITY; 3];
+    let mut max = [f32::NEG_INFINITY; 3];
+    for &point_index in &points_order[start..end] {
+        min[0] = min[0].min(x[point_index as usize]);
+        min[1] = min[1].min(y[point_index as usize]);
+        min[2] = min[2].min(z[point_index as usize]);
+        max[0] = max[0].max(x[point_index as usize]);
+        max[1] = max[1].max(y[point_index as usize]);
+        max[2] = max[2].max(z[point_index as usize]);
+    }
+
+    let mut best_axis = 0_u8;
+    let mut best_extent = max[0] - min[0];
+    for axis in 1_u8..3 {
+        let extent = max[axis as usize] - min[axis as usize];
+        if extent > best_extent {
+            best_extent = extent;
+            best_axis = axis;
+        }
+    }
+    best_axis
+}
+
+fn select_nth_by_axis(
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    points_order: &mut [u32],
+    start: usize,
+    end: usize,
+    axis: u8,
+    nth: usize,
+) {
+    let mut left = start;
+    let mut right = end;
+    while left < right {
+        let pivot = partition_by_axis(x, y, z, points_order, left, right, axis);
+        match nth.cmp(&pivot) {
+            Ordering::Less => right = pivot,
+            Ordering::Greater => left = pivot + 1,
+            Ordering::Equal => break,
+        }
+    }
+}
+
+fn partition_by_axis(
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    points_order: &mut [u32],
+    start: usize,
+    end: usize,
+    axis: u8,
+) -> usize {
+    let pivot_index = (start + end) / 2;
+    points_order.swap(start, pivot_index);
+    let pivot_point = points_order[start];
+    let pivot_value = coordinate(x, y, z, pivot_point, axis);
+
+    let mut store = start + 1;
+    for i in (start + 1)..end {
+        if coordinate(x, y, z, points_order[i], axis) < pivot_value {
+            points_order.swap(i, store);
+            store += 1;
+        }
+    }
+    points_order.swap(start, store - 1);
+    store - 1
+}
+
+fn coordinate(x: &[f32], y: &[f32], z: &[f32], point_index: u32, axis: u8) -> f32 {
+    match axis {
+        0 => x[point_index as usize],
+        1 => y[point_index as usize],
+        _ => z[point_index as usize],
+    }
+}
+
+fn squared_distance(px: f32, py: f32, pz: f32, qx: f32, qy: f32, qz: f32) -> f32 {
+    let dx = px - qx;
+    let dy = py - qy;
+    let dz = pz - qz;
+    dx * dx + dy * dy + dz * dz
+}
+
+fn insert_neighbor(best: &mut Vec<Neighbor>, k: usize, candidate: Neighbor) {
+    if k == 0 {
+        return;
+    }
+    if best.len() < k {
+        best.push(candidate);
+        best.sort_by(|a, b| {
+            b.distance_squared.partial_cmp(&a.distance_squared).unwrap_or(Ordering::Equal)
+        });
+        return;
+    }
+
+    if candidate.distance_squared >= best[0].distance_squared {
+        return;
+    }
+
+    best[0] = candidate;
+    best.sort_by(|a, b| {
+        b.distance_squared.partial_cmp(&a.distance_squared).unwrap_or(Ordering::Equal)
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::KdTree;
+    use crate::{
+        brute::{brute_force_knn, brute_force_radius, BruteForceIndex},
+        NearestNeighborIndex, RadiusSearchIndex,
+    };
+    use spatialrust_core::{PointCloudBuilder, StandardSchemas};
+
+    use crate::SpatialIndex;
+
+    fn sample_cloud() -> (Vec<f32>, Vec<f32>, Vec<f32>) {
+        (
+            vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+            vec![0.0, 0.0, 0.0, 1.0, 2.0, 0.0],
+            vec![0.0, 0.0, 0.0, 0.0, 0.0, 5.0],
+        )
+    }
+
+    #[test]
+    fn nearest_one_matches_brute_force() {
+        let (x, y, z) = sample_cloud();
+        let tree = KdTree::from_slices(&x, &y, &z);
+        let brute = BruteForceIndex::from_slices(&x, &y, &z);
+
+        let query = (2.1_f32, 0.0, 0.0);
+        assert_eq!(
+            tree.nearest_one(query.0, query.1, query.2),
+            brute.nearest_one(query.0, query.1, query.2)
+        );
+    }
+
+    #[test]
+    fn nearest_k_matches_brute_force() {
+        let (x, y, z) = sample_cloud();
+        let tree = KdTree::from_slices(&x, &y, &z);
+        let expected = brute_force_knn(&x, &y, &z, 1.0, 0.0, 0.0, 3);
+        let actual = tree.nearest_k(1.0, 0.0, 0.0, 3);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn radius_search_matches_brute_force() {
+        let (x, y, z) = sample_cloud();
+        let tree = KdTree::from_slices(&x, &y, &z);
+        let expected = brute_force_radius(&x, &y, &z, 2.0, 0.0, 0.0, 1.5);
+        let actual = tree.radius_search(2.0, 0.0, 0.0, 1.5);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn builds_from_point_cloud() {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        builder.push_point([0.0, 0.0, 0.0]).unwrap();
+        builder.push_point([1.0, 0.0, 0.0]).unwrap();
+        let cloud = builder.build().unwrap();
+        let tree = KdTree::from_point_cloud(&cloud).unwrap();
+        assert_eq!(tree.len(), 2);
+        let nearest = tree.nearest_one(0.9, 0.0, 0.0).unwrap();
+        assert_eq!(nearest.index, 1);
+    }
+
+    #[test]
+    fn degenerate_points_return_valid_neighbor() {
+        let x = vec![1.0, 1.0, 1.0];
+        let y = vec![2.0, 2.0, 2.0];
+        let z = vec![3.0, 3.0, 3.0];
+        let tree = KdTree::from_slices(&x, &y, &z);
+        let neighbor = tree.nearest_one(1.0, 2.0, 2.0).unwrap();
+        assert_eq!(neighbor.distance_squared, 1.0);
+    }
+}

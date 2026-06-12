@@ -1,0 +1,56 @@
+[workspace]
+members = [
+    "crates/spatialrust",
+    "crates/spatialrust-core",
+    "crates/spatialrust-math",
+    "crates/spatialrust-io",
+    "crates/spatialrust-search",
+    "crates/spatialrust-filtering",
+    "crates/spatialrust-features",
+    "crates/spatialrust-segmentation",
+    "crates/spatialrust-registration",
+    "crates/spatialrust-pipeline",
+    "crates/spatialrust-gpu",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["SpatialRust Contributors"]
+repository = "https://github.com/spatialrust/spatialrust"
+rust-version = "1.75"
+description = "Next-generation spatial computing framework for Rust"
+
+[workspace.dependencies]
+spatialrust-core = { path = "crates/spatialrust-core", version = "0.1.0" }
+spatialrust-math = { path = "crates/spatialrust-math", version = "0.1.0" }
+spatialrust-io = { path = "crates/spatialrust-io", version = "0.1.0" }
+spatialrust-gpu = { path = "crates/spatialrust-gpu", version = "0.1.0" }
+spatialrust-search = { path = "crates/spatialrust-search", version = "0.1.0" }
+spatialrust-filtering = { path = "crates/spatialrust-filtering", version = "0.1.0" }
+spatialrust-features = { path = "crates/spatialrust-features", version = "0.1.0" }
+spatialrust-segmentation = { path = "crates/spatialrust-segmentation", version = "0.1.0" }
+spatialrust-registration = { path = "crates/spatialrust-registration", version = "0.1.0" }
+spatialrust-pipeline = { path = "crates/spatialrust-pipeline", version = "0.1.0" }
+
+bytemuck = { version = "1", features = ["derive"] }
+las = "0.9"
+e57 = "0.11"
+copc-streaming = "0.1.5"
+copc-core = "0.2.0"
+copc-writer = "0.2.0"
+pollster = "0.4"
+ureq = "2.12"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+wgpu = "24"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[profile.bench]
+inherits = "release"

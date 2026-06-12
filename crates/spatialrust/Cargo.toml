@@ -1,0 +1,74 @@
+[package]
+name = "spatialrust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Next-generation spatial computing framework for Rust"
+
+[features]
+default = []
+serde = ["spatialrust-core/serde", "spatialrust-math/serde"]
+io-pcd = ["spatialrust-io/io-pcd"]
+io-ply = ["spatialrust-io/io-ply"]
+io-las = ["spatialrust-io/io-las"]
+io-laz = ["spatialrust-io/io-laz"]
+io-e57 = ["spatialrust-io/io-e57"]
+io-copc = ["spatialrust-io/io-copc"]
+io-copc-http = ["io-copc", "spatialrust-io/io-copc-http"]
+search-kdtree = ["spatialrust-search/search-kdtree"]
+filter-voxel = ["spatialrust-filtering/filter-voxel"]
+filter-voxel-gpu = [
+    "spatialrust-filtering/filter-voxel-gpu",
+    "gpu-wgpu",
+]
+feature-normal = ["spatialrust-features/feature-normal", "spatialrust-search/search-kdtree"]
+segment-ransac-plane = ["spatialrust-segmentation/segment-ransac-plane"]
+segment-euclidean = [
+    "spatialrust-segmentation/segment-euclidean",
+    "spatialrust-search/search-kdtree",
+]
+register-icp = [
+    "spatialrust-registration/register-icp",
+    "spatialrust-search/search-kdtree",
+]
+mvp = [
+    "io-pcd",
+    "io-ply",
+    "io-las",
+    "io-copc",
+    "filter-voxel",
+    "feature-normal",
+    "search-kdtree",
+    "segment-ransac-plane",
+    "segment-euclidean",
+    "register-icp",
+    "pipeline-mvp",
+]
+pipeline-mvp = ["spatialrust-pipeline/pipeline-mvp"]
+pipeline-mvp-gpu = [
+    "spatialrust-pipeline/pipeline-mvp-gpu",
+    "filter-voxel-gpu",
+]
+gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-math = { workspace = true }
+spatialrust-io = { workspace = true }
+spatialrust-gpu = { workspace = true }
+spatialrust-search = { workspace = true }
+spatialrust-filtering = { workspace = true }
+spatialrust-features = { workspace = true }
+spatialrust-segmentation = { workspace = true }
+spatialrust-registration = { workspace = true }
+spatialrust-pipeline = { workspace = true }
+
+[dev-dependencies]
+
+[[bin]]
+name = "spatialrust-mvp"
+path = "src/bin/spatialrust_mvp.rs"
+required-features = ["mvp"]

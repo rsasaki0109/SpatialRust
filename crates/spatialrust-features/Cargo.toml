@@ -1,0 +1,21 @@
+[package]
+name = "spatialrust-features"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Feature estimation for SpatialRust point clouds"
+
+[features]
+default = ["feature-normal"]
+feature-normal = []
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-math = { workspace = true }
+spatialrust-search = { workspace = true, features = ["search-kdtree"] }
+
+[dev-dependencies]
+spatialrust-core = { workspace = true }

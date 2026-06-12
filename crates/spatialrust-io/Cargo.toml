@@ -1,0 +1,34 @@
+[package]
+name = "spatialrust-io"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Point cloud and spatial data IO for SpatialRust"
+
+[features]
+default = []
+io-pcd = []
+io-ply = []
+io-las = ["dep:las"]
+io-laz = ["io-las", "las/laz"]
+io-e57 = ["dep:e57"]
+io-copc = ["dep:copc-streaming", "dep:copc-core", "dep:copc-writer", "dep:pollster", "io-laz"]
+io-copc-http = ["io-copc", "dep:ureq"]
+serde = ["spatialrust-core/serde"]
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-math = { workspace = true }
+thiserror = { workspace = true }
+las = { workspace = true, optional = true }
+e57 = { workspace = true, optional = true }
+copc-streaming = { workspace = true, optional = true }
+copc-core = { workspace = true, optional = true }
+copc-writer = { workspace = true, optional = true }
+pollster = { workspace = true, optional = true }
+ureq = { workspace = true, optional = true }
+
+[dev-dependencies]

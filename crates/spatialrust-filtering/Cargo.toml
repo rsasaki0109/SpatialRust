@@ -1,0 +1,28 @@
+[package]
+name = "spatialrust-filtering"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Point cloud filters for SpatialRust"
+
+[features]
+default = ["filter-voxel"]
+filter-voxel = []
+filter-voxel-gpu = ["dep:spatialrust-gpu", "spatialrust-gpu/gpu-wgpu"]
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-math = { workspace = true }
+spatialrust-gpu = { workspace = true, optional = true }
+
+[[bench]]
+name = "voxel_downsample"
+harness = false
+required-features = ["filter-voxel-gpu"]
+
+[dev-dependencies]
+spatialrust-io = { workspace = true, features = ["io-pcd"] }
+criterion = { workspace = true }

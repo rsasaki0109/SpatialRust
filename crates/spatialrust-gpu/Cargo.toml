@@ -1,0 +1,30 @@
+[package]
+name = "spatialrust-gpu"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "GPU runtime and device buffers for SpatialRust"
+
+[features]
+default = []
+gpu-wgpu = ["dep:wgpu", "dep:bytemuck", "dep:pollster"]
+gpu-cuda = []
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-math = { workspace = true }
+thiserror = { workspace = true }
+wgpu = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true }
+pollster = { version = "0.4", optional = true }
+
+[[bench]]
+name = "voxel_pipeline"
+harness = false
+required-features = ["gpu-wgpu"]
+
+[dev-dependencies]
+criterion = { workspace = true }

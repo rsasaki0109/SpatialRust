@@ -1,0 +1,21 @@
+[package]
+name = "spatialrust-registration"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Point cloud registration for SpatialRust"
+
+[features]
+default = ["register-icp"]
+register-icp = ["dep:spatialrust-search"]
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-math = { workspace = true }
+spatialrust-search = { workspace = true, optional = true, features = ["search-kdtree"] }
+
+[dev-dependencies]
+spatialrust-core = { workspace = true }

@@ -1,0 +1,22 @@
+[package]
+name = "spatialrust-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Core data model and traits for SpatialRust"
+
+[features]
+default = []
+serde = ["dep:serde", "spatialrust-math/serde"]
+bytemuck = ["dep:bytemuck"]
+
+[dependencies]
+spatialrust-math = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true }
+
+[dev-dependencies]

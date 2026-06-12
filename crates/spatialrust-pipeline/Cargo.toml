@@ -1,0 +1,25 @@
+[package]
+name = "spatialrust-pipeline"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Composable processing pipelines for SpatialRust"
+
+[features]
+default = ["pipeline-mvp"]
+pipeline-mvp = []
+pipeline-mvp-gpu = ["spatialrust-filtering/filter-voxel-gpu"]
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-math = { workspace = true }
+spatialrust-filtering = { workspace = true, features = ["filter-voxel"] }
+spatialrust-features = { workspace = true, features = ["feature-normal"] }
+spatialrust-segmentation = { workspace = true, features = ["segment-ransac-plane", "segment-euclidean"] }
+spatialrust-registration = { workspace = true, features = ["register-icp"] }
+
+[dev-dependencies]
+spatialrust-core = { workspace = true }

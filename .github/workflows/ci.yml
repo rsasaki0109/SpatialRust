@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  test:
+    name: Test (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: workspace-default
+            args: --workspace
+          - name: spatialrust-serde
+            args: -p spatialrust --features serde
+          - name: spatialrust-io-pcd
+            args: -p spatialrust-io --features io-pcd
+          - name: spatialrust-io-pcd-meta
+            args: -p spatialrust --features io-pcd
+          - name: spatialrust-search-kdtree
+            args: -p spatialrust-search --features search-kdtree
+          - name: spatialrust-search-meta
+            args: -p spatialrust --features search-kdtree
+          - name: spatialrust-filter-voxel
+            args: -p spatialrust-filtering --features filter-voxel
+          - name: spatialrust-features-normal
+            args: -p spatialrust-features --features feature-normal
+          - name: spatialrust-segmentation
+            args: -p spatialrust-segmentation --all-features
+          - name: spatialrust-registration-icp
+            args: -p spatialrust-registration --features register-icp
+          - name: spatialrust-pipeline-mvp
+            args: -p spatialrust-pipeline --features pipeline-mvp
+          - name: spatialrust-pipeline-mvp-gpu
+            args: -p spatialrust-pipeline --features pipeline-mvp,pipeline-mvp-gpu
+          - name: spatialrust-mvp
+            args: -p spatialrust --features io-pcd,filter-voxel
+          - name: spatialrust-mvp-normals
+            args: -p spatialrust --features io-pcd,filter-voxel,feature-normal,search-kdtree
+          - name: spatialrust-mvp-segmentation
+            args: -p spatialrust --features io-pcd,filter-voxel,feature-normal,search-kdtree,segment-ransac-plane,segment-euclidean
+          - name: spatialrust-mvp-registration
+            args: -p spatialrust --features io-pcd,filter-voxel,register-icp,search-kdtree
+          - name: spatialrust-mvp-full
+            args: -p spatialrust --features mvp
+          - name: spatialrust-io-ply
+            args: -p spatialrust-io --features io-ply
+          - name: spatialrust-io-ply-meta
+            args: -p spatialrust --features io-ply
+          - name: spatialrust-io-las
+            args: -p spatialrust-io --features io-las
+          - name: spatialrust-io-las-meta
+            args: -p spatialrust --features io-las
+          - name: spatialrust-io-laz
+            args: -p spatialrust-io --features io-laz
+          - name: spatialrust-io-laz-meta
+            args: -p spatialrust --features io-laz
+          - name: spatialrust-io-e57
+            args: -p spatialrust-io --features io-e57
+          - name: spatialrust-io-e57-meta
+            args: -p spatialrust --features io-e57
+          - name: spatialrust-io-copc
+            args: -p spatialrust-io --features io-copc
+          - name: spatialrust-io-copc-meta
+            args: -p spatialrust --features io-copc
+          - name: spatialrust-io-copc-http
+            args: -p spatialrust-io --features io-copc-http
+          - name: spatialrust-io-copc-http-meta
+            args: -p spatialrust --features io-copc-http
+          - name: spatialrust-gpu-wgpu
+            args: -p spatialrust --features gpu-wgpu
+          - name: spatialrust-gpu-crate
+            args: -p spatialrust-gpu --features gpu-wgpu
+          - name: spatialrust-filter-voxel-gpu
+            args: -p spatialrust-filtering --features filter-voxel-gpu
+          - name: spatialrust-filter-voxel-gpu-meta
+            args: -p spatialrust --features filter-voxel-gpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build and test
+        run: |
+          cargo test ${{ matrix.args }}
+          cargo test --doc ${{ matrix.args }}
+
+  bench:
+    name: Benchmark compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: |
+          cargo bench --workspace --no-run
+          cargo bench -p spatialrust-gpu --features gpu-wgpu --no-run
+          cargo bench -p spatialrust-filtering --features filter-voxel-gpu --no-run
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --workspace --no-deps --all-features
+
+  unsafe-audit:
+    name: Unsafe audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect unexpected unsafe usage
+        run: |
+          set -euo pipefail
+          rg '#!\[(deny|allow|warn)\(unsafe_code\)\]' crates -n
+          if rg '\bunsafe\b' crates/spatialrust-core crates/spatialrust-math crates/spatialrust-io crates/spatialrust/src; then
+            echo "Unexpected unsafe usage in audited crates"
+            exit 1
+          fi
+          echo "Unsafe audit passed"
