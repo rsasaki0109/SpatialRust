@@ -90,10 +90,16 @@ pub struct VoxelReducePipelines {
     pub xyz_bind_group_layout: wgpu::BindGroupLayout,
     /// XYZ centroid reduce pipeline.
     pub xyz_pipeline: wgpu::ComputePipeline,
+    /// Bind group layout for single-channel u8 voxel reduce dispatch.
+    pub u8_bind_group_layout: wgpu::BindGroupLayout,
+    /// Single-channel u8 voxel reduce pipeline.
+    pub u8_pipeline: wgpu::ComputePipeline,
     _pipeline_layout: wgpu::PipelineLayout,
     _xyz_pipeline_layout: wgpu::PipelineLayout,
+    _u8_pipeline_layout: wgpu::PipelineLayout,
     _shader: wgpu::ShaderModule,
     _xyz_shader: wgpu::ShaderModule,
+    _u8_shader: wgpu::ShaderModule,
 }
 
 /// Cached pipelines for voxel first-point gather.
@@ -106,6 +112,10 @@ pub struct VoxelGatherPipelines {
     pub xyz_bind_group_layout: wgpu::BindGroupLayout,
     /// XYZ gather pipeline.
     pub xyz_pipeline: wgpu::ComputePipeline,
+    /// Bind group layout for single-channel u8 gather.
+    pub u8_bind_group_layout: wgpu::BindGroupLayout,
+    /// Single-channel u8 gather pipeline.
+    pub u8_pipeline: wgpu::ComputePipeline,
     /// Bind group layout for 2-channel gather.
     pub multi_bind_group_layout: wgpu::BindGroupLayout,
     /// 2-channel gather pipeline.
@@ -124,6 +134,8 @@ pub struct VoxelGatherPipelines {
     _xyz_shader: wgpu::ShaderModule,
     _multi_shader: wgpu::ShaderModule,
     _multi4_shader: Option<wgpu::ShaderModule>,
+    _u8_pipeline_layout: wgpu::PipelineLayout,
+    _u8_shader: wgpu::ShaderModule,
 }
 
 impl ComputePipelineCache {
@@ -429,15 +441,47 @@ impl VoxelReducePipelines {
             "main",
         );
 
+        let u8_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("voxel-reduce-u8-layout"),
+            entries: &[
+                uniform_entry(0),
+                storage_entry(1, true),
+                storage_entry(2, true),
+                storage_entry(3, true),
+                storage_entry(4, false),
+            ],
+        });
+        let u8_shader = load_shader(
+            device,
+            "voxel-reduce-u8-shader",
+            include_str!("shaders/voxel_reduce_u8.wgsl"),
+        );
+        let u8_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("voxel-reduce-u8-pipeline-layout"),
+            bind_group_layouts: &[&u8_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+        let u8_pipeline = build_compute_pipeline(
+            device,
+            &u8_pipeline_layout,
+            &u8_shader,
+            "voxel-reduce-u8-pipeline",
+            "main",
+        );
+
         Self {
             bind_group_layout,
             pipeline,
             xyz_bind_group_layout,
             xyz_pipeline,
+            u8_bind_group_layout,
+            u8_pipeline,
             _pipeline_layout: pipeline_layout,
             _xyz_pipeline_layout: xyz_pipeline_layout,
+            _u8_pipeline_layout: u8_pipeline_layout,
             _shader: shader,
             _xyz_shader: xyz_shader,
+            _u8_shader: u8_shader,
         }
     }
 }
@@ -501,6 +545,34 @@ impl VoxelGatherPipelines {
             &xyz_pipeline_layout,
             &xyz_shader,
             "voxel-gather-xyz-pipeline",
+            "main",
+        );
+
+        let u8_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("voxel-gather-u8-layout"),
+            entries: &[
+                uniform_entry(0),
+                storage_entry(1, true),
+                storage_entry(2, true),
+                storage_entry(3, true),
+                storage_entry(4, false),
+            ],
+        });
+        let u8_shader = load_shader(
+            device,
+            "voxel-gather-u8-shader",
+            include_str!("shaders/voxel_gather_u8.wgsl"),
+        );
+        let u8_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("voxel-gather-u8-pipeline-layout"),
+            bind_group_layouts: &[&u8_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+        let u8_pipeline = build_compute_pipeline(
+            device,
+            &u8_pipeline_layout,
+            &u8_shader,
+            "voxel-gather-u8-pipeline",
             "main",
         );
 
@@ -595,6 +667,8 @@ impl VoxelGatherPipelines {
             pipeline,
             xyz_bind_group_layout,
             xyz_pipeline,
+            u8_bind_group_layout,
+            u8_pipeline,
             multi_bind_group_layout,
             multi_pipeline,
             multi4_bind_group_layout,
@@ -602,10 +676,12 @@ impl VoxelGatherPipelines {
             multi_max_channels,
             _pipeline_layout: pipeline_layout,
             _xyz_pipeline_layout: xyz_pipeline_layout,
+            _u8_pipeline_layout: u8_pipeline_layout,
             _multi_pipeline_layout: multi_pipeline_layout,
             _multi4_pipeline_layout: multi4_pipeline_layout,
             _shader: shader,
             _xyz_shader: xyz_shader,
+            _u8_shader: u8_shader,
             _multi_shader: multi_shader,
             _multi4_shader: multi4_shader,
         }

@@ -320,6 +320,20 @@ fn gpu_non_position_fields(schema: &PointSchema) -> Vec<PointField> {
 }
 
 #[cfg(feature = "filter-voxel-gpu")]
+fn partition_gpu_attribute_fields(fields: &[PointField]) -> (Vec<PointField>, Vec<PointField>) {
+    let mut f32_fields = Vec::new();
+    let mut u8_fields = Vec::new();
+    for field in fields {
+        if field.dtype == DType::U8 {
+            u8_fields.push(field.clone());
+        } else {
+            f32_fields.push(field.clone());
+        }
+    }
+    (f32_fields, u8_fields)
+}
+
+#[cfg(feature = "filter-voxel-gpu")]
 fn collect_attribute_f32_sources(
     input: &PointCloud,
     fields: &[PointField],
@@ -336,13 +350,31 @@ fn collect_attribute_f32_sources(
 }
 
 #[cfg(feature = "filter-voxel-gpu")]
+fn collect_attribute_u8_sources(
+    input: &PointCloud,
+    fields: &[PointField],
+) -> SpatialResult<Vec<Vec<u8>>> {
+    let mut sources = Vec::with_capacity(fields.len());
+    for field in fields {
+        let buffer = input.field(&field.name)?;
+        let PointBuffer::U8(values) = buffer else {
+            return Err(SpatialError::UnsupportedDType(field.dtype));
+        };
+        sources.push(values.to_vec());
+    }
+    Ok(sources)
+}
+
+#[cfg(feature = "filter-voxel-gpu")]
 fn assemble_gpu_voxel_output(
     input: &PointCloud,
     out_x: Vec<f32>,
     out_y: Vec<f32>,
     out_z: Vec<f32>,
-    attribute_fields: &[PointField],
-    attribute_values: Vec<Vec<f32>>,
+    f32_attribute_fields: &[PointField],
+    f32_attribute_values: Vec<Vec<f32>>,
+    u8_attribute_fields: &[PointField],
+    u8_attribute_values: Vec<Vec<u8>>,
 ) -> SpatialResult<PointCloud> {
     let schema = input.schema().clone();
     let mut buffers = PointBufferSet::new();
@@ -361,8 +393,11 @@ fn assemble_gpu_voxel_output(
     set_field_from_f32(&mut buffers, y_field, out_y)?;
     set_field_from_f32(&mut buffers, z_field, out_z)?;
 
-    for (field, values) in attribute_fields.iter().zip(attribute_values) {
+    for (field, values) in f32_attribute_fields.iter().zip(f32_attribute_values) {
         set_field_from_f32(&mut buffers, field, values)?;
+    }
+    for (field, values) in u8_attribute_fields.iter().zip(u8_attribute_values) {
+        set_field_from_u8(&mut buffers, field, values)?;
     }
 
     PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
@@ -402,9 +437,12 @@ fn filter_gpu_centroid(
             pipeline.out_z,
             &[],
             Vec::new(),
+            &[],
+            Vec::new(),
         );
     }
 
+    let (f32_fields, u8_fields) = partition_gpu_attribute_fields(&attribute_fields);
     let runtime = WgpuRuntime::shared()?;
     let positions = compute_voxel_keys_gpu_buffers(
         &runtime,
@@ -421,15 +459,18 @@ fn filter_gpu_centroid(
         point_count,
         point_count.next_power_of_two(),
     )?;
-    let attribute_sources = collect_attribute_f32_sources(input, &attribute_fields)?;
-    let attribute_refs: Vec<&[f32]> = attribute_sources.iter().map(Vec::as_slice).collect();
-    let (out_x, out_y, out_z, attribute_values) = match attribute_policy {
+    let f32_sources = collect_attribute_f32_sources(input, &f32_fields)?;
+    let u8_sources = collect_attribute_u8_sources(input, &u8_fields)?;
+    let f32_refs: Vec<&[f32]> = f32_sources.iter().map(Vec::as_slice).collect();
+    let u8_refs: Vec<&[u8]> = u8_sources.iter().map(Vec::as_slice).collect();
+    let (out_x, out_y, out_z, f32_values, u8_values) = match attribute_policy {
         AttributeAggregation::Average => reduce_voxel_centroids_xyz_and_average_multi_gpu(
             &runtime,
             positions.x_buffer(),
             positions.y_buffer(),
             positions.z_buffer(),
-            &attribute_refs,
+            &f32_refs,
+            &u8_refs,
             &segments,
         )?,
         AttributeAggregation::First => reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
@@ -437,7 +478,8 @@ fn filter_gpu_centroid(
             positions.x_buffer(),
             positions.y_buffer(),
             positions.z_buffer(),
-            &attribute_refs,
+            &f32_refs,
+            &u8_refs,
             &segments,
         )?,
     };
@@ -447,8 +489,10 @@ fn filter_gpu_centroid(
         out_x,
         out_y,
         out_z,
-        &attribute_fields,
-        attribute_values,
+        &f32_fields,
+        f32_values,
+        &u8_fields,
+        u8_values,
     )
 }
 
@@ -486,9 +530,12 @@ fn filter_gpu_approximate_first(
             pipeline.out_z,
             &[],
             Vec::new(),
+            &[],
+            Vec::new(),
         );
     }
 
+    let (f32_fields, u8_fields) = partition_gpu_attribute_fields(&attribute_fields);
     let runtime = WgpuRuntime::shared()?;
     let positions = compute_voxel_keys_gpu_buffers(
         &runtime,
@@ -505,15 +552,18 @@ fn filter_gpu_approximate_first(
         point_count,
         point_count.next_power_of_two(),
     )?;
-    let attribute_sources = collect_attribute_f32_sources(input, &attribute_fields)?;
-    let attribute_refs: Vec<&[f32]> = attribute_sources.iter().map(Vec::as_slice).collect();
-    let (out_x, out_y, out_z, attribute_values) = match attribute_policy {
+    let f32_sources = collect_attribute_f32_sources(input, &f32_fields)?;
+    let u8_sources = collect_attribute_u8_sources(input, &u8_fields)?;
+    let f32_refs: Vec<&[f32]> = f32_sources.iter().map(Vec::as_slice).collect();
+    let u8_refs: Vec<&[u8]> = u8_sources.iter().map(Vec::as_slice).collect();
+    let (out_x, out_y, out_z, f32_values, u8_values) = match attribute_policy {
         AttributeAggregation::Average => gather_voxel_first_xyz_and_average_multi_gpu(
             &runtime,
             positions.x_buffer(),
             positions.y_buffer(),
             positions.z_buffer(),
-            &attribute_refs,
+            &f32_refs,
+            &u8_refs,
             &segments,
         )?,
         AttributeAggregation::First => gather_voxel_first_xyz_and_multi_gpu(
@@ -521,7 +571,8 @@ fn filter_gpu_approximate_first(
             positions.x_buffer(),
             positions.y_buffer(),
             positions.z_buffer(),
-            &attribute_refs,
+            &f32_refs,
+            &u8_refs,
             &segments,
         )?,
     };
@@ -531,8 +582,10 @@ fn filter_gpu_approximate_first(
         out_x,
         out_y,
         out_z,
-        &attribute_fields,
-        attribute_values,
+        &f32_fields,
+        f32_values,
+        &u8_fields,
+        u8_values,
     )
 }
 
@@ -664,6 +717,18 @@ fn set_field_from_f32(
     Ok(())
 }
 
+fn set_field_from_u8(
+    buffers: &mut PointBufferSet,
+    field: &PointField,
+    values: Vec<u8>,
+) -> SpatialResult<()> {
+    if field.dtype != DType::U8 {
+        return Err(SpatialError::UnsupportedDType(field.dtype));
+    }
+    buffers.insert(field.name.clone(), PointBuffer::U8(values));
+    Ok(())
+}
+
 fn push_field(buffers: &mut PointBufferSet, field: &PointField, value: f32) -> SpatialResult<()> {
     let buffer = buffers
         .get_mut(&field.name)
@@ -786,6 +851,34 @@ mod tests {
 
         assert_eq!(cpu.len(), gpu.len());
         assert!((cpu.intensity().unwrap()[0] - gpu.intensity().unwrap()[0]).abs() < 1e-5);
+    }
+
+    #[cfg(feature = "filter-voxel-gpu")]
+    #[test]
+    fn gpu_policy_averages_u8_rgb_on_gpu() {
+        use spatialrust_core::{ExecutionPolicy, PointBuffer};
+
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzrgb());
+        builder.push_point([0.0, 0.0, 0.0, 10.0, 20.0, 30.0]).unwrap();
+        builder.push_point([0.1, 0.0, 0.0, 30.0, 40.0, 50.0]).unwrap();
+        let input = builder.build().unwrap();
+
+        let filter = VoxelGridDownsample::new(VoxelGridDownsampleConfig::centroid(1.0).without_gpu_min_points());
+        let cpu = filter.filter(&input).unwrap();
+        let gpu = filter
+            .filter_with_policy(&input, ExecutionPolicy::Gpu(spatialrust_core::DeviceKind::Wgpu))
+            .unwrap();
+
+        assert_eq!(cpu.len(), gpu.len());
+        for channel in ["r", "g", "b"] {
+            let PointBuffer::U8(cpu_values) = cpu.field(channel).unwrap() else {
+                panic!("expected u8 channel");
+            };
+            let PointBuffer::U8(gpu_values) = gpu.field(channel).unwrap() else {
+                panic!("expected u8 channel");
+            };
+            assert_eq!(cpu_values, gpu_values);
+        }
     }
 
     #[cfg(feature = "filter-voxel-gpu")]

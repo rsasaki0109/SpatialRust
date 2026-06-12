@@ -5,7 +5,9 @@ use wgpu::util::DeviceExt;
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::readback::{
-    read_staging_f32, split_channel_blocks, split_xyz_and_attribute_blocks, split_xyz_blocks,
+    pad_u8_for_gpu_storage, read_staging_f32, read_staging_f32_and_u8, split_channel_blocks,
+    split_u8_channel_blocks, split_xyz_and_attribute_blocks, split_xyz_blocks,
+    u8_output_staging_bytes, unpack_u8_outputs_from_u32_staging,
 };
 use crate::runtime::WgpuRuntime;
 
@@ -181,27 +183,38 @@ pub fn reduce_voxel_average_f32_multi_gpu(
     Ok(split_channel_blocks(flat, channels.len(), cells))
 }
 
-/// Averages xyz and multiple attribute channels with one GPU submit/readback.
+/// Averages xyz and multiple f32/u8 attribute channels with one GPU submit/readback.
 pub fn reduce_voxel_centroids_xyz_and_average_multi_gpu(
     runtime: &WgpuRuntime,
     x: &wgpu::Buffer,
     y: &wgpu::Buffer,
     z: &wgpu::Buffer,
     attribute_channels: &[&[f32]],
+    u8_attribute_channels: &[&[u8]],
     segments: &GpuVoxelSegments,
-) -> SpatialResult<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<Vec<f32>>)> {
+) -> SpatialResult<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<Vec<f32>>, Vec<Vec<u8>>)> {
     let attribute_count = attribute_channels.len();
+    let u8_attribute_count = u8_attribute_channels.len();
     if segments.cell_count() == 0 {
         return Ok((
             Vec::new(),
             Vec::new(),
             Vec::new(),
             vec![Vec::new(); attribute_count],
+            vec![Vec::new(); u8_attribute_count],
         ));
     }
 
     let point_count = segments.point_count() as usize;
     for channel in attribute_channels {
+        if channel.len() != point_count {
+            return Err(SpatialError::BufferLengthMismatch {
+                expected: point_count,
+                found: channel.len(),
+            });
+        }
+    }
+    for channel in u8_attribute_channels {
         if channel.len() != point_count {
             return Err(SpatialError::BufferLengthMismatch {
                 expected: point_count,
@@ -215,7 +228,9 @@ pub fn reduce_voxel_centroids_xyz_and_average_multi_gpu(
     let cell_count = segments.cell_count();
     let cells = cell_count as usize;
     let channel_len = cells * std::mem::size_of::<f32>();
-    let total_channels = 3 + attribute_count;
+    let f32_channel_count = 3 + attribute_count;
+    let u8_staging_len = u8_output_staging_bytes(cells, u8_attribute_count);
+    let staging_size = channel_len * f32_channel_count + u8_staging_len;
 
     let output_x = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-reduce-xyz-out-x"),
@@ -237,7 +252,7 @@ pub fn reduce_voxel_centroids_xyz_and_average_multi_gpu(
     });
     let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-reduce-xyz-attrs-staging"),
-        size: (channel_len * total_channels) as u64,
+        size: staging_size as u64,
         usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
@@ -310,35 +325,99 @@ pub fn reduce_voxel_centroids_xyz_and_average_multi_gpu(
         );
     }
 
+    let u8_region_offset = (channel_len * f32_channel_count) as u64;
+    for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {
+        let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("voxel-reduce-xyz-u8-values"),
+            contents: &pad_u8_for_gpu_storage(channel),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
+        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-reduce-xyz-u8-output"),
+            size: (cells * std::mem::size_of::<u32>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+
+        record_voxel_reduce_u8_pass(
+            &mut encoder,
+            runtime,
+            &values_buffer,
+            segments.point_indices_buffer(),
+            segments.cell_starts_buffer(),
+            cell_count,
+            segments.point_count(),
+            &output_buffer,
+        )?;
+
+        encoder.copy_buffer_to_buffer(
+            &output_buffer,
+            0,
+            &staging_buffer,
+            u8_region_offset + attribute_index as u64 * (cells * std::mem::size_of::<u32>()) as u64,
+            (cells * std::mem::size_of::<u32>()) as u64,
+        );
+    }
+
     queue.submit(Some(encoder.finish()));
 
-    let flat = read_staging_f32(device, &staging_buffer, cells * total_channels)?;
-    Ok(split_xyz_and_attribute_blocks(flat, attribute_count, cells))
+    let (flat, u8_raw) = read_staging_f32_and_u8(
+        device,
+        &staging_buffer,
+        cells * f32_channel_count,
+        u8_staging_len,
+    )?;
+    let u8_flat = if u8_attribute_count == 0 {
+        Vec::new()
+    } else {
+        unpack_u8_outputs_from_u32_staging(u8_raw, cells, u8_attribute_count)
+    };
+    let (out_x, out_y, out_z, attributes) =
+        split_xyz_and_attribute_blocks(flat, attribute_count, cells);
+    Ok((
+        out_x,
+        out_y,
+        out_z,
+        attributes,
+        split_u8_channel_blocks(u8_flat, u8_attribute_count, cells),
+    ))
 }
 
-/// Averages xyz and gathers the first attribute value per voxel with one readback.
+/// Averages xyz and gathers the first f32/u8 attribute value per voxel with one readback.
 pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
     runtime: &WgpuRuntime,
     x: &wgpu::Buffer,
     y: &wgpu::Buffer,
     z: &wgpu::Buffer,
     attribute_channels: &[&[f32]],
+    u8_attribute_channels: &[&[u8]],
     segments: &GpuVoxelSegments,
-) -> SpatialResult<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<Vec<f32>>)> {
+) -> SpatialResult<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<Vec<f32>>, Vec<Vec<u8>>)> {
     use crate::kernels::voxel_gather::record_voxel_gather_f32_pass;
+    use crate::kernels::voxel_gather::record_voxel_gather_u8_pass;
 
     let attribute_count = attribute_channels.len();
+    let u8_attribute_count = u8_attribute_channels.len();
     if segments.cell_count() == 0 {
         return Ok((
             Vec::new(),
             Vec::new(),
             Vec::new(),
             vec![Vec::new(); attribute_count],
+            vec![Vec::new(); u8_attribute_count],
         ));
     }
 
     let point_count = segments.point_count() as usize;
     for channel in attribute_channels {
+        if channel.len() != point_count {
+            return Err(SpatialError::BufferLengthMismatch {
+                expected: point_count,
+                found: channel.len(),
+            });
+        }
+    }
+    for channel in u8_attribute_channels {
         if channel.len() != point_count {
             return Err(SpatialError::BufferLengthMismatch {
                 expected: point_count,
@@ -352,10 +431,12 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
     let cell_count = segments.cell_count();
     let cells = cell_count as usize;
     let channel_len = cells * std::mem::size_of::<f32>();
-    let total_channels = 3 + attribute_count;
+    let f32_channel_count = 3 + attribute_count;
+    let u8_staging_len = u8_output_staging_bytes(cells, u8_attribute_count);
+    let staging_size = channel_len * f32_channel_count + u8_staging_len;
     let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-reduce-xyz-gather-attrs-staging"),
-        size: (channel_len * total_channels) as u64,
+        size: staging_size as u64,
         usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
@@ -442,9 +523,59 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
         );
     }
 
+    let u8_region_offset = (channel_len * f32_channel_count) as u64;
+    for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {
+        let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("voxel-gather-xyz-u8-values"),
+            contents: &pad_u8_for_gpu_storage(channel),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
+        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-gather-xyz-u8-output"),
+            size: (cells * std::mem::size_of::<u32>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        record_voxel_gather_u8_pass(
+            &mut encoder,
+            runtime,
+            &values_buffer,
+            segments.point_indices_buffer(),
+            segments.cell_starts_buffer(),
+            cell_count,
+            segments.point_count(),
+            &output_buffer,
+        )?;
+        encoder.copy_buffer_to_buffer(
+            &output_buffer,
+            0,
+            &staging_buffer,
+            u8_region_offset + attribute_index as u64 * (cells * std::mem::size_of::<u32>()) as u64,
+            (cells * std::mem::size_of::<u32>()) as u64,
+        );
+    }
+
     queue.submit(Some(encoder.finish()));
-    let flat = read_staging_f32(device, &staging_buffer, cells * total_channels)?;
-    Ok(split_xyz_and_attribute_blocks(flat, attribute_count, cells))
+    let (flat, u8_raw) = read_staging_f32_and_u8(
+        device,
+        &staging_buffer,
+        cells * f32_channel_count,
+        u8_staging_len,
+    )?;
+    let u8_flat = if u8_attribute_count == 0 {
+        Vec::new()
+    } else {
+        unpack_u8_outputs_from_u32_staging(u8_raw, cells, u8_attribute_count)
+    };
+    let (out_x, out_y, out_z, attributes) =
+        split_xyz_and_attribute_blocks(flat, attribute_count, cells);
+    Ok((
+        out_x,
+        out_y,
+        out_z,
+        attributes,
+        split_u8_channel_blocks(u8_flat, u8_attribute_count, cells),
+    ))
 }
 
 pub(crate) fn record_voxel_reduce_f32_pass(
@@ -507,6 +638,71 @@ pub(crate) fn record_voxel_reduce_f32_pass(
         timestamp_writes: None,
     });
     pass.set_pipeline(&pipelines.voxel_reduce.pipeline);
+    pass.set_bind_group(0, &bind_group, &[]);
+    pass.dispatch_workgroups(cell_count.div_ceil(WORKGROUP_SIZE), 1, 1);
+    Ok(())
+}
+
+pub(crate) fn record_voxel_reduce_u8_pass(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    values: &wgpu::Buffer,
+    point_indices: &wgpu::Buffer,
+    cell_starts: &wgpu::Buffer,
+    cell_count: u32,
+    point_count: u32,
+    output_buffer: &wgpu::Buffer,
+) -> SpatialResult<()> {
+    if cell_count == 0 {
+        return Ok(());
+    }
+
+    let device = runtime.device();
+    let pipelines = runtime.pipelines();
+    let uniform = ReduceUniform {
+        cell_count,
+        point_count,
+        _pad0: 0,
+        _pad1: 0,
+    };
+    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("voxel-reduce-u8-uniform"),
+        contents: bytemuck::bytes_of(&uniform),
+        usage: wgpu::BufferUsages::UNIFORM,
+    });
+
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("voxel-reduce-u8-bind-group"),
+        layout: &pipelines.voxel_reduce.u8_bind_group_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: point_indices.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: values.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 3,
+                resource: cell_starts.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 4,
+                resource: output_buffer.as_entire_binding(),
+            },
+        ],
+    });
+
+    let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+        label: Some("voxel-reduce-u8-pass"),
+        timestamp_writes: None,
+    });
+    pass.set_pipeline(&pipelines.voxel_reduce.u8_pipeline);
     pass.set_bind_group(0, &bind_group, &[]);
     pass.dispatch_workgroups(cell_count.div_ceil(WORKGROUP_SIZE), 1, 1);
     Ok(())
@@ -879,12 +1075,13 @@ mod tests {
         )
         .expect("segments");
 
-        let (out_x, out_y, out_z, attrs) = reduce_voxel_centroids_xyz_and_average_multi_gpu(
+        let (out_x, out_y, out_z, attrs, _) = reduce_voxel_centroids_xyz_and_average_multi_gpu(
             &runtime,
             positions.x_buffer(),
             positions.y_buffer(),
             positions.z_buffer(),
             &[&intensity],
+            &[],
             &segments,
         )
         .expect("unified reduce");
@@ -896,16 +1093,66 @@ mod tests {
         assert!((attrs[0][0] - 0.5).abs() < 1e-5);
         assert!((attrs[0][1] - 15.0).abs() < 1e-5);
 
-        let (_, _, _, gathered) = reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
+        let (_, _, _, gathered, _) = reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
             &runtime,
             positions.x_buffer(),
             positions.y_buffer(),
             positions.z_buffer(),
             &[&intensity],
+            &[],
             &segments,
         )
         .expect("unified gather attrs");
         assert!((gathered[0][0] - 0.2).abs() < 1e-5);
         assert!((gathered[0][1] - 10.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn unified_xyz_and_u8_attribute_readback_matches_reference() {
+        use crate::kernels::voxel_keys::compute_voxel_keys_gpu_buffers;
+        use crate::kernels::voxel_sort::build_voxel_segments_gpu_from_keys_buffer;
+
+        let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
+        let x = [0.0_f32, 0.1, 1.0, 1.1];
+        let y = [0.0_f32, 0.0, 0.0, 0.0];
+        let z = [0.0_f32, 0.0, 0.0, 0.0];
+        let red = [10_u8, 20, 100, 200];
+        let green = [30_u8, 40, 50, 60];
+        let positions =
+            compute_voxel_keys_gpu_buffers(&runtime, &x, &y, &z, [0.0; 3], 2.0).expect("keys");
+        let segments = build_voxel_segments_gpu_from_keys_buffer(
+            &runtime,
+            positions.keys_buffer(),
+            positions.point_count(),
+            4,
+        )
+        .expect("segments");
+
+        let (_, _, _, _, u8_attrs) = reduce_voxel_centroids_xyz_and_average_multi_gpu(
+            &runtime,
+            positions.x_buffer(),
+            positions.y_buffer(),
+            positions.z_buffer(),
+            &[],
+            &[&red, &green],
+            &segments,
+        )
+        .expect("unified u8 reduce");
+
+        assert_eq!(u8_attrs[0], vec![15, 150]);
+        assert_eq!(u8_attrs[1], vec![35, 55]);
+
+        let (_, _, _, _, gathered_u8) = reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
+            &runtime,
+            positions.x_buffer(),
+            positions.y_buffer(),
+            positions.z_buffer(),
+            &[],
+            &[&red, &green],
+            &segments,
+        )
+        .expect("unified u8 gather");
+        assert_eq!(gathered_u8[0], vec![10, 100]);
+        assert_eq!(gathered_u8[1], vec![30, 50]);
     }
 }
