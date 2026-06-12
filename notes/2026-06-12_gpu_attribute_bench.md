@@ -27,9 +27,9 @@
 ## 未確認/要確認項目
 
 - RGB+intensity+normals 複合スキーマ（実 LAS 相当）での end-to-end
-- approximate-first × 属性多数
+- xyzinormal approximate-first GPU ボトルネック（Epic 38: 全規模 CPU 優位）
 
 ## 次アクション
 
-1. MVP end-to-end で xyzinormal 入力の計測
-2. 多解像度 COPC 実ファイル `--resolution` 検証
+1. 実スキャン規模（数百万点）end-to-end
+2. 複合スキーマ MVP 検証

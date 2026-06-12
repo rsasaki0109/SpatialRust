@@ -60,5 +60,5 @@ cargo test -p spatialrust --features mvp mvp_load_voxel_normals_plane_cluster
 
 ## 次アクション
 
-1. approximate-first × 属性多数ベンチ
-2. 実スキャン規模（数百万点）end-to-end
+1. 実スキャン規模（数百万点）end-to-end
+2. 複合スキーマ MVP 検証

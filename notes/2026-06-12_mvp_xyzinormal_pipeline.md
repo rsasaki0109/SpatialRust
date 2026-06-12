@@ -43,6 +43,5 @@
 
 ## 次アクション
 
-1. approximate-first × 属性多数ベンチ
-2. 実スキャン規模（数百万点）end-to-end
-3. 複合スキーマ（xyzi + rgb 等）MVP 検証
+1. 実スキャン規模（数百万点）end-to-end
+2. 複合スキーマ（xyzi + rgb 等）MVP 検証

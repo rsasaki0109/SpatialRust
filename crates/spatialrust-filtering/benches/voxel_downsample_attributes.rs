@@ -48,8 +48,11 @@ fn synthetic_point_cloud(schema: PointSchema, point_count: usize) -> PointCloud 
 }
 
 fn bench_voxel_downsample_attributes(c: &mut Criterion) {
-    let filter = VoxelGridDownsample::new(
+    let centroid = VoxelGridDownsample::new(
         VoxelGridDownsampleConfig::centroid(4.0).without_gpu_min_points(),
+    );
+    let approximate = VoxelGridDownsample::new(
+        VoxelGridDownsampleConfig::approximate(4.0).without_gpu_min_points(),
     );
 
     let schemas = [
@@ -59,7 +62,7 @@ fn bench_voxel_downsample_attributes(c: &mut Criterion) {
         ("xyzinormal", StandardSchemas::point_xyzinormal()),
     ];
 
-    for point_count in [500_000_usize, 1_000_000] {
+    for point_count in [500_000_usize, 1_000_000, 2_000_000] {
         for (label, schema) in &schemas {
             let input = synthetic_point_cloud(schema.clone(), point_count);
             let mut group = c.benchmark_group(format!(
@@ -69,19 +72,38 @@ fn bench_voxel_downsample_attributes(c: &mut Criterion) {
 
             group.bench_function("cpu_centroid", |bencher| {
                 bencher.iter(|| {
-                    black_box(filter.filter(&input).expect("cpu centroid"));
+                    black_box(centroid.filter(&input).expect("cpu centroid"));
                 });
             });
 
             group.bench_function("gpu_centroid", |bencher| {
                 bencher.iter(|| {
                     black_box(
-                        filter
+                        centroid
                             .filter_with_policy(
                                 &input,
                                 ExecutionPolicy::Gpu(spatialrust_core::DeviceKind::Wgpu),
                             )
                             .expect("gpu centroid"),
+                    );
+                });
+            });
+
+            group.bench_function("cpu_approximate_first", |bencher| {
+                bencher.iter(|| {
+                    black_box(approximate.filter(&input).expect("cpu approximate-first"));
+                });
+            });
+
+            group.bench_function("gpu_approximate_first", |bencher| {
+                bencher.iter(|| {
+                    black_box(
+                        approximate
+                            .filter_with_policy(
+                                &input,
+                                ExecutionPolicy::Gpu(spatialrust_core::DeviceKind::Wgpu),
+                            )
+                            .expect("gpu approximate-first"),
                     );
                 });
             });
