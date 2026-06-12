@@ -305,7 +305,7 @@ fn gpu_aggregate_attribute_fields(
     segments: &spatialrust_gpu::GpuVoxelSegments,
     policy: AttributeAggregation,
 ) -> SpatialResult<Vec<Vec<f32>>> {
-    use spatialrust_gpu::{gather_voxel_first_f32_multi_gpu, reduce_voxel_average_f32_gpu};
+    use spatialrust_gpu::{gather_voxel_first_f32_multi_gpu, reduce_voxel_average_f32_multi_gpu};
 
     if fields.is_empty() {
         return Ok(Vec::new());
@@ -326,19 +326,17 @@ fn gpu_aggregate_attribute_fields(
             gather_voxel_first_f32_multi_gpu(runtime, &refs, segments)
         }
         AttributeAggregation::Average => {
-            let mut gathered = Vec::with_capacity(fields.len());
+            let mut sources = Vec::with_capacity(fields.len());
             for field in fields {
                 let mut source_values = Vec::with_capacity(input.len());
                 for index in 0..input.len() {
                     source_values.push(read_field_f32(input, field, index)?);
                 }
-                gathered.push(reduce_voxel_average_f32_gpu(
-                    runtime,
-                    &source_values,
-                    segments,
-                )?);
+                sources.push(source_values);
             }
-            Ok(gathered)
+
+            let refs: Vec<&[f32]> = sources.iter().map(Vec::as_slice).collect();
+            reduce_voxel_average_f32_multi_gpu(runtime, &refs, segments)
         }
     }
 }
@@ -365,17 +363,10 @@ fn filter_gpu_centroid(
         inv_leaf,
     )?;
     let segments = &pipeline.segments;
-    let cell_count = segments.cell_count() as usize;
     let (out_x, out_y, out_z) = (pipeline.out_x, pipeline.out_y, pipeline.out_z);
 
     let schema = input.schema().clone();
     let mut buffers = PointBufferSet::new();
-    for field in schema.fields() {
-        buffers.insert(
-            field.name.clone(),
-            PointBuffer::with_capacity(field.dtype, cell_count),
-        );
-    }
 
     let x_field = schema
         .find_semantic(FieldSemantic::PositionX)
@@ -387,11 +378,9 @@ fn filter_gpu_centroid(
         .find_semantic(FieldSemantic::PositionZ)
         .ok_or_else(|| SpatialError::MissingField("z".to_owned()))?;
 
-    for index in 0..cell_count {
-        push_field(&mut buffers, x_field, out_x[index])?;
-        push_field(&mut buffers, y_field, out_y[index])?;
-        push_field(&mut buffers, z_field, out_z[index])?;
-    }
+    set_field_from_f32(&mut buffers, x_field, out_x)?;
+    set_field_from_f32(&mut buffers, y_field, out_y)?;
+    set_field_from_f32(&mut buffers, z_field, out_z)?;
 
     let attribute_fields: Vec<_> = schema
         .fields()
@@ -412,9 +401,7 @@ fn filter_gpu_centroid(
         attribute_policy,
     )?;
     for (field, values) in attribute_fields.iter().zip(attribute_values) {
-        for value in values {
-            push_field(&mut buffers, field, value)?;
-        }
+        set_field_from_f32(&mut buffers, field, values)?;
     }
 
     PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
@@ -442,17 +429,10 @@ fn filter_gpu_approximate_first(
         inv_leaf,
     )?;
     let segments = &pipeline.segments;
-    let cell_count = segments.cell_count() as usize;
     let (out_x, out_y, out_z) = (pipeline.out_x, pipeline.out_y, pipeline.out_z);
 
     let schema = input.schema().clone();
     let mut buffers = PointBufferSet::new();
-    for field in schema.fields() {
-        buffers.insert(
-            field.name.clone(),
-            PointBuffer::with_capacity(field.dtype, cell_count),
-        );
-    }
 
     let x_field = schema
         .find_semantic(FieldSemantic::PositionX)
@@ -464,11 +444,9 @@ fn filter_gpu_approximate_first(
         .find_semantic(FieldSemantic::PositionZ)
         .ok_or_else(|| SpatialError::MissingField("z".to_owned()))?;
 
-    for index in 0..cell_count {
-        push_field(&mut buffers, x_field, out_x[index])?;
-        push_field(&mut buffers, y_field, out_y[index])?;
-        push_field(&mut buffers, z_field, out_z[index])?;
-    }
+    set_field_from_f32(&mut buffers, x_field, out_x)?;
+    set_field_from_f32(&mut buffers, y_field, out_y)?;
+    set_field_from_f32(&mut buffers, z_field, out_z)?;
 
     let attribute_fields: Vec<_> = schema
         .fields()
@@ -489,9 +467,7 @@ fn filter_gpu_approximate_first(
         attribute_policy,
     )?;
     for (field, values) in attribute_fields.iter().zip(attribute_values) {
-        for value in values {
-            push_field(&mut buffers, field, value)?;
-        }
+        set_field_from_f32(&mut buffers, field, values)?;
     }
 
     PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
@@ -606,6 +582,23 @@ fn read_field_f32(input: &PointCloud, field: &PointField, index: usize) -> Spati
             Ok(values[index] as f32)
         }
     }
+}
+
+fn set_field_from_f32(
+    buffers: &mut PointBufferSet,
+    field: &PointField,
+    values: Vec<f32>,
+) -> SpatialResult<()> {
+    let buffer = match field.dtype {
+        DType::F32 | DType::F16 => PointBuffer::from_f32(values),
+        DType::F64 => PointBuffer::F64(values.into_iter().map(f64::from).collect()),
+        DType::U8 => PointBuffer::U8(values.into_iter().map(|value| value.round() as u8).collect()),
+        DType::U16 => PointBuffer::U16(values.into_iter().map(|value| value.round() as u16).collect()),
+        DType::I32 => PointBuffer::I32(values.into_iter().map(|value| value.round() as i32).collect()),
+        DType::U32 => PointBuffer::U32(values.into_iter().map(|value| value.round() as u32).collect()),
+    };
+    buffers.insert(field.name.clone(), buffer);
+    Ok(())
 }
 
 fn push_field(buffers: &mut PointBufferSet, field: &PointField, value: f32) -> SpatialResult<()> {

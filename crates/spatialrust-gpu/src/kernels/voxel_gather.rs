@@ -4,6 +4,7 @@ use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_segments::VoxelSegments;
+use crate::readback::{read_staging_f32, split_channel_blocks, split_xyz_blocks};
 use crate::runtime::WgpuRuntime;
 
 const WORKGROUP_SIZE: u32 = 256;
@@ -283,12 +284,7 @@ pub fn gather_voxel_first_xyz_gpu_buffers(
     queue.submit(Some(encoder.finish()));
 
     let flat = read_staging_f32(device, &staging_buffer, cell_count as usize * 3)?;
-    let cells = cell_count as usize;
-    Ok((
-        flat[..cells].to_vec(),
-        flat[cells..cells * 2].to_vec(),
-        flat[cells * 2..cells * 3].to_vec(),
-    ))
+    Ok(split_xyz_blocks(flat, cell_count as usize))
 }
 
 fn dispatch_voxel_gather_f32(
@@ -501,10 +497,7 @@ fn dispatch_voxel_gather_multi2_gpu_buffers(
     queue.submit(Some(encoder.finish()));
 
     let flat = read_staging_f32(device, &staging_buffer, cell_count as usize * channels)?;
-    let cells = cell_count as usize;
-    Ok((0..channels)
-        .map(|index| flat[index * cells..(index + 1) * cells].to_vec())
-        .collect())
+    Ok(split_channel_blocks(flat, channels, cell_count as usize))
 }
 
 fn dispatch_voxel_gather_multi4_gpu_buffers(
@@ -638,10 +631,7 @@ fn dispatch_voxel_gather_multi4_gpu_buffers(
     queue.submit(Some(encoder.finish()));
 
     let flat = read_staging_f32(device, &staging_buffer, cell_count as usize * channels)?;
-    let cells = cell_count as usize;
-    Ok((0..channels)
-        .map(|index| flat[index * cells..(index + 1) * cells].to_vec())
-        .collect())
+    Ok(split_channel_blocks(flat, channels, cell_count as usize))
 }
 
 fn empty_storage_buffer(device: &wgpu::Device) -> SpatialResult<wgpu::Buffer> {
@@ -651,25 +641,6 @@ fn empty_storage_buffer(device: &wgpu::Device) -> SpatialResult<wgpu::Buffer> {
         usage: wgpu::BufferUsages::STORAGE,
         mapped_at_creation: false,
     }))
-}
-
-fn read_staging_f32(device: &wgpu::Device, staging_buffer: &wgpu::Buffer, len: usize) -> SpatialResult<Vec<f32>> {
-    let slice = staging_buffer.slice(..);
-    let (sender, receiver) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |result| {
-        let _ = sender.send(result);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    receiver
-        .recv()
-        .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
-        .map_err(|error| SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}")))?;
-
-    let data = slice.get_mapped_range();
-    let values: Vec<f32> = bytemuck::cast_slice(&data)[..len].to_vec();
-    drop(data);
-    staging_buffer.unmap();
-    Ok(values)
 }
 
 #[cfg(test)]

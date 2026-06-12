@@ -15,6 +15,9 @@ mod kernels;
 mod pipeline_cache;
 
 #[cfg(feature = "gpu-wgpu")]
+mod readback;
+
+#[cfg(feature = "gpu-wgpu")]
 mod runtime;
 
 pub use buffer::DeviceBuffer;
@@ -29,6 +32,7 @@ pub use kernels::{
     gather_voxel_first_f32_gpu, gather_voxel_first_f32_gpu_buffers, gather_voxel_first_f32_multi_gpu,
     gather_voxel_first_xyz_gpu_buffers,
     reduce_voxel_average_f32, reduce_voxel_average_f32_gpu, reduce_voxel_average_f32_gpu_buffers,
+    reduce_voxel_average_f32_multi_gpu,
     reduce_voxel_centroids_xyz, reduce_voxel_centroids_xyz_gpu_buffers, GpuVoxelKeyBuffers,
     GpuVoxelSegments, VoxelApproximateFirstGpuResult, VoxelCentroidGpuResult, VoxelSegments,
 };

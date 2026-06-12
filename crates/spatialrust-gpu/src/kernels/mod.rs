@@ -36,7 +36,8 @@ pub use voxel_keys::{compute_voxel_keys, compute_voxel_keys_gpu_buffers, GpuVoxe
 #[cfg(feature = "gpu-wgpu")]
 pub use voxel_reduce::{
     reduce_voxel_average_f32, reduce_voxel_average_f32_gpu, reduce_voxel_average_f32_gpu_buffers,
-    reduce_voxel_centroids_xyz, reduce_voxel_centroids_xyz_gpu_buffers,
+    reduce_voxel_average_f32_multi_gpu, reduce_voxel_centroids_xyz,
+    reduce_voxel_centroids_xyz_gpu_buffers,
 };
 
 #[cfg(feature = "gpu-wgpu")]

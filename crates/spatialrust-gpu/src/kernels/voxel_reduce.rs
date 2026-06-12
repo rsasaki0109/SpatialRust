@@ -4,6 +4,7 @@ use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_segments::VoxelSegments;
+use crate::readback::{read_staging_f32, split_channel_blocks, split_xyz_blocks};
 use crate::runtime::WgpuRuntime;
 
 const WORKGROUP_SIZE: u32 = 256;
@@ -98,6 +99,149 @@ pub fn reduce_voxel_average_f32_gpu(
         usage: wgpu::BufferUsages::STORAGE,
     });
     reduce_voxel_average_f32_gpu_buffers(runtime, &values_buffer, segments)
+}
+
+/// Uploads multiple `f32` channels and averages them with one GPU submit/readback.
+pub fn reduce_voxel_average_f32_multi_gpu(
+    runtime: &WgpuRuntime,
+    channels: &[&[f32]],
+    segments: &GpuVoxelSegments,
+) -> SpatialResult<Vec<Vec<f32>>> {
+    if channels.is_empty() {
+        return Ok(Vec::new());
+    }
+    if segments.cell_count() == 0 {
+        return Ok(vec![Vec::new(); channels.len()]);
+    }
+
+    let point_count = segments.point_count() as usize;
+    for channel in channels {
+        if channel.len() != point_count {
+            return Err(SpatialError::BufferLengthMismatch {
+                expected: point_count,
+                found: channel.len(),
+            });
+        }
+    }
+
+    let device = runtime.device();
+    let queue = runtime.queue();
+    let cell_count = segments.cell_count();
+    let cells = cell_count as usize;
+    let channel_len = cells * std::mem::size_of::<f32>();
+    let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("voxel-reduce-multi-staging"),
+        size: (channel_len * channels.len()) as u64,
+        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("voxel-reduce-multi-encoder"),
+    });
+
+    for (channel_index, channel) in channels.iter().enumerate() {
+        let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("voxel-reduce-multi-values"),
+            contents: bytemuck::cast_slice(channel),
+            usage: wgpu::BufferUsages::STORAGE,
+        });
+        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-reduce-multi-output"),
+            size: channel_len as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+
+        record_voxel_reduce_f32_pass(
+            &mut encoder,
+            runtime,
+            &values_buffer,
+            segments.point_indices_buffer(),
+            segments.cell_starts_buffer(),
+            cell_count,
+            segments.point_count(),
+            &output_buffer,
+        )?;
+
+        encoder.copy_buffer_to_buffer(
+            &output_buffer,
+            0,
+            &staging_buffer,
+            (channel_len * channel_index) as u64,
+            channel_len as u64,
+        );
+    }
+
+    queue.submit(Some(encoder.finish()));
+
+    let flat = read_staging_f32(device, &staging_buffer, cells * channels.len())?;
+    Ok(split_channel_blocks(flat, channels.len(), cells))
+}
+
+fn record_voxel_reduce_f32_pass(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    values: &wgpu::Buffer,
+    point_indices: &wgpu::Buffer,
+    cell_starts: &wgpu::Buffer,
+    cell_count: u32,
+    point_count: u32,
+    output_buffer: &wgpu::Buffer,
+) -> SpatialResult<()> {
+    if cell_count == 0 {
+        return Ok(());
+    }
+
+    let device = runtime.device();
+    let pipelines = runtime.pipelines();
+    let uniform = ReduceUniform {
+        cell_count,
+        point_count,
+        _pad0: 0,
+        _pad1: 0,
+    };
+    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("voxel-reduce-uniform"),
+        contents: bytemuck::bytes_of(&uniform),
+        usage: wgpu::BufferUsages::UNIFORM,
+    });
+
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("voxel-reduce-bind-group"),
+        layout: &pipelines.voxel_reduce.bind_group_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: point_indices.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: values.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 3,
+                resource: cell_starts.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 4,
+                resource: output_buffer.as_entire_binding(),
+            },
+        ],
+    });
+
+    let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+        label: Some("voxel-reduce-pass"),
+        timestamp_writes: None,
+    });
+    pass.set_pipeline(&pipelines.voxel_reduce.pipeline);
+    pass.set_bind_group(0, &bind_group, &[]);
+    pass.dispatch_workgroups(cell_count.div_ceil(WORKGROUP_SIZE), 1, 1);
+    Ok(())
 }
 
 fn dispatch_voxel_reduce_f32(
@@ -355,36 +499,12 @@ fn dispatch_voxel_reduce_xyz_f32(
     queue.submit(Some(encoder.finish()));
 
     let flat = read_staging_f32(device, &staging_buffer, cell_count as usize * 3)?;
-    let cells = cell_count as usize;
-    Ok((
-        flat[..cells].to_vec(),
-        flat[cells..cells * 2].to_vec(),
-        flat[cells * 2..cells * 3].to_vec(),
-    ))
-}
-
-fn read_staging_f32(device: &wgpu::Device, staging_buffer: &wgpu::Buffer, len: usize) -> SpatialResult<Vec<f32>> {
-    let slice = staging_buffer.slice(..);
-    let (sender, receiver) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |result| {
-        let _ = sender.send(result);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    receiver
-        .recv()
-        .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
-        .map_err(|error| SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}")))?;
-
-    let data = slice.get_mapped_range();
-    let values: Vec<f32> = bytemuck::cast_slice(&data)[..len].to_vec();
-    drop(data);
-    staging_buffer.unmap();
-    Ok(values)
+    Ok(split_xyz_blocks(flat, cell_count as usize))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{reduce_voxel_average_f32, reduce_voxel_centroids_xyz};
+    use super::{reduce_voxel_average_f32, reduce_voxel_average_f32_multi_gpu, reduce_voxel_centroids_xyz};
     use crate::kernels::voxel_segments::build_voxel_segments;
     use crate::runtime::WgpuRuntime;
 
@@ -409,5 +529,28 @@ mod tests {
         let gpu_i = reduce_voxel_average_f32(&runtime, &intensity, &segments).expect("gpu average");
         assert!((gpu_i[0] - 0.5).abs() < 1e-5);
         assert!((gpu_i[1] - 15.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn gpu_multi_reduce_matches_single_channel_reference() {
+        use crate::kernels::voxel_sort::build_voxel_segments_gpu_from_keys;
+
+        let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
+        let intensity = [0.2_f32, 0.8, 10.0, 20.0];
+        let classification = [1.0_f32, 2.0, 3.0, 4.0];
+        let keys = vec![(0, 0, 0), (0, 0, 0), (2, 0, 0), (2, 0, 0)];
+        let segments = build_voxel_segments_gpu_from_keys(&runtime, &keys).expect("gpu segments");
+
+        let multi = reduce_voxel_average_f32_multi_gpu(
+            &runtime,
+            &[&intensity, &classification],
+            &segments,
+        )
+        .expect("multi reduce");
+
+        assert!((multi[0][0] - 0.5).abs() < 1e-5);
+        assert!((multi[0][1] - 15.0).abs() < 1e-5);
+        assert!((multi[1][0] - 1.5).abs() < 1e-5);
+        assert!((multi[1][1] - 3.5).abs() < 1e-5);
     }
 }
