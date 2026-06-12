@@ -1,6 +1,12 @@
 # SpatialRust
 
+<p align="center">
+  <img src="docs/assets/readme_mvp_preview.svg" alt="SpatialRust MVP pipeline preview: RANSAC plane inliers and Euclidean cluster labels from a real pipeline run" width="960">
+</p>
+
 **PyTorch for Spatial Computing** — a Rust-native framework for point clouds, geometry, GPU compute, robotics, and spatial AI.
+
+Preview image is generated from the MVP pipeline (`cargo run -p spatialrust --features mvp --example readme_mvp_preview`), not a decorative mockup.
 
 ## Status
 

@@ -72,3 +72,8 @@ spatialrust-pipeline = { workspace = true }
 name = "spatialrust-mvp"
 path = "src/bin/spatialrust_mvp.rs"
 required-features = ["mvp"]
+
+[[example]]
+name = "readme_mvp_preview"
+path = "examples/readme_mvp_preview.rs"
+required-features = ["mvp"]
