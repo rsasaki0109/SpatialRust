@@ -1,7 +1,7 @@
 # SpatialRust
 
 <p align="center">
-  <img src="docs/assets/readme_mvp_pipeline.gif" alt="SpatialRust MVP pipeline: input, voxel downsample, plane RANSAC, and Euclidean cluster labels from a real pipeline run" width="720">
+  <img src="docs/assets/readme_hero.gif" alt="SpatialRust hero: isometric LiDAR scan sweep, voxel downsample, plane RANSAC, and neon cluster labels from a real MVP pipeline run" width="960">
 </p>
 
 <p align="center">
@@ -16,11 +16,13 @@
   <img src="https://img.shields.io/badge/GPU-wgpu-38bdf8.svg" alt="wgpu">
 </p>
 
-The GIF above is **real MVP pipeline output** (not a mockup). Regenerate all README assets:
+The hero GIF above is **real MVP pipeline output** (not a mockup): isometric view, LiDAR scan sweep, and stage transitions. Regenerate all README assets:
 
 ```bash
 cargo run -p spatialrust --features mvp --example readme_mvp_preview
 ```
+
+Outputs: `docs/assets/readme_hero.gif` (README header), `readme_mvp_pipeline.gif` (compact 2D view), `social_preview.svg`.
 
 ## Why SpatialRust?
 
