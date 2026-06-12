@@ -2,12 +2,16 @@
 //!
 //! ```text
 //! cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- input.pcd output.pcd
+//! cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+//!   --bounds 0,0,-1,100,100,1 scan.copc.laz roi.copc.laz
 //! ```
 
 use std::{env, path::Path, process::ExitCode, time::Instant};
 
 use spatialrust::{
-    read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, MvpPipeline, MvpPipelineConfig,
+    detect_point_cloud_format, read_copc_file_with_query, read_point_cloud_file,
+    write_point_cloud_file, CopcBounds, CopcQuery, ExecutionPolicy, MvpPipeline,
+    MvpPipelineConfig, PointCloudFileFormat,
 };
 
 fn print_usage(program: &str) {
@@ -20,6 +24,8 @@ Run the MVP pipeline (voxel → normals → plane → cluster) and write labeled
 Options:
   --leaf-size <METERS>       Voxel leaf size (default: 0.05)
   --voxel-policy <POLICY>    auto | cpu | gpu (default: auto)
+  --bounds <MINX,MINY,MINZ,MAXX,MAXY,MAXZ>
+                             COPC spatial query bounds (requires .copc.laz/.copc.las input)
   -h, --help                 Show this help
 "
     );
@@ -46,6 +52,64 @@ fn parse_voxel_policy(value: &str) -> Result<ExecutionPolicy, String> {
     }
 }
 
+fn parse_bounds(value: &str) -> Result<CopcBounds, String> {
+    let parts: Vec<&str> = value.split(',').collect();
+    if parts.len() != 6 {
+        return Err(format!(
+            "expected 6 comma-separated values (minx,miny,minz,maxx,maxy,maxz), got {}",
+            parts.len()
+        ));
+    }
+
+    let mut coords = [0.0_f64; 6];
+    for (index, part) in parts.iter().enumerate() {
+        coords[index] = part
+            .trim()
+            .parse()
+            .map_err(|_| format!("invalid bounds coordinate `{part}`"))?;
+    }
+
+    let bounds = CopcBounds::from_ranges(
+        (coords[0], coords[3]),
+        (coords[1], coords[4]),
+        (coords[2], coords[5]),
+    );
+    bounds
+        .validate()
+        .map_err(|error| format!("invalid COPC bounds: {error}"))?;
+    Ok(bounds)
+}
+
+fn load_input(
+    input_path: &str,
+    bounds: Option<CopcBounds>,
+) -> Result<spatialrust::PointCloud, Box<dyn std::error::Error>> {
+    match bounds {
+        Some(bounds) => {
+            let format = detect_point_cloud_format(input_path).ok_or_else(|| {
+                format!("cannot detect input format for --bounds: {input_path}")
+            })?;
+            if format != PointCloudFileFormat::Copc {
+                return Err(
+                    "--bounds requires a COPC input (.copc.laz or .copc.las)".into(),
+                );
+            }
+
+            eprintln!(
+                "COPC bounds query: x=[{}, {}] y=[{}, {}] z=[{}, {}]",
+                bounds.min[0],
+                bounds.max[0],
+                bounds.min[1],
+                bounds.max[1],
+                bounds.min[2],
+                bounds.max[2],
+            );
+            Ok(read_copc_file_with_query(input_path, &CopcQuery::bounds(bounds))?)
+        }
+        None => Ok(read_point_cloud_file(input_path)?),
+    }
+}
+
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let program = env::args()
@@ -54,6 +118,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut leaf_size = 0.05_f32;
     let mut voxel_policy = ExecutionPolicy::Auto;
+    let mut copc_bounds = None;
     let mut input_path = None;
     let mut output_path = None;
 
@@ -76,6 +141,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     .next()
                     .ok_or("--voxel-policy requires auto, cpu, or gpu")?;
                 voxel_policy = parse_voxel_policy(&value)?;
+            }
+            "--bounds" => {
+                let value = args.next().ok_or("--bounds requires 6 comma-separated values")?;
+                copc_bounds = Some(parse_bounds(&value)?);
             }
             value if value.starts_with('-') => {
                 return Err(format!("unknown option `{value}`").into());
@@ -100,7 +169,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     eprintln!("loading {input_path}");
-    let input = read_point_cloud_file(&input_path)?;
+    let input = load_input(&input_path, copc_bounds)?;
     let input_points = input.len();
     eprintln!("input points: {input_points}");
 
@@ -140,5 +209,27 @@ fn main() -> ExitCode {
             );
             ExitCode::FAILURE
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_bounds;
+
+    #[test]
+    fn parse_bounds_accepts_six_values() {
+        let bounds = parse_bounds("0,0,-1,100,100,1").unwrap();
+        assert_eq!(bounds.min, [0.0, 0.0, -1.0]);
+        assert_eq!(bounds.max, [100.0, 100.0, 1.0]);
+    }
+
+    #[test]
+    fn parse_bounds_rejects_wrong_count() {
+        assert!(parse_bounds("0,0,0").is_err());
+    }
+
+    #[test]
+    fn parse_bounds_rejects_inverted_axis() {
+        assert!(parse_bounds("10,0,0,0,1,1").is_err());
     }
 }

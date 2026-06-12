@@ -12,6 +12,7 @@ pub use filter::PointCloudFilter;
 
 #[cfg(feature = "filter-voxel")]
 pub use voxel::{
-    AttributeAggregation, DEFAULT_GPU_MIN_POINTS, VoxelAggregationMode, VoxelGridDownsample,
+    AttributeAggregation, DEFAULT_GPU_MIN_POINTS, DEFAULT_GPU_MIN_POINTS_APPROXIMATE,
+    VoxelAggregationMode, VoxelGridDownsample,
     VoxelGridDownsampleConfig,
 };

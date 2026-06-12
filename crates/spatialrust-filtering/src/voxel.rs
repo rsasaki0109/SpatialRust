@@ -28,10 +28,16 @@ pub enum AttributeAggregation {
     First,
 }
 
-/// Default minimum point count before GPU voxel downsampling is selected.
+/// Default minimum point count before GPU voxel downsampling is selected (centroid).
 ///
 /// Local end-to-end filter benches show GPU centroid wins above ~500k points.
 pub const DEFAULT_GPU_MIN_POINTS: usize = 500_000;
+
+/// Default minimum point count before GPU approximate-first downsampling is selected.
+///
+/// Approximate-first pays a higher gather/readback cost than centroid. End-to-end
+/// benches at 500k still favor CPU (~23 ms vs ~37 ms); GPU wins from ~750k upward.
+pub const DEFAULT_GPU_MIN_POINTS_APPROXIMATE: usize = 750_000;
 
 /// Configuration for voxel-grid downsampling.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -46,8 +52,8 @@ pub struct VoxelGridDownsampleConfig {
     pub attribute_policy: AttributeAggregation,
     /// Minimum input point count before GPU execution is considered worthwhile.
     ///
-    /// `None` always uses GPU when requested. The default follows local bench
-    /// results where end-to-end GPU centroid filtering wins above ~500k points.
+    /// `None` always uses GPU when requested. Defaults follow local bench results:
+    /// centroid ~500k, approximate-first ~750k.
     pub gpu_min_points: Option<usize>,
 }
 
@@ -72,7 +78,7 @@ impl VoxelGridDownsampleConfig {
             origin: None,
             mode: VoxelAggregationMode::ApproximateFirst,
             attribute_policy: AttributeAggregation::First,
-            gpu_min_points: Some(DEFAULT_GPU_MIN_POINTS),
+            gpu_min_points: Some(DEFAULT_GPU_MIN_POINTS_APPROXIMATE),
         }
     }
 
@@ -794,5 +800,23 @@ mod tests {
         let (cpu_x, _, _) = cpu.positions3().unwrap();
         let (auto_x, _, _) = auto.positions3().unwrap();
         assert!((cpu_x[0] - auto_x[0]).abs() < 1e-5);
+    }
+
+    #[cfg(feature = "filter-voxel-gpu")]
+    #[test]
+    fn approximate_default_gpu_threshold_is_higher_than_centroid() {
+        use super::{
+            DEFAULT_GPU_MIN_POINTS, DEFAULT_GPU_MIN_POINTS_APPROXIMATE, VoxelGridDownsampleConfig,
+        };
+
+        assert!(DEFAULT_GPU_MIN_POINTS_APPROXIMATE > DEFAULT_GPU_MIN_POINTS);
+
+        let centroid = VoxelGridDownsampleConfig::centroid(0.5);
+        let approximate = VoxelGridDownsampleConfig::approximate(0.5);
+        assert_eq!(centroid.gpu_min_points, Some(DEFAULT_GPU_MIN_POINTS));
+        assert_eq!(
+            approximate.gpu_min_points,
+            Some(DEFAULT_GPU_MIN_POINTS_APPROXIMATE)
+        );
     }
 }
