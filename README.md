@@ -1,12 +1,48 @@
 # SpatialRust
 
 <p align="center">
-  <img src="docs/assets/readme_mvp_preview.svg" alt="SpatialRust MVP pipeline preview: RANSAC plane inliers and Euclidean cluster labels from a real pipeline run" width="960">
+  <img src="docs/assets/readme_mvp_pipeline.gif" alt="SpatialRust MVP pipeline: input, voxel downsample, plane RANSAC, and Euclidean cluster labels from a real pipeline run" width="720">
 </p>
 
-**PyTorch for Spatial Computing** — a Rust-native framework for point clouds, geometry, GPU compute, robotics, and spatial AI.
+<p align="center">
+  <strong>PyTorch for Spatial Computing</strong><br>
+  Point clouds · wgpu · COPC · RANSAC · ICP — native Rust, no C++ binding layer.
+</p>
 
-Preview image is generated from the MVP pipeline (`cargo run -p spatialrust --features mvp --example readme_mvp_preview`), not a decorative mockup.
+<p align="center">
+  <a href="https://github.com/rsasaki0109/SpatialRust/actions/workflows/ci.yml"><img src="https://github.com/rsasaki0109/SpatialRust/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/rust-1.75+-orange.svg" alt="Rust 1.75+">
+  <img src="https://img.shields.io/badge/GPU-wgpu-38bdf8.svg" alt="wgpu">
+</p>
+
+The GIF above is **real MVP pipeline output** (not a mockup). Regenerate all README assets:
+
+```bash
+cargo run -p spatialrust --features mvp --example readme_mvp_preview
+```
+
+## Why SpatialRust?
+
+| | Typical C++ stack (PCL / Open3D bindings) | SpatialRust |
+| --- | --- | --- |
+| Core language | C++ + FFI glue | **Native Rust** |
+| GPU path | varies by wrapper | **wgpu voxel filter** with CPU fallback |
+| COPC | bolt-on scripts | **bounds + LOD queries** in library & CLI |
+| Pipeline | glue code | **composable MVP crate** |
+
+**One command** from LAS/COPC to labeled clusters:
+
+```bash
+cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- scan.las labeled.las
+```
+
+Partial COPC read + pipeline:
+
+```bash
+cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+  --bounds 0,0,-1,100,100,1 --resolution 0.5 scan.copc.laz roi.copc.laz
+```
 
 ## Status
 
@@ -84,6 +120,10 @@ cargo test -p spatialrust --features filter-voxel-gpu
 cargo test -p spatialrust --features mvp mvp_copc_pipeline_roundtrip
 cargo test -p spatialrust --features mvp mvp_copc_query_pipeline
 ```
+
+## Social preview
+
+Upload `docs/assets/social_preview.svg` (or export to PNG) as the GitHub repository social image under **Settings → General → Social preview**.
 
 ## License
 
