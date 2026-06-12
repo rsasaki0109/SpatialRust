@@ -55,5 +55,5 @@ cargo test -p spatialrust --features mvp mvp_load_voxel_normals_plane_cluster
 
 ## 次アクション
 
-1. 2M 点 approximate-first GPU クロスオーバー計測
-2. 属性多数点群での end-to-end 時間
+1. xyz + 属性 readback 完全統合
+2. 多解像度 COPC 実ファイルでの `--resolution` 点数削減効果

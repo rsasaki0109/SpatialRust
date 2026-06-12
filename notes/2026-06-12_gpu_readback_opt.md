@@ -29,5 +29,5 @@ GPU filter の staging/readback まわりを整理し、属性 reduce の GPU su
 
 ## 次アクション
 
-1. 2M 点 approximate-first クロスオーバー計測
-2. xyz + 属性 readback 完全統合
+1. xyz + 属性 readback 完全統合（Epic 31: U8 RGB が GPU ボトルネック）
+2. U8 RGB 専用 reduce / 単一 staging 後の再ベンチ

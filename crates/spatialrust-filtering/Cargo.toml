@@ -23,6 +23,11 @@ name = "voxel_downsample"
 harness = false
 required-features = ["filter-voxel-gpu"]
 
+[[bench]]
+name = "voxel_downsample_attributes"
+harness = false
+required-features = ["filter-voxel-gpu"]
+
 [dev-dependencies]
 spatialrust-io = { workspace = true, features = ["io-pcd"] }
 criterion = { workspace = true }
