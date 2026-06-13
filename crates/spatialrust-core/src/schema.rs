@@ -193,6 +193,15 @@ impl StandardSchemas {
             .with_field(PointField::scalar("b", FieldSemantic::ColorB, DType::U8))
     }
 
+    /// `PointXYZIRGB` schema (intensity + packed RGB, LAS/PCD composite).
+    #[must_use]
+    pub fn point_xyzirgb() -> PointSchema {
+        Self::point_xyzi()
+            .with_field(PointField::scalar("r", FieldSemantic::ColorR, DType::U8))
+            .with_field(PointField::scalar("g", FieldSemantic::ColorG, DType::U8))
+            .with_field(PointField::scalar("b", FieldSemantic::ColorB, DType::U8))
+    }
+
     /// `PointXYZINormal` schema.
     #[must_use]
     pub fn point_xyzinormal() -> PointSchema {
@@ -213,5 +222,13 @@ mod tests {
         schema.validate_positions().unwrap();
         assert_eq!(schema.len(), 3);
         assert!(schema.find_semantic(FieldSemantic::PositionX).is_some());
+    }
+
+    #[test]
+    fn standard_xyzirgb_has_intensity_and_color() {
+        let schema = StandardSchemas::point_xyzirgb();
+        assert!(schema.find_semantic(FieldSemantic::Intensity).is_some());
+        assert!(schema.find_semantic(FieldSemantic::ColorR).is_some());
+        assert_eq!(schema.len(), 7);
     }
 }

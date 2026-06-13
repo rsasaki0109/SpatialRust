@@ -28,3 +28,11 @@ criterion = { workspace = true }
 [[bench]]
 name = "mvp_xyzinormal"
 harness = false
+
+[[bench]]
+name = "mvp_large_scale"
+harness = false
+
+[[bench]]
+name = "mvp_composite_xyzirgb"
+harness = false

@@ -3,7 +3,7 @@ use std::io::{Seek, Write};
 use las::point::{Classification, Format};
 use las::{Builder, Color, Header, Point, Writer};
 use spatialrust_core::{
-    DType, FieldSemantic, HasPositions3, PointCloud, PointField, PointSchema,
+    FieldSemantic, HasPositions3, PointCloud, PointField, PointSchema,
 };
 
 use crate::error::{las_format, las_parse, IoError};
@@ -142,55 +142,43 @@ pub(crate) fn point_from_cloud(
         ) {
             continue;
         }
-        if cloud.field(&field.name).is_err() {
+        let Some(field_name) = cloud_field_name_for_export(cloud, field) else {
             continue;
-        }
-        let value = read_cloud_field(cloud, field, index)?;
+        };
+        let value = read_cloud_field(cloud, field_name, index)?;
         apply_las_field(&mut point, field, value, format)?;
     }
 
     Ok(point)
 }
 
+fn cloud_field_name_for_export<'a>(
+    cloud: &'a PointCloud,
+    export_field: &'a PointField,
+) -> Option<&'a str> {
+    if cloud.field(&export_field.name).is_ok() {
+        return Some(export_field.name.as_str());
+    }
+    cloud.schema()
+        .find_semantic(export_field.semantic)
+        .map(|field| field.name.as_str())
+        .filter(|name| cloud.field(name).is_ok())
+}
+
 fn read_cloud_field(
     cloud: &PointCloud,
-    field: &PointField,
+    field_name: &str,
     index: usize,
 ) -> Result<f64, IoError> {
-    let buffer = cloud.field(&field.name)?;
-    match field.dtype {
-        DType::F32 | DType::F16 => Ok(f64::from(buffer.as_f32()?[index])),
-        DType::F64 => {
-            let PointBuffer::F64(values) = buffer else {
-                return Err(spatialrust_core::SpatialError::UnsupportedDType(field.dtype).into());
-            };
-            Ok(values[index])
-        }
-        DType::U8 => {
-            let PointBuffer::U8(values) = buffer else {
-                return Err(spatialrust_core::SpatialError::UnsupportedDType(field.dtype).into());
-            };
-            Ok(f64::from(values[index]))
-        }
-        DType::U16 => {
-            let PointBuffer::U16(values) = buffer else {
-                return Err(spatialrust_core::SpatialError::UnsupportedDType(field.dtype).into());
-            };
-            Ok(f64::from(values[index]))
-        }
-        DType::I32 => {
-            let PointBuffer::I32(values) = buffer else {
-                return Err(spatialrust_core::SpatialError::UnsupportedDType(field.dtype).into());
-            };
-            Ok(f64::from(values[index]))
-        }
-        DType::U32 => {
-            let PointBuffer::U32(values) = buffer else {
-                return Err(spatialrust_core::SpatialError::UnsupportedDType(field.dtype).into());
-            };
-            Ok(f64::from(values[index]))
-        }
-    }
+    let buffer = cloud.field(field_name)?;
+    Ok(match buffer {
+        PointBuffer::F32(values) => f64::from(values[index]),
+        PointBuffer::F64(values) => values[index],
+        PointBuffer::U8(values) => f64::from(values[index]),
+        PointBuffer::U16(values) => f64::from(values[index]),
+        PointBuffer::I32(values) => f64::from(values[index]),
+        PointBuffer::U32(values) => f64::from(values[index]),
+    })
 }
 
 use spatialrust_core::PointBuffer;
@@ -239,6 +227,19 @@ mod tests {
     fn writes_xyz_cloud() {
         let mut builder = PointCloudBuilder::xyz();
         builder.push_point([1.0, 2.0, 3.0]).unwrap();
+        let cloud = builder.build().unwrap();
+        let bytes = write_las(Cursor::new(Vec::new()), &cloud, LasWriteFormat::Las).unwrap();
+        assert!(!bytes.get_ref().is_empty());
+    }
+
+    #[test]
+    fn writes_xyzirgb_cloud_with_u8_color_fields() {
+        use spatialrust_core::StandardSchemas;
+
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzirgb());
+        builder
+            .push_point([1.0, 2.0, 3.0, 100.0, 255.0, 128.0, 64.0])
+            .unwrap();
         let cloud = builder.build().unwrap();
         let bytes = write_las(Cursor::new(Vec::new()), &cloud, LasWriteFormat::Las).unwrap();
         assert!(!bytes.get_ref().is_empty());

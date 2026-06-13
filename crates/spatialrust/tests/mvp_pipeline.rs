@@ -751,6 +751,254 @@ fn mvp_xyzinormal_gpu_voxel_matches_cpu() {
 }
 
 #[cfg(feature = "mvp")]
+fn sample_xyzirgb_plane_cloud() -> spatialrust::PointCloud {
+    use spatialrust::{PointCloudBuilder, StandardSchemas};
+
+    let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzirgb());
+    for x in 0..10 {
+        for y in 0..10 {
+            builder
+                .push_point([
+                    x as f32 * 0.1,
+                    y as f32 * 0.1,
+                    0.0,
+                    0.2,
+                    200.0,
+                    40.0,
+                    40.0,
+                ])
+                .unwrap();
+        }
+    }
+    builder
+        .push_point([0.0, 0.0, 0.5, 0.9, 255.0, 128.0, 32.0])
+        .unwrap();
+    builder
+        .push_point([0.1, 0.0, 0.5, 0.8, 64.0, 192.0, 96.0])
+        .unwrap();
+    builder.build().unwrap()
+}
+
+#[cfg(feature = "mvp")]
+fn mvp_composite_base_config() -> spatialrust::MvpPipelineConfig {
+    use spatialrust::{
+        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig,
+        Vec3,
+    };
+
+    MvpPipelineConfig {
+        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(0.2).without_gpu_min_points(),
+        normals: NormalEstimationConfig {
+            k_neighbors: 8,
+            min_neighbors: 3,
+            viewpoint: Some(Vec3::new(0.0, 0.0, 10.0)),
+            ..NormalEstimationConfig::default()
+        },
+        plane: RansacPlaneConfig {
+            distance_threshold: 0.05,
+            max_iterations: 500,
+            min_inliers: 10,
+            seed: 17,
+        },
+        cluster: EuclideanClusterConfig {
+            cluster_tolerance: 0.3,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+        },
+        icp: None,
+        ..MvpPipelineConfig::default()
+    }
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_composite_xyzirgb_pcd_pipeline_roundtrip() {
+    use spatialrust::{
+        HasIntensity, HasPositions3, MvpPipeline, PcdWriteFormat, PointBuffer, read_pcd, write_pcd,
+    };
+    use std::io::Cursor;
+
+    let cloud = sample_xyzirgb_plane_cloud();
+    let mut input_bytes = Vec::new();
+    write_pcd(&mut input_bytes, &cloud, PcdWriteFormat::Ascii).unwrap();
+    let loaded = read_pcd(&mut Cursor::new(input_bytes)).unwrap();
+
+    assert!(loaded.intensity().is_ok());
+    assert!(loaded.field("r").is_ok());
+
+    let result = MvpPipeline::new(mvp_composite_base_config())
+        .run(&loaded)
+        .unwrap();
+
+    assert!(!result.downsampled.is_empty());
+    assert!(result.downsampled.intensity().is_ok());
+    assert!(result.downsampled.field("r").is_ok());
+    assert!(result.with_normals.field("normal_x").is_ok());
+    assert!(result.plane.inlier_count >= 10);
+    assert!(result.output.field("label").is_ok());
+
+    let PointBuffer::U8(down_r) = result.downsampled.field("r").unwrap() else {
+        panic!("expected u8 rgb channel");
+    };
+    assert!(down_r.iter().all(|value| *value > 0));
+
+    let mut output_bytes = Vec::new();
+    write_pcd(&mut output_bytes, &result.output, PcdWriteFormat::Binary).unwrap();
+    let saved = read_pcd(&mut Cursor::new(output_bytes)).unwrap();
+    assert_eq!(saved.len(), result.output.len());
+    let (x, y, z) = saved.positions3().unwrap();
+    assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_composite_xyzirgb_las_pipeline_roundtrip() {
+    use spatialrust::{
+        FieldSemantic, HasIntensity, HasPositions3, MvpPipeline, read_point_cloud_file,
+        write_point_cloud_file,
+    };
+
+    let cloud = sample_xyzirgb_plane_cloud();
+    let input_path =
+        std::env::temp_dir().join(format!("spatialrust_mvp_xyzirgb_in_{}.las", std::process::id()));
+    write_point_cloud_file(&input_path, &cloud).unwrap();
+    let loaded = read_point_cloud_file(&input_path).unwrap();
+
+    assert!(loaded.intensity().is_ok());
+    assert!(loaded.schema().find_semantic(FieldSemantic::ColorR).is_some());
+
+    let result = MvpPipeline::new(mvp_composite_base_config())
+        .run(&loaded)
+        .unwrap();
+
+    let output_path =
+        std::env::temp_dir().join(format!("spatialrust_mvp_xyzirgb_out_{}.las", std::process::id()));
+    write_point_cloud_file(&output_path, &result.output).unwrap();
+    let saved = read_point_cloud_file(&output_path).unwrap();
+
+    let _ = std::fs::remove_file(input_path);
+    let _ = std::fs::remove_file(output_path);
+
+    assert_eq!(saved.len(), result.output.len());
+    assert!(saved.schema().find_semantic(FieldSemantic::Label).is_some());
+    assert!(saved.intensity().is_ok());
+    assert!(saved.schema().find_semantic(FieldSemantic::ColorR).is_some());
+    let (x, y, z) = saved.positions3().unwrap();
+    assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+#[test]
+fn mvp_composite_xyzirgb_gpu_voxel_matches_cpu() {
+    use spatialrust::{
+        DeviceKind, ExecutionPolicy, HasIntensity, HasPositions3, MvpPipeline, PointBuffer,
+    };
+
+    let cloud = sample_xyzirgb_plane_cloud();
+    let mut cpu_config = mvp_composite_base_config();
+    cpu_config.voxel_policy = ExecutionPolicy::CpuSingle;
+    let mut gpu_config = mvp_composite_base_config();
+    gpu_config.voxel_policy = ExecutionPolicy::Gpu(DeviceKind::Wgpu);
+
+    let cpu = MvpPipeline::new(cpu_config).run(&cloud).unwrap();
+    let gpu = MvpPipeline::new(gpu_config).run(&cloud).unwrap();
+
+    assert_eq!(cpu.downsampled.len(), gpu.downsampled.len());
+    let (cpu_x, cpu_y, cpu_z) = cpu.downsampled.positions3().unwrap();
+    let (gpu_x, gpu_y, gpu_z) = gpu.downsampled.positions3().unwrap();
+    for index in 0..cpu.downsampled.len() {
+        assert!((cpu_x[index] - gpu_x[index]).abs() < 1e-4);
+        assert!((cpu_y[index] - gpu_y[index]).abs() < 1e-4);
+        assert!((cpu_z[index] - gpu_z[index]).abs() < 1e-4);
+    }
+
+    let cpu_i = cpu.downsampled.intensity().unwrap();
+    let gpu_i = gpu.downsampled.intensity().unwrap();
+    for (left, right) in cpu_i.iter().zip(gpu_i) {
+        assert!((left - right).abs() < 1e-4);
+    }
+
+    for channel in ["r", "g", "b"] {
+        let PointBuffer::U8(cpu_values) = cpu.downsampled.field(channel).unwrap() else {
+            panic!("expected u8 channel");
+        };
+        let PointBuffer::U8(gpu_values) = gpu.downsampled.field(channel).unwrap() else {
+            panic!("expected u8 channel");
+        };
+        assert_eq!(cpu_values, gpu_values);
+    }
+}
+
+#[cfg(feature = "mvp")]
+fn sample_large_scale_xyzi_grid(point_count: usize) -> spatialrust::PointCloud {
+    use spatialrust::{PointCloudBuilder, StandardSchemas};
+
+    let side = (point_count as f64).sqrt().ceil() as usize;
+    let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzi());
+    for index in 0..point_count {
+        let x = (index % side) as f32 * 0.1;
+        let y = (index / side) as f32 * 0.1;
+        let intensity = (index % 256) as f32;
+        builder.push_point([x, y, 0.0, intensity]).unwrap();
+    }
+    for x in 0..10 {
+        for y in 0..10 {
+            builder
+                .push_point([
+                    side as f32 * 0.1 + 10.0 + x as f32 * 0.01,
+                    y as f32 * 0.01,
+                    0.5,
+                    128.0,
+                ])
+                .unwrap();
+        }
+    }
+    builder.build().unwrap()
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_large_scale_xyzi_pipeline_smoke() {
+    use spatialrust::{
+        EuclideanClusterConfig, HasIntensity, HasPositions3, MvpPipeline, MvpPipelineConfig,
+        NormalEstimationConfig, RansacPlaneConfig, Vec3,
+    };
+
+    let cloud = sample_large_scale_xyzi_grid(100_000);
+    let result = MvpPipeline::new(MvpPipelineConfig {
+        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(4.0).without_gpu_min_points(),
+        normals: NormalEstimationConfig {
+            k_neighbors: 16,
+            min_neighbors: 3,
+            viewpoint: Some(Vec3::new(0.0, 0.0, 100.0)),
+            ..NormalEstimationConfig::default()
+        },
+        plane: RansacPlaneConfig {
+            distance_threshold: 0.2,
+            max_iterations: 200,
+            min_inliers: 10,
+            seed: 42,
+        },
+        cluster: EuclideanClusterConfig {
+            cluster_tolerance: 1.0,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+        },
+        icp: None,
+        ..MvpPipelineConfig::default()
+    })
+    .run(&cloud)
+    .expect("large-scale xyzi MVP smoke");
+
+    assert!(result.downsampled.len() < cloud.len());
+    assert!(result.downsampled.intensity().is_ok());
+    assert!(result.plane.inlier_count >= 10);
+    assert!(result.output.field("label").is_ok());
+    let (x, y, z) = result.output.positions3().unwrap();
+    assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
+}
+
+#[cfg(feature = "mvp")]
 #[test]
 fn mvp_approximate_voxel_mode_pipeline() {
     use spatialrust::{

@@ -39,5 +39,5 @@
 
 ## 次アクション
 
-1. 実スキャン規模（数百万点）end-to-end
-2. 複合スキーマ MVP 検証
+1. 実 LAS/COPC ファイル end-to-end
+2. xyzinormal approximate-first GPU 改善 or スキーマ別 Auto 閾値
