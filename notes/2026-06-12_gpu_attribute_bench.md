@@ -27,9 +27,9 @@
 ## 未確認/要確認項目
 
 - RGB+intensity+normals 複合スキーマ（実 LAS 相当）での end-to-end
-- xyzinormal approximate-first GPU ボトルネック（Epic 38: 全規模 CPU 優位）
+- xyzinormal approximate-first GPU ボトルネック（Epic 38: 全規模 CPU 優位、Epic 42: Auto 閾値で回避）
 
 ## 次アクション
 
-1. 実スキャン規模（数百万点）end-to-end
-2. 複合スキーマ MVP 検証
+1. approximate-first xyzinormal GPU kernel/readback 最適化
+2. 外部実スキャン COPC CLI `--resolution` ベンチ

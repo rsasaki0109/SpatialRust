@@ -44,5 +44,5 @@
 
 ## 次アクション
 
-1. xyzinormal approximate-first GPU 改善 or スキーマ別 Auto 閾値
+1. approximate-first xyzinormal GPU kernel/readback 最適化
 2. 外部実スキャン COPC CLI `--resolution` ベンチ

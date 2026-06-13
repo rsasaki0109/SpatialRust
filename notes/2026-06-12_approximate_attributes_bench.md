@@ -41,10 +41,9 @@
 ## 未確認/要確認項目
 
 - xyzinormal approximate-first GPU ボトルネック（gather ch 数 vs readback サイズ）のプロファイル
-- スキーマ別 `gpu_min_points` / Auto ポリシー拡張
 - 実スキャン LAS（xyzi+rgb 複合）での end-to-end
 
 ## 次アクション
 
-1. xyzinormal approximate-first GPU 改善 or スキーマ別 Auto 閾値
+1. approximate-first xyzinormal GPU kernel/readback 最適化
 2. 外部実スキャン COPC CLI `--resolution` ベンチ

@@ -40,6 +40,11 @@ pub const DEFAULT_GPU_MIN_POINTS: usize = 500_000;
 /// until a crossover is measured above that range.
 pub const DEFAULT_GPU_MIN_POINTS_APPROXIMATE: usize = 2_000_000;
 
+/// Non-position F32 attribute count at/above which approximate-first Auto never picks GPU.
+///
+/// Epic 38: `point_xyzinormal` approximate-first GPU loses at all measured scales (2M included).
+pub const APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS: usize = 4;
+
 /// Configuration for voxel-grid downsampling.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct VoxelGridDownsampleConfig {
@@ -55,6 +60,10 @@ pub struct VoxelGridDownsampleConfig {
     ///
     /// `None` always uses GPU when requested. Defaults follow local bench results:
     /// centroid ~500k, approximate-first ~2M (1M end-to-end still CPU-favored).
+    ///
+    /// Approximate-first Auto also consults the input schema: clouds with
+    /// [`APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS`] or more non-position F32 fields
+    /// (e.g. `point_xyzinormal`) never auto-select GPU.
     pub gpu_min_points: Option<usize>,
 }
 
@@ -88,6 +97,22 @@ impl VoxelGridDownsampleConfig {
     pub const fn without_gpu_min_points(mut self) -> Self {
         self.gpu_min_points = None;
         self
+    }
+
+    /// Returns the point-count threshold used by [`ExecutionPolicy::Auto`].
+    ///
+    /// Approximate-first mode raises the effective threshold to [`usize::MAX`] when the
+    /// schema carries many F32 attributes (Epic 38 xyzinormal approximate-first regression).
+    #[must_use]
+    pub fn effective_gpu_min_points(&self, schema: &PointSchema) -> Option<usize> {
+        let base = self.gpu_min_points?;
+        if self.mode != VoxelAggregationMode::ApproximateFirst {
+            return Some(base);
+        }
+        if count_non_position_f32_fields(schema) >= APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS {
+            return Some(usize::MAX);
+        }
+        Some(base)
     }
 }
 
@@ -244,7 +269,7 @@ impl VoxelGridDownsample {
     fn should_use_gpu(&self, input: &PointCloud) -> bool {
         #[cfg(feature = "filter-voxel-gpu")]
         {
-            match self.config.gpu_min_points {
+            match self.config.effective_gpu_min_points(input.schema()) {
                 Some(min_points) => input.len() >= min_points,
                 None => true,
             }
@@ -255,6 +280,19 @@ impl VoxelGridDownsample {
             false
         }
     }
+}
+
+fn count_non_position_f32_fields(schema: &PointSchema) -> usize {
+    schema
+        .fields()
+        .iter()
+        .filter(|field| {
+            !matches!(
+                field.semantic,
+                FieldSemantic::PositionX | FieldSemantic::PositionY | FieldSemantic::PositionZ
+            ) && matches!(field.dtype, DType::F32 | DType::F16)
+        })
+        .count()
 }
 
 #[derive(Clone, Debug, Default)]
@@ -968,5 +1006,64 @@ mod tests {
             approximate.gpu_min_points,
             Some(DEFAULT_GPU_MIN_POINTS_APPROXIMATE)
         );
+    }
+
+    #[test]
+    fn effective_gpu_min_points_blocks_heavy_approximate_schema() {
+        use super::{
+            APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS, DEFAULT_GPU_MIN_POINTS_APPROXIMATE,
+            VoxelGridDownsampleConfig,
+        };
+
+        let approximate = VoxelGridDownsampleConfig::approximate(1.0);
+        assert_eq!(
+            approximate.effective_gpu_min_points(&StandardSchemas::point_xyz()),
+            Some(DEFAULT_GPU_MIN_POINTS_APPROXIMATE)
+        );
+        assert_eq!(
+            approximate.effective_gpu_min_points(&StandardSchemas::point_xyzinormal()),
+            Some(usize::MAX)
+        );
+        assert!(
+            super::count_non_position_f32_fields(&StandardSchemas::point_xyzinormal())
+                >= APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS
+        );
+    }
+
+    #[cfg(feature = "filter-voxel-gpu")]
+    #[test]
+    fn auto_approximate_first_uses_cpu_for_xyzinormal() {
+        use spatialrust_core::ExecutionPolicy;
+
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzinormal());
+        for index in 0..128 {
+            builder
+                .push_point([
+                    (index % 16) as f32 * 0.1,
+                    (index / 16) as f32 * 0.1,
+                    0.0,
+                    0.5,
+                    0.0,
+                    0.0,
+                    1.0,
+                ])
+                .unwrap();
+        }
+        let input = builder.build().unwrap();
+
+        let mut config = VoxelGridDownsampleConfig::approximate(0.5);
+        config.gpu_min_points = Some(10);
+        let filter = VoxelGridDownsample::new(config);
+        let cpu = filter.filter(&input).unwrap();
+        let auto = filter
+            .filter_with_policy(&input, ExecutionPolicy::Auto)
+            .unwrap();
+
+        assert_eq!(cpu.len(), auto.len());
+        let (cpu_x, _, _) = cpu.positions3().unwrap();
+        let (auto_x, _, _) = auto.positions3().unwrap();
+        for index in 0..cpu.len() {
+            assert!((cpu_x[index] - auto_x[index]).abs() < 1e-5);
+        }
     }
 }
