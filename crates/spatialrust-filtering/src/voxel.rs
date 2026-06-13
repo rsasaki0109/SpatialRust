@@ -791,7 +791,7 @@ fn push_field(buffers: &mut PointBufferSet, field: &PointField, value: f32) -> S
 mod tests {
     use super::{VoxelGridDownsample, VoxelGridDownsampleConfig};
     use crate::PointCloudFilter;
-    use spatialrust_core::{HasIntensity, HasPositions3, PointCloudBuilder, StandardSchemas};
+    use spatialrust_core::{HasIntensity, HasNormals3, HasPositions3, PointCloudBuilder, StandardSchemas};
 
     #[test]
     fn centroid_downsample_reduces_points() {
@@ -944,6 +944,50 @@ mod tests {
             assert!((cpu_x[index] - gpu_x[index]).abs() < 1e-5);
         }
         assert_eq!(cpu.intensity().unwrap(), gpu.intensity().unwrap());
+    }
+
+    #[cfg(feature = "filter-voxel-gpu")]
+    #[test]
+    fn gpu_approximate_first_xyzinormal_matches_cpu_downsample() {
+        use spatialrust_core::ExecutionPolicy;
+
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzinormal());
+        builder
+            .push_point([0.0, 0.0, 0.0, 0.2, 0.0, 0.0, 1.0])
+            .unwrap();
+        builder
+            .push_point([0.1, 0.0, 0.0, 0.9, 0.1, 0.0, 1.0])
+            .unwrap();
+        builder
+            .push_point([1.0, 0.0, 0.0, 10.0, 0.0, 1.0, 0.0])
+            .unwrap();
+        builder
+            .push_point([1.1, 0.0, 0.0, 20.0, 0.0, 0.0, 1.0])
+            .unwrap();
+        let input = builder.build().unwrap();
+
+        let filter = VoxelGridDownsample::new(
+            VoxelGridDownsampleConfig::approximate(0.5).without_gpu_min_points(),
+        );
+        let cpu = filter.filter(&input).unwrap();
+        let gpu = filter
+            .filter_with_policy(&input, ExecutionPolicy::Gpu(spatialrust_core::DeviceKind::Wgpu))
+            .unwrap();
+
+        assert_eq!(cpu.len(), gpu.len());
+        let (cpu_x, cpu_y, cpu_z) = cpu.positions3().unwrap();
+        let (gpu_x, gpu_y, gpu_z) = gpu.positions3().unwrap();
+        for index in 0..cpu.len() {
+            assert!((cpu_x[index] - gpu_x[index]).abs() < 1e-5);
+            assert!((cpu_y[index] - gpu_y[index]).abs() < 1e-5);
+            assert!((cpu_z[index] - gpu_z[index]).abs() < 1e-5);
+        }
+        assert_eq!(cpu.intensity().unwrap(), gpu.intensity().unwrap());
+        let (cpu_nx, cpu_ny, cpu_nz) = cpu.normals3().unwrap();
+        let (gpu_nx, gpu_ny, gpu_nz) = gpu.normals3().unwrap();
+        assert_eq!(cpu_nx, gpu_nx);
+        assert_eq!(cpu_ny, gpu_ny);
+        assert_eq!(cpu_nz, gpu_nz);
     }
 
     #[cfg(feature = "filter-voxel-gpu")]

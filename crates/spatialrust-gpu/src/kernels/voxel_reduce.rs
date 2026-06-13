@@ -393,7 +393,7 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
     u8_attribute_channels: &[&[u8]],
     segments: &GpuVoxelSegments,
 ) -> SpatialResult<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<Vec<f32>>, Vec<Vec<u8>>)> {
-    use crate::kernels::voxel_gather::record_voxel_gather_f32_pass;
+    use crate::kernels::voxel_gather::record_gather_f32_attribute_channels_to_staging;
     use crate::kernels::voxel_gather::record_voxel_gather_u8_pass;
 
     let attribute_count = attribute_channels.len();
@@ -492,36 +492,14 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
         channel_len as u64,
     );
 
-    for (attribute_index, channel) in attribute_channels.iter().enumerate() {
-        let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("voxel-gather-xyz-attrs-values"),
-            contents: bytemuck::cast_slice(channel),
-            usage: wgpu::BufferUsages::STORAGE,
-        });
-        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-attrs-output"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        record_voxel_gather_f32_pass(
-            &mut encoder,
-            runtime,
-            &values_buffer,
-            segments.point_indices_buffer(),
-            segments.cell_starts_buffer(),
-            cell_count,
-            segments.point_count(),
-            &output_buffer,
-        )?;
-        encoder.copy_buffer_to_buffer(
-            &output_buffer,
-            0,
-            &staging_buffer,
-            (channel_len * (3 + attribute_index)) as u64,
-            channel_len as u64,
-        );
-    }
+    record_gather_f32_attribute_channels_to_staging(
+        &mut encoder,
+        runtime,
+        attribute_channels,
+        segments,
+        &staging_buffer,
+        channel_len as u64,
+    )?;
 
     let u8_region_offset = (channel_len * f32_channel_count) as u64;
     for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {

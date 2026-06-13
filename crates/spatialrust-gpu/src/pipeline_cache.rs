@@ -124,16 +124,22 @@ pub struct VoxelGatherPipelines {
     pub multi4_bind_group_layout: Option<wgpu::BindGroupLayout>,
     /// Up-to-4-channel gather pipeline.
     pub multi4_pipeline: Option<wgpu::ComputePipeline>,
+    /// Bind group layout for fused xyz + 4 f32 attribute gather.
+    pub xyz_attrs4_bind_group_layout: Option<wgpu::BindGroupLayout>,
+    /// Fused xyz + 4 f32 attribute gather pipeline.
+    pub xyz_attrs4_pipeline: Option<wgpu::ComputePipeline>,
     /// Maximum channels supported by the cached multi gather pipelines.
     pub multi_max_channels: u32,
     _pipeline_layout: wgpu::PipelineLayout,
     _xyz_pipeline_layout: wgpu::PipelineLayout,
     _multi_pipeline_layout: wgpu::PipelineLayout,
     _multi4_pipeline_layout: Option<wgpu::PipelineLayout>,
+    _xyz_attrs4_pipeline_layout: Option<wgpu::PipelineLayout>,
     _shader: wgpu::ShaderModule,
     _xyz_shader: wgpu::ShaderModule,
     _multi_shader: wgpu::ShaderModule,
     _multi4_shader: Option<wgpu::ShaderModule>,
+    _xyz_attrs4_shader: Option<wgpu::ShaderModule>,
     _u8_pipeline_layout: wgpu::PipelineLayout,
     _u8_shader: wgpu::ShaderModule,
 }
@@ -662,6 +668,53 @@ impl VoxelGatherPipelines {
                 (None, None, None, None)
             };
 
+        let (xyz_attrs4_bind_group_layout, xyz_attrs4_pipeline_layout, xyz_attrs4_pipeline, xyz_attrs4_shader) =
+            if storage_limit >= crate::runtime::MULTI_GATHER4_STORAGE_BUFFERS {
+                let xyz_attrs4_bind_group_layout =
+                    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                        label: Some("voxel-gather-xyz-attrs4-layout"),
+                        entries: &[
+                            uniform_entry(0),
+                            storage_entry(1, true),
+                            storage_entry(2, true),
+                            storage_entry(3, true),
+                            storage_entry(4, true),
+                            storage_entry(5, true),
+                            storage_entry(6, true),
+                            storage_entry(7, true),
+                            storage_entry(8, true),
+                            storage_entry(9, true),
+                            storage_entry(10, false),
+                        ],
+                    });
+                let xyz_attrs4_shader = load_shader(
+                    device,
+                    "voxel-gather-xyz-attrs4-shader",
+                    include_str!("shaders/voxel_gather_xyz_attrs4.wgsl"),
+                );
+                let xyz_attrs4_pipeline_layout =
+                    device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                        label: Some("voxel-gather-xyz-attrs4-pipeline-layout"),
+                        bind_group_layouts: &[&xyz_attrs4_bind_group_layout],
+                        push_constant_ranges: &[],
+                    });
+                let xyz_attrs4_pipeline = build_compute_pipeline(
+                    device,
+                    &xyz_attrs4_pipeline_layout,
+                    &xyz_attrs4_shader,
+                    "voxel-gather-xyz-attrs4-pipeline",
+                    "main",
+                );
+                (
+                    Some(xyz_attrs4_bind_group_layout),
+                    Some(xyz_attrs4_pipeline_layout),
+                    Some(xyz_attrs4_pipeline),
+                    Some(xyz_attrs4_shader),
+                )
+            } else {
+                (None, None, None, None)
+            };
+
         Self {
             bind_group_layout,
             pipeline,
@@ -673,17 +726,21 @@ impl VoxelGatherPipelines {
             multi_pipeline,
             multi4_bind_group_layout,
             multi4_pipeline,
+            xyz_attrs4_bind_group_layout,
+            xyz_attrs4_pipeline,
             multi_max_channels,
             _pipeline_layout: pipeline_layout,
             _xyz_pipeline_layout: xyz_pipeline_layout,
             _u8_pipeline_layout: u8_pipeline_layout,
             _multi_pipeline_layout: multi_pipeline_layout,
             _multi4_pipeline_layout: multi4_pipeline_layout,
+            _xyz_attrs4_pipeline_layout: xyz_attrs4_pipeline_layout,
             _shader: shader,
             _xyz_shader: xyz_shader,
             _u8_shader: u8_shader,
             _multi_shader: multi_shader,
             _multi4_shader: multi4_shader,
+            _xyz_attrs4_shader: xyz_attrs4_shader,
         }
     }
 }

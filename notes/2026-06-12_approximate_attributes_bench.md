@@ -45,5 +45,5 @@
 
 ## 次アクション
 
-1. approximate-first xyzinormal GPU kernel/readback 最適化
-2. 外部実スキャン COPC で bounds + resolution 曲線の再現
+1. 外部実スキャン COPC で bounds + resolution 曲線の再現
+2. GPU attribute buffer キャッシュ / pinned upload（Epic 45 参照）
