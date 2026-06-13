@@ -41,5 +41,5 @@
 
 ## 次アクション
 
-1. 実 LAS/COPC ファイル end-to-end
-2. xyzinormal approximate-first GPU 改善 or スキーマ別 Auto 閾値
+1. xyzinormal approximate-first GPU 改善 or スキーマ別 Auto 閾値
+2. 外部実スキャン COPC CLI `--resolution` ベンチ

@@ -999,6 +999,198 @@ fn mvp_large_scale_xyzi_pipeline_smoke() {
 }
 
 #[cfg(feature = "mvp")]
+fn sample_scan_like_xyzi(point_count: usize) -> spatialrust::PointCloud {
+    use spatialrust::{
+        DType, FieldSemantic, PointCloudBuilder, PointField, StandardSchemas,
+    };
+
+    let schema = StandardSchemas::point_xyzi().with_field(PointField::scalar(
+        "classification",
+        FieldSemantic::Label,
+        DType::U8,
+    ));
+    let mut builder = PointCloudBuilder::new(schema);
+    for index in 0..point_count {
+        let t = index as f32;
+        let x = (t * 0.013).fract() * 80.0;
+        let y = ((index % 97) as f32) * 0.41;
+        let z = ((index % 53) as f32) * 0.023;
+        let intensity = (index % 256) as f32;
+        let classification = if z < 0.5 { 2.0 } else { 1.0 };
+        builder
+            .push_point([x, y, z, intensity, classification])
+            .unwrap();
+    }
+    for x in 0..10 {
+        for y in 0..10 {
+            builder
+                .push_point([90.0 + x as f32 * 0.02, y as f32 * 0.02, 2.5, 200.0, 6.0])
+                .unwrap();
+        }
+    }
+    builder.build().unwrap()
+}
+
+#[cfg(feature = "mvp")]
+fn mvp_scan_like_base_config() -> spatialrust::MvpPipelineConfig {
+    use spatialrust::{
+        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig,
+        Vec3,
+    };
+
+    MvpPipelineConfig {
+        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(4.0).without_gpu_min_points(),
+        voxel_policy: spatialrust::ExecutionPolicy::CpuSingle,
+        normals: NormalEstimationConfig {
+            k_neighbors: 16,
+            min_neighbors: 3,
+            viewpoint: Some(Vec3::new(0.0, 0.0, 100.0)),
+            ..NormalEstimationConfig::default()
+        },
+        plane: RansacPlaneConfig {
+            distance_threshold: 0.2,
+            max_iterations: 200,
+            min_inliers: 10,
+            seed: 42,
+        },
+        cluster: EuclideanClusterConfig {
+            cluster_tolerance: 1.0,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+        },
+        icp: None,
+        ..MvpPipelineConfig::default()
+    }
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_scan_like_las_file_pipeline() {
+    use spatialrust::{
+        FieldSemantic, HasIntensity, HasPositions3, MvpPipeline, read_point_cloud_file,
+        write_point_cloud_file,
+    };
+
+    const POINT_COUNT: usize = 50_000;
+    let cloud = sample_scan_like_xyzi(POINT_COUNT);
+    let input_path =
+        std::env::temp_dir().join(format!("spatialrust_mvp_scan_las_in_{}.las", std::process::id()));
+    write_point_cloud_file(&input_path, &cloud).unwrap();
+    let loaded = read_point_cloud_file(&input_path).unwrap();
+
+    assert_eq!(loaded.len(), cloud.len());
+    assert!(loaded.intensity().is_ok());
+    assert!(loaded.schema().find_semantic(FieldSemantic::Label).is_some());
+
+    let result = MvpPipeline::new(mvp_scan_like_base_config())
+        .run(&loaded)
+        .expect("scan-like LAS MVP");
+
+    let output_path =
+        std::env::temp_dir().join(format!("spatialrust_mvp_scan_las_out_{}.las", std::process::id()));
+    write_point_cloud_file(&output_path, &result.output).unwrap();
+    let saved = read_point_cloud_file(&output_path).unwrap();
+
+    let _ = std::fs::remove_file(input_path);
+    let _ = std::fs::remove_file(output_path);
+
+    assert!(result.downsampled.len() < loaded.len());
+    assert!(result.plane.inlier_count >= 10);
+    assert!(result.output.field("label").is_ok());
+    assert!(saved.schema().find_semantic(FieldSemantic::Label).is_some());
+    let (x, y, z) = saved.positions3().unwrap();
+    assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_scan_like_copc_file_pipeline() {
+    use spatialrust::{
+        FieldSemantic, HasIntensity, HasPositions3, MvpPipeline, read_copc_file, write_copc_file_with_params,
+        CopcWriterParams,
+    };
+
+    const POINT_COUNT: usize = 50_000;
+    let cloud = sample_scan_like_xyzi(POINT_COUNT);
+    let path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_scan_copc_{}.copc.laz",
+        std::process::id()
+    ));
+    write_copc_file_with_params(
+        &path,
+        &cloud,
+        &CopcWriterParams {
+            max_points_per_node: 512,
+            max_depth: 10,
+        },
+    )
+    .unwrap();
+
+    let loaded = read_copc_file(&path).unwrap();
+    assert_eq!(loaded.len(), cloud.len());
+    assert!(loaded.intensity().is_ok());
+    assert!(loaded.schema().find_semantic(FieldSemantic::Label).is_some());
+
+    let result = MvpPipeline::new(mvp_scan_like_base_config())
+        .run(&loaded)
+        .expect("scan-like COPC MVP");
+
+    let _ = std::fs::remove_file(&path);
+
+    assert!(result.downsampled.len() < loaded.len());
+    assert!(result.plane.inlier_count >= 10);
+    assert!(result.output.field("label").is_ok());
+    let (x, y, z) = result.output.positions3().unwrap();
+    assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_scan_like_copc_resolution_file_pipeline() {
+    use spatialrust::{
+        CopcQuery, HasIntensity, MvpPipeline, read_copc_file, read_copc_file_info,
+        read_copc_file_with_query, write_copc_file_with_params, CopcWriterParams,
+    };
+
+    const POINT_COUNT: usize = 50_000;
+    let cloud = sample_scan_like_xyzi(POINT_COUNT);
+    let path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_scan_copc_res_{}.copc.laz",
+        std::process::id()
+    ));
+    write_copc_file_with_params(
+        &path,
+        &cloud,
+        &CopcWriterParams {
+            max_points_per_node: 512,
+            max_depth: 10,
+        },
+    )
+    .unwrap();
+
+    let info = read_copc_file_info(&path).unwrap();
+    let full = read_copc_file(&path).unwrap();
+    let loaded = read_copc_file_with_query(
+        &path,
+        &CopcQuery::with_resolution(info.root_bounds, info.spacing * 4.0),
+    )
+    .unwrap();
+
+    assert_eq!(full.len(), cloud.len());
+    assert!(loaded.len() < full.len());
+    assert!(loaded.intensity().is_ok());
+
+    let result = MvpPipeline::new(mvp_scan_like_base_config())
+        .run(&loaded)
+        .expect("scan-like COPC resolution MVP");
+
+    let _ = std::fs::remove_file(&path);
+
+    assert!(!result.downsampled.is_empty());
+    assert!(result.plane.inlier_count >= 10);
+}
+
+#[cfg(feature = "mvp")]
 #[test]
 fn mvp_approximate_voxel_mode_pipeline() {
     use spatialrust::{
