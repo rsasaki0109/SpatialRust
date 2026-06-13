@@ -20,7 +20,7 @@
 | 新 API | `write_copc_file_with_params` / `CopcWriterParams` 公開 |
 | IO テスト | `multi_resolution_copc_resolution_query_reduces_point_count` |
 | MVP テスト | `mvp_copc_resolution_query_pipeline`（7k 多階層 fixture） |
-| CLI テスト | `mvp_cli_copc_resolution_reduces_input_points` |
+| CLI テスト | `mvp_cli_copc_resolution_reduces_input_points`（7k）、**`mvp_cli_scan_like_copc_resolution_reduces_input_points`（50k scan-like、Epic 43）**、**`mvp_cli_scan_like_copc_bounds_resolution_reduces_input_points`（Epic 44）** |
 | フィクスチャ | 31×29×23 格子 7,000 点、`CopcWriterParams { max_points_per_node: 96, max_depth: 8 }` |
 
 ### 主な変更ファイル
@@ -34,10 +34,9 @@
 ## 未確認/要確認項目
 
 - 実スキャン由来 COPC（LAS 変換・本番 octree）での `--resolution` 効果
-- `--bounds` と `--resolution` 併用時の end-to-end レイテンシ
 - HTTP COPC (`read_copc_url_with_query`) での同等 LOD 挙動
 
 ## 次アクション
 
 1. approximate-first xyzinormal GPU kernel/readback 最適化
-2. 外部実スキャン COPC CLI `--resolution` ベンチ
+2. 外部実スキャン COPC で bounds + resolution 曲線の再現（Epic 44: 合成 50k で併用 ~0.27 ms 確認済み）

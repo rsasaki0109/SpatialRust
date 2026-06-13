@@ -32,4 +32,4 @@
 ## 次アクション
 
 1. approximate-first xyzinormal GPU kernel/readback 最適化
-2. 外部実スキャン COPC CLI `--resolution` ベンチ
+2. 外部実スキャン COPC で bounds + resolution 曲線の再現

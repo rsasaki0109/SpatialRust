@@ -624,6 +624,280 @@ fn parse_cli_input_points(stderr: &[u8]) -> usize {
 }
 
 #[cfg(feature = "mvp")]
+fn parse_cli_elapsed_ms(stderr: &[u8]) -> f64 {
+    let text = String::from_utf8_lossy(stderr);
+    let value = text
+        .lines()
+        .find_map(|line| line.strip_prefix("elapsed: "))
+        .expect("CLI stderr should report elapsed time");
+    parse_duration_debug_ms(value.trim())
+}
+
+#[cfg(feature = "mvp")]
+fn parse_duration_debug_ms(value: &str) -> f64 {
+    if let Some(ms) = value.strip_suffix("ms") {
+        return ms.parse().expect("elapsed milliseconds");
+    }
+    if let Some(us) = value.strip_suffix("µs") {
+        return us.parse::<f64>().expect("elapsed microseconds") / 1_000.0;
+    }
+    if let Some(us) = value.strip_suffix("us") {
+        return us.parse::<f64>().expect("elapsed microseconds") / 1_000.0;
+    }
+    if let Some(s) = value.strip_suffix('s') {
+        return s.parse::<f64>().expect("elapsed seconds") * 1_000.0;
+    }
+    panic!("unsupported elapsed format `{value}`");
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_cli_scan_like_copc_resolution_reduces_input_points() {
+    use std::process::Command;
+
+    use spatialrust::{
+        read_copc_file, read_copc_file_info, read_copc_file_with_query, write_copc_file_with_params,
+        CopcQuery, CopcWriterParams,
+    };
+
+    const POINT_COUNT: usize = 50_000;
+    let cloud = sample_scan_like_xyzi(POINT_COUNT);
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_scan_copc_in_{}.copc.laz",
+        std::process::id()
+    ));
+    let coarse_output = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_scan_copc_coarse_{}.copc.laz",
+        std::process::id()
+    ));
+    let full_output = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_scan_copc_full_{}.copc.laz",
+        std::process::id()
+    ));
+    write_copc_file_with_params(
+        &input_path,
+        &cloud,
+        &CopcWriterParams {
+            max_points_per_node: 512,
+            max_depth: 10,
+        },
+    )
+    .unwrap();
+
+    let info = read_copc_file_info(&input_path).unwrap();
+    let full_count = read_copc_file(&input_path).unwrap().len();
+    let coarse_resolution = info.spacing * 4.0;
+    let coarse_query_count = read_copc_file_with_query(
+        &input_path,
+        &CopcQuery::with_resolution(info.root_bounds, coarse_resolution),
+    )
+    .unwrap()
+    .len();
+    let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+    let cli_args = [
+        "--leaf-size",
+        "4.0",
+        "--voxel-policy",
+        "cpu",
+    ];
+
+    let coarse = Command::new(bin)
+        .args(cli_args)
+        .args([
+            "--resolution",
+            &format!("{coarse_resolution}"),
+            input_path.to_str().unwrap(),
+            coarse_output.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run coarse resolution CLI");
+    assert!(
+        coarse.status.success(),
+        "coarse CLI failed: {}",
+        String::from_utf8_lossy(&coarse.stderr)
+    );
+
+    let full = Command::new(bin)
+        .args(cli_args)
+        .args([
+            input_path.to_str().unwrap(),
+            full_output.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run full detail CLI");
+    assert!(
+        full.status.success(),
+        "full CLI failed: {}",
+        String::from_utf8_lossy(&full.stderr)
+    );
+
+    let coarse_loaded = parse_cli_input_points(&coarse.stderr);
+    let full_loaded = parse_cli_input_points(&full.stderr);
+    assert_eq!(full_loaded, full_count);
+    assert_eq!(coarse_loaded, coarse_query_count);
+    assert!(coarse_loaded < full_loaded);
+    assert!(
+        coarse_loaded * 10 < full_loaded,
+        "expected >90% reduction at spacing×4, got {coarse_loaded}/{full_loaded}"
+    );
+
+    let coarse_elapsed_ms = parse_cli_elapsed_ms(&coarse.stderr);
+    let full_elapsed_ms = parse_cli_elapsed_ms(&full.stderr);
+    assert!(
+        coarse_elapsed_ms < full_elapsed_ms,
+        "coarse CLI should be faster: {coarse_elapsed_ms}ms vs {full_elapsed_ms}ms"
+    );
+
+    let _ = std::fs::remove_file(input_path);
+    let _ = std::fs::remove_file(coarse_output);
+    let _ = std::fs::remove_file(full_output);
+}
+
+#[cfg(feature = "mvp")]
+fn write_scan_like_copc_fixture(
+    path: &std::path::Path,
+    point_count: usize,
+) -> spatialrust::PointCloud {
+    use spatialrust::{write_copc_file_with_params, CopcWriterParams};
+
+    let cloud = sample_scan_like_xyzi(point_count);
+    write_copc_file_with_params(
+        path,
+        &cloud,
+        &CopcWriterParams {
+            max_points_per_node: 512,
+            max_depth: 10,
+        },
+    )
+    .unwrap();
+    cloud
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_cli_scan_like_copc_bounds_resolution_reduces_input_points() {
+    use std::process::Command;
+
+    use spatialrust::{
+        read_copc_file, read_copc_file_info, read_copc_file_with_query, CopcBounds, CopcQuery,
+    };
+
+    const POINT_COUNT: usize = 50_000;
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_scan_bounds_res_in_{}.copc.laz",
+        std::process::id()
+    ));
+    write_scan_like_copc_fixture(&input_path, POINT_COUNT);
+
+    let info = read_copc_file_info(&input_path).unwrap();
+    let full_count = read_copc_file(&input_path).unwrap().len();
+    let roi_bounds = CopcBounds::from_ranges((0.0, 40.0), (0.0, 20.0), (-0.01, 0.5));
+    let coarse_resolution = info.spacing * 4.0;
+    let bounds_only_count = read_copc_file_with_query(
+        &input_path,
+        &CopcQuery::bounds(roi_bounds),
+    )
+    .unwrap()
+    .len();
+    let combined_count = read_copc_file_with_query(
+        &input_path,
+        &CopcQuery::with_resolution(roi_bounds, coarse_resolution),
+    )
+    .unwrap()
+    .len();
+
+    assert!(bounds_only_count < full_count);
+    assert!(combined_count <= bounds_only_count);
+    assert!(combined_count < full_count);
+
+    let bounds_arg = "0,0,-0.01,40,20,0.5";
+    let resolution_arg = format!("{coarse_resolution}");
+    let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+    let cli_args = ["--leaf-size", "4.0", "--voxel-policy", "cpu"];
+    let combined_output = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_scan_bounds_res_out_{}.copc.laz",
+        std::process::id()
+    ));
+    let bounds_output = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_scan_bounds_out_{}.copc.laz",
+        std::process::id()
+    ));
+    let full_output = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_scan_bounds_res_full_{}.copc.laz",
+        std::process::id()
+    ));
+
+    let combined = Command::new(bin)
+        .args(cli_args)
+        .args([
+            "--bounds",
+            bounds_arg,
+            "--resolution",
+            &resolution_arg,
+            input_path.to_str().unwrap(),
+            combined_output.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run bounds+resolution CLI");
+    assert!(
+        combined.status.success(),
+        "bounds+resolution CLI failed: {}",
+        String::from_utf8_lossy(&combined.stderr)
+    );
+
+    let bounds_only = Command::new(bin)
+        .args(cli_args)
+        .args([
+            "--bounds",
+            bounds_arg,
+            input_path.to_str().unwrap(),
+            bounds_output.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run bounds-only CLI");
+    assert!(
+        bounds_only.status.success(),
+        "bounds-only CLI failed: {}",
+        String::from_utf8_lossy(&bounds_only.stderr)
+    );
+
+    let full = Command::new(bin)
+        .args(cli_args)
+        .args([
+            input_path.to_str().unwrap(),
+            full_output.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run full detail CLI");
+    assert!(
+        full.status.success(),
+        "full CLI failed: {}",
+        String::from_utf8_lossy(&full.stderr)
+    );
+
+    let combined_loaded = parse_cli_input_points(&combined.stderr);
+    let bounds_loaded = parse_cli_input_points(&bounds_only.stderr);
+    let full_loaded = parse_cli_input_points(&full.stderr);
+    assert_eq!(full_loaded, full_count);
+    assert_eq!(bounds_loaded, bounds_only_count);
+    assert_eq!(combined_loaded, combined_count);
+    assert!(combined_loaded < bounds_loaded);
+    assert!(bounds_loaded < full_loaded);
+
+    let combined_elapsed_ms = parse_cli_elapsed_ms(&combined.stderr);
+    let full_elapsed_ms = parse_cli_elapsed_ms(&full.stderr);
+    assert!(
+        combined_elapsed_ms < full_elapsed_ms,
+        "combined CLI should be faster than full: {combined_elapsed_ms}ms vs {full_elapsed_ms}ms"
+    );
+
+    let _ = std::fs::remove_file(input_path);
+    let _ = std::fs::remove_file(combined_output);
+    let _ = std::fs::remove_file(bounds_output);
+    let _ = std::fs::remove_file(full_output);
+}
+
+#[cfg(feature = "mvp")]
 fn sample_xyzinormal_plane_cloud() -> spatialrust::PointCloud {
     use spatialrust::{PointCloudBuilder, StandardSchemas};
 
