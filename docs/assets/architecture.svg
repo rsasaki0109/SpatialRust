@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" role="img" aria-labelledby="title desc">
+<title id="title">SpatialRust architecture</title>
+<desc id="desc">Dataflow from file load to labeled clusters with composable SpatialRust crates and optional wgpu acceleration.</desc>
+<rect width="960" height="440" fill="#0f172a"/>
+<text x="24" y="36" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">SpatialRust architecture</text>
+<text x="24" y="60" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">One dataflow from file to labeled clusters — composable crates, optional wgpu acceleration</text>
+<rect x="24" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>
+<rect x="24" y="84" width="120" height="6" fill="#38bdf8"/>
+<text x="84" y="128" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">Load</text>
+<text x="84" y="148" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">PCD·PLY·LAS·COPC</text>
+<text x="84" y="164" text-anchor="middle" fill="#64748b" font-family="ui-monospace, monospace" font-size="10">spatialrust-io</text>
+<rect x="156" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>
+<rect x="156" y="84" width="120" height="6" fill="#22c55e"/>
+<text x="216" y="128" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">Voxel</text>
+<text x="216" y="148" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">downsample</text>
+<text x="216" y="164" text-anchor="middle" fill="#64748b" font-family="ui-monospace, monospace" font-size="10">spatialrust-filtering</text>
+<rect x="288" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>
+<rect x="288" y="84" width="120" height="6" fill="#facc15"/>
+<text x="348" y="128" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">Normals</text>
+<text x="348" y="148" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">estimate</text>
+<text x="348" y="164" text-anchor="middle" fill="#64748b" font-family="ui-monospace, monospace" font-size="10">spatialrust-features</text>
+<rect x="420" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>
+<rect x="420" y="84" width="120" height="6" fill="#a855f7"/>
+<text x="480" y="128" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">Plane</text>
+<text x="480" y="148" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">RANSAC</text>
+<text x="480" y="164" text-anchor="middle" fill="#64748b" font-family="ui-monospace, monospace" font-size="10">spatialrust-segmentation</text>
+<rect x="552" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>
+<rect x="552" y="84" width="120" height="6" fill="#a855f7"/>
+<text x="612" y="128" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">Cluster</text>
+<text x="612" y="148" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">Euclidean</text>
+<text x="612" y="164" text-anchor="middle" fill="#64748b" font-family="ui-monospace, monospace" font-size="10">spatialrust-segmentation</text>
+<rect x="684" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>
+<rect x="684" y="84" width="120" height="6" fill="#f472b6"/>
+<text x="744" y="128" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">Register</text>
+<text x="744" y="148" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">ICP</text>
+<text x="744" y="164" text-anchor="middle" fill="#64748b" font-family="ui-monospace, monospace" font-size="10">spatialrust-registration</text>
+<rect x="816" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>
+<rect x="816" y="84" width="120" height="6" fill="#38bdf8"/>
+<text x="876" y="128" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">Save</text>
+<text x="876" y="148" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">PCD·PLY·LAS·COPC</text>
+<text x="876" y="164" text-anchor="middle" fill="#64748b" font-family="ui-monospace, monospace" font-size="10">spatialrust-io</text>
+<polygon points="146,122 154,128 146,134" fill="#38bdf8"/>
+<polygon points="278,122 286,128 278,134" fill="#38bdf8"/>
+<polygon points="410,122 418,128 410,134" fill="#38bdf8"/>
+<polygon points="542,122 550,128 542,134" fill="#38bdf8"/>
+<polygon points="674,122 682,128 674,134" fill="#38bdf8"/>
+<polygon points="806,122 814,128 806,134" fill="#38bdf8"/>
+<rect x="156" y="210" width="120" height="56" rx="10" fill="#0b1224" stroke="#38bdf8"/>
+<line x1="216" y1="172" x2="216" y2="210" stroke="#38bdf8" stroke-dasharray="3 3"/>
+<text x="216" y="234" text-anchor="middle" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">wgpu</text>
+<text x="216" y="250" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10">voxel kernel + CPU fallback</text>
+<rect x="24" y="300" width="912" height="64" rx="12" fill="#111827" stroke="#334155"/>
+<text x="40" y="322" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="700">Foundation</text>
+<text x="40" y="348" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="12">spatialrust-core — schema · metadata · traits</text>
+<text x="400" y="348" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="12">spatialrust-math — Vec / Mat / Pose</text>
+<text x="700" y="348" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="12">spatialrust-search — KD-tree</text>
+<rect x="560" y="24" width="180" height="24" rx="14" fill="#0b1224" stroke="#334155"/>
+<text x="650" y="40" text-anchor="middle" fill="#cbd5e1" font-family="ui-monospace, monospace" font-size="11">spatialrust · re-exports</text>
+<rect x="752" y="24" width="184" height="24" rx="14" fill="#0b1224" stroke="#334155"/>
+<text x="844" y="40" text-anchor="middle" fill="#cbd5e1" font-family="ui-monospace, monospace" font-size="11">spatialrust-pipeline · MVP</text>
+<text x="24" y="396" fill="#64748b" font-family="ui-monospace, monospace" font-size="12">dependency direction:  math → core → io · search · gpu → algorithms → pipeline</text>
+</svg>
