@@ -130,6 +130,10 @@ jobs:
             args: -p spatialrust-voxelize --features voxelize-occupancy
           - name: spatialrust-voxelize-meta
             args: -p spatialrust --features voxelize-occupancy
+          - name: spatialrust-voxelize-range-image
+            args: -p spatialrust-voxelize --features voxelize-range-image
+          - name: spatialrust-voxelize-range-image-meta
+            args: -p spatialrust --features voxelize-range-image
           - name: spatialrust-pipeline-mvp
             args: -p spatialrust-pipeline --features pipeline-mvp
           - name: spatialrust-pipeline-mvp-gpu

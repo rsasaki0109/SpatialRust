@@ -22,6 +22,7 @@ spatialrust = { path = "../spatialrust", features = [
     "metrics-distance",
     "transform-ops",
     "voxelize-occupancy",
+    "voxelize-range-image",
     "feature-iss",
     "feature-normal-orient",
     "feature-boundary",

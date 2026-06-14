@@ -41,7 +41,10 @@ use spatialrust::transform::{
     normalize_unit_sphere as normalize_unit, oriented_bounding_box as obb, recenter as recenter_op,
     scale_cloud,
 };
-use spatialrust::voxelize::{voxelize as voxelize_grid, VoxelFill, VoxelGridConfig};
+use spatialrust::voxelize::{
+    range_image as range_image_proj, voxelize as voxelize_grid, RangeImageConfig, VoxelFill,
+    VoxelGridConfig,
+};
 use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
     StandardSchemas,
@@ -975,6 +978,25 @@ fn voxelize<'py>(
     ))
 }
 
+/// Projects a rotating-LiDAR cloud into a 2D range image `(height, width)`,
+/// keeping the nearest range per pixel (empty pixels are 0). Returns the range
+/// image as a NumPy array.
+#[pyfunction]
+#[pyo3(signature = (cloud, width=1024, height=64, fov_up_deg=3.0, fov_down_deg=-25.0))]
+fn range_image<'py>(
+    py: Python<'py>,
+    cloud: &PyPointCloud,
+    width: usize,
+    height: usize,
+    fov_up_deg: f32,
+    fov_down_deg: f32,
+) -> PyResult<Bound<'py, PyArray2<f32>>> {
+    let config = RangeImageConfig { width, height, fov_up_deg, fov_down_deg };
+    let img = range_image_proj(&cloud.inner, config).map_err(to_py_err)?;
+    let arr = Array2::from_shape_vec((img.height, img.width), img.data).map_err(to_py_err)?;
+    Ok(arr.into_pyarray_bound(py))
+}
+
 /// SpatialRust — PyTorch for Spatial Computing.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
@@ -1017,6 +1039,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(bounding_box, m)?)?;
     m.add_function(wrap_pyfunction!(oriented_bounding_box, m)?)?;
     m.add_function(wrap_pyfunction!(voxelize, m)?)?;
+    m.add_function(wrap_pyfunction!(range_image, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;

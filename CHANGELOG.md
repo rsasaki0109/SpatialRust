@@ -16,6 +16,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   voxelizes a cloud into a dense 3D occupancy or count grid (the tensor learned
   models consume), exposed in the Python bindings as `voxelize` returning an
   `(nz, ny, nx)` NumPy array.
+- **Spherical range-image projection** (`spatialrust-voxelize`,
+  `voxelize-range-image`): projects a rotating-LiDAR scan into the dense 2D
+  range image used by LiDAR segmentation models, exposed in the Python bindings
+  as `range_image` returning a `(height, width)` NumPy array.
 - **Cloud transform utilities** crate (`spatialrust-transform`, `transform-ops`):
   4×4 affine transforms (positions + normals), recentering, scale and unit-sphere
   normalization, cloud merging, and AABB / PCA-based OBB computation, exposed in

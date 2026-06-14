@@ -109,6 +109,7 @@ gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
 metrics-distance = ["spatialrust-metrics/metrics-distance"]
 transform-ops = ["spatialrust-transform/transform-ops"]
 voxelize-occupancy = ["spatialrust-voxelize/voxelize-occupancy"]
+voxelize-range-image = ["spatialrust-voxelize/voxelize-range-image"]
 
 [dependencies]
 spatialrust-core = { workspace = true }

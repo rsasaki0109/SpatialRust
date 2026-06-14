@@ -169,6 +169,9 @@ pub use spatialrust_transform::{
 #[cfg(feature = "voxelize-occupancy")]
 pub use spatialrust_voxelize::{voxelize, OccupancyGrid, VoxelFill, VoxelGridConfig};
 
+#[cfg(feature = "voxelize-range-image")]
+pub use spatialrust_voxelize::{range_image, RangeImage, RangeImageConfig};
+
 #[cfg(feature = "pipeline-mvp")]
 pub use spatialrust_pipeline::{
     MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult, MvpRegistrationMethod,
