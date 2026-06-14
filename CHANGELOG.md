@@ -99,9 +99,13 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- `KdTree::radius_search` no longer sorts its results (no caller relied on the
-  order), speeding radius outlier removal ~1.85× and benefiting every
-  radius-search consumer (DBSCAN, MLS, FPFH, boundary detection).
+- Performance: radius outlier removal is **~16× faster** (1.70 s → 0.10 s on
+  210k points) via a new `KdTree::radius_reaches` early-exit density test that
+  stops once enough neighbors are found and allocates nothing. `radius_search`
+  also no longer sorts results (no caller relied on the order), and the CPU
+  voxel downsampler uses a fast integer hasher (~20% faster). Measured against
+  PCL 1.14, SpatialRust now wins 3 of 4 compared operations
+  (`bench/pcl_comparison/`).
 
 ### Fixed
 

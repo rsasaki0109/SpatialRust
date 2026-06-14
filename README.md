@@ -96,12 +96,12 @@ A reproducible, apples-to-apples comparison against [PCL](https://pointclouds.or
 
 | Operation | SpatialRust | PCL | |
 | --- | ---: | ---: | :--- |
-| Normal estimation (k=10) | **0.32 s** | 0.48 s | **1.5× faster** |
-| Statistical Outlier Removal | **0.28 s** | 0.50 s | **1.8× faster** |
-| Voxel downsample | 0.043 s | **0.011 s** | PCL ~4× |
-| Radius Outlier Removal | 1.70 s | **0.32 s** | PCL ~5× |
+| Radius Outlier Removal | **0.10 s** | 0.33 s | **3.2× faster** |
+| Statistical Outlier Removal | **0.29 s** | 0.51 s | **1.8× faster** |
+| Normal estimation (k=10) | **0.33 s** | 0.48 s | **1.5× faster** |
+| Voxel downsample | 0.037 s | **0.011 s** | PCL ~3× |
 
-SpatialRust is faster on neighborhood-statistics operations; PCL's hashed voxel grid and radius filter are still ahead and are active optimization targets. Honest single-machine numbers, wins and losses both. Reproduce: `bench/pcl_comparison/run.sh`.
+SpatialRust wins **3 of 4** — neighborhood-statistics and density operations are faster (radius outlier removal uses an early-exit density test). PCL's hand-tuned hashed voxel grid is still ahead on downsampling. Honest single-machine numbers, wins and losses both. Reproduce: `bench/pcl_comparison/run.sh`.
 
 ### Registration methods
 
