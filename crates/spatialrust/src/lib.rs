@@ -143,7 +143,9 @@ pub use spatialrust_registration::{GicpConfig, GicpRegistration};
 pub use spatialrust_registration::{NdtConfig, NdtRegistration};
 
 #[cfg(feature = "register-fpfh")]
-pub use spatialrust_registration::{FpfhRansacConfig, FpfhRansacRegistration};
+pub use spatialrust_registration::{
+    fpfh_descriptors, FpfhDescriptor, FpfhRansacConfig, FpfhRansacRegistration, FPFH_DESCRIPTOR_LEN,
+};
 
 #[cfg(feature = "metrics-distance")]
 pub use spatialrust_metrics::{

@@ -18,8 +18,31 @@ const BINS: usize = 11;
 /// FPFH descriptor dimensionality (`alpha`, `phi`, `theta` histograms).
 const FPFH_DIM: usize = 3 * BINS;
 
+/// Length of an FPFH descriptor (33: three 11-bin angular histograms).
+pub const FPFH_DESCRIPTOR_LEN: usize = FPFH_DIM;
+
 /// A single FPFH descriptor.
-type Descriptor = [f32; FPFH_DIM];
+pub type FpfhDescriptor = [f32; FPFH_DIM];
+
+/// Internal shorthand kept for the existing call sites.
+type Descriptor = FpfhDescriptor;
+
+/// Computes an FPFH descriptor for every point in `cloud`.
+///
+/// The cloud must carry normals. `feature_radius` is the neighborhood radius
+/// used to build each descriptor (≈5× the point spacing is a good start). This
+/// is the reusable building block behind [`FpfhRansacRegistration`]; compute it
+/// once on a keypoint cloud to drive descriptor-based matching cheaply.
+pub fn fpfh_descriptors(
+    cloud: &PointCloud,
+    feature_radius: f32,
+) -> SpatialResult<Vec<FpfhDescriptor>> {
+    if feature_radius <= 0.0 || feature_radius.is_nan() {
+        return Err(SpatialError::InvalidArgument("feature_radius must be positive".to_owned()));
+    }
+    let set = PointSet::from_cloud(cloud)?;
+    Ok(compute_fpfh(&set, feature_radius))
+}
 
 /// Configuration for [`FpfhRansacRegistration`].
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -457,5 +480,19 @@ mod tests {
         let cloud = build_cloud(&points, &normals);
         let config = FpfhRansacConfig { feature_radius: 0.0, ..FpfhRansacConfig::default() };
         assert!(FpfhRansacRegistration::new(config).align(&cloud, &cloud).is_err());
+    }
+
+    #[test]
+    fn public_descriptors_have_expected_shape() {
+        use super::{fpfh_descriptors, FPFH_DESCRIPTOR_LEN};
+        let (points, normals) = corner_cloud();
+        let cloud = build_cloud(&points, &normals);
+        let descriptors = fpfh_descriptors(&cloud, 0.2).unwrap();
+        assert_eq!(descriptors.len(), cloud.len());
+        assert_eq!(FPFH_DESCRIPTOR_LEN, 33);
+        // Each descriptor's three sub-histograms are normalized to ~100 each,
+        // so a non-degenerate point's bins should sum to a positive value.
+        let total: f32 = descriptors[descriptors.len() / 2].iter().sum();
+        assert!(total > 0.0);
     }
 }

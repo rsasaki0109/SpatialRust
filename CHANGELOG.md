@@ -40,6 +40,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - FPFH + RANSAC global registration (`register-fpfh`): coarse alignment with
     no initial guess via Fast Point Feature Histograms and a RANSAC pose search,
     exposed in the Python bindings (`register_fpfh_ransac`).
+  - Public FPFH descriptor API (`fpfh_descriptors`, `FpfhDescriptor`) and a
+    keypoint-based registration path (ISS keypoints → FPFH → RANSAC) exposed in
+    the Python bindings as `register_fpfh_keypoints`.
   - Registration backend selection in the MVP pipeline (`MvpRegistrationMethod`).
 - **ISS keypoint detection** (`spatialrust-features`, `feature-iss`): Intrinsic
   Shape Signatures saliency with non-maximum suppression, returning a sparse

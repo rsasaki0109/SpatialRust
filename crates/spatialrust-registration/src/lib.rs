@@ -39,4 +39,6 @@ pub use gicp::{GicpConfig, GicpRegistration};
 pub use ndt::{NdtConfig, NdtRegistration};
 
 #[cfg(feature = "register-fpfh")]
-pub use fpfh::{FpfhRansacConfig, FpfhRansacRegistration};
+pub use fpfh::{
+    fpfh_descriptors, FpfhDescriptor, FpfhRansacConfig, FpfhRansacRegistration, FPFH_DESCRIPTOR_LEN,
+};

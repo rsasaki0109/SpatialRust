@@ -783,6 +783,49 @@ fn register_fpfh_ransac(
     Ok(PyRegistrationResult::from_result(&result))
 }
 
+/// Keypoint-based FPFH + RANSAC global registration: estimates normals, detects
+/// ISS keypoints, and runs FPFH matching only on those keypoints — the standard
+/// keypoint → descriptor → registration flow, far faster than describing every
+/// point. Returns the coarse alignment (refine with ICP/GICP afterwards).
+#[pyfunction]
+#[pyo3(signature = (source, target, salient_radius=0.1, feature_radius=0.25, max_correspondence_distance=0.075, ransac_iterations=4000, k_neighbors=20))]
+fn register_fpfh_keypoints(
+    source: &PyPointCloud,
+    target: &PyPointCloud,
+    salient_radius: f32,
+    feature_radius: f32,
+    max_correspondence_distance: f32,
+    ransac_iterations: usize,
+    k_neighbors: usize,
+) -> PyResult<PyRegistrationResult> {
+    let normals = NormalEstimationConfig::k_neighbors(k_neighbors);
+    let iss = IssKeypointConfig {
+        salient_radius,
+        non_max_radius: salient_radius * 0.7,
+        ..IssKeypointConfig::default()
+    };
+
+    // Estimate normals on the full cloud, then keep only ISS keypoints (which
+    // carry the normals through), so FPFH is computed on a sparse salient set.
+    let keypoints = |cloud: &PointCloud| -> PyResult<PointCloud> {
+        let with_normals = NormalEstimator::new(normals).estimate(cloud).map_err(to_py_err)?;
+        Ok(IssKeypointDetector::new(iss).detect(&with_normals).map_err(to_py_err)?.keypoints)
+    };
+    let source_keypoints = keypoints(&source.inner)?;
+    let target_keypoints = keypoints(&target.inner)?;
+
+    let config = FpfhRansacConfig {
+        feature_radius,
+        max_correspondence_distance,
+        ransac_iterations,
+        ..FpfhRansacConfig::default()
+    };
+    let result = FpfhRansacRegistration::new(config)
+        .align(&source_keypoints, &target_keypoints)
+        .map_err(to_py_err)?;
+    Ok(PyRegistrationResult::from_result(&result))
+}
+
 /// SpatialRust — PyTorch for Spatial Computing.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
@@ -819,5 +862,6 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;
     m.add_function(wrap_pyfunction!(register_ndt, m)?)?;
     m.add_function(wrap_pyfunction!(register_fpfh_ransac, m)?)?;
+    m.add_function(wrap_pyfunction!(register_fpfh_keypoints, m)?)?;
     Ok(())
 }
