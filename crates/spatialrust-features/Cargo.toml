@@ -21,3 +21,9 @@ spatialrust-gpu = { workspace = true, optional = true, features = ["gpu-wgpu"] }
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "normals"
+harness = false
+required-features = ["feature-normal-gpu"]

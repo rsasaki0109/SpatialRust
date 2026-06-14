@@ -72,6 +72,8 @@ End-to-end centroid filter latency (leaf=4.0), measured via `cargo bench -p spat
 
 Reproduce: `cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.
 
+Normal estimation also has an optional wgpu path (`GpuNormalEstimator`, `feature-normal-gpu`) that offloads the per-point covariance + eigen step to the GPU. The gain is modest (~1.1× at 100k–200k points) because KD-tree neighbor search stays on the CPU and dominates — see [notes](notes/2026-06-15_gpu_normals_bench.md). Reproduce: `cargo bench -p spatialrust-features --features feature-normal-gpu --bench normals`.
+
 ## Status
 
 MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and ICP (point-to-point, point-to-plane, and GICP). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.
