@@ -10,7 +10,7 @@ MVP チェーン（PCD/LAS/COPC/HTTP COPC → voxel → normals → RANSAC plane
 |------|------|
 | 実行日 | 2026-06-12 |
 | テスト (`mvp`) | `cargo test -p spatialrust --features mvp --test mvp_pipeline` → **23 passed**, 1 ignored |
-| テスト (`mvp` + GPU) | **27 passed**, 3 ignored |
+| テスト (`mvp` + GPU) | **27 passed**, 4 ignored |
 | HTTP COPC CLI | `cargo test -p spatialrust --features mvp,mvp-http --test mvp_http_copc_cli` → **1 passed** |
 | CLI bin テスト | `cargo test -p spatialrust --features mvp --bin spatialrust-mvp` → **13 passed** |
 | パイプライン段 | voxel → normal → plane → cluster → optional ICP |

@@ -651,6 +651,46 @@ fn parse_duration_debug_ms(value: &str) -> f64 {
 }
 
 #[cfg(feature = "mvp")]
+fn parse_cli_repeat_iteration_ms(stderr: &[u8], iteration: usize, total: usize) -> f64 {
+    let prefix = format!("repeat {iteration}/{total} elapsed:");
+    let text = String::from_utf8_lossy(stderr);
+    let value = text
+        .lines()
+        .find_map(|line| line.strip_prefix(&prefix))
+        .unwrap_or_else(|| panic!("CLI stderr should report `{prefix}`"));
+    parse_duration_debug_ms(value.trim())
+}
+
+#[cfg(feature = "mvp")]
+fn parse_cli_repeat_summary_ms(stderr: &[u8]) -> (f64, f64, f64) {
+    let text = String::from_utf8_lossy(stderr);
+    let line = text
+        .lines()
+        .find(|line| line.starts_with("repeat summary:"))
+        .expect("CLI stderr should report repeat summary");
+    let min = line
+        .split("min=")
+        .nth(1)
+        .and_then(|rest| rest.split_whitespace().next())
+        .expect("repeat summary min");
+    let max = line
+        .split("max=")
+        .nth(1)
+        .and_then(|rest| rest.split_whitespace().next())
+        .expect("repeat summary max");
+    let avg = line
+        .split("avg=")
+        .nth(1)
+        .and_then(|rest| rest.split_whitespace().next())
+        .expect("repeat summary avg");
+    (
+        parse_duration_debug_ms(min),
+        parse_duration_debug_ms(max),
+        parse_duration_debug_ms(avg),
+    )
+}
+
+#[cfg(feature = "mvp")]
 #[test]
 fn mvp_cli_scan_like_copc_resolution_reduces_input_points() {
     use std::process::Command;
@@ -1984,6 +2024,73 @@ fn probe_xyzinormal_approximate_auto_cli_release() {
             eprintln!("{label}: points={points} elapsed={elapsed:.3}ms");
             let _ = std::fs::remove_file(output_path);
         }
+    }
+
+    let _ = std::fs::remove_file(input_path);
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+#[test]
+#[ignore = "manual release probe for xyzinormal approximate Auto CLI with --repeat 3"]
+fn probe_xyzinormal_approximate_auto_cli_repeat_release() {
+    use std::process::Command;
+
+    use spatialrust::write_point_cloud_file;
+
+    if std::env::var("SPATIALRUST_PROBE_RELEASE").is_err() {
+        return;
+    }
+
+    const POINT_COUNT: usize = 1_000_000;
+    const REPEAT: usize = 3;
+    let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_probe_xyzinormal_approx_repeat_in_{}.las",
+        std::process::id()
+    ));
+    write_point_cloud_file(&input_path, &cloud).unwrap();
+
+    let repeat_arg = REPEAT.to_string();
+    let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+    let base_args = [
+        "--leaf-size",
+        "4.0",
+        "--voxel-mode",
+        "approximate",
+        "--repeat",
+        repeat_arg.as_str(),
+    ];
+    eprintln!("release xyzinormal approximate CLI repeat={REPEAT} (1M LAS, IO once per process):");
+    for (label, policy) in [("cpu", "cpu"), ("auto", "auto"), ("gpu", "gpu")] {
+        let output_path = std::env::temp_dir().join(format!(
+            "spatialrust_probe_xyzinormal_approx_repeat_{label}_{}.las",
+            std::process::id()
+        ));
+        let output = Command::new(bin)
+            .args(base_args)
+            .args(["--voxel-policy", policy])
+            .arg(input_path.to_str().unwrap())
+            .arg(output_path.to_str().unwrap())
+            .output()
+            .expect("release repeat CLI");
+        assert!(
+            output.status.success(),
+            "{label}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        let points = parse_cli_input_points(&output.stderr);
+        assert_eq!(points, cloud.len());
+        for iteration in 1..=REPEAT {
+            let elapsed = parse_cli_repeat_iteration_ms(&output.stderr, iteration, REPEAT);
+            eprintln!("{label} repeat {iteration}/{REPEAT}: {elapsed:.3}ms");
+        }
+        let (min_ms, max_ms, avg_ms) = parse_cli_repeat_summary_ms(&output.stderr);
+        let last_ms = parse_cli_elapsed_ms(&output.stderr);
+        eprintln!(
+            "{label} summary: min={min_ms:.3}ms max={max_ms:.3}ms avg={avg_ms:.3}ms last={last_ms:.3}ms"
+        );
+        let _ = std::fs::remove_file(output_path);
     }
 
     let _ = std::fs::remove_file(input_path);
