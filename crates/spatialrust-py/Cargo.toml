@@ -17,7 +17,12 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py38"] }
 numpy = "0.22"
-spatialrust = { path = "../spatialrust", features = ["mvp", "segment-region-growing"] }
+spatialrust = { path = "../spatialrust", features = [
+    "mvp",
+    "segment-region-growing",
+    "register-icp-point-to-plane",
+    "register-gicp",
+] }
 
 # Keep this crate out of the main Rust workspace so `cargo test --workspace`
 # in CI does not need a Python toolchain.

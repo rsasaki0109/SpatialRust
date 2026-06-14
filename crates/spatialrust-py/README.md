@@ -50,6 +50,13 @@ reloaded = sr.read("labeled.las")
 | `voxel_downsample(cloud, leaf_size, policy="auto")` | Voxel-grid downsample |
 | `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline |
 | `region_growing(cloud, k_neighbors=30, smoothness_deg=3.0, min_region_size=10)` | Estimate normals, then grow smooth regions |
+| `register_icp(source, target, max_correspondence_distance=1.0, max_iterations=50)` | Point-to-point ICP |
+| `register_point_to_plane(source, target, ..., k_neighbors=20)` | Point-to-plane ICP (normals estimated on target) |
+| `register_gicp(source, target, ..., k_neighbors=20)` | Generalized ICP (plane-to-plane) |
+
+`register_*` return a `RegistrationResult` with `.transform()` (4x4 NumPy
+matrix mapping source into the target frame), `.fitness`, `.iterations`, and
+`.converged`.
 
 ## Example
 

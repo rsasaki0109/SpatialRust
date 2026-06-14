@@ -16,6 +16,10 @@ use spatialrust::core::{PointBuffer, PointBufferSet, SpatialMetadata};
 use spatialrust::features::{FeatureEstimator, NormalEstimationConfig, NormalEstimator};
 use spatialrust::filtering::{VoxelGridDownsample, VoxelGridDownsampleConfig};
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
+use spatialrust::registration::{
+    GicpConfig, GicpRegistration, IcpConfig, IcpRegistration, PointCloudRegistration,
+    PointToPlaneIcp, PointToPlaneIcpConfig, RegistrationResult,
+};
 use spatialrust::segmentation::{RegionGrowingConfig, RegionGrowingSegmenter};
 use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
@@ -274,6 +278,110 @@ fn region_growing(
     })
 }
 
+/// Result of a registration (alignment) run.
+#[pyclass(name = "RegistrationResult")]
+pub struct PyRegistrationResult {
+    matrix: [[f32; 4]; 4],
+    /// Final alignment fitness (lower is better).
+    #[pyo3(get)]
+    fitness: f64,
+    /// Number of iterations performed.
+    #[pyo3(get)]
+    iterations: usize,
+    /// Whether the algorithm reached its convergence criterion.
+    #[pyo3(get)]
+    converged: bool,
+}
+
+impl PyRegistrationResult {
+    fn from_result(result: &RegistrationResult) -> Self {
+        Self {
+            matrix: result.transform.to_mat4().m,
+            fitness: result.fitness,
+            iterations: result.iterations,
+            converged: result.converged,
+        }
+    }
+}
+
+#[pymethods]
+impl PyRegistrationResult {
+    /// Returns the 4x4 transform mapping source into the target frame.
+    fn transform<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray2<f32>>> {
+        let data: Vec<f32> = self.matrix.iter().flatten().copied().collect();
+        let arr = Array2::from_shape_vec((4, 4), data).map_err(to_py_err)?;
+        Ok(arr.into_pyarray_bound(py))
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "RegistrationResult(fitness={:.3e}, iterations={}, converged={})",
+            self.fitness, self.iterations, self.converged
+        )
+    }
+}
+
+/// Point-to-point ICP aligning `source` onto `target`.
+#[pyfunction]
+#[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50))]
+fn register_icp(
+    source: &PyPointCloud,
+    target: &PyPointCloud,
+    max_correspondence_distance: f32,
+    max_iterations: usize,
+) -> PyResult<PyRegistrationResult> {
+    let config = IcpConfig { max_correspondence_distance, max_iterations, ..IcpConfig::default() };
+    let result =
+        IcpRegistration::new(config).align(&source.inner, &target.inner).map_err(to_py_err)?;
+    Ok(PyRegistrationResult::from_result(&result))
+}
+
+/// Point-to-plane ICP. Normals are estimated on `target` from k-nearest neighbors.
+#[pyfunction]
+#[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50, k_neighbors=20))]
+fn register_point_to_plane(
+    source: &PyPointCloud,
+    target: &PyPointCloud,
+    max_correspondence_distance: f32,
+    max_iterations: usize,
+    k_neighbors: usize,
+) -> PyResult<PyRegistrationResult> {
+    let target_with_normals =
+        NormalEstimator::new(NormalEstimationConfig::k_neighbors(k_neighbors))
+            .estimate(&target.inner)
+            .map_err(to_py_err)?;
+    let config = PointToPlaneIcpConfig {
+        max_correspondence_distance,
+        max_iterations,
+        ..PointToPlaneIcpConfig::default()
+    };
+    let result = PointToPlaneIcp::new(config)
+        .align(&source.inner, &target_with_normals)
+        .map_err(to_py_err)?;
+    Ok(PyRegistrationResult::from_result(&result))
+}
+
+/// Generalized ICP (plane-to-plane). Covariances are estimated from k-nearest neighbors.
+#[pyfunction]
+#[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50, k_neighbors=20))]
+fn register_gicp(
+    source: &PyPointCloud,
+    target: &PyPointCloud,
+    max_correspondence_distance: f32,
+    max_iterations: usize,
+    k_neighbors: usize,
+) -> PyResult<PyRegistrationResult> {
+    let config = GicpConfig {
+        max_correspondence_distance,
+        max_iterations,
+        k_neighbors,
+        ..GicpConfig::default()
+    };
+    let result =
+        GicpRegistration::new(config).align(&source.inner, &target.inner).map_err(to_py_err)?;
+    Ok(PyRegistrationResult::from_result(&result))
+}
+
 /// SpatialRust — PyTorch for Spatial Computing.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
@@ -282,10 +390,14 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPointCloud>()?;
     m.add_class::<PyPipelineResult>()?;
     m.add_class::<PyRegionResult>()?;
+    m.add_class::<PyRegistrationResult>()?;
     m.add_function(wrap_pyfunction!(read, m)?)?;
     m.add_function(wrap_pyfunction!(write, m)?)?;
     m.add_function(wrap_pyfunction!(voxel_downsample, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(region_growing, m)?)?;
+    m.add_function(wrap_pyfunction!(register_icp, m)?)?;
+    m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
+    m.add_function(wrap_pyfunction!(register_gicp, m)?)?;
     Ok(())
 }
