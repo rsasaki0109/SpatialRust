@@ -1,3 +1,7 @@
+// Exercises the HTTP COPC reader; only compiled when the feature is enabled so
+// `cargo test --workspace` (default features) does not fail to build it.
+#![cfg(feature = "io-copc-http")]
+
 mod common;
 
 #[test]
