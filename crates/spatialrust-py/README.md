@@ -70,6 +70,7 @@ reloaded = sr.read("labeled.las")
 | `iss_keypoints(cloud, salient_radius=0.2, non_max_radius=0.15, ...)` | ISS keypoints (sparse salient sub-cloud) |
 | `region_growing(cloud, k_neighbors=30, smoothness_deg=3.0, min_region_size=10)` | Estimate normals, then grow smooth regions |
 | `dbscan(cloud, eps=0.5, min_points=10)` | Density-based clustering with noise labeling (`-1`) |
+| `ground_segmentation(cloud, cell_size=0.5, height_threshold=0.2, ...)` | Grid-based ground / non-ground split |
 | `ransac_sphere(cloud, distance_threshold=0.02, ...)` | Fit the dominant sphere (center, radius, inliers/outliers) |
 | `ransac_cylinder(cloud, distance_threshold=0.02, ...)` | Fit the dominant cylinder (axis, radius, inliers/outliers) |
 | `register_icp(source, target, max_correspondence_distance=1.0, max_iterations=50)` | Point-to-point ICP |

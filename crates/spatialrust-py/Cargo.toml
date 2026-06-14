@@ -26,6 +26,7 @@ spatialrust = { path = "../spatialrust", features = [
     "filter-fps",
     "filter-mls",
     "segment-dbscan",
+    "segment-ground",
     "segment-ransac-primitives",
     "segment-region-growing",
     "register-icp-point-to-plane",

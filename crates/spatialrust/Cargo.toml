@@ -51,6 +51,7 @@ segment-dbscan = [
     "spatialrust-search/search-kdtree",
 ]
 segment-ransac-primitives = ["spatialrust-segmentation/segment-ransac-primitives"]
+segment-ground = ["spatialrust-segmentation/segment-ground"]
 segment-region-growing = [
     "spatialrust-segmentation/segment-region-growing",
     "spatialrust-search/search-kdtree",
@@ -110,7 +111,7 @@ spatialrust-features = { workspace = true }
 spatialrust-segmentation = { workspace = true }
 spatialrust-registration = { workspace = true }
 spatialrust-pipeline = { workspace = true }
-spatialrust-metrics = { workspace = true, default-features = false }
+spatialrust-metrics = { workspace = true }
 
 [dev-dependencies]
 

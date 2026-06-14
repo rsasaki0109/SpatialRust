@@ -84,6 +84,8 @@ jobs:
             args: -p spatialrust --features segment-dbscan
           - name: spatialrust-segmentation-ransac-primitives-meta
             args: -p spatialrust --features segment-ransac-primitives
+          - name: spatialrust-segmentation-ground-meta
+            args: -p spatialrust --features segment-ground
           - name: spatialrust-segmentation-region-growing-meta
             args: -p spatialrust --features segment-region-growing
           - name: spatialrust-registration-icp

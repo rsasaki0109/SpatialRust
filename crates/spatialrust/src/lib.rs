@@ -119,6 +119,9 @@ pub use spatialrust_segmentation::{
     RansacSphereSegmenter, SphereModel,
 };
 
+#[cfg(feature = "segment-ground")]
+pub use spatialrust_segmentation::{GroundConfig, GroundSegmentation, GroundSegmenter, UpAxis};
+
 #[cfg(feature = "segment-region-growing")]
 pub use spatialrust_segmentation::{
     RegionGrowingConfig, RegionGrowingResult, RegionGrowingSegmenter,

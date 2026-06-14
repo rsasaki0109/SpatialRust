@@ -15,6 +15,9 @@ mod cluster;
 #[cfg(feature = "segment-dbscan")]
 mod dbscan;
 
+#[cfg(feature = "segment-ground")]
+mod ground;
+
 #[cfg(feature = "segment-ransac-primitives")]
 mod primitives;
 
@@ -32,6 +35,9 @@ pub use cluster::{EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanCl
 
 #[cfg(feature = "segment-dbscan")]
 pub use dbscan::{DbscanConfig, DbscanResult, DbscanSegmenter};
+
+#[cfg(feature = "segment-ground")]
+pub use ground::{GroundConfig, GroundSegmentation, GroundSegmenter, UpAxis};
 
 #[cfg(feature = "segment-ransac-primitives")]
 pub use primitives::{

@@ -50,6 +50,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **DBSCAN segmentation** (`spatialrust-segmentation`, `segment-dbscan`):
   density-based clustering with explicit noise labeling, exposed in the Python
   bindings (`dbscan`).
+- **Ground segmentation** (`spatialrust-segmentation`, `segment-ground`):
+  grid-based ground/non-ground split using per-cell minimum heights eroded
+  against neighbors (robust to slopes and rooftops), exposed in the Python
+  bindings (`ground_segmentation`).
 - **RANSAC sphere & cylinder fitting** (`spatialrust-segmentation`,
   `segment-ransac-primitives`): detect spheres (positions only) and cylinders
   (axis recovered from surface normals), partitioning inliers/outliers, exposed

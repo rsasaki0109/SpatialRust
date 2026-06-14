@@ -31,8 +31,8 @@ use spatialrust::registration::{
     PointToPlaneIcpConfig, RegistrationResult,
 };
 use spatialrust::segmentation::{
-    DbscanConfig, DbscanSegmenter, RansacCylinderSegmenter, RansacPrimitiveConfig,
-    RansacSphereSegmenter, RegionGrowingConfig, RegionGrowingSegmenter,
+    DbscanConfig, DbscanSegmenter, GroundConfig, GroundSegmenter, RansacCylinderSegmenter,
+    RansacPrimitiveConfig, RansacSphereSegmenter, RegionGrowingConfig, RegionGrowingSegmenter,
 };
 use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
@@ -251,6 +251,52 @@ fn dbscan(cloud: &PyPointCloud, eps: f32, min_points: usize) -> PyResult<PyDbsca
         cluster_count: result.cluster_count,
         cluster_sizes: result.cluster_sizes,
         noise_count: result.noise_count,
+    })
+}
+
+/// Result of ground segmentation.
+#[pyclass(name = "GroundResult")]
+pub struct PyGroundResult {
+    /// Points classified as ground.
+    #[pyo3(get)]
+    ground: PyPointCloud,
+    /// Points classified as non-ground (objects, vegetation, structures).
+    #[pyo3(get)]
+    non_ground: PyPointCloud,
+    /// Number of ground points.
+    #[pyo3(get)]
+    ground_count: usize,
+}
+
+#[pymethods]
+impl PyGroundResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GroundResult(ground={}, non_ground={})",
+            self.ground.inner.len(),
+            self.non_ground.inner.len()
+        )
+    }
+}
+
+/// Grid-based ground segmentation for outdoor scans. Splits the cloud into
+/// ground and non-ground by comparing each point to a local minimum-height
+/// estimate (eroded against neighbors). Assumes +Z is up.
+#[pyfunction]
+#[pyo3(signature = (cloud, cell_size=0.5, height_threshold=0.2, erosion_cells=1))]
+fn ground_segmentation(
+    cloud: &PyPointCloud,
+    cell_size: f32,
+    height_threshold: f32,
+    erosion_cells: usize,
+) -> PyResult<PyGroundResult> {
+    let config =
+        GroundConfig { cell_size, height_threshold, erosion_cells, ..GroundConfig::default() };
+    let result = GroundSegmenter::new(config).segment(&cloud.inner).map_err(to_py_err)?;
+    Ok(PyGroundResult {
+        ground: PyPointCloud { inner: result.ground },
+        non_ground: PyPointCloud { inner: result.non_ground },
+        ground_count: result.ground_count,
     })
 }
 
@@ -746,6 +792,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPipelineResult>()?;
     m.add_class::<PyRegionResult>()?;
     m.add_class::<PyDbscanResult>()?;
+    m.add_class::<PyGroundResult>()?;
     m.add_class::<PySphereResult>()?;
     m.add_class::<PyCylinderResult>()?;
     m.add_class::<PyRegistrationResult>()?;
@@ -762,6 +809,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(region_growing, m)?)?;
     m.add_function(wrap_pyfunction!(dbscan, m)?)?;
+    m.add_function(wrap_pyfunction!(ground_segmentation, m)?)?;
     m.add_function(wrap_pyfunction!(ransac_sphere, m)?)?;
     m.add_function(wrap_pyfunction!(ransac_cylinder, m)?)?;
     m.add_function(wrap_pyfunction!(chamfer_distance, m)?)?;
