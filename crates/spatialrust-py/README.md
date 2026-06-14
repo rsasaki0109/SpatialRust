@@ -37,6 +37,13 @@ maturin develop --release
 pytest
 ```
 
+## Type stubs
+
+The package ships PEP 561 type information (`spatialrust.pyi` + `py.typed`), so
+editors and type checkers (mypy, pyright) get full autocomplete and signature
+checking for the compiled extension. CI runs `mypy.stubtest` on every push to
+keep the stubs in sync with the runtime API.
+
 ## Quickstart
 
 ```python

@@ -12,6 +12,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   apples-to-apples timing harness against PCL 1.14 on voxel downsampling, normal
   estimation, and outlier removal, plus rotating cluster/voxel README GIFs
   generated through the Python bindings (`examples/make_gifs.py`).
+- **Python type stubs** (`spatialrust.pyi` + `py.typed`, PEP 561): full type
+  information for the compiled extension so editors and type checkers (mypy,
+  pyright) get autocomplete and signature checking. CI runs `mypy.stubtest` on
+  every push to keep the stubs in sync with the runtime API.
 - **Python bindings** (`spatialrust-py`, PyO3 + maturin): NumPy interop for point
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,

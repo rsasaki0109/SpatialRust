@@ -238,9 +238,11 @@ jobs:
         run: |
           python -m venv .venv
           . .venv/bin/activate
-          pip install maturin pytest numpy
+          pip install maturin pytest numpy mypy
           maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
           pytest crates/spatialrust-py/tests
+          # Fail the build if the .pyi type stubs drift from the runtime API.
+          python -m mypy.stubtest spatialrust --ignore-missing-stub
 
   bench:
     name: Benchmark compile
