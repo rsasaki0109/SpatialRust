@@ -1,6 +1,13 @@
 /target
+**/target/
 **/*.rs.bk
 Cargo.lock
 .idea/
 .vscode/
 *.pdb
+
+# Python / maturin
+.venv/
+__pycache__/
+*.egg-info/
+*.so

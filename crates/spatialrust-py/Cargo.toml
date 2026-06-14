@@ -1,0 +1,24 @@
+# Standalone crate (own workspace) so the existing Rust workspace CI is not
+# forced to build the PyO3 extension module. Built with maturin.
+[package]
+name = "spatialrust-py"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["SpatialRust Contributors"]
+repository = "https://github.com/rsasaki0109/SpatialRust"
+description = "Python bindings for SpatialRust — PyTorch for Spatial Computing"
+
+[lib]
+# Importable module name: `import spatialrust`
+name = "spatialrust"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py38"] }
+numpy = "0.22"
+spatialrust = { path = "../spatialrust", features = ["mvp", "segment-region-growing"] }
+
+# Keep this crate out of the main Rust workspace so `cargo test --workspace`
+# in CI does not need a Python toolchain.
+[workspace]

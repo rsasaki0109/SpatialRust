@@ -12,6 +12,9 @@ members = [
     "crates/spatialrust-pipeline",
     "crates/spatialrust-gpu",
 ]
+# spatialrust-py is a PyO3 cdylib built with maturin; keep it out of the Rust
+# workspace so `cargo test --workspace` does not require a Python toolchain.
+exclude = ["crates/spatialrust-py"]
 resolver = "2"
 
 [workspace.package]
