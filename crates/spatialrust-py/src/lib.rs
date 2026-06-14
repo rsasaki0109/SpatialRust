@@ -20,8 +20,9 @@ use spatialrust::filtering::{
 };
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
 use spatialrust::registration::{
-    GicpConfig, GicpRegistration, IcpConfig, IcpRegistration, NdtConfig, NdtRegistration,
-    PointCloudRegistration, PointToPlaneIcp, PointToPlaneIcpConfig, RegistrationResult,
+    FpfhRansacConfig, FpfhRansacRegistration, GicpConfig, GicpRegistration, IcpConfig,
+    IcpRegistration, NdtConfig, NdtRegistration, PointCloudRegistration, PointToPlaneIcp,
+    PointToPlaneIcpConfig, RegistrationResult,
 };
 use spatialrust::segmentation::{
     DbscanConfig, DbscanSegmenter, RegionGrowingConfig, RegionGrowingSegmenter,
@@ -482,6 +483,36 @@ fn register_ndt(
     Ok(PyRegistrationResult::from_result(&result))
 }
 
+/// FPFH + RANSAC global registration: recovers a coarse alignment with no
+/// initial guess (typically refined afterwards with ICP/GICP). Normals are
+/// estimated on both clouds from k-nearest neighbors.
+#[pyfunction]
+#[pyo3(signature = (source, target, feature_radius=0.25, max_correspondence_distance=0.075, ransac_iterations=4000, k_neighbors=20))]
+fn register_fpfh_ransac(
+    source: &PyPointCloud,
+    target: &PyPointCloud,
+    feature_radius: f32,
+    max_correspondence_distance: f32,
+    ransac_iterations: usize,
+    k_neighbors: usize,
+) -> PyResult<PyRegistrationResult> {
+    let normals = NormalEstimationConfig::k_neighbors(k_neighbors);
+    let source_with_normals =
+        NormalEstimator::new(normals).estimate(&source.inner).map_err(to_py_err)?;
+    let target_with_normals =
+        NormalEstimator::new(normals).estimate(&target.inner).map_err(to_py_err)?;
+    let config = FpfhRansacConfig {
+        feature_radius,
+        max_correspondence_distance,
+        ransac_iterations,
+        ..FpfhRansacConfig::default()
+    };
+    let result = FpfhRansacRegistration::new(config)
+        .align(&source_with_normals, &target_with_normals)
+        .map_err(to_py_err)?;
+    Ok(PyRegistrationResult::from_result(&result))
+}
+
 /// SpatialRust — PyTorch for Spatial Computing.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
@@ -504,5 +535,6 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;
     m.add_function(wrap_pyfunction!(register_ndt, m)?)?;
+    m.add_function(wrap_pyfunction!(register_fpfh_ransac, m)?)?;
     Ok(())
 }

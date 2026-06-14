@@ -69,6 +69,7 @@ reloaded = sr.read("labeled.las")
 | `register_point_to_plane(source, target, ..., k_neighbors=20)` | Point-to-plane ICP (normals estimated on target) |
 | `register_gicp(source, target, ..., k_neighbors=20)` | Generalized ICP (plane-to-plane) |
 | `register_ndt(source, target, resolution=1.0, max_iterations=35)` | NDT (Normal Distributions Transform) |
+| `register_fpfh_ransac(source, target, feature_radius=0.25, ...)` | FPFH + RANSAC global registration (no initial guess; coarse) |
 
 `register_*` return a `RegistrationResult` with `.transform()` (4x4 NumPy
 matrix mapping source into the target frame), `.fitness`, `.iterations`, and

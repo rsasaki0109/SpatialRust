@@ -25,6 +25,7 @@ spatialrust = { path = "../spatialrust", features = [
     "register-icp-point-to-plane",
     "register-gicp",
     "register-ndt",
+    "register-fpfh",
 ] }
 
 # Keep this crate out of the main Rust workspace so `cargo test --workspace`

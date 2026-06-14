@@ -120,6 +120,9 @@ pub use spatialrust_registration::{GicpConfig, GicpRegistration};
 #[cfg(feature = "register-ndt")]
 pub use spatialrust_registration::{NdtConfig, NdtRegistration};
 
+#[cfg(feature = "register-fpfh")]
+pub use spatialrust_registration::{FpfhRansacConfig, FpfhRansacRegistration};
+
 #[cfg(feature = "pipeline-mvp")]
 pub use spatialrust_pipeline::{
     MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult, MvpRegistrationMethod,

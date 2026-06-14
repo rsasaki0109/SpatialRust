@@ -22,6 +22,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     path (`register-gicp-gpu`, ~1.7× faster covariance estimation).
   - NDT — Normal Distributions Transform (`register-ndt`), point-to-distribution
     with Levenberg–Marquardt.
+  - FPFH + RANSAC global registration (`register-fpfh`): coarse alignment with
+    no initial guess via Fast Point Feature Histograms and a RANSAC pose search,
+    exposed in the Python bindings (`register_fpfh_ransac`).
   - Registration backend selection in the MVP pipeline (`MvpRegistrationMethod`).
 - **GPU normal estimation** (`spatialrust-features`, `feature-normal-gpu`): a wgpu
   path with a fully-GPU uniform-grid radius neighbor search (covariance + Jacobi

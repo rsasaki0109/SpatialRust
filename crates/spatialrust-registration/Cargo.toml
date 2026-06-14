@@ -15,6 +15,7 @@ register-icp-point-to-plane = ["dep:spatialrust-search"]
 register-gicp = ["dep:spatialrust-search"]
 register-gicp-gpu = ["register-gicp", "dep:spatialrust-gpu"]
 register-ndt = []
+register-fpfh = ["dep:spatialrust-search"]
 
 [dependencies]
 spatialrust-core = { workspace = true }

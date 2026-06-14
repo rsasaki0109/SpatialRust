@@ -65,6 +65,10 @@ register-gicp-gpu = [
     "gpu-wgpu",
 ]
 register-ndt = ["spatialrust-registration/register-ndt"]
+register-fpfh = [
+    "spatialrust-registration/register-fpfh",
+    "spatialrust-search/search-kdtree",
+]
 mvp = [
     "io-pcd",
     "io-ply",

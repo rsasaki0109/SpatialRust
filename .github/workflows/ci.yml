@@ -86,6 +86,10 @@ jobs:
             args: -p spatialrust-registration --features register-ndt
           - name: spatialrust-registration-ndt-meta
             args: -p spatialrust --features register-ndt
+          - name: spatialrust-registration-fpfh
+            args: -p spatialrust-registration --features register-fpfh
+          - name: spatialrust-registration-fpfh-meta
+            args: -p spatialrust --features register-fpfh
           - name: spatialrust-pipeline-mvp
             args: -p spatialrust-pipeline --features pipeline-mvp
           - name: spatialrust-pipeline-mvp-gpu
