@@ -59,9 +59,9 @@ cargo run -p spatialrust --features mvp,pipeline-mvp-gpu --release --bin spatial
 ## 未確認/要確認項目
 
 - GitHub Actions software renderer での `--repeat` + GPU policy
-- Epic 51 単発 CLI gpu ~193 ms との差分要因
+- Epic 51 単発 CLI gpu ~193 ms との差分要因 → **Epic 55: 再現せず、環境要因**
 
 ## 次アクション
 
 1. 外部 COPC URL / 実スキャンファイルがあれば HTTP CLI / multiplier 曲線を再実行
-2. 必要なら Epic 51 単発 vs `--repeat 1` 同条件比較
+2. 古いノートの outdated 次アクション整理

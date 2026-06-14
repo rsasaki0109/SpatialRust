@@ -37,10 +37,10 @@ SPATIALRUST_PROBE_RELEASE=1 cargo test -p spatialrust --features mvp,pipeline-mv
 
 ## 未確認/要確認項目
 
-- Epic 51 単発 193 ms gpu と repeat 35 ms の差分要因（プロセス cold / GPU デバイス状態 / 設定差の切り分け）
 - GitHub Actions software renderer での `--repeat` + GPU policy
+- Epic 51 単発 gpu ~193 ms → **Epic 55: 再現せず、環境要因と判断**
 
 ## 次アクション
 
 1. 外部 COPC URL / 実スキャンファイルがあれば HTTP CLI / multiplier 曲線を再実行
-2. 必要なら Epic 51 単発 vs `--repeat 1` 同条件の比較プローブ
+2. 古いノートの outdated 次アクション整理

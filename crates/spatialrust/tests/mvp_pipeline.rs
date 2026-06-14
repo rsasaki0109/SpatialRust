@@ -2097,6 +2097,120 @@ fn probe_xyzinormal_approximate_auto_cli_repeat_release() {
 }
 
 #[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+fn run_approximate_cli_probe(
+    bin: &str,
+    input_path: &std::path::Path,
+    output_path: &std::path::Path,
+    policy: &str,
+    repeat: Option<usize>,
+) -> std::process::Output {
+    use std::process::Command;
+
+    let mut command = Command::new(bin);
+    command.args([
+        "--leaf-size",
+        "4.0",
+        "--voxel-mode",
+        "approximate",
+        "--voxel-policy",
+        policy,
+    ]);
+    if let Some(repeat) = repeat {
+        command.args(["--repeat", &repeat.to_string()]);
+    }
+    command
+        .arg(input_path)
+        .arg(output_path)
+        .output()
+        .expect("run MVP CLI probe")
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+#[test]
+#[ignore = "manual release probe comparing single-run vs --repeat 1 CLI"]
+fn probe_xyzinormal_approximate_auto_cli_single_vs_repeat1_release() {
+    use spatialrust::write_point_cloud_file;
+
+    if std::env::var("SPATIALRUST_PROBE_RELEASE").is_err() {
+        return;
+    }
+
+    const POINT_COUNT: usize = 1_000_000;
+    let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_probe_xyzinormal_single_vs_repeat_in_{}.las",
+        std::process::id()
+    ));
+    write_point_cloud_file(&input_path, &cloud).unwrap();
+    let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+
+    eprintln!("single vs --repeat 1 (1M LAS, separate process per invocation):");
+    for policy in ["cpu", "auto", "gpu"] {
+        let single_out = std::env::temp_dir().join(format!(
+            "spatialrust_probe_single_{policy}_{}.las",
+            std::process::id()
+        ));
+        let repeat_out = std::env::temp_dir().join(format!(
+            "spatialrust_probe_repeat1_{policy}_{}.las",
+            std::process::id()
+        ));
+        let single = run_approximate_cli_probe(bin, &input_path, &single_out, policy, None);
+        assert!(
+            single.status.success(),
+            "single {policy}: {}",
+            String::from_utf8_lossy(&single.stderr)
+        );
+        let repeat = run_approximate_cli_probe(bin, &input_path, &repeat_out, policy, Some(1));
+        assert!(
+            repeat.status.success(),
+            "repeat1 {policy}: {}",
+            String::from_utf8_lossy(&repeat.stderr)
+        );
+        let single_ms = parse_cli_elapsed_ms(&single.stderr);
+        let repeat_ms = parse_cli_elapsed_ms(&repeat.stderr);
+        eprintln!("{policy}: single={single_ms:.3}ms repeat1={repeat_ms:.3}ms delta={:.3}ms", repeat_ms - single_ms);
+        let _ = std::fs::remove_file(single_out);
+        let _ = std::fs::remove_file(repeat_out);
+    }
+
+    eprintln!("Epic 51 order (auto, cpu, gpu single-run, separate processes):");
+    for policy in ["auto", "cpu", "gpu"] {
+        let output_path = std::env::temp_dir().join(format!(
+            "spatialrust_probe_epic51_order_{policy}_{}.las",
+            std::process::id()
+        ));
+        let output = run_approximate_cli_probe(bin, &input_path, &output_path, policy, None);
+        assert!(
+            output.status.success(),
+            "epic51 order {policy}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let elapsed_ms = parse_cli_elapsed_ms(&output.stderr);
+        eprintln!("{policy}: {elapsed_ms:.3}ms");
+        let _ = std::fs::remove_file(output_path);
+    }
+
+    eprintln!("gpu single-run twice (separate processes, Epic 51-style):");
+    for run in 1..=2 {
+        let output_path = std::env::temp_dir().join(format!(
+            "spatialrust_probe_gpu_single_{run}_{}.las",
+            std::process::id()
+        ));
+        let output = run_approximate_cli_probe(bin, &input_path, &output_path, "gpu", None);
+        assert!(
+            output.status.success(),
+            "gpu single {run}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let elapsed_ms = parse_cli_elapsed_ms(&output.stderr);
+        eprintln!("gpu run {run}: {elapsed_ms:.3}ms");
+        let _ = std::fs::remove_file(output_path);
+    }
+
+    let _ = std::fs::remove_file(input_path);
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
 fn elapsed_ms(duration: std::time::Duration) -> f64 {
     duration.as_secs_f64() * 1_000.0
 }
