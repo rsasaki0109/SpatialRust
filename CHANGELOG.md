@@ -20,6 +20,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   voxelizes a cloud into a dense 3D occupancy or count grid (the tensor learned
   models consume), exposed in the Python bindings as `voxelize` returning an
   `(nz, ny, nx)` NumPy array.
+- **ML preprocessing example** (`examples/ml_preprocess.py`): the end-to-end
+  "point cloud → model-ready tensors" pipeline (clean → unit-sphere normalize →
+  FPS → voxel occupancy grid / LiDAR range image / k-NN `edge_index`), with a
+  four-panel figure.
 - **Neighborhood graph construction** (`spatialrust-search`, `search-graph`):
   directed k-NN and radius graphs over a cloud, exposed in the Python bindings
   as `knn_graph` / `radius_graph` returning a PyG-style `(2, E)` `edge_index`
