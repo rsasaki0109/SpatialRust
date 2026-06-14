@@ -769,6 +769,7 @@ fn read_field_f32(input: &PointCloud, field: &PointField, index: usize) -> Spati
     }
 }
 
+#[cfg(feature = "filter-voxel-gpu")]
 fn set_field_from_f32(
     buffers: &mut PointBufferSet,
     field: &PointField,
@@ -792,6 +793,7 @@ fn set_field_from_f32(
     Ok(())
 }
 
+#[cfg(feature = "filter-voxel-gpu")]
 fn set_field_from_u8(
     buffers: &mut PointBufferSet,
     field: &PointField,
@@ -828,9 +830,9 @@ fn push_field(buffers: &mut PointBufferSet, field: &PointField, value: f32) -> S
 mod tests {
     use super::{VoxelGridDownsample, VoxelGridDownsampleConfig};
     use crate::PointCloudFilter;
-    use spatialrust_core::{
-        HasIntensity, HasNormals3, HasPositions3, PointCloudBuilder, StandardSchemas,
-    };
+    #[cfg(feature = "filter-voxel-gpu")]
+    use spatialrust_core::HasNormals3;
+    use spatialrust_core::{HasIntensity, HasPositions3, PointCloudBuilder, StandardSchemas};
 
     #[test]
     fn centroid_downsample_reduces_points() {
@@ -1147,6 +1149,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "filter-voxel-gpu")]
     fn synthetic_xyzinormal_plane(point_count: usize) -> spatialrust_core::PointCloud {
         let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzinormal());
         for index in 0..point_count {
