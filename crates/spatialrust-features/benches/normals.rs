@@ -1,9 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use spatialrust_core::PointCloud;
+use spatialrust_core::{PointCloudBuilder, StandardSchemas};
 use spatialrust_features::{
     FeatureEstimator, GpuNormalEstimator, NormalEstimationConfig, NormalEstimator,
 };
-use spatialrust_core::{PointCloudBuilder, StandardSchemas};
 
 /// A gently undulating height field so normals vary across the surface.
 fn synthetic_surface(point_count: usize) -> PointCloud {
