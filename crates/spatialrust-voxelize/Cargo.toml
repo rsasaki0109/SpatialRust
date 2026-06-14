@@ -1,0 +1,19 @@
+[package]
+name = "spatialrust-voxelize"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Voxel occupancy / feature grids for SpatialRust"
+
+[features]
+default = ["voxelize-occupancy"]
+voxelize-occupancy = []
+
+[dependencies]
+spatialrust-core = { workspace = true }
+
+[dev-dependencies]
+spatialrust-core = { workspace = true }

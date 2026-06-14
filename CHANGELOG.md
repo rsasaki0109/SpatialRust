@@ -12,6 +12,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,
   `register_gicp`, `register_ndt`). Built as `abi3` wheels (CPython 3.8+).
+- **Voxel occupancy grids** crate (`spatialrust-voxelize`, `voxelize-occupancy`):
+  voxelizes a cloud into a dense 3D occupancy or count grid (the tensor learned
+  models consume), exposed in the Python bindings as `voxelize` returning an
+  `(nz, ny, nx)` NumPy array.
 - **Cloud transform utilities** crate (`spatialrust-transform`, `transform-ops`):
   4×4 affine transforms (positions + normals), recentering, scale and unit-sphere
   normalization, cloud merging, and AABB / PCA-based OBB computation, exposed in

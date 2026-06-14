@@ -126,6 +126,10 @@ jobs:
             args: -p spatialrust-transform --features transform-ops
           - name: spatialrust-transform-meta
             args: -p spatialrust --features transform-ops
+          - name: spatialrust-voxelize
+            args: -p spatialrust-voxelize --features voxelize-occupancy
+          - name: spatialrust-voxelize-meta
+            args: -p spatialrust --features voxelize-occupancy
           - name: spatialrust-pipeline-mvp
             args: -p spatialrust-pipeline --features pipeline-mvp
           - name: spatialrust-pipeline-mvp-gpu

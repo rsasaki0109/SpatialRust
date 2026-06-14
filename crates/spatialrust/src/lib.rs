@@ -18,6 +18,7 @@ pub use spatialrust_registration as registration;
 pub use spatialrust_search as search;
 pub use spatialrust_segmentation as segmentation;
 pub use spatialrust_transform as transform;
+pub use spatialrust_voxelize as voxelize;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
@@ -164,6 +165,9 @@ pub use spatialrust_transform::{
     apply_transform, bounding_box, centroid, merge_clouds, normalize_unit_sphere,
     oriented_bounding_box, recenter, scale_cloud, Aabb as TransformAabb, Obb,
 };
+
+#[cfg(feature = "voxelize-occupancy")]
+pub use spatialrust_voxelize::{voxelize, OccupancyGrid, VoxelFill, VoxelGridConfig};
 
 #[cfg(feature = "pipeline-mvp")]
 pub use spatialrust_pipeline::{

@@ -7,8 +7,8 @@
 // PyO3's `#[pyfunction]` expansion emits `.into()` on already-`PyErr` results.
 #![allow(clippy::useless_conversion)]
 
-use numpy::ndarray::Array2;
-use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
+use numpy::ndarray::{Array2, Array3};
+use numpy::{IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray2};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -41,6 +41,7 @@ use spatialrust::transform::{
     normalize_unit_sphere as normalize_unit, oriented_bounding_box as obb, recenter as recenter_op,
     scale_cloud,
 };
+use spatialrust::voxelize::{voxelize as voxelize_grid, VoxelFill, VoxelGridConfig};
 use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
     StandardSchemas,
@@ -942,6 +943,38 @@ fn oriented_bounding_box(
     ))
 }
 
+/// Voxelizes a cloud into a dense 3D grid `(nz, ny, nx)` for learned models.
+/// `mode` is "occupancy" (1/0) or "count" (points per voxel). Returns
+/// `(grid, origin_xyz, voxel_size)`; the grid is indexed `[z, y, x]`.
+#[pyfunction]
+#[pyo3(signature = (cloud, voxel_size=0.1, mode="occupancy"))]
+fn voxelize<'py>(
+    py: Python<'py>,
+    cloud: &PyPointCloud,
+    voxel_size: f32,
+    mode: &str,
+) -> PyResult<(Bound<'py, PyArray3<f32>>, (f32, f32, f32), f32)> {
+    let fill = match mode.to_lowercase().as_str() {
+        "occupancy" => VoxelFill::Occupancy,
+        "count" => VoxelFill::Count,
+        other => {
+            return Err(PyValueError::new_err(format!(
+                "unknown voxelize mode `{other}` (expected: occupancy, count)"
+            )))
+        }
+    };
+    let config = VoxelGridConfig { voxel_size, fill, ..VoxelGridConfig::default() };
+    let grid = voxelize_grid(&cloud.inner, config).map_err(to_py_err)?;
+    let [nx, ny, nz] = grid.dims;
+    // Data is stored z-major; reshape to (nz, ny, nx) so axis order matches.
+    let arr = Array3::from_shape_vec((nz, ny, nx), grid.data).map_err(to_py_err)?;
+    Ok((
+        arr.into_pyarray_bound(py),
+        (grid.origin[0], grid.origin[1], grid.origin[2]),
+        grid.voxel_size,
+    ))
+}
+
 /// SpatialRust — PyTorch for Spatial Computing.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
@@ -983,6 +1016,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(centroid, m)?)?;
     m.add_function(wrap_pyfunction!(bounding_box, m)?)?;
     m.add_function(wrap_pyfunction!(oriented_bounding_box, m)?)?;
+    m.add_function(wrap_pyfunction!(voxelize, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;
