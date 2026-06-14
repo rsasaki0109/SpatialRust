@@ -14,5 +14,6 @@ pub use neighborhood::{KdTreeNeighborhood, NeighborhoodProvider};
 
 #[cfg(feature = "feature-normal")]
 pub use normal::{
-    NormalEstimationConfig, NormalEstimationResult, NormalEstimator, orient_normal_towards_viewpoint,
+    orient_normal_towards_viewpoint, NormalEstimationConfig, NormalEstimationResult,
+    NormalEstimator,
 };

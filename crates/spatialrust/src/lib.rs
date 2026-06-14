@@ -7,15 +7,15 @@
 #![warn(missing_docs)]
 
 pub use spatialrust_core as core;
+pub use spatialrust_features as features;
+pub use spatialrust_filtering as filtering;
 pub use spatialrust_gpu as gpu;
 pub use spatialrust_io as io;
 pub use spatialrust_math as math;
-pub use spatialrust_search as search;
-pub use spatialrust_filtering as filtering;
-pub use spatialrust_features as features;
-pub use spatialrust_segmentation as segmentation;
-pub use spatialrust_registration as registration;
 pub use spatialrust_pipeline as pipeline;
+pub use spatialrust_registration as registration;
+pub use spatialrust_search as search;
+pub use spatialrust_segmentation as segmentation;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
@@ -38,9 +38,7 @@ pub use spatialrust_io::{read_pcd, read_pcd_file, write_pcd, write_pcd_file, Pcd
 pub use spatialrust_io::{read_ply, read_ply_file, write_ply, write_ply_file, PlyWriteFormat};
 
 #[cfg(feature = "io-las")]
-pub use spatialrust_io::{
-    read_las, read_las_file, write_las, write_las_file, LasWriteFormat,
-};
+pub use spatialrust_io::{read_las, read_las_file, write_las, write_las_file, LasWriteFormat};
 
 #[cfg(feature = "io-e57")]
 pub use spatialrust_io::{read_e57, read_e57_file, write_e57, write_e57_file};
@@ -76,19 +74,19 @@ pub use spatialrust_filtering::{
 
 #[cfg(feature = "feature-normal")]
 pub use spatialrust_features::{
-    FeatureEstimator, KdTreeNeighborhood, NeighborhoodProvider, NormalEstimationConfig,
-    NormalEstimationResult, NormalEstimator, orient_normal_towards_viewpoint,
+    orient_normal_towards_viewpoint, FeatureEstimator, KdTreeNeighborhood, NeighborhoodProvider,
+    NormalEstimationConfig, NormalEstimationResult, NormalEstimator,
 };
 
 #[cfg(feature = "segment-ransac-plane")]
 pub use spatialrust_segmentation::{
-    extract_indices, extract_mask, with_labels, PlaneModel, PointCloudSegmenter,
-    RansacPlaneConfig, RansacPlaneSegmentation, RansacPlaneSegmenter,
+    extract_indices, extract_mask, with_labels, PlaneModel, PointCloudSegmenter, RansacPlaneConfig,
+    RansacPlaneSegmentation, RansacPlaneSegmenter,
 };
 
 #[cfg(feature = "segment-euclidean")]
 pub use spatialrust_segmentation::{
-    EuclideanClusterConfig, EuclideanClusterResult, EuclideanClusterExtractor,
+    EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult,
 };
 
 #[cfg(feature = "segment-region-growing")]
@@ -103,6 +101,4 @@ pub use spatialrust_registration::{
 };
 
 #[cfg(feature = "pipeline-mvp")]
-pub use spatialrust_pipeline::{
-    MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult,
-};
+pub use spatialrust_pipeline::{MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult};

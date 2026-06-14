@@ -138,21 +138,21 @@ pub fn gather_voxel_first_f32_multi_gpu(
     for chunk in channels.chunks(max_channels) {
         let mut value_buffers = [None, None, None, None];
         for (index, channel) in chunk.iter().enumerate() {
-            value_buffers[index] = Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("voxel-gather-multi-values"),
-                contents: bytemuck::cast_slice(channel),
-                usage: wgpu::BufferUsages::STORAGE,
-            }));
+            value_buffers[index] =
+                Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("voxel-gather-multi-values"),
+                    contents: bytemuck::cast_slice(channel),
+                    usage: wgpu::BufferUsages::STORAGE,
+                }));
         }
 
-        let value_refs: [&wgpu::Buffer; MULTI4_CHANNELS] =
-            std::array::from_fn(|index| {
-                if index < chunk.len() {
-                    value_buffers[index].as_ref().expect("value buffer")
-                } else {
-                    &empty
-                }
-            });
+        let value_refs: [&wgpu::Buffer; MULTI4_CHANNELS] = std::array::from_fn(|index| {
+            if index < chunk.len() {
+                value_buffers[index].as_ref().expect("value buffer")
+            } else {
+                &empty
+            }
+        });
 
         gathered.extend(dispatch_voxel_gather_multi_gpu_buffers(
             runtime,
@@ -215,11 +215,7 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
     let staging_size = channel_len * f32_channel_count + u8_staging_len;
     let fused_xyz_attrs4 = attribute_count == 4
         && u8_attribute_count == 0
-        && runtime
-            .pipelines()
-            .voxel_gather
-            .xyz_attrs4_pipeline
-            .is_some();
+        && runtime.pipelines().voxel_gather.xyz_attrs4_pipeline.is_some();
 
     let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-gather-xyz-attrs-staging"),
@@ -235,7 +231,8 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
 
     if fused_xyz_attrs4 {
         for channel in attribute_channels {
-            upload_recycle.push(runtime.upload_f32_storage("voxel-gather-xyz-attrs4-values", channel)?);
+            upload_recycle
+                .push(runtime.upload_f32_storage("voxel-gather-xyz-attrs4-values", channel)?);
         }
         let attr_refs: [&wgpu::Buffer; MULTI4_CHANNELS] =
             std::array::from_fn(|index| &upload_recycle[index]);
@@ -630,7 +627,13 @@ pub fn gather_voxel_first_xyz_gpu_buffers(
         &output_z,
     )?;
     encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
-    encoder.copy_buffer_to_buffer(&output_y, 0, &staging_buffer, channel_len as u64, channel_len as u64);
+    encoder.copy_buffer_to_buffer(
+        &output_y,
+        0,
+        &staging_buffer,
+        channel_len as u64,
+        channel_len as u64,
+    );
     encoder.copy_buffer_to_buffer(
         &output_z,
         0,
@@ -660,20 +663,15 @@ pub(crate) fn record_voxel_gather_xyz_and_attrs4_packed_pass(
 
     let device = runtime.device();
     let pipelines = runtime.pipelines();
-    let xyz_attrs4_pipeline = pipelines
-        .voxel_gather
-        .xyz_attrs4_pipeline
-        .as_ref()
-        .ok_or_else(|| {
+    let xyz_attrs4_pipeline =
+        pipelines.voxel_gather.xyz_attrs4_pipeline.as_ref().ok_or_else(|| {
             SpatialError::InvalidArgument(
-                "fused xyz+4-attribute gather pipeline is unavailable on this gpu adapter".to_owned(),
+                "fused xyz+4-attribute gather pipeline is unavailable on this gpu adapter"
+                    .to_owned(),
             )
         })?;
-    let xyz_attrs4_layout = pipelines
-        .voxel_gather
-        .xyz_attrs4_bind_group_layout
-        .as_ref()
-        .expect("xyz attrs4 layout");
+    let xyz_attrs4_layout =
+        pipelines.voxel_gather.xyz_attrs4_bind_group_layout.as_ref().expect("xyz attrs4 layout");
     let cell_count = segments.cell_count();
     let uniform = GatherUniform {
         cell_count,
@@ -690,10 +688,7 @@ pub(crate) fn record_voxel_gather_xyz_and_attrs4_packed_pass(
         label: Some("voxel-gather-xyz-attrs4-bind-group"),
         layout: xyz_attrs4_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: segments.point_indices_buffer().as_entire_binding(),
@@ -702,38 +697,14 @@ pub(crate) fn record_voxel_gather_xyz_and_attrs4_packed_pass(
                 binding: 2,
                 resource: segments.cell_starts_buffer().as_entire_binding(),
             },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: x.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: y.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: z.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 6,
-                resource: attribute_buffers[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 7,
-                resource: attribute_buffers[1].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 8,
-                resource: attribute_buffers[2].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 9,
-                resource: attribute_buffers[3].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 10,
-                resource: packed_output.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 3, resource: x.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: y.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: z.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: attribute_buffers[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 7, resource: attribute_buffers[1].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 8, resource: attribute_buffers[2].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 9, resource: attribute_buffers[3].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 10, resource: packed_output.as_entire_binding() },
         ],
     });
     let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -770,7 +741,8 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
 
         let chunk_upload_start = upload_recycle.len();
         for channel in chunk {
-            upload_recycle.push(runtime.upload_f32_storage("voxel-gather-xyz-attrs-values", channel)?);
+            upload_recycle
+                .push(runtime.upload_f32_storage("voxel-gather-xyz-attrs-values", channel)?);
         }
         let value_buffers = &upload_recycle[chunk_upload_start..];
 
@@ -801,14 +773,7 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
                     [&value_buffers[0], &value_buffers[1]];
                 let outputs: [&wgpu::Buffer; MULTI2_CHANNELS] =
                     [&output_buffers[0], &output_buffers[1]];
-                record_voxel_gather_multi2_pass(
-                    encoder,
-                    runtime,
-                    &values,
-                    segments,
-                    &outputs,
-                    2,
-                )?;
+                record_voxel_gather_multi2_pass(encoder, runtime, &values, segments, &outputs, 2)?;
             }
             channel_count => {
                 if runtime.pipelines().voxel_gather.multi4_pipeline.is_some() {
@@ -847,10 +812,9 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
                 } else {
                     for (local_index, channel) in chunk.iter().enumerate() {
                         let chunk_upload_start = upload_recycle.len();
-                        upload_recycle.push(runtime.upload_f32_storage(
-                            "voxel-gather-xyz-attrs-values",
-                            channel,
-                        )?);
+                        upload_recycle.push(
+                            runtime.upload_f32_storage("voxel-gather-xyz-attrs-values", channel)?,
+                        );
                         record_voxel_gather_f32_pass(
                             encoder,
                             runtime,
@@ -891,12 +855,8 @@ pub(crate) fn record_voxel_gather_multi2_pass(
     let device = runtime.device();
     let pipelines = runtime.pipelines();
     let cell_count = segments.cell_count();
-    let uniform = GatherUniform {
-        cell_count,
-        point_count: segments.point_count(),
-        channel_count,
-        _pad: 0,
-    };
+    let uniform =
+        GatherUniform { cell_count, point_count: segments.point_count(), channel_count, _pad: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-gather-multi-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -906,10 +866,7 @@ pub(crate) fn record_voxel_gather_multi2_pass(
         label: Some("voxel-gather-multi-bind-group"),
         layout: &pipelines.voxel_gather.multi_bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: segments.point_indices_buffer().as_entire_binding(),
@@ -918,22 +875,10 @@ pub(crate) fn record_voxel_gather_multi2_pass(
                 binding: 2,
                 resource: segments.cell_starts_buffer().as_entire_binding(),
             },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: values[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: values[1].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: outputs[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 6,
-                resource: outputs[1].as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 3, resource: values[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: values[1].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: outputs[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: outputs[1].as_entire_binding() },
         ],
     });
     let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -956,27 +901,16 @@ pub(crate) fn record_voxel_gather_multi4_pass(
 ) -> SpatialResult<()> {
     let device = runtime.device();
     let pipelines = runtime.pipelines();
-    let multi4_pipeline = pipelines
-        .voxel_gather
-        .multi4_pipeline
-        .as_ref()
-        .ok_or_else(|| {
-            SpatialError::InvalidArgument(
-                "4-channel gather pipeline is unavailable on this gpu adapter".to_owned(),
-            )
-        })?;
-    let multi4_layout = pipelines
-        .voxel_gather
-        .multi4_bind_group_layout
-        .as_ref()
-        .expect("multi4 layout");
+    let multi4_pipeline = pipelines.voxel_gather.multi4_pipeline.as_ref().ok_or_else(|| {
+        SpatialError::InvalidArgument(
+            "4-channel gather pipeline is unavailable on this gpu adapter".to_owned(),
+        )
+    })?;
+    let multi4_layout =
+        pipelines.voxel_gather.multi4_bind_group_layout.as_ref().expect("multi4 layout");
     let cell_count = segments.cell_count();
-    let uniform = GatherUniform {
-        cell_count,
-        point_count: segments.point_count(),
-        channel_count,
-        _pad: 0,
-    };
+    let uniform =
+        GatherUniform { cell_count, point_count: segments.point_count(), channel_count, _pad: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-gather-multi4-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -986,10 +920,7 @@ pub(crate) fn record_voxel_gather_multi4_pass(
         label: Some("voxel-gather-multi4-bind-group"),
         layout: multi4_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: segments.point_indices_buffer().as_entire_binding(),
@@ -998,38 +929,14 @@ pub(crate) fn record_voxel_gather_multi4_pass(
                 binding: 2,
                 resource: segments.cell_starts_buffer().as_entire_binding(),
             },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: values[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: values[1].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: values[2].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 6,
-                resource: values[3].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 7,
-                resource: outputs[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 8,
-                resource: outputs[1].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 9,
-                resource: outputs[2].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 10,
-                resource: outputs[3].as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 3, resource: values[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: values[1].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: values[2].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: values[3].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 7, resource: outputs[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 8, resource: outputs[1].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 9, resource: outputs[2].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 10, resource: outputs[3].as_entire_binding() },
         ],
     });
     let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -1058,12 +965,7 @@ pub(crate) fn record_voxel_gather_f32_pass(
 
     let device = runtime.device();
     let pipelines = runtime.pipelines();
-    let uniform = GatherUniform {
-        cell_count,
-        point_count,
-        channel_count: 1,
-        _pad: 0,
-    };
+    let uniform = GatherUniform { cell_count, point_count, channel_count: 1, _pad: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-gather-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -1074,26 +976,11 @@ pub(crate) fn record_voxel_gather_f32_pass(
         label: Some("voxel-gather-bind-group"),
         layout: &pipelines.voxel_gather.bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: point_indices.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: values.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: cell_starts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: output_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: point_indices.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: values.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: cell_starts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: output_buffer.as_entire_binding() },
         ],
     });
 
@@ -1123,12 +1010,7 @@ pub(crate) fn record_voxel_gather_u8_pass(
 
     let device = runtime.device();
     let pipelines = runtime.pipelines();
-    let uniform = GatherUniform {
-        cell_count,
-        point_count,
-        channel_count: 1,
-        _pad: 0,
-    };
+    let uniform = GatherUniform { cell_count, point_count, channel_count: 1, _pad: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-gather-u8-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -1139,26 +1021,11 @@ pub(crate) fn record_voxel_gather_u8_pass(
         label: Some("voxel-gather-u8-bind-group"),
         layout: &pipelines.voxel_gather.u8_bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: point_indices.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: values.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: cell_starts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: output_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: point_indices.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: values.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: cell_starts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: output_buffer.as_entire_binding() },
         ],
     });
 
@@ -1191,12 +1058,7 @@ pub(crate) fn record_voxel_gather_xyz_pass(
     let pipelines = runtime.pipelines();
     let cell_count = segments.cell_count();
     let point_count = segments.point_count();
-    let uniform = GatherUniform {
-        cell_count,
-        point_count,
-        channel_count: 0,
-        _pad: 0,
-    };
+    let uniform = GatherUniform { cell_count, point_count, channel_count: 0, _pad: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-gather-xyz-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -1207,10 +1069,7 @@ pub(crate) fn record_voxel_gather_xyz_pass(
         label: Some("voxel-gather-xyz-bind-group"),
         layout: &pipelines.voxel_gather.xyz_bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: segments.point_indices_buffer().as_entire_binding(),
@@ -1219,30 +1078,12 @@ pub(crate) fn record_voxel_gather_xyz_pass(
                 binding: 2,
                 resource: segments.cell_starts_buffer().as_entire_binding(),
             },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: x.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: y.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: z.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 6,
-                resource: output_x.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 7,
-                resource: output_y.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 8,
-                resource: output_z.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 3, resource: x.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: y.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: z.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: output_x.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 7, resource: output_y.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 8, resource: output_z.as_entire_binding() },
         ],
     });
 
@@ -1272,12 +1113,7 @@ fn dispatch_voxel_gather_f32(
     let queue = runtime.queue();
     let pipelines = runtime.pipelines();
 
-    let uniform = GatherUniform {
-        cell_count,
-        point_count,
-        channel_count: 1,
-        _pad: 0,
-    };
+    let uniform = GatherUniform { cell_count, point_count, channel_count: 1, _pad: 0 };
 
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-gather-uniform"),
@@ -1303,26 +1139,11 @@ fn dispatch_voxel_gather_f32(
         label: Some("voxel-gather-bind-group"),
         layout: &pipelines.voxel_gather.bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: point_indices.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: values.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: cell_starts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: output_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: point_indices.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: values.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: cell_starts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: output_buffer.as_entire_binding() },
         ],
     });
 
@@ -1379,12 +1200,7 @@ fn dispatch_voxel_gather_multi2_gpu_buffers(
     let point_count = segments.point_count();
     let channels = channel_count as usize;
 
-    let uniform = GatherUniform {
-        cell_count,
-        point_count,
-        channel_count,
-        _pad: 0,
-    };
+    let uniform = GatherUniform { cell_count, point_count, channel_count, _pad: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-gather-multi-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -1415,10 +1231,7 @@ fn dispatch_voxel_gather_multi2_gpu_buffers(
         label: Some("voxel-gather-multi-bind-group"),
         layout: &pipelines.voxel_gather.multi_bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: segments.point_indices_buffer().as_entire_binding(),
@@ -1427,22 +1240,10 @@ fn dispatch_voxel_gather_multi2_gpu_buffers(
                 binding: 2,
                 resource: segments.cell_starts_buffer().as_entire_binding(),
             },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: values[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: values[1].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: output_refs[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 6,
-                resource: output_refs[1].as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 3, resource: values[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: values[1].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: output_refs[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: output_refs[1].as_entire_binding() },
         ],
     });
 
@@ -1478,31 +1279,19 @@ fn dispatch_voxel_gather_multi4_gpu_buffers(
     let device = runtime.device();
     let queue = runtime.queue();
     let pipelines = runtime.pipelines();
-    let multi4_pipeline = pipelines
-        .voxel_gather
-        .multi4_pipeline
-        .as_ref()
-        .ok_or_else(|| {
-            SpatialError::InvalidArgument(
-                "4-channel gather pipeline is unavailable on this gpu adapter".to_owned(),
-            )
-        })?;
-    let multi4_layout = pipelines
-        .voxel_gather
-        .multi4_bind_group_layout
-        .as_ref()
-        .expect("multi4 layout");
+    let multi4_pipeline = pipelines.voxel_gather.multi4_pipeline.as_ref().ok_or_else(|| {
+        SpatialError::InvalidArgument(
+            "4-channel gather pipeline is unavailable on this gpu adapter".to_owned(),
+        )
+    })?;
+    let multi4_layout =
+        pipelines.voxel_gather.multi4_bind_group_layout.as_ref().expect("multi4 layout");
 
     let cell_count = segments.cell_count();
     let point_count = segments.point_count();
     let channels = channel_count as usize;
 
-    let uniform = GatherUniform {
-        cell_count,
-        point_count,
-        channel_count,
-        _pad: 0,
-    };
+    let uniform = GatherUniform { cell_count, point_count, channel_count, _pad: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-gather-multi4-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -1533,10 +1322,7 @@ fn dispatch_voxel_gather_multi4_gpu_buffers(
         label: Some("voxel-gather-multi4-bind-group"),
         layout: multi4_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: segments.point_indices_buffer().as_entire_binding(),
@@ -1545,38 +1331,14 @@ fn dispatch_voxel_gather_multi4_gpu_buffers(
                 binding: 2,
                 resource: segments.cell_starts_buffer().as_entire_binding(),
             },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: values[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: values[1].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: values[2].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 6,
-                resource: values[3].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 7,
-                resource: output_refs[0].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 8,
-                resource: output_refs[1].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 9,
-                resource: output_refs[2].as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 10,
-                resource: output_refs[3].as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 3, resource: values[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: values[1].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: values[2].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: values[3].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 7, resource: output_refs[0].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 8, resource: output_refs[1].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 9, resource: output_refs[2].as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 10, resource: output_refs[3].as_entire_binding() },
         ],
     });
 
@@ -1644,12 +1406,9 @@ mod tests {
         let keys = vec![(0, 0, 0), (0, 0, 0), (2, 0, 0), (2, 0, 0)];
         let segments = gpu_segments_from_keys(&runtime, &keys);
 
-        let multi = gather_voxel_first_f32_multi_gpu(
-            &runtime,
-            &[&intensity, &classification],
-            &segments,
-        )
-        .expect("multi gather");
+        let multi =
+            gather_voxel_first_f32_multi_gpu(&runtime, &[&intensity, &classification], &segments)
+                .expect("multi gather");
 
         assert!((multi[0][0] - 0.2).abs() < 1e-5);
         assert!((multi[0][1] - 10.0).abs() < 1e-5);

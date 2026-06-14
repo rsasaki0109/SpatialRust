@@ -67,9 +67,8 @@ impl PointReader for CopcReader {
 pub(crate) async fn read_header_info<S: ByteSource>(
     source: S,
 ) -> Result<(Header, CopcFileInfo), IoError> {
-    let reader = CopcStreamingReader::open(source)
-        .await
-        .map_err(|error| copc_parse(error.to_string()))?;
+    let reader =
+        CopcStreamingReader::open(source).await.map_err(|error| copc_parse(error.to_string()))?;
     let las_header = reader.header().las_header().clone();
     let copc_info = reader.copc_info();
     let root = copc_info.root_bounds();
@@ -84,11 +83,7 @@ pub(crate) async fn read_header_info<S: ByteSource>(
 /// Reads COPC header metadata without loading points.
 pub fn read_copc_file_info(path: impl AsRef<Path>) -> Result<CopcFileInfo, IoError> {
     let source = FileSource::open(path.as_ref()).map_err(|error| copc_parse(error.to_string()))?;
-    pollster::block_on(async {
-        read_header_info(source)
-            .await
-            .map(|(_, info)| info)
-    })
+    pollster::block_on(async { read_header_info(source).await.map(|(_, info)| info) })
 }
 
 /// Reads all points from a COPC file on disk.
@@ -124,9 +119,8 @@ pub(crate) async fn read_copc_from_byte_source<S: ByteSource>(
     source: S,
     query: Option<&CopcQuery>,
 ) -> Result<PointCloud, IoError> {
-    let mut reader = CopcStreamingReader::open(source)
-        .await
-        .map_err(|error| copc_parse(error.to_string()))?;
+    let mut reader =
+        CopcStreamingReader::open(source).await.map_err(|error| copc_parse(error.to_string()))?;
 
     let las_header = reader.header().las_header().clone();
     let schema = schema_for_las_header(&las_header);
@@ -143,23 +137,16 @@ pub(crate) async fn read_copc_from_byte_source<S: ByteSource>(
 async fn read_all_points<S: ByteSource>(
     reader: &mut CopcStreamingReader<S>,
 ) -> Result<Vec<las::Point>, IoError> {
-    reader
-        .load_all_hierarchy()
-        .await
-        .map_err(|error| copc_parse(error.to_string()))?;
+    reader.load_all_hierarchy().await.map_err(|error| copc_parse(error.to_string()))?;
 
     let mut points = Vec::new();
     for (key, entry) in reader.entries() {
         if entry.point_count == 0 {
             continue;
         }
-        let chunk = reader
-            .fetch_chunk(key)
-            .await
-            .map_err(|error| copc_parse(error.to_string()))?;
-        let chunk_points = reader
-            .read_points(&chunk)
-            .map_err(|error| copc_parse(error.to_string()))?;
+        let chunk = reader.fetch_chunk(key).await.map_err(|error| copc_parse(error.to_string()))?;
+        let chunk_points =
+            reader.read_points(&chunk).map_err(|error| copc_parse(error.to_string()))?;
         points.extend(chunk_points);
     }
     Ok(points)
@@ -176,18 +163,15 @@ async fn read_query_points<S: ByteSource>(
             .await
             .map_err(|error| copc_parse(error.to_string()))
     } else {
-        reader
-            .query_points(&bounds)
-            .await
-            .map_err(|error| copc_parse(error.to_string()))
+        reader.query_points(&bounds).await.map_err(|error| copc_parse(error.to_string()))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{read_copc_file, read_copc_file_info, read_copc_file_with_query, CopcQuery};
-    use crate::copc::{copc_level_for_resolution, CopcBounds};
     use crate::copc::writer::write_copc_file;
+    use crate::copc::{copc_level_for_resolution, CopcBounds};
     use crate::{write_las_file, LasWriteFormat};
     use spatialrust_core::PointCloudBuilder;
 
@@ -207,7 +191,8 @@ mod tests {
 
     #[test]
     fn rejects_invalid_query_bounds() {
-        let path = std::env::temp_dir().join(format!("spatialrust_copc_query_{}.copc.laz", std::process::id()));
+        let path = std::env::temp_dir()
+            .join(format!("spatialrust_copc_query_{}.copc.laz", std::process::id()));
         let query = CopcQuery::bounds(CopcBounds::from_ranges((1.0, 0.0), (0.0, 1.0), (0.0, 1.0)));
         let error = read_copc_file_with_query(&path, &query).unwrap_err();
         assert!(matches!(error, crate::IoError::CopcFormat(_)));
@@ -215,21 +200,21 @@ mod tests {
 
     #[test]
     fn write_copc_rejects_empty_cloud() {
-        use spatialrust_core::{PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas};
+        use spatialrust_core::{
+            PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas,
+        };
 
         let schema = StandardSchemas::point_xyz();
         let mut buffers = PointBufferSet::new();
         for field in schema.fields() {
-            buffers.insert(
-                field.name.clone(),
-                PointBuffer::with_capacity(field.dtype, 0),
-            );
+            buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, 0));
         }
         let cloud =
             PointCloud::try_from_parts(schema, buffers, SpatialMetadata::default()).unwrap();
         assert!(cloud.is_empty());
 
-        let path = std::env::temp_dir().join(format!("spatialrust_copc_{}.copc.laz", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("spatialrust_copc_{}.copc.laz", std::process::id()));
         let error = write_copc_file(&path, &cloud).unwrap_err();
         assert!(matches!(error, crate::IoError::CopcFormat(_)));
     }
@@ -246,17 +231,12 @@ mod tests {
         use crate::copc::writer::write_copc_file_with_params;
 
         let cloud = dense_grid_cloud(7_000);
-        let path = std::env::temp_dir().join(format!(
-            "spatialrust_copc_multires_{}.copc.laz",
-            std::process::id()
-        ));
+        let path = std::env::temp_dir()
+            .join(format!("spatialrust_copc_multires_{}.copc.laz", std::process::id()));
         write_copc_file_with_params(
             &path,
             &cloud,
-            &CopcWriterParams {
-                max_points_per_node: 96,
-                max_depth: 8,
-            },
+            &CopcWriterParams { max_points_per_node: 96, max_depth: 8 },
         )
         .unwrap();
 
@@ -288,10 +268,10 @@ mod tests {
             "coarse resolution should load fewer points than full detail"
         );
 
-        let level0 = read_copc_file_with_query(&path, &CopcQuery::with_level(info.root_bounds, 0))
-            .unwrap();
-        let level2 = read_copc_file_with_query(&path, &CopcQuery::with_level(info.root_bounds, 2))
-            .unwrap();
+        let level0 =
+            read_copc_file_with_query(&path, &CopcQuery::with_level(info.root_bounds, 0)).unwrap();
+        let level2 =
+            read_copc_file_with_query(&path, &CopcQuery::with_level(info.root_bounds, 2)).unwrap();
         assert!(level0.len() <= level2.len());
         assert!(level2.len() <= full.len());
 

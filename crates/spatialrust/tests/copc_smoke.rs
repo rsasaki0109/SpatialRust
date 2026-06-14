@@ -11,12 +11,10 @@ fn copc_public_api_and_format_detection() {
     builder.push_point([4.0, 5.0, 6.0]).unwrap();
     let cloud = builder.build().unwrap();
 
-    assert_eq!(
-        detect_point_cloud_format("scan.copc.laz"),
-        Some(PointCloudFileFormat::Copc)
-    );
+    assert_eq!(detect_point_cloud_format("scan.copc.laz"), Some(PointCloudFileFormat::Copc));
 
-    let path = std::env::temp_dir().join(format!("spatialrust_copc_smoke_{}.copc.laz", std::process::id()));
+    let path = std::env::temp_dir()
+        .join(format!("spatialrust_copc_smoke_{}.copc.laz", std::process::id()));
     write_copc_file(&path, &cloud).expect("write copc");
     let loaded = read_copc_file(&path).expect("read copc");
     let _ = std::fs::remove_file(&path);
@@ -37,7 +35,8 @@ fn copc_query_api_surface() {
     let query = CopcQuery::with_resolution(bounds, 0.5);
     assert!(query.validate().is_ok());
 
-    let path = std::env::temp_dir().join(format!("spatialrust_copc_query_{}.copc.laz", std::process::id()));
+    let path = std::env::temp_dir()
+        .join(format!("spatialrust_copc_query_{}.copc.laz", std::process::id()));
     let bounds_error = read_copc_file_in_bounds(
         &path,
         CopcBounds::from_ranges((1.0, 0.0), (0.0, 1.0), (0.0, 1.0)),

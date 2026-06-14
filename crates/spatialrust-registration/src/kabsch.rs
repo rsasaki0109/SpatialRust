@@ -1,8 +1,11 @@
-use spatialrust_math::{Isometry3, Mat3, Quat, Vec3, symmetric_eigen3};
+use spatialrust_math::{symmetric_eigen3, Isometry3, Mat3, Quat, Vec3};
 
 /// Estimates the rigid transform that best maps `source` onto `target`.
 #[must_use]
-pub fn estimate_rigid_transform(source: &[Vec3<f32>], target: &[Vec3<f32>]) -> Option<Isometry3<f32>> {
+pub fn estimate_rigid_transform(
+    source: &[Vec3<f32>],
+    target: &[Vec3<f32>],
+) -> Option<Isometry3<f32>> {
     if source.len() != target.len() || source.len() < 3 {
         return None;
     }
@@ -69,7 +72,11 @@ fn eigenvectors_from_cross_covariance(h: Mat3<f64>) -> Mat3<f64> {
 }
 
 fn inv_sqrt(value: f64) -> f64 {
-    if value > 1e-12 { 1.0 / value.sqrt() } else { 0.0 }
+    if value > 1e-12 {
+        1.0 / value.sqrt()
+    } else {
+        0.0
+    }
 }
 
 fn subtract(a: Vec3<f32>, b: Vec3<f32>) -> Vec3<f32> {
@@ -162,9 +169,7 @@ mod tests {
 
     #[test]
     fn recovers_pure_translation() {
-        let source: Vec<Vec3<f32>> = (0..20)
-            .map(|i| Vec3::new(i as f32 * 0.1, 0.0, 0.0))
-            .collect();
+        let source: Vec<Vec3<f32>> = (0..20).map(|i| Vec3::new(i as f32 * 0.1, 0.0, 0.0)).collect();
         let offset = Vec3::new(0.5, -0.2, 0.1);
         let target: Vec<Vec3<f32>> = source.iter().map(|point| *point + offset).collect();
 
@@ -177,16 +182,18 @@ mod tests {
     #[test]
     fn recovers_known_rigid_transform() {
         let target: Vec<Vec3<f32>> = (0..4)
-            .flat_map(|x| (0..4).flat_map(move |y| (0..3).map(move |z| Vec3::new(x as f32, y as f32, z as f32 * 0.2))))
+            .flat_map(|x| {
+                (0..4).flat_map(move |y| {
+                    (0..3).map(move |z| Vec3::new(x as f32, y as f32, z as f32 * 0.2))
+                })
+            })
             .collect();
         let misalignment = Isometry3::new(
             Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 0.2),
             Vec3::new(0.3, -0.1, 0.05),
         );
-        let source: Vec<Vec3<f32>> = target
-            .iter()
-            .map(|point| misalignment.transform_point(*point))
-            .collect();
+        let source: Vec<Vec3<f32>> =
+            target.iter().map(|point| misalignment.transform_point(*point)).collect();
 
         let estimated = estimate_rigid_transform(&source, &target).unwrap();
         let composed = estimated.compose(misalignment);

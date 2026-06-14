@@ -183,11 +183,7 @@ impl PyRegionResult {
     }
 
     fn __repr__(&self) -> String {
-        format!(
-            "RegionResult(points={}, regions={})",
-            self.output.inner.len(),
-            self.cluster_count
-        )
+        format!("RegionResult(points={}, regions={})", self.output.inner.len(), self.cluster_count)
     }
 }
 
@@ -264,20 +260,15 @@ fn region_growing(
     min_region_size: usize,
 ) -> PyResult<PyRegionResult> {
     let normals_config = NormalEstimationConfig::k_neighbors(k_neighbors);
-    let with_normals = NormalEstimator::new(normals_config)
-        .estimate(&cloud.inner)
-        .map_err(to_py_err)?;
+    let with_normals =
+        NormalEstimator::new(normals_config).estimate(&cloud.inner).map_err(to_py_err)?;
 
     let mut config = RegionGrowingConfig::with_smoothness(smoothness_deg.to_radians(), k_neighbors);
     config.min_cluster_size = min_region_size.max(1);
-    let result = RegionGrowingSegmenter::new(config)
-        .segment(&with_normals)
-        .map_err(to_py_err)?;
+    let result = RegionGrowingSegmenter::new(config).segment(&with_normals).map_err(to_py_err)?;
 
     Ok(PyRegionResult {
-        output: PyPointCloud {
-            inner: result.cloud,
-        },
+        output: PyPointCloud { inner: result.cloud },
         cluster_count: result.cluster_count,
         cluster_sizes: result.cluster_sizes,
     })

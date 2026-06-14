@@ -84,10 +84,7 @@ pub fn compute_voxel_keys(
     inv_leaf: f32,
 ) -> SpatialResult<Vec<(i64, i64, i64)>> {
     if x.len() != y.len() || x.len() != z.len() {
-        return Err(SpatialError::BufferLengthMismatch {
-            expected: x.len(),
-            found: y.len(),
-        });
+        return Err(SpatialError::BufferLengthMismatch { expected: x.len(), found: y.len() });
     }
     if x.is_empty() {
         return Ok(Vec::new());
@@ -107,10 +104,7 @@ pub fn compute_voxel_keys_gpu_buffers(
     inv_leaf: f32,
 ) -> SpatialResult<GpuVoxelKeyBuffers> {
     if x.len() != y.len() || x.len() != z.len() {
-        return Err(SpatialError::BufferLengthMismatch {
-            expected: x.len(),
-            found: y.len(),
-        });
+        return Err(SpatialError::BufferLengthMismatch { expected: x.len(), found: y.len() });
     }
     if x.is_empty() {
         return Err(SpatialError::InvalidArgument(
@@ -134,16 +128,13 @@ pub fn compute_voxel_keys_gpu_buffers(
         point_count,
     )?;
 
-    Ok(GpuVoxelKeyBuffers {
-        x: x_buffer,
-        y: y_buffer,
-        z: z_buffer,
-        keys: keys_buffer,
-        point_count,
-    })
+    Ok(GpuVoxelKeyBuffers { x: x_buffer, y: y_buffer, z: z_buffer, keys: keys_buffer, point_count })
 }
 
-fn read_voxel_keys(runtime: &WgpuRuntime, buffers: &GpuVoxelKeyBuffers) -> SpatialResult<Vec<(i64, i64, i64)>> {
+fn read_voxel_keys(
+    runtime: &WgpuRuntime,
+    buffers: &GpuVoxelKeyBuffers,
+) -> SpatialResult<Vec<(i64, i64, i64)>> {
     let device = runtime.device();
     let queue = runtime.queue();
     let point_count = buffers.point_count() as usize;
@@ -171,7 +162,9 @@ fn read_voxel_keys(runtime: &WgpuRuntime, buffers: &GpuVoxelKeyBuffers) -> Spati
     receiver
         .recv()
         .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
-        .map_err(|error| SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}")))?;
+        .map_err(|error| {
+            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
+        })?;
 
     let data = slice.get_mapped_range();
     let outputs: &[VoxelKeyOutput] = bytemuck::cast_slice(&data);
@@ -225,26 +218,11 @@ fn dispatch_voxel_keys(
         label: Some("voxel-key-bind-group"),
         layout: &pipelines.voxel_keys.bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: x_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: y_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: z_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: output_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: x_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: y_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: z_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: output_buffer.as_entire_binding() },
         ],
     });
 

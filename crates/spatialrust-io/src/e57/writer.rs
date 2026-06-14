@@ -1,11 +1,13 @@
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use e57::{E57Writer as ExternalE57Writer, RecordValue, RawValues};
-use spatialrust_core::{DType, FieldSemantic, HasPositions3, PointBuffer, PointCloud, PointField, PointSchema};
+use e57::{E57Writer as ExternalE57Writer, RawValues, RecordValue};
+use spatialrust_core::{
+    DType, FieldSemantic, HasPositions3, PointBuffer, PointCloud, PointField, PointSchema,
+};
 
-use crate::error::{e57_format, e57_parse, IoError};
 use crate::e57::schema::{schema_from_point_cloud, validate_export_schema};
+use crate::error::{e57_format, e57_parse, IoError};
 use crate::{PointWriter, WriteOptions};
 
 /// Writes point clouds to E57 files.
@@ -28,8 +30,10 @@ impl PointWriter for E57Writer {
         _options: &WriteOptions,
     ) -> spatialrust_core::SpatialResult<()> {
         let path = std::env::temp_dir().join(format!("spatialrust_e57_{}.e57", std::process::id()));
-        write_e57_file(&path, cloud).map_err(|error| spatialrust_core::SpatialError::Io(error.to_string()))?;
-        std::fs::remove_file(path).map_err(|error| spatialrust_core::SpatialError::Io(error.to_string()))?;
+        write_e57_file(&path, cloud)
+            .map_err(|error| spatialrust_core::SpatialError::Io(error.to_string()))?;
+        std::fs::remove_file(path)
+            .map_err(|error| spatialrust_core::SpatialError::Io(error.to_string()))?;
         Ok(())
     }
 }
@@ -56,20 +60,18 @@ pub fn write_e57_file(path: impl AsRef<Path>, cloud: &PointCloud) -> Result<(), 
 
     for index in 0..cloud.len() {
         let values = point_values(cloud, &export_schema, index)?;
-        pc_writer
-            .add_point(values)
-            .map_err(|error| e57_format(error.to_string()))?;
+        pc_writer.add_point(values).map_err(|error| e57_format(error.to_string()))?;
     }
 
-    pc_writer
-        .finalize()
-        .map_err(|error| e57_format(error.to_string()))?;
-    writer
-        .finalize()
-        .map_err(|error| e57_format(error.to_string()))
+    pc_writer.finalize().map_err(|error| e57_format(error.to_string()))?;
+    writer.finalize().map_err(|error| e57_format(error.to_string()))
 }
 
-fn point_values(cloud: &PointCloud, schema: &PointSchema, index: usize) -> Result<RawValues, IoError> {
+fn point_values(
+    cloud: &PointCloud,
+    schema: &PointSchema,
+    index: usize,
+) -> Result<RawValues, IoError> {
     let (x, y, z) = cloud.positions3()?;
     let mut values = Vec::with_capacity(schema.len());
 
@@ -78,9 +80,7 @@ fn point_values(cloud: &PointCloud, schema: &PointSchema, index: usize) -> Resul
             FieldSemantic::PositionX => RecordValue::Single(x[index]),
             FieldSemantic::PositionY => RecordValue::Single(y[index]),
             FieldSemantic::PositionZ => RecordValue::Single(z[index]),
-            FieldSemantic::Intensity => {
-                RecordValue::Single(read_cloud_field(cloud, field, index)?)
-            }
+            FieldSemantic::Intensity => RecordValue::Single(read_cloud_field(cloud, field, index)?),
             FieldSemantic::ColorR | FieldSemantic::ColorG | FieldSemantic::ColorB => {
                 RecordValue::Integer(read_cloud_field(cloud, field, index)?.round() as i64)
             }
@@ -128,7 +128,8 @@ mod tests {
         let mut builder = PointCloudBuilder::xyz();
         builder.push_point([1.0, 2.0, 3.0]).unwrap();
         let cloud = builder.build().unwrap();
-        let path = std::env::temp_dir().join(format!("spatialrust_e57_write_{}.e57", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("spatialrust_e57_write_{}.e57", std::process::id()));
         write_e57_file(&path, &cloud).unwrap();
         let loaded = read_e57_file(&path).unwrap();
         let _ = std::fs::remove_file(path);

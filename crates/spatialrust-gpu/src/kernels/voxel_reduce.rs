@@ -32,9 +32,7 @@ pub fn reduce_voxel_average_f32(
         return Ok(Vec::new());
     }
     if values.is_empty() {
-        return Err(SpatialError::InvalidArgument(
-            "cannot reduce empty value buffer".to_owned(),
-        ));
+        return Err(SpatialError::InvalidArgument("cannot reduce empty value buffer".to_owned()));
     }
 
     let device = runtime.device();
@@ -577,12 +575,7 @@ pub(crate) fn record_voxel_reduce_f32_pass(
 
     let device = runtime.device();
     let pipelines = runtime.pipelines();
-    let uniform = ReduceUniform {
-        cell_count,
-        point_count,
-        _pad0: 0,
-        _pad1: 0,
-    };
+    let uniform = ReduceUniform { cell_count, point_count, _pad0: 0, _pad1: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-reduce-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -593,26 +586,11 @@ pub(crate) fn record_voxel_reduce_f32_pass(
         label: Some("voxel-reduce-bind-group"),
         layout: &pipelines.voxel_reduce.bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: point_indices.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: values.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: cell_starts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: output_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: point_indices.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: values.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: cell_starts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: output_buffer.as_entire_binding() },
         ],
     });
 
@@ -642,12 +620,7 @@ pub(crate) fn record_voxel_reduce_u8_pass(
 
     let device = runtime.device();
     let pipelines = runtime.pipelines();
-    let uniform = ReduceUniform {
-        cell_count,
-        point_count,
-        _pad0: 0,
-        _pad1: 0,
-    };
+    let uniform = ReduceUniform { cell_count, point_count, _pad0: 0, _pad1: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-reduce-u8-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -658,26 +631,11 @@ pub(crate) fn record_voxel_reduce_u8_pass(
         label: Some("voxel-reduce-u8-bind-group"),
         layout: &pipelines.voxel_reduce.u8_bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: point_indices.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: values.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: cell_starts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: output_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: point_indices.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: values.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: cell_starts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: output_buffer.as_entire_binding() },
         ],
     });
 
@@ -711,12 +669,7 @@ pub(crate) fn record_voxel_reduce_xyz_pass(
 
     let device = runtime.device();
     let pipelines = runtime.pipelines();
-    let uniform = ReduceUniform {
-        cell_count,
-        point_count,
-        _pad0: 0,
-        _pad1: 0,
-    };
+    let uniform = ReduceUniform { cell_count, point_count, _pad0: 0, _pad1: 0 };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-reduce-xyz-uniform"),
         contents: bytemuck::bytes_of(&uniform),
@@ -727,42 +680,15 @@ pub(crate) fn record_voxel_reduce_xyz_pass(
         label: Some("voxel-reduce-xyz-bind-group"),
         layout: &pipelines.voxel_reduce.xyz_bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: point_indices.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: cell_starts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: values_x.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: values_y.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: values_z.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 6,
-                resource: output_x.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 7,
-                resource: output_y.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 8,
-                resource: output_z.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: point_indices.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: cell_starts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: values_x.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: values_y.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: values_z.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: output_x.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 7, resource: output_y.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 8, resource: output_z.as_entire_binding() },
         ],
     });
 
@@ -791,12 +717,7 @@ fn dispatch_voxel_reduce_f32(
     let device = runtime.device();
     let queue = runtime.queue();
 
-    let uniform = ReduceUniform {
-        cell_count,
-        point_count,
-        _pad0: 0,
-        _pad1: 0,
-    };
+    let uniform = ReduceUniform { cell_count, point_count, _pad0: 0, _pad1: 0 };
 
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-reduce-uniform"),
@@ -824,26 +745,11 @@ fn dispatch_voxel_reduce_f32(
         label: Some("voxel-reduce-bind-group"),
         layout: &pipelines.voxel_reduce.bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: point_indices.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: values.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: cell_starts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: output_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: point_indices.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: values.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: cell_starts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: output_buffer.as_entire_binding() },
         ],
     });
 
@@ -876,10 +782,7 @@ pub fn reduce_voxel_centroids_xyz(
     segments: &VoxelSegments,
 ) -> SpatialResult<(Vec<f32>, Vec<f32>, Vec<f32>)> {
     if x.len() != y.len() || x.len() != z.len() {
-        return Err(SpatialError::BufferLengthMismatch {
-            expected: x.len(),
-            found: y.len(),
-        });
+        return Err(SpatialError::BufferLengthMismatch { expected: x.len(), found: y.len() });
     }
 
     let out_x = reduce_voxel_average_f32(runtime, x, segments)?;
@@ -968,7 +871,13 @@ fn dispatch_voxel_reduce_xyz_f32(
         &output_z,
     )?;
     encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
-    encoder.copy_buffer_to_buffer(&output_y, 0, &staging_buffer, channel_len as u64, channel_len as u64);
+    encoder.copy_buffer_to_buffer(
+        &output_y,
+        0,
+        &staging_buffer,
+        channel_len as u64,
+        channel_len as u64,
+    );
     encoder.copy_buffer_to_buffer(
         &output_z,
         0,
@@ -985,8 +894,8 @@ fn dispatch_voxel_reduce_xyz_f32(
 #[cfg(test)]
 mod tests {
     use super::{
-        reduce_voxel_average_f32, reduce_voxel_average_f32_multi_gpu,
-        reduce_voxel_centroids_xyz, reduce_voxel_centroids_xyz_and_average_multi_gpu,
+        reduce_voxel_average_f32, reduce_voxel_average_f32_multi_gpu, reduce_voxel_centroids_xyz,
+        reduce_voxel_centroids_xyz_and_average_multi_gpu,
         reduce_voxel_centroids_xyz_and_gather_first_multi_gpu,
     };
     use crate::kernels::voxel_segments::build_voxel_segments;
@@ -1025,12 +934,9 @@ mod tests {
         let keys = vec![(0, 0, 0), (0, 0, 0), (2, 0, 0), (2, 0, 0)];
         let segments = build_voxel_segments_gpu_from_keys(&runtime, &keys).expect("gpu segments");
 
-        let multi = reduce_voxel_average_f32_multi_gpu(
-            &runtime,
-            &[&intensity, &classification],
-            &segments,
-        )
-        .expect("multi reduce");
+        let multi =
+            reduce_voxel_average_f32_multi_gpu(&runtime, &[&intensity, &classification], &segments)
+                .expect("multi reduce");
 
         assert!((multi[0][0] - 0.5).abs() < 1e-5);
         assert!((multi[0][1] - 15.0).abs() < 1e-5);

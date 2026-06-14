@@ -2,9 +2,7 @@ use std::path::Path;
 
 use copc_core::{Bounds as CopcBounds, Error as CopcCoreError, Result as CopcCoreResult};
 use copc_writer::{write_source, CopcPointFields, CopcPointSource, CopcWriterParams};
-use spatialrust_core::{
-    DType, FieldSemantic, HasPositions3, PointCloud, PointField, PointSchema,
-};
+use spatialrust_core::{DType, FieldSemantic, HasPositions3, PointCloud, PointField, PointSchema};
 
 use crate::error::{copc_format, copc_parse, IoError};
 use crate::{PointWriter, WriteOptions};
@@ -46,21 +44,15 @@ pub fn write_copc_file_with_params(
         return Err(copc_format("cannot write an empty point cloud to COPC".to_owned()));
     }
 
-    let has_color = cloud
-        .schema()
-        .fields()
-        .iter()
-        .any(|field| matches!(field.semantic, FieldSemantic::ColorR | FieldSemantic::ColorG | FieldSemantic::ColorB));
+    let has_color = cloud.schema().fields().iter().any(|field| {
+        matches!(
+            field.semantic,
+            FieldSemantic::ColorR | FieldSemantic::ColorG | FieldSemantic::ColorB
+        )
+    });
     let bounds = bounds_from_cloud(cloud)?;
     let source = PointCloudCopcSource { cloud };
-    write_source(
-        path.as_ref(),
-        &source,
-        has_color,
-        bounds,
-        params,
-    )
-    .map_err(map_copc_writer_error)
+    write_source(path.as_ref(), &source, has_color, bounds, params).map_err(map_copc_writer_error)
 }
 
 fn validate_copc_output_path(path: &Path) -> Result<(), IoError> {
@@ -100,10 +92,7 @@ fn bounds_from_cloud(cloud: &PointCloud) -> Result<CopcBounds, IoError> {
         max[2] = max[2].max(f64::from(z[index]));
     }
     expand_degenerate_bounds(&mut min, &mut max);
-    Ok(CopcBounds::new(
-        (min[0], min[1], min[2]),
-        (max[0], max[1], max[2]),
-    ))
+    Ok(CopcBounds::new((min[0], min[1], min[2]), (max[0], max[1], max[2])))
 }
 
 fn expand_degenerate_bounds(min: &mut [f64; 3], max: &mut [f64; 3]) {
@@ -134,11 +123,7 @@ impl CopcPointSource for PointCloudCopcSource<'_> {
 
     fn xyz(&self, index: usize) -> (f64, f64, f64) {
         let (x, y, z) = self.cloud.positions3().expect("validated cloud positions");
-        (
-            f64::from(x[index]),
-            f64::from(y[index]),
-            f64::from(z[index]),
-        )
+        (f64::from(x[index]), f64::from(y[index]), f64::from(z[index]))
     }
 
     fn fields(&self, index: usize) -> CopcCoreResult<CopcPointFields> {
@@ -147,7 +132,8 @@ impl CopcPointSource for PointCloudCopcSource<'_> {
 }
 
 fn point_fields_from_cloud(cloud: &PointCloud, index: usize) -> CopcCoreResult<CopcPointFields> {
-    let (x, y, z) = cloud.positions3().map_err(|error| CopcCoreError::InvalidInput(error.to_string()))?;
+    let (x, y, z) =
+        cloud.positions3().map_err(|error| CopcCoreError::InvalidInput(error.to_string()))?;
     let schema = cloud.schema();
     Ok(CopcPointFields {
         x: f64::from(x[index]),
@@ -155,8 +141,14 @@ fn point_fields_from_cloud(cloud: &PointCloud, index: usize) -> CopcCoreResult<C
         z: f64::from(z[index]),
         intensity: read_optional_u16(cloud, schema, FieldSemantic::Intensity, "intensity", index)?
             .unwrap_or(0),
-        return_number: read_optional_u8(cloud, schema, FieldSemantic::Unknown, "return_number", index)?
-            .unwrap_or(1),
+        return_number: read_optional_u8(
+            cloud,
+            schema,
+            FieldSemantic::Unknown,
+            "return_number",
+            index,
+        )?
+        .unwrap_or(1),
         number_of_returns: read_optional_u8(
             cloud,
             schema,
@@ -172,8 +164,14 @@ fn point_fields_from_cloud(cloud: &PointCloud, index: usize) -> CopcCoreResult<C
         scan_channel: 0,
         scan_direction_flag: 0,
         edge_of_flight_line: 0,
-        classification: read_optional_u8(cloud, schema, FieldSemantic::Label, "classification", index)?
-            .unwrap_or(0),
+        classification: read_optional_u8(
+            cloud,
+            schema,
+            FieldSemantic::Label,
+            "classification",
+            index,
+        )?
+        .unwrap_or(0),
         user_data: 0,
         scan_angle: 0.0,
         point_source_id: read_optional_u16(
@@ -187,7 +185,8 @@ fn point_fields_from_cloud(cloud: &PointCloud, index: usize) -> CopcCoreResult<C
         gps_time: read_optional_f64(cloud, schema, FieldSemantic::TimeOffset, "gps_time", index)?
             .unwrap_or(0.0),
         red: read_optional_u16(cloud, schema, FieldSemantic::ColorR, "red", index)?.unwrap_or(0),
-        green: read_optional_u16(cloud, schema, FieldSemantic::ColorG, "green", index)?.unwrap_or(0),
+        green: read_optional_u16(cloud, schema, FieldSemantic::ColorG, "green", index)?
+            .unwrap_or(0),
         blue: read_optional_u16(cloud, schema, FieldSemantic::ColorB, "blue", index)?.unwrap_or(0),
     })
 }
@@ -254,14 +253,11 @@ fn read_scalar_as_u16(cloud: &PointCloud, field: &PointField, index: usize) -> C
 fn read_scalar_as_f64(cloud: &PointCloud, field: &PointField, index: usize) -> CopcCoreResult<f64> {
     use spatialrust_core::PointBuffer;
 
-    let buffer = cloud
-        .field(&field.name)
-        .map_err(|error| CopcCoreError::InvalidInput(error.to_string()))?;
+    let buffer =
+        cloud.field(&field.name).map_err(|error| CopcCoreError::InvalidInput(error.to_string()))?;
     match field.dtype {
         DType::F32 | DType::F16 => Ok(f64::from(
-            buffer
-                .as_f32()
-                .map_err(|error| CopcCoreError::InvalidInput(error.to_string()))?[index],
+            buffer.as_f32().map_err(|error| CopcCoreError::InvalidInput(error.to_string()))?[index],
         )),
         DType::F64 => {
             let PointBuffer::F64(values) = buffer else {
@@ -324,7 +320,8 @@ mod tests {
         let mut builder = PointCloudBuilder::xyz();
         builder.push_point([0.0, 0.0, 0.0]).unwrap();
         let cloud = builder.build().unwrap();
-        let path = std::env::temp_dir().join(format!("spatialrust_bad_ext_{}.laz", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("spatialrust_bad_ext_{}.laz", std::process::id()));
         let error = write_copc_file(&path, &cloud).unwrap_err();
         assert!(matches!(error, crate::IoError::CopcFormat(_)));
     }
@@ -344,10 +341,8 @@ mod tests {
         builder.push_point([4.0, 5.0, 6.0, 64.0]).unwrap();
         let cloud = builder.build().unwrap();
 
-        let path = std::env::temp_dir().join(format!(
-            "spatialrust_copc_xyzi_{}.copc.laz",
-            std::process::id()
-        ));
+        let path = std::env::temp_dir()
+            .join(format!("spatialrust_copc_xyzi_{}.copc.laz", std::process::id()));
         write_copc_file(&path, &cloud).expect("write copc");
         let loaded = read_copc_file(&path).expect("read copc");
         let _ = std::fs::remove_file(&path);
@@ -374,10 +369,8 @@ mod tests {
         builder.push_point([1.0, 1.0, 1.0, 40.0, 50.0, 60.0]).unwrap();
         let cloud = builder.build().unwrap();
 
-        let path = std::env::temp_dir().join(format!(
-            "spatialrust_copc_xyzrgb_{}.copc.laz",
-            std::process::id()
-        ));
+        let path = std::env::temp_dir()
+            .join(format!("spatialrust_copc_xyzrgb_{}.copc.laz", std::process::id()));
         write_copc_file(&path, &cloud).expect("write copc");
         let loaded = read_copc_file(&path).expect("read copc");
         let _ = std::fs::remove_file(&path);
@@ -423,10 +416,8 @@ mod tests {
         builder.push_point([1.5, 2.5, 3.5]).unwrap();
         let cloud = builder.build().unwrap();
 
-        let path = std::env::temp_dir().join(format!(
-            "spatialrust_copc_roundtrip_{}.copc.laz",
-            std::process::id()
-        ));
+        let path = std::env::temp_dir()
+            .join(format!("spatialrust_copc_roundtrip_{}.copc.laz", std::process::id()));
         write_copc_file(&path, &cloud).expect("write copc");
         let loaded = read_copc_file(&path).expect("read copc");
         let _ = std::fs::remove_file(&path);
@@ -454,10 +445,8 @@ mod tests {
         builder.push_point([0.0, 0.0, 0.5]).unwrap();
         let cloud = builder.build().unwrap();
 
-        let path = std::env::temp_dir().join(format!(
-            "spatialrust_copc_bounds_query_{}.copc.laz",
-            std::process::id()
-        ));
+        let path = std::env::temp_dir()
+            .join(format!("spatialrust_copc_bounds_query_{}.copc.laz", std::process::id()));
         write_copc_file(&path, &cloud).expect("write copc");
 
         let bounds = CopcBounds::from_ranges((0.0, 0.85), (0.0, 0.85), (-0.01, 0.01));
@@ -466,12 +455,10 @@ mod tests {
 
         assert!(loaded.len() < cloud.len());
         assert!(loaded.len() >= 10);
-        assert!(
-            loaded
-                .schema()
-                .find_semantic(spatialrust_core::FieldSemantic::PositionX)
-                .is_some()
-        );
+        assert!(loaded
+            .schema()
+            .find_semantic(spatialrust_core::FieldSemantic::PositionX)
+            .is_some());
         let (x, _, _) = loaded.positions3().expect("positions3");
         assert_eq!(x.len(), loaded.len());
     }

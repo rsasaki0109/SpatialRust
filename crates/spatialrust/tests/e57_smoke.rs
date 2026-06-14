@@ -11,7 +11,8 @@ fn e57_public_api_roundtrip() {
     builder.push_point([4.0, 5.0, 6.0]).unwrap();
     let cloud = builder.build().unwrap();
 
-    let path = std::env::temp_dir().join(format!("spatialrust_e57_smoke_{}.e57", std::process::id()));
+    let path =
+        std::env::temp_dir().join(format!("spatialrust_e57_smoke_{}.e57", std::process::id()));
     write_e57_file(&path, &cloud).unwrap();
     let loaded = read_e57_file(&path).unwrap();
     assert_eq!(loaded.len(), 2);

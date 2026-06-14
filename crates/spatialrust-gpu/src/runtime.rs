@@ -59,8 +59,7 @@ impl WgpuRuntime {
     /// Returns cached compute pipelines for this runtime's device.
     #[must_use]
     pub fn pipelines(&self) -> &ComputePipelineCache {
-        self.pipelines
-            .get_or_init(|| ComputePipelineCache::new(&self.device))
+        self.pipelines.get_or_init(|| ComputePipelineCache::new(&self.device))
     }
 
     /// Returns the maximum attribute channels gatherable in one multi dispatch.
@@ -70,7 +69,11 @@ impl WgpuRuntime {
     }
 
     /// Uploads `f32` values into a reusable pooled storage buffer.
-    pub fn upload_f32_storage(&self, label: &'static str, data: &[f32]) -> SpatialResult<wgpu::Buffer> {
+    pub fn upload_f32_storage(
+        &self,
+        label: &'static str,
+        data: &[f32],
+    ) -> SpatialResult<wgpu::Buffer> {
         self.upload_pool.upload_f32_storage(self, label, data)
     }
 
@@ -140,9 +143,7 @@ fn max_gather_channels_for_limit(storage_buffers_per_stage: u32) -> u32 {
 
 #[cfg(feature = "gpu-wgpu")]
 fn init_shared_runtime() -> Result<Arc<WgpuRuntime>, String> {
-    WgpuRuntime::new_headless()
-        .map(Arc::new)
-        .map_err(|error| error.to_string())
+    WgpuRuntime::new_headless().map(Arc::new).map_err(|error| error.to_string())
 }
 
 #[cfg(all(feature = "gpu-wgpu", test))]
@@ -179,10 +180,7 @@ mod tests {
     #[test]
     fn adapter_limits_enable_multi_channel_gather() {
         let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
-        let limit = runtime
-            .device()
-            .limits()
-            .max_storage_buffers_per_shader_stage;
+        let limit = runtime.device().limits().max_storage_buffers_per_shader_stage;
         assert!(
             limit >= super::MULTI_GATHER2_STORAGE_BUFFERS,
             "expected at least {} storage buffers per stage, got {limit}",

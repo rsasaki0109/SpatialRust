@@ -19,16 +19,10 @@ pub use cloud::{extract_indices, extract_mask, with_labels};
 pub use segmenter::PointCloudSegmenter;
 
 #[cfg(feature = "segment-ransac-plane")]
-pub use plane::{
-    PlaneModel, RansacPlaneConfig, RansacPlaneSegmentation, RansacPlaneSegmenter,
-};
+pub use plane::{PlaneModel, RansacPlaneConfig, RansacPlaneSegmentation, RansacPlaneSegmenter};
 
 #[cfg(feature = "segment-euclidean")]
-pub use cluster::{
-    EuclideanClusterConfig, EuclideanClusterResult, EuclideanClusterExtractor,
-};
+pub use cluster::{EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult};
 
 #[cfg(feature = "segment-region-growing")]
-pub use region_growing::{
-    RegionGrowingConfig, RegionGrowingResult, RegionGrowingSegmenter,
-};
+pub use region_growing::{RegionGrowingConfig, RegionGrowingResult, RegionGrowingSegmenter};

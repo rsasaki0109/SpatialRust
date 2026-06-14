@@ -95,7 +95,11 @@ pub(crate) fn read_staging_f32_and_u8(
     Ok((f32_values, u8_values))
 }
 
-pub(crate) fn split_u8_channel_blocks(flat: Vec<u8>, channels: usize, cells: usize) -> Vec<Vec<u8>> {
+pub(crate) fn split_u8_channel_blocks(
+    flat: Vec<u8>,
+    channels: usize,
+    cells: usize,
+) -> Vec<Vec<u8>> {
     if channels == 0 {
         return Vec::new();
     }
@@ -124,7 +128,11 @@ pub(crate) fn u8_output_staging_bytes(cells: usize, channels: usize) -> usize {
     cells * channels * U32_OUTPUT_BYTES_PER_CELL
 }
 
-pub(crate) fn unpack_u8_outputs_from_u32_staging(raw: Vec<u8>, cells: usize, channels: usize) -> Vec<u8> {
+pub(crate) fn unpack_u8_outputs_from_u32_staging(
+    raw: Vec<u8>,
+    cells: usize,
+    channels: usize,
+) -> Vec<u8> {
     let word_count = cells * channels;
     let words: &[u32] = bytemuck::cast_slice(&raw[..word_count * U32_OUTPUT_BYTES_PER_CELL]);
     words.iter().map(|word| (*word & 0xFF) as u8).collect()

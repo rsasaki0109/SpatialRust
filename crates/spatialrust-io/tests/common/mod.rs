@@ -32,13 +32,7 @@ impl LocalHttpFileServer {
             }
         });
 
-        (
-            Self {
-                stop,
-                handle: Some(handle),
-            },
-            url,
-        )
+        (Self { stop, handle: Some(handle) }, url)
     }
 }
 
@@ -69,9 +63,7 @@ fn serve_http_file_request(mut stream: TcpStream, payload: &[u8]) {
         return;
     }
 
-    let range = request
-        .lines()
-        .find_map(|line| line.strip_prefix("Range: bytes="));
+    let range = request.lines().find_map(|line| line.strip_prefix("Range: bytes="));
     if let Some(range) = range {
         let (start, end) = parse_byte_range(range).unwrap_or((0, payload.len().saturating_sub(1)));
         write_response(&mut stream, 206, payload, Some((start, end)));
@@ -84,32 +76,26 @@ fn serve_http_file_request(mut stream: TcpStream, payload: &[u8]) {
 fn parse_byte_range(value: &str) -> Option<(usize, usize)> {
     let (start, end) = value.split_once('-')?;
     let start = start.parse().ok()?;
-    let end = if end.is_empty() {
-        None
-    } else {
-        end.parse().ok()
-    };
+    let end = if end.is_empty() { None } else { end.parse().ok() };
     Some((start, end?))
 }
 
-fn write_response(stream: &mut TcpStream, status: u16, payload: &[u8], range: Option<(usize, usize)>) {
+fn write_response(
+    stream: &mut TcpStream,
+    status: u16,
+    payload: &[u8],
+    range: Option<(usize, usize)>,
+) {
     let (body, content_range) = match range {
         Some((start, end)) if start < payload.len() => {
             let end = end.min(payload.len().saturating_sub(1));
             let slice = &payload[start..=end];
-            (
-                slice.to_vec(),
-                Some(format!("bytes {start}-{end}/{}", payload.len())),
-            )
+            (slice.to_vec(), Some(format!("bytes {start}-{end}/{}", payload.len())))
         }
         _ => (payload.to_vec(), None),
     };
 
-    let status_text = if status == 206 {
-        "Partial Content"
-    } else {
-        "OK"
-    };
+    let status_text = if status == 206 { "Partial Content" } else { "OK" };
     let mut headers = format!(
         "HTTP/1.1 {status} {status_text}\r\nContent-Length: {}\r\nAccept-Ranges: bytes\r\n",
         body.len()

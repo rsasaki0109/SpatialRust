@@ -16,17 +16,12 @@ fn read_copc_url_with_query_matches_local_file() {
     }
     let cloud = builder.build().unwrap();
 
-    let path = std::env::temp_dir().join(format!(
-        "spatialrust_io_http_copc_{}.copc.laz",
-        std::process::id()
-    ));
+    let path = std::env::temp_dir()
+        .join(format!("spatialrust_io_http_copc_{}.copc.laz", std::process::id()));
     write_copc_file_with_params(
         &path,
         &cloud,
-        &CopcWriterParams {
-            max_points_per_node: 256,
-            max_depth: 8,
-        },
+        &CopcWriterParams { max_points_per_node: 256, max_depth: 8 },
     )
     .unwrap();
     let payload = std::fs::read(&path).unwrap();

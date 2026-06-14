@@ -59,19 +59,25 @@ pub fn compact_voxel_segments_gpu_buffers(
     let flags_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-compact-flags"),
         size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_DST
+            | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
     let inclusive_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-compact-inclusive"),
         size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_SRC
+            | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
     let scan_scratch_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-compact-scan-scratch"),
         size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_DST
+            | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
     let keys_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -278,42 +284,15 @@ fn create_compact_bind_group(
         label: Some("voxel-compact-bind-group"),
         layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: resources.params.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: resources.entries.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: resources.flags.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: resources.prefix.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: resources.keys.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: resources.starts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 6,
-                resource: resources.counts.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 7,
-                resource: resources.indices.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 8,
-                resource: resources.scan_out.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: resources.params.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: resources.entries.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: resources.flags.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: resources.prefix.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: resources.keys.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: resources.starts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: resources.counts.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 7, resource: resources.indices.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 8, resource: resources.scan_out.as_entire_binding() },
         ],
     })
 }
@@ -344,11 +323,8 @@ fn derive_cell_counts(cell_starts: &[u32], cell_count: usize, point_count: usize
     (0..cell_count)
         .map(|cell| {
             let start = cell_starts[cell] as usize;
-            let end = if cell + 1 == cell_count {
-                point_count
-            } else {
-                cell_starts[cell + 1] as usize
-            };
+            let end =
+                if cell + 1 == cell_count { point_count } else { cell_starts[cell + 1] as usize };
             (end - start) as u32
         })
         .collect()
@@ -366,12 +342,7 @@ pub(crate) fn finalize_segments_from_readback(
         point_indices[start..end].sort_unstable();
     }
 
-    VoxelSegments {
-        keys,
-        point_indices,
-        cell_starts,
-        cell_counts,
-    }
+    VoxelSegments { keys, point_indices, cell_starts, cell_counts }
 }
 
 fn empty_storage_buffer(runtime: &WgpuRuntime) -> SpatialResult<wgpu::Buffer> {
@@ -383,13 +354,13 @@ fn empty_storage_buffer(runtime: &WgpuRuntime) -> SpatialResult<wgpu::Buffer> {
     }))
 }
 
-fn write_params(queue: &wgpu::Queue, params_buffer: &wgpu::Buffer, point_count: u32, scan_stride: u32) {
-    let params = CompactParams {
-        point_count,
-        scan_stride,
-        _pad0: 0,
-        _pad1: 0,
-    };
+fn write_params(
+    queue: &wgpu::Queue,
+    params_buffer: &wgpu::Buffer,
+    point_count: u32,
+    scan_stride: u32,
+) {
+    let params = CompactParams { point_count, scan_stride, _pad0: 0, _pad1: 0 };
     queue.write_buffer(params_buffer, 0, bytemuck::bytes_of(&params));
 }
 
@@ -463,7 +434,11 @@ fn read_u32_buffer(
     read_staging_u32(device, &staging, len)
 }
 
-fn read_staging_u32(device: &wgpu::Device, staging_buffer: &wgpu::Buffer, len: usize) -> SpatialResult<Vec<u32>> {
+fn read_staging_u32(
+    device: &wgpu::Device,
+    staging_buffer: &wgpu::Buffer,
+    len: usize,
+) -> SpatialResult<Vec<u32>> {
     let slice = staging_buffer.slice(..);
     let (sender, receiver) = std::sync::mpsc::channel();
     slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -473,7 +448,9 @@ fn read_staging_u32(device: &wgpu::Device, staging_buffer: &wgpu::Buffer, len: u
     receiver
         .recv()
         .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
-        .map_err(|error| SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}")))?;
+        .map_err(|error| {
+            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
+        })?;
 
     let data = slice.get_mapped_range();
     let values = bytemuck::cast_slice(&data)[..len].to_vec();
@@ -482,7 +459,11 @@ fn read_staging_u32(device: &wgpu::Device, staging_buffer: &wgpu::Buffer, len: u
     Ok(values)
 }
 
-fn read_staging_struct<T: Pod>(device: &wgpu::Device, staging_buffer: &wgpu::Buffer, len: usize) -> SpatialResult<Vec<T>> {
+fn read_staging_struct<T: Pod>(
+    device: &wgpu::Device,
+    staging_buffer: &wgpu::Buffer,
+    len: usize,
+) -> SpatialResult<Vec<T>> {
     let slice = staging_buffer.slice(..);
     let (sender, receiver) = std::sync::mpsc::channel();
     slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -492,7 +473,9 @@ fn read_staging_struct<T: Pod>(device: &wgpu::Device, staging_buffer: &wgpu::Buf
     receiver
         .recv()
         .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
-        .map_err(|error| SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}")))?;
+        .map_err(|error| {
+            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
+        })?;
 
     let data = slice.get_mapped_range();
     let values = bytemuck::cast_slice::<u8, T>(&data)[..len].to_vec();

@@ -1,5 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use spatialrust_core::{ExecutionPolicy, PointCloud, PointCloudBuilder, PointSchema, StandardSchemas};
+use spatialrust_core::{
+    ExecutionPolicy, PointCloud, PointCloudBuilder, PointSchema, StandardSchemas,
+};
 use spatialrust_filtering::{PointCloudFilter, VoxelGridDownsample, VoxelGridDownsampleConfig};
 
 fn synthetic_values(schema: &PointSchema, index: usize) -> Vec<f32> {
@@ -40,17 +42,14 @@ fn synthetic_values(schema: &PointSchema, index: usize) -> Vec<f32> {
 fn synthetic_point_cloud(schema: PointSchema, point_count: usize) -> PointCloud {
     let mut builder = PointCloudBuilder::new(schema.clone());
     for index in 0..point_count {
-        builder
-            .push_point(synthetic_values(&schema, index))
-            .expect("push point");
+        builder.push_point(synthetic_values(&schema, index)).expect("push point");
     }
     builder.build().expect("point cloud")
 }
 
 fn bench_voxel_downsample_attributes(c: &mut Criterion) {
-    let centroid = VoxelGridDownsample::new(
-        VoxelGridDownsampleConfig::centroid(4.0).without_gpu_min_points(),
-    );
+    let centroid =
+        VoxelGridDownsample::new(VoxelGridDownsampleConfig::centroid(4.0).without_gpu_min_points());
     let approximate = VoxelGridDownsample::new(
         VoxelGridDownsampleConfig::approximate(4.0).without_gpu_min_points(),
     );
@@ -65,9 +64,8 @@ fn bench_voxel_downsample_attributes(c: &mut Criterion) {
     for point_count in [500_000_usize, 1_000_000, 2_000_000] {
         for (label, schema) in &schemas {
             let input = synthetic_point_cloud(schema.clone(), point_count);
-            let mut group = c.benchmark_group(format!(
-                "voxel_downsample_attributes/{point_count}/{label}"
-            ));
+            let mut group =
+                c.benchmark_group(format!("voxel_downsample_attributes/{point_count}/{label}"));
             group.throughput(Throughput::Elements(point_count as u64));
 
             group.bench_function("cpu_centroid", |bencher| {

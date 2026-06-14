@@ -2,9 +2,7 @@ use std::io::{Seek, Write};
 
 use las::point::{Classification, Format};
 use las::{Builder, Color, Header, Point, Writer};
-use spatialrust_core::{
-    FieldSemantic, HasPositions3, PointCloud, PointField, PointSchema,
-};
+use spatialrust_core::{FieldSemantic, HasPositions3, PointCloud, PointField, PointSchema};
 
 use crate::error::{las_format, las_parse, IoError};
 use crate::las::schema::schema_from_point_cloud;
@@ -66,13 +64,12 @@ pub fn write_las<W: Write + Seek + Send + Sync + 'static>(
 
     let (point_format, export_schema) = schema_from_point_cloud(cloud.schema())?;
     let header = header_from_cloud(point_format, format)?;
-    let mut las_writer = Writer::new(writer, header).map_err(|error| las_format(error.to_string()))?;
+    let mut las_writer =
+        Writer::new(writer, header).map_err(|error| las_format(error.to_string()))?;
 
     for index in 0..cloud.len() {
         let point = point_from_cloud(cloud, &export_schema, index, point_format)?;
-        las_writer
-            .write_point(point)
-            .map_err(|error| las_format(error.to_string()))?;
+        las_writer.write_point(point).map_err(|error| las_format(error.to_string()))?;
     }
 
     las_writer.into_inner().map_err(|error| las_format(error.to_string()))
@@ -95,14 +92,12 @@ pub fn write_las_file(
 
     let (point_format, export_schema) = schema_from_point_cloud(cloud.schema())?;
     let header = header_from_cloud(point_format, format)?;
-    let mut las_writer = Writer::from_path(path.as_ref(), header)
-        .map_err(|error| las_format(error.to_string()))?;
+    let mut las_writer =
+        Writer::from_path(path.as_ref(), header).map_err(|error| las_format(error.to_string()))?;
 
     for index in 0..cloud.len() {
         let point = point_from_cloud(cloud, &export_schema, index, point_format)?;
-        las_writer
-            .write_point(point)
-            .map_err(|error| las_format(error.to_string()))?;
+        las_writer.write_point(point).map_err(|error| las_format(error.to_string()))?;
     }
 
     las_writer.close().map_err(|error| las_format(error.to_string()))
@@ -159,17 +154,14 @@ fn cloud_field_name_for_export<'a>(
     if cloud.field(&export_field.name).is_ok() {
         return Some(export_field.name.as_str());
     }
-    cloud.schema()
+    cloud
+        .schema()
         .find_semantic(export_field.semantic)
         .map(|field| field.name.as_str())
         .filter(|name| cloud.field(name).is_ok())
 }
 
-fn read_cloud_field(
-    cloud: &PointCloud,
-    field_name: &str,
-    index: usize,
-) -> Result<f64, IoError> {
+fn read_cloud_field(cloud: &PointCloud, field_name: &str, index: usize) -> Result<f64, IoError> {
     let buffer = cloud.field(field_name)?;
     Ok(match buffer {
         PointBuffer::F32(values) => f64::from(values[index]),
@@ -237,9 +229,7 @@ mod tests {
         use spatialrust_core::StandardSchemas;
 
         let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzirgb());
-        builder
-            .push_point([1.0, 2.0, 3.0, 100.0, 255.0, 128.0, 64.0])
-            .unwrap();
+        builder.push_point([1.0, 2.0, 3.0, 100.0, 255.0, 128.0, 64.0]).unwrap();
         let cloud = builder.build().unwrap();
         let bytes = write_las(Cursor::new(Vec::new()), &cloud, LasWriteFormat::Las).unwrap();
         assert!(!bytes.get_ref().is_empty());
@@ -251,7 +241,8 @@ mod tests {
         let mut builder = PointCloudBuilder::xyz();
         builder.push_point([0.0, 0.0, 0.0]).unwrap();
         let cloud = builder.build().unwrap();
-        let path = std::env::temp_dir().join(format!("spatialrust_laz_write_{}.laz", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("spatialrust_laz_write_{}.laz", std::process::id()));
         write_las_file(&path, &cloud, LasWriteFormat::Laz).unwrap();
         let loaded = crate::las::read_las_file(&path).unwrap();
         let _ = std::fs::remove_file(path);

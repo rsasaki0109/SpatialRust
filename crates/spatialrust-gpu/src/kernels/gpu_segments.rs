@@ -24,13 +24,7 @@ impl GpuVoxelSegments {
         point_indices: wgpu::Buffer,
         cell_starts: wgpu::Buffer,
     ) -> Self {
-        Self {
-            cell_count,
-            point_count,
-            keys,
-            point_indices,
-            cell_starts,
-        }
+        Self { cell_count, point_count, keys, point_indices, cell_starts }
     }
 
     /// Returns the number of occupied voxel cells.
@@ -77,11 +71,6 @@ impl GpuVoxelSegments {
         let (keys, cell_starts, cell_counts, point_indices) =
             read_segment_metadata(runtime, self, self.cell_count as usize)?;
 
-        Ok(finalize_segments_from_readback(
-            keys,
-            point_indices,
-            cell_starts,
-            cell_counts,
-        ))
+        Ok(finalize_segments_from_readback(keys, point_indices, cell_starts, cell_counts))
     }
 }

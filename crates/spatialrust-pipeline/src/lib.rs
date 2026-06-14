@@ -7,6 +7,4 @@
 mod mvp;
 
 #[cfg(feature = "pipeline-mvp")]
-pub use mvp::{
-    MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult,
-};
+pub use mvp::{MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult};

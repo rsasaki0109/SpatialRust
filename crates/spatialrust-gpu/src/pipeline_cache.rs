@@ -170,29 +170,16 @@ impl VoxelKeysPipelines {
                 storage_entry(4, false),
             ],
         });
-        let shader = load_shader(
-            device,
-            "voxel-key-shader",
-            include_str!("shaders/voxel_keys.wgsl"),
-        );
+        let shader =
+            load_shader(device, "voxel-key-shader", include_str!("shaders/voxel_keys.wgsl"));
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("voxel-key-pipeline-layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
-        let pipeline = build_compute_pipeline(
-            device,
-            &pipeline_layout,
-            &shader,
-            "voxel-key-pipeline",
-            "main",
-        );
-        Self {
-            bind_group_layout,
-            pipeline,
-            _pipeline_layout: pipeline_layout,
-            _shader: shader,
-        }
+        let pipeline =
+            build_compute_pipeline(device, &pipeline_layout, &shader, "voxel-key-pipeline", "main");
+        Self { bind_group_layout, pipeline, _pipeline_layout: pipeline_layout, _shader: shader }
     }
 }
 
@@ -202,11 +189,8 @@ impl VoxelSortPipelines {
             label: Some("voxel-sort-layout"),
             entries: &[uniform_entry(0), storage_entry(1, false)],
         });
-        let shader = load_shader(
-            device,
-            "voxel-sort-shader",
-            include_str!("shaders/voxel_sort.wgsl"),
-        );
+        let shader =
+            load_shader(device, "voxel-sort-shader", include_str!("shaders/voxel_sort.wgsl"));
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("voxel-sort-pipeline-layout"),
             bind_group_layouts: &[&bind_group_layout],
@@ -219,12 +203,7 @@ impl VoxelSortPipelines {
             "voxel-sort-pipeline",
             "main",
         );
-        Self {
-            bind_group_layout,
-            pipeline,
-            _pipeline_layout: pipeline_layout,
-            _shader: shader,
-        }
+        Self { bind_group_layout, pipeline, _pipeline_layout: pipeline_layout, _shader: shader }
     }
 }
 
@@ -232,11 +211,7 @@ impl VoxelSortBuildPipelines {
     fn new(device: &wgpu::Device) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("voxel-sort-build-layout"),
-            entries: &[
-                uniform_entry(0),
-                storage_entry(1, true),
-                storage_entry(2, false),
-            ],
+            entries: &[uniform_entry(0), storage_entry(1, true), storage_entry(2, false)],
         });
         let shader = load_shader(
             device,
@@ -255,12 +230,7 @@ impl VoxelSortBuildPipelines {
             "voxel-sort-build-pipeline",
             "build_sort_entries",
         );
-        Self {
-            bind_group_layout,
-            pipeline,
-            _pipeline_layout: pipeline_layout,
-            _shader: shader,
-        }
+        Self { bind_group_layout, pipeline, _pipeline_layout: pipeline_layout, _shader: shader }
     }
 }
 
@@ -339,11 +309,8 @@ impl VoxelCompactPipelines {
                 storage_entry(8, false),
             ],
         });
-        let shader = load_shader(
-            device,
-            "voxel-compact-shader",
-            include_str!("shaders/voxel_compact.wgsl"),
-        );
+        let shader =
+            load_shader(device, "voxel-compact-shader", include_str!("shaders/voxel_compact.wgsl"));
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("voxel-compact-pipeline-layout"),
             bind_group_layouts: &[&bind_group_layout],
@@ -397,11 +364,8 @@ impl VoxelReducePipelines {
                 storage_entry(4, false),
             ],
         });
-        let shader = load_shader(
-            device,
-            "voxel-reduce-shader",
-            include_str!("shaders/voxel_reduce.wgsl"),
-        );
+        let shader =
+            load_shader(device, "voxel-reduce-shader", include_str!("shaders/voxel_reduce.wgsl"));
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("voxel-reduce-pipeline-layout"),
             bind_group_layouts: &[&bind_group_layout],
@@ -415,20 +379,21 @@ impl VoxelReducePipelines {
             "main",
         );
 
-        let xyz_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("voxel-reduce-xyz-layout"),
-            entries: &[
-                uniform_entry(0),
-                storage_entry(1, true),
-                storage_entry(2, true),
-                storage_entry(3, true),
-                storage_entry(4, true),
-                storage_entry(5, true),
-                storage_entry(6, false),
-                storage_entry(7, false),
-                storage_entry(8, false),
-            ],
-        });
+        let xyz_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-reduce-xyz-layout"),
+                entries: &[
+                    uniform_entry(0),
+                    storage_entry(1, true),
+                    storage_entry(2, true),
+                    storage_entry(3, true),
+                    storage_entry(4, true),
+                    storage_entry(5, true),
+                    storage_entry(6, false),
+                    storage_entry(7, false),
+                    storage_entry(8, false),
+                ],
+            });
         let xyz_shader = load_shader(
             device,
             "voxel-reduce-xyz-shader",
@@ -447,16 +412,17 @@ impl VoxelReducePipelines {
             "main",
         );
 
-        let u8_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("voxel-reduce-u8-layout"),
-            entries: &[
-                uniform_entry(0),
-                storage_entry(1, true),
-                storage_entry(2, true),
-                storage_entry(3, true),
-                storage_entry(4, false),
-            ],
-        });
+        let u8_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-reduce-u8-layout"),
+                entries: &[
+                    uniform_entry(0),
+                    storage_entry(1, true),
+                    storage_entry(2, true),
+                    storage_entry(3, true),
+                    storage_entry(4, false),
+                ],
+            });
         let u8_shader = load_shader(
             device,
             "voxel-reduce-u8-shader",
@@ -504,11 +470,8 @@ impl VoxelGatherPipelines {
                 storage_entry(4, false),
             ],
         });
-        let shader = load_shader(
-            device,
-            "voxel-gather-shader",
-            include_str!("shaders/voxel_gather.wgsl"),
-        );
+        let shader =
+            load_shader(device, "voxel-gather-shader", include_str!("shaders/voxel_gather.wgsl"));
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("voxel-gather-pipeline-layout"),
             bind_group_layouts: &[&bind_group_layout],
@@ -522,20 +485,21 @@ impl VoxelGatherPipelines {
             "main",
         );
 
-        let xyz_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("voxel-gather-xyz-layout"),
-            entries: &[
-                uniform_entry(0),
-                storage_entry(1, true),
-                storage_entry(2, true),
-                storage_entry(3, true),
-                storage_entry(4, true),
-                storage_entry(5, true),
-                storage_entry(6, false),
-                storage_entry(7, false),
-                storage_entry(8, false),
-            ],
-        });
+        let xyz_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-gather-xyz-layout"),
+                entries: &[
+                    uniform_entry(0),
+                    storage_entry(1, true),
+                    storage_entry(2, true),
+                    storage_entry(3, true),
+                    storage_entry(4, true),
+                    storage_entry(5, true),
+                    storage_entry(6, false),
+                    storage_entry(7, false),
+                    storage_entry(8, false),
+                ],
+            });
         let xyz_shader = load_shader(
             device,
             "voxel-gather-xyz-shader",
@@ -554,16 +518,17 @@ impl VoxelGatherPipelines {
             "main",
         );
 
-        let u8_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("voxel-gather-u8-layout"),
-            entries: &[
-                uniform_entry(0),
-                storage_entry(1, true),
-                storage_entry(2, true),
-                storage_entry(3, true),
-                storage_entry(4, false),
-            ],
-        });
+        let u8_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-gather-u8-layout"),
+                entries: &[
+                    uniform_entry(0),
+                    storage_entry(1, true),
+                    storage_entry(2, true),
+                    storage_entry(3, true),
+                    storage_entry(4, false),
+                ],
+            });
         let u8_shader = load_shader(
             device,
             "voxel-gather-u8-shader",
@@ -582,28 +547,30 @@ impl VoxelGatherPipelines {
             "main",
         );
 
-        let multi_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("voxel-gather-multi-layout"),
-            entries: &[
-                uniform_entry(0),
-                storage_entry(1, true),
-                storage_entry(2, true),
-                storage_entry(3, true),
-                storage_entry(4, true),
-                storage_entry(5, false),
-                storage_entry(6, false),
-            ],
-        });
+        let multi_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-gather-multi-layout"),
+                entries: &[
+                    uniform_entry(0),
+                    storage_entry(1, true),
+                    storage_entry(2, true),
+                    storage_entry(3, true),
+                    storage_entry(4, true),
+                    storage_entry(5, false),
+                    storage_entry(6, false),
+                ],
+            });
         let multi_shader = load_shader(
             device,
             "voxel-gather-multi-shader",
             include_str!("shaders/voxel_gather_multi.wgsl"),
         );
-        let multi_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("voxel-gather-multi-pipeline-layout"),
-            bind_group_layouts: &[&multi_bind_group_layout],
-            push_constant_ranges: &[],
-        });
+        let multi_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("voxel-gather-multi-pipeline-layout"),
+                bind_group_layouts: &[&multi_bind_group_layout],
+                push_constant_ranges: &[],
+            });
         let multi_pipeline = build_compute_pipeline(
             device,
             &multi_pipeline_layout,
@@ -668,52 +635,56 @@ impl VoxelGatherPipelines {
                 (None, None, None, None)
             };
 
-        let (xyz_attrs4_bind_group_layout, xyz_attrs4_pipeline_layout, xyz_attrs4_pipeline, xyz_attrs4_shader) =
-            if storage_limit >= crate::runtime::MULTI_GATHER4_STORAGE_BUFFERS {
-                let xyz_attrs4_bind_group_layout =
-                    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                        label: Some("voxel-gather-xyz-attrs4-layout"),
-                        entries: &[
-                            uniform_entry(0),
-                            storage_entry(1, true),
-                            storage_entry(2, true),
-                            storage_entry(3, true),
-                            storage_entry(4, true),
-                            storage_entry(5, true),
-                            storage_entry(6, true),
-                            storage_entry(7, true),
-                            storage_entry(8, true),
-                            storage_entry(9, true),
-                            storage_entry(10, false),
-                        ],
-                    });
-                let xyz_attrs4_shader = load_shader(
-                    device,
-                    "voxel-gather-xyz-attrs4-shader",
-                    include_str!("shaders/voxel_gather_xyz_attrs4.wgsl"),
-                );
-                let xyz_attrs4_pipeline_layout =
-                    device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                        label: Some("voxel-gather-xyz-attrs4-pipeline-layout"),
-                        bind_group_layouts: &[&xyz_attrs4_bind_group_layout],
-                        push_constant_ranges: &[],
-                    });
-                let xyz_attrs4_pipeline = build_compute_pipeline(
-                    device,
-                    &xyz_attrs4_pipeline_layout,
-                    &xyz_attrs4_shader,
-                    "voxel-gather-xyz-attrs4-pipeline",
-                    "main",
-                );
-                (
-                    Some(xyz_attrs4_bind_group_layout),
-                    Some(xyz_attrs4_pipeline_layout),
-                    Some(xyz_attrs4_pipeline),
-                    Some(xyz_attrs4_shader),
-                )
-            } else {
-                (None, None, None, None)
-            };
+        let (
+            xyz_attrs4_bind_group_layout,
+            xyz_attrs4_pipeline_layout,
+            xyz_attrs4_pipeline,
+            xyz_attrs4_shader,
+        ) = if storage_limit >= crate::runtime::MULTI_GATHER4_STORAGE_BUFFERS {
+            let xyz_attrs4_bind_group_layout =
+                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: Some("voxel-gather-xyz-attrs4-layout"),
+                    entries: &[
+                        uniform_entry(0),
+                        storage_entry(1, true),
+                        storage_entry(2, true),
+                        storage_entry(3, true),
+                        storage_entry(4, true),
+                        storage_entry(5, true),
+                        storage_entry(6, true),
+                        storage_entry(7, true),
+                        storage_entry(8, true),
+                        storage_entry(9, true),
+                        storage_entry(10, false),
+                    ],
+                });
+            let xyz_attrs4_shader = load_shader(
+                device,
+                "voxel-gather-xyz-attrs4-shader",
+                include_str!("shaders/voxel_gather_xyz_attrs4.wgsl"),
+            );
+            let xyz_attrs4_pipeline_layout =
+                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("voxel-gather-xyz-attrs4-pipeline-layout"),
+                    bind_group_layouts: &[&xyz_attrs4_bind_group_layout],
+                    push_constant_ranges: &[],
+                });
+            let xyz_attrs4_pipeline = build_compute_pipeline(
+                device,
+                &xyz_attrs4_pipeline_layout,
+                &xyz_attrs4_shader,
+                "voxel-gather-xyz-attrs4-pipeline",
+                "main",
+            );
+            (
+                Some(xyz_attrs4_bind_group_layout),
+                Some(xyz_attrs4_pipeline_layout),
+                Some(xyz_attrs4_pipeline),
+                Some(xyz_attrs4_shader),
+            )
+        } else {
+            (None, None, None, None)
+        };
 
         Self {
             bind_group_layout,

@@ -74,6 +74,4 @@ pub use copc::{
 };
 
 #[cfg(feature = "io-copc-http")]
-pub use copc::{
-    read_copc_url, read_copc_url_info, read_copc_url_with_query, HttpByteSource,
-};
+pub use copc::{read_copc_url, read_copc_url_info, read_copc_url_with_query, HttpByteSource};

@@ -62,7 +62,9 @@ impl PointReader for LasReader {
 }
 
 /// Reads a complete LAS/LAZ stream.
-pub fn read_las<R: BufRead + Seek + Send + Sync + 'static>(reader: R) -> Result<PointCloud, IoError> {
+pub fn read_las<R: BufRead + Seek + Send + Sync + 'static>(
+    reader: R,
+) -> Result<PointCloud, IoError> {
     let mut las_reader = Reader::new(reader).map_err(|error| las_parse(error.to_string()))?;
     let header = las_reader.header().clone();
     let schema = schema_for_las_header(&header);

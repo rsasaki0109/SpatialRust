@@ -1,8 +1,8 @@
 use spatialrust_core::SpatialResult;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
-use crate::kernels::voxel_keys::{compute_voxel_keys_gpu_buffers, GpuVoxelKeyBuffers};
 use crate::kernels::voxel_gather::gather_voxel_first_xyz_gpu_buffers;
+use crate::kernels::voxel_keys::{compute_voxel_keys_gpu_buffers, GpuVoxelKeyBuffers};
 use crate::kernels::voxel_reduce::reduce_voxel_centroids_xyz_gpu_buffers;
 use crate::kernels::voxel_sort::build_voxel_segments_gpu_from_keys_buffer;
 use crate::runtime::WgpuRuntime;
@@ -47,13 +47,7 @@ pub fn downsample_voxel_centroid_gpu(
         &segments,
     )?;
 
-    Ok(VoxelCentroidGpuResult {
-        out_x,
-        out_y,
-        out_z,
-        segments,
-        positions,
-    })
+    Ok(VoxelCentroidGpuResult { out_x, out_y, out_z, segments, positions })
 }
 
 /// GPU-resident approximate-first downsample result.
@@ -96,20 +90,14 @@ pub fn downsample_voxel_approximate_first_gpu(
         &segments,
     )?;
 
-    Ok(VoxelApproximateFirstGpuResult {
-        out_x,
-        out_y,
-        out_z,
-        segments,
-        positions,
-    })
+    Ok(VoxelApproximateFirstGpuResult { out_x, out_y, out_z, segments, positions })
 }
 
 #[cfg(test)]
 mod tests {
     use super::{downsample_voxel_approximate_first_gpu, downsample_voxel_centroid_gpu};
-    use crate::kernels::voxel_segments::build_voxel_segments;
     use crate::kernels::voxel_reduce::reduce_voxel_centroids_xyz;
+    use crate::kernels::voxel_segments::build_voxel_segments;
     use crate::runtime::WgpuRuntime;
 
     #[test]

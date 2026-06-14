@@ -39,10 +39,7 @@ impl IcpConfig {
     /// Creates a config with the given correspondence distance.
     #[must_use]
     pub fn with_correspondence_distance(max_correspondence_distance: f32) -> Self {
-        Self {
-            max_correspondence_distance,
-            ..Self::default()
-        }
+        Self { max_correspondence_distance, ..Self::default() }
     }
 }
 
@@ -181,7 +178,8 @@ fn apply_transform_in_place(
     transform: Isometry3<f32>,
 ) {
     for (index, point) in transformed.iter_mut().enumerate() {
-        *point = transform.transform_point(Vec3::new(source_x[index], source_y[index], source_z[index]));
+        *point =
+            transform.transform_point(Vec3::new(source_x[index], source_y[index], source_z[index]));
     }
 }
 
@@ -228,7 +226,10 @@ fn final_fitness(
 fn transform_delta_below_epsilon(delta: Isometry3<f32>, epsilon: f64) -> bool {
     let translation = delta.translation();
     let translation_norm = f64::from(
-        (translation.x * translation.x + translation.y * translation.y + translation.z * translation.z).sqrt(),
+        (translation.x * translation.x
+            + translation.y * translation.y
+            + translation.z * translation.z)
+            .sqrt(),
     );
     translation_norm < epsilon
 }

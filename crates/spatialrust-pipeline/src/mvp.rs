@@ -11,8 +11,8 @@ use spatialrust_registration::{
     transform_point_cloud, IcpConfig, IcpRegistration, PointCloudRegistration, RegistrationResult,
 };
 use spatialrust_segmentation::{
-    EuclideanClusterConfig, EuclideanClusterExtractor, RansacPlaneConfig,
-    RansacPlaneSegmentation, RansacPlaneSegmenter, EuclideanClusterResult,
+    EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult, RansacPlaneConfig,
+    RansacPlaneSegmentation, RansacPlaneSegmenter,
 };
 
 /// Configuration for optional ICP in the MVP pipeline.
@@ -58,10 +58,7 @@ impl MvpPipelineConfig {
     /// Creates a config with the given voxel leaf size.
     #[must_use]
     pub fn with_voxel_leaf_size(leaf_size: f32) -> Self {
-        Self {
-            voxel: VoxelGridDownsampleConfig::centroid(leaf_size),
-            ..Self::default()
-        }
+        Self { voxel: VoxelGridDownsampleConfig::centroid(leaf_size), ..Self::default() }
     }
 }
 
@@ -106,8 +103,7 @@ impl MvpPipeline {
         let downsampled = VoxelGridDownsample::new(self.config.voxel)
             .filter_with_policy(input, self.config.voxel_policy)?;
 
-        let with_normals =
-            NormalEstimator::new(self.config.normals).estimate(&downsampled)?;
+        let with_normals = NormalEstimator::new(self.config.normals).estimate(&downsampled)?;
 
         let plane = RansacPlaneSegmenter::new(self.config.plane).segment(&with_normals)?;
 

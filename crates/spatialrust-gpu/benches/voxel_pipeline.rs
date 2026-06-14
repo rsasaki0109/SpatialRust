@@ -35,15 +35,8 @@ fn bench_centroid_shared_runtime(c: &mut Criterion) {
             |bencher, (x, y, z)| {
                 bencher.iter(|| {
                     black_box(
-                        downsample_voxel_centroid_gpu(
-                            &runtime,
-                            x,
-                            y,
-                            z,
-                            ORIGIN,
-                            INV_LEAF,
-                        )
-                        .expect("centroid pipeline"),
+                        downsample_voxel_centroid_gpu(&runtime, x, y, z, ORIGIN, INV_LEAF)
+                            .expect("centroid pipeline"),
                     );
                 });
             },
@@ -67,15 +60,8 @@ fn bench_approximate_first_shared_runtime(c: &mut Criterion) {
             |bencher, (x, y, z)| {
                 bencher.iter(|| {
                     black_box(
-                        downsample_voxel_approximate_first_gpu(
-                            &runtime,
-                            x,
-                            y,
-                            z,
-                            ORIGIN,
-                            INV_LEAF,
-                        )
-                        .expect("approximate-first pipeline"),
+                        downsample_voxel_approximate_first_gpu(&runtime, x, y, z, ORIGIN, INV_LEAF)
+                            .expect("approximate-first pipeline"),
                     );
                 });
             },

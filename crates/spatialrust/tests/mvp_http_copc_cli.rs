@@ -34,13 +34,7 @@ mod http_file_server {
                 }
             });
 
-            (
-                Self {
-                    stop,
-                    handle: Some(handle),
-                },
-                url,
-            )
+            (Self { stop, handle: Some(handle) }, url)
         }
     }
 
@@ -71,21 +65,15 @@ mod http_file_server {
             return;
         }
 
-        let range = request
-            .lines()
-            .find_map(|line| line.strip_prefix("Range: bytes="));
+        let range = request.lines().find_map(|line| line.strip_prefix("Range: bytes="));
         if let Some(range) = range {
-            let (start, end) = parse_byte_range(range).unwrap_or((0, payload.len().saturating_sub(1)));
+            let (start, end) =
+                parse_byte_range(range).unwrap_or((0, payload.len().saturating_sub(1)));
             write_response(&mut stream, 206, payload, Some((start, end)));
             return;
         }
 
-        write_response(
-            &mut stream,
-            200,
-            payload,
-            Some((0, payload.len().saturating_sub(1))),
-        );
+        write_response(&mut stream, 200, payload, Some((0, payload.len().saturating_sub(1))));
     }
 
     fn parse_byte_range(value: &str) -> Option<(usize, usize)> {
@@ -105,19 +93,12 @@ mod http_file_server {
             Some((start, end)) if start < payload.len() => {
                 let end = end.min(payload.len().saturating_sub(1));
                 let slice = &payload[start..=end];
-                (
-                    slice.to_vec(),
-                    Some(format!("bytes {start}-{end}/{}", payload.len())),
-                )
+                (slice.to_vec(), Some(format!("bytes {start}-{end}/{}", payload.len())))
             }
             _ => (payload.to_vec(), None),
         };
 
-        let status_text = if status == 206 {
-            "Partial Content"
-        } else {
-            "OK"
-        };
+        let status_text = if status == 206 { "Partial Content" } else { "OK" };
         let mut headers = format!(
             "HTTP/1.1 {status} {status_text}\r\nContent-Length: {}\r\nAccept-Ranges: bytes\r\n",
             body.len()
@@ -136,20 +117,21 @@ mod http_file_server {
 fn mvp_cli_http_copc_bounds_resolution_matches_local_query() {
     use std::process::Command;
 
-    use spatialrust::{read_copc_file_with_query, read_copc_url_info, read_copc_url_with_query, CopcQuery};
+    use spatialrust::{
+        read_copc_file_with_query, read_copc_url_info, read_copc_url_with_query, CopcQuery,
+    };
 
     const POINT_COUNT: usize = 50_000;
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_http_copc_in_{}.copc.laz",
-        std::process::id()
-    ));
-    let output_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_http_copc_out_{}.copc.laz",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_http_copc_in_{}.copc.laz", std::process::id()));
+    let output_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_http_copc_out_{}.copc.laz", std::process::id()));
 
     let cloud = {
-        use spatialrust::{write_copc_file_with_params, CopcWriterParams, DType, FieldSemantic, PointCloudBuilder, PointField, StandardSchemas};
+        use spatialrust::{
+            write_copc_file_with_params, CopcWriterParams, DType, FieldSemantic, PointCloudBuilder,
+            PointField, StandardSchemas,
+        };
         let schema = StandardSchemas::point_xyzi().with_field(PointField::scalar(
             "classification",
             FieldSemantic::Label,
@@ -163,9 +145,7 @@ fn mvp_cli_http_copc_bounds_resolution_matches_local_query() {
             let z = ((index % 53) as f32) * 0.023;
             let intensity = (index % 256) as f32;
             let classification = if z < 0.5 { 2.0 } else { 1.0 };
-            builder
-                .push_point([x, y, z, intensity, classification])
-                .unwrap();
+            builder.push_point([x, y, z, intensity, classification]).unwrap();
         }
         for x in 0..10 {
             for y in 0..10 {
@@ -178,10 +158,7 @@ fn mvp_cli_http_copc_bounds_resolution_matches_local_query() {
         write_copc_file_with_params(
             &input_path,
             &cloud,
-            &CopcWriterParams {
-                max_points_per_node: 512,
-                max_depth: 10,
-            },
+            &CopcWriterParams { max_points_per_node: 512, max_depth: 10 },
         )
         .unwrap();
         cloud
@@ -197,9 +174,8 @@ fn mvp_cli_http_copc_bounds_resolution_matches_local_query() {
     let expected = read_copc_file_with_query(&input_path, &query)
         .expect("local bounds+resolution query")
         .len();
-    let remote = read_copc_url_with_query(&url, Some(&query))
-        .expect("http bounds+resolution query")
-        .len();
+    let remote =
+        read_copc_url_with_query(&url, Some(&query)).expect("http bounds+resolution query").len();
     assert_eq!(remote, expected);
     assert!(expected < cloud.len());
 

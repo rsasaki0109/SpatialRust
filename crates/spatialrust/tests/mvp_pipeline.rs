@@ -25,13 +25,18 @@ fn mvp_load_voxel_downsample() {
     assert!((x[1] - 0.7).abs() < 1e-5);
 }
 
-#[cfg(all(feature = "io-pcd", feature = "filter-voxel", feature = "feature-normal", feature = "search-kdtree"))]
+#[cfg(all(
+    feature = "io-pcd",
+    feature = "filter-voxel",
+    feature = "feature-normal",
+    feature = "search-kdtree"
+))]
 #[test]
 fn mvp_load_voxel_normals() {
     use spatialrust::{
-        FeatureEstimator, HasNormals3, NormalEstimationConfig, NormalEstimator, PointCloudBuilder,
-        PointCloudFilter, VoxelGridDownsample, VoxelGridDownsampleConfig, read_pcd, write_pcd,
-        PcdWriteFormat,
+        read_pcd, write_pcd, FeatureEstimator, HasNormals3, NormalEstimationConfig,
+        NormalEstimator, PcdWriteFormat, PointCloudBuilder, PointCloudFilter, VoxelGridDownsample,
+        VoxelGridDownsampleConfig,
     };
     use std::io::Cursor;
 
@@ -73,9 +78,10 @@ fn mvp_load_voxel_normals() {
 #[test]
 fn mvp_load_voxel_normals_plane_cluster() {
     use spatialrust::{
-        EuclideanClusterConfig, EuclideanClusterExtractor, FeatureEstimator, NormalEstimationConfig,
-        NormalEstimator, PointCloudBuilder, PointCloudFilter, RansacPlaneConfig, RansacPlaneSegmenter,
-        VoxelGridDownsample, VoxelGridDownsampleConfig, read_pcd, write_pcd, PcdWriteFormat,
+        read_pcd, write_pcd, EuclideanClusterConfig, EuclideanClusterExtractor, FeatureEstimator,
+        NormalEstimationConfig, NormalEstimator, PcdWriteFormat, PointCloudBuilder,
+        PointCloudFilter, RansacPlaneConfig, RansacPlaneSegmenter, VoxelGridDownsample,
+        VoxelGridDownsampleConfig,
     };
     use std::io::Cursor;
 
@@ -127,13 +133,18 @@ fn mvp_load_voxel_normals_plane_cluster() {
     assert!(clusters.cloud.field("label").is_ok());
 }
 
-#[cfg(all(feature = "io-pcd", feature = "filter-voxel", feature = "register-icp", feature = "search-kdtree"))]
+#[cfg(all(
+    feature = "io-pcd",
+    feature = "filter-voxel",
+    feature = "register-icp",
+    feature = "search-kdtree"
+))]
 #[test]
 fn mvp_load_voxel_icp() {
     use spatialrust::{
-        IcpConfig, IcpRegistration, PointCloudBuilder, PointCloudFilter, PointCloudRegistration,
-        VoxelGridDownsample, VoxelGridDownsampleConfig, read_pcd, transform_point_cloud, write_pcd,
-        Isometry3, PcdWriteFormat, Quat, Vec3,
+        read_pcd, transform_point_cloud, write_pcd, IcpConfig, IcpRegistration, Isometry3,
+        PcdWriteFormat, PointCloudBuilder, PointCloudFilter, PointCloudRegistration, Quat, Vec3,
+        VoxelGridDownsample, VoxelGridDownsampleConfig,
     };
     use std::io::Cursor;
 
@@ -170,9 +181,9 @@ fn mvp_load_voxel_icp() {
 #[test]
 fn mvp_full_pipeline_roundtrip() {
     use spatialrust::{
-        HasPositions3, MvpIcpConfig, MvpPipeline, MvpPipelineConfig, NormalEstimationConfig,
-        PcdWriteFormat, PointCloudBuilder, RansacPlaneConfig, read_pcd, write_pcd, Isometry3,
-        Quat, Vec3,
+        read_pcd, write_pcd, HasPositions3, Isometry3, MvpIcpConfig, MvpPipeline,
+        MvpPipelineConfig, NormalEstimationConfig, PcdWriteFormat, PointCloudBuilder, Quat,
+        RansacPlaneConfig, Vec3,
     };
     use spatialrust::{EuclideanClusterConfig, IcpConfig};
     use std::io::Cursor;
@@ -247,8 +258,9 @@ fn mvp_full_pipeline_roundtrip() {
 #[test]
 fn mvp_las_pipeline_roundtrip() {
     use spatialrust::{
-        HasPositions3, MvpPipeline, MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder,
-        RansacPlaneConfig, read_point_cloud_file, write_point_cloud_file, Isometry3, Quat, Vec3,
+        read_point_cloud_file, write_point_cloud_file, HasPositions3, Isometry3, MvpPipeline,
+        MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder, Quat, RansacPlaneConfig,
+        Vec3,
     };
     use spatialrust::{EuclideanClusterConfig, IcpConfig, MvpIcpConfig};
 
@@ -319,8 +331,8 @@ fn mvp_las_pipeline_roundtrip() {
 #[test]
 fn mvp_copc_pipeline_roundtrip() {
     use spatialrust::{
-        HasPositions3, MvpPipeline, MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder,
-        RansacPlaneConfig, read_copc_file, write_copc_file, Isometry3, Quat, Vec3,
+        read_copc_file, write_copc_file, HasPositions3, Isometry3, MvpPipeline, MvpPipelineConfig,
+        NormalEstimationConfig, PointCloudBuilder, Quat, RansacPlaneConfig, Vec3,
     };
     use spatialrust::{EuclideanClusterConfig, IcpConfig, MvpIcpConfig};
 
@@ -334,8 +346,8 @@ fn mvp_copc_pipeline_roundtrip() {
     builder.push_point([0.1, 0.0, 0.5]).unwrap();
     let cloud = builder.build().unwrap();
 
-    let input_path =
-        std::env::temp_dir().join(format!("spatialrust_mvp_copc_in_{}.copc.laz", std::process::id()));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_copc_in_{}.copc.laz", std::process::id()));
     write_copc_file(&input_path, &cloud).unwrap();
     let loaded = read_copc_file(&input_path).unwrap();
 
@@ -380,8 +392,8 @@ fn mvp_copc_pipeline_roundtrip() {
     assert!(result.registration.expect("icp").converged);
     assert!(result.output.field("label").is_ok());
 
-    let output_path =
-        std::env::temp_dir().join(format!("spatialrust_mvp_copc_out_{}.copc.laz", std::process::id()));
+    let output_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_copc_out_{}.copc.laz", std::process::id()));
     write_copc_file(&output_path, &result.output).unwrap();
     let saved = read_copc_file(&output_path).unwrap();
 
@@ -397,12 +409,12 @@ fn mvp_copc_pipeline_roundtrip() {
 #[cfg(feature = "mvp")]
 #[test]
 fn mvp_copc_query_pipeline() {
-    use spatialrust::{
-        CopcBounds, CopcQuery, ExecutionPolicy, HasPositions3, MvpPipeline, MvpPipelineConfig,
-        NormalEstimationConfig, PointCloudBuilder, RansacPlaneConfig, read_copc_file_with_query,
-        write_copc_file, Vec3,
-    };
     use spatialrust::EuclideanClusterConfig;
+    use spatialrust::{
+        read_copc_file_with_query, write_copc_file, CopcBounds, CopcQuery, ExecutionPolicy,
+        HasPositions3, MvpPipeline, MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder,
+        RansacPlaneConfig, Vec3,
+    };
 
     let mut builder = PointCloudBuilder::xyz();
     for x in 0..10 {
@@ -414,8 +426,8 @@ fn mvp_copc_query_pipeline() {
     builder.push_point([0.1, 0.0, 0.5]).unwrap();
     let cloud = builder.build().unwrap();
 
-    let path =
-        std::env::temp_dir().join(format!("spatialrust_mvp_copc_query_{}.copc.laz", std::process::id()));
+    let path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_copc_query_{}.copc.laz", std::process::id()));
     write_copc_file(&path, &cloud).unwrap();
 
     let bounds = CopcBounds::from_ranges((0.0, 0.85), (0.0, 0.85), (-0.01, 0.01));
@@ -460,12 +472,12 @@ fn mvp_copc_query_pipeline() {
 #[cfg(feature = "mvp")]
 #[test]
 fn mvp_copc_resolution_query_pipeline() {
-    use spatialrust::{
-        CopcQuery, CopcWriterParams, ExecutionPolicy, MvpPipeline, MvpPipelineConfig,
-        NormalEstimationConfig, PointCloudBuilder, RansacPlaneConfig, read_copc_file,
-        read_copc_file_info, read_copc_file_with_query, write_copc_file_with_params, Vec3,
-    };
     use spatialrust::EuclideanClusterConfig;
+    use spatialrust::{
+        read_copc_file, read_copc_file_info, read_copc_file_with_query,
+        write_copc_file_with_params, CopcQuery, CopcWriterParams, ExecutionPolicy, MvpPipeline,
+        MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder, RansacPlaneConfig, Vec3,
+    };
 
     let mut builder = PointCloudBuilder::xyz();
     for index in 0..7_000 {
@@ -476,17 +488,12 @@ fn mvp_copc_resolution_query_pipeline() {
     }
     let cloud = builder.build().unwrap();
 
-    let path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_copc_resolution_{}.copc.laz",
-        std::process::id()
-    ));
+    let path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_copc_resolution_{}.copc.laz", std::process::id()));
     write_copc_file_with_params(
         &path,
         &cloud,
-        &CopcWriterParams {
-            max_points_per_node: 96,
-            max_depth: 8,
-        },
+        &CopcWriterParams { max_points_per_node: 96, max_depth: 8 },
     )
     .unwrap();
 
@@ -549,25 +556,16 @@ fn mvp_cli_copc_resolution_reduces_input_points() {
     }
     let cloud = builder.build().unwrap();
 
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_copc_in_{}.copc.laz",
-        std::process::id()
-    ));
-    let coarse_output = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_copc_coarse_{}.copc.laz",
-        std::process::id()
-    ));
-    let full_output = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_copc_full_{}.copc.laz",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_copc_in_{}.copc.laz", std::process::id()));
+    let coarse_output = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_copc_coarse_{}.copc.laz", std::process::id()));
+    let full_output = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_copc_full_{}.copc.laz", std::process::id()));
     write_copc_file_with_params(
         &input_path,
         &cloud,
-        &CopcWriterParams {
-            max_points_per_node: 96,
-            max_depth: 8,
-        },
+        &CopcWriterParams { max_points_per_node: 96, max_depth: 8 },
     )
     .unwrap();
 
@@ -592,17 +590,10 @@ fn mvp_cli_copc_resolution_reduces_input_points() {
     );
 
     let full = Command::new(bin)
-        .args([
-            input_path.to_str().unwrap(),
-            full_output.to_str().unwrap(),
-        ])
+        .args([input_path.to_str().unwrap(), full_output.to_str().unwrap()])
         .output()
         .expect("run full detail CLI");
-    assert!(
-        full.status.success(),
-        "full CLI failed: {}",
-        String::from_utf8_lossy(&full.stderr)
-    );
+    assert!(full.status.success(), "full CLI failed: {}", String::from_utf8_lossy(&full.stderr));
 
     let coarse_loaded = parse_cli_input_points(&coarse.stderr);
     let full_loaded = parse_cli_input_points(&full.stderr);
@@ -683,11 +674,7 @@ fn parse_cli_repeat_summary_ms(stderr: &[u8]) -> (f64, f64, f64) {
         .nth(1)
         .and_then(|rest| rest.split_whitespace().next())
         .expect("repeat summary avg");
-    (
-        parse_duration_debug_ms(min),
-        parse_duration_debug_ms(max),
-        parse_duration_debug_ms(avg),
-    )
+    (parse_duration_debug_ms(min), parse_duration_debug_ms(max), parse_duration_debug_ms(avg))
 }
 
 #[cfg(feature = "mvp")]
@@ -696,31 +683,22 @@ fn mvp_cli_scan_like_copc_resolution_reduces_input_points() {
     use std::process::Command;
 
     use spatialrust::{
-        read_copc_file, read_copc_file_info, read_copc_file_with_query, write_copc_file_with_params,
-        CopcQuery, CopcWriterParams,
+        read_copc_file, read_copc_file_info, read_copc_file_with_query,
+        write_copc_file_with_params, CopcQuery, CopcWriterParams,
     };
 
     const POINT_COUNT: usize = 50_000;
     let cloud = sample_scan_like_xyzi(POINT_COUNT);
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_scan_copc_in_{}.copc.laz",
-        std::process::id()
-    ));
-    let coarse_output = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_scan_copc_coarse_{}.copc.laz",
-        std::process::id()
-    ));
-    let full_output = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_scan_copc_full_{}.copc.laz",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_scan_copc_in_{}.copc.laz", std::process::id()));
+    let coarse_output = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_scan_copc_coarse_{}.copc.laz", std::process::id()));
+    let full_output = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_scan_copc_full_{}.copc.laz", std::process::id()));
     write_copc_file_with_params(
         &input_path,
         &cloud,
-        &CopcWriterParams {
-            max_points_per_node: 512,
-            max_depth: 10,
-        },
+        &CopcWriterParams { max_points_per_node: 512, max_depth: 10 },
     )
     .unwrap();
 
@@ -734,12 +712,7 @@ fn mvp_cli_scan_like_copc_resolution_reduces_input_points() {
     .unwrap()
     .len();
     let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
-    let cli_args = [
-        "--leaf-size",
-        "4.0",
-        "--voxel-policy",
-        "cpu",
-    ];
+    let cli_args = ["--leaf-size", "4.0", "--voxel-policy", "cpu"];
 
     let coarse = Command::new(bin)
         .args(cli_args)
@@ -759,17 +732,10 @@ fn mvp_cli_scan_like_copc_resolution_reduces_input_points() {
 
     let full = Command::new(bin)
         .args(cli_args)
-        .args([
-            input_path.to_str().unwrap(),
-            full_output.to_str().unwrap(),
-        ])
+        .args([input_path.to_str().unwrap(), full_output.to_str().unwrap()])
         .output()
         .expect("run full detail CLI");
-    assert!(
-        full.status.success(),
-        "full CLI failed: {}",
-        String::from_utf8_lossy(&full.stderr)
-    );
+    assert!(full.status.success(), "full CLI failed: {}", String::from_utf8_lossy(&full.stderr));
 
     let coarse_loaded = parse_cli_input_points(&coarse.stderr);
     let full_loaded = parse_cli_input_points(&full.stderr);
@@ -804,10 +770,7 @@ fn write_scan_like_copc_fixture(
     write_copc_file_with_params(
         path,
         &cloud,
-        &CopcWriterParams {
-            max_points_per_node: 512,
-            max_depth: 10,
-        },
+        &CopcWriterParams { max_points_per_node: 512, max_depth: 10 },
     )
     .unwrap();
     cloud
@@ -823,22 +786,16 @@ fn mvp_cli_scan_like_copc_bounds_resolution_reduces_input_points() {
     };
 
     const POINT_COUNT: usize = 50_000;
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_scan_bounds_res_in_{}.copc.laz",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_scan_bounds_res_in_{}.copc.laz", std::process::id()));
     write_scan_like_copc_fixture(&input_path, POINT_COUNT);
 
     let info = read_copc_file_info(&input_path).unwrap();
     let full_count = read_copc_file(&input_path).unwrap().len();
     let roi_bounds = CopcBounds::from_ranges((0.0, 40.0), (0.0, 20.0), (-0.01, 0.5));
     let coarse_resolution = info.spacing * 4.0;
-    let bounds_only_count = read_copc_file_with_query(
-        &input_path,
-        &CopcQuery::bounds(roi_bounds),
-    )
-    .unwrap()
-    .len();
+    let bounds_only_count =
+        read_copc_file_with_query(&input_path, &CopcQuery::bounds(roi_bounds)).unwrap().len();
     let combined_count = read_copc_file_with_query(
         &input_path,
         &CopcQuery::with_resolution(roi_bounds, coarse_resolution),
@@ -854,18 +811,12 @@ fn mvp_cli_scan_like_copc_bounds_resolution_reduces_input_points() {
     let resolution_arg = format!("{coarse_resolution}");
     let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
     let cli_args = ["--leaf-size", "4.0", "--voxel-policy", "cpu"];
-    let combined_output = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_scan_bounds_res_out_{}.copc.laz",
-        std::process::id()
-    ));
-    let bounds_output = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_scan_bounds_out_{}.copc.laz",
-        std::process::id()
-    ));
-    let full_output = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_scan_bounds_res_full_{}.copc.laz",
-        std::process::id()
-    ));
+    let combined_output = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_scan_bounds_res_out_{}.copc.laz", std::process::id()));
+    let bounds_output = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_scan_bounds_out_{}.copc.laz", std::process::id()));
+    let full_output = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_scan_bounds_res_full_{}.copc.laz", std::process::id()));
 
     let combined = Command::new(bin)
         .args(cli_args)
@@ -903,17 +854,10 @@ fn mvp_cli_scan_like_copc_bounds_resolution_reduces_input_points() {
 
     let full = Command::new(bin)
         .args(cli_args)
-        .args([
-            input_path.to_str().unwrap(),
-            full_output.to_str().unwrap(),
-        ])
+        .args([input_path.to_str().unwrap(), full_output.to_str().unwrap()])
         .output()
         .expect("run full detail CLI");
-    assert!(
-        full.status.success(),
-        "full CLI failed: {}",
-        String::from_utf8_lossy(&full.stderr)
-    );
+    assert!(full.status.success(), "full CLI failed: {}", String::from_utf8_lossy(&full.stderr));
 
     let combined_loaded = parse_cli_input_points(&combined.stderr);
     let bounds_loaded = parse_cli_input_points(&bounds_only.stderr);
@@ -943,15 +887,11 @@ fn mvp_cli_repeat_logs_per_iteration_timing() {
     use std::process::Command;
 
     const POINT_COUNT: usize = 5_000;
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_repeat_in_{}.copc.laz",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_repeat_in_{}.copc.laz", std::process::id()));
     write_scan_like_copc_fixture(&input_path, POINT_COUNT);
-    let output_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_repeat_out_{}.copc.laz",
-        std::process::id()
-    ));
+    let output_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_repeat_out_{}.copc.laz", std::process::id()));
 
     let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
     let output = Command::new(bin)
@@ -1038,18 +978,15 @@ fn mvp_scan_like_copc_bounds_resolution_curve_monotonic() {
     use spatialrust::{read_copc_file, read_copc_file_info, read_copc_file_with_query, CopcQuery};
 
     const POINT_COUNT: usize = 50_000;
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_scan_curve_lib_{}.copc.laz",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_scan_curve_lib_{}.copc.laz", std::process::id()));
     write_scan_like_copc_fixture(&input_path, POINT_COUNT);
 
     let info = read_copc_file_info(&input_path).unwrap();
     let full_count = read_copc_file(&input_path).unwrap().len();
     let roi_bounds = scan_like_roi_bounds();
-    let bounds_only_count = read_copc_file_with_query(&input_path, &CopcQuery::bounds(roi_bounds))
-        .unwrap()
-        .len();
+    let bounds_only_count =
+        read_copc_file_with_query(&input_path, &CopcQuery::bounds(roi_bounds)).unwrap().len();
 
     let root_counts: Vec<usize> = resolution_curve_counts(&input_path, info.root_bounds)
         .into_iter()
@@ -1082,10 +1019,8 @@ fn mvp_cli_scan_like_copc_bounds_resolution_curve() {
     use std::process::Command;
 
     const POINT_COUNT: usize = 50_000;
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_scan_curve_in_{}.copc.laz",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_scan_curve_in_{}.copc.laz", std::process::id()));
     write_scan_like_copc_fixture(&input_path, POINT_COUNT);
 
     let info = spatialrust::read_copc_file_info(&input_path).unwrap();
@@ -1197,10 +1132,7 @@ fn probe_scan_like_copc_resolution_curve_counts() {
         eprintln!("release CLI elapsed (ms):");
         let cases: [(&str, Vec<String>); 3] = [
             ("full", Vec::new()),
-            (
-                "roi",
-                vec!["--bounds".to_string(), scan_like_roi_bounds_arg().to_string()],
-            ),
+            ("roi", vec!["--bounds".to_string(), scan_like_roi_bounds_arg().to_string()]),
             (
                 "roi+x4",
                 vec![
@@ -1218,11 +1150,7 @@ fn probe_scan_like_copc_resolution_curve_counts() {
             for arg in &extra_args {
                 cmd.arg(arg);
             }
-            let output = cmd
-                .arg(&input_path)
-                .arg(&out)
-                .output()
-                .expect("release CLI");
+            let output = cmd.arg(&input_path).arg(&out).output().expect("release CLI");
             assert!(
                 output.status.success(),
                 "{label}: {}",
@@ -1244,17 +1172,11 @@ fn sample_xyzinormal_plane_cloud() -> spatialrust::PointCloud {
     let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzinormal());
     for x in 0..10 {
         for y in 0..10 {
-            builder
-                .push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0, 0.2, 0.0, 0.0, 1.0])
-                .unwrap();
+            builder.push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0, 0.2, 0.0, 0.0, 1.0]).unwrap();
         }
     }
-    builder
-        .push_point([0.0, 0.0, 0.5, 0.9, 0.0, 0.0, 1.0])
-        .unwrap();
-    builder
-        .push_point([0.1, 0.0, 0.5, 0.8, 0.0, 0.0, 1.0])
-        .unwrap();
+    builder.push_point([0.0, 0.0, 0.5, 0.9, 0.0, 0.0, 1.0]).unwrap();
+    builder.push_point([0.1, 0.0, 0.5, 0.8, 0.0, 0.0, 1.0]).unwrap();
     builder.build().unwrap()
 }
 
@@ -1267,9 +1189,7 @@ fn sample_xyzinormal_plane_grid(point_count: usize) -> spatialrust::PointCloud {
         let x = (index % 256) as f32 * 0.1;
         let y = ((index / 256) % 256) as f32 * 0.1;
         let intensity = (index % 256) as f32;
-        builder
-            .push_point([x, y, 0.0, intensity, 0.0, 0.0, 1.0])
-            .unwrap();
+        builder.push_point([x, y, 0.0, intensity, 0.0, 0.0, 1.0]).unwrap();
     }
     for x in 0..10 {
         for y in 0..10 {
@@ -1284,8 +1204,7 @@ fn sample_xyzinormal_plane_grid(point_count: usize) -> spatialrust::PointCloud {
 #[cfg(feature = "mvp")]
 fn mvp_xyzinormal_approximate_auto_config() -> spatialrust::MvpPipelineConfig {
     use spatialrust::{
-        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig,
-        Vec3,
+        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig, Vec3,
     };
 
     MvpPipelineConfig {
@@ -1316,8 +1235,7 @@ fn mvp_xyzinormal_approximate_auto_config() -> spatialrust::MvpPipelineConfig {
 #[cfg(feature = "mvp")]
 fn mvp_xyzinormal_base_config() -> spatialrust::MvpPipelineConfig {
     use spatialrust::{
-        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig,
-        Vec3,
+        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig, Vec3,
     };
 
     MvpPipelineConfig {
@@ -1348,8 +1266,7 @@ fn mvp_xyzinormal_base_config() -> spatialrust::MvpPipelineConfig {
 #[test]
 fn mvp_xyzinormal_pcd_pipeline_roundtrip() {
     use spatialrust::{
-        HasIntensity, HasNormals3, HasPositions3, MvpPipeline, PcdWriteFormat, read_pcd,
-        write_pcd,
+        read_pcd, write_pcd, HasIntensity, HasNormals3, HasPositions3, MvpPipeline, PcdWriteFormat,
     };
     use std::io::Cursor;
 
@@ -1361,9 +1278,7 @@ fn mvp_xyzinormal_pcd_pipeline_roundtrip() {
     assert!(loaded.field("normal_x").is_ok());
     assert!(loaded.intensity().is_ok());
 
-    let result = MvpPipeline::new(mvp_xyzinormal_base_config())
-        .run(&loaded)
-        .unwrap();
+    let result = MvpPipeline::new(mvp_xyzinormal_base_config()).run(&loaded).unwrap();
 
     assert!(!result.downsampled.is_empty());
     assert!(result.downsampled.field("normal_x").is_ok());
@@ -1386,7 +1301,9 @@ fn mvp_xyzinormal_pcd_pipeline_roundtrip() {
 #[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
 #[test]
 fn mvp_xyzinormal_gpu_voxel_matches_cpu() {
-    use spatialrust::{DeviceKind, ExecutionPolicy, HasIntensity, HasNormals3, HasPositions3, MvpPipeline};
+    use spatialrust::{
+        DeviceKind, ExecutionPolicy, HasIntensity, HasNormals3, HasPositions3, MvpPipeline,
+    };
 
     let cloud = sample_xyzinormal_plane_cloud();
     let mut cpu_config = mvp_xyzinormal_base_config();
@@ -1427,32 +1344,19 @@ fn sample_xyzirgb_plane_cloud() -> spatialrust::PointCloud {
     for x in 0..10 {
         for y in 0..10 {
             builder
-                .push_point([
-                    x as f32 * 0.1,
-                    y as f32 * 0.1,
-                    0.0,
-                    0.2,
-                    200.0,
-                    40.0,
-                    40.0,
-                ])
+                .push_point([x as f32 * 0.1, y as f32 * 0.1, 0.0, 0.2, 200.0, 40.0, 40.0])
                 .unwrap();
         }
     }
-    builder
-        .push_point([0.0, 0.0, 0.5, 0.9, 255.0, 128.0, 32.0])
-        .unwrap();
-    builder
-        .push_point([0.1, 0.0, 0.5, 0.8, 64.0, 192.0, 96.0])
-        .unwrap();
+    builder.push_point([0.0, 0.0, 0.5, 0.9, 255.0, 128.0, 32.0]).unwrap();
+    builder.push_point([0.1, 0.0, 0.5, 0.8, 64.0, 192.0, 96.0]).unwrap();
     builder.build().unwrap()
 }
 
 #[cfg(feature = "mvp")]
 fn mvp_composite_base_config() -> spatialrust::MvpPipelineConfig {
     use spatialrust::{
-        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig,
-        Vec3,
+        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig, Vec3,
     };
 
     MvpPipelineConfig {
@@ -1483,7 +1387,7 @@ fn mvp_composite_base_config() -> spatialrust::MvpPipelineConfig {
 #[test]
 fn mvp_composite_xyzirgb_pcd_pipeline_roundtrip() {
     use spatialrust::{
-        HasIntensity, HasPositions3, MvpPipeline, PcdWriteFormat, PointBuffer, read_pcd, write_pcd,
+        read_pcd, write_pcd, HasIntensity, HasPositions3, MvpPipeline, PcdWriteFormat, PointBuffer,
     };
     use std::io::Cursor;
 
@@ -1495,9 +1399,7 @@ fn mvp_composite_xyzirgb_pcd_pipeline_roundtrip() {
     assert!(loaded.intensity().is_ok());
     assert!(loaded.field("r").is_ok());
 
-    let result = MvpPipeline::new(mvp_composite_base_config())
-        .run(&loaded)
-        .unwrap();
+    let result = MvpPipeline::new(mvp_composite_base_config()).run(&loaded).unwrap();
 
     assert!(!result.downsampled.is_empty());
     assert!(result.downsampled.intensity().is_ok());
@@ -1523,8 +1425,8 @@ fn mvp_composite_xyzirgb_pcd_pipeline_roundtrip() {
 #[test]
 fn mvp_composite_xyzirgb_las_pipeline_roundtrip() {
     use spatialrust::{
-        FieldSemantic, HasIntensity, HasPositions3, MvpPipeline, read_point_cloud_file,
-        write_point_cloud_file,
+        read_point_cloud_file, write_point_cloud_file, FieldSemantic, HasIntensity, HasPositions3,
+        MvpPipeline,
     };
 
     let cloud = sample_xyzirgb_plane_cloud();
@@ -1536,12 +1438,10 @@ fn mvp_composite_xyzirgb_las_pipeline_roundtrip() {
     assert!(loaded.intensity().is_ok());
     assert!(loaded.schema().find_semantic(FieldSemantic::ColorR).is_some());
 
-    let result = MvpPipeline::new(mvp_composite_base_config())
-        .run(&loaded)
-        .unwrap();
+    let result = MvpPipeline::new(mvp_composite_base_config()).run(&loaded).unwrap();
 
-    let output_path =
-        std::env::temp_dir().join(format!("spatialrust_mvp_xyzirgb_out_{}.las", std::process::id()));
+    let output_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_xyzirgb_out_{}.las", std::process::id()));
     write_point_cloud_file(&output_path, &result.output).unwrap();
     let saved = read_point_cloud_file(&output_path).unwrap();
 
@@ -1669,9 +1569,7 @@ fn mvp_large_scale_xyzi_pipeline_smoke() {
 
 #[cfg(feature = "mvp")]
 fn sample_scan_like_xyzi(point_count: usize) -> spatialrust::PointCloud {
-    use spatialrust::{
-        DType, FieldSemantic, PointCloudBuilder, PointField, StandardSchemas,
-    };
+    use spatialrust::{DType, FieldSemantic, PointCloudBuilder, PointField, StandardSchemas};
 
     let schema = StandardSchemas::point_xyzi().with_field(PointField::scalar(
         "classification",
@@ -1686,15 +1584,11 @@ fn sample_scan_like_xyzi(point_count: usize) -> spatialrust::PointCloud {
         let z = ((index % 53) as f32) * 0.023;
         let intensity = (index % 256) as f32;
         let classification = if z < 0.5 { 2.0 } else { 1.0 };
-        builder
-            .push_point([x, y, z, intensity, classification])
-            .unwrap();
+        builder.push_point([x, y, z, intensity, classification]).unwrap();
     }
     for x in 0..10 {
         for y in 0..10 {
-            builder
-                .push_point([90.0 + x as f32 * 0.02, y as f32 * 0.02, 2.5, 200.0, 6.0])
-                .unwrap();
+            builder.push_point([90.0 + x as f32 * 0.02, y as f32 * 0.02, 2.5, 200.0, 6.0]).unwrap();
         }
     }
     builder.build().unwrap()
@@ -1703,8 +1597,7 @@ fn sample_scan_like_xyzi(point_count: usize) -> spatialrust::PointCloud {
 #[cfg(feature = "mvp")]
 fn mvp_scan_like_base_config() -> spatialrust::MvpPipelineConfig {
     use spatialrust::{
-        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig,
-        Vec3,
+        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig, Vec3,
     };
 
     MvpPipelineConfig {
@@ -1736,14 +1629,14 @@ fn mvp_scan_like_base_config() -> spatialrust::MvpPipelineConfig {
 #[test]
 fn mvp_scan_like_las_file_pipeline() {
     use spatialrust::{
-        FieldSemantic, HasIntensity, HasPositions3, MvpPipeline, read_point_cloud_file,
-        write_point_cloud_file,
+        read_point_cloud_file, write_point_cloud_file, FieldSemantic, HasIntensity, HasPositions3,
+        MvpPipeline,
     };
 
     const POINT_COUNT: usize = 50_000;
     let cloud = sample_scan_like_xyzi(POINT_COUNT);
-    let input_path =
-        std::env::temp_dir().join(format!("spatialrust_mvp_scan_las_in_{}.las", std::process::id()));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_scan_las_in_{}.las", std::process::id()));
     write_point_cloud_file(&input_path, &cloud).unwrap();
     let loaded = read_point_cloud_file(&input_path).unwrap();
 
@@ -1751,12 +1644,11 @@ fn mvp_scan_like_las_file_pipeline() {
     assert!(loaded.intensity().is_ok());
     assert!(loaded.schema().find_semantic(FieldSemantic::Label).is_some());
 
-    let result = MvpPipeline::new(mvp_scan_like_base_config())
-        .run(&loaded)
-        .expect("scan-like LAS MVP");
+    let result =
+        MvpPipeline::new(mvp_scan_like_base_config()).run(&loaded).expect("scan-like LAS MVP");
 
-    let output_path =
-        std::env::temp_dir().join(format!("spatialrust_mvp_scan_las_out_{}.las", std::process::id()));
+    let output_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_scan_las_out_{}.las", std::process::id()));
     write_point_cloud_file(&output_path, &result.output).unwrap();
     let saved = read_point_cloud_file(&output_path).unwrap();
 
@@ -1775,23 +1667,18 @@ fn mvp_scan_like_las_file_pipeline() {
 #[test]
 fn mvp_scan_like_copc_file_pipeline() {
     use spatialrust::{
-        FieldSemantic, HasIntensity, HasPositions3, MvpPipeline, read_copc_file, write_copc_file_with_params,
-        CopcWriterParams,
+        read_copc_file, write_copc_file_with_params, CopcWriterParams, FieldSemantic, HasIntensity,
+        HasPositions3, MvpPipeline,
     };
 
     const POINT_COUNT: usize = 50_000;
     let cloud = sample_scan_like_xyzi(POINT_COUNT);
-    let path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_scan_copc_{}.copc.laz",
-        std::process::id()
-    ));
+    let path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_scan_copc_{}.copc.laz", std::process::id()));
     write_copc_file_with_params(
         &path,
         &cloud,
-        &CopcWriterParams {
-            max_points_per_node: 512,
-            max_depth: 10,
-        },
+        &CopcWriterParams { max_points_per_node: 512, max_depth: 10 },
     )
     .unwrap();
 
@@ -1800,9 +1687,8 @@ fn mvp_scan_like_copc_file_pipeline() {
     assert!(loaded.intensity().is_ok());
     assert!(loaded.schema().find_semantic(FieldSemantic::Label).is_some());
 
-    let result = MvpPipeline::new(mvp_scan_like_base_config())
-        .run(&loaded)
-        .expect("scan-like COPC MVP");
+    let result =
+        MvpPipeline::new(mvp_scan_like_base_config()).run(&loaded).expect("scan-like COPC MVP");
 
     let _ = std::fs::remove_file(&path);
 
@@ -1817,23 +1703,18 @@ fn mvp_scan_like_copc_file_pipeline() {
 #[test]
 fn mvp_scan_like_copc_resolution_file_pipeline() {
     use spatialrust::{
-        CopcQuery, HasIntensity, MvpPipeline, read_copc_file, read_copc_file_info,
-        read_copc_file_with_query, write_copc_file_with_params, CopcWriterParams,
+        read_copc_file, read_copc_file_info, read_copc_file_with_query,
+        write_copc_file_with_params, CopcQuery, CopcWriterParams, HasIntensity, MvpPipeline,
     };
 
     const POINT_COUNT: usize = 50_000;
     let cloud = sample_scan_like_xyzi(POINT_COUNT);
-    let path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_scan_copc_res_{}.copc.laz",
-        std::process::id()
-    ));
+    let path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_scan_copc_res_{}.copc.laz", std::process::id()));
     write_copc_file_with_params(
         &path,
         &cloud,
-        &CopcWriterParams {
-            max_points_per_node: 512,
-            max_depth: 10,
-        },
+        &CopcWriterParams { max_points_per_node: 512, max_depth: 10 },
     )
     .unwrap();
 
@@ -1862,11 +1743,11 @@ fn mvp_scan_like_copc_resolution_file_pipeline() {
 #[cfg(feature = "mvp")]
 #[test]
 fn mvp_approximate_voxel_mode_pipeline() {
+    use spatialrust::EuclideanClusterConfig;
     use spatialrust::{
         HasPositions3, MvpPipeline, MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder,
-        RansacPlaneConfig, VoxelAggregationMode, Vec3,
+        RansacPlaneConfig, Vec3, VoxelAggregationMode,
     };
-    use spatialrust::EuclideanClusterConfig;
 
     let mut builder = PointCloudBuilder::xyz();
     for x in 0..10 {
@@ -1928,19 +1809,15 @@ fn mvp_cli_xyzinormal_approximate_auto_1m() {
     use std::process::Command;
 
     use spatialrust::{
-        FieldSemantic, HasPositions3, read_point_cloud_file, write_point_cloud_file,
+        read_point_cloud_file, write_point_cloud_file, FieldSemantic, HasPositions3,
     };
 
     const POINT_COUNT: usize = 1_000_000;
     let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_xyzinormal_approx_auto_in_{}.las",
-        std::process::id()
-    ));
-    let output_path = std::env::temp_dir().join(format!(
-        "spatialrust_mvp_cli_xyzinormal_approx_auto_out_{}.las",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_xyzinormal_approx_auto_in_{}.las", std::process::id()));
+    let output_path = std::env::temp_dir()
+        .join(format!("spatialrust_mvp_cli_xyzinormal_approx_auto_out_{}.las", std::process::id()));
     write_point_cloud_file(&input_path, &cloud).unwrap();
 
     let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
@@ -1957,11 +1834,7 @@ fn mvp_cli_xyzinormal_approximate_auto_1m() {
         ])
         .output()
         .expect("run xyzinormal approximate Auto CLI");
-    assert!(
-        output.status.success(),
-        "CLI failed: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert!(output.status.success(), "CLI failed: {}", String::from_utf8_lossy(&output.stderr));
 
     let loaded_points = parse_cli_input_points(&output.stderr);
     assert_eq!(loaded_points, cloud.len());
@@ -1986,20 +1859,13 @@ fn probe_xyzinormal_approximate_auto_cli_release() {
 
     const POINT_COUNT: usize = 1_000_000;
     let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_probe_xyzinormal_approx_auto_in_{}.las",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_probe_xyzinormal_approx_auto_in_{}.las", std::process::id()));
     write_point_cloud_file(&input_path, &cloud).unwrap();
 
     if std::env::var("SPATIALRUST_PROBE_RELEASE").is_ok() {
         let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
-        let base_args = [
-            "--leaf-size",
-            "4.0",
-            "--voxel-mode",
-            "approximate",
-        ];
+        let base_args = ["--leaf-size", "4.0", "--voxel-mode", "approximate"];
         let policies = [("auto", "auto"), ("cpu", "cpu"), ("gpu", "gpu")];
         eprintln!("release xyzinormal approximate CLI (1M LAS, IO included):");
         for (label, policy) in policies {
@@ -2044,22 +1910,14 @@ fn probe_xyzinormal_approximate_auto_cli_repeat_release() {
     const POINT_COUNT: usize = 1_000_000;
     const REPEAT: usize = 3;
     let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
-    let input_path = std::env::temp_dir().join(format!(
-        "spatialrust_probe_xyzinormal_approx_repeat_in_{}.las",
-        std::process::id()
-    ));
+    let input_path = std::env::temp_dir()
+        .join(format!("spatialrust_probe_xyzinormal_approx_repeat_in_{}.las", std::process::id()));
     write_point_cloud_file(&input_path, &cloud).unwrap();
 
     let repeat_arg = REPEAT.to_string();
     let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
-    let base_args = [
-        "--leaf-size",
-        "4.0",
-        "--voxel-mode",
-        "approximate",
-        "--repeat",
-        repeat_arg.as_str(),
-    ];
+    let base_args =
+        ["--leaf-size", "4.0", "--voxel-mode", "approximate", "--repeat", repeat_arg.as_str()];
     eprintln!("release xyzinormal approximate CLI repeat={REPEAT} (1M LAS, IO once per process):");
     for (label, policy) in [("cpu", "cpu"), ("auto", "auto"), ("gpu", "gpu")] {
         let output_path = std::env::temp_dir().join(format!(
@@ -2073,11 +1931,7 @@ fn probe_xyzinormal_approximate_auto_cli_repeat_release() {
             .arg(output_path.to_str().unwrap())
             .output()
             .expect("release repeat CLI");
-        assert!(
-            output.status.success(),
-            "{label}: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
+        assert!(output.status.success(), "{label}: {}", String::from_utf8_lossy(&output.stderr));
 
         let points = parse_cli_input_points(&output.stderr);
         assert_eq!(points, cloud.len());
@@ -2107,22 +1961,11 @@ fn run_approximate_cli_probe(
     use std::process::Command;
 
     let mut command = Command::new(bin);
-    command.args([
-        "--leaf-size",
-        "4.0",
-        "--voxel-mode",
-        "approximate",
-        "--voxel-policy",
-        policy,
-    ]);
+    command.args(["--leaf-size", "4.0", "--voxel-mode", "approximate", "--voxel-policy", policy]);
     if let Some(repeat) = repeat {
         command.args(["--repeat", &repeat.to_string()]);
     }
-    command
-        .arg(input_path)
-        .arg(output_path)
-        .output()
-        .expect("run MVP CLI probe")
+    command.arg(input_path).arg(output_path).output().expect("run MVP CLI probe")
 }
 
 #[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
@@ -2146,14 +1989,10 @@ fn probe_xyzinormal_approximate_auto_cli_single_vs_repeat1_release() {
 
     eprintln!("single vs --repeat 1 (1M LAS, separate process per invocation):");
     for policy in ["cpu", "auto", "gpu"] {
-        let single_out = std::env::temp_dir().join(format!(
-            "spatialrust_probe_single_{policy}_{}.las",
-            std::process::id()
-        ));
-        let repeat_out = std::env::temp_dir().join(format!(
-            "spatialrust_probe_repeat1_{policy}_{}.las",
-            std::process::id()
-        ));
+        let single_out = std::env::temp_dir()
+            .join(format!("spatialrust_probe_single_{policy}_{}.las", std::process::id()));
+        let repeat_out = std::env::temp_dir()
+            .join(format!("spatialrust_probe_repeat1_{policy}_{}.las", std::process::id()));
         let single = run_approximate_cli_probe(bin, &input_path, &single_out, policy, None);
         assert!(
             single.status.success(),
@@ -2168,17 +2007,18 @@ fn probe_xyzinormal_approximate_auto_cli_single_vs_repeat1_release() {
         );
         let single_ms = parse_cli_elapsed_ms(&single.stderr);
         let repeat_ms = parse_cli_elapsed_ms(&repeat.stderr);
-        eprintln!("{policy}: single={single_ms:.3}ms repeat1={repeat_ms:.3}ms delta={:.3}ms", repeat_ms - single_ms);
+        eprintln!(
+            "{policy}: single={single_ms:.3}ms repeat1={repeat_ms:.3}ms delta={:.3}ms",
+            repeat_ms - single_ms
+        );
         let _ = std::fs::remove_file(single_out);
         let _ = std::fs::remove_file(repeat_out);
     }
 
     eprintln!("Epic 51 order (auto, cpu, gpu single-run, separate processes):");
     for policy in ["auto", "cpu", "gpu"] {
-        let output_path = std::env::temp_dir().join(format!(
-            "spatialrust_probe_epic51_order_{policy}_{}.las",
-            std::process::id()
-        ));
+        let output_path = std::env::temp_dir()
+            .join(format!("spatialrust_probe_epic51_order_{policy}_{}.las", std::process::id()));
         let output = run_approximate_cli_probe(bin, &input_path, &output_path, policy, None);
         assert!(
             output.status.success(),
@@ -2192,10 +2032,8 @@ fn probe_xyzinormal_approximate_auto_cli_single_vs_repeat1_release() {
 
     eprintln!("gpu single-run twice (separate processes, Epic 51-style):");
     for run in 1..=2 {
-        let output_path = std::env::temp_dir().join(format!(
-            "spatialrust_probe_gpu_single_{run}_{}.las",
-            std::process::id()
-        ));
+        let output_path = std::env::temp_dir()
+            .join(format!("spatialrust_probe_gpu_single_{run}_{}.las", std::process::id()));
         let output = run_approximate_cli_probe(bin, &input_path, &output_path, "gpu", None);
         assert!(
             output.status.success(),
@@ -2235,23 +2073,17 @@ fn probe_xyzinormal_approximate_auto_gpu_warmup() {
     let gpu_pipeline = MvpPipeline::new(gpu_config);
 
     let gpu_cold_started = Instant::now();
-    gpu_pipeline
-        .run(&cloud)
-        .expect("gpu approximate Auto MVP cold");
+    gpu_pipeline.run(&cloud).expect("gpu approximate Auto MVP cold");
     let gpu_cold_ms = elapsed_ms(gpu_cold_started.elapsed());
 
     let gpu_warm_started = Instant::now();
-    gpu_pipeline
-        .run(&cloud)
-        .expect("gpu approximate Auto MVP warm");
+    gpu_pipeline.run(&cloud).expect("gpu approximate Auto MVP warm");
     let gpu_warm_ms = elapsed_ms(gpu_warm_started.elapsed());
 
     let mut cpu_config = mvp_xyzinormal_approximate_auto_config();
     cpu_config.voxel_policy = ExecutionPolicy::CpuSingle;
     let cpu_started = Instant::now();
-    MvpPipeline::new(cpu_config)
-        .run(&cloud)
-        .expect("cpu approximate Auto MVP");
+    MvpPipeline::new(cpu_config).run(&cloud).expect("cpu approximate Auto MVP");
     let cpu_ms = elapsed_ms(cpu_started.elapsed());
 
     let auto_started = Instant::now();

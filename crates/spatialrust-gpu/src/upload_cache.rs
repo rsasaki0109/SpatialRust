@@ -21,9 +21,7 @@ impl GpuUploadPool {
     ) -> SpatialResult<wgpu::Buffer> {
         let byte_len = (data.len() * std::mem::size_of::<f32>()) as u64;
         let buffer = self.take_storage(runtime, label, byte_len);
-        runtime
-            .queue()
-            .write_buffer(&buffer, 0, bytemuck::cast_slice(data));
+        runtime.queue().write_buffer(&buffer, 0, bytemuck::cast_slice(data));
         Ok(buffer)
     }
 
@@ -37,7 +35,12 @@ impl GpuUploadPool {
         }
     }
 
-    fn take_storage(&self, runtime: &WgpuRuntime, label: &'static str, byte_len: u64) -> wgpu::Buffer {
+    fn take_storage(
+        &self,
+        runtime: &WgpuRuntime,
+        label: &'static str,
+        byte_len: u64,
+    ) -> wgpu::Buffer {
         if byte_len == 0 {
             return runtime.device().create_buffer(&wgpu::BufferDescriptor {
                 label: Some(label),
@@ -73,14 +76,12 @@ mod tests {
         let pool = GpuUploadPool::default();
         let data = [1.0_f32, 2.0, 3.0];
 
-        let first = pool
-            .upload_f32_storage(&runtime, "upload-pool-test", &data)
-            .expect("first upload");
+        let first =
+            pool.upload_f32_storage(&runtime, "upload-pool-test", &data).expect("first upload");
         pool.recycle_storage(first.size(), first);
 
-        let second = pool
-            .upload_f32_storage(&runtime, "upload-pool-test", &data)
-            .expect("second upload");
+        let second =
+            pool.upload_f32_storage(&runtime, "upload-pool-test", &data).expect("second upload");
         assert_eq!(second.size(), (data.len() * std::mem::size_of::<f32>()) as u64);
     }
 }

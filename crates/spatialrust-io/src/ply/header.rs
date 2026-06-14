@@ -115,8 +115,10 @@ impl PlyHeader {
             let keyword = parts.next().ok_or_else(|| ply_parse("empty PLY header line"))?;
             match keyword {
                 "format" => {
-                    let token = parts.next().ok_or_else(|| ply_parse("missing PLY format token"))?;
-                    let version = parts.next().ok_or_else(|| ply_parse("missing PLY format version"))?;
+                    let token =
+                        parts.next().ok_or_else(|| ply_parse("missing PLY format token"))?;
+                    let version =
+                        parts.next().ok_or_else(|| ply_parse("missing PLY format version"))?;
                     if version != "1.0" {
                         return Err(ply_format(format!("unsupported PLY version `{version}`")));
                     }
@@ -152,23 +154,20 @@ impl PlyHeader {
                     current_element = Some(name);
                 }
                 "property" => {
-                    let element = current_element.as_deref().ok_or_else(|| {
-                        ply_parse("PLY property declared before element")
-                    })?;
+                    let element = current_element
+                        .as_deref()
+                        .ok_or_else(|| ply_parse("PLY property declared before element"))?;
                     if element != "vertex" {
                         return Err(ply_format("only vertex properties are supported"));
                     }
-                    let kind_token = parts
-                        .next()
-                        .ok_or_else(|| ply_parse("missing PLY property type"))?;
+                    let kind_token =
+                        parts.next().ok_or_else(|| ply_parse("missing PLY property type"))?;
                     let name = parts
                         .next()
                         .ok_or_else(|| ply_parse("missing PLY property name"))?
                         .to_owned();
-                    properties.push(PlyProperty {
-                        name,
-                        kind: PlyPropertyKind::parse(kind_token)?,
-                    });
+                    properties
+                        .push(PlyProperty { name, kind: PlyPropertyKind::parse(kind_token)? });
                 }
                 "comment" | "obj_info" => {}
                 _ => return Err(ply_parse(format!("unsupported PLY header keyword `{keyword}`"))),
@@ -189,10 +188,7 @@ impl PlyHeader {
     }
 
     /// Writes a vertex-only PLY header.
-    pub fn write_header<W: std::io::Write>(
-        &self,
-        writer: &mut W,
-    ) -> Result<(), IoError> {
+    pub fn write_header<W: std::io::Write>(&self, writer: &mut W) -> Result<(), IoError> {
         writeln!(writer, "ply")?;
         let format = match self.format {
             PlyFormat::Ascii => "ascii 1.0",
@@ -201,12 +197,7 @@ impl PlyHeader {
         writeln!(writer, "format {format}")?;
         writeln!(writer, "element vertex {}", self.vertex_count)?;
         for property in &self.properties {
-            writeln!(
-                writer,
-                "property {} {}",
-                property.kind.as_token(),
-                property.name
-            )?;
+            writeln!(writer, "property {} {}", property.kind.as_token(), property.name)?;
         }
         writeln!(writer, "end_header")?;
         Ok(())

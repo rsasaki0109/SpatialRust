@@ -1,4 +1,4 @@
-use las::{Header, point::Format};
+use las::{point::Format, Header};
 use spatialrust_core::{DType, FieldSemantic, PointField, PointSchema, StandardSchemas};
 
 use crate::error::{las_format, IoError};
@@ -54,7 +54,9 @@ pub fn schema_for_las_header(header: &Header) -> PointSchema {
 /// Selects a COPC-compatible LAS point format for writing the given cloud schema.
 ///
 /// COPC accepts PDRF 1/3 (upgraded to 6/7) or native 6–8. SpatialRust maps clouds to PDRF 1 or 3.
-pub fn schema_from_point_cloud_for_copc(schema: &PointSchema) -> Result<(Format, PointSchema), IoError> {
+pub fn schema_from_point_cloud_for_copc(
+    schema: &PointSchema,
+) -> Result<(Format, PointSchema), IoError> {
     let has_color = schema.fields().iter().any(|field| {
         matches!(
             field.semantic,
@@ -74,14 +76,14 @@ pub fn schema_from_point_cloud_for_copc(schema: &PointSchema) -> Result<(Format,
 
 /// Selects a LAS point format for writing the given cloud schema.
 pub fn schema_from_point_cloud(schema: &PointSchema) -> Result<(Format, PointSchema), IoError> {
-    let has_color = schema
-        .fields()
-        .iter()
-        .any(|field| matches!(field.semantic, FieldSemantic::ColorR | FieldSemantic::ColorG | FieldSemantic::ColorB));
-    let has_gps_time = schema
-        .fields()
-        .iter()
-        .any(|field| field.semantic == FieldSemantic::TimeOffset);
+    let has_color = schema.fields().iter().any(|field| {
+        matches!(
+            field.semantic,
+            FieldSemantic::ColorR | FieldSemantic::ColorG | FieldSemantic::ColorB
+        )
+    });
+    let has_gps_time =
+        schema.fields().iter().any(|field| field.semantic == FieldSemantic::TimeOffset);
 
     let format = if has_color {
         Format::new(2).map_err(|error| las_format(error.to_string()))?
@@ -159,9 +161,6 @@ mod tests {
         let (format, export_schema) =
             schema_from_point_cloud(&StandardSchemas::point_xyzrgb()).expect("format selection");
         assert_eq!(format.to_u8().unwrap(), 2);
-        assert_eq!(
-            export_schema.find_semantic(FieldSemantic::ColorR).unwrap().name,
-            "red"
-        );
+        assert_eq!(export_schema.find_semantic(FieldSemantic::ColorR).unwrap().name, "red");
     }
 }

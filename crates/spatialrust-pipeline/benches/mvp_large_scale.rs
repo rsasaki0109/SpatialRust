@@ -13,9 +13,7 @@ fn synthetic_scan_xyzi(point_count: usize) -> PointCloud {
         let x = (index % side) as f32 * 0.1;
         let y = (index / side) as f32 * 0.1;
         let intensity = (index % 256) as f32;
-        builder
-            .push_point([x, y, 0.0, intensity])
-            .expect("push point");
+        builder.push_point([x, y, 0.0, intensity]).expect("push point");
     }
     for x in 0..10 {
         for y in 0..10 {

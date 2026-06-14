@@ -23,10 +23,7 @@ impl CopcBounds {
     /// Creates bounds from separate axis ranges.
     #[must_use]
     pub fn from_ranges(x: (f64, f64), y: (f64, f64), z: (f64, f64)) -> Self {
-        Self {
-            min: [x.0, y.0, z.0],
-            max: [x.1, y.1, z.1],
-        }
+        Self { min: [x.0, y.0, z.0], max: [x.1, y.1, z.1] }
     }
 
     /// Validates that min <= max on every axis.
@@ -43,10 +40,7 @@ impl CopcBounds {
     }
 
     pub(crate) fn to_aabb(self) -> Aabb {
-        Aabb {
-            min: self.min,
-            max: self.max,
-        }
+        Aabb { min: self.min, max: self.max }
     }
 }
 
@@ -65,31 +59,19 @@ impl CopcQuery {
     /// Creates a bounds-only query at full available detail inside the region.
     #[must_use]
     pub fn bounds(bounds: CopcBounds) -> Self {
-        Self {
-            bounds,
-            max_resolution: None,
-            max_level: None,
-        }
+        Self { bounds, max_resolution: None, max_level: None }
     }
 
     /// Creates a bounds query limited by target point spacing.
     #[must_use]
     pub fn with_resolution(bounds: CopcBounds, max_resolution: f64) -> Self {
-        Self {
-            bounds,
-            max_resolution: Some(max_resolution),
-            max_level: None,
-        }
+        Self { bounds, max_resolution: Some(max_resolution), max_level: None }
     }
 
     /// Creates a bounds query limited by explicit octree level.
     #[must_use]
     pub fn with_level(bounds: CopcBounds, max_level: i32) -> Self {
-        Self {
-            bounds,
-            max_resolution: None,
-            max_level: Some(max_level),
-        }
+        Self { bounds, max_resolution: None, max_level: Some(max_level) }
     }
 
     /// Validates query parameters.
@@ -114,8 +96,7 @@ impl CopcQuery {
         if self.max_level.is_some() {
             return self.max_level;
         }
-        self.max_resolution
-            .map(|resolution| copc_level_for_resolution(base_spacing, resolution))
+        self.max_resolution.map(|resolution| copc_level_for_resolution(base_spacing, resolution))
     }
 }
 

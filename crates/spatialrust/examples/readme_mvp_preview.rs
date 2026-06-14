@@ -34,9 +34,7 @@ fn rich_sample_scene() -> PointCloud {
             let xf = xi as f32 * 2.6 / 54.0;
             let yf = yi as f32 * 1.9 / 39.0;
             let noise = ((xi * 7 + yi * 13) % 5) as f32 * 0.005 - 0.01;
-            builder
-                .push_point([xf, yf, noise])
-                .expect("floor point");
+            builder.push_point([xf, yf, noise]).expect("floor point");
         }
     }
 
@@ -46,9 +44,7 @@ fn rich_sample_scene() -> PointCloud {
             let px = 0.52 + i as f32 * 0.025;
             let py = 0.40 + j as f32 * 0.022;
             let z_noise = ((i * 3 + j * 5) % 3) as f32 * 0.003;
-            builder
-                .push_point([px, py, 0.62 + z_noise])
-                .expect("table point");
+            builder.push_point([px, py, 0.62 + z_noise]).expect("table point");
         }
     }
 
@@ -124,9 +120,7 @@ fn rich_sample_scene() -> PointCloud {
                     let yf = cy + j as f32 * 0.045 - 0.045;
                     let zf = 0.10 + layer as f32 * 0.14;
                     let noise = ((layer * 7 + i * 3 + j) % 4) as f32 * 0.006 - 0.009;
-                    builder
-                        .push_point([xf, yf, zf + noise])
-                        .expect("perimeter pillar");
+                    builder.push_point([xf, yf, zf + noise]).expect("perimeter pillar");
                 }
             }
         }
@@ -326,11 +320,7 @@ impl Canvas {
             return Rgb(0, 0, 0);
         }
         let index = ((y as u32 * width + x as u32) * 3) as usize;
-        Rgb(
-            self.pixels[index],
-            self.pixels[index + 1],
-            self.pixels[index + 2],
-        )
+        Rgb(self.pixels[index], self.pixels[index + 1], self.pixels[index + 2])
     }
 
     fn height(&self, width: u32) -> u32 {
@@ -416,11 +406,7 @@ impl Canvas {
         for index in 0..4 {
             let cx = 170 + index as i32 * 240;
             let active = index == stage;
-            let dot = if active {
-                Rgb(56, 189, 248)
-            } else {
-                Rgb(71, 85, 105)
-            };
+            let dot = if active { Rgb(56, 189, 248) } else { Rgb(71, 85, 105) };
             if active {
                 self.fill_circle_blend(width, cx, footer_top + 18, 14, Rgb(56, 189, 248), 0.25);
             }
@@ -431,11 +417,7 @@ impl Canvas {
     }
 
     fn draw_label_chip(&mut self, width: u32, x: i32, y: i32, text: &str, active: bool) {
-        let color = if active {
-            Rgb(226, 232, 240)
-        } else {
-            Rgb(100, 116, 139)
-        };
+        let color = if active { Rgb(226, 232, 240) } else { Rgb(100, 116, 139) };
         let mut cursor = x;
         for ch in text.chars() {
             self.draw_char(width, cursor, y, ch, color, active);
@@ -498,11 +480,7 @@ impl Canvas {
         for index in 0..4 {
             let x0 = 24 + index as u32 * 168;
             let active = index == stage;
-            let color = if active {
-                Rgb(56, 189, 248)
-            } else {
-                Rgb(51, 65, 85)
-            };
+            let color = if active { Rgb(56, 189, 248) } else { Rgb(51, 65, 85) };
             for x in x0..x0 + 150 {
                 for y in bar_y..bar_y + 6 {
                     self.put(width, x as i32, y as i32, color);
@@ -592,11 +570,7 @@ fn glyph_5x7(ch: char) -> [u8; 7] {
 
 fn depth_color(z: f32, min_z: f32, max_z: f32) -> Rgb {
     let t = ((z - min_z) / (max_z - min_z).max(1e-3)).clamp(0.0, 1.0);
-    Rgb(
-        (40.0 + t * 180.0) as u8,
-        (120.0 + t * 80.0) as u8,
-        (220.0 - t * 120.0) as u8,
-    )
+    Rgb((40.0 + t * 180.0) as u8, (120.0 + t * 80.0) as u8, (220.0 - t * 120.0) as u8)
 }
 
 /// Vivid, well-separated palette cycled by cluster id so every cluster in the
@@ -642,18 +616,8 @@ fn collect_iso_points(
         if !visible(index, x[index], y[index], z[index]) {
             continue;
         }
-        let (px, py, depth) = iso_project(
-            x[index],
-            y[index],
-            z[index],
-            yaw,
-            min,
-            max,
-            width,
-            height,
-            80.0,
-            110.0,
-        );
+        let (px, py, depth) =
+            iso_project(x[index], y[index], z[index], yaw, min, max, width, height, 80.0, 110.0);
         points.push(IsoPoint {
             px,
             py,
@@ -663,9 +627,7 @@ fn collect_iso_points(
         });
     }
     points.sort_by(|left, right| {
-        left.depth
-            .partial_cmp(&right.depth)
-            .unwrap_or(std::cmp::Ordering::Equal)
+        left.depth.partial_cmp(&right.depth).unwrap_or(std::cmp::Ordering::Equal)
     });
     points
 }
@@ -693,24 +655,15 @@ fn render_hero_frames(input: &PointCloud, result: &MvpPipelineResult, temp_dir: 
     let (min_z, max_z) = (bounds.0[2], bounds.1[2]);
     let mut frame_index = 0_u32;
 
-    let phases: [(usize, usize, f32); 5] = [
-        (0, 18, 0.55),
-        (0, 12, 0.85),
-        (1, 10, 1.15),
-        (2, 12, 1.45),
-        (3, 16, 1.85),
-    ];
+    let phases: [(usize, usize, f32); 5] =
+        [(0, 18, 0.55), (0, 12, 0.85), (1, 10, 1.15), (2, 12, 1.45), (3, 16, 1.85)];
 
     for (stage, frame_count, yaw_base) in phases {
         for frame in 0..frame_count {
             let t = frame as f32 / frame_count.max(1) as f32;
             let yaw = yaw_base + t * 0.35;
-            let mut canvas = Canvas::new_gradient(
-                HERO_WIDTH,
-                HERO_HEIGHT,
-                Rgb(8, 12, 28),
-                Rgb(17, 24, 39),
-            );
+            let mut canvas =
+                Canvas::new_gradient(HERO_WIDTH, HERO_HEIGHT, Rgb(8, 12, 28), Rgb(17, 24, 39));
             canvas.draw_title(HERO_WIDTH);
 
             let sweep = if stage == 0 && frame_count > 12 && frame < frame_count - 4 {
@@ -767,9 +720,7 @@ fn render_hero_frames(input: &PointCloud, result: &MvpPipelineResult, temp_dir: 
                         |_, _, _, _| true,
                     ));
                     items.sort_by(|left, right| {
-                        left.depth
-                            .partial_cmp(&right.depth)
-                            .unwrap_or(std::cmp::Ordering::Equal)
+                        left.depth.partial_cmp(&right.depth).unwrap_or(std::cmp::Ordering::Equal)
                     });
                     items
                 }
@@ -803,9 +754,7 @@ fn render_hero_frames(input: &PointCloud, result: &MvpPipelineResult, temp_dir: 
                         });
                     }
                     items.sort_by(|left, right| {
-                        left.depth
-                            .partial_cmp(&right.depth)
-                            .unwrap_or(std::cmp::Ordering::Equal)
+                        left.depth.partial_cmp(&right.depth).unwrap_or(std::cmp::Ordering::Equal)
                     });
                     items
                 }
@@ -841,15 +790,8 @@ fn draw_points(
 ) {
     let (x, y, _) = cloud.positions3().expect("positions");
     for index in 0..cloud.len() {
-        let (px, py) = project(
-            x[index],
-            y[index],
-            min,
-            max,
-            GIF_WIDTH as f32,
-            GIF_HEIGHT as f32,
-            48.0,
-        );
+        let (px, py) =
+            project(x[index], y[index], min, max, GIF_WIDTH as f32, GIF_HEIGHT as f32, 48.0);
         canvas.fill_circle(GIF_WIDTH, px, py, radius, color);
     }
 }
@@ -860,45 +802,19 @@ fn draw_plane_stage(
     min: [f32; 2],
     max: [f32; 2],
 ) {
-    draw_points(
-        canvas,
-        &plane.inliers,
-        min,
-        max,
-        4,
-        Rgb(203, 213, 225),
-    );
-    draw_points(
-        canvas,
-        &plane.outliers,
-        min,
-        max,
-        5,
-        Rgb(251, 146, 60),
-    );
+    draw_points(canvas, &plane.inliers, min, max, 4, Rgb(203, 213, 225));
+    draw_points(canvas, &plane.outliers, min, max, 5, Rgb(251, 146, 60));
 }
 
-fn draw_cluster_stage(
-    canvas: &mut Canvas,
-    output: &PointCloud,
-    min: [f32; 2],
-    max: [f32; 2],
-) {
+fn draw_cluster_stage(canvas: &mut Canvas, output: &PointCloud, min: [f32; 2], max: [f32; 2]) {
     let (x, y, _) = output.positions3().expect("positions");
     let labels = match output.field("label").expect("labels") {
         spatialrust::PointBuffer::I32(values) => values.as_slice(),
         other => panic!("expected i32 labels, got {:?}", other.dtype()),
     };
     for index in 0..output.len() {
-        let (px, py) = project(
-            x[index],
-            y[index],
-            min,
-            max,
-            GIF_WIDTH as f32,
-            GIF_HEIGHT as f32,
-            48.0,
-        );
+        let (px, py) =
+            project(x[index], y[index], min, max, GIF_WIDTH as f32, GIF_HEIGHT as f32, 48.0);
         canvas.draw_glow_point(GIF_WIDTH, px, py, 5, label_rgb_flat(labels[index]));
     }
 }
@@ -949,9 +865,8 @@ fn render_copc_frames(input: &PointCloud, temp_dir: &Path) {
     let b_min = [0.65_f32, 0.30_f32];
     let b_max = [1.78_f32, 1.36_f32];
     let (x, y, _) = input.positions3().expect("positions");
-    let inside = |i: usize| {
-        x[i] >= b_min[0] && x[i] <= b_max[0] && y[i] >= b_min[1] && y[i] <= b_max[1]
-    };
+    let inside =
+        |i: usize| x[i] >= b_min[0] && x[i] <= b_max[0] && y[i] >= b_min[1] && y[i] <= b_max[1];
     let inside_count = (0..input.len()).filter(|&i| inside(i)).count();
 
     let dim = Rgb(71, 85, 105);
@@ -1031,22 +946,8 @@ fn render_gif_frames(input: &PointCloud, result: &MvpPipelineResult, temp_dir: &
             let mut canvas = Canvas::new(GIF_WIDTH, GIF_HEIGHT, Rgb(15, 23, 42));
             canvas.draw_stage_bar(GIF_WIDTH, stage);
             match stage {
-                0 => draw_points(
-                    &mut canvas,
-                    input,
-                    min,
-                    max,
-                    3,
-                    Rgb(148, 163, 184),
-                ),
-                1 => draw_points(
-                    &mut canvas,
-                    &result.downsampled,
-                    min,
-                    max,
-                    4,
-                    Rgb(226, 232, 240),
-                ),
+                0 => draw_points(&mut canvas, input, min, max, 3, Rgb(148, 163, 184)),
+                1 => draw_points(&mut canvas, &result.downsampled, min, max, 4, Rgb(226, 232, 240)),
                 2 => draw_plane_stage(&mut canvas, &result.plane, min, max),
                 3 => draw_cluster_stage(&mut canvas, &result.output, min, max),
                 _ => unreachable!(),
@@ -1104,9 +1005,8 @@ fn encode_gif_per_frame_palette(temp_dir: &Path, pattern: &str, framerate: &str,
 
 fn label_color_hex(label: i32) -> &'static str {
     // Mirror CLUSTER_PALETTE so the SVG preview matches the GIF colors.
-    const HEX: [&str; 8] = [
-        "#38bdf8", "#f97316", "#22c55e", "#a855f7", "#f472b6", "#facc15", "#2dd4bf", "#60a5fa",
-    ];
+    const HEX: [&str; 8] =
+        ["#38bdf8", "#f97316", "#22c55e", "#a855f7", "#f472b6", "#facc15", "#2dd4bf", "#60a5fa"];
     HEX[label.rem_euclid(HEX.len() as i32) as usize]
 }
 
@@ -1130,10 +1030,7 @@ fn write_cluster_points_svg(svg: &mut String, cloud: &PointCloud, min: [f32; 2],
     for index in 0..cloud.len() {
         let (px, py) = project_f32(x[index], y[index], min, max, 320.0, 240.0, 24.0);
         let color = label_color_hex(labels[index]);
-        let _ = write!(
-            svg,
-            r#"<circle cx="{px:.2}" cy="{py:.2}" r="4.6" fill="{color}"/>"#,
-        );
+        let _ = write!(svg, r#"<circle cx="{px:.2}" cy="{py:.2}" r="4.6" fill="{color}"/>"#,);
     }
 }
 
@@ -1161,7 +1058,9 @@ fn render_svg(plane: &PointCloud, clusters: &PointCloud, cluster_count: usize) -
 
     svg.push_str(r#"<g transform="translate(24 72)">"#);
     svg.push('\n');
-    svg.push_str(r##"<rect x="0" y="0" width="320" height="240" rx="12" fill="#111827" stroke="#334155"/>"##);
+    svg.push_str(
+        r##"<rect x="0" y="0" width="320" height="240" rx="12" fill="#111827" stroke="#334155"/>"##,
+    );
     svg.push('\n');
     svg.push_str(r##"<text x="16" y="24" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">Plane inliers (RANSAC)</text>"##);
     svg.push('\n');
@@ -1171,7 +1070,9 @@ fn render_svg(plane: &PointCloud, clusters: &PointCloud, cluster_count: usize) -
 
     svg.push_str(r#"<g transform="translate(360 72)">"#);
     svg.push('\n');
-    svg.push_str(r##"<rect x="0" y="0" width="320" height="240" rx="12" fill="#111827" stroke="#334155"/>"##);
+    svg.push_str(
+        r##"<rect x="0" y="0" width="320" height="240" rx="12" fill="#111827" stroke="#334155"/>"##,
+    );
     svg.push('\n');
     svg.push_str(r##"<text x="16" y="24" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">Cluster labels (Euclidean)</text>"##);
     svg.push('\n');
@@ -1181,7 +1082,9 @@ fn render_svg(plane: &PointCloud, clusters: &PointCloud, cluster_count: usize) -
 
     svg.push_str(r#"<g transform="translate(696 72)">"#);
     svg.push('\n');
-    svg.push_str(r##"<rect x="0" y="0" width="240" height="240" rx="12" fill="#111827" stroke="#334155"/>"##);
+    svg.push_str(
+        r##"<rect x="0" y="0" width="240" height="240" rx="12" fill="#111827" stroke="#334155"/>"##,
+    );
     svg.push('\n');
     svg.push_str(r##"<text x="16" y="24" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">Pipeline</text>"##);
     svg.push('\n');
@@ -1241,9 +1144,8 @@ fn render_benchmark_chart() -> String {
         (2_000_000.0, 389.0, 101.0),
     ];
 
-    let x_px = |point_count: f64| {
-        plot_left + (point_count.log10() - log_x_min) / log_x_span * plot_width
-    };
+    let x_px =
+        |point_count: f64| plot_left + (point_count.log10() - log_x_min) / log_x_span * plot_width;
     let y_px = |ms: f64| plot_top + plot_height - (ms / y_max) * plot_height;
 
     let mut svg = String::new();
@@ -1274,11 +1176,7 @@ fn render_benchmark_chart() -> String {
         );
     }
 
-    let x_ticks: [(f64, &str); 3] = [
-        (10_000.0, "10k"),
-        (100_000.0, "100k"),
-        (1_000_000.0, "1M"),
-    ];
+    let x_ticks: [(f64, &str); 3] = [(10_000.0, "10k"), (100_000.0, "100k"), (1_000_000.0, "1M")];
     for (point_count, label) in x_ticks {
         let x = x_px(point_count);
         let _ = write!(
@@ -1336,14 +1234,8 @@ fn render_benchmark_chart() -> String {
         let x = x_px(point_count);
         let cpu_y = y_px(cpu_ms);
         let gpu_y = y_px(gpu_ms);
-        let _ = write!(
-            svg,
-            r##"<circle cx="{x:.2}" cy="{cpu_y:.2}" r="4" fill="#f97316"/>"##,
-        );
-        let _ = write!(
-            svg,
-            r##"<circle cx="{x:.2}" cy="{gpu_y:.2}" r="4" fill="#38bdf8"/>"##,
-        );
+        let _ = write!(svg, r##"<circle cx="{x:.2}" cy="{cpu_y:.2}" r="4" fill="#f97316"/>"##,);
+        let _ = write!(svg, r##"<circle cx="{x:.2}" cy="{gpu_y:.2}" r="4" fill="#38bdf8"/>"##,);
     }
 
     let legend_x = plot_right - 8.0;
@@ -1424,10 +1316,8 @@ fn render_architecture_diagram() -> String {
             r##"<rect x="{card_x}" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>"##,
         );
         svg.push('\n');
-        let _ = write!(
-            svg,
-            r##"<rect x="{card_x}" y="84" width="120" height="6" fill="{accent}"/>"##,
-        );
+        let _ =
+            write!(svg, r##"<rect x="{card_x}" y="84" width="120" height="6" fill="{accent}"/>"##,);
         svg.push('\n');
         let _ = write!(
             svg,
@@ -1458,7 +1348,9 @@ fn render_architecture_diagram() -> String {
 
     svg.push_str(r##"<rect x="156" y="210" width="120" height="56" rx="10" fill="#0b1224" stroke="#38bdf8"/>"##);
     svg.push('\n');
-    svg.push_str(r##"<line x1="216" y1="172" x2="216" y2="210" stroke="#38bdf8" stroke-dasharray="3 3"/>"##);
+    svg.push_str(
+        r##"<line x1="216" y1="172" x2="216" y2="210" stroke="#38bdf8" stroke-dasharray="3 3"/>"##,
+    );
     svg.push('\n');
     svg.push_str(r##"<text x="216" y="234" text-anchor="middle" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">wgpu</text>"##);
     svg.push('\n');
@@ -1504,9 +1396,7 @@ fn render_social_card() -> String {
     svg.push('\n');
     svg.push_str(r#"<defs>"#);
     svg.push('\n');
-    svg.push_str(
-        r##"  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">"##,
-    );
+    svg.push_str(r##"  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">"##);
     svg.push('\n');
     svg.push_str(r##"    <stop offset="0%" stop-color="#080c1c"/>"##);
     svg.push('\n');
@@ -1518,13 +1408,9 @@ fn render_social_card() -> String {
     svg.push('\n');
     svg.push_str(r##"  <radialGradient id="glow" cx="72%" cy="38%" r="48%">"##);
     svg.push('\n');
-    svg.push_str(
-        r##"    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>"##,
-    );
+    svg.push_str(r##"    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>"##);
     svg.push('\n');
-    svg.push_str(
-        r##"    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>"##,
-    );
+    svg.push_str(r##"    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>"##);
     svg.push('\n');
     svg.push_str(r#"  </radialGradient>"#);
     svg.push('\n');
@@ -1614,13 +1500,9 @@ fn render_social_card() -> String {
     }
     svg.push('\n');
 
-    svg.push_str(
-        r##"<rect x="842" y="500" width="348" height="8" rx="4" fill="#1e293b"/>"##,
-    );
+    svg.push_str(r##"<rect x="842" y="500" width="348" height="8" rx="4" fill="#1e293b"/>"##);
     svg.push('\n');
-    svg.push_str(
-        r##"<rect x="842" y="500" width="261" height="8" rx="4" fill="#38bdf8"/>"##,
-    );
+    svg.push_str(r##"<rect x="842" y="500" width="261" height="8" rx="4" fill="#38bdf8"/>"##);
     svg.push('\n');
     svg.push_str(
         r##"<text x="842" y="534" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="16">scan → voxel → plane → cluster</text>"##,
@@ -1636,9 +1518,7 @@ fn assets_dir() -> PathBuf {
 
 fn main() {
     let input = sample_scene();
-    let result = MvpPipeline::new(pipeline_config())
-        .run(&input)
-        .expect("mvp pipeline preview run");
+    let result = MvpPipeline::new(pipeline_config()).run(&input).expect("mvp pipeline preview run");
 
     let assets = assets_dir();
     fs::create_dir_all(&assets).expect("create docs/assets directory");
@@ -1646,22 +1526,20 @@ fn main() {
     let svg_path = assets.join("readme_mvp_preview.svg");
     fs::write(
         &svg_path,
-        render_svg(
-            &result.plane.inliers,
-            &result.output,
-            result.clusters.cluster_count,
-        ),
+        render_svg(&result.plane.inliers, &result.output, result.clusters.cluster_count),
     )
     .expect("write svg");
 
-    let temp_dir = std::env::temp_dir().join(format!("spatialrust_readme_gif_{}", std::process::id()));
+    let temp_dir =
+        std::env::temp_dir().join(format!("spatialrust_readme_gif_{}", std::process::id()));
     let _ = fs::remove_dir_all(&temp_dir);
     fs::create_dir_all(&temp_dir).expect("create temp gif frames");
     render_gif_frames(&input, &result, &temp_dir);
     let gif_path = assets.join("readme_mvp_pipeline.gif");
     encode_gif_per_frame_palette(&temp_dir, "frame_%03d.ppm", "8", &gif_path);
 
-    let copc_temp = std::env::temp_dir().join(format!("spatialrust_readme_copc_{}", std::process::id()));
+    let copc_temp =
+        std::env::temp_dir().join(format!("spatialrust_readme_copc_{}", std::process::id()));
     let _ = fs::remove_dir_all(&copc_temp);
     fs::create_dir_all(&copc_temp).expect("create temp copc frames");
     render_copc_frames(&input, &copc_temp);
@@ -1669,7 +1547,8 @@ fn main() {
     encode_gif(&copc_temp, "copc_%03d.ppm", "6", &copc_path);
     let _ = fs::remove_dir_all(&copc_temp);
 
-    let hero_temp = std::env::temp_dir().join(format!("spatialrust_readme_hero_{}", std::process::id()));
+    let hero_temp =
+        std::env::temp_dir().join(format!("spatialrust_readme_hero_{}", std::process::id()));
     let _ = fs::remove_dir_all(&hero_temp);
     fs::create_dir_all(&hero_temp).expect("create temp hero frames");
     render_hero_frames(&input, &result, &hero_temp);
@@ -1691,7 +1570,8 @@ fn main() {
     fs::write(&benchmark_path, render_benchmark_chart()).expect("write benchmark chart");
 
     let architecture_path = assets.join("architecture.svg");
-    fs::write(&architecture_path, render_architecture_diagram()).expect("write architecture diagram");
+    fs::write(&architecture_path, render_architecture_diagram())
+        .expect("write architecture diagram");
 
     println!("wrote {}", svg_path.display());
     println!("wrote {}", gif_path.display());

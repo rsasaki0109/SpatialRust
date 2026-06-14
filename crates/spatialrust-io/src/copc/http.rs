@@ -25,10 +25,7 @@ impl HttpByteSource {
     pub fn new(url: impl Into<String>) -> Result<Self, IoError> {
         let url = url.into();
         validate_http_url(&url)?;
-        Ok(Self {
-            url,
-            max_parallel_ranges: DEFAULT_MAX_PARALLEL_RANGES,
-        })
+        Ok(Self { url, max_parallel_ranges: DEFAULT_MAX_PARALLEL_RANGES })
     }
 
     /// Limits how many HTTP range requests are in flight at once.
@@ -94,11 +91,7 @@ pub fn read_copc_url_with_query(
 pub fn read_copc_url_info(url: &str) -> Result<CopcFileInfo, IoError> {
     validate_http_url(url)?;
     let source = HttpByteSource::new(url)?;
-    pollster::block_on(async {
-        read_header_info(source)
-            .await
-            .map(|(_, info)| info)
-    })
+    pollster::block_on(async { read_header_info(source).await.map(|(_, info)| info) })
 }
 
 fn fetch_http_range(
@@ -118,12 +111,10 @@ fn fetch_http_range(
 
     let status = response.status();
     if status != 200 && status != 206 {
-        return Err(copc_streaming::CopcError::ByteSource(Box::new(
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("unexpected HTTP status {status} for range request"),
-            ),
-        )));
+        return Err(copc_streaming::CopcError::ByteSource(Box::new(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("unexpected HTTP status {status} for range request"),
+        ))));
     }
 
     let mut bytes = Vec::with_capacity(length as usize);
@@ -176,14 +167,12 @@ fn read_range_batch(
 
         let mut batch = vec![Vec::new(); ranges.len()];
         for handle in handles {
-            let (index, bytes) = handle
-                .join()
-                .map_err(|_| {
-                    copc_streaming::CopcError::ByteSource(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "parallel HTTP range worker panicked",
-                    )))
-                })??;
+            let (index, bytes) = handle.join().map_err(|_| {
+                copc_streaming::CopcError::ByteSource(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "parallel HTTP range worker panicked",
+                )))
+            })??;
             batch[index] = bytes;
         }
         Ok(batch)
@@ -202,10 +191,7 @@ fn fetch_http_size(url: &str) -> Result<Option<u64>, copc_streaming::CopcError> 
         .call()
         .map_err(|error| copc_streaming::CopcError::ByteSource(Box::new(error)))?;
 
-    if let Some(total) = response
-        .header("Content-Range")
-        .and_then(parse_content_range_total)
-    {
+    if let Some(total) = response.header("Content-Range").and_then(parse_content_range_total) {
         return Ok(Some(total));
     }
 
@@ -323,11 +309,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    fn serve_test_range(
-        stream: &mut TcpStream,
-        payload: &[u8],
-        requests: &AtomicUsize,
-    ) {
+    fn serve_test_range(stream: &mut TcpStream, payload: &[u8], requests: &AtomicUsize) {
         let mut buffer = [0_u8; 512];
         let read = stream.read(&mut buffer).unwrap();
         let request = std::str::from_utf8(&buffer[..read]).unwrap();
@@ -337,9 +319,7 @@ mod tests {
             .expect("missing Range header");
         let (start, end) = range
             .split_once('-')
-            .and_then(|(start, end)| {
-                Some((start.parse::<u64>().ok()?, end.parse::<u64>().ok()?))
-            })
+            .and_then(|(start, end)| Some((start.parse::<u64>().ok()?, end.parse::<u64>().ok()?)))
             .expect("invalid Range header");
         let start = start as usize;
         let end = end as usize;

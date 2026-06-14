@@ -2,7 +2,7 @@ use spatialrust_core::{
     DType, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet, PointCloud, PointField,
     PointSchema, SpatialResult,
 };
-use spatialrust_math::{Mat3, Vec3, symmetric_eigen3};
+use spatialrust_math::{symmetric_eigen3, Mat3, Vec3};
 
 use crate::estimator::FeatureEstimator;
 use crate::neighborhood::{KdTreeNeighborhood, NeighborhoodProvider};
@@ -22,12 +22,7 @@ pub struct NormalEstimationConfig {
 
 impl Default for NormalEstimationConfig {
     fn default() -> Self {
-        Self {
-            k_neighbors: 20,
-            search_radius: None,
-            min_neighbors: 3,
-            viewpoint: None,
-        }
+        Self { k_neighbors: 20, search_radius: None, min_neighbors: 3, viewpoint: None }
     }
 }
 
@@ -35,12 +30,7 @@ impl NormalEstimationConfig {
     /// Creates a k-NN normal estimation config.
     #[must_use]
     pub const fn k_neighbors(k_neighbors: usize) -> Self {
-        Self {
-            k_neighbors,
-            search_radius: None,
-            min_neighbors: 3,
-            viewpoint: None,
-        }
+        Self { k_neighbors, search_radius: None, min_neighbors: 3, viewpoint: None }
     }
 }
 
@@ -118,13 +108,7 @@ impl NormalEstimator {
         }
 
         let output = build_output_cloud(input, nx, ny, nz, curvature)?;
-        Ok((
-            output,
-            NormalEstimationResult {
-                valid_count,
-                invalid_count,
-            },
-        ))
+        Ok((output, NormalEstimationResult { valid_count, invalid_count }))
     }
 
     fn query_neighbors(
@@ -157,7 +141,8 @@ pub fn orient_normal_towards_viewpoint(
     point: Vec3<f32>,
     viewpoint: Vec3<f32>,
 ) -> Vec3<f32> {
-    let view_direction = Vec3::new(viewpoint.x - point.x, viewpoint.y - point.y, viewpoint.z - point.z);
+    let view_direction =
+        Vec3::new(viewpoint.x - point.x, viewpoint.y - point.y, viewpoint.z - point.z);
     if normal.dot(view_direction) < 0.0 {
         normal.x = -normal.x;
         normal.y = -normal.y;
@@ -224,11 +209,7 @@ fn estimate_normal_from_neighbors(
     .normalize();
 
     let sum = eigen.eigenvalues[0] + eigen.eigenvalues[1] + eigen.eigenvalues[2];
-    let curvature = if sum > 0.0 {
-        (eigen.eigenvalues[0] / sum) as f32
-    } else {
-        0.0
-    };
+    let curvature = if sum > 0.0 { (eigen.eigenvalues[0] / sum) as f32 } else { 0.0 };
 
     Some((normal, curvature))
 }
@@ -241,30 +222,10 @@ fn build_output_cloud(
     curvature: Vec<f32>,
 ) -> SpatialResult<PointCloud> {
     let mut schema = input.schema().clone();
-    ensure_field(
-        &mut schema,
-        "normal_x",
-        FieldSemantic::NormalX,
-        DType::F32,
-    );
-    ensure_field(
-        &mut schema,
-        "normal_y",
-        FieldSemantic::NormalY,
-        DType::F32,
-    );
-    ensure_field(
-        &mut schema,
-        "normal_z",
-        FieldSemantic::NormalZ,
-        DType::F32,
-    );
-    ensure_field(
-        &mut schema,
-        "curvature",
-        FieldSemantic::Curvature,
-        DType::F32,
-    );
+    ensure_field(&mut schema, "normal_x", FieldSemantic::NormalX, DType::F32);
+    ensure_field(&mut schema, "normal_y", FieldSemantic::NormalY, DType::F32);
+    ensure_field(&mut schema, "normal_z", FieldSemantic::NormalZ, DType::F32);
+    ensure_field(&mut schema, "curvature", FieldSemantic::Curvature, DType::F32);
 
     let mut buffers = PointBufferSet::new();
     for field in input.schema().fields() {
@@ -298,7 +259,7 @@ fn clone_buffer(buffer: &PointBuffer) -> SpatialResult<PointBuffer> {
 
 #[cfg(test)]
 mod tests {
-    use super::{NormalEstimationConfig, NormalEstimator, orient_normal_towards_viewpoint};
+    use super::{orient_normal_towards_viewpoint, NormalEstimationConfig, NormalEstimator};
     use crate::FeatureEstimator;
     use spatialrust_core::{HasNormals3, PointCloudBuilder, StandardSchemas};
     use spatialrust_math::Vec3;

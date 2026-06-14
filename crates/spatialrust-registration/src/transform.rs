@@ -1,10 +1,14 @@
 use spatialrust_core::{
-    FieldSemantic, HasNormals3, HasPositions3, PointBuffer, PointBufferSet, PointCloud, SpatialResult,
+    FieldSemantic, HasNormals3, HasPositions3, PointBuffer, PointBufferSet, PointCloud,
+    SpatialResult,
 };
 use spatialrust_math::{Isometry3, TransformPoint, Vec3};
 
 /// Applies a rigid transform to point positions and normals in a point cloud copy.
-pub fn transform_point_cloud(input: &PointCloud, transform: Isometry3<f32>) -> SpatialResult<PointCloud> {
+pub fn transform_point_cloud(
+    input: &PointCloud,
+    transform: Isometry3<f32>,
+) -> SpatialResult<PointCloud> {
     if input.is_empty() {
         return Ok(input.clone());
     }
@@ -35,11 +39,7 @@ pub fn transform_point_cloud(input: &PointCloud, transform: Isometry3<f32>) -> S
         buffers.insert(field.name.clone(), buffer);
     }
 
-    PointCloud::try_from_parts(
-        input.schema().clone(),
-        buffers,
-        input.metadata().clone(),
-    )
+    PointCloud::try_from_parts(input.schema().clone(), buffers, input.metadata().clone())
 }
 
 fn transform_normal_buffer(
@@ -50,9 +50,8 @@ fn transform_normal_buffer(
     let (nx, ny, nz) = input.normals3()?;
     let mut values = Vec::with_capacity(input.len());
     for index in 0..input.len() {
-        let normal = transform
-            .transform_vector(Vec3::new(nx[index], ny[index], nz[index]))
-            .normalize();
+        let normal =
+            transform.transform_vector(Vec3::new(nx[index], ny[index], nz[index])).normalize();
         values.push(match semantic {
             FieldSemantic::NormalX => normal.x,
             FieldSemantic::NormalY => normal.y,
@@ -87,10 +86,8 @@ mod tests {
         builder.push_point([1.0, 0.0, 0.0]).unwrap();
         let cloud = builder.build().unwrap();
 
-        let transform = Isometry3::new(
-            spatialrust_math::Quat::<f32>::identity(),
-            Vec3::new(1.0, 2.0, 3.0),
-        );
+        let transform =
+            Isometry3::new(spatialrust_math::Quat::<f32>::identity(), Vec3::new(1.0, 2.0, 3.0));
         let transformed = transform_point_cloud(&cloud, transform).unwrap();
         let (x, y, z) = transformed.positions3().unwrap();
         assert!((x[0] - 1.0).abs() < 1e-6);

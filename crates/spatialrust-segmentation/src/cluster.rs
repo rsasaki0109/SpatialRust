@@ -19,11 +19,7 @@ pub struct EuclideanClusterConfig {
 
 impl Default for EuclideanClusterConfig {
     fn default() -> Self {
-        Self {
-            cluster_tolerance: 0.02,
-            min_cluster_size: 1,
-            max_cluster_size: usize::MAX,
-        }
+        Self { cluster_tolerance: 0.02, min_cluster_size: 1, max_cluster_size: usize::MAX }
     }
 }
 
@@ -31,11 +27,7 @@ impl EuclideanClusterConfig {
     /// Creates a config with the given tolerance and minimum cluster size.
     #[must_use]
     pub const fn with_tolerance(cluster_tolerance: f32, min_cluster_size: usize) -> Self {
-        Self {
-            cluster_tolerance,
-            min_cluster_size,
-            max_cluster_size: usize::MAX,
-        }
+        Self { cluster_tolerance, min_cluster_size, max_cluster_size: usize::MAX }
     }
 }
 
@@ -113,7 +105,8 @@ impl EuclideanClusterExtractor {
 
             while let Some(index) = queue.pop_front() {
                 cluster_indices.push(index);
-                let neighbors = tree.radius_search(x[index], y[index], z[index], self.config.cluster_tolerance);
+                let neighbors =
+                    tree.radius_search(x[index], y[index], z[index], self.config.cluster_tolerance);
                 for neighbor in neighbors {
                     let candidate = neighbor.index;
                     if processed[candidate] {

@@ -19,23 +19,15 @@ fn synthetic_point_cloud(point_count: usize) -> spatialrust_core::PointCloud {
 }
 
 fn bench_voxel_downsample(c: &mut Criterion) {
-    let centroid = VoxelGridDownsample::new(
-        VoxelGridDownsampleConfig::centroid(4.0).without_gpu_min_points(),
-    );
+    let centroid =
+        VoxelGridDownsample::new(VoxelGridDownsampleConfig::centroid(4.0).without_gpu_min_points());
     let approximate = VoxelGridDownsample::new(
         VoxelGridDownsampleConfig::approximate(4.0).without_gpu_min_points(),
     );
 
-    for point_count in [
-        10_000_usize,
-        65_536,
-        100_000,
-        200_000,
-        500_000,
-        750_000,
-        1_000_000,
-        2_000_000,
-    ] {
+    for point_count in
+        [10_000_usize, 65_536, 100_000, 200_000, 500_000, 750_000, 1_000_000, 2_000_000]
+    {
         let input = synthetic_point_cloud(point_count);
         let mut group = c.benchmark_group(format!("voxel_downsample/{point_count}"));
         group.throughput(Throughput::Elements(point_count as u64));

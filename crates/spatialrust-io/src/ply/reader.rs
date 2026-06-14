@@ -73,12 +73,17 @@ fn read_ply_body<R: BufRead>(
 ) -> Result<PointCloud, IoError> {
     let mut buffers = PointBufferSet::new();
     for field in schema.fields() {
-        buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, header.vertex_count));
+        buffers.insert(
+            field.name.clone(),
+            PointBuffer::with_capacity(field.dtype, header.vertex_count),
+        );
     }
 
     match header.format {
         PlyFormat::Ascii => read_ascii_vertices(reader, header, &schema, &mut buffers)?,
-        PlyFormat::BinaryLittleEndian => read_binary_vertices(reader, header, &schema, &mut buffers)?,
+        PlyFormat::BinaryLittleEndian => {
+            read_binary_vertices(reader, header, &schema, &mut buffers)?
+        }
     }
 
     PointCloud::try_from_parts(schema, buffers, metadata).map_err(IoError::from)

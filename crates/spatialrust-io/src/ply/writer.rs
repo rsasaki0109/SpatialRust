@@ -62,7 +62,9 @@ pub fn write_ply<W: Write>(
 
     match format {
         PlyWriteFormat::Ascii => write_ascii_vertices(writer, cloud, &header.properties)?,
-        PlyWriteFormat::BinaryLittleEndian => write_binary_vertices(writer, cloud, &header.properties)?,
+        PlyWriteFormat::BinaryLittleEndian => {
+            write_binary_vertices(writer, cloud, &header.properties)?
+        }
     }
     Ok(())
 }
@@ -79,11 +81,7 @@ pub fn write_ply_file(
 }
 
 fn ply_properties_from_schema(schema: &PointSchema) -> Result<Vec<PlyProperty>, IoError> {
-    schema
-        .fields()
-        .iter()
-        .map(ply_property_from_field)
-        .collect()
+    schema.fields().iter().map(ply_property_from_field).collect()
 }
 
 fn write_ascii_vertices<W: Write>(
@@ -177,7 +175,11 @@ fn write_binary_scalar<W: Write>(
     Ok(())
 }
 
-fn read_scalar(cloud: &PointCloud, property: &PlyProperty, point_index: usize) -> Result<f32, IoError> {
+fn read_scalar(
+    cloud: &PointCloud,
+    property: &PlyProperty,
+    point_index: usize,
+) -> Result<f32, IoError> {
     let field = find_field_for_property(cloud.schema(), property)?;
     let buffer = cloud.field(&field.name).map_err(IoError::from)?;
     let value = match field.dtype {

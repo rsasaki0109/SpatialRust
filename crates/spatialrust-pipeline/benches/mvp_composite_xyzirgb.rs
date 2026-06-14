@@ -16,9 +16,7 @@ fn synthetic_xyzirgb_plane(point_count: usize) -> PointCloud {
         let r = (index % 256) as f32;
         let g = ((index / 3) % 256) as f32;
         let b = ((index / 7) % 256) as f32;
-        builder
-            .push_point([x, y, 0.0, intensity, r, g, b])
-            .expect("push point");
+        builder.push_point([x, y, 0.0, intensity, r, g, b]).expect("push point");
     }
     for x in 0..10 {
         for y in 0..10 {

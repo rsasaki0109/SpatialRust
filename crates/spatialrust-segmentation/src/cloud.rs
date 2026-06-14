@@ -9,7 +9,11 @@ pub fn extract_indices(input: &PointCloud, indices: &[usize]) -> SpatialResult<P
         for field in input.schema().fields() {
             buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, 0));
         }
-        return PointCloud::try_from_parts(input.schema().clone(), buffers, input.metadata().clone());
+        return PointCloud::try_from_parts(
+            input.schema().clone(),
+            buffers,
+            input.metadata().clone(),
+        );
     }
 
     let mut buffers = PointBufferSet::new();
@@ -31,11 +35,8 @@ pub fn extract_mask(input: &PointCloud, mask: &[bool]) -> SpatialResult<PointClo
         )));
     }
 
-    let indices: Vec<usize> = mask
-        .iter()
-        .enumerate()
-        .filter_map(|(index, selected)| selected.then_some(index))
-        .collect();
+    let indices: Vec<usize> =
+        mask.iter().enumerate().filter_map(|(index, selected)| selected.then_some(index)).collect();
     extract_indices(input, &indices)
 }
 
@@ -54,10 +55,7 @@ pub fn with_labels(
     }
 
     let mut schema = input.schema().clone();
-    if schema
-        .find_semantic(spatialrust_core::FieldSemantic::Label)
-        .is_none()
-    {
+    if schema.find_semantic(spatialrust_core::FieldSemantic::Label).is_none() {
         schema = schema.with_field(PointField::scalar(
             field_name,
             spatialrust_core::FieldSemantic::Label,

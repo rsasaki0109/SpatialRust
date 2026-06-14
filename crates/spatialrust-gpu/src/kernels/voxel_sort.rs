@@ -113,16 +113,13 @@ fn build_sort_entries_from_keys_gpu(
     let entries_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-sort-entries-build"),
         size: (padded_count as usize * std::mem::size_of::<VoxelSortEntry>()) as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_DST
+            | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
 
-    let params = BuildEntriesParams {
-        point_count,
-        padded_count,
-        _pad0: 0,
-        _pad1: 0,
-    };
+    let params = BuildEntriesParams { point_count, padded_count, _pad0: 0, _pad1: 0 };
     let params_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-sort-build-params"),
         contents: bytemuck::bytes_of(&params),
@@ -135,18 +132,9 @@ fn build_sort_entries_from_keys_gpu(
         label: Some("voxel-sort-build-bind-group"),
         layout: &pipelines.voxel_sort_build.bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: params_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: keys_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: entries_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: params_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: keys_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: entries_buffer.as_entire_binding() },
         ],
     });
 
@@ -177,13 +165,7 @@ fn empty_gpu_segments(runtime: &WgpuRuntime) -> SpatialResult<GpuVoxelSegments> 
             mapped_at_creation: false,
         })
     };
-    Ok(GpuVoxelSegments::new(
-        0,
-        0,
-        make_empty(),
-        make_empty(),
-        make_empty(),
-    ))
+    Ok(GpuVoxelSegments::new(0, 0, make_empty(), make_empty(), make_empty()))
 }
 
 fn filter_valid_sorted_entries(
@@ -200,19 +182,25 @@ fn filter_valid_sorted_entries(
     let flags_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-sort-filter-flags"),
         size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_DST
+            | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
     let inclusive_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-sort-filter-inclusive"),
         size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_SRC
+            | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
     let scan_scratch_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-sort-filter-scan-scratch"),
         size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_DST
+            | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
     let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -384,30 +372,12 @@ fn create_filter_bind_group(
         label: Some("voxel-sort-filter-bind-group"),
         layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: params_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: entries_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: flags_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: scan_in.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 4,
-                resource: scan_out.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 5,
-                resource: output_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: params_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: entries_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: flags_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: scan_in.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: scan_out.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: output_buffer.as_entire_binding() },
         ],
     })
 }
@@ -428,12 +398,7 @@ fn write_filter_params(
     padded_count: u32,
     scan_stride: u32,
 ) {
-    let params = FilterParams {
-        point_count,
-        padded_count,
-        scan_stride,
-        _pad: 0,
-    };
+    let params = FilterParams { point_count, padded_count, scan_stride, _pad: 0 };
     queue.write_buffer(params_buffer, 0, bytemuck::bytes_of(&params));
 }
 
@@ -503,14 +468,8 @@ fn sort_entries_gpu(
         label: Some("voxel-sort-bind-group"),
         layout: &pipelines.voxel_sort.bind_group_layout,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: params_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: entries_buffer.as_entire_binding(),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: params_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: entries_buffer.as_entire_binding() },
         ],
     });
 
@@ -518,12 +477,7 @@ fn sort_entries_gpu(
     while k <= padded_count {
         let mut j = k / 2;
         while j >= 1 {
-            let params = SortParams {
-                padded_count,
-                pair_distance: j,
-                block_width: k,
-                _pad: 0,
-            };
+            let params = SortParams { padded_count, pair_distance: j, block_width: k, _pad: 0 };
             queue.write_buffer(&params_buffer, 0, bytemuck::bytes_of(&params));
 
             let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {

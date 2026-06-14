@@ -61,6 +61,6 @@ pub use voxel_segments_gpu::{
 
 #[cfg(feature = "gpu-wgpu")]
 pub use voxel_pipeline::{
-    downsample_voxel_approximate_first_gpu, downsample_voxel_centroid_gpu, VoxelApproximateFirstGpuResult,
-    VoxelCentroidGpuResult,
+    downsample_voxel_approximate_first_gpu, downsample_voxel_centroid_gpu,
+    VoxelApproximateFirstGpuResult, VoxelCentroidGpuResult,
 };

@@ -1,12 +1,16 @@
 use std::path::Path;
 
-use e57::{CartesianCoordinate, E57Reader as ExternalE57Reader, Point as E57Point, PointCloud as E57PointCloud};
+use e57::{
+    CartesianCoordinate, E57Reader as ExternalE57Reader, Point as E57Point,
+    PointCloud as E57PointCloud,
+};
 use spatialrust_core::{
-    DType, FieldSemantic, PointBuffer, PointBufferSet, PointCloud, PointField, PointSchema, SpatialMetadata,
+    DType, FieldSemantic, PointBuffer, PointBufferSet, PointCloud, PointField, PointSchema,
+    SpatialMetadata,
 };
 
-use crate::error::{e57_format, e57_parse, IoError};
 use crate::e57::schema::schema_for_e57_pointcloud;
+use crate::error::{e57_format, e57_parse, IoError};
 use crate::{PointReader, ReadOptions};
 
 /// Reads point clouds from E57 files.
@@ -17,9 +21,7 @@ pub struct E57Reader {
 impl E57Reader {
     /// Opens an E57 file and parses its header eagerly.
     pub fn open(_path: impl AsRef<Path>) -> Result<Self, IoError> {
-        Ok(Self {
-            metadata: metadata_from_file(),
-        })
+        Ok(Self { metadata: metadata_from_file() })
     }
 }
 
@@ -68,9 +70,8 @@ fn read_from_reader(
     }
 
     for scan in scans {
-        let mut iter = reader
-            .pointcloud_simple(&scan)
-            .map_err(|error| e57_parse(error.to_string()))?;
+        let mut iter =
+            reader.pointcloud_simple(&scan).map_err(|error| e57_parse(error.to_string()))?;
         iter.normalize_intensity(false);
         iter.normalize_color(false);
 
@@ -133,16 +134,15 @@ fn append_e57_point(
             FieldSemantic::PositionY => y,
             FieldSemantic::PositionZ => z,
             FieldSemantic::Intensity => point.intensity.ok_or_else(|| {
-                e57_parse("missing intensity for E57 point with intensity-enabled schema".to_owned())
+                e57_parse(
+                    "missing intensity for E57 point with intensity-enabled schema".to_owned(),
+                )
             })?,
             FieldSemantic::ColorR => color_channel(point, |color| color.red)?,
             FieldSemantic::ColorG => color_channel(point, |color| color.green)?,
             FieldSemantic::ColorB => color_channel(point, |color| color.blue)?,
             _ => {
-                return Err(e57_parse(format!(
-                    "unsupported E57 export field `{}`",
-                    field.name
-                )));
+                return Err(e57_parse(format!("unsupported E57 export field `{}`", field.name)));
             }
         };
         push_field(buffers, field, value)?;
@@ -153,29 +153,20 @@ fn append_e57_point(
 fn cartesian_xyz(point: &E57Point) -> Result<(f32, f32, f32), IoError> {
     match point.cartesian {
         CartesianCoordinate::Valid { x, y, z } => Ok((x as f32, y as f32, z as f32)),
-        CartesianCoordinate::Direction { .. } => Err(e57_parse(
-            "direction-only Cartesian E57 points are not supported".to_owned(),
-        )),
+        CartesianCoordinate::Direction { .. } => {
+            Err(e57_parse("direction-only Cartesian E57 points are not supported".to_owned()))
+        }
         CartesianCoordinate::Invalid => Err(e57_parse("invalid Cartesian E57 point".to_owned())),
     }
 }
 
-fn color_channel(
-    point: &E57Point,
-    channel: impl Fn(&e57::Color) -> f32,
-) -> Result<f32, IoError> {
-    point
-        .color
-        .as_ref()
-        .map(|color| channel(color))
-        .ok_or_else(|| e57_parse("missing color for E57 point with color-enabled schema".to_owned()))
+fn color_channel(point: &E57Point, channel: impl Fn(&e57::Color) -> f32) -> Result<f32, IoError> {
+    point.color.as_ref().map(|color| channel(color)).ok_or_else(|| {
+        e57_parse("missing color for E57 point with color-enabled schema".to_owned())
+    })
 }
 
-fn push_field(
-    buffers: &mut PointBufferSet,
-    field: &PointField,
-    value: f32,
-) -> Result<(), IoError> {
+fn push_field(buffers: &mut PointBufferSet, field: &PointField, value: f32) -> Result<(), IoError> {
     let buffer = buffers
         .get_mut(&field.name)
         .ok_or_else(|| spatialrust_core::SpatialError::MissingField(field.name.clone()))?;

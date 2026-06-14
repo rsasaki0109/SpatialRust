@@ -62,10 +62,7 @@ pub fn detect_point_cloud_format(path: impl AsRef<Path>) -> Option<PointCloudFil
 pub fn read_point_cloud_file(path: impl AsRef<Path>) -> Result<PointCloud, IoError> {
     let path = path.as_ref();
     let format = detect_point_cloud_format(path).ok_or_else(|| {
-        IoError::Io(format!(
-            "unsupported or missing point cloud extension: {}",
-            path.display()
-        ))
+        IoError::Io(format!("unsupported or missing point cloud extension: {}", path.display()))
     })?;
     read_point_cloud_file_with_format(path, format)
 }
@@ -89,10 +86,7 @@ pub fn read_point_cloud_file_with_format(
 pub fn write_point_cloud_file(path: impl AsRef<Path>, cloud: &PointCloud) -> Result<(), IoError> {
     let path = path.as_ref();
     let format = detect_point_cloud_format(path).ok_or_else(|| {
-        IoError::Io(format!(
-            "unsupported or missing point cloud extension: {}",
-            path.display()
-        ))
+        IoError::Io(format!("unsupported or missing point cloud extension: {}", path.display()))
     })?;
     write_point_cloud_file_with_format(path, cloud, format)
 }
@@ -234,10 +228,7 @@ fn write_copc_file(path: impl AsRef<Path>, _cloud: &PointCloud) -> Result<(), Io
 }
 
 fn missing_feature_error(feature: &str, path: &Path) -> IoError {
-    IoError::Io(format!(
-        "reading or writing `{}` requires the `{feature}` feature",
-        path.display()
-    ))
+    IoError::Io(format!("reading or writing `{}` requires the `{feature}` feature", path.display()))
 }
 
 #[cfg(test)]
@@ -247,19 +238,13 @@ mod tests {
 
     #[test]
     fn detects_known_extensions() {
-        assert_eq!(
-            detect_point_cloud_format("scan.pcd"),
-            Some(PointCloudFileFormat::Pcd)
-        );
+        assert_eq!(detect_point_cloud_format("scan.pcd"), Some(PointCloudFileFormat::Pcd));
         assert_eq!(
             detect_point_cloud_format(PathBuf::from("/tmp/cloud.PLY")),
             Some(PointCloudFileFormat::Ply)
         );
         assert_eq!(detect_point_cloud_format("data.xyz"), None);
-        assert_eq!(
-            detect_point_cloud_format("scan.copc.laz"),
-            Some(PointCloudFileFormat::Copc)
-        );
+        assert_eq!(detect_point_cloud_format("scan.copc.laz"), Some(PointCloudFileFormat::Copc));
     }
 
     #[cfg(feature = "io-pcd")]
@@ -272,7 +257,8 @@ mod tests {
         builder.push_point([1.0, 2.0, 3.0]).unwrap();
         let cloud = builder.build().unwrap();
 
-        let path = std::env::temp_dir().join(format!("spatialrust_auto_{}.pcd", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("spatialrust_auto_{}.pcd", std::process::id()));
         write_point_cloud_file(&path, &cloud).unwrap();
         let loaded = read_point_cloud_file(&path).unwrap();
         let _ = std::fs::remove_file(path);

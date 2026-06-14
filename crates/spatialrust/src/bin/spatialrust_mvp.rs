@@ -62,7 +62,7 @@ fn parse_voxel_policy(value: &str) -> Result<ExecutionPolicy, String> {
             #[cfg(not(feature = "pipeline-mvp-gpu"))]
             {
                 return Err(
-                    "GPU voxel policy requires `--features mvp,pipeline-mvp-gpu`".to_string(),
+                    "GPU voxel policy requires `--features mvp,pipeline-mvp-gpu`".to_string()
                 );
             }
             #[cfg(feature = "pipeline-mvp-gpu")]
@@ -81,18 +81,14 @@ fn parse_voxel_mode(value: &str) -> Result<VoxelAggregationMode, String> {
         "approximate" | "approximate-first" | "approx" => {
             Ok(VoxelAggregationMode::ApproximateFirst)
         }
-        other => Err(format!(
-            "unknown voxel mode `{other}` (expected centroid or approximate)"
-        )),
+        other => Err(format!("unknown voxel mode `{other}` (expected centroid or approximate)")),
     }
 }
 
 fn build_voxel_config(leaf_size: f32, mode: VoxelAggregationMode) -> VoxelGridDownsampleConfig {
     match mode {
         VoxelAggregationMode::Centroid => VoxelGridDownsampleConfig::centroid(leaf_size),
-        VoxelAggregationMode::ApproximateFirst => {
-            VoxelGridDownsampleConfig::approximate(leaf_size)
-        }
+        VoxelAggregationMode::ApproximateFirst => VoxelGridDownsampleConfig::approximate(leaf_size),
     }
 }
 
@@ -114,10 +110,8 @@ fn parse_bounds(value: &str) -> Result<CopcBounds, String> {
 
     let mut coords = [0.0_f64; 6];
     for (index, part) in parts.iter().enumerate() {
-        coords[index] = part
-            .trim()
-            .parse()
-            .map_err(|_| format!("invalid bounds coordinate `{part}`"))?;
+        coords[index] =
+            part.trim().parse().map_err(|_| format!("invalid bounds coordinate `{part}`"))?;
     }
 
     let bounds = CopcBounds::from_ranges(
@@ -125,17 +119,12 @@ fn parse_bounds(value: &str) -> Result<CopcBounds, String> {
         (coords[1], coords[4]),
         (coords[2], coords[5]),
     );
-    bounds
-        .validate()
-        .map_err(|error| format!("invalid COPC bounds: {error}"))?;
+    bounds.validate().map_err(|error| format!("invalid COPC bounds: {error}"))?;
     Ok(bounds)
 }
 
 fn parse_resolution(value: &str) -> Result<f64, String> {
-    let resolution = value
-        .trim()
-        .parse()
-        .map_err(|_| format!("invalid resolution `{value}`"))?;
+    let resolution = value.trim().parse().map_err(|_| format!("invalid resolution `{value}`"))?;
     CopcQuery::with_resolution(CopcBounds::new([0.0; 3], [1.0; 3]), resolution)
         .validate()
         .map_err(|error| format!("invalid COPC resolution: {error}"))?;
@@ -143,9 +132,7 @@ fn parse_resolution(value: &str) -> Result<f64, String> {
 }
 
 fn parse_repeat(value: &str) -> Result<usize, String> {
-    let repeat: usize = value
-        .parse()
-        .map_err(|_| format!("invalid repeat count `{value}`"))?;
+    let repeat: usize = value.parse().map_err(|_| format!("invalid repeat count `{value}`"))?;
     if repeat == 0 {
         return Err("--repeat requires a positive integer".to_string());
     }
@@ -157,10 +144,7 @@ fn log_repeat_summary(timings: &[std::time::Duration]) {
     let max = timings.iter().max().copied().expect("repeat timings");
     let total: std::time::Duration = timings.iter().sum();
     let avg = total / timings.len() as u32;
-    eprintln!(
-        "repeat summary: min={min:.3?} max={max:.3?} avg={avg:.3?} (n={})",
-        timings.len()
-    );
+    eprintln!("repeat summary: min={min:.3?} max={max:.3?} avg={avg:.3?} (n={})", timings.len());
 }
 
 fn is_http_copc_input(input: &str) -> bool {
@@ -289,9 +273,7 @@ fn load_input(
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
-    let program = env::args()
-        .next()
-        .unwrap_or_else(|| "spatialrust-mvp".to_string());
+    let program = env::args().next().unwrap_or_else(|| "spatialrust-mvp".to_string());
 
     let mut leaf_size = 0.05_f32;
     let mut voxel_mode = VoxelAggregationMode::Centroid;
@@ -308,23 +290,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 return Ok(());
             }
             "--leaf-size" => {
-                let value = args
-                    .next()
-                    .ok_or("--leaf-size requires a numeric value")?;
-                leaf_size = value
-                    .parse()
-                    .map_err(|_| format!("invalid leaf size `{value}`"))?;
+                let value = args.next().ok_or("--leaf-size requires a numeric value")?;
+                leaf_size = value.parse().map_err(|_| format!("invalid leaf size `{value}`"))?;
             }
             "--voxel-mode" => {
-                let value = args
-                    .next()
-                    .ok_or("--voxel-mode requires centroid or approximate")?;
+                let value = args.next().ok_or("--voxel-mode requires centroid or approximate")?;
                 voxel_mode = parse_voxel_mode(&value)?;
             }
             "--voxel-policy" => {
-                let value = args
-                    .next()
-                    .ok_or("--voxel-policy requires auto, cpu, or gpu")?;
+                let value = args.next().ok_or("--voxel-policy requires auto, cpu, or gpu")?;
                 voxel_policy = parse_voxel_policy(&value)?;
             }
             "--bounds" => {
@@ -411,11 +385,7 @@ fn main() -> ExitCode {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("error: {error}");
-            print_usage(
-                &env::args()
-                    .next()
-                    .unwrap_or_else(|| "spatialrust-mvp".to_string()),
-            );
+            print_usage(&env::args().next().unwrap_or_else(|| "spatialrust-mvp".to_string()));
             ExitCode::FAILURE
         }
     }
@@ -474,16 +444,8 @@ mod tests {
     fn copc_query_options_active_when_bounds_or_resolution_set() {
         let bounds = parse_bounds("0,0,0,1,1,1").unwrap();
         assert!(!CopcQueryOptions::default().is_active());
-        assert!(CopcQueryOptions {
-            bounds: Some(bounds),
-            resolution: None,
-        }
-        .is_active());
-        assert!(CopcQueryOptions {
-            bounds: None,
-            resolution: Some(0.5),
-        }
-        .is_active());
+        assert!(CopcQueryOptions { bounds: Some(bounds), resolution: None }.is_active());
+        assert!(CopcQueryOptions { bounds: None, resolution: Some(0.5) }.is_active());
     }
 
     #[test]
@@ -495,10 +457,7 @@ mod tests {
 
     #[test]
     fn parse_voxel_mode_accepts_centroid_and_approximate() {
-        assert_eq!(
-            parse_voxel_mode("centroid").unwrap(),
-            VoxelAggregationMode::Centroid
-        );
+        assert_eq!(parse_voxel_mode("centroid").unwrap(), VoxelAggregationMode::Centroid);
         assert_eq!(
             parse_voxel_mode("approximate").unwrap(),
             VoxelAggregationMode::ApproximateFirst

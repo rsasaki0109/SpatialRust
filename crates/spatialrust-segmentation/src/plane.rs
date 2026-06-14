@@ -1,5 +1,5 @@
 use spatialrust_core::{HasPositions3, PointCloud, SpatialError, SpatialResult};
-use spatialrust_math::{Mat3, Vec3, symmetric_eigen3};
+use spatialrust_math::{symmetric_eigen3, Mat3, Vec3};
 
 use crate::cloud::extract_mask;
 use crate::segmenter::PointCloudSegmenter;
@@ -48,12 +48,7 @@ pub struct RansacPlaneConfig {
 
 impl Default for RansacPlaneConfig {
     fn default() -> Self {
-        Self {
-            distance_threshold: 0.01,
-            max_iterations: 1_000,
-            min_inliers: 3,
-            seed: 42,
-        }
+        Self { distance_threshold: 0.01, max_iterations: 1_000, min_inliers: 3, seed: 42 }
     }
 }
 
@@ -61,12 +56,7 @@ impl RansacPlaneConfig {
     /// Creates a config with the given distance threshold.
     #[must_use]
     pub const fn with_distance_threshold(distance_threshold: f32) -> Self {
-        Self {
-            distance_threshold,
-            max_iterations: 1_000,
-            min_inliers: 3,
-            seed: 42,
-        }
+        Self { distance_threshold, max_iterations: 1_000, min_inliers: 3, seed: 42 }
     }
 }
 
@@ -145,9 +135,10 @@ impl RansacPlaneSegmenter {
             )));
         }
 
-        let model = refine_plane_from_inliers(x, y, z, &best_inliers).or(best_model).ok_or_else(
-            || SpatialError::InvalidArgument("failed to refine plane model".to_owned()),
-        )?;
+        let model =
+            refine_plane_from_inliers(x, y, z, &best_inliers).or(best_model).ok_or_else(|| {
+                SpatialError::InvalidArgument("failed to refine plane model".to_owned())
+            })?;
 
         let mut inlier_mask = vec![false; len];
         for index in &best_inliers {
@@ -161,12 +152,7 @@ impl RansacPlaneSegmenter {
         let inliers = extract_mask(input, &inlier_mask)?;
         let outliers = extract_mask(input, &outlier_mask)?;
 
-        Ok(RansacPlaneSegmentation {
-            inlier_count: best_inliers.len(),
-            model,
-            inliers,
-            outliers,
-        })
+        Ok(RansacPlaneSegmentation { inlier_count: best_inliers.len(), model, inliers, outliers })
     }
 
     /// Returns only the outlier cloud after removing the dominant plane.
@@ -254,7 +240,12 @@ fn collect_inliers(
         .collect()
 }
 
-fn refine_plane_from_inliers(x: &[f32], y: &[f32], z: &[f32], inliers: &[usize]) -> Option<PlaneModel> {
+fn refine_plane_from_inliers(
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    inliers: &[usize],
+) -> Option<PlaneModel> {
     if inliers.len() < 3 {
         return None;
     }
@@ -343,10 +334,7 @@ mod tests {
 
     #[test]
     fn plane_distance_matches_point() {
-        let model = PlaneModel {
-            normal: Vec3::new(0.0, 0.0, 1.0),
-            d: 0.0,
-        };
+        let model = PlaneModel { normal: Vec3::new(0.0, 0.0, 1.0), d: 0.0 };
         assert!((model.distance(Vec3::new(0.0, 0.0, 1.0)) - 1.0).abs() < 1e-6);
     }
 
