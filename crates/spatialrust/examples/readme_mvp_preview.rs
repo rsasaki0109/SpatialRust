@@ -28,52 +28,108 @@ fn sample_scene() -> PointCloud {
 fn rich_sample_scene() -> PointCloud {
     let mut builder = PointCloudBuilder::xyz();
 
-    for x in 0..18 {
-        for y in 0..18 {
-            let xf = x as f32 * 0.08;
-            let yf = y as f32 * 0.08;
-            let noise = ((x * 7 + y * 13) % 5) as f32 * 0.004 - 0.008;
+    // Dense floor grid — dominant ground plane for RANSAC.
+    for xi in 0..55 {
+        for yi in 0..40 {
+            let xf = xi as f32 * 2.6 / 54.0;
+            let yf = yi as f32 * 1.9 / 39.0;
+            let noise = ((xi * 7 + yi * 13) % 5) as f32 * 0.005 - 0.01;
             builder
                 .push_point([xf, yf, noise])
                 .expect("floor point");
         }
     }
 
-    for x in 0..6 {
-        for y in 0..4 {
+    // Table — flat raised surface.
+    for i in 0..7 {
+        for j in 0..8 {
+            let px = 0.52 + i as f32 * 0.025;
+            let py = 0.40 + j as f32 * 0.022;
+            let z_noise = ((i * 3 + j * 5) % 3) as f32 * 0.003;
             builder
-                .push_point([
-                    0.55 + x as f32 * 0.06,
-                    0.45 + y as f32 * 0.06,
-                    0.62,
-                ])
+                .push_point([px, py, 0.62 + z_noise])
                 .expect("table point");
         }
     }
 
-    for (cx, cy, cz) in [
-        (0.22, 0.78, 0.38),
-        (0.28, 0.82, 0.41),
-        (0.18, 0.74, 0.36),
-        (0.25, 0.76, 0.39),
-        (0.30, 0.80, 0.40),
-    ] {
-        builder.push_point([cx, cy, cz]).expect("cluster a");
+    // Chair / box cluster A.
+    for i in 0..5 {
+        for j in 0..6 {
+            let px = 0.18 + i as f32 * 0.025;
+            let py = 0.74 + j as f32 * 0.022;
+            let z = 0.36 + ((i + j) % 4) as f32 * 0.02;
+            builder.push_point([px, py, z]).expect("chair a");
+        }
     }
 
-    for (cx, cy, cz) in [
-        (1.02, 0.28, 0.48),
-        (1.06, 0.32, 0.46),
-        (1.00, 0.30, 0.50),
-        (1.04, 0.26, 0.47),
-    ] {
-        builder.push_point([cx, cy, cz]).expect("cluster b");
+    // Chair / box cluster B.
+    for i in 0..5 {
+        for j in 0..6 {
+            let px = 0.98 + i as f32 * 0.024;
+            let py = 0.24 + j as f32 * 0.022;
+            let z = 0.44 + ((i * 2 + j) % 5) as f32 * 0.015;
+            builder.push_point([px, py, z]).expect("chair b");
+        }
     }
 
-    for z in 0..8 {
-        builder
-            .push_point([1.28, 0.12 + z as f32 * 0.08, 0.05 + z as f32 * 0.07])
-            .expect("wall point");
+    // Tall cabinet — multi-layer vertical blob.
+    for i in 0..6 {
+        for j in 0..5 {
+            for k in 0..3 {
+                let px = 1.30 + i as f32 * 0.022;
+                let py = 0.50 + j as f32 * 0.020;
+                let z = 0.48 + k as f32 * 0.18;
+                builder.push_point([px, py, z]).expect("cabinet point");
+            }
+        }
+    }
+
+    // Small object on the floor.
+    for i in 0..6 {
+        for j in 0..6 {
+            let px = 1.95 + i as f32 * 0.020;
+            let py = 1.15 + j as f32 * 0.018;
+            let z = 0.38 + ((i + j) % 3) as f32 * 0.04;
+            builder.push_point([px, py, z]).expect("small object");
+        }
+    }
+
+    // Box cluster near back wall.
+    for i in 0..6 {
+        for j in 0..7 {
+            let px = 0.80 + i as f32 * 0.022;
+            let py = 1.50 + j as f32 * 0.020;
+            let z = 0.42 + ((i * j) % 3) as f32 * 0.05;
+            builder.push_point([px, py, z]).expect("box cluster");
+        }
+    }
+
+    // Perimeter pillars: dense vertical blobs spaced apart along the back and
+    // side edges. Each pillar is tight enough (<0.18) to cluster on its own and
+    // separated enough (>0.4) to stay distinct, so the cluster reveal lights up
+    // a colorful room outline instead of one giant blob.
+    let pillars = [
+        (0.30_f32, 1.86_f32),
+        (0.95, 1.86),
+        (1.70, 1.86),
+        (2.45, 1.86),
+        (2.52, 1.30),
+        (2.52, 0.70),
+    ];
+    for (cx, cy) in pillars {
+        for layer in 0..5 {
+            for i in 0..3 {
+                for j in 0..3 {
+                    let xf = cx + i as f32 * 0.05 - 0.05;
+                    let yf = cy + j as f32 * 0.045 - 0.045;
+                    let zf = 0.10 + layer as f32 * 0.14;
+                    let noise = ((layer * 7 + i * 3 + j) % 4) as f32 * 0.006 - 0.009;
+                    builder
+                        .push_point([xf, yf, zf + noise])
+                        .expect("perimeter pillar");
+                }
+            }
+        }
     }
 
     builder.build().expect("rich scene")
@@ -197,7 +253,10 @@ fn iso_project(
     let span_y = (max[1] - min[1]).max(1e-3);
     let span_z = (max[2] - min[2]).max(1e-3);
     let extent = (span_x + span_y + span_z * 0.8).max(0.5);
-    let scale = ((width - 2.0 * pad_x) / extent).min((height - 2.0 * pad_y) / (extent * 0.72));
+    // Fill more of the frame for a punchier hero composition.
+    const FILL: f32 = 1.5;
+    let scale =
+        FILL * ((width - 2.0 * pad_x) / extent).min((height - 2.0 * pad_y) / (extent * 0.72));
 
     let cx = (min[0] + max[0]) * 0.5;
     let cy = (min[1] + max[1]) * 0.5;
@@ -366,7 +425,8 @@ impl Canvas {
                 self.fill_circle_blend(width, cx, footer_top + 18, 14, Rgb(56, 189, 248), 0.25);
             }
             self.fill_circle(width, cx, footer_top + 18, if active { 6 } else { 4 }, dot);
-            self.draw_label_chip(width, cx + 16, footer_top + 12, labels[index], active);
+            let label_x = cx + if active { 26 } else { 16 };
+            self.draw_label_chip(width, label_x, footer_top + 12, labels[index], active);
         }
     }
 
@@ -462,37 +522,57 @@ impl Canvas {
 fn glyph_5x7(ch: char) -> [u8; 7] {
     match ch {
         'A' => [0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11],
+        'B' => [0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E],
         'C' => [0x0E, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0E],
+        'D' => [0x1E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1E],
+        'F' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x10],
         'E' => [0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F],
         'G' => [0x0E, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0E],
         'H' => [0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11],
         'I' => [0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E],
+        'J' => [0x07, 0x02, 0x02, 0x02, 0x02, 0x12, 0x0C],
+        'K' => [0x11, 0x12, 0x14, 0x18, 0x14, 0x12, 0x11],
         'L' => [0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F],
+        'M' => [0x11, 0x1B, 0x15, 0x11, 0x11, 0x11, 0x11],
         'N' => [0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11],
         'O' => [0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
         'P' => [0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10],
+        'Q' => [0x0E, 0x11, 0x11, 0x11, 0x15, 0x12, 0x0D],
         'R' => [0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11],
         'S' => [0x0F, 0x10, 0x10, 0x0E, 0x01, 0x01, 0x1E],
         'T' => [0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04],
         'U' => [0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E],
         'V' => [0x11, 0x11, 0x11, 0x11, 0x0A, 0x0A, 0x04],
+        'W' => [0x11, 0x11, 0x11, 0x15, 0x15, 0x1B, 0x11],
+        'X' => [0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11],
         'Y' => [0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04],
+        'Z' => [0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F],
         'a' => [0x00, 0x00, 0x0E, 0x01, 0x0F, 0x11, 0x0F],
+        'b' => [0x10, 0x10, 0x16, 0x19, 0x11, 0x11, 0x1E],
         'c' => [0x00, 0x00, 0x0E, 0x10, 0x10, 0x11, 0x0E],
+        'd' => [0x01, 0x01, 0x0D, 0x13, 0x11, 0x11, 0x0F],
         'e' => [0x00, 0x00, 0x0E, 0x11, 0x1F, 0x10, 0x0E],
         'f' => [0x06, 0x08, 0x1E, 0x08, 0x08, 0x08, 0x08],
         'g' => [0x00, 0x00, 0x0F, 0x11, 0x0F, 0x01, 0x0E],
         'h' => [0x10, 0x10, 0x16, 0x19, 0x11, 0x11, 0x11],
         'i' => [0x04, 0x00, 0x0C, 0x04, 0x04, 0x04, 0x0E],
+        'j' => [0x02, 0x00, 0x06, 0x02, 0x02, 0x12, 0x0C],
+        'k' => [0x10, 0x10, 0x12, 0x14, 0x18, 0x14, 0x12],
         'l' => [0x0C, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E],
         'm' => [0x00, 0x00, 0x1A, 0x15, 0x15, 0x11, 0x11],
         'n' => [0x00, 0x00, 0x16, 0x19, 0x11, 0x11, 0x11],
         'o' => [0x00, 0x00, 0x0E, 0x11, 0x11, 0x11, 0x0E],
         'p' => [0x00, 0x00, 0x1E, 0x11, 0x1E, 0x10, 0x10],
+        'q' => [0x00, 0x00, 0x0D, 0x13, 0x11, 0x0D, 0x01],
         'r' => [0x00, 0x00, 0x16, 0x19, 0x10, 0x10, 0x10],
         's' => [0x00, 0x00, 0x0F, 0x10, 0x0E, 0x01, 0x1E],
         't' => [0x08, 0x08, 0x1C, 0x08, 0x08, 0x09, 0x06],
         'u' => [0x00, 0x00, 0x11, 0x11, 0x11, 0x13, 0x0D],
+        'v' => [0x00, 0x00, 0x11, 0x11, 0x11, 0x0A, 0x04],
+        'w' => [0x00, 0x00, 0x11, 0x11, 0x15, 0x15, 0x0A],
+        'x' => [0x00, 0x00, 0x11, 0x0A, 0x04, 0x0A, 0x11],
+        'y' => [0x00, 0x00, 0x11, 0x11, 0x0F, 0x01, 0x0E],
+        'z' => [0x00, 0x00, 0x1F, 0x02, 0x04, 0x08, 0x1F],
         ' ' => [0x00; 7],
         '.' => [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04],
         '·' => [0x00, 0x04, 0x00, 0x00, 0x04, 0x00, 0x00],
@@ -519,14 +599,22 @@ fn depth_color(z: f32, min_z: f32, max_z: f32) -> Rgb {
     )
 }
 
+/// Vivid, well-separated palette cycled by cluster id so every cluster in the
+/// reveal frame gets a distinct neon color instead of collapsing to one hue.
+const CLUSTER_PALETTE: [Rgb; 8] = [
+    Rgb(56, 189, 248),  // sky
+    Rgb(249, 115, 22),  // orange
+    Rgb(34, 197, 94),   // green
+    Rgb(168, 85, 247),  // purple
+    Rgb(244, 114, 182), // pink
+    Rgb(250, 204, 21),  // amber
+    Rgb(45, 212, 191),  // teal
+    Rgb(96, 165, 250),  // blue
+];
+
 fn label_rgb(label: i32) -> Rgb {
-    match label {
-        0 => Rgb(249, 115, 22),
-        1 => Rgb(6, 182, 212),
-        2 => Rgb(168, 85, 247),
-        3 => Rgb(34, 197, 94),
-        _ => Rgb(244, 114, 182),
-    }
+    let index = label.rem_euclid(CLUSTER_PALETTE.len() as i32) as usize;
+    CLUSTER_PALETTE[index]
 }
 
 struct IsoPoint {
@@ -811,7 +899,125 @@ fn draw_cluster_stage(
             GIF_HEIGHT as f32,
             48.0,
         );
-        canvas.fill_circle(GIF_WIDTH, px, py, 6, label_rgb_flat(labels[index]));
+        canvas.draw_glow_point(GIF_WIDTH, px, py, 5, label_rgb_flat(labels[index]));
+    }
+}
+
+fn world_to_px(x: f32, y: f32, min: [f32; 2], max: [f32; 2], pad: f32) -> (i32, i32) {
+    project(x, y, min, max, GIF_WIDTH as f32, GIF_HEIGHT as f32, pad)
+}
+
+fn draw_bounds_box(
+    canvas: &mut Canvas,
+    min: [f32; 2],
+    max: [f32; 2],
+    b_min: [f32; 2],
+    b_max: [f32; 2],
+    color: Rgb,
+    glow: f32,
+) {
+    let (px0, py0) = world_to_px(b_min[0], b_min[1], min, max, 48.0);
+    let (px1, py1) = world_to_px(b_max[0], b_max[1], min, max, 48.0);
+    let left = px0.min(px1);
+    let right = px0.max(px1);
+    let top = py0.min(py1);
+    let bottom = py0.max(py1);
+
+    if glow > 0.0 {
+        for y in top..=bottom {
+            for x in left..=right {
+                canvas.put_blend(GIF_WIDTH, x, y, color, 0.07 * glow);
+            }
+        }
+    }
+    for t in 0..3 {
+        for x in left..=right {
+            canvas.put(GIF_WIDTH, x, top + t, color);
+            canvas.put(GIF_WIDTH, x, bottom - t, color);
+        }
+        for y in top..=bottom {
+            canvas.put(GIF_WIDTH, left + t, y, color);
+            canvas.put(GIF_WIDTH, right - t, y, color);
+        }
+    }
+}
+
+/// Compact GIF showing a COPC partial read: full tile -> bounds query ->
+/// the recentered region of interest, mirroring the `--bounds` CLI flag.
+fn render_copc_frames(input: &PointCloud, temp_dir: &Path) {
+    let (min, max) = bounds_xy(input);
+    let b_min = [0.65_f32, 0.30_f32];
+    let b_max = [1.78_f32, 1.36_f32];
+    let (x, y, _) = input.positions3().expect("positions");
+    let inside = |i: usize| {
+        x[i] >= b_min[0] && x[i] <= b_max[0] && y[i] >= b_min[1] && y[i] <= b_max[1]
+    };
+    let inside_count = (0..input.len()).filter(|&i| inside(i)).count();
+
+    let dim = Rgb(71, 85, 105);
+    let hot = Rgb(56, 189, 248);
+    let bg = Rgb(15, 23, 42);
+    let mut frame_index = 0_u32;
+
+    let mut write_frame = |canvas: &Canvas| {
+        let path = temp_dir.join(format!("copc_{frame_index:03}.ppm"));
+        canvas.write_ppm(GIF_WIDTH, GIF_HEIGHT, &path);
+        frame_index += 1;
+    };
+
+    // Stage 1: the full COPC tile.
+    for _ in 0..8 {
+        let mut canvas = Canvas::new(GIF_WIDTH, GIF_HEIGHT, bg);
+        canvas.draw_char_line(GIF_WIDTH, 24, 22, "Full COPC tile", Rgb(226, 232, 240), 2);
+        for i in 0..input.len() {
+            let (px, py) = world_to_px(x[i], y[i], min, max, 48.0);
+            canvas.fill_circle(GIF_WIDTH, px, py, 3, dim);
+        }
+        let cap = format!("{} points", input.len());
+        canvas.draw_char_line(GIF_WIDTH, 24, GIF_HEIGHT as i32 - 32, &cap, Rgb(148, 163, 184), 1);
+        write_frame(&canvas);
+    }
+
+    // Stage 2: bounds query — box pulses in, points inside light up.
+    for f in 0..12 {
+        let t = f as f32 / 11.0;
+        let glow = 0.35 + 0.65 * (t * std::f32::consts::PI).sin().abs();
+        let mut canvas = Canvas::new(GIF_WIDTH, GIF_HEIGHT, bg);
+        canvas.draw_char_line(GIF_WIDTH, 24, 22, "COPC bounds query", Rgb(226, 232, 240), 2);
+        for i in 0..input.len() {
+            let (px, py) = world_to_px(x[i], y[i], min, max, 48.0);
+            if inside(i) {
+                canvas.fill_circle(GIF_WIDTH, px, py, 4, hot);
+            } else {
+                canvas.fill_circle(GIF_WIDTH, px, py, 3, dim);
+            }
+        }
+        draw_bounds_box(&mut canvas, min, max, b_min, b_max, hot, glow);
+        canvas.draw_char_line(
+            GIF_WIDTH,
+            24,
+            GIF_HEIGHT as i32 - 32,
+            "select region of interest",
+            Rgb(148, 163, 184),
+            1,
+        );
+        write_frame(&canvas);
+    }
+
+    // Stage 3: the recentered partial-read result.
+    for _ in 0..12 {
+        let mut canvas = Canvas::new(GIF_WIDTH, GIF_HEIGHT, bg);
+        canvas.draw_char_line(GIF_WIDTH, 24, 22, "Partial read result", Rgb(226, 232, 240), 2);
+        for i in 0..input.len() {
+            if !inside(i) {
+                continue;
+            }
+            let (px, py) = world_to_px(x[i], y[i], b_min, b_max, 72.0);
+            canvas.fill_circle(GIF_WIDTH, px, py, 5, hot);
+        }
+        let cap = format!("roi.copc.laz · {inside_count} points");
+        canvas.draw_char_line(GIF_WIDTH, 24, GIF_HEIGHT as i32 - 32, &cap, Rgb(148, 163, 184), 1);
+        write_frame(&canvas);
     }
 }
 
@@ -880,14 +1086,28 @@ fn encode_gif_with_filter(
     assert!(status.success(), "ffmpeg gif encode failed");
 }
 
+/// Encode with a fresh palette per frame so sparse neon cluster colors are not
+/// quantized away by the dense floor color that dominates a single global
+/// palette.
+fn encode_gif_per_frame_palette(temp_dir: &Path, pattern: &str, framerate: &str, output: &Path) {
+    let filter =
+        "split[s0][s1];[s0]palettegen=stats_mode=single[p];[s1][p]paletteuse=new=1:dither=bayer";
+    let status = Command::new("ffmpeg")
+        .args(["-y", "-framerate", framerate, "-i"])
+        .arg(temp_dir.join(pattern))
+        .args(["-vf", filter, "-loop", "0"])
+        .arg(output)
+        .status()
+        .expect("spawn ffmpeg");
+    assert!(status.success(), "ffmpeg gif encode failed");
+}
+
 fn label_color_hex(label: i32) -> &'static str {
-    match label {
-        0 => "#f97316",
-        1 => "#06b6d4",
-        2 => "#a855f7",
-        3 => "#22c55e",
-        _ => "#64748b",
-    }
+    // Mirror CLUSTER_PALETTE so the SVG preview matches the GIF colors.
+    const HEX: [&str; 8] = [
+        "#38bdf8", "#f97316", "#22c55e", "#a855f7", "#f472b6", "#facc15", "#2dd4bf", "#60a5fa",
+    ];
+    HEX[label.rem_euclid(HEX.len() as i32) as usize]
 }
 
 fn write_plane_points_svg(svg: &mut String, cloud: &PointCloud, min: [f32; 2], max: [f32; 2]) {
@@ -990,47 +1210,424 @@ fn render_svg(plane: &PointCloud, clusters: &PointCloud, cluster_count: usize) -
     svg
 }
 
+fn render_benchmark_chart() -> String {
+    const WIDTH: f64 = 960.0;
+    const HEIGHT: f64 = 360.0;
+    const MARGIN_LEFT: f64 = 70.0;
+    const MARGIN_RIGHT: f64 = 150.0;
+    const MARGIN_TOP: f64 = 70.0;
+    const MARGIN_BOTTOM: f64 = 50.0;
+
+    let plot_left = MARGIN_LEFT;
+    let plot_top = MARGIN_TOP;
+    let plot_width = WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
+    let plot_height = HEIGHT - MARGIN_TOP - MARGIN_BOTTOM;
+    let plot_bottom = plot_top + plot_height;
+    let plot_right = plot_left + plot_width;
+
+    let log_x_min = 10_000_f64.log10();
+    let log_x_max = 2_000_000_f64.log10();
+    let log_x_span = log_x_max - log_x_min;
+    let y_max = 400.0_f64;
+
+    let data: [(f64, f64, f64); 8] = [
+        (10_000.0, 0.8, 17.0),
+        (65_000.0, 4.7, 14.7),
+        (100_000.0, 7.0, 17.2),
+        (200_000.0, 23.8, 26.3),
+        (500_000.0, 94.0, 51.0),
+        (750_000.0, 148.0, 48.0),
+        (1_000_000.0, 155.0, 56.0),
+        (2_000_000.0, 389.0, 101.0),
+    ];
+
+    let x_px = |point_count: f64| {
+        plot_left + (point_count.log10() - log_x_min) / log_x_span * plot_width
+    };
+    let y_px = |ms: f64| plot_top + plot_height - (ms / y_max) * plot_height;
+
+    let mut svg = String::new();
+    svg.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
+    svg.push('\n');
+    svg.push_str(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">"#,
+    );
+    svg.push('\n');
+    svg.push_str(r#"<title id="title">Voxel downsample: CPU vs GPU</title>"#);
+    svg.push('\n');
+    svg.push_str(
+        r#"<desc id="desc">End-to-end centroid voxel filter latency versus point count on CPU and GPU.</desc>"#,
+    );
+    svg.push('\n');
+    svg.push_str(r##"<rect width="960" height="360" fill="#0f172a"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="24" y="34" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="700">Voxel downsample: CPU vs GPU</text>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="24" y="58" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">End-to-end filter latency vs point count (centroid, leaf=4.0)</text>"##);
+    svg.push('\n');
+
+    for ms in [0.0, 100.0, 200.0, 300.0, 400.0] {
+        let y = y_px(ms);
+        let _ = write!(
+            svg,
+            r##"<line x1="{plot_left:.1}" y1="{y:.2}" x2="{plot_right:.1}" y2="{y:.2}" stroke="#1e293b" stroke-width="1"/>"##,
+        );
+    }
+
+    let x_ticks: [(f64, &str); 3] = [
+        (10_000.0, "10k"),
+        (100_000.0, "100k"),
+        (1_000_000.0, "1M"),
+    ];
+    for (point_count, label) in x_ticks {
+        let x = x_px(point_count);
+        let _ = write!(
+            svg,
+            r##"<line x1="{x:.2}" y1="{plot_top:.1}" x2="{x:.2}" y2="{plot_bottom:.1}" stroke="#1e293b" stroke-width="1"/>"##,
+        );
+        let _ = write!(
+            svg,
+            r##"<text x="{x:.2}" y="{plot_bottom:.1}" dy="18" text-anchor="middle" fill="#64748b" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">{label}</text>"##,
+        );
+    }
+
+    for ms in [0.0, 100.0, 200.0, 300.0, 400.0] {
+        let y = y_px(ms);
+        let label = if ms >= 399.0 { "400 ms" } else { "" };
+        if ms < 399.0 {
+            let _ = write!(
+                svg,
+                r##"<text x="{plot_left:.1}" y="{y:.2}" dx="-8" text-anchor="end" dominant-baseline="middle" fill="#64748b" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">{ms:.0}</text>"##,
+            );
+        } else {
+            let _ = write!(
+                svg,
+                r##"<text x="{plot_left:.1}" y="{y:.2}" dx="-8" text-anchor="end" dominant-baseline="middle" fill="#64748b" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">{label}</text>"##,
+            );
+        }
+    }
+
+    let mut cpu_points = String::new();
+    let mut gpu_points = String::new();
+    for (point_count, cpu_ms, gpu_ms) in data {
+        let x = x_px(point_count);
+        let cpu_y = y_px(cpu_ms);
+        let gpu_y = y_px(gpu_ms);
+        if !cpu_points.is_empty() {
+            cpu_points.push(' ');
+        }
+        let _ = write!(cpu_points, "{x:.2},{cpu_y:.2}");
+        if !gpu_points.is_empty() {
+            gpu_points.push(' ');
+        }
+        let _ = write!(gpu_points, "{x:.2},{gpu_y:.2}");
+    }
+
+    let _ = write!(
+        svg,
+        r##"<polyline points="{cpu_points}" fill="none" stroke="#f97316" stroke-width="3" stroke-linejoin="round"/>"##,
+    );
+    let _ = write!(
+        svg,
+        r##"<polyline points="{gpu_points}" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linejoin="round"/>"##,
+    );
+
+    for (point_count, cpu_ms, gpu_ms) in data {
+        let x = x_px(point_count);
+        let cpu_y = y_px(cpu_ms);
+        let gpu_y = y_px(gpu_ms);
+        let _ = write!(
+            svg,
+            r##"<circle cx="{x:.2}" cy="{cpu_y:.2}" r="4" fill="#f97316"/>"##,
+        );
+        let _ = write!(
+            svg,
+            r##"<circle cx="{x:.2}" cy="{gpu_y:.2}" r="4" fill="#38bdf8"/>"##,
+        );
+    }
+
+    let legend_x = plot_right - 8.0;
+    let legend_y = plot_top + 12.0;
+    let _ = write!(
+        svg,
+        r##"<line x1="{legend_x:.1}" y1="{legend_y:.1}" x2="{:.1}" y2="{legend_y:.1}" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>"##,
+        legend_x - 28.0,
+    );
+    let _ = write!(
+        svg,
+        r##"<text x="{legend_x:.1}" y="{legend_y:.1}" dx="8" dominant-baseline="middle" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">CPU (centroid)</text>"##,
+    );
+    let legend_y_gpu = legend_y + 22.0;
+    let _ = write!(
+        svg,
+        r##"<line x1="{legend_x:.1}" y1="{legend_y_gpu:.1}" x2="{:.1}" y2="{legend_y_gpu:.1}" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>"##,
+        legend_x - 28.0,
+    );
+    let _ = write!(
+        svg,
+        r##"<text x="{legend_x:.1}" y="{legend_y_gpu:.1}" dx="8" dominant-baseline="middle" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">GPU (centroid)</text>"##,
+    );
+
+    // Headline insight placed in the empty upper-left of the plot so it never
+    // crosses the steeply climbing CPU line near 2M.
+    let callout_x = x_px(60_000.0);
+    let callout_y = y_px(330.0);
+    let _ = write!(
+        svg,
+        r##"<text x="{callout_x:.1}" y="{callout_y:.1}" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700">GPU is ~3.9x faster at 2M points</text>"##,
+    );
+    let _ = write!(
+        svg,
+        r##"<text x="{callout_x:.1}" y="{:.1}" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">CPU stays ahead below ~200k; wgpu wins as clouds grow</text>"##,
+        callout_y + 20.0,
+    );
+
+    svg.push_str("</svg>\n");
+    svg
+}
+
+fn render_architecture_diagram() -> String {
+    let mut svg = String::new();
+    svg.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
+    svg.push('\n');
+    svg.push_str(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" role="img" aria-labelledby="title desc">"#,
+    );
+    svg.push('\n');
+    svg.push_str(r#"<title id="title">SpatialRust architecture</title>"#);
+    svg.push('\n');
+    svg.push_str(
+        r#"<desc id="desc">Dataflow from file load to labeled clusters with composable SpatialRust crates and optional wgpu acceleration.</desc>"#,
+    );
+    svg.push('\n');
+    svg.push_str(r##"<rect width="960" height="440" fill="#0f172a"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="24" y="36" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">SpatialRust architecture</text>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="24" y="60" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">One dataflow from file to labeled clusters — composable crates, optional wgpu acceleration</text>"##);
+    svg.push('\n');
+
+    let cards: [(&str, &str, &str, &str, i32); 7] = [
+        ("Load", "PCD·PLY·LAS·COPC", "spatialrust-io", "#38bdf8", 24),
+        ("Voxel", "downsample", "spatialrust-filtering", "#22c55e", 156),
+        ("Normals", "estimate", "spatialrust-features", "#facc15", 288),
+        ("Plane", "RANSAC", "spatialrust-segmentation", "#a855f7", 420),
+        ("Cluster", "Euclidean", "spatialrust-segmentation", "#a855f7", 552),
+        ("Register", "ICP", "spatialrust-registration", "#f472b6", 684),
+        ("Save", "PCD·PLY·LAS·COPC", "spatialrust-io", "#38bdf8", 816),
+    ];
+
+    for (name, sub, crate_name, accent, card_x) in cards {
+        let cx = card_x + 60;
+        let _ = write!(
+            svg,
+            r##"<rect x="{card_x}" y="84" width="120" height="88" rx="10" fill="#111827" stroke="#334155"/>"##,
+        );
+        svg.push('\n');
+        let _ = write!(
+            svg,
+            r##"<rect x="{card_x}" y="84" width="120" height="6" fill="{accent}"/>"##,
+        );
+        svg.push('\n');
+        let _ = write!(
+            svg,
+            r##"<text x="{cx}" y="128" text-anchor="middle" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">{name}</text>"##,
+        );
+        svg.push('\n');
+        let _ = write!(
+            svg,
+            r##"<text x="{cx}" y="148" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">{sub}</text>"##,
+        );
+        svg.push('\n');
+        let _ = write!(
+            svg,
+            r##"<text x="{cx}" y="164" text-anchor="middle" fill="#64748b" font-family="ui-monospace, monospace" font-size="10">{crate_name}</text>"##,
+        );
+        svg.push('\n');
+    }
+
+    for (_, _, _, _, card_x) in cards.iter().take(6) {
+        let gap_left = card_x + 120 + 2;
+        let gap_tip = gap_left + 8;
+        let _ = write!(
+            svg,
+            r##"<polygon points="{gap_left},122 {gap_tip},128 {gap_left},134" fill="#38bdf8"/>"##,
+        );
+        svg.push('\n');
+    }
+
+    svg.push_str(r##"<rect x="156" y="210" width="120" height="56" rx="10" fill="#0b1224" stroke="#38bdf8"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"<line x1="216" y1="172" x2="216" y2="210" stroke="#38bdf8" stroke-dasharray="3 3"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="216" y="234" text-anchor="middle" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="700">wgpu</text>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="216" y="250" text-anchor="middle" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10">voxel kernel + CPU fallback</text>"##);
+    svg.push('\n');
+
+    svg.push_str(r##"<rect x="24" y="300" width="912" height="64" rx="12" fill="#111827" stroke="#334155"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="40" y="322" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="700">Foundation</text>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="40" y="348" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="12">spatialrust-core — schema · metadata · traits</text>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="400" y="348" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="12">spatialrust-math — Vec / Mat / Pose</text>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="700" y="348" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="12">spatialrust-search — KD-tree</text>"##);
+    svg.push('\n');
+
+    svg.push_str(r##"<rect x="560" y="24" width="180" height="24" rx="14" fill="#0b1224" stroke="#334155"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="650" y="40" text-anchor="middle" fill="#cbd5e1" font-family="ui-monospace, monospace" font-size="11">spatialrust · re-exports</text>"##);
+    svg.push('\n');
+    svg.push_str(r##"<rect x="752" y="24" width="184" height="24" rx="14" fill="#0b1224" stroke="#334155"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"<text x="844" y="40" text-anchor="middle" fill="#cbd5e1" font-family="ui-monospace, monospace" font-size="11">spatialrust-pipeline · MVP</text>"##);
+    svg.push('\n');
+
+    svg.push_str(r##"<text x="24" y="396" fill="#64748b" font-family="ui-monospace, monospace" font-size="12">dependency direction:  math → core → io · search · gpu → algorithms → pipeline</text>"##);
+    svg.push('\n');
+
+    svg.push_str("</svg>\n");
+    svg
+}
+
 fn render_social_card() -> String {
-    r##"<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title">
-  <title id="title">SpatialRust social preview</title>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#080c1c"/>
-      <stop offset="55%" stop-color="#111827"/>
-      <stop offset="100%" stop-color="#172554"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="72%" cy="42%" r="45%">
-      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="1280" height="640" fill="url(#bg)"/>
-  <rect width="1280" height="640" fill="url(#glow)"/>
-  <text x="80" y="150" fill="#f8fafc" font-family="ui-sans-serif, system-ui, sans-serif" font-size="72" font-weight="800">SpatialRust</text>
-  <text x="80" y="220" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="600">PyTorch for Spatial Computing</text>
-  <text x="80" y="290" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="28">Point clouds · wgpu · COPC · RANSAC · ICP · native Rust</text>
-  <text x="80" y="380" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="24">cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- scan.las out.las</text>
-  <rect x="820" y="90" width="400" height="460" rx="28" fill="#0b1224" stroke="#334155"/>
-  <text x="850" y="140" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">Isometric pipeline preview</text>
-  <circle cx="920" cy="250" r="5" fill="#94a3b8"/>
-  <circle cx="940" cy="230" r="5" fill="#64748b"/>
-  <circle cx="960" cy="260" r="5" fill="#cbd5e1"/>
-  <circle cx="980" cy="240" r="5" fill="#64748b"/>
-  <circle cx="1000" cy="270" r="5" fill="#94a3b8"/>
-  <circle cx="1040" cy="220" r="7" fill="#38bdf8"/>
-  <circle cx="1060" cy="210" r="7" fill="#38bdf8"/>
-  <circle cx="1080" cy="225" r="7" fill="#22d3ee"/>
-  <circle cx="1110" cy="320" r="9" fill="#f97316"/>
-  <circle cx="1135" cy="305" r="9" fill="#06b6d4"/>
-  <circle cx="1160" cy="330" r="9" fill="#a855f7"/>
-  <circle cx="1185" cy="315" r="9" fill="#22c55e"/>
-  <rect x="850" y="390" width="340" height="8" rx="4" fill="#1e293b"/>
-  <rect x="850" y="390" width="255" height="8" rx="4" fill="#38bdf8"/>
-  <text x="850" y="430" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="16">scan → voxel → plane → cluster</text>
-</svg>
-"##
-    .to_string()
+    let mut svg = String::new();
+    svg.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
+    svg.push('\n');
+    svg.push_str(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title">"#,
+    );
+    svg.push('\n');
+    svg.push_str(r#"<title id="title">SpatialRust social preview</title>"#);
+    svg.push('\n');
+    svg.push_str(r#"<defs>"#);
+    svg.push('\n');
+    svg.push_str(
+        r##"  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">"##,
+    );
+    svg.push('\n');
+    svg.push_str(r##"    <stop offset="0%" stop-color="#080c1c"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"    <stop offset="55%" stop-color="#111827"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"    <stop offset="100%" stop-color="#172554"/>"##);
+    svg.push('\n');
+    svg.push_str(r##"  </linearGradient>"##);
+    svg.push('\n');
+    svg.push_str(r##"  <radialGradient id="glow" cx="72%" cy="38%" r="48%">"##);
+    svg.push('\n');
+    svg.push_str(
+        r##"    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>"##,
+    );
+    svg.push('\n');
+    svg.push_str(r#"  </radialGradient>"#);
+    svg.push('\n');
+    svg.push_str(r#"</defs>"#);
+    svg.push('\n');
+    svg.push_str(r#"<rect width="1280" height="640" fill="url(#bg)"/>"#);
+    svg.push('\n');
+    svg.push_str(r#"<rect width="1280" height="640" fill="url(#glow)"/>"#);
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="80" y="150" fill="#f8fafc" font-family="ui-sans-serif, system-ui, sans-serif" font-size="80" font-weight="800">SpatialRust</text>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="82" y="210" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="700">PyTorch for Spatial Computing</text>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="82" y="262" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="24">Point clouds · wgpu · COPC · RANSAC · ICP — native Rust</text>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<rect x="80" y="300" width="230" height="40" rx="16" fill="#0b1224" stroke="#334155"/>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<rect x="326" y="300" width="150" height="40" rx="16" fill="#0b1224" stroke="#334155"/>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<rect x="492" y="300" width="250" height="40" rx="16" fill="#0b1224" stroke="#334155"/>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="195" y="320" text-anchor="middle" dominant-baseline="middle" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">GPU voxel ~3.9x @ 2M</text>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="401" y="320" text-anchor="middle" dominant-baseline="middle" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18">11 crates</text>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="617" y="320" text-anchor="middle" dominant-baseline="middle" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18">MIT / Apache-2.0</text>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="82" y="400" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="22">cargo run --features mvp --bin spatialrust-mvp -- scan.las out.las</text>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<rect x="812" y="70" width="408" height="500" rx="28" fill="#0b1224" stroke="#334155"/>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="842" y="118" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">Isometric pipeline preview</text>"##,
+    );
+    svg.push('\n');
+
+    const PANEL_CX: f32 = 1016.0;
+    const FLOOR_ANCHOR_Y: f32 = 250.0;
+    for gx in 0..14 {
+        for gy in 0..11 {
+            let u = gx as f32;
+            let v = gy as f32;
+            let px = PANEL_CX + (u - v) * 11.5;
+            let py = FLOOR_ANCHOR_Y + (u + v) * 6.5;
+            let _ = write!(
+                svg,
+                r##"<circle cx="{px:.1}" cy="{py:.1}" r="3" fill="#3b82f6" fill-opacity="0.7"/>"##,
+            );
+        }
+    }
+    svg.push('\n');
+
+    let cluster_centers = [(940, 250), (980, 300), (1060, 260), (1090, 320), (1010, 360)];
+    let cluster_colors = ["#f97316", "#06b6d4", "#a855f7", "#22c55e", "#f472b6"];
+    let blob_offsets = [(0, 0), (8, 4), (-7, 5), (4, -7), (-5, -6)];
+    for ((cx, cy), color) in cluster_centers.iter().zip(cluster_colors.iter()) {
+        for (dx, dy) in blob_offsets {
+            let _ = write!(
+                svg,
+                r##"<circle cx="{}" cy="{}" r="6" fill="{color}"/>"##,
+                cx + dx,
+                cy + dy,
+            );
+        }
+    }
+    svg.push('\n');
+
+    svg.push_str(
+        r##"<rect x="842" y="500" width="348" height="8" rx="4" fill="#1e293b"/>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<rect x="842" y="500" width="261" height="8" rx="4" fill="#38bdf8"/>"##,
+    );
+    svg.push('\n');
+    svg.push_str(
+        r##"<text x="842" y="534" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="16">scan → voxel → plane → cluster</text>"##,
+    );
+    svg.push('\n');
+    svg.push_str("</svg>\n");
+    svg
 }
 
 fn assets_dir() -> PathBuf {
@@ -1062,7 +1659,15 @@ fn main() {
     fs::create_dir_all(&temp_dir).expect("create temp gif frames");
     render_gif_frames(&input, &result, &temp_dir);
     let gif_path = assets.join("readme_mvp_pipeline.gif");
-    encode_gif(&temp_dir, "frame_%03d.ppm", "8", &gif_path);
+    encode_gif_per_frame_palette(&temp_dir, "frame_%03d.ppm", "8", &gif_path);
+
+    let copc_temp = std::env::temp_dir().join(format!("spatialrust_readme_copc_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&copc_temp);
+    fs::create_dir_all(&copc_temp).expect("create temp copc frames");
+    render_copc_frames(&input, &copc_temp);
+    let copc_path = assets.join("copc_query.gif");
+    encode_gif(&copc_temp, "copc_%03d.ppm", "6", &copc_path);
+    let _ = fs::remove_dir_all(&copc_temp);
 
     let hero_temp = std::env::temp_dir().join(format!("spatialrust_readme_hero_{}", std::process::id()));
     let _ = fs::remove_dir_all(&hero_temp);
@@ -1082,8 +1687,17 @@ fn main() {
     let social_path = assets.join("social_preview.svg");
     fs::write(&social_path, render_social_card()).expect("write social preview");
 
+    let benchmark_path = assets.join("benchmark_voxel.svg");
+    fs::write(&benchmark_path, render_benchmark_chart()).expect("write benchmark chart");
+
+    let architecture_path = assets.join("architecture.svg");
+    fs::write(&architecture_path, render_architecture_diagram()).expect("write architecture diagram");
+
     println!("wrote {}", svg_path.display());
     println!("wrote {}", gif_path.display());
     println!("wrote {}", hero_path.display());
     println!("wrote {}", social_path.display());
+    println!("wrote {}", benchmark_path.display());
+    println!("wrote {}", architecture_path.display());
+    println!("wrote {}", copc_path.display());
 }
