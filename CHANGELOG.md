@@ -12,6 +12,12 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,
   `register_gicp`, `register_ndt`). Built as `abi3` wheels (CPython 3.8+).
+- **Cloud transform utilities** crate (`spatialrust-transform`, `transform-ops`):
+  4×4 affine transforms (positions + normals), recentering, scale and unit-sphere
+  normalization, cloud merging, and AABB / PCA-based OBB computation, exposed in
+  the Python bindings (`apply_transform`, `recenter`, `scale`,
+  `normalize_unit_sphere`, `merge`, `centroid`, `bounding_box`,
+  `oriented_bounding_box`).
 - **Point cloud metrics** crate (`spatialrust-metrics`, `metrics-distance`):
   symmetric Chamfer and Hausdorff distances (plus directed statistics) for
   scoring registration / reconstruction against a reference, exposed in the

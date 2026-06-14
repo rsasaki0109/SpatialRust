@@ -80,6 +80,10 @@ reloaded = sr.read("labeled.las")
 | `register_fpfh_ransac(source, target, feature_radius=0.25, ...)` | FPFH + RANSAC global registration (no initial guess; coarse) |
 | `register_fpfh_keypoints(source, target, salient_radius=0.1, ...)` | Keypoint-based (ISS→FPFH→RANSAC) global registration |
 | `chamfer_distance(a, b)` / `hausdorff_distance(a, b)` | Cloud-to-cloud distance metrics for scoring alignment |
+| `apply_transform(cloud, matrix)` | Apply a 4×4 affine transform (positions + normals) |
+| `recenter(cloud)` / `scale(cloud, factor)` / `normalize_unit_sphere(cloud)` | Centering and scale normalization |
+| `merge(clouds)` | Concatenate same-schema clouds |
+| `centroid(cloud)` / `bounding_box(cloud)` / `oriented_bounding_box(cloud)` | Centroid and AABB / PCA-OBB |
 
 `register_*` return a `RegistrationResult` with `.transform()` (4x4 NumPy
 matrix mapping source into the target frame), `.fitness`, `.iterations`, and

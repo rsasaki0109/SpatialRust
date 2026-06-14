@@ -23,6 +23,7 @@ use spatialrust::filtering::{
     StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
     VoxelGridDownsampleConfig,
 };
+use spatialrust::math::Mat4;
 use spatialrust::metrics::{chamfer_distance as chamfer, hausdorff_distance as hausdorff};
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
 use spatialrust::registration::{
@@ -33,6 +34,11 @@ use spatialrust::registration::{
 use spatialrust::segmentation::{
     DbscanConfig, DbscanSegmenter, GroundConfig, GroundSegmenter, RansacCylinderSegmenter,
     RansacPrimitiveConfig, RansacSphereSegmenter, RegionGrowingConfig, RegionGrowingSegmenter,
+};
+use spatialrust::transform::{
+    apply_transform as apply_tf, bounding_box as bbox, centroid as cloud_centroid, merge_clouds,
+    normalize_unit_sphere as normalize_unit, oriented_bounding_box as obb, recenter as recenter_op,
+    scale_cloud,
 };
 use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
@@ -826,6 +832,80 @@ fn register_fpfh_keypoints(
     Ok(PyRegistrationResult::from_result(&result))
 }
 
+/// Applies a 4x4 affine transform (NumPy array) to a cloud's positions and
+/// normals.
+#[pyfunction]
+fn apply_transform(
+    cloud: &PyPointCloud,
+    matrix: PyReadonlyArray2<'_, f32>,
+) -> PyResult<PyPointCloud> {
+    let m = matrix.as_array();
+    if m.shape() != [4, 4] {
+        return Err(PyValueError::new_err("transform must be a (4, 4) float32 matrix"));
+    }
+    let mat = Mat4::from_rows(
+        [m[[0, 0]], m[[0, 1]], m[[0, 2]], m[[0, 3]]],
+        [m[[1, 0]], m[[1, 1]], m[[1, 2]], m[[1, 3]]],
+        [m[[2, 0]], m[[2, 1]], m[[2, 2]], m[[2, 3]]],
+        [m[[3, 0]], m[[3, 1]], m[[3, 2]], m[[3, 3]]],
+    );
+    Ok(PyPointCloud { inner: apply_tf(&cloud.inner, mat).map_err(to_py_err)? })
+}
+
+/// Translates a cloud so its centroid is at the origin.
+#[pyfunction]
+fn recenter(cloud: &PyPointCloud) -> PyResult<PyPointCloud> {
+    Ok(PyPointCloud { inner: recenter_op(&cloud.inner).map_err(to_py_err)? })
+}
+
+/// Uniformly scales a cloud about the origin by `factor`.
+#[pyfunction]
+fn scale(cloud: &PyPointCloud, factor: f32) -> PyResult<PyPointCloud> {
+    Ok(PyPointCloud { inner: scale_cloud(&cloud.inner, factor).map_err(to_py_err)? })
+}
+
+/// Recenters and scales a cloud so its farthest point is at unit distance.
+#[pyfunction]
+fn normalize_unit_sphere(cloud: &PyPointCloud) -> PyResult<PyPointCloud> {
+    Ok(PyPointCloud { inner: normalize_unit(&cloud.inner).map_err(to_py_err)? })
+}
+
+/// Concatenates clouds sharing the same schema into one.
+#[pyfunction]
+fn merge(clouds: Vec<PyPointCloud>) -> PyResult<PyPointCloud> {
+    let refs: Vec<&PointCloud> = clouds.iter().map(|c| &c.inner).collect();
+    Ok(PyPointCloud { inner: merge_clouds(&refs).map_err(to_py_err)? })
+}
+
+/// Centroid (mean position) as `(x, y, z)`.
+#[pyfunction]
+fn centroid(cloud: &PyPointCloud) -> PyResult<(f32, f32, f32)> {
+    let c = cloud_centroid(&cloud.inner).map_err(to_py_err)?;
+    Ok((c.x, c.y, c.z))
+}
+
+/// Axis-aligned bounding box as `(min_xyz, max_xyz)`.
+#[pyfunction]
+fn bounding_box(cloud: &PyPointCloud) -> PyResult<((f32, f32, f32), (f32, f32, f32))> {
+    let b = bbox(&cloud.inner).map_err(to_py_err)?;
+    Ok(((b.min.x, b.min.y, b.min.z), (b.max.x, b.max.y, b.max.z)))
+}
+
+/// Oriented (PCA) bounding box as `(center, half_extents, axes_3x3)`. The axes
+/// are returned principal-first; column `k` of `axes_3x3` is the k-th box axis.
+#[pyfunction]
+fn oriented_bounding_box(
+    cloud: &PyPointCloud,
+) -> PyResult<((f32, f32, f32), (f32, f32, f32), Vec<(f32, f32, f32)>)> {
+    let o = obb(&cloud.inner).map_err(to_py_err)?;
+    let axis = |k: usize| (o.axes.m[0][k], o.axes.m[1][k], o.axes.m[2][k]);
+    Ok((
+        (o.center.x, o.center.y, o.center.z),
+        (o.half_extents.x, o.half_extents.y, o.half_extents.z),
+        vec![axis(0), axis(1), axis(2)],
+    ))
+}
+
 /// SpatialRust — PyTorch for Spatial Computing.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
@@ -857,6 +937,14 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ransac_cylinder, m)?)?;
     m.add_function(wrap_pyfunction!(chamfer_distance, m)?)?;
     m.add_function(wrap_pyfunction!(hausdorff_distance, m)?)?;
+    m.add_function(wrap_pyfunction!(apply_transform, m)?)?;
+    m.add_function(wrap_pyfunction!(recenter, m)?)?;
+    m.add_function(wrap_pyfunction!(scale, m)?)?;
+    m.add_function(wrap_pyfunction!(normalize_unit_sphere, m)?)?;
+    m.add_function(wrap_pyfunction!(merge, m)?)?;
+    m.add_function(wrap_pyfunction!(centroid, m)?)?;
+    m.add_function(wrap_pyfunction!(bounding_box, m)?)?;
+    m.add_function(wrap_pyfunction!(oriented_bounding_box, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;

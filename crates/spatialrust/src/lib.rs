@@ -17,6 +17,7 @@ pub use spatialrust_pipeline as pipeline;
 pub use spatialrust_registration as registration;
 pub use spatialrust_search as search;
 pub use spatialrust_segmentation as segmentation;
+pub use spatialrust_transform as transform;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
@@ -150,6 +151,12 @@ pub use spatialrust_registration::{
 #[cfg(feature = "metrics-distance")]
 pub use spatialrust_metrics::{
     chamfer_distance, cloud_distances, hausdorff_distance, CloudDistances,
+};
+
+#[cfg(feature = "transform-ops")]
+pub use spatialrust_transform::{
+    apply_transform, bounding_box, centroid, merge_clouds, normalize_unit_sphere,
+    oriented_bounding_box, recenter, scale_cloud, Aabb as TransformAabb, Obb,
 };
 
 #[cfg(feature = "pipeline-mvp")]

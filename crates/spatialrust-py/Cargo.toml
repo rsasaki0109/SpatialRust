@@ -20,6 +20,7 @@ numpy = "0.22"
 spatialrust = { path = "../spatialrust", features = [
     "mvp",
     "metrics-distance",
+    "transform-ops",
     "feature-iss",
     "filter-outlier",
     "filter-crop",

@@ -114,6 +114,10 @@ jobs:
             args: -p spatialrust-metrics --features metrics-distance
           - name: spatialrust-metrics-meta
             args: -p spatialrust --features metrics-distance
+          - name: spatialrust-transform
+            args: -p spatialrust-transform --features transform-ops
+          - name: spatialrust-transform-meta
+            args: -p spatialrust --features transform-ops
           - name: spatialrust-pipeline-mvp
             args: -p spatialrust-pipeline --features pipeline-mvp
           - name: spatialrust-pipeline-mvp-gpu

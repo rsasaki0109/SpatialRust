@@ -99,6 +99,7 @@ pipeline-mvp-gpu = [
 ]
 gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
 metrics-distance = ["spatialrust-metrics/metrics-distance"]
+transform-ops = ["spatialrust-transform/transform-ops"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
@@ -112,6 +113,7 @@ spatialrust-segmentation = { workspace = true }
 spatialrust-registration = { workspace = true }
 spatialrust-pipeline = { workspace = true }
 spatialrust-metrics = { workspace = true }
+spatialrust-transform = { workspace = true }
 
 [dev-dependencies]
 

@@ -1,0 +1,20 @@
+[package]
+name = "spatialrust-transform"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Geometric transforms and cloud utilities for SpatialRust"
+
+[features]
+default = ["transform-ops"]
+transform-ops = []
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-math = { workspace = true }
+
+[dev-dependencies]
+spatialrust-core = { workspace = true }
