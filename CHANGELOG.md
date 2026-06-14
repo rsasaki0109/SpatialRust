@@ -123,9 +123,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- RANSAC plane sampling drew indices from the low (short-period) bits of its
-  LCG; it now uses the well-mixed high bits via multiply-shift, making plane
-  fits more reliable (this is what let multi-plane extraction find every plane).
+- RANSAC samplers (plane and sphere / cylinder) drew indices from the low
+  (short-period) bits of their LCG; they now use the well-mixed high bits via
+  multiply-shift, making fits more reliable (the plane fix is what let
+  multi-plane extraction find every plane).
 - Gated the `io-copc-http` integration test behind its feature so
   `cargo test --workspace` builds with default features.
 - Resolved pre-existing rustfmt and clippy drift surfaced by current stable

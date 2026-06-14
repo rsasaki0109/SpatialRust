@@ -372,7 +372,9 @@ impl Rng {
 
     fn next_usize(&mut self, upper: usize) -> usize {
         self.state = self.state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
-        (self.state as usize) % upper
+        // Map the high, well-mixed bits of the LCG into `0..upper` (its low bits
+        // have a short period, which biases naive `% upper` sampling).
+        (((self.state >> 32) * upper as u64) >> 32) as usize
     }
 }
 
@@ -465,6 +467,49 @@ mod tests {
         assert!((result.model.radius - radius).abs() < 0.02);
         assert!((result.model.center - center).length() < 0.02);
         assert_eq!(result.outliers.len(), 2);
+    }
+
+    #[test]
+    fn fits_sphere_among_many_distractors() {
+        // A sphere plus a cloud of scattered random distractors of comparable
+        // size. Random points fit no sphere, so the only high-inlier model is the
+        // true sphere, and finding it requires reliably sampling 4 sphere points
+        // among the ~50% noise -- a stress test for the RANSAC sampler.
+        let center = Vec3::new(0.0, 0.0, 0.0);
+        let radius = 0.4_f32;
+        let mut pts = Vec::new();
+        for i in 0..16 {
+            for j in 0..16 {
+                let theta = PI * i as f32 / 15.0;
+                let phi = 2.0 * PI * j as f32 / 16.0;
+                pts.push(Vec3::new(
+                    radius * theta.sin() * phi.cos(),
+                    radius * theta.sin() * phi.sin(),
+                    radius * theta.cos(),
+                ));
+            }
+        }
+        // ~256 scattered distractors in a box well away from the sphere surface.
+        let mut s = 1234_u64;
+        let mut rand = || {
+            s = s.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            (s >> 40) as f32 / (1u64 << 24) as f32 // in [0, 1)
+        };
+        for _ in 0..256 {
+            pts.push(Vec3::new(rand() * 4.0 - 2.0, rand() * 4.0 - 2.0, rand() * 4.0 + 2.0));
+        }
+
+        let cloud = xyz_cloud(&pts);
+        let seg = RansacSphereSegmenter::new(RansacPrimitiveConfig {
+            distance_threshold: 0.02,
+            max_iterations: 2000,
+            min_inliers: 100,
+            seed: 11,
+            ..RansacPrimitiveConfig::default()
+        });
+        let result = seg.segment(&cloud).unwrap();
+        assert!((result.model.radius - radius).abs() < 0.03, "radius {}", result.model.radius);
+        assert!((result.model.center - center).length() < 0.03);
     }
 
     #[test]
