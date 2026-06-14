@@ -1,7 +1,7 @@
 # SpatialRust
 
 <p align="center">
-  <img src="docs/assets/readme_hero.gif" alt="SpatialRust hero: isometric LiDAR scan sweep, voxel downsample, plane RANSAC, and neon cluster labels from a real MVP pipeline run" width="960">
+  <img src="docs/assets/readme_hero.gif" alt="SpatialRust hero: isometric LiDAR room scan sweep, voxel downsample, plane RANSAC, and neon Euclidean cluster labels from a real MVP pipeline run" width="960">
 </p>
 
 <p align="center">
@@ -16,13 +16,15 @@
   <img src="https://img.shields.io/badge/GPU-wgpu-38bdf8.svg" alt="wgpu">
 </p>
 
-The hero GIF above is **real MVP pipeline output** (not a mockup): isometric view, LiDAR scan sweep, and stage transitions. Regenerate all README assets:
+The hero GIF above is **real MVP pipeline output** (not a mockup): an isometric room scan sweeps in, voxel-downsamples, RANSAC peels off the dominant floor plane, and Euclidean clustering lights up each object in its own neon color — every frame rendered straight from a live pipeline run.
 
-```bash
-cargo run -p spatialrust --features mvp --example readme_mvp_preview
-```
+<p align="center">
+  <img src="docs/assets/readme_mvp_preview.svg" alt="SpatialRust MVP pipeline preview: RANSAC plane inliers, Euclidean cluster labels, and the pipeline stages" width="960">
+</p>
 
-Outputs: `docs/assets/readme_hero.gif` (README header), `readme_mvp_pipeline.gif` (compact 2D view), `social_preview.svg`.
+| ⚡ GPU-accelerated | 🗂️ COPC-native | 🦀 Pure Rust | 🧩 Composable |
+| --- | --- | --- | --- |
+| wgpu voxel filter, **~3.9× at 2M points**, automatic CPU fallback | **bounds + LOD** partial reads straight off disk — no full-tile load | no C++ / FFI binding layer to fight | one MVP crate: **IO → filter → segment → register** |
 
 ## Why SpatialRust?
 
@@ -39,18 +41,48 @@ Outputs: `docs/assets/readme_hero.gif` (README header), `readme_mvp_pipeline.gif
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- scan.las labeled.las
 ```
 
-Partial COPC read + pipeline:
+Partial COPC read + pipeline — stream only the region of interest straight off disk, no full-tile load:
 
 ```bash
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
   --bounds 0,0,-1,100,100,1 --resolution 0.5 scan.copc.laz roi.copc.laz
 ```
 
+<p align="center">
+  <img src="docs/assets/copc_query.gif" alt="COPC partial read: a bounds box selects a region of interest from the full tile, then the recentered subset is read out to roi.copc.laz" width="720">
+</p>
+
+## Performance
+
+The voxel downsampler runs on CPU or GPU (wgpu). `ExecutionPolicy::Auto` keeps small clouds on the CPU — where it's fastest — and switches to the GPU as point counts grow, so you get the best of both without tuning.
+
+<p align="center">
+  <img src="docs/assets/benchmark_voxel.svg" alt="Voxel downsample latency: CPU vs GPU across point counts, showing the GPU crossover above ~200k points and ~3.9x speedup at 2M" width="960">
+</p>
+
+End-to-end centroid filter latency (leaf=4.0), measured via `cargo bench -p spatialrust-filtering`:
+
+| Points | CPU | GPU | Winner |
+| ---: | ---: | ---: | :--- |
+| 100k | **~7 ms** | ~17 ms | CPU |
+| 200k | **~24 ms** | ~26 ms | ~even |
+| 500k | ~94 ms | **~51 ms** | GPU |
+| 1M | ~155 ms | **~56 ms** | GPU (~2.8x) |
+| 2M | ~389 ms | **~101 ms** | GPU (~3.9x) |
+
+Reproduce: `cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.
+
 ## Status
 
 MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, and ICP. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.
 
 ## Workspace crates
+
+One dataflow, eleven crates — each pipeline stage maps to the crate that implements it, all sitting on a small math/core/search foundation:
+
+<p align="center">
+  <img src="docs/assets/architecture.svg" alt="SpatialRust architecture: Load → Voxel → Normals → Plane → Cluster → Register → Save dataflow with implementing crates, wgpu voxel acceleration, and the core/math/search foundation" width="960">
+</p>
 
 | Crate | Role |
 | --- | --- |
@@ -114,6 +146,10 @@ let cloud = read_copc_file_with_query("scan.copc.laz", &CopcQuery::bounds(bounds
 PCD/PLY/LAS/COPC -> voxel downsample -> normals -> plane RANSAC -> clustering -> ICP -> save
 ```
 
+<p align="center">
+  <img src="docs/assets/readme_mvp_pipeline.gif" alt="Top-down 2D view of the MVP pipeline stages: input scan, voxel grid, plane RANSAC, and neon Euclidean clusters" width="640">
+</p>
+
 GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode).
 
 ```bash
@@ -122,6 +158,16 @@ cargo test -p spatialrust --features filter-voxel-gpu
 cargo test -p spatialrust --features mvp mvp_copc_pipeline_roundtrip
 cargo test -p spatialrust --features mvp mvp_copc_query_pipeline
 ```
+
+## README visuals
+
+Every image in this README — the hero GIF, the COPC query GIF, the architecture diagram, the performance chart, and the social card — is generated from a single live pipeline run. Regenerate them all with:
+
+```bash
+cargo run -p spatialrust --features mvp --example readme_mvp_preview
+```
+
+Outputs: `readme_hero.gif` (header), `readme_mvp_preview.svg` (pipeline panel), `copc_query.gif` (COPC partial read), `benchmark_voxel.svg` (Performance chart), `architecture.svg` (crates diagram), `readme_mvp_pipeline.gif` (compact 2D view), and `social_preview.svg`.
 
 ## Social preview
 
