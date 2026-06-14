@@ -26,7 +26,8 @@ use spatialrust::registration::{
     PointToPlaneIcpConfig, RegistrationResult,
 };
 use spatialrust::segmentation::{
-    DbscanConfig, DbscanSegmenter, RegionGrowingConfig, RegionGrowingSegmenter,
+    DbscanConfig, DbscanSegmenter, RansacCylinderSegmenter, RansacPrimitiveConfig,
+    RansacSphereSegmenter, RegionGrowingConfig, RegionGrowingSegmenter,
 };
 use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
@@ -245,6 +246,124 @@ fn dbscan(cloud: &PyPointCloud, eps: f32, min_points: usize) -> PyResult<PyDbsca
         cluster_count: result.cluster_count,
         cluster_sizes: result.cluster_sizes,
         noise_count: result.noise_count,
+    })
+}
+
+/// Result of fitting a RANSAC sphere.
+#[pyclass(name = "SphereResult")]
+pub struct PySphereResult {
+    /// Sphere center as (x, y, z).
+    #[pyo3(get)]
+    center: (f32, f32, f32),
+    /// Sphere radius.
+    #[pyo3(get)]
+    radius: f32,
+    /// Points on the sphere surface.
+    #[pyo3(get)]
+    inliers: PyPointCloud,
+    /// Points not on the sphere.
+    #[pyo3(get)]
+    outliers: PyPointCloud,
+}
+
+#[pymethods]
+impl PySphereResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SphereResult(center={:?}, radius={:.4}, inliers={})",
+            self.center,
+            self.radius,
+            self.inliers.inner.len()
+        )
+    }
+}
+
+/// Result of fitting a RANSAC cylinder.
+#[pyclass(name = "CylinderResult")]
+pub struct PyCylinderResult {
+    /// A point on the cylinder axis as (x, y, z).
+    #[pyo3(get)]
+    axis_point: (f32, f32, f32),
+    /// Unit axis direction as (x, y, z).
+    #[pyo3(get)]
+    axis_direction: (f32, f32, f32),
+    /// Cylinder radius.
+    #[pyo3(get)]
+    radius: f32,
+    /// Points on the cylinder surface.
+    #[pyo3(get)]
+    inliers: PyPointCloud,
+    /// Points not on the cylinder.
+    #[pyo3(get)]
+    outliers: PyPointCloud,
+}
+
+#[pymethods]
+impl PyCylinderResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CylinderResult(axis_point={:?}, radius={:.4}, inliers={})",
+            self.axis_point,
+            self.radius,
+            self.inliers.inner.len()
+        )
+    }
+}
+
+/// Fits the dominant sphere with RANSAC and partitions inliers/outliers.
+#[pyfunction]
+#[pyo3(signature = (cloud, distance_threshold=0.02, max_iterations=1000, min_inliers=10))]
+fn ransac_sphere(
+    cloud: &PyPointCloud,
+    distance_threshold: f32,
+    max_iterations: usize,
+    min_inliers: usize,
+) -> PyResult<PySphereResult> {
+    let config = RansacPrimitiveConfig {
+        distance_threshold,
+        max_iterations,
+        min_inliers,
+        ..RansacPrimitiveConfig::default()
+    };
+    let result = RansacSphereSegmenter::new(config).segment(&cloud.inner).map_err(to_py_err)?;
+    let c = result.model.center;
+    Ok(PySphereResult {
+        center: (c.x, c.y, c.z),
+        radius: result.model.radius,
+        inliers: PyPointCloud { inner: result.inliers },
+        outliers: PyPointCloud { inner: result.outliers },
+    })
+}
+
+/// Fits the dominant cylinder with RANSAC. Normals are estimated on the cloud
+/// from k-nearest neighbors (the axis is recovered from surface normals).
+#[pyfunction]
+#[pyo3(signature = (cloud, distance_threshold=0.02, max_iterations=1000, min_inliers=10, k_neighbors=20))]
+fn ransac_cylinder(
+    cloud: &PyPointCloud,
+    distance_threshold: f32,
+    max_iterations: usize,
+    min_inliers: usize,
+    k_neighbors: usize,
+) -> PyResult<PyCylinderResult> {
+    let with_normals = NormalEstimator::new(NormalEstimationConfig::k_neighbors(k_neighbors))
+        .estimate(&cloud.inner)
+        .map_err(to_py_err)?;
+    let config = RansacPrimitiveConfig {
+        distance_threshold,
+        max_iterations,
+        min_inliers,
+        ..RansacPrimitiveConfig::default()
+    };
+    let result = RansacCylinderSegmenter::new(config).segment(&with_normals).map_err(to_py_err)?;
+    let a = result.model.axis_point;
+    let d = result.model.axis_direction;
+    Ok(PyCylinderResult {
+        axis_point: (a.x, a.y, a.z),
+        axis_direction: (d.x, d.y, d.z),
+        radius: result.model.radius,
+        inliers: PyPointCloud { inner: result.inliers },
+        outliers: PyPointCloud { inner: result.outliers },
     })
 }
 
@@ -559,6 +678,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPipelineResult>()?;
     m.add_class::<PyRegionResult>()?;
     m.add_class::<PyDbscanResult>()?;
+    m.add_class::<PySphereResult>()?;
+    m.add_class::<PyCylinderResult>()?;
     m.add_class::<PyRegistrationResult>()?;
     m.add_function(wrap_pyfunction!(read, m)?)?;
     m.add_function(wrap_pyfunction!(write, m)?)?;
@@ -570,6 +691,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(region_growing, m)?)?;
     m.add_function(wrap_pyfunction!(dbscan, m)?)?;
+    m.add_function(wrap_pyfunction!(ransac_sphere, m)?)?;
+    m.add_function(wrap_pyfunction!(ransac_cylinder, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;

@@ -44,6 +44,7 @@ segment-dbscan = [
     "spatialrust-segmentation/segment-dbscan",
     "spatialrust-search/search-kdtree",
 ]
+segment-ransac-primitives = ["spatialrust-segmentation/segment-ransac-primitives"]
 segment-region-growing = [
     "spatialrust-segmentation/segment-region-growing",
     "spatialrust-search/search-kdtree",

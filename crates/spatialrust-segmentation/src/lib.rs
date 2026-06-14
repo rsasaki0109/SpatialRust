@@ -15,6 +15,9 @@ mod cluster;
 #[cfg(feature = "segment-dbscan")]
 mod dbscan;
 
+#[cfg(feature = "segment-ransac-primitives")]
+mod primitives;
+
 #[cfg(feature = "segment-region-growing")]
 mod region_growing;
 
@@ -29,6 +32,12 @@ pub use cluster::{EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanCl
 
 #[cfg(feature = "segment-dbscan")]
 pub use dbscan::{DbscanConfig, DbscanResult, DbscanSegmenter};
+
+#[cfg(feature = "segment-ransac-primitives")]
+pub use primitives::{
+    CylinderModel, PrimitiveSegmentation, RansacCylinderSegmenter, RansacPrimitiveConfig,
+    RansacSphereSegmenter, SphereModel,
+};
 
 #[cfg(feature = "segment-region-growing")]
 pub use region_growing::{RegionGrowingConfig, RegionGrowingResult, RegionGrowingSegmenter};

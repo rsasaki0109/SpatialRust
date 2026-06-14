@@ -13,6 +13,7 @@ default = ["segment-ransac-plane", "segment-euclidean"]
 segment-ransac-plane = []
 segment-euclidean = ["dep:spatialrust-search"]
 segment-dbscan = ["dep:spatialrust-search"]
+segment-ransac-primitives = []
 segment-region-growing = ["dep:spatialrust-search"]
 
 [dependencies]

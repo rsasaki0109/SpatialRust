@@ -35,6 +35,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **DBSCAN segmentation** (`spatialrust-segmentation`, `segment-dbscan`):
   density-based clustering with explicit noise labeling, exposed in the Python
   bindings (`dbscan`).
+- **RANSAC sphere & cylinder fitting** (`spatialrust-segmentation`,
+  `segment-ransac-primitives`): detect spheres (positions only) and cylinders
+  (axis recovered from surface normals), partitioning inliers/outliers, exposed
+  in the Python bindings (`ransac_sphere`, `ransac_cylinder`).
 - **Region growing segmentation** (`spatialrust-segmentation`,
   `segment-region-growing`): normal-smoothness region growing with curvature
   seeding.
