@@ -99,6 +99,7 @@ matrix mapping source into the target frame), `.fitness`, `.iterations`, and
 python examples/segment_room.py --png room.png        # segmentation pipeline
 python examples/register_scans.py --png reg.png        # two-scan registration
 python examples/end_to_end.py --png demo.png           # full clean->cluster->register
+python examples/make_gifs.py                            # rotating cluster + voxel GIFs
 ```
 
 `segment_room.py` synthesizes a scan-like room, runs the pipeline, and writes a

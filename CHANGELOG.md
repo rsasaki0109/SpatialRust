@@ -8,6 +8,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **PCL comparison benchmark** (`bench/pcl_comparison/`): a reproducible,
+  apples-to-apples timing harness against PCL 1.14 on voxel downsampling, normal
+  estimation, and outlier removal, plus rotating cluster/voxel README GIFs
+  generated through the Python bindings (`examples/make_gifs.py`).
 - **Python bindings** (`spatialrust-py`, PyO3 + maturin): NumPy interop for point
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,
@@ -92,6 +96,12 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   figure; accepts a real scan via `--input`.
 - CI: Python wheel build/publish workflow; benchmark-compile and per-feature
   test matrix entries for all new features.
+
+### Changed
+
+- `KdTree::radius_search` no longer sorts its results (no caller relied on the
+  order), speeding radius outlier removal ~1.85× and benefiting every
+  radius-search consumer (DBSCAN, MLS, FPFH, boundary detection).
 
 ### Fixed
 
