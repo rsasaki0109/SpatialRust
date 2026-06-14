@@ -66,6 +66,7 @@ reloaded = sr.read("labeled.las")
 | `farthest_point_sampling(cloud, sample_size, seed_index=0)` | Even FPS downsampling to a target count |
 | `voxelize(cloud, voxel_size=0.1, mode="occupancy")` | Dense 3D occupancy/count grid `(nz, ny, nx)` for ML |
 | `range_image(cloud, width=1024, height=64, fov_up_deg=3.0, fov_down_deg=-25.0)` | Spherical LiDAR range image `(height, width)` |
+| `knn_graph(cloud, k)` / `radius_graph(cloud, radius)` | PyG-style `(2, E)` `edge_index` for GNNs |
 | `statistical_outlier_removal(cloud, k_neighbors=16, std_mul=1.0)` | Drop points far from their k-NN (SOR) |
 | `radius_outlier_removal(cloud, radius=0.5, min_neighbors=4)` | Drop points with too few neighbors in radius (ROR) |
 | `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline |

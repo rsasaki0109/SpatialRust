@@ -19,6 +19,7 @@ io-e57 = ["spatialrust-io/io-e57"]
 io-copc = ["spatialrust-io/io-copc"]
 io-copc-http = ["io-copc", "spatialrust-io/io-copc-http"]
 search-kdtree = ["spatialrust-search/search-kdtree"]
+search-graph = ["spatialrust-search/search-graph"]
 filter-voxel = ["spatialrust-filtering/filter-voxel"]
 filter-voxel-gpu = [
     "spatialrust-filtering/filter-voxel-gpu",

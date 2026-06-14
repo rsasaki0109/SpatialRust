@@ -20,6 +20,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   voxelizes a cloud into a dense 3D occupancy or count grid (the tensor learned
   models consume), exposed in the Python bindings as `voxelize` returning an
   `(nz, ny, nx)` NumPy array.
+- **Neighborhood graph construction** (`spatialrust-search`, `search-graph`):
+  directed k-NN and radius graphs over a cloud, exposed in the Python bindings
+  as `knn_graph` / `radius_graph` returning a PyG-style `(2, E)` `edge_index`
+  for graph neural networks.
 - **Spherical range-image projection** (`spatialrust-voxelize`,
   `voxelize-range-image`): projects a rotating-LiDAR scan into the dense 2D
   range image used by LiDAR segmentation models, exposed in the Python bindings

@@ -69,6 +69,9 @@ pub use spatialrust_search::{
     RadiusSearchIndex, SpatialIndex,
 };
 
+#[cfg(feature = "search-graph")]
+pub use spatialrust_search::{knn_graph, radius_graph, NeighborGraph};
+
 #[cfg(feature = "filter-voxel")]
 pub use spatialrust_filtering::{
     AttributeAggregation, PointCloudFilter, VoxelAggregationMode, VoxelGridDownsample,

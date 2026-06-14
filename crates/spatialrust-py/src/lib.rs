@@ -46,6 +46,9 @@ use spatialrust::voxelize::{
     VoxelGridConfig,
 };
 use spatialrust::{
+    knn_graph as knn_graph_build, radius_graph as radius_graph_build, NeighborGraph,
+};
+use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
     StandardSchemas,
 };
@@ -978,6 +981,49 @@ fn voxelize<'py>(
     ))
 }
 
+/// Builds an `edge_index` of shape `(2, E)` (PyG convention) for a neighborhood
+/// graph: row 0 is the source node, row 1 the target. Each `graph_edge_index`
+/// helper assembles directed edges from the cloud's k-NN or radius neighbors.
+fn graph_to_edge_index<'py>(
+    py: Python<'py>,
+    graph: &NeighborGraph,
+) -> PyResult<Bound<'py, PyArray2<i32>>> {
+    let e = graph.edges.len();
+    let mut data = Vec::with_capacity(e * 2);
+    for edge in &graph.edges {
+        data.push(edge[0] as i32);
+    }
+    for edge in &graph.edges {
+        data.push(edge[1] as i32);
+    }
+    let arr = Array2::from_shape_vec((2, e), data).map_err(to_py_err)?;
+    Ok(arr.into_pyarray_bound(py))
+}
+
+/// Directed k-nearest-neighbor graph as a `(2, E)` `edge_index` (PyG style):
+/// an edge from each point to each of its `k` nearest neighbors.
+#[pyfunction]
+fn knn_graph<'py>(
+    py: Python<'py>,
+    cloud: &PyPointCloud,
+    k: usize,
+) -> PyResult<Bound<'py, PyArray2<i32>>> {
+    let graph = knn_graph_build(&cloud.inner, k).map_err(to_py_err)?;
+    graph_to_edge_index(py, &graph)
+}
+
+/// Directed radius graph as a `(2, E)` `edge_index` (PyG style): an edge from
+/// each point to every other point within `radius`.
+#[pyfunction]
+fn radius_graph<'py>(
+    py: Python<'py>,
+    cloud: &PyPointCloud,
+    radius: f32,
+) -> PyResult<Bound<'py, PyArray2<i32>>> {
+    let graph = radius_graph_build(&cloud.inner, radius).map_err(to_py_err)?;
+    graph_to_edge_index(py, &graph)
+}
+
 /// Projects a rotating-LiDAR cloud into a 2D range image `(height, width)`,
 /// keeping the nearest range per pixel (empty pixels are 0). Returns the range
 /// image as a NumPy array.
@@ -1040,6 +1086,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(oriented_bounding_box, m)?)?;
     m.add_function(wrap_pyfunction!(voxelize, m)?)?;
     m.add_function(wrap_pyfunction!(range_image, m)?)?;
+    m.add_function(wrap_pyfunction!(knn_graph, m)?)?;
+    m.add_function(wrap_pyfunction!(radius_graph, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;

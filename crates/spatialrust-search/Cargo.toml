@@ -11,6 +11,7 @@ description = "Spatial search structures for SpatialRust"
 [features]
 default = ["search-kdtree"]
 search-kdtree = []
+search-graph = ["search-kdtree"]
 parallel = []
 
 [dependencies]

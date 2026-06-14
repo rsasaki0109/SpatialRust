@@ -50,6 +50,10 @@ jobs:
             args: -p spatialrust-search --features search-kdtree
           - name: spatialrust-search-meta
             args: -p spatialrust --features search-kdtree
+          - name: spatialrust-search-graph
+            args: -p spatialrust-search --features search-graph
+          - name: spatialrust-search-graph-meta
+            args: -p spatialrust --features search-graph
           - name: spatialrust-filter-voxel
             args: -p spatialrust-filtering --features filter-voxel
           - name: spatialrust-filter-outlier
