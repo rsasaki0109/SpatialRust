@@ -92,7 +92,7 @@ One dataflow, eleven crates — each pipeline stage maps to the crate that imple
 | `spatialrust-io` | Point cloud readers/writers (PCD, PLY, LAS, COPC) |
 | `spatialrust-search` | KD-tree spatial search |
 | `spatialrust-filtering` | Voxel downsample and filters |
-| `spatialrust-features` | Normal estimation |
+| `spatialrust-features` | Normal estimation (CPU + optional wgpu) |
 | `spatialrust-segmentation` | RANSAC plane, Euclidean clustering, region growing |
 | `spatialrust-registration` | ICP registration (point-to-point, point-to-plane, GICP) |
 | `spatialrust-pipeline` | Composable MVP pipelines |

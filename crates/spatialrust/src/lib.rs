@@ -78,6 +78,9 @@ pub use spatialrust_features::{
     NormalEstimationConfig, NormalEstimationResult, NormalEstimator,
 };
 
+#[cfg(feature = "feature-normal-gpu")]
+pub use spatialrust_features::GpuNormalEstimator;
+
 #[cfg(feature = "segment-ransac-plane")]
 pub use spatialrust_segmentation::{
     extract_indices, extract_mask, with_labels, PlaneModel, PointCloudSegmenter, RansacPlaneConfig,

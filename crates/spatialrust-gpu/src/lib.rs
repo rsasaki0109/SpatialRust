@@ -28,6 +28,7 @@ pub use device::{GpuDevice, WgpuDevice};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use kernels::{
+    estimate_normals_gpu, GpuNormal,
     build_voxel_segments, build_voxel_segments_from_positions_gpu,
     build_voxel_segments_from_positions_gpu_buffers, build_voxel_segments_gpu,
     build_voxel_segments_gpu_from_keys_buffer, compact_voxel_segments_from_sorted,

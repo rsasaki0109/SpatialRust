@@ -4,6 +4,9 @@
 mod gpu_segments;
 
 #[cfg(feature = "gpu-wgpu")]
+mod normals;
+
+#[cfg(feature = "gpu-wgpu")]
 mod voxel_keys;
 
 #[cfg(feature = "gpu-wgpu")]
@@ -29,6 +32,9 @@ mod voxel_pipeline;
 
 #[cfg(feature = "gpu-wgpu")]
 pub use gpu_segments::GpuVoxelSegments;
+
+#[cfg(feature = "gpu-wgpu")]
+pub use normals::{estimate_normals_gpu, GpuNormal};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use voxel_keys::{compute_voxel_keys, compute_voxel_keys_gpu_buffers, GpuVoxelKeyBuffers};

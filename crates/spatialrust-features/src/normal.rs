@@ -214,7 +214,7 @@ fn estimate_normal_from_neighbors(
     Some((normal, curvature))
 }
 
-fn build_output_cloud(
+pub(crate) fn build_output_cloud(
     input: &PointCloud,
     nx: Vec<f32>,
     ny: Vec<f32>,

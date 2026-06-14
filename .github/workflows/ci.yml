@@ -54,6 +54,10 @@ jobs:
             args: -p spatialrust-filtering --features filter-voxel
           - name: spatialrust-features-normal
             args: -p spatialrust-features --features feature-normal
+          - name: spatialrust-features-normal-gpu
+            args: -p spatialrust-features --features feature-normal-gpu
+          - name: spatialrust-features-normal-gpu-meta
+            args: -p spatialrust --features feature-normal-gpu
           - name: spatialrust-segmentation
             args: -p spatialrust-segmentation --all-features
           - name: spatialrust-segmentation-region-growing-meta

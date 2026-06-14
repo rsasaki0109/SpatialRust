@@ -11,11 +11,13 @@ description = "Feature estimation for SpatialRust point clouds"
 [features]
 default = ["feature-normal"]
 feature-normal = []
+feature-normal-gpu = ["feature-normal", "dep:spatialrust-gpu"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
 spatialrust-math = { workspace = true }
 spatialrust-search = { workspace = true, features = ["search-kdtree"] }
+spatialrust-gpu = { workspace = true, optional = true, features = ["gpu-wgpu"] }
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }
