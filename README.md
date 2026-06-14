@@ -74,7 +74,7 @@ Reproduce: `cargo bench -p spatialrust-filtering --features filter-voxel-gpu --b
 
 ## Status
 
-MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and ICP (point-to-point and point-to-plane). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.
+MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and ICP (point-to-point, point-to-plane, and GICP). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.
 
 ## Workspace crates
 
@@ -94,7 +94,7 @@ One dataflow, eleven crates — each pipeline stage maps to the crate that imple
 | `spatialrust-filtering` | Voxel downsample and filters |
 | `spatialrust-features` | Normal estimation |
 | `spatialrust-segmentation` | RANSAC plane, Euclidean clustering, region growing |
-| `spatialrust-registration` | ICP registration (point-to-point + point-to-plane) |
+| `spatialrust-registration` | ICP registration (point-to-point, point-to-plane, GICP) |
 | `spatialrust-pipeline` | Composable MVP pipelines |
 | `spatialrust-gpu` | wgpu runtime and voxel kernels |
 

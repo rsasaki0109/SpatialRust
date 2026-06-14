@@ -42,6 +42,10 @@ register-icp-point-to-plane = [
     "spatialrust-registration/register-icp-point-to-plane",
     "spatialrust-search/search-kdtree",
 ]
+register-gicp = [
+    "spatialrust-registration/register-gicp",
+    "spatialrust-search/search-kdtree",
+]
 mvp = [
     "io-pcd",
     "io-ply",

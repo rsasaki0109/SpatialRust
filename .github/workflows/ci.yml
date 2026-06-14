@@ -64,6 +64,10 @@ jobs:
             args: -p spatialrust-registration --features register-icp-point-to-plane
           - name: spatialrust-registration-point-to-plane-meta
             args: -p spatialrust --features register-icp-point-to-plane
+          - name: spatialrust-registration-gicp
+            args: -p spatialrust-registration --features register-gicp
+          - name: spatialrust-registration-gicp-meta
+            args: -p spatialrust --features register-gicp
           - name: spatialrust-pipeline-mvp
             args: -p spatialrust-pipeline --features pipeline-mvp
           - name: spatialrust-pipeline-mvp-gpu
