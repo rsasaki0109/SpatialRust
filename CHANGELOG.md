@@ -123,6 +123,12 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- CI now runs clippy under `--all-features` (library targets) and a full
+  `--all-features` test pass, closing a gap where clippy and combined-feature
+  builds were only checked at default features; resolved the pre-existing
+  clippy warnings this surfaced in the GPU and IO crates.
+- Boundary detection panicked on isolated points when `min_neighbors` was 0
+  (empty angle list indexed out of bounds); it now returns non-boundary.
 - RANSAC samplers (plane and sphere / cylinder) drew indices from the low
   (short-period) bits of their LCG; they now use the well-mixed high bits via
   multiply-shift, making fits more reliable (the plane fix is what let

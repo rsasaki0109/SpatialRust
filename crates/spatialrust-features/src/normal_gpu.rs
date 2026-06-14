@@ -146,8 +146,8 @@ mod tests {
         let output = estimator.estimate(&cloud).unwrap();
 
         let (_, _, nz) = output.normals3().unwrap();
-        for index in 0..output.len() {
-            assert!(nz[index] > 0.99, "normal not vertical: {}", nz[index]);
+        for &value in nz {
+            assert!(value > 0.99, "normal not vertical: {value}");
         }
     }
 }

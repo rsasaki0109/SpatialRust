@@ -19,7 +19,7 @@ impl GpuUploadPool {
         label: &'static str,
         data: &[f32],
     ) -> SpatialResult<wgpu::Buffer> {
-        let byte_len = (data.len() * std::mem::size_of::<f32>()) as u64;
+        let byte_len = std::mem::size_of_val(data) as u64;
         let buffer = self.take_storage(runtime, label, byte_len);
         runtime.queue().write_buffer(&buffer, 0, bytemuck::cast_slice(data));
         Ok(buffer)

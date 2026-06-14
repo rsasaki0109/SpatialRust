@@ -1214,7 +1214,10 @@ mod tests {
             VoxelGridDownsampleConfig, DEFAULT_GPU_MIN_POINTS, DEFAULT_GPU_MIN_POINTS_APPROXIMATE,
         };
 
-        assert!(DEFAULT_GPU_MIN_POINTS_APPROXIMATE > DEFAULT_GPU_MIN_POINTS);
+        #[allow(clippy::assertions_on_constants)]
+        {
+            assert!(DEFAULT_GPU_MIN_POINTS_APPROXIMATE > DEFAULT_GPU_MIN_POINTS);
+        }
 
         let centroid = VoxelGridDownsampleConfig::centroid(0.5);
         let approximate = VoxelGridDownsampleConfig::approximate(0.5);

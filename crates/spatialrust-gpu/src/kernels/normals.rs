@@ -317,8 +317,8 @@ mod tests {
                 let db = (x[b] - x[i]).powi(2) + (y[b] - y[i]).powi(2) + (z[b] - z[i]).powi(2);
                 da.total_cmp(&db)
             });
-            for slot in 0..k as usize {
-                neighbors.push(order[slot] as u32);
+            for &idx in order.iter().take(k as usize) {
+                neighbors.push(idx as u32);
             }
         }
 

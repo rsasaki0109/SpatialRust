@@ -161,7 +161,7 @@ fn cartesian_xyz(point: &E57Point) -> Result<(f32, f32, f32), IoError> {
 }
 
 fn color_channel(point: &E57Point, channel: impl Fn(&e57::Color) -> f32) -> Result<f32, IoError> {
-    point.color.as_ref().map(|color| channel(color)).ok_or_else(|| {
+    point.color.as_ref().map(channel).ok_or_else(|| {
         e57_parse("missing color for E57 point with color-enabled schema".to_owned())
     })
 }

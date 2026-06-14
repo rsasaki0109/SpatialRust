@@ -1039,6 +1039,7 @@ pub(crate) fn record_voxel_gather_u8_pass(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn record_voxel_gather_xyz_pass(
     encoder: &mut wgpu::CommandEncoder,
     runtime: &WgpuRuntime,

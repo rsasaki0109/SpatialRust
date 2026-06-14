@@ -227,6 +227,7 @@ fn write_copc_file(path: impl AsRef<Path>, _cloud: &PointCloud) -> Result<(), Io
     Err(missing_feature_error("io-copc", path.as_ref()))
 }
 
+#[allow(dead_code)] // only used by the per-feature fallback stubs
 fn missing_feature_error(feature: &str, path: &Path) -> IoError {
     IoError::Io(format!("reading or writing `{}` requires the `{feature}` feature", path.display()))
 }

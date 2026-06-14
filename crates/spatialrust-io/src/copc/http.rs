@@ -168,8 +168,7 @@ fn read_range_batch(
         let mut batch = vec![Vec::new(); ranges.len()];
         for handle in handles {
             let (index, bytes) = handle.join().map_err(|_| {
-                copc_streaming::CopcError::ByteSource(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
+                copc_streaming::CopcError::ByteSource(Box::new(std::io::Error::other(
                     "parallel HTTP range worker panicked",
                 )))
             })??;
