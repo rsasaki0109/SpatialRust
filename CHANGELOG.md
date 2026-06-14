@@ -12,6 +12,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,
   `register_gicp`, `register_ndt`). Built as `abi3` wheels (CPython 3.8+).
+- **Farthest Point Sampling** in `spatialrust-filtering` (`filter-fps`): even
+  spatial downsampling to a target point count (the standard front-end for
+  learned point-cloud models), exposed in the Python bindings
+  (`farthest_point_sampling`).
 - **MLS surface smoothing** in `spatialrust-filtering` (`filter-mls`): Moving
   Least Squares projection onto a local polynomial surface (order 1 or 2) that
   removes noise while preserving curvature, exposed in the Python bindings

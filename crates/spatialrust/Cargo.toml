@@ -29,6 +29,7 @@ filter-outlier = [
     "spatialrust-search/search-kdtree",
 ]
 filter-crop = ["spatialrust-filtering/filter-crop"]
+filter-fps = ["spatialrust-filtering/filter-fps"]
 filter-mls = [
     "spatialrust-filtering/filter-mls",
     "spatialrust-search/search-kdtree",

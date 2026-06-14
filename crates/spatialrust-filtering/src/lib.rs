@@ -8,6 +8,9 @@ mod filter;
 #[cfg(feature = "filter-crop")]
 mod crop;
 
+#[cfg(feature = "filter-fps")]
+mod fps;
+
 #[cfg(feature = "filter-mls")]
 mod mls;
 
@@ -21,6 +24,9 @@ pub use filter::PointCloudFilter;
 
 #[cfg(feature = "filter-crop")]
 pub use crop::{Aabb, CropBox, PassThrough};
+
+#[cfg(feature = "filter-fps")]
+pub use fps::{FarthestPointSampling, FarthestPointSamplingConfig};
 
 #[cfg(feature = "filter-mls")]
 pub use mls::{MlsConfig, MlsSmoothing};

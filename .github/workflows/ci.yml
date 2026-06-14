@@ -64,6 +64,10 @@ jobs:
             args: -p spatialrust-filtering --features filter-mls
           - name: spatialrust-filter-mls-meta
             args: -p spatialrust --features filter-mls
+          - name: spatialrust-filter-fps
+            args: -p spatialrust-filtering --features filter-fps
+          - name: spatialrust-filter-fps-meta
+            args: -p spatialrust --features filter-fps
           - name: spatialrust-features-normal
             args: -p spatialrust-features --features feature-normal
           - name: spatialrust-features-iss

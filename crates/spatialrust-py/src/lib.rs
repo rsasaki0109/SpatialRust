@@ -18,8 +18,9 @@ use spatialrust::features::{
     NormalEstimator,
 };
 use spatialrust::filtering::{
-    Aabb, CropBox, MlsConfig, MlsSmoothing, PassThrough, PointCloudFilter, RadiusOutlierConfig,
-    RadiusOutlierRemoval, StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
+    Aabb, CropBox, FarthestPointSampling, FarthestPointSamplingConfig, MlsConfig, MlsSmoothing,
+    PassThrough, PointCloudFilter, RadiusOutlierConfig, RadiusOutlierRemoval,
+    StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
     VoxelGridDownsampleConfig,
 };
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
@@ -430,6 +431,20 @@ fn pass_through(
     Ok(PyPointCloud { inner })
 }
 
+/// Farthest Point Sampling: keeps `sample_size` points spread as evenly as
+/// possible over the cloud — the standard downsampling for learned models.
+#[pyfunction]
+#[pyo3(signature = (cloud, sample_size, seed_index=0))]
+fn farthest_point_sampling(
+    cloud: &PyPointCloud,
+    sample_size: usize,
+    seed_index: usize,
+) -> PyResult<PyPointCloud> {
+    let config = FarthestPointSamplingConfig { sample_size, seed_index };
+    let inner = FarthestPointSampling::new(config).filter(&cloud.inner).map_err(to_py_err)?;
+    Ok(PyPointCloud { inner })
+}
+
 /// Moving Least Squares smoothing: projects each point onto a local polynomial
 /// surface fit to its neighborhood, removing scanner noise while preserving
 /// curvature. `polynomial_order` is 1 (plane) or 2 (quadratic).
@@ -726,6 +741,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pass_through, m)?)?;
     m.add_function(wrap_pyfunction!(iss_keypoints, m)?)?;
     m.add_function(wrap_pyfunction!(mls_smooth, m)?)?;
+    m.add_function(wrap_pyfunction!(farthest_point_sampling, m)?)?;
     m.add_function(wrap_pyfunction!(statistical_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(radius_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;

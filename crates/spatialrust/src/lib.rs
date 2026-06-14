@@ -80,6 +80,9 @@ pub use spatialrust_filtering::{
 #[cfg(feature = "filter-crop")]
 pub use spatialrust_filtering::{Aabb, CropBox, PassThrough};
 
+#[cfg(feature = "filter-fps")]
+pub use spatialrust_filtering::{FarthestPointSampling, FarthestPointSamplingConfig};
+
 #[cfg(feature = "filter-mls")]
 pub use spatialrust_filtering::{MlsConfig, MlsSmoothing};
 
