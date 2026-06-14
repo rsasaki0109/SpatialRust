@@ -109,6 +109,9 @@ pub use spatialrust_registration::{PointToPlaneIcp, PointToPlaneIcpConfig};
 #[cfg(feature = "register-gicp")]
 pub use spatialrust_registration::{GicpConfig, GicpRegistration};
 
+#[cfg(feature = "register-ndt")]
+pub use spatialrust_registration::{NdtConfig, NdtRegistration};
+
 #[cfg(feature = "pipeline-mvp")]
 pub use spatialrust_pipeline::{
     MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult, MvpRegistrationMethod,

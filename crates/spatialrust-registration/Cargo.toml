@@ -13,6 +13,7 @@ default = ["register-icp"]
 register-icp = ["dep:spatialrust-search"]
 register-icp-point-to-plane = ["dep:spatialrust-search"]
 register-gicp = ["dep:spatialrust-search"]
+register-ndt = []
 
 [dependencies]
 spatialrust-core = { workspace = true }

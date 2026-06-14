@@ -51,6 +51,7 @@ register-gicp = [
     "spatialrust-registration/register-gicp",
     "spatialrust-search/search-kdtree",
 ]
+register-ndt = ["spatialrust-registration/register-ndt"]
 mvp = [
     "io-pcd",
     "io-ply",

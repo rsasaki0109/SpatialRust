@@ -76,7 +76,7 @@ Normal estimation also has an optional wgpu path (`GpuNormalEstimator`, `feature
 
 ## Status
 
-MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and ICP (point-to-point, point-to-plane, and GICP). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.
+MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and registration (ICP point-to-point/point-to-plane, GICP, NDT). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.
 
 ## Workspace crates
 
@@ -96,7 +96,7 @@ One dataflow, eleven crates — each pipeline stage maps to the crate that imple
 | `spatialrust-filtering` | Voxel downsample and filters |
 | `spatialrust-features` | Normal estimation (CPU + optional wgpu) |
 | `spatialrust-segmentation` | RANSAC plane, Euclidean clustering, region growing |
-| `spatialrust-registration` | ICP registration (point-to-point, point-to-plane, GICP) |
+| `spatialrust-registration` | Registration: ICP (point-to-point, point-to-plane), GICP, NDT |
 | `spatialrust-pipeline` | Composable MVP pipelines |
 | `spatialrust-gpu` | wgpu runtime and voxel kernels |
 
