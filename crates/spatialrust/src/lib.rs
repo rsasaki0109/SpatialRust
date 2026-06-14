@@ -80,6 +80,9 @@ pub use spatialrust_filtering::{
 #[cfg(feature = "filter-crop")]
 pub use spatialrust_filtering::{Aabb, CropBox, PassThrough};
 
+#[cfg(feature = "filter-mls")]
+pub use spatialrust_filtering::{MlsConfig, MlsSmoothing};
+
 #[cfg(feature = "feature-normal")]
 pub use spatialrust_features::{
     orient_normal_towards_viewpoint, FeatureEstimator, KdTreeNeighborhood, NeighborhoodProvider,

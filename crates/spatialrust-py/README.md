@@ -62,6 +62,7 @@ reloaded = sr.read("labeled.las")
 | `voxel_downsample(cloud, leaf_size, policy="auto")` | Voxel-grid downsample |
 | `crop_box(cloud, min, max, invert=False)` | Keep/drop points inside an AABB |
 | `pass_through(cloud, field, min, max, invert=False)` | Keep/drop points by a field's value range |
+| `mls_smooth(cloud, search_radius=0.1, polynomial_order=2, min_neighbors=6)` | Moving Least Squares surface smoothing |
 | `statistical_outlier_removal(cloud, k_neighbors=16, std_mul=1.0)` | Drop points far from their k-NN (SOR) |
 | `radius_outlier_removal(cloud, radius=0.5, min_neighbors=4)` | Drop points with too few neighbors in radius (ROR) |
 | `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline |

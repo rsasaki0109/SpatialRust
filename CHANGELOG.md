@@ -12,6 +12,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,
   `register_gicp`, `register_ndt`). Built as `abi3` wheels (CPython 3.8+).
+- **MLS surface smoothing** in `spatialrust-filtering` (`filter-mls`): Moving
+  Least Squares projection onto a local polynomial surface (order 1 or 2) that
+  removes noise while preserving curvature, exposed in the Python bindings
+  (`mls_smooth`).
 - **Crop and range filters** in `spatialrust-filtering` (`filter-crop`):
   axis-aligned `CropBox` and field-range `PassThrough` (both invertible),
   exposed in the Python bindings (`crop_box`, `pass_through`).

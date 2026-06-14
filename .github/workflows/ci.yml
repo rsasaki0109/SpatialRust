@@ -60,6 +60,10 @@ jobs:
             args: -p spatialrust-filtering --features filter-crop
           - name: spatialrust-filter-crop-meta
             args: -p spatialrust --features filter-crop
+          - name: spatialrust-filter-mls
+            args: -p spatialrust-filtering --features filter-mls
+          - name: spatialrust-filter-mls-meta
+            args: -p spatialrust --features filter-mls
           - name: spatialrust-features-normal
             args: -p spatialrust-features --features feature-normal
           - name: spatialrust-features-iss

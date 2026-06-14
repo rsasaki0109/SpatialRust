@@ -18,8 +18,8 @@ use spatialrust::features::{
     NormalEstimator,
 };
 use spatialrust::filtering::{
-    Aabb, CropBox, PassThrough, PointCloudFilter, RadiusOutlierConfig, RadiusOutlierRemoval,
-    StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
+    Aabb, CropBox, MlsConfig, MlsSmoothing, PassThrough, PointCloudFilter, RadiusOutlierConfig,
+    RadiusOutlierRemoval, StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
     VoxelGridDownsampleConfig,
 };
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
@@ -430,6 +430,22 @@ fn pass_through(
     Ok(PyPointCloud { inner })
 }
 
+/// Moving Least Squares smoothing: projects each point onto a local polynomial
+/// surface fit to its neighborhood, removing scanner noise while preserving
+/// curvature. `polynomial_order` is 1 (plane) or 2 (quadratic).
+#[pyfunction]
+#[pyo3(signature = (cloud, search_radius=0.1, polynomial_order=2, min_neighbors=6))]
+fn mls_smooth(
+    cloud: &PyPointCloud,
+    search_radius: f32,
+    polynomial_order: u8,
+    min_neighbors: usize,
+) -> PyResult<PyPointCloud> {
+    let config = MlsConfig { search_radius, polynomial_order, min_neighbors };
+    let inner = MlsSmoothing::new(config).filter(&cloud.inner).map_err(to_py_err)?;
+    Ok(PyPointCloud { inner })
+}
+
 /// Intrinsic Shape Signatures (ISS) keypoints: returns a sparse sub-cloud of
 /// geometrically salient points (corners), useful as a front-end for
 /// feature-based registration.
@@ -709,6 +725,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crop_box, m)?)?;
     m.add_function(wrap_pyfunction!(pass_through, m)?)?;
     m.add_function(wrap_pyfunction!(iss_keypoints, m)?)?;
+    m.add_function(wrap_pyfunction!(mls_smooth, m)?)?;
     m.add_function(wrap_pyfunction!(statistical_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(radius_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;

@@ -29,6 +29,10 @@ filter-outlier = [
     "spatialrust-search/search-kdtree",
 ]
 filter-crop = ["spatialrust-filtering/filter-crop"]
+filter-mls = [
+    "spatialrust-filtering/filter-mls",
+    "spatialrust-search/search-kdtree",
+]
 feature-normal = ["spatialrust-features/feature-normal", "spatialrust-search/search-kdtree"]
 feature-iss = ["spatialrust-features/feature-iss", "spatialrust-search/search-kdtree"]
 feature-normal-gpu = [
