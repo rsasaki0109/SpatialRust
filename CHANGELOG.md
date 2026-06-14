@@ -12,6 +12,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,
   `register_gicp`, `register_ndt`). Built as `abi3` wheels (CPython 3.8+).
+- **Crop and range filters** in `spatialrust-filtering` (`filter-crop`):
+  axis-aligned `CropBox` and field-range `PassThrough` (both invertible),
+  exposed in the Python bindings (`crop_box`, `pass_through`).
 - **Outlier removal filters** in `spatialrust-filtering` (`filter-outlier`):
   Statistical Outlier Removal (SOR) and Radius Outlier Removal (ROR), both
   exposed in the Python bindings (`statistical_outlier_removal`,

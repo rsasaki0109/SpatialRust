@@ -5,6 +5,9 @@
 
 mod filter;
 
+#[cfg(feature = "filter-crop")]
+mod crop;
+
 #[cfg(feature = "filter-outlier")]
 mod outlier;
 
@@ -12,6 +15,9 @@ mod outlier;
 mod voxel;
 
 pub use filter::PointCloudFilter;
+
+#[cfg(feature = "filter-crop")]
+pub use crop::{Aabb, CropBox, PassThrough};
 
 #[cfg(feature = "filter-outlier")]
 pub use outlier::{

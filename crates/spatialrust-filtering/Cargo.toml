@@ -13,6 +13,7 @@ default = ["filter-voxel"]
 filter-voxel = []
 filter-voxel-gpu = ["dep:spatialrust-gpu", "spatialrust-gpu/gpu-wgpu"]
 filter-outlier = ["dep:spatialrust-search"]
+filter-crop = []
 
 [dependencies]
 spatialrust-core = { workspace = true }

@@ -77,6 +77,9 @@ pub use spatialrust_filtering::{
     RadiusOutlierConfig, RadiusOutlierRemoval, StatisticalOutlierConfig, StatisticalOutlierRemoval,
 };
 
+#[cfg(feature = "filter-crop")]
+pub use spatialrust_filtering::{Aabb, CropBox, PassThrough};
+
 #[cfg(feature = "feature-normal")]
 pub use spatialrust_features::{
     orient_normal_towards_viewpoint, FeatureEstimator, KdTreeNeighborhood, NeighborhoodProvider,

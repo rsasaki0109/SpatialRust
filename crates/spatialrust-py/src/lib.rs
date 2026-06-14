@@ -15,8 +15,9 @@ use pyo3::prelude::*;
 use spatialrust::core::{PointBuffer, PointBufferSet, SpatialMetadata};
 use spatialrust::features::{FeatureEstimator, NormalEstimationConfig, NormalEstimator};
 use spatialrust::filtering::{
-    PointCloudFilter, RadiusOutlierConfig, RadiusOutlierRemoval, StatisticalOutlierConfig,
-    StatisticalOutlierRemoval, VoxelGridDownsample, VoxelGridDownsampleConfig,
+    Aabb, CropBox, PassThrough, PointCloudFilter, RadiusOutlierConfig, RadiusOutlierRemoval,
+    StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
+    VoxelGridDownsampleConfig,
 };
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
 use spatialrust::registration::{
@@ -268,6 +269,42 @@ fn voxel_downsample(cloud: &PyPointCloud, leaf_size: f32, policy: &str) -> PyRes
     let filter = VoxelGridDownsample::new(config);
     let inner =
         filter.filter_with_policy(&cloud.inner, parse_policy(policy)?).map_err(to_py_err)?;
+    Ok(PyPointCloud { inner })
+}
+
+/// Crop to an axis-aligned box. Keeps points inside `[min, max]`, or drops them
+/// when `invert=True`. `min`/`max` are `(x, y, z)` tuples.
+#[pyfunction]
+#[pyo3(signature = (cloud, min, max, invert=false))]
+fn crop_box(
+    cloud: &PyPointCloud,
+    min: (f32, f32, f32),
+    max: (f32, f32, f32),
+    invert: bool,
+) -> PyResult<PyPointCloud> {
+    let bounds = Aabb::new([min.0, min.1, min.2], [max.0, max.1, max.2]);
+    let filter = if invert { CropBox::inverted(bounds) } else { CropBox::new(bounds) };
+    let inner = filter.filter(&cloud.inner).map_err(to_py_err)?;
+    Ok(PyPointCloud { inner })
+}
+
+/// Keep points whose value in `field` lies within `[min, max]` (e.g. a height
+/// slice on "z" or an intensity threshold), or drop them when `invert=True`.
+#[pyfunction]
+#[pyo3(signature = (cloud, field, min, max, invert=false))]
+fn pass_through(
+    cloud: &PyPointCloud,
+    field: &str,
+    min: f32,
+    max: f32,
+    invert: bool,
+) -> PyResult<PyPointCloud> {
+    let filter = if invert {
+        PassThrough::inverted(field, min, max)
+    } else {
+        PassThrough::new(field, min, max)
+    };
+    let inner = filter.filter(&cloud.inner).map_err(to_py_err)?;
     Ok(PyPointCloud { inner })
 }
 
@@ -526,6 +563,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read, m)?)?;
     m.add_function(wrap_pyfunction!(write, m)?)?;
     m.add_function(wrap_pyfunction!(voxel_downsample, m)?)?;
+    m.add_function(wrap_pyfunction!(crop_box, m)?)?;
+    m.add_function(wrap_pyfunction!(pass_through, m)?)?;
     m.add_function(wrap_pyfunction!(statistical_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(radius_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;

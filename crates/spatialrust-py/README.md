@@ -60,6 +60,8 @@ reloaded = sr.read("labeled.las")
 | `PointCloud.field_names()` / `len(cloud)` | Schema fields / point count |
 | `read(path)` / `write(path, cloud)` | IO by file extension |
 | `voxel_downsample(cloud, leaf_size, policy="auto")` | Voxel-grid downsample |
+| `crop_box(cloud, min, max, invert=False)` | Keep/drop points inside an AABB |
+| `pass_through(cloud, field, min, max, invert=False)` | Keep/drop points by a field's value range |
 | `statistical_outlier_removal(cloud, k_neighbors=16, std_mul=1.0)` | Drop points far from their k-NN (SOR) |
 | `radius_outlier_removal(cloud, radius=0.5, min_neighbors=4)` | Drop points with too few neighbors in radius (ROR) |
 | `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline |

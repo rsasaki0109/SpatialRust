@@ -56,6 +56,10 @@ jobs:
             args: -p spatialrust-filtering --features filter-outlier
           - name: spatialrust-filter-outlier-meta
             args: -p spatialrust --features filter-outlier
+          - name: spatialrust-filter-crop
+            args: -p spatialrust-filtering --features filter-crop
+          - name: spatialrust-filter-crop-meta
+            args: -p spatialrust --features filter-crop
           - name: spatialrust-features-normal
             args: -p spatialrust-features --features feature-normal
           - name: spatialrust-features-normal-gpu
