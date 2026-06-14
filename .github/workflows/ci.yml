@@ -217,6 +217,31 @@ jobs:
           cargo test ${{ matrix.args }}
           cargo test --doc ${{ matrix.args }}
 
+  python-bindings:
+    name: Python bindings (${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.8", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build extension and run binding tests
+        # maturin develop needs an active virtualenv. The abi3 wheel targets
+        # 3.8+, so running on both 3.8 and current proves the forward-compatible
+        # ABI actually imports and the NumPy <-> Rust boundary works end to end.
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install maturin pytest numpy
+          maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
+          pytest crates/spatialrust-py/tests
+
   bench:
     name: Benchmark compile
     runs-on: ubuntu-latest

@@ -123,6 +123,12 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Python binding tests**: a pytest suite (`crates/spatialrust-py/tests/`)
+  covering the NumPy ⇄ Rust boundary of every exported function (shapes, dtypes,
+  keyword signatures, and sane results on synthetic clouds), wired into CI as a
+  `python-bindings` job that builds the extension with maturin and runs the
+  tests on Python 3.8 and current — closing a gap where the bindings were only
+  compile-checked, never imported or called.
 - CI now runs clippy under `--all-features` (library targets) and a full
   `--all-features` test pass, closing a gap where clippy and combined-feature
   builds were only checked at default features; resolved the pre-existing

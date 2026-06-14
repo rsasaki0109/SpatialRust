@@ -17,8 +17,15 @@ classifiers = [
 dependencies = ["numpy>=1.21"]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
 [project.urls]
 Repository = "https://github.com/rsasaki0109/SpatialRust"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]

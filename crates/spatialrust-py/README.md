@@ -25,6 +25,18 @@ maturin develop --release        # builds the Rust extension into the venv
 maturin build --release --out dist
 ```
 
+## Test
+
+The bindings have a pytest suite (`tests/`) that exercises the NumPy ⇄ Rust
+boundary of every exported function. It runs on Python 3.8 and current in CI on
+every push.
+
+```bash
+pip install -e '.[test]'   # or: pip install pytest
+maturin develop --release
+pytest
+```
+
 ## Quickstart
 
 ```python
