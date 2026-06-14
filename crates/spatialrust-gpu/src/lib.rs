@@ -28,20 +28,20 @@ pub use device::{GpuDevice, WgpuDevice};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use kernels::{
-    estimate_normals_gpu, GpuNormal,
     build_voxel_segments, build_voxel_segments_from_positions_gpu,
     build_voxel_segments_from_positions_gpu_buffers, build_voxel_segments_gpu,
     build_voxel_segments_gpu_from_keys_buffer, compact_voxel_segments_from_sorted,
     compute_voxel_keys, compute_voxel_keys_gpu_buffers, downsample_voxel_approximate_first_gpu,
-    downsample_voxel_centroid_gpu, gather_voxel_first_f32, gather_voxel_first_f32_gpu,
-    gather_voxel_first_f32_gpu_buffers, gather_voxel_first_f32_multi_gpu,
-    gather_voxel_first_xyz_and_average_multi_gpu, gather_voxel_first_xyz_and_multi_gpu,
-    gather_voxel_first_xyz_gpu_buffers, reduce_voxel_average_f32, reduce_voxel_average_f32_gpu,
-    reduce_voxel_average_f32_gpu_buffers, reduce_voxel_average_f32_multi_gpu,
-    reduce_voxel_centroids_xyz, reduce_voxel_centroids_xyz_and_average_multi_gpu,
+    downsample_voxel_centroid_gpu, estimate_normals_gpu, gather_voxel_first_f32,
+    gather_voxel_first_f32_gpu, gather_voxel_first_f32_gpu_buffers,
+    gather_voxel_first_f32_multi_gpu, gather_voxel_first_xyz_and_average_multi_gpu,
+    gather_voxel_first_xyz_and_multi_gpu, gather_voxel_first_xyz_gpu_buffers,
+    reduce_voxel_average_f32, reduce_voxel_average_f32_gpu, reduce_voxel_average_f32_gpu_buffers,
+    reduce_voxel_average_f32_multi_gpu, reduce_voxel_centroids_xyz,
+    reduce_voxel_centroids_xyz_and_average_multi_gpu,
     reduce_voxel_centroids_xyz_and_gather_first_multi_gpu, reduce_voxel_centroids_xyz_gpu_buffers,
-    GpuVoxelKeyBuffers, GpuVoxelSegments, VoxelApproximateFirstGpuResult, VoxelCentroidGpuResult,
-    VoxelSegments,
+    GpuNormal, GpuVoxelKeyBuffers, GpuVoxelSegments, VoxelApproximateFirstGpuResult,
+    VoxelCentroidGpuResult, VoxelSegments,
 };
 
 #[cfg(feature = "gpu-wgpu")]
