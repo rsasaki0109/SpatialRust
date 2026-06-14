@@ -5,10 +5,18 @@
 
 mod filter;
 
+#[cfg(feature = "filter-outlier")]
+mod outlier;
+
 #[cfg(feature = "filter-voxel")]
 mod voxel;
 
 pub use filter::PointCloudFilter;
+
+#[cfg(feature = "filter-outlier")]
+pub use outlier::{
+    RadiusOutlierConfig, RadiusOutlierRemoval, StatisticalOutlierConfig, StatisticalOutlierRemoval,
+};
 
 #[cfg(feature = "filter-voxel")]
 pub use voxel::{

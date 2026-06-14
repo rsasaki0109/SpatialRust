@@ -12,6 +12,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,
   `register_gicp`, `register_ndt`). Built as `abi3` wheels (CPython 3.8+).
+- **Outlier removal filters** in `spatialrust-filtering` (`filter-outlier`):
+  Statistical Outlier Removal (SOR) and Radius Outlier Removal (ROR), both
+  exposed in the Python bindings (`statistical_outlier_removal`,
+  `radius_outlier_removal`).
 - **Registration suite** in `spatialrust-registration`:
   - Point-to-plane ICP (`register-icp-point-to-plane`).
   - Generalized ICP / GICP (`register-gicp`), with an optional GPU covariance

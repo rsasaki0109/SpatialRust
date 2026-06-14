@@ -24,6 +24,10 @@ filter-voxel-gpu = [
     "spatialrust-filtering/filter-voxel-gpu",
     "gpu-wgpu",
 ]
+filter-outlier = [
+    "spatialrust-filtering/filter-outlier",
+    "spatialrust-search/search-kdtree",
+]
 feature-normal = ["spatialrust-features/feature-normal", "spatialrust-search/search-kdtree"]
 feature-normal-gpu = [
     "spatialrust-features/feature-normal-gpu",

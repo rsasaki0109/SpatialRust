@@ -52,6 +52,10 @@ jobs:
             args: -p spatialrust --features search-kdtree
           - name: spatialrust-filter-voxel
             args: -p spatialrust-filtering --features filter-voxel
+          - name: spatialrust-filter-outlier
+            args: -p spatialrust-filtering --features filter-outlier
+          - name: spatialrust-filter-outlier-meta
+            args: -p spatialrust --features filter-outlier
           - name: spatialrust-features-normal
             args: -p spatialrust-features --features feature-normal
           - name: spatialrust-features-normal-gpu

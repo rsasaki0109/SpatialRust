@@ -14,7 +14,10 @@ use pyo3::prelude::*;
 
 use spatialrust::core::{PointBuffer, PointBufferSet, SpatialMetadata};
 use spatialrust::features::{FeatureEstimator, NormalEstimationConfig, NormalEstimator};
-use spatialrust::filtering::{VoxelGridDownsample, VoxelGridDownsampleConfig};
+use spatialrust::filtering::{
+    PointCloudFilter, RadiusOutlierConfig, RadiusOutlierRemoval, StatisticalOutlierConfig,
+    StatisticalOutlierRemoval, VoxelGridDownsample, VoxelGridDownsampleConfig,
+};
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
 use spatialrust::registration::{
     GicpConfig, GicpRegistration, IcpConfig, IcpRegistration, NdtConfig, NdtRegistration,
@@ -215,6 +218,35 @@ fn voxel_downsample(cloud: &PyPointCloud, leaf_size: f32, policy: &str) -> PyRes
     Ok(PyPointCloud { inner })
 }
 
+/// Statistical Outlier Removal: drops points whose mean distance to their `k`
+/// nearest neighbors is more than `std_mul` standard deviations above the mean.
+#[pyfunction]
+#[pyo3(signature = (cloud, k_neighbors=16, std_mul=1.0))]
+fn statistical_outlier_removal(
+    cloud: &PyPointCloud,
+    k_neighbors: usize,
+    std_mul: f32,
+) -> PyResult<PyPointCloud> {
+    let filter =
+        StatisticalOutlierRemoval::new(StatisticalOutlierConfig::new(k_neighbors, std_mul));
+    let inner = filter.filter(&cloud.inner).map_err(to_py_err)?;
+    Ok(PyPointCloud { inner })
+}
+
+/// Radius Outlier Removal: drops points with fewer than `min_neighbors` other
+/// points within `radius`.
+#[pyfunction]
+#[pyo3(signature = (cloud, radius=0.5, min_neighbors=4))]
+fn radius_outlier_removal(
+    cloud: &PyPointCloud,
+    radius: f32,
+    min_neighbors: usize,
+) -> PyResult<PyPointCloud> {
+    let filter = RadiusOutlierRemoval::new(RadiusOutlierConfig::new(radius, min_neighbors));
+    let inner = filter.filter(&cloud.inner).map_err(to_py_err)?;
+    Ok(PyPointCloud { inner })
+}
+
 /// Runs the MVP pipeline: voxel downsample → normals → RANSAC plane → Euclidean clustering.
 #[pyfunction]
 #[pyo3(signature = (cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto"))]
@@ -410,6 +442,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read, m)?)?;
     m.add_function(wrap_pyfunction!(write, m)?)?;
     m.add_function(wrap_pyfunction!(voxel_downsample, m)?)?;
+    m.add_function(wrap_pyfunction!(statistical_outlier_removal, m)?)?;
+    m.add_function(wrap_pyfunction!(radius_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(region_growing, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;

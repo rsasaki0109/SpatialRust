@@ -12,10 +12,12 @@ description = "Point cloud filters for SpatialRust"
 default = ["filter-voxel"]
 filter-voxel = []
 filter-voxel-gpu = ["dep:spatialrust-gpu", "spatialrust-gpu/gpu-wgpu"]
+filter-outlier = ["dep:spatialrust-search"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
 spatialrust-math = { workspace = true }
+spatialrust-search = { workspace = true, optional = true }
 spatialrust-gpu = { workspace = true, optional = true }
 
 [[bench]]

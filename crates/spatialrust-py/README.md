@@ -60,6 +60,8 @@ reloaded = sr.read("labeled.las")
 | `PointCloud.field_names()` / `len(cloud)` | Schema fields / point count |
 | `read(path)` / `write(path, cloud)` | IO by file extension |
 | `voxel_downsample(cloud, leaf_size, policy="auto")` | Voxel-grid downsample |
+| `statistical_outlier_removal(cloud, k_neighbors=16, std_mul=1.0)` | Drop points far from their k-NN (SOR) |
+| `radius_outlier_removal(cloud, radius=0.5, min_neighbors=4)` | Drop points with too few neighbors in radius (ROR) |
 | `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline |
 | `region_growing(cloud, k_neighbors=30, smoothness_deg=3.0, min_region_size=10)` | Estimate normals, then grow smooth regions |
 | `register_icp(source, target, max_correspondence_distance=1.0, max_iterations=50)` | Point-to-point ICP |

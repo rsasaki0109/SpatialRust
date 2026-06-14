@@ -72,6 +72,11 @@ pub use spatialrust_filtering::{
     VoxelGridDownsampleConfig,
 };
 
+#[cfg(feature = "filter-outlier")]
+pub use spatialrust_filtering::{
+    RadiusOutlierConfig, RadiusOutlierRemoval, StatisticalOutlierConfig, StatisticalOutlierRemoval,
+};
+
 #[cfg(feature = "feature-normal")]
 pub use spatialrust_features::{
     orient_normal_towards_viewpoint, FeatureEstimator, KdTreeNeighborhood, NeighborhoodProvider,
