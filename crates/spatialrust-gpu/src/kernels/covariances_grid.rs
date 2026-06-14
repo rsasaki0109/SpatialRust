@@ -2,33 +2,34 @@ use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
 use wgpu::util::DeviceExt;
 
-use crate::kernels::normals::GpuNormal;
+use crate::kernels::normals_grid::{build_grid, grid_bounds};
 use crate::runtime::WgpuRuntime;
 
 const WORKGROUP_SIZE: u32 = 256;
-/// Upper bound on dense grid cells to avoid pathological memory use; callers
-/// should fall back to the CPU/KD-tree path when exceeded.
-const MAX_CELLS: u64 = 64_000_000;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
-struct GridUniform {
+struct CovUniform {
     origin: [f32; 4],
     dims: [u32; 4], // dimx, dimy, dimz, point_count
     inv_cell: f32,
     radius_sq: f32,
-    _pad0: f32,
-    _pad1: f32,
+    epsilon: f32,
+    _pad: f32,
 }
 
-const NORMALS_GRID_WGSL: &str = r#"
+/// Per-point plane-regularized covariance as 6 unique elements:
+/// `[c00, c11, c22, c01, c02, c12]`.
+pub type GpuCovariance = [f32; 6];
+
+const COV_GRID_WGSL: &str = r#"
 struct Params {
     origin: vec4<f32>,
     dims: vec4<u32>,
     inv_cell: f32,
     radius_sq: f32,
-    pad0: f32,
-    pad1: f32,
+    epsilon: f32,
+    pad: f32,
 };
 
 @group(0) @binding(0) var<uniform> params: Params;
@@ -37,7 +38,7 @@ struct Params {
 @group(0) @binding(3) var<storage, read> zs: array<f32>;
 @group(0) @binding(4) var<storage, read> sorted: array<u32>;
 @group(0) @binding(5) var<storage, read> cell_start: array<u32>;
-@group(0) @binding(6) var<storage, read_write> out_normals: array<vec4<f32>>;
+@group(0) @binding(6) var<storage, read_write> out_cov: array<vec4<f32>>;
 
 fn rotate(a: ptr<function, array<vec3<f32>, 3>>,
           v: ptr<function, array<vec3<f32>, 3>>,
@@ -94,12 +95,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dimx = params.dims.x;
     let dimy = params.dims.y;
     let dimz = params.dims.z;
-
     let cx = cell_coord(px, params.origin.x, params.inv_cell, dimx);
     let cy = cell_coord(py, params.origin.y, params.inv_cell, dimy);
     let cz = cell_coord(pz, params.origin.z, params.inv_cell, dimz);
 
-    // First pass: mean over radius neighbors across the 27 adjacent cells.
     var mean = vec3<f32>(0.0, 0.0, 0.0);
     var count = 0.0;
     for (var dz = -1; dz <= 1; dz = dz + 1) {
@@ -112,9 +111,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 let nx = cx + dx;
                 if (nx < 0 || nx >= i32(dimx)) { continue; }
                 let cid = (u32(nz) * dimy + u32(ny)) * dimx + u32(nx);
-                let begin = cell_start[cid];
-                let end = cell_start[cid + 1u];
-                for (var s = begin; s < end; s = s + 1u) {
+                for (var s = cell_start[cid]; s < cell_start[cid + 1u]; s = s + 1u) {
                     let j = sorted[s];
                     let d = vec3<f32>(xs[j] - px, ys[j] - py, zs[j] - pz);
                     if (dot(d, d) <= params.radius_sq) {
@@ -126,8 +123,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
+    // Too few neighbors: emit an isotropic epsilon-scaled covariance.
     if (count < 3.0) {
-        out_normals[i] = vec4<f32>(0.0, 0.0, 1.0, 0.0);
+        out_cov[i] = vec4<f32>(params.epsilon, params.epsilon, params.epsilon, 0.0);
+        // remaining elements default to zero
         return;
     }
     mean = mean / count;
@@ -144,9 +143,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 let nx = cx + dx;
                 if (nx < 0 || nx >= i32(dimx)) { continue; }
                 let cid = (u32(nz) * dimy + u32(ny)) * dimx + u32(nx);
-                let begin = cell_start[cid];
-                let end = cell_start[cid + 1u];
-                for (var s = begin; s < end; s = s + 1u) {
+                for (var s = cell_start[cid]; s < cell_start[cid + 1u]; s = s + 1u) {
                     let j = sorted[s];
                     let p = vec3<f32>(xs[j], ys[j], zs[j]);
                     let rel = p - vec3<f32>(px, py, pz);
@@ -180,37 +177,50 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         rotate(&a, &v, 1u, 2u);
     }
 
+    // GICP plane regularization: rebuild covariance with eigenvalues (eps, 1, 1),
+    // smallest eigenvalue (surface normal) -> eps.
     let eig = vec3<f32>(a[0][0], a[1][1], a[2][2]);
     var min_idx = 0u;
     if (eig[1] < eig[min_idx]) { min_idx = 1u; }
     if (eig[2] < eig[min_idx]) { min_idx = 2u; }
-    let normal = vec3<f32>(v[0][min_idx], v[1][min_idx], v[2][min_idx]);
-    let len = max(sqrt(dot(normal, normal)), 1e-20);
-    let unit = normal / len;
-    let trace = eig[0] + eig[1] + eig[2];
-    var curvature = 0.0;
-    if (trace > 0.0) {
-        curvature = eig[min_idx] / trace;
+
+    var reg = array<f32, 6>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    for (var col = 0u; col < 3u; col = col + 1u) {
+        var lambda = 1.0;
+        if (col == min_idx) {
+            lambda = params.epsilon;
+        }
+        let ax = v[0][col];
+        let ay = v[1][col];
+        let az = v[2][col];
+        reg[0] = reg[0] + lambda * ax * ax;
+        reg[1] = reg[1] + lambda * ay * ay;
+        reg[2] = reg[2] + lambda * az * az;
+        reg[3] = reg[3] + lambda * ax * ay;
+        reg[4] = reg[4] + lambda * ax * az;
+        reg[5] = reg[5] + lambda * ay * az;
     }
-    out_normals[i] = vec4<f32>(unit.x, unit.y, unit.z, curvature);
+
+    out_cov[i] = vec4<f32>(reg[0], reg[1], reg[2], reg[3]);
+    out_cov[params.dims.w + i] = vec4<f32>(reg[4], reg[5], 0.0, 0.0);
 }
 "#;
 
-/// Estimates per-point normals and curvature with a fully GPU radius neighbor
-/// search over a uniform grid.
+/// Estimates per-point plane-regularized covariances on the GPU via a uniform
+/// grid radius neighbor search.
 ///
-/// The grid (cell size = `radius`) is built on the CPU with a counting sort
-/// (O(n)); the per-point neighbor gather, covariance, and eigen-decomposition
-/// all run on the GPU. Returns `SpatialError::InvalidArgument` when the bounding
-/// grid would exceed an internal cell cap (caller should fall back to the CPU
-/// KD-tree path).
-pub fn estimate_normals_grid_gpu(
+/// Returns one [`GpuCovariance`] per point — the unique elements of a covariance
+/// matrix whose eigenvalues have been set to `(epsilon, 1, 1)` (the GICP
+/// plane-to-plane model). Grid construction (counting sort) runs on the CPU; the
+/// neighbor gather, covariance, and eigen-decomposition run on the GPU.
+pub fn estimate_plane_covariances_grid_gpu(
     runtime: &WgpuRuntime,
     x: &[f32],
     y: &[f32],
     z: &[f32],
     radius: f32,
-) -> SpatialResult<Vec<GpuNormal>> {
+    epsilon: f32,
+) -> SpatialResult<Vec<GpuCovariance>> {
     let point_count = x.len();
     if y.len() != point_count || z.len() != point_count {
         return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: y.len() });
@@ -227,62 +237,62 @@ pub fn estimate_normals_grid_gpu(
 
     let device = runtime.device();
     let queue = runtime.queue();
-    let inv_cell = 1.0 / radius;
-
     let storage = wgpu::BufferUsages::STORAGE;
+
     let x_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-x"),
+        label: Some("cg-x"),
         contents: bytemuck::cast_slice(x),
         usage: storage,
     });
     let y_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-y"),
+        label: Some("cg-y"),
         contents: bytemuck::cast_slice(y),
         usage: storage,
     });
     let z_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-z"),
+        label: Some("cg-z"),
         contents: bytemuck::cast_slice(z),
         usage: storage,
     });
     let sorted_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-sorted"),
+        label: Some("cg-sorted"),
         contents: bytemuck::cast_slice(&sorted),
         usage: storage,
     });
     let cell_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-cell-start"),
+        label: Some("cg-cell-start"),
         contents: bytemuck::cast_slice(&cell_start),
         usage: storage,
     });
-    let uniform = GridUniform {
+    let uniform = CovUniform {
         origin: [origin[0], origin[1], origin[2], 0.0],
         dims: [dims[0], dims[1], dims[2], point_count as u32],
-        inv_cell,
+        inv_cell: 1.0 / radius,
         radius_sq: radius * radius,
-        _pad0: 0.0,
-        _pad1: 0.0,
+        epsilon,
+        _pad: 0.0,
     };
     let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-uniform"),
+        label: Some("cg-uniform"),
         contents: bytemuck::bytes_of(&uniform),
         usage: wgpu::BufferUsages::UNIFORM,
     });
 
-    let output_len = (point_count * std::mem::size_of::<[f32; 4]>()) as u64;
+    // Two vec4 rows per point: row0 = (c00,c11,c22,c01), row1 = (c02,c12,_,_).
+    let output_len = (2 * point_count * std::mem::size_of::<[f32; 4]>()) as u64;
     let output_buf = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("ng-output"),
+        label: Some("cg-output"),
         size: output_len,
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
 
     let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("ng-shader"),
-        source: wgpu::ShaderSource::Wgsl(NORMALS_GRID_WGSL.into()),
+        label: Some("cg-shader"),
+        source: wgpu::ShaderSource::Wgsl(COV_GRID_WGSL.into()),
     });
     let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("ng-pipeline"),
+        label: Some("cg-pipeline"),
         layout: None,
         module: &module,
         entry_point: Some("main"),
@@ -290,7 +300,7 @@ pub fn estimate_normals_grid_gpu(
         cache: None,
     });
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("ng-bind-group"),
+        label: Some("cg-bind-group"),
         layout: &pipeline.get_bind_group_layout(0),
         entries: &[
             wgpu::BindGroupEntry { binding: 0, resource: uniform_buf.as_entire_binding() },
@@ -304,10 +314,10 @@ pub fn estimate_normals_grid_gpu(
     });
 
     let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("ng") });
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("cg") });
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("ng-pass"),
+            label: Some("cg-pass"),
             timestamp_writes: None,
         });
         pass.set_pipeline(&pipeline);
@@ -317,13 +327,13 @@ pub fn estimate_normals_grid_gpu(
     queue.submit(Some(encoder.finish()));
 
     let staging = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("ng-staging"),
+        label: Some("cg-staging"),
         size: output_len,
         usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
     let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("ng-rb") });
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("cg-rb") });
     encoder.copy_buffer_to_buffer(&output_buf, 0, &staging, 0, output_len);
     queue.submit(Some(encoder.finish()));
 
@@ -340,98 +350,26 @@ pub fn estimate_normals_grid_gpu(
             SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
         })?;
     let data = slice.get_mapped_range();
-    let raw: &[[f32; 4]] = bytemuck::cast_slice(&data);
-    let normals =
-        raw.iter().map(|v| GpuNormal { normal: [v[0], v[1], v[2]], curvature: v[3] }).collect();
+    let rows: &[[f32; 4]] = bytemuck::cast_slice(&data);
+    let mut out = Vec::with_capacity(point_count);
+    for i in 0..point_count {
+        let row0 = rows[i];
+        let row1 = rows[point_count + i];
+        out.push([row0[0], row0[1], row0[2], row0[3], row1[0], row1[1]]);
+    }
     drop(data);
     staging.unmap();
 
-    Ok(normals)
-}
-
-pub(crate) fn grid_bounds(
-    x: &[f32],
-    y: &[f32],
-    z: &[f32],
-    radius: f32,
-) -> SpatialResult<([f32; 3], [u32; 3])> {
-    let mut min = [f32::INFINITY; 3];
-    let mut max = [f32::NEG_INFINITY; 3];
-    for index in 0..x.len() {
-        for (axis, value) in [x[index], y[index], z[index]].into_iter().enumerate() {
-            min[axis] = min[axis].min(value);
-            max[axis] = max[axis].max(value);
-        }
-    }
-    let inv_cell = 1.0 / radius;
-    let mut dims = [0u32; 3];
-    for axis in 0..3 {
-        let span = ((max[axis] - min[axis]) * inv_cell).floor() as i64 + 1;
-        dims[axis] = span.max(1) as u32;
-    }
-    let cells = dims[0] as u64 * dims[1] as u64 * dims[2] as u64;
-    if cells > MAX_CELLS {
-        return Err(SpatialError::InvalidArgument(format!(
-            "grid would need {cells} cells (cap {MAX_CELLS}); use a larger radius or the CPU path"
-        )));
-    }
-    Ok((min, dims))
-}
-
-/// Counting-sort points into grid cells, returning sorted indices and CSR offsets.
-pub(crate) fn build_grid(
-    x: &[f32],
-    y: &[f32],
-    z: &[f32],
-    origin: [f32; 3],
-    dims: [u32; 3],
-    radius: f32,
-) -> (Vec<u32>, Vec<u32>) {
-    let inv_cell = 1.0 / radius;
-    let n = x.len();
-    let num_cells = dims[0] as usize * dims[1] as usize * dims[2] as usize;
-
-    let cell_of = |index: usize| -> usize {
-        let cx = (((x[index] - origin[0]) * inv_cell).floor() as i64).clamp(0, dims[0] as i64 - 1)
-            as usize;
-        let cy = (((y[index] - origin[1]) * inv_cell).floor() as i64).clamp(0, dims[1] as i64 - 1)
-            as usize;
-        let cz = (((z[index] - origin[2]) * inv_cell).floor() as i64).clamp(0, dims[2] as i64 - 1)
-            as usize;
-        (cz * dims[1] as usize + cy) * dims[0] as usize + cx
-    };
-
-    let mut counts = vec![0u32; num_cells + 1];
-    for index in 0..n {
-        counts[cell_of(index)] += 1;
-    }
-    // Prefix sum -> cell_start (CSR offsets).
-    let mut acc = 0u32;
-    for slot in counts.iter_mut() {
-        let c = *slot;
-        *slot = acc;
-        acc += c;
-    }
-    let cell_start = counts; // now offsets, length num_cells+1, last == n
-
-    let mut cursor = cell_start.clone();
-    let mut sorted = vec![0u32; n];
-    for index in 0..n {
-        let cell = cell_of(index);
-        let slot = cursor[cell];
-        sorted[slot as usize] = index as u32;
-        cursor[cell] = slot + 1;
-    }
-    (sorted, cell_start)
+    Ok(out)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::estimate_normals_grid_gpu;
+    use super::estimate_plane_covariances_grid_gpu;
     use crate::runtime::WgpuRuntime;
 
     #[test]
-    fn planar_patch_has_vertical_normal() {
+    fn planar_patch_covariance_is_disk() {
         let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
         let mut x: Vec<f32> = Vec::new();
         let mut y: Vec<f32> = Vec::new();
@@ -443,11 +381,16 @@ mod tests {
                 z.push(0.0);
             }
         }
-        let normals = estimate_normals_grid_gpu(&runtime, &x, &y, &z, 0.25).expect("grid normals");
-        assert_eq!(normals.len(), x.len());
-        for normal in &normals {
-            assert!(normal.normal[2].abs() > 0.99, "normal not vertical: {:?}", normal.normal);
-            assert!(normal.curvature < 1e-3, "curvature too high: {}", normal.curvature);
+        let eps = 1e-3_f32;
+        let cov = estimate_plane_covariances_grid_gpu(&runtime, &x, &y, &z, 0.25, eps)
+            .expect("gpu covariances");
+        assert_eq!(cov.len(), x.len());
+        // For a z=0 plane, the regularized covariance ~ diag(1, 1, eps):
+        // in-plane variance ~1, out-of-plane (z) ~eps.
+        for c in &cov {
+            let [c00, c11, c22, _c01, _c02, _c12] = *c;
+            assert!((c22 - eps).abs() < 1e-2, "c22 not ~eps: {c22}");
+            assert!(c00 > 0.5 && c11 > 0.5, "in-plane variance too small: {c00},{c11}");
         }
     }
 }

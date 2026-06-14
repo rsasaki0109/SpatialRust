@@ -112,6 +112,18 @@ fn bench_registration(c: &mut Criterion) {
     group.bench_function("gicp", |b| {
         b.iter(|| black_box(gicp.align(&source, &target_xyz).unwrap()));
     });
+    #[cfg(feature = "register-gicp-gpu")]
+    {
+        let gicp_gpu = GicpRegistration::new(GicpConfig {
+            max_correspondence_distance: 0.3,
+            max_iterations: 40,
+            covariance_radius: Some(0.1),
+            ..GicpConfig::default()
+        });
+        group.bench_function("gicp_gpu", |b| {
+            b.iter(|| black_box(gicp_gpu.align(&source, &target_xyz).unwrap()));
+        });
+    }
     group.bench_function("ndt", |b| {
         b.iter(|| black_box(ndt.align(&source, &target_xyz).unwrap()));
     });

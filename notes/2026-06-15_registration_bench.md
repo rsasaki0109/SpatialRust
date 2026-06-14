@@ -16,6 +16,17 @@
 - **NDT**: ターゲットをボクセル分布化、Levenberg-Marquardt で安定。GICP に近い精度を 1/3 の時間で。
 - **point-to-point ICP**: 平面主体だと点対点対応の収束が遅く、反復上限まで回りやすい。
 
+### GICP の GPU 共分散（`register-gicp-gpu`）
+
+`GicpConfig.covariance_radius` を設定すると、per-point 共分散推定を GPU グリッド近傍探索（[GPU 法線と同じカーネル系](2026-06-15_gpu_normals_bench.md)）で行う:
+
+| GICP | 速度 |
+|------|------|
+| CPU 共分散（k近傍） | ~27.9 ms |
+| **GPU 共分散（グリッド半径）** | **~16.3 ms（~1.7x）** |
+
+法線（最大50x）ほどの倍率にならないのは、GICP の各反復で行う最近傍対応探索（CPU KD-tree）が残るため。共分散推定（固有分解込み）の部分が GPU 化された分だけ短縮。対応探索も GPU 化すればさらに伸びる（今後）。
+
 ## 計測条件
 
 | 項目 | 内容 |

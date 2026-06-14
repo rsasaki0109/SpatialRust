@@ -13,12 +13,14 @@ default = ["register-icp"]
 register-icp = ["dep:spatialrust-search"]
 register-icp-point-to-plane = ["dep:spatialrust-search"]
 register-gicp = ["dep:spatialrust-search"]
+register-gicp-gpu = ["register-gicp", "dep:spatialrust-gpu"]
 register-ndt = []
 
 [dependencies]
 spatialrust-core = { workspace = true }
 spatialrust-math = { workspace = true }
 spatialrust-search = { workspace = true, optional = true, features = ["search-kdtree"] }
+spatialrust-gpu = { workspace = true, optional = true, features = ["gpu-wgpu"] }
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }

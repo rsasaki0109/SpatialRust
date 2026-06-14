@@ -72,6 +72,10 @@ jobs:
             args: -p spatialrust-registration --features register-gicp
           - name: spatialrust-registration-gicp-meta
             args: -p spatialrust --features register-gicp
+          - name: spatialrust-registration-gicp-gpu
+            args: -p spatialrust-registration --features register-gicp-gpu
+          - name: spatialrust-registration-gicp-gpu-meta
+            args: -p spatialrust --features register-gicp-gpu
           - name: spatialrust-registration-ndt
             args: -p spatialrust-registration --features register-ndt
           - name: spatialrust-registration-ndt-meta
@@ -151,6 +155,7 @@ jobs:
           cargo bench -p spatialrust-pipeline --features pipeline-mvp-gpu --bench mvp_xyzinormal_approximate_auto --no-run
           cargo bench -p spatialrust-features --features feature-normal-gpu --bench normals --no-run
           cargo bench -p spatialrust-registration --features register-icp,register-icp-point-to-plane,register-gicp,register-ndt --bench registration --no-run
+          cargo bench -p spatialrust-registration --features register-icp,register-icp-point-to-plane,register-gicp,register-gicp-gpu,register-ndt --bench registration --no-run
 
   docs:
     name: Documentation

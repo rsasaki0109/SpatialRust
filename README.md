@@ -90,7 +90,7 @@ Four registration backends, compared on a synthetic box corner (7500 points, sma
 | --- | ---: | ---: | --- |
 | ICP (point-to-point) | 0.0196 m | ~147 ms | slow to converge on planar surfaces |
 | **Point-to-plane ICP** | 0.0007 m | **~6.5 ms** | best speed/accuracy balance |
-| GICP | **0.0006 m** | ~26 ms | most accurate; per-point covariance |
+| GICP | **0.0006 m** | ~26 ms | most accurate; per-point covariance (optional GPU covariance ~1.7×, `register-gicp-gpu`) |
 | NDT | 0.0008 m | ~8.7 ms | voxel distributions + Levenberg–Marquardt |
 
 See [notes](notes/2026-06-15_registration_bench.md). Reproduce: `cargo bench -p spatialrust-registration --features register-icp,register-icp-point-to-plane,register-gicp,register-ndt --bench registration`.

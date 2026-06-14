@@ -37,6 +37,10 @@ pub struct GicpConfig {
     pub min_correspondences: usize,
     /// Initial transform guess mapping source into target frame.
     pub initial_guess: Isometry3<f32>,
+    /// When set (and the `register-gicp-gpu` feature is enabled), estimate
+    /// per-point covariances on the GPU using a uniform grid neighbor search of
+    /// this radius instead of the CPU KD-tree. Falls back to CPU on GPU errors.
+    pub covariance_radius: Option<f32>,
 }
 
 impl Default for GicpConfig {
@@ -50,6 +54,7 @@ impl Default for GicpConfig {
             fitness_epsilon: 1e-6,
             min_correspondences: 6,
             initial_guess: Isometry3::identity(),
+            covariance_radius: None,
         }
     }
 }
@@ -81,6 +86,19 @@ impl GicpRegistration {
         self.config
     }
 
+    /// Per-point plane-regularized covariances, on the GPU when a covariance
+    /// radius is configured and the `register-gicp-gpu` feature is enabled.
+    fn point_covariances(&self, x: &[f32], y: &[f32], z: &[f32]) -> Vec<M3> {
+        #[cfg(feature = "register-gicp-gpu")]
+        if let Some(radius) = self.config.covariance_radius {
+            if let Some(cov) = gpu_covariances(x, y, z, radius, self.config.epsilon) {
+                return cov;
+            }
+        }
+        let tree = KdTree::from_slices(x, y, z);
+        covariances(x, y, z, &tree, self.config.k_neighbors, self.config.epsilon)
+    }
+
     /// Aligns `source` to `target` using Generalized ICP.
     pub fn align_with_diagnostics(
         &self,
@@ -100,12 +118,9 @@ impl GicpRegistration {
 
         let (sx, sy, sz) = source.positions3()?;
         let (tx, ty, tz) = target.positions3()?;
-        let source_tree = KdTree::from_slices(sx, sy, sz);
         let target_tree = KdTree::from_slices(tx, ty, tz);
-        let source_cov =
-            covariances(sx, sy, sz, &source_tree, self.config.k_neighbors, self.config.epsilon);
-        let target_cov =
-            covariances(tx, ty, tz, &target_tree, self.config.k_neighbors, self.config.epsilon);
+        let source_cov = self.point_covariances(sx, sy, sz);
+        let target_cov = self.point_covariances(tx, ty, tz);
 
         let max_distance_squared =
             self.config.max_correspondence_distance * self.config.max_correspondence_distance;
@@ -217,6 +232,27 @@ impl PointCloudRegistration for GicpRegistration {
     fn align(&self, source: &PointCloud, target: &PointCloud) -> SpatialResult<RegistrationResult> {
         self.align_with_diagnostics(source, target)
     }
+}
+
+/// GPU path: per-point plane covariances via a uniform-grid neighbor search.
+/// Returns `None` on any GPU error so the caller falls back to the CPU path.
+#[cfg(feature = "register-gicp-gpu")]
+fn gpu_covariances(x: &[f32], y: &[f32], z: &[f32], radius: f32, epsilon: f64) -> Option<Vec<M3>> {
+    use spatialrust_gpu::{estimate_plane_covariances_grid_gpu, WgpuRuntime};
+    let runtime = WgpuRuntime::shared().ok()?;
+    let raw =
+        estimate_plane_covariances_grid_gpu(&runtime, x, y, z, radius, epsilon as f32).ok()?;
+    Some(
+        raw.into_iter()
+            .map(|[c00, c11, c22, c01, c02, c12]| {
+                [
+                    [c00 as f64, c01 as f64, c02 as f64],
+                    [c01 as f64, c11 as f64, c12 as f64],
+                    [c02 as f64, c12 as f64, c22 as f64],
+                ]
+            })
+            .collect(),
+    )
 }
 
 /// Computes per-point plane-regularized covariances from k-nearest neighbors.
@@ -457,5 +493,34 @@ mod tests {
         let cloud = box_corner();
         let gicp = GicpRegistration::new(GicpConfig { k_neighbors: 2, ..GicpConfig::default() });
         assert!(gicp.align(&cloud, &cloud).is_err());
+    }
+
+    #[cfg(feature = "register-gicp-gpu")]
+    #[test]
+    fn aligns_with_gpu_covariances() {
+        // Skip gracefully when no GPU/software adapter is available.
+        if spatialrust_gpu::WgpuRuntime::shared().is_err() {
+            return;
+        }
+        let target = box_corner();
+        let misalignment = Isometry3::new(
+            Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 0.05),
+            Vec3::new(0.015, -0.01, 0.012),
+        );
+        let source = transform_point_cloud(&target, misalignment).unwrap();
+
+        let gicp = GicpRegistration::new(GicpConfig {
+            max_correspondence_distance: 0.2,
+            max_iterations: 40,
+            covariance_radius: Some(0.16),
+            ..GicpConfig::default()
+        });
+        let result = gicp.align(&source, &target).unwrap();
+        let composed = result.transform.compose(misalignment);
+        let probe = Vec3::new(0.3, 0.4, 0.2);
+        let restored = composed.transform_point(probe);
+        assert!((restored.x - probe.x).abs() < 2e-2, "x off: {}", restored.x);
+        assert!((restored.y - probe.y).abs() < 2e-2, "y off: {}", restored.y);
+        assert!((restored.z - probe.z).abs() < 2e-2, "z off: {}", restored.z);
     }
 }

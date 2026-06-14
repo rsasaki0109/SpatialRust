@@ -10,6 +10,9 @@ mod normals;
 mod normals_grid;
 
 #[cfg(feature = "gpu-wgpu")]
+mod covariances_grid;
+
+#[cfg(feature = "gpu-wgpu")]
 mod voxel_keys;
 
 #[cfg(feature = "gpu-wgpu")]
@@ -41,6 +44,9 @@ pub use normals::{estimate_normals_gpu, GpuNormal};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use normals_grid::estimate_normals_grid_gpu;
+
+#[cfg(feature = "gpu-wgpu")]
+pub use covariances_grid::{estimate_plane_covariances_grid_gpu, GpuCovariance};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use voxel_keys::{compute_voxel_keys, compute_voxel_keys_gpu_buffers, GpuVoxelKeyBuffers};
