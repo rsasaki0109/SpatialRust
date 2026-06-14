@@ -129,6 +129,11 @@ fn tangent_basis(n: Vec3<f32>) -> (Vec3<f32>, Vec3<f32>) {
 
 /// Largest gap between consecutive sorted angles, wrapping around the circle.
 fn max_angle_gap(angles: &mut [f32]) -> f32 {
+    // A point with no in-plane neighbors has no gap to measure (reachable when
+    // `min_neighbors` is 0 and a point is isolated); treat it as non-salient.
+    if angles.is_empty() {
+        return 0.0;
+    }
     angles.sort_by(f32::total_cmp);
     let mut max_gap = 0.0_f32;
     for w in angles.windows(2) {
@@ -211,5 +216,21 @@ mod tests {
     fn rejects_bad_radius() {
         let cloud = square_patch(5);
         assert!(BoundaryDetector::new(BoundaryConfig::with_radius(0.0)).detect(&cloud).is_err());
+    }
+
+    #[test]
+    fn handles_isolated_point_with_zero_min_neighbors() {
+        // A lone point far from the patch has no in-radius neighbors. With
+        // min_neighbors = 0 this used to reach the angle-gap code with an empty
+        // angle list and panic; it must now just run.
+        let mut builder = PointCloudBuilder::new(schema());
+        builder.push_point([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]).unwrap();
+        builder.push_point([100.0, 100.0, 100.0, 0.0, 0.0, 1.0]).unwrap();
+        let cloud = builder.build().unwrap();
+
+        let config = BoundaryConfig { min_neighbors: 0, ..BoundaryConfig::with_radius(0.1) };
+        let mask = BoundaryDetector::new(config).boundary_mask(&cloud).unwrap();
+        // Isolated points (no neighbors) are not flagged as surface boundaries.
+        assert_eq!(mask, vec![false, false]);
     }
 }
