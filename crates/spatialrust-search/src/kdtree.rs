@@ -228,9 +228,8 @@ impl RadiusSearchIndex for KdTree {
         let radius_sq = radius * radius;
         let mut out = Vec::new();
         self.radius_recursive(self.root, x, y, z, radius_sq, &mut out);
-        out.sort_by(|a, b| {
-            a.distance_squared.partial_cmp(&b.distance_squared).unwrap_or(Ordering::Equal)
-        });
+        // Intentionally unsorted: callers count or iterate neighbors, and
+        // sorting every query dominates radius search on dense clouds.
         out
     }
 }
@@ -467,8 +466,11 @@ mod tests {
     fn radius_search_matches_brute_force() {
         let (x, y, z) = sample_cloud();
         let tree = KdTree::from_slices(&x, &y, &z);
-        let expected = brute_force_radius(&x, &y, &z, 2.0, 0.0, 0.0, 1.5);
-        let actual = tree.radius_search(2.0, 0.0, 0.0, 1.5);
+        let mut expected = brute_force_radius(&x, &y, &z, 2.0, 0.0, 0.0, 1.5);
+        let mut actual = tree.radius_search(2.0, 0.0, 0.0, 1.5);
+        // `radius_search` is unsorted, so compare as sets ordered by index.
+        expected.sort_by_key(|n| n.index);
+        actual.sort_by_key(|n| n.index);
         assert_eq!(actual, expected);
     }
 
