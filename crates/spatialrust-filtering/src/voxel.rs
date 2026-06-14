@@ -40,10 +40,14 @@ pub const DEFAULT_GPU_MIN_POINTS: usize = 500_000;
 /// until a crossover is measured above that range.
 pub const DEFAULT_GPU_MIN_POINTS_APPROXIMATE: usize = 2_000_000;
 
-/// Non-position F32 attribute count at/above which approximate-first Auto never picks GPU.
+/// Non-position F32 attribute count at/above which approximate-first Auto uses a higher GPU threshold.
 ///
-/// Epic 38: `point_xyzinormal` approximate-first GPU loses at all measured scales (2M included).
+/// Epic 38: `point_xyzinormal` approximate-first GPU lost at all measured scales.
+/// Epic 46: upload pool + zero-copy attrs restored GPU crossover at 1M+.
 pub const APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS: usize = 4;
+
+/// Auto GPU threshold for approximate-first on attribute-heavy schemas (e.g. xyzinormal).
+pub const DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY: usize = 1_000_000;
 
 /// Configuration for voxel-grid downsampling.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -63,7 +67,7 @@ pub struct VoxelGridDownsampleConfig {
     ///
     /// Approximate-first Auto also consults the input schema: clouds with
     /// [`APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS`] or more non-position F32 fields
-    /// (e.g. `point_xyzinormal`) never auto-select GPU.
+    /// (e.g. `point_xyzinormal`) use [`DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY`].
     pub gpu_min_points: Option<usize>,
 }
 
@@ -101,8 +105,9 @@ impl VoxelGridDownsampleConfig {
 
     /// Returns the point-count threshold used by [`ExecutionPolicy::Auto`].
     ///
-    /// Approximate-first mode raises the effective threshold to [`usize::MAX`] when the
-    /// schema carries many F32 attributes (Epic 38 xyzinormal approximate-first regression).
+    /// Approximate-first mode raises the effective threshold to
+    /// [`DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY`] when the schema carries many F32
+    /// attributes (Epic 38 regression, Epic 46 crossover at 1M+).
     #[must_use]
     pub fn effective_gpu_min_points(&self, schema: &PointSchema) -> Option<usize> {
         let base = self.gpu_min_points?;
@@ -110,7 +115,7 @@ impl VoxelGridDownsampleConfig {
             return Some(base);
         }
         if count_non_position_f32_fields(schema) >= APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS {
-            return Some(usize::MAX);
+            return Some(DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY);
         }
         Some(base)
     }
@@ -388,6 +393,21 @@ fn collect_attribute_f32_sources(
 }
 
 #[cfg(feature = "filter-voxel-gpu")]
+fn borrow_attribute_f32_channels<'a>(
+    input: &'a PointCloud,
+    fields: &[PointField],
+) -> SpatialResult<Option<Vec<&'a [f32]>>> {
+    let mut channels = Vec::with_capacity(fields.len());
+    for field in fields {
+        if !matches!(field.dtype, DType::F32 | DType::F16) {
+            return Ok(None);
+        }
+        channels.push(input.field(&field.name)?.as_f32()?);
+    }
+    Ok(Some(channels))
+}
+
+#[cfg(feature = "filter-voxel-gpu")]
 fn collect_attribute_u8_sources(
     input: &PointCloud,
     fields: &[PointField],
@@ -497,9 +517,14 @@ fn filter_gpu_centroid(
         point_count,
         point_count.next_power_of_two(),
     )?;
-    let f32_sources = collect_attribute_f32_sources(input, &f32_fields)?;
+    let owned_f32_sources;
+    let f32_refs: Vec<&[f32]> = if let Some(borrowed) = borrow_attribute_f32_channels(input, &f32_fields)? {
+        borrowed
+    } else {
+        owned_f32_sources = collect_attribute_f32_sources(input, &f32_fields)?;
+        owned_f32_sources.iter().map(Vec::as_slice).collect()
+    };
     let u8_sources = collect_attribute_u8_sources(input, &u8_fields)?;
-    let f32_refs: Vec<&[f32]> = f32_sources.iter().map(Vec::as_slice).collect();
     let u8_refs: Vec<&[u8]> = u8_sources.iter().map(Vec::as_slice).collect();
     let (out_x, out_y, out_z, f32_values, u8_values) = match attribute_policy {
         AttributeAggregation::Average => reduce_voxel_centroids_xyz_and_average_multi_gpu(
@@ -521,6 +546,8 @@ fn filter_gpu_centroid(
             &segments,
         )?,
     };
+
+    positions.recycle(&runtime);
 
     assemble_gpu_voxel_output(
         input,
@@ -590,9 +617,14 @@ fn filter_gpu_approximate_first(
         point_count,
         point_count.next_power_of_two(),
     )?;
-    let f32_sources = collect_attribute_f32_sources(input, &f32_fields)?;
+    let owned_f32_sources;
+    let f32_refs: Vec<&[f32]> = if let Some(borrowed) = borrow_attribute_f32_channels(input, &f32_fields)? {
+        borrowed
+    } else {
+        owned_f32_sources = collect_attribute_f32_sources(input, &f32_fields)?;
+        owned_f32_sources.iter().map(Vec::as_slice).collect()
+    };
     let u8_sources = collect_attribute_u8_sources(input, &u8_fields)?;
-    let f32_refs: Vec<&[f32]> = f32_sources.iter().map(Vec::as_slice).collect();
     let u8_refs: Vec<&[u8]> = u8_sources.iter().map(Vec::as_slice).collect();
     let (out_x, out_y, out_z, f32_values, u8_values) = match attribute_policy {
         AttributeAggregation::Average => gather_voxel_first_xyz_and_average_multi_gpu(
@@ -614,6 +646,8 @@ fn filter_gpu_approximate_first(
             &segments,
         )?,
     };
+
+    positions.recycle(&runtime);
 
     assemble_gpu_voxel_output(
         input,
@@ -1056,7 +1090,7 @@ mod tests {
     fn effective_gpu_min_points_blocks_heavy_approximate_schema() {
         use super::{
             APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS, DEFAULT_GPU_MIN_POINTS_APPROXIMATE,
-            VoxelGridDownsampleConfig,
+            DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY, VoxelGridDownsampleConfig,
         };
 
         let approximate = VoxelGridDownsampleConfig::approximate(1.0);
@@ -1066,7 +1100,7 @@ mod tests {
         );
         assert_eq!(
             approximate.effective_gpu_min_points(&StandardSchemas::point_xyzinormal()),
-            Some(usize::MAX)
+            Some(DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY)
         );
         assert!(
             super::count_non_position_f32_fields(&StandardSchemas::point_xyzinormal())
@@ -1108,6 +1142,67 @@ mod tests {
         let (auto_x, _, _) = auto.positions3().unwrap();
         for index in 0..cpu.len() {
             assert!((cpu_x[index] - auto_x[index]).abs() < 1e-5);
+        }
+    }
+
+    fn synthetic_xyzinormal_plane(point_count: usize) -> spatialrust_core::PointCloud {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzinormal());
+        for index in 0..point_count {
+            let x = (index % 256) as f32 * 0.1;
+            let y = ((index / 256) % 256) as f32 * 0.1;
+            let intensity = (index % 256) as f32;
+            builder
+                .push_point([x, y, 0.0, intensity, 0.0, 0.0, 1.0])
+                .unwrap();
+        }
+        builder.build().unwrap()
+    }
+
+    #[cfg(feature = "filter-voxel-gpu")]
+    #[test]
+    fn auto_approximate_first_uses_cpu_below_heavy_threshold() {
+        use spatialrust_core::ExecutionPolicy;
+
+        const POINT_COUNT: usize = 500_000;
+        let input = synthetic_xyzinormal_plane(POINT_COUNT);
+        let filter = VoxelGridDownsample::new(VoxelGridDownsampleConfig::approximate(4.0));
+        let cpu = filter.filter(&input).unwrap();
+        let auto = filter
+            .filter_with_policy(&input, ExecutionPolicy::Auto)
+            .unwrap();
+
+        assert_eq!(cpu.len(), auto.len());
+        let (cpu_x, cpu_y, cpu_z) = cpu.positions3().unwrap();
+        let (auto_x, auto_y, auto_z) = auto.positions3().unwrap();
+        for index in 0..cpu.len() {
+            assert!((cpu_x[index] - auto_x[index]).abs() < 1e-4);
+            assert!((cpu_y[index] - auto_y[index]).abs() < 1e-4);
+            assert!((cpu_z[index] - auto_z[index]).abs() < 1e-4);
+        }
+    }
+
+    #[cfg(feature = "filter-voxel-gpu")]
+    #[test]
+    fn auto_approximate_first_uses_gpu_at_heavy_threshold() {
+        use spatialrust_core::{DeviceKind, ExecutionPolicy};
+
+        const POINT_COUNT: usize = 1_000_000;
+        let input = synthetic_xyzinormal_plane(POINT_COUNT);
+        let filter = VoxelGridDownsample::new(VoxelGridDownsampleConfig::approximate(4.0));
+        let gpu = filter
+            .filter_with_policy(&input, ExecutionPolicy::Gpu(DeviceKind::Wgpu))
+            .unwrap();
+        let auto = filter
+            .filter_with_policy(&input, ExecutionPolicy::Auto)
+            .unwrap();
+
+        assert_eq!(gpu.len(), auto.len());
+        let (gpu_x, gpu_y, gpu_z) = gpu.positions3().unwrap();
+        let (auto_x, auto_y, auto_z) = auto.positions3().unwrap();
+        for index in 0..gpu.len() {
+            assert!((gpu_x[index] - auto_x[index]).abs() < 1e-4);
+            assert!((gpu_y[index] - auto_y[index]).abs() < 1e-4);
+            assert!((gpu_z[index] - auto_z[index]).abs() < 1e-4);
         }
     }
 }

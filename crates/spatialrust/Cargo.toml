@@ -47,6 +47,7 @@ mvp = [
     "register-icp",
     "pipeline-mvp",
 ]
+mvp-http = ["mvp", "io-copc-http"]
 pipeline-mvp = ["spatialrust-pipeline/pipeline-mvp"]
 pipeline-mvp-gpu = [
     "spatialrust-pipeline/pipeline-mvp-gpu",

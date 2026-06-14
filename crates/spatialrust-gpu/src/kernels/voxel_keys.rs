@@ -64,6 +64,14 @@ impl GpuVoxelKeyBuffers {
     pub fn keys_buffer(&self) -> &wgpu::Buffer {
         &self.keys
     }
+
+    /// Returns position/key GPU buffers to the runtime upload pool.
+    pub fn recycle(self, runtime: &WgpuRuntime) {
+        runtime.recycle_storage(self.x.size(), self.x);
+        runtime.recycle_storage(self.y.size(), self.y);
+        runtime.recycle_storage(self.z.size(), self.z);
+        runtime.recycle_storage(self.keys.size(), self.keys);
+    }
 }
 
 /// Computes per-point voxel grid keys on the GPU.
@@ -110,24 +118,11 @@ pub fn compute_voxel_keys_gpu_buffers(
         ));
     }
 
-    let device = runtime.device();
     let point_count = x.len() as u32;
 
-    let x_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-key-x"),
-        contents: bytemuck::cast_slice(x),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-    let y_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-key-y"),
-        contents: bytemuck::cast_slice(y),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-    let z_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-key-z"),
-        contents: bytemuck::cast_slice(z),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
+    let x_buffer = runtime.upload_f32_storage("voxel-key-x", x)?;
+    let y_buffer = runtime.upload_f32_storage("voxel-key-y", y)?;
+    let z_buffer = runtime.upload_f32_storage("voxel-key-z", z)?;
 
     let keys_buffer = dispatch_voxel_keys(
         runtime,

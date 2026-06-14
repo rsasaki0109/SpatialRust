@@ -18,6 +18,9 @@ mod pipeline_cache;
 mod readback;
 
 #[cfg(feature = "gpu-wgpu")]
+mod upload_cache;
+
+#[cfg(feature = "gpu-wgpu")]
 mod runtime;
 
 pub use buffer::DeviceBuffer;

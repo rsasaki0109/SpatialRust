@@ -462,6 +462,7 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-reduce-xyz-gather-attrs-encoder"),
     });
+    let mut upload_recycle = Vec::new();
     record_voxel_reduce_xyz_pass(
         &mut encoder,
         runtime,
@@ -499,6 +500,7 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
         segments,
         &staging_buffer,
         channel_len as u64,
+        &mut upload_recycle,
     )?;
 
     let u8_region_offset = (channel_len * f32_channel_count) as u64;
@@ -547,6 +549,9 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
     };
     let (out_x, out_y, out_z, attributes) =
         split_xyz_and_attribute_blocks(flat, attribute_count, cells);
+    for buffer in upload_recycle {
+        runtime.recycle_storage(buffer.size(), buffer);
+    }
     Ok((
         out_x,
         out_y,

@@ -96,6 +96,12 @@ jobs:
             args: -p spatialrust-io --features io-copc-http
           - name: spatialrust-io-copc-http-meta
             args: -p spatialrust --features io-copc-http
+          - name: spatialrust-io-copc-http-local
+            args: -p spatialrust-io --features io-copc-http --test copc_http_local
+          - name: spatialrust-mvp-http
+            args: -p spatialrust --features mvp,mvp-http --test mvp_http_copc_cli
+          - name: spatialrust-mvp-gpu-integration
+            args: -p spatialrust --features mvp,pipeline-mvp-gpu --test mvp_pipeline
           - name: spatialrust-gpu-wgpu
             args: -p spatialrust --features gpu-wgpu
           - name: spatialrust-gpu-crate
@@ -124,6 +130,7 @@ jobs:
           cargo bench --workspace --no-run
           cargo bench -p spatialrust-gpu --features gpu-wgpu --no-run
           cargo bench -p spatialrust-filtering --features filter-voxel-gpu --no-run
+          cargo bench -p spatialrust-pipeline --features pipeline-mvp-gpu --bench mvp_xyzinormal_approximate_auto --no-run
 
   docs:
     name: Documentation

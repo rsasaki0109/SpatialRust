@@ -231,15 +231,14 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-gather-xyz-attrs-encoder"),
     });
+    let mut upload_recycle = Vec::new();
 
     if fused_xyz_attrs4 {
-        let attr_buffers: [wgpu::Buffer; MULTI4_CHANNELS] = std::array::from_fn(|index| {
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("voxel-gather-xyz-attrs4-values"),
-                contents: bytemuck::cast_slice(attribute_channels[index]),
-                usage: wgpu::BufferUsages::STORAGE,
-            })
-        });
+        for channel in attribute_channels {
+            upload_recycle.push(runtime.upload_f32_storage("voxel-gather-xyz-attrs4-values", channel)?);
+        }
+        let attr_refs: [&wgpu::Buffer; MULTI4_CHANNELS] =
+            std::array::from_fn(|index| &upload_recycle[index]);
         let packed_output = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("voxel-gather-xyz-attrs4-packed-output"),
             size: (channel_len * f32_channel_count) as u64,
@@ -252,12 +251,7 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
             x,
             y,
             z,
-            &[
-                &attr_buffers[0],
-                &attr_buffers[1],
-                &attr_buffers[2],
-                &attr_buffers[3],
-            ],
+            &attr_refs,
             segments,
             &packed_output,
         )?;
@@ -323,6 +317,7 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
             segments,
             &staging_buffer,
             channel_len as u64,
+            &mut upload_recycle,
         )?;
     }
 
@@ -375,6 +370,9 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
     };
     let (out_x, out_y, out_z, attributes) =
         split_xyz_and_attribute_blocks(flat, attribute_count, cells);
+    for buffer in upload_recycle {
+        runtime.recycle_storage(buffer.size(), buffer);
+    }
     Ok((
         out_x,
         out_y,
@@ -756,6 +754,7 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
     segments: &GpuVoxelSegments,
     staging_buffer: &wgpu::Buffer,
     channel_len: u64,
+    upload_recycle: &mut Vec<wgpu::Buffer>,
 ) -> SpatialResult<()> {
     if attribute_channels.is_empty() {
         return Ok(());
@@ -769,16 +768,12 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
         let chunk = &attribute_channels[chunk_start..chunk_end];
         let channels_in_chunk = chunk.len();
 
-        let value_buffers: Vec<wgpu::Buffer> = chunk
-            .iter()
-            .map(|channel| {
-                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("voxel-gather-xyz-attrs-values"),
-                    contents: bytemuck::cast_slice(channel),
-                    usage: wgpu::BufferUsages::STORAGE,
-                })
-            })
-            .collect();
+        let chunk_upload_start = upload_recycle.len();
+        for channel in chunk {
+            upload_recycle.push(runtime.upload_f32_storage("voxel-gather-xyz-attrs-values", channel)?);
+        }
+        let value_buffers = &upload_recycle[chunk_upload_start..];
+
         let output_buffers: Vec<wgpu::Buffer> = (0..channels_in_chunk)
             .map(|_| {
                 device.create_buffer(&wgpu::BufferDescriptor {
@@ -851,16 +846,15 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
                     )?;
                 } else {
                     for (local_index, channel) in chunk.iter().enumerate() {
-                        let values_buffer =
-                            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                                label: Some("voxel-gather-xyz-attrs-values"),
-                                contents: bytemuck::cast_slice(channel),
-                                usage: wgpu::BufferUsages::STORAGE,
-                            });
+                        let chunk_upload_start = upload_recycle.len();
+                        upload_recycle.push(runtime.upload_f32_storage(
+                            "voxel-gather-xyz-attrs-values",
+                            channel,
+                        )?);
                         record_voxel_gather_f32_pass(
                             encoder,
                             runtime,
-                            &values_buffer,
+                            &upload_recycle[chunk_upload_start],
                             segments.point_indices_buffer(),
                             segments.cell_starts_buffer(),
                             segments.cell_count(),

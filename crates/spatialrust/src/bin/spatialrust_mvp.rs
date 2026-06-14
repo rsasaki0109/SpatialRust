@@ -18,6 +18,8 @@ use spatialrust::{
     MvpPipeline, MvpPipelineConfig, PointCloudFileFormat, VoxelAggregationMode,
     VoxelGridDownsampleConfig,
 };
+#[cfg(feature = "io-copc-http")]
+use spatialrust::{read_copc_url_info, read_copc_url_with_query};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 struct CopcQueryOptions {
@@ -43,7 +45,7 @@ Options:
   --voxel-mode <MODE>        centroid | approximate (default: centroid)
   --voxel-policy <POLICY>    auto | cpu | gpu (default: auto)
   --bounds <MINX,MINY,MINZ,MAXX,MAXY,MAXZ>
-                             COPC spatial query bounds (requires .copc.laz/.copc.las input)
+                             COPC spatial query bounds (requires COPC input)
   --resolution <METERS>      COPC max point spacing LOD (requires COPC input; uses root bounds
                              when --bounds is omitted)
   -h, --help                 Show this help
@@ -139,15 +141,70 @@ fn parse_resolution(value: &str) -> Result<f64, String> {
     Ok(resolution)
 }
 
+fn is_http_copc_input(input: &str) -> bool {
+    input.starts_with("http://") || input.starts_with("https://")
+}
+
+fn detect_input_format(input: &str) -> Option<PointCloudFileFormat> {
+    if is_http_copc_input(input) {
+        let file_name = input.rsplit('/').next()?.to_ascii_lowercase();
+        if file_name.ends_with(".copc.laz") || file_name.ends_with(".copc.las") {
+            return Some(PointCloudFileFormat::Copc);
+        }
+        return None;
+    }
+    detect_point_cloud_format(input)
+}
+
 fn ensure_copc_input(input_path: &str, option: &str) -> Result<(), String> {
-    let format = detect_point_cloud_format(input_path)
+    let format = detect_input_format(input_path)
         .ok_or_else(|| format!("cannot detect input format for {option}: {input_path}"))?;
     if format != PointCloudFileFormat::Copc {
-        return Err(format!(
-            "{option} requires a COPC input (.copc.laz or .copc.las)"
-        ));
+        return Err(format!("{option} requires a COPC input (.copc.laz/.copc.las or http URL)"));
     }
     Ok(())
+}
+
+fn read_copc_header_info(
+    input_path: &str,
+) -> Result<spatialrust::CopcFileInfo, Box<dyn std::error::Error>> {
+    if is_http_copc_input(input_path) {
+        #[cfg(feature = "io-copc-http")]
+        {
+            return Ok(read_copc_url_info(input_path)?);
+        }
+        #[cfg(not(feature = "io-copc-http"))]
+        {
+            return Err(
+                "HTTP COPC input requires `--features mvp,mvp-http` when building spatialrust-mvp"
+                    .into(),
+            );
+        }
+    }
+    Ok(read_copc_file_info(input_path)?)
+}
+
+fn read_copc_points(
+    input_path: &str,
+    query: Option<&CopcQuery>,
+) -> Result<spatialrust::PointCloud, Box<dyn std::error::Error>> {
+    if is_http_copc_input(input_path) {
+        #[cfg(feature = "io-copc-http")]
+        {
+            return Ok(read_copc_url_with_query(input_path, query)?);
+        }
+        #[cfg(not(feature = "io-copc-http"))]
+        {
+            return Err(
+                "HTTP COPC input requires `--features mvp,mvp-http` when building spatialrust-mvp"
+                    .into(),
+            );
+        }
+    }
+    match query {
+        Some(query) => Ok(read_copc_file_with_query(input_path, query)?),
+        None => Ok(read_point_cloud_file(input_path)?),
+    }
 }
 
 fn build_copc_query(
@@ -156,7 +213,7 @@ fn build_copc_query(
 ) -> Result<CopcQuery, Box<dyn std::error::Error>> {
     let bounds = match options.bounds {
         Some(bounds) => bounds,
-        None => read_copc_file_info(input_path)?.root_bounds,
+        None => read_copc_header_info(input_path)?.root_bounds,
     };
 
     let query = match options.resolution {
@@ -187,6 +244,10 @@ fn load_input(
     copc: CopcQueryOptions,
 ) -> Result<spatialrust::PointCloud, Box<dyn std::error::Error>> {
     if !copc.is_active() {
+        if is_http_copc_input(input_path) {
+            ensure_copc_input(input_path, "HTTP COPC input")?;
+            return read_copc_points(input_path, None);
+        }
         return Ok(read_point_cloud_file(input_path)?);
     }
 
@@ -201,7 +262,7 @@ fn load_input(
 
     let query = build_copc_query(input_path, copc)?;
     log_copc_query(&query);
-    Ok(read_copc_file_with_query(input_path, &query)?)
+    read_copc_points(input_path, Some(&query))
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
@@ -269,7 +330,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let input_path = input_path.ok_or("missing INPUT path")?;
     let output_path = output_path.ok_or("missing OUTPUT path")?;
 
-    if !Path::new(&input_path).exists() {
+    if !is_http_copc_input(&input_path) && !Path::new(&input_path).exists() {
         return Err(format!("input file not found: {input_path}").into());
     }
 
@@ -320,8 +381,11 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
-    use super::{build_voxel_config, parse_bounds, parse_resolution, parse_voxel_mode, CopcQueryOptions};
-    use spatialrust::{CopcQuery, VoxelAggregationMode};
+    use super::{
+        build_voxel_config, detect_input_format, parse_bounds, parse_resolution, parse_voxel_mode,
+        CopcQueryOptions,
+    };
+    use spatialrust::{CopcQuery, PointCloudFileFormat, VoxelAggregationMode};
 
     #[test]
     fn parse_bounds_accepts_six_values() {
@@ -404,5 +468,18 @@ mod tests {
         let approximate = build_voxel_config(0.2, VoxelAggregationMode::ApproximateFirst);
         assert_eq!(approximate.mode, VoxelAggregationMode::ApproximateFirst);
         assert_eq!(approximate.leaf_size, 0.2);
+    }
+
+    #[test]
+    fn detect_input_format_accepts_http_copc_urls() {
+        assert_eq!(
+            detect_input_format("https://example.com/path/scan.copc.laz"),
+            Some(PointCloudFileFormat::Copc)
+        );
+        assert_eq!(
+            detect_input_format("http://127.0.0.1:8080/data.copc.las"),
+            Some(PointCloudFileFormat::Copc)
+        );
+        assert!(detect_input_format("https://example.com/cloud.laz").is_none());
     }
 }

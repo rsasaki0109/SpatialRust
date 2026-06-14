@@ -45,4 +45,4 @@ Epic 38 の **xyzinormal approximate-first GPU 劣後**に対し、属性 gather
 ## 次アクション
 
 1. 外部実スキャン COPC で bounds + resolution 曲線の再現
-2. GPU attribute buffer キャッシュ / pinned upload で approximate-first heavy schema を再評価
+2. ~~GPU attribute buffer キャッシュ~~ → Epic 46 で upload pool 実装済み

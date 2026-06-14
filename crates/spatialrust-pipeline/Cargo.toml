@@ -36,3 +36,7 @@ harness = false
 [[bench]]
 name = "mvp_composite_xyzirgb"
 harness = false
+
+[[bench]]
+name = "mvp_xyzinormal_approximate_auto"
+harness = false

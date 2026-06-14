@@ -898,6 +898,260 @@ fn mvp_cli_scan_like_copc_bounds_resolution_reduces_input_points() {
 }
 
 #[cfg(feature = "mvp")]
+fn scan_like_roi_bounds() -> spatialrust::CopcBounds {
+    spatialrust::CopcBounds::from_ranges((0.0, 40.0), (0.0, 20.0), (-0.01, 0.5))
+}
+
+#[cfg(feature = "mvp")]
+fn scan_like_roi_bounds_arg() -> &'static str {
+    "0,0,-0.01,40,20,0.5"
+}
+
+#[cfg(feature = "mvp")]
+fn scan_like_resolution_multipliers() -> [f64; 5] {
+    [1.0, 2.0, 4.0, 8.0, 16.0]
+}
+
+#[cfg(feature = "mvp")]
+fn resolution_curve_counts(
+    input_path: &std::path::Path,
+    bounds: spatialrust::CopcBounds,
+) -> Vec<(f64, usize)> {
+    use spatialrust::{read_copc_file_info, read_copc_file_with_query, CopcQuery};
+
+    let info = read_copc_file_info(input_path).expect("copc info");
+    scan_like_resolution_multipliers()
+        .into_iter()
+        .map(|multiplier| {
+            let resolution = info.spacing * multiplier;
+            let count = read_copc_file_with_query(
+                input_path,
+                &CopcQuery::with_resolution(bounds, resolution),
+            )
+            .expect("resolution query")
+            .len();
+            (multiplier, count)
+        })
+        .collect()
+}
+
+#[cfg(feature = "mvp")]
+fn assert_monotonic_non_increasing(counts: &[usize], label: &str) {
+    for window in counts.windows(2) {
+        assert!(
+            window[0] >= window[1],
+            "{label} point counts should be non-increasing with coarser resolution: {:?}",
+            counts
+        );
+    }
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_scan_like_copc_bounds_resolution_curve_monotonic() {
+    use spatialrust::{read_copc_file, read_copc_file_info, read_copc_file_with_query, CopcQuery};
+
+    const POINT_COUNT: usize = 50_000;
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_scan_curve_lib_{}.copc.laz",
+        std::process::id()
+    ));
+    write_scan_like_copc_fixture(&input_path, POINT_COUNT);
+
+    let info = read_copc_file_info(&input_path).unwrap();
+    let full_count = read_copc_file(&input_path).unwrap().len();
+    let roi_bounds = scan_like_roi_bounds();
+    let bounds_only_count = read_copc_file_with_query(&input_path, &CopcQuery::bounds(roi_bounds))
+        .unwrap()
+        .len();
+
+    let root_counts: Vec<usize> = resolution_curve_counts(&input_path, info.root_bounds)
+        .into_iter()
+        .map(|(_, count)| count)
+        .collect();
+    let roi_counts: Vec<usize> = resolution_curve_counts(&input_path, roi_bounds)
+        .into_iter()
+        .map(|(_, count)| count)
+        .collect();
+
+    assert_monotonic_non_increasing(&root_counts, "root bounds");
+    assert_monotonic_non_increasing(&roi_counts, "roi bounds");
+    assert!(root_counts[0] <= full_count);
+    assert!(roi_counts[0] <= bounds_only_count);
+    assert!(
+        *roi_counts.last().expect("curve") < bounds_only_count,
+        "coarsest roi+resolution should beat bounds-only"
+    );
+    assert!(
+        root_counts.last().copied().unwrap_or(full_count) < full_count,
+        "coarsest root+resolution should beat full load"
+    );
+
+    let _ = std::fs::remove_file(input_path);
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+fn mvp_cli_scan_like_copc_bounds_resolution_curve() {
+    use std::process::Command;
+
+    const POINT_COUNT: usize = 50_000;
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_scan_curve_in_{}.copc.laz",
+        std::process::id()
+    ));
+    write_scan_like_copc_fixture(&input_path, POINT_COUNT);
+
+    let info = spatialrust::read_copc_file_info(&input_path).unwrap();
+    let root_curve = resolution_curve_counts(&input_path, info.root_bounds);
+    let roi_curve = resolution_curve_counts(&input_path, scan_like_roi_bounds());
+    let root_counts: Vec<usize> = root_curve.iter().map(|(_, count)| *count).collect();
+    let roi_counts: Vec<usize> = roi_curve.iter().map(|(_, count)| *count).collect();
+    assert_monotonic_non_increasing(&root_counts, "root bounds library");
+    assert_monotonic_non_increasing(&roi_counts, "roi bounds library");
+
+    let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+    let cli_args = ["--leaf-size", "4.0", "--voxel-policy", "cpu"];
+    let mut root_cli_counts = Vec::new();
+    let mut roi_cli_counts = Vec::new();
+
+    for (multiplier, expected_count) in root_curve {
+        let resolution = format!("{}", info.spacing * multiplier);
+        let output_path = std::env::temp_dir().join(format!(
+            "spatialrust_mvp_cli_scan_curve_root_{multiplier}_{}.copc.laz",
+            std::process::id()
+        ));
+        let output = Command::new(bin)
+            .args(cli_args)
+            .args([
+                "--resolution",
+                &resolution,
+                input_path.to_str().unwrap(),
+                output_path.to_str().unwrap(),
+            ])
+            .output()
+            .expect("run root resolution CLI");
+        assert!(
+            output.status.success(),
+            "root resolution x{multiplier} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let loaded = parse_cli_input_points(&output.stderr);
+        assert_eq!(loaded, expected_count);
+        root_cli_counts.push(loaded);
+        let _ = std::fs::remove_file(output_path);
+    }
+
+    for (multiplier, expected_count) in roi_curve {
+        let resolution = format!("{}", info.spacing * multiplier);
+        let output_path = std::env::temp_dir().join(format!(
+            "spatialrust_mvp_cli_scan_curve_roi_{multiplier}_{}.copc.laz",
+            std::process::id()
+        ));
+        let output = Command::new(bin)
+            .args(cli_args)
+            .args([
+                "--bounds",
+                scan_like_roi_bounds_arg(),
+                "--resolution",
+                &resolution,
+                input_path.to_str().unwrap(),
+                output_path.to_str().unwrap(),
+            ])
+            .output()
+            .expect("run roi resolution CLI");
+        assert!(
+            output.status.success(),
+            "roi resolution x{multiplier} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let loaded = parse_cli_input_points(&output.stderr);
+        assert_eq!(loaded, expected_count);
+        roi_cli_counts.push(loaded);
+        let _ = std::fs::remove_file(output_path);
+    }
+
+    assert_monotonic_non_increasing(&root_cli_counts, "root bounds CLI");
+    assert_monotonic_non_increasing(&roi_cli_counts, "roi bounds CLI");
+
+    let _ = std::fs::remove_file(input_path);
+}
+
+#[cfg(feature = "mvp")]
+#[test]
+#[ignore = "manual probe for resolution curve counts"]
+fn probe_scan_like_copc_resolution_curve_counts() {
+    const POINT_COUNT: usize = 50_000;
+    let input_path = std::env::temp_dir().join("spatialrust_probe_scan_curve.copc.laz");
+    write_scan_like_copc_fixture(&input_path, POINT_COUNT);
+    let info = spatialrust::read_copc_file_info(&input_path).unwrap();
+    let spacing = info.spacing;
+    let full_count = spatialrust::read_copc_file(&input_path).unwrap().len();
+    let bounds_only = spatialrust::read_copc_file_with_query(
+        &input_path,
+        &spatialrust::CopcQuery::bounds(scan_like_roi_bounds()),
+    )
+    .unwrap()
+    .len();
+    eprintln!("spacing={spacing} full={full_count} roi_only={bounds_only}");
+    eprintln!("multiplier | root+resolution | roi+resolution");
+    for (multiplier, root_count) in resolution_curve_counts(&input_path, info.root_bounds) {
+        let roi_count = resolution_curve_counts(&input_path, scan_like_roi_bounds())
+            .into_iter()
+            .find(|(m, _)| (*m - multiplier).abs() < f64::EPSILON)
+            .map(|(_, c)| c)
+            .expect("roi curve");
+        eprintln!("x{multiplier:<4} | {root_count:>15} | {roi_count:>14}");
+    }
+    if std::env::var("SPATIALRUST_PROBE_RELEASE").is_ok() {
+        use std::process::Command;
+
+        let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+        let cli_args = ["--leaf-size", "4.0", "--voxel-policy", "cpu"];
+        eprintln!("release CLI elapsed (ms):");
+        let cases: [(&str, Vec<String>); 3] = [
+            ("full", Vec::new()),
+            (
+                "roi",
+                vec!["--bounds".to_string(), scan_like_roi_bounds_arg().to_string()],
+            ),
+            (
+                "roi+x4",
+                vec![
+                    "--bounds".to_string(),
+                    scan_like_roi_bounds_arg().to_string(),
+                    "--resolution".to_string(),
+                    format!("{}", spacing * 4.0),
+                ],
+            ),
+        ];
+        for (label, extra_args) in cases {
+            let out = std::env::temp_dir().join(format!("spatialrust_probe_out_{label}.copc.laz"));
+            let mut cmd = Command::new(bin);
+            cmd.args(cli_args);
+            for arg in &extra_args {
+                cmd.arg(arg);
+            }
+            let output = cmd
+                .arg(&input_path)
+                .arg(&out)
+                .output()
+                .expect("release CLI");
+            assert!(
+                output.status.success(),
+                "{label}: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let elapsed = parse_cli_elapsed_ms(&output.stderr);
+            let points = parse_cli_input_points(&output.stderr);
+            eprintln!("{label}: points={points} elapsed={elapsed:.3}ms");
+            let _ = std::fs::remove_file(out);
+        }
+    }
+    let _ = std::fs::remove_file(input_path);
+}
+
+#[cfg(feature = "mvp")]
 fn sample_xyzinormal_plane_cloud() -> spatialrust::PointCloud {
     use spatialrust::{PointCloudBuilder, StandardSchemas};
 
@@ -916,6 +1170,61 @@ fn sample_xyzinormal_plane_cloud() -> spatialrust::PointCloud {
         .push_point([0.1, 0.0, 0.5, 0.8, 0.0, 0.0, 1.0])
         .unwrap();
     builder.build().unwrap()
+}
+
+#[cfg(feature = "mvp")]
+fn sample_xyzinormal_plane_grid(point_count: usize) -> spatialrust::PointCloud {
+    use spatialrust::{PointCloudBuilder, StandardSchemas};
+
+    let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzinormal());
+    for index in 0..point_count {
+        let x = (index % 256) as f32 * 0.1;
+        let y = ((index / 256) % 256) as f32 * 0.1;
+        let intensity = (index % 256) as f32;
+        builder
+            .push_point([x, y, 0.0, intensity, 0.0, 0.0, 1.0])
+            .unwrap();
+    }
+    for x in 0..10 {
+        for y in 0..10 {
+            builder
+                .push_point([90.0 + x as f32 * 0.02, y as f32 * 0.02, 2.5, 200.0, 0.0, 0.0, 1.0])
+                .unwrap();
+        }
+    }
+    builder.build().unwrap()
+}
+
+#[cfg(feature = "mvp")]
+fn mvp_xyzinormal_approximate_auto_config() -> spatialrust::MvpPipelineConfig {
+    use spatialrust::{
+        EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig,
+        Vec3,
+    };
+
+    MvpPipelineConfig {
+        voxel: spatialrust::VoxelGridDownsampleConfig::approximate(4.0),
+        voxel_policy: spatialrust::ExecutionPolicy::Auto,
+        normals: NormalEstimationConfig {
+            k_neighbors: 16,
+            min_neighbors: 3,
+            viewpoint: Some(Vec3::new(0.0, 0.0, 100.0)),
+            ..NormalEstimationConfig::default()
+        },
+        plane: RansacPlaneConfig {
+            distance_threshold: 0.2,
+            max_iterations: 200,
+            min_inliers: 10,
+            seed: 42,
+        },
+        cluster: EuclideanClusterConfig {
+            cluster_tolerance: 1.0,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+        },
+        icp: None,
+        ..MvpPipelineConfig::default()
+    }
 }
 
 #[cfg(feature = "mvp")]
@@ -1516,4 +1825,142 @@ fn mvp_approximate_voxel_mode_pipeline() {
     assert!(result.plane.inlier_count >= 10);
     let (x, _, _) = result.downsampled.positions3().unwrap();
     assert!(x.iter().all(|value| value.is_finite()));
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+fn parse_cli_plane_inliers(stderr: &[u8]) -> usize {
+    let text = String::from_utf8_lossy(stderr);
+    text.lines()
+        .find_map(|line| line.strip_prefix("plane inliers: "))
+        .and_then(|value| value.trim().parse().ok())
+        .expect("CLI stderr should report plane inliers")
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+#[test]
+fn mvp_cli_xyzinormal_approximate_auto_1m() {
+    use std::process::Command;
+
+    use spatialrust::{
+        FieldSemantic, HasPositions3, read_point_cloud_file, write_point_cloud_file,
+    };
+
+    const POINT_COUNT: usize = 1_000_000;
+    let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_xyzinormal_approx_auto_in_{}.las",
+        std::process::id()
+    ));
+    let output_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_xyzinormal_approx_auto_out_{}.las",
+        std::process::id()
+    ));
+    write_point_cloud_file(&input_path, &cloud).unwrap();
+
+    let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+    let output = Command::new(bin)
+        .args([
+            "--leaf-size",
+            "4.0",
+            "--voxel-mode",
+            "approximate",
+            "--voxel-policy",
+            "auto",
+            input_path.to_str().unwrap(),
+            output_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run xyzinormal approximate Auto CLI");
+    assert!(
+        output.status.success(),
+        "CLI failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let loaded_points = parse_cli_input_points(&output.stderr);
+    assert_eq!(loaded_points, cloud.len());
+    assert!(parse_cli_plane_inliers(&output.stderr) >= 10);
+
+    let saved = read_point_cloud_file(&output_path).unwrap();
+    assert!(saved.schema().find_semantic(FieldSemantic::Label).is_some());
+    let (x, y, z) = saved.positions3().unwrap();
+    assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
+
+    let _ = std::fs::remove_file(input_path);
+    let _ = std::fs::remove_file(output_path);
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+#[test]
+#[ignore = "manual release probe for xyzinormal approximate Auto CLI"]
+fn probe_xyzinormal_approximate_auto_cli_release() {
+    use std::process::Command;
+
+    use spatialrust::write_point_cloud_file;
+
+    const POINT_COUNT: usize = 1_000_000;
+    let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_probe_xyzinormal_approx_auto_in_{}.las",
+        std::process::id()
+    ));
+    write_point_cloud_file(&input_path, &cloud).unwrap();
+
+    if std::env::var("SPATIALRUST_PROBE_RELEASE").is_ok() {
+        let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+        let base_args = [
+            "--leaf-size",
+            "4.0",
+            "--voxel-mode",
+            "approximate",
+        ];
+        let policies = [("auto", "auto"), ("cpu", "cpu"), ("gpu", "gpu")];
+        eprintln!("release xyzinormal approximate CLI (1M LAS, IO included):");
+        for (label, policy) in policies {
+            let output_path = std::env::temp_dir().join(format!(
+                "spatialrust_probe_xyzinormal_approx_auto_{label}_{}.las",
+                std::process::id()
+            ));
+            let output = Command::new(bin)
+                .args(base_args)
+                .args(["--voxel-policy", policy])
+                .arg(input_path.to_str().unwrap())
+                .arg(output_path.to_str().unwrap())
+                .output()
+                .expect("release CLI");
+            assert!(
+                output.status.success(),
+                "{label}: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let points = parse_cli_input_points(&output.stderr);
+            let elapsed = parse_cli_elapsed_ms(&output.stderr);
+            eprintln!("{label}: points={points} elapsed={elapsed:.3}ms");
+            let _ = std::fs::remove_file(output_path);
+        }
+    }
+
+    let _ = std::fs::remove_file(input_path);
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+#[test]
+fn mvp_xyzinormal_approximate_auto_1m_smoke() {
+    use spatialrust::{HasIntensity, HasNormals3, HasPositions3, MvpPipeline};
+
+    const POINT_COUNT: usize = 1_000_000;
+    let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
+    let result = MvpPipeline::new(mvp_xyzinormal_approximate_auto_config())
+        .run(&cloud)
+        .expect("xyzinormal approximate Auto MVP @1M");
+
+    assert!(result.downsampled.len() < cloud.len());
+    assert!(result.downsampled.intensity().is_ok());
+    assert!(result.downsampled.field("normal_x").is_ok());
+    assert!(result.plane.inlier_count >= 10);
+    assert!(result.output.field("label").is_ok());
+    let (x, y, z) = result.output.positions3().unwrap();
+    assert!(x.iter().chain(y).chain(z).all(|value| value.is_finite()));
+    let (_, _, nz) = result.downsampled.normals3().unwrap();
+    assert!(nz.iter().all(|value| value.is_finite()));
 }

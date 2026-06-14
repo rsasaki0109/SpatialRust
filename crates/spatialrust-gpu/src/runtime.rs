@@ -3,6 +3,7 @@ use std::sync::{Arc, OnceLock};
 use spatialrust_core::{SpatialError, SpatialResult};
 
 use crate::pipeline_cache::ComputePipelineCache;
+use crate::upload_cache::GpuUploadPool;
 
 /// Headless wgpu runtime for compute-only workloads.
 #[cfg(feature = "gpu-wgpu")]
@@ -12,6 +13,7 @@ pub struct WgpuRuntime {
     queue: wgpu::Queue,
     pipelines: OnceLock<ComputePipelineCache>,
     max_gather_channels: u32,
+    upload_pool: GpuUploadPool,
 }
 
 /// Minimum storage buffers required for the 4-channel gather kernel.
@@ -67,6 +69,16 @@ impl WgpuRuntime {
         self.max_gather_channels
     }
 
+    /// Uploads `f32` values into a reusable pooled storage buffer.
+    pub fn upload_f32_storage(&self, label: &'static str, data: &[f32]) -> SpatialResult<wgpu::Buffer> {
+        self.upload_pool.upload_f32_storage(self, label, data)
+    }
+
+    /// Returns a storage buffer to the upload pool for reuse.
+    pub fn recycle_storage(&self, byte_len: u64, buffer: wgpu::Buffer) {
+        self.upload_pool.recycle_storage(byte_len, buffer);
+    }
+
     async fn new_headless_async() -> SpatialResult<Self> {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
@@ -110,6 +122,7 @@ impl WgpuRuntime {
             queue,
             pipelines: OnceLock::new(),
             max_gather_channels,
+            upload_pool: GpuUploadPool::default(),
         })
     }
 }
