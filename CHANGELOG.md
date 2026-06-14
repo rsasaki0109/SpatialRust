@@ -102,9 +102,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Performance: radius outlier removal is **~16× faster** (1.70 s → 0.10 s on
   210k points) via a new `KdTree::radius_reaches` early-exit density test that
   stops once enough neighbors are found and allocates nothing. `radius_search`
-  also no longer sorts results (no caller relied on the order), and the CPU
-  voxel downsampler uses a fast integer hasher (~20% faster). Measured against
-  PCL 1.14, SpatialRust now wins 3 of 4 compared operations
+  also no longer sorts results (no caller relied on the order). CPU voxel
+  downsampling is **~2× faster** (0.047 s → 0.022 s on 210k points) via a fast
+  integer hasher and a single-pass centroid accumulator for the default
+  Centroid + Average case. Measured against PCL 1.14, SpatialRust now wins 3 of
+  4 compared operations, with PCL's voxel grid keeping a ~2× edge
   (`bench/pcl_comparison/`).
 
 ### Fixed

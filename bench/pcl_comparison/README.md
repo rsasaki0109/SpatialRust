@@ -35,12 +35,13 @@ varies by CPU; run it yourself for numbers on your hardware.
 | Radius Outlier Removal | 0.10 s | 0.33 s | **3.2× faster** |
 | Statistical Outlier Removal | 0.29 s | 0.51 s | **1.8× faster** |
 | Normal estimation | 0.33 s | 0.48 s | **1.5× faster** |
-| Voxel downsample | 0.037 s | 0.011 s | 0.30× (PCL ~3× faster) |
+| Voxel downsample | 0.022 s | 0.011 s | 0.51× (PCL ~2× faster) |
 
 SpatialRust is faster on neighborhood-statistics and density operations (radius
-outlier removal uses an early-exit density test; normals and SOR win too). PCL's
-hand-tuned hashed voxel grid is still ahead on downsampling. These are honest
-single-run numbers, including where PCL wins.
+outlier removal uses an early-exit density test; normals and SOR win too; voxel
+downsampling uses a single-pass accumulator). PCL's hand-tuned hashed voxel grid
+keeps a ~2× edge on downsampling. These are honest single-run numbers, including
+where PCL wins.
 
 > Note: comparisons use each library's straightforward default API on a CPU,
 > single-threaded where that is the default. They are indicative, not a
