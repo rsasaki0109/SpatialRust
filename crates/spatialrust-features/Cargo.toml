@@ -12,6 +12,7 @@ description = "Feature estimation for SpatialRust point clouds"
 default = ["feature-normal"]
 feature-normal = []
 feature-iss = []
+feature-normal-orient = []
 feature-normal-gpu = ["feature-normal", "dep:spatialrust-gpu"]
 
 [dependencies]

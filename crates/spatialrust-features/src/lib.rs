@@ -9,6 +9,9 @@ mod neighborhood;
 #[cfg(feature = "feature-iss")]
 mod iss;
 
+#[cfg(feature = "feature-normal-orient")]
+mod orient;
+
 #[cfg(feature = "feature-normal")]
 mod normal;
 
@@ -20,6 +23,9 @@ pub use neighborhood::{KdTreeNeighborhood, NeighborhoodProvider};
 
 #[cfg(feature = "feature-iss")]
 pub use iss::{IssKeypointConfig, IssKeypointDetector, IssKeypointResult};
+
+#[cfg(feature = "feature-normal-orient")]
+pub use orient::{orient_normals_consistent, NormalOrientationConfig};
 
 #[cfg(feature = "feature-normal")]
 pub use normal::{

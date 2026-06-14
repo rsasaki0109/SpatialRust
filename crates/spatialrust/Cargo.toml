@@ -36,6 +36,10 @@ filter-mls = [
 ]
 feature-normal = ["spatialrust-features/feature-normal", "spatialrust-search/search-kdtree"]
 feature-iss = ["spatialrust-features/feature-iss", "spatialrust-search/search-kdtree"]
+feature-normal-orient = [
+    "spatialrust-features/feature-normal-orient",
+    "spatialrust-search/search-kdtree",
+]
 feature-normal-gpu = [
     "spatialrust-features/feature-normal-gpu",
     "feature-normal",

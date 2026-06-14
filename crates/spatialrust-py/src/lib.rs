@@ -14,8 +14,8 @@ use pyo3::prelude::*;
 
 use spatialrust::core::{PointBuffer, PointBufferSet, SpatialMetadata};
 use spatialrust::features::{
-    FeatureEstimator, IssKeypointConfig, IssKeypointDetector, NormalEstimationConfig,
-    NormalEstimator,
+    orient_normals_consistent, FeatureEstimator, IssKeypointConfig, IssKeypointDetector,
+    NormalEstimationConfig, NormalEstimator, NormalOrientationConfig,
 };
 use spatialrust::filtering::{
     Aabb, CropBox, FarthestPointSampling, FarthestPointSamplingConfig, MlsConfig, MlsSmoothing,
@@ -528,6 +528,21 @@ fn mls_smooth(
     Ok(PyPointCloud { inner })
 }
 
+/// Estimates normals, then propagates a single consistent orientation across a
+/// k-NN graph (MST) so neighboring normals agree in sign. Returns a cloud
+/// carrying the oriented normals (`normal_x/y/z` fields).
+#[pyfunction]
+#[pyo3(signature = (cloud, k_neighbors=15))]
+fn orient_normals(cloud: &PyPointCloud, k_neighbors: usize) -> PyResult<PyPointCloud> {
+    let with_normals = NormalEstimator::new(NormalEstimationConfig::k_neighbors(k_neighbors))
+        .estimate(&cloud.inner)
+        .map_err(to_py_err)?;
+    let oriented =
+        orient_normals_consistent(&with_normals, NormalOrientationConfig::new(k_neighbors))
+            .map_err(to_py_err)?;
+    Ok(PyPointCloud { inner: oriented })
+}
+
 /// Intrinsic Shape Signatures (ISS) keypoints: returns a sparse sub-cloud of
 /// geometrically salient points (corners), useful as a front-end for
 /// feature-based registration.
@@ -925,6 +940,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crop_box, m)?)?;
     m.add_function(wrap_pyfunction!(pass_through, m)?)?;
     m.add_function(wrap_pyfunction!(iss_keypoints, m)?)?;
+    m.add_function(wrap_pyfunction!(orient_normals, m)?)?;
     m.add_function(wrap_pyfunction!(mls_smooth, m)?)?;
     m.add_function(wrap_pyfunction!(farthest_point_sampling, m)?)?;
     m.add_function(wrap_pyfunction!(statistical_outlier_removal, m)?)?;

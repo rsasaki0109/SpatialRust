@@ -74,6 +74,10 @@ jobs:
             args: -p spatialrust-features --features feature-iss
           - name: spatialrust-features-iss-meta
             args: -p spatialrust --features feature-iss
+          - name: spatialrust-features-normal-orient
+            args: -p spatialrust-features --features feature-normal-orient
+          - name: spatialrust-features-normal-orient-meta
+            args: -p spatialrust --features feature-normal-orient
           - name: spatialrust-features-normal-gpu
             args: -p spatialrust-features --features feature-normal-gpu
           - name: spatialrust-features-normal-gpu-meta

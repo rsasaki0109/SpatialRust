@@ -50,6 +50,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     keypoint-based registration path (ISS keypoints → FPFH → RANSAC) exposed in
     the Python bindings as `register_fpfh_keypoints`.
   - Registration backend selection in the MVP pipeline (`MvpRegistrationMethod`).
+- **Consistent normal orientation** (`spatialrust-features`,
+  `feature-normal-orient`): MST/Prim propagation over a k-NN graph that flips
+  estimated normals to agree in sign, exposed in the Python bindings as
+  `orient_normals` (estimate + orient).
 - **ISS keypoint detection** (`spatialrust-features`, `feature-iss`): Intrinsic
   Shape Signatures saliency with non-maximum suppression, returning a sparse
   keypoint sub-cloud; exposed in the Python bindings (`iss_keypoints`).
