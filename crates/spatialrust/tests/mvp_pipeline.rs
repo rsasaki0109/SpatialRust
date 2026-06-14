@@ -232,6 +232,7 @@ fn mvp_full_pipeline_roundtrip() {
                 Quat::<f32>::identity(),
                 Vec3::new(0.03, -0.01, 0.0),
             )),
+            ..Default::default()
         }),
         ..MvpPipelineConfig::default()
     })
@@ -307,6 +308,7 @@ fn mvp_las_pipeline_roundtrip() {
                 Quat::<f32>::identity(),
                 Vec3::new(0.03, -0.01, 0.0),
             )),
+            ..Default::default()
         }),
         ..MvpPipelineConfig::default()
     })
@@ -380,6 +382,7 @@ fn mvp_copc_pipeline_roundtrip() {
                 Quat::<f32>::identity(),
                 Vec3::new(0.03, -0.01, 0.0),
             )),
+            ..Default::default()
         }),
         ..MvpPipelineConfig::default()
     })

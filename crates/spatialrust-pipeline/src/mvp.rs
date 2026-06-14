@@ -8,20 +8,45 @@ use spatialrust_features::{FeatureEstimator, NormalEstimationConfig, NormalEstim
 use spatialrust_filtering::{VoxelGridDownsample, VoxelGridDownsampleConfig};
 use spatialrust_math::Isometry3;
 use spatialrust_registration::{
-    transform_point_cloud, IcpConfig, IcpRegistration, PointCloudRegistration, RegistrationResult,
+    transform_point_cloud, GicpConfig, GicpRegistration, IcpConfig, IcpRegistration,
+    PointCloudRegistration, PointToPlaneIcp, PointToPlaneIcpConfig, RegistrationResult,
 };
 use spatialrust_segmentation::{
     EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult, RansacPlaneConfig,
     RansacPlaneSegmentation, RansacPlaneSegmenter,
 };
 
+/// Registration backend used by the MVP pipeline's optional alignment step.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum MvpRegistrationMethod {
+    /// Classic point-to-point ICP (target = downsampled cloud).
+    #[default]
+    PointToPoint,
+    /// Point-to-plane ICP using the estimated normals (target = cloud with normals).
+    PointToPlane,
+    /// Generalized ICP (plane-to-plane, target = downsampled cloud).
+    Gicp,
+}
+
 /// Configuration for optional ICP in the MVP pipeline.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MvpIcpConfig {
-    /// ICP algorithm settings.
+    /// Shared registration settings (iterations, correspondence distance, thresholds).
     pub icp: IcpConfig,
-    /// Optional transform applied to the downsampled cloud to synthesize a source scan.
+    /// Optional transform applied to the reference cloud to synthesize a source scan.
     pub source_transform: Option<Isometry3<f32>>,
+    /// Registration backend to use.
+    pub method: MvpRegistrationMethod,
+}
+
+impl Default for MvpIcpConfig {
+    fn default() -> Self {
+        Self {
+            icp: IcpConfig::default(),
+            source_transform: None,
+            method: MvpRegistrationMethod::PointToPoint,
+        }
+    }
 }
 
 /// Full configuration for the MVP pipeline.
@@ -111,12 +136,30 @@ impl MvpPipeline {
             EuclideanClusterExtractor::new(self.config.cluster).extract(&plane.outliers)?;
 
         let registration = if let Some(icp_config) = &self.config.icp {
-            let source = if let Some(transform) = icp_config.source_transform {
-                transform_point_cloud(&downsampled, transform)?
-            } else {
-                downsampled.clone()
+            // Point-to-plane aligns against the normal-bearing cloud; the others
+            // use the plain downsampled cloud as the reference target.
+            let target = match icp_config.method {
+                MvpRegistrationMethod::PointToPlane => &with_normals,
+                MvpRegistrationMethod::PointToPoint | MvpRegistrationMethod::Gicp => &downsampled,
             };
-            Some(IcpRegistration::new(icp_config.icp).align(&source, &downsampled)?)
+            let source = if let Some(transform) = icp_config.source_transform {
+                transform_point_cloud(target, transform)?
+            } else {
+                target.clone()
+            };
+            let result = match icp_config.method {
+                MvpRegistrationMethod::PointToPoint => {
+                    IcpRegistration::new(icp_config.icp).align(&source, target)?
+                }
+                MvpRegistrationMethod::PointToPlane => {
+                    PointToPlaneIcp::new(point_to_plane_config(&icp_config.icp))
+                        .align(&source, target)?
+                }
+                MvpRegistrationMethod::Gicp => {
+                    GicpRegistration::new(gicp_config(&icp_config.icp)).align(&source, target)?
+                }
+            };
+            Some(result)
         } else {
             None
         };
@@ -129,6 +172,31 @@ impl MvpPipeline {
             clusters,
             registration,
         })
+    }
+}
+
+/// Maps the shared ICP settings onto a point-to-plane configuration.
+fn point_to_plane_config(icp: &IcpConfig) -> PointToPlaneIcpConfig {
+    PointToPlaneIcpConfig {
+        max_iterations: icp.max_iterations,
+        max_correspondence_distance: icp.max_correspondence_distance,
+        transformation_epsilon: icp.transformation_epsilon,
+        fitness_epsilon: icp.fitness_epsilon,
+        min_correspondences: icp.min_correspondences,
+        initial_guess: icp.initial_guess,
+    }
+}
+
+/// Maps the shared ICP settings onto a GICP configuration.
+fn gicp_config(icp: &IcpConfig) -> GicpConfig {
+    GicpConfig {
+        max_iterations: icp.max_iterations,
+        max_correspondence_distance: icp.max_correspondence_distance,
+        transformation_epsilon: icp.transformation_epsilon,
+        fitness_epsilon: icp.fitness_epsilon,
+        min_correspondences: icp.min_correspondences,
+        initial_guess: icp.initial_guess,
+        ..GicpConfig::default()
     }
 }
 
@@ -217,6 +285,7 @@ mod tests {
                     Quat::<f32>::identity(),
                     Vec3::new(0.03, -0.01, 0.0),
                 )),
+                ..Default::default()
             }),
             ..Default::default()
         });
@@ -224,6 +293,71 @@ mod tests {
         let result = pipeline.run(&sample_cloud()).unwrap();
         let registration = result.registration.expect("expected icp result");
         assert!(registration.converged);
+    }
+
+    /// Three perpendicular faces, giving point-to-plane/GICP full 6-DoF constraint.
+    fn corner_cloud() -> spatialrust_core::PointCloud {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for i in 0..12 {
+            for j in 0..12 {
+                let (a, b) = (i as f32 * 0.06, j as f32 * 0.06);
+                builder.push_point([a, b, 0.0]).unwrap();
+                builder.push_point([a, 0.0, b + 0.03]).unwrap();
+                builder.push_point([0.0, a + 0.03, b + 0.03]).unwrap();
+            }
+        }
+        builder.build().unwrap()
+    }
+
+    fn run_with_method(method: super::MvpRegistrationMethod) -> super::RegistrationResult {
+        let pipeline = MvpPipeline::new(MvpPipelineConfig {
+            voxel: spatialrust_filtering::VoxelGridDownsampleConfig::centroid(0.05),
+            normals: spatialrust_features::NormalEstimationConfig {
+                k_neighbors: 10,
+                min_neighbors: 3,
+                ..Default::default()
+            },
+            plane: RansacPlaneConfig {
+                distance_threshold: 0.02,
+                max_iterations: 500,
+                min_inliers: 10,
+                seed: 17,
+            },
+            cluster: EuclideanClusterConfig {
+                cluster_tolerance: 0.3,
+                min_cluster_size: 1,
+                max_cluster_size: usize::MAX,
+            },
+            icp: Some(MvpIcpConfig {
+                icp: IcpConfig {
+                    max_correspondence_distance: 0.3,
+                    max_iterations: 40,
+                    min_correspondences: 6,
+                    ..Default::default()
+                },
+                source_transform: Some(Isometry3::new(
+                    Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 0.05),
+                    Vec3::new(0.01, -0.008, 0.012),
+                )),
+                method,
+            }),
+            ..Default::default()
+        });
+        pipeline.run(&corner_cloud()).unwrap().registration.expect("expected registration")
+    }
+
+    #[test]
+    fn runs_point_to_plane_registration() {
+        let result = run_with_method(super::MvpRegistrationMethod::PointToPlane);
+        assert!(result.fitness.is_finite());
+        assert!(result.fitness < 1e-2, "fitness too high: {}", result.fitness);
+    }
+
+    #[test]
+    fn runs_gicp_registration() {
+        let result = run_with_method(super::MvpRegistrationMethod::Gicp);
+        assert!(result.fitness.is_finite());
+        assert!(result.fitness < 1e-1, "fitness too high: {}", result.fitness);
     }
 
     #[cfg(feature = "pipeline-mvp-gpu")]

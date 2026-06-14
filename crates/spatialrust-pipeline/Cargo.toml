@@ -19,7 +19,11 @@ spatialrust-math = { workspace = true }
 spatialrust-filtering = { workspace = true, features = ["filter-voxel"] }
 spatialrust-features = { workspace = true, features = ["feature-normal"] }
 spatialrust-segmentation = { workspace = true, features = ["segment-ransac-plane", "segment-euclidean"] }
-spatialrust-registration = { workspace = true, features = ["register-icp"] }
+spatialrust-registration = { workspace = true, features = [
+    "register-icp",
+    "register-icp-point-to-plane",
+    "register-gicp",
+] }
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }
