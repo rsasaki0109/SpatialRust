@@ -93,10 +93,40 @@ One dataflow, eleven crates — each pipeline stage maps to the crate that imple
 | `spatialrust-search` | KD-tree spatial search |
 | `spatialrust-filtering` | Voxel downsample and filters |
 | `spatialrust-features` | Normal estimation |
-| `spatialrust-segmentation` | RANSAC plane and Euclidean clustering |
+| `spatialrust-segmentation` | RANSAC plane, Euclidean clustering, region growing |
 | `spatialrust-registration` | ICP registration |
 | `spatialrust-pipeline` | Composable MVP pipelines |
 | `spatialrust-gpu` | wgpu runtime and voxel kernels |
+
+## Python
+
+True to the **"PyTorch for Spatial Computing"** tagline, the whole pipeline is callable from Python with NumPy interop — no C++ binding layer:
+
+```python
+import numpy as np
+import spatialrust as sr
+
+cloud = sr.PointCloud.from_xyz(points)            # (N, 3) float32 -> native cloud
+result = sr.run_pipeline(cloud, leaf_size=0.1, cluster_tolerance=0.3)
+
+print(result.plane_normal)                        # dominant plane normal (nx, ny, nz)
+labels = result.labels()                          # (N,) int32 cluster ids
+sr.write("labeled.las", result.output)            # LAS/PCD/PLY/COPC by extension
+```
+
+<p align="center">
+  <img src="docs/assets/python_segmentation.png" alt="Top-down view of five neon clusters segmented from a synthetic room scan via a single Python run_pipeline() call" width="540">
+</p>
+
+Build the extension with [maturin](https://www.maturin.rs/) and reproduce the image above:
+
+```bash
+pip install maturin numpy matplotlib
+cd crates/spatialrust-py && maturin develop --release
+python examples/segment_room.py --png ../../docs/assets/python_segmentation.png
+```
+
+See [crates/spatialrust-py/README.md](crates/spatialrust-py/README.md) for the full Python API.
 
 ## Quick start
 
