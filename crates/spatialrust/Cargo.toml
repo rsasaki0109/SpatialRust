@@ -30,6 +30,10 @@ segment-euclidean = [
     "spatialrust-segmentation/segment-euclidean",
     "spatialrust-search/search-kdtree",
 ]
+segment-region-growing = [
+    "spatialrust-segmentation/segment-region-growing",
+    "spatialrust-search/search-kdtree",
+]
 register-icp = [
     "spatialrust-registration/register-icp",
     "spatialrust-search/search-kdtree",

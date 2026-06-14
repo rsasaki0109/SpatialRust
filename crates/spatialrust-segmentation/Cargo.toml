@@ -12,6 +12,7 @@ description = "Point cloud segmentation for SpatialRust"
 default = ["segment-ransac-plane", "segment-euclidean"]
 segment-ransac-plane = []
 segment-euclidean = ["dep:spatialrust-search"]
+segment-region-growing = ["dep:spatialrust-search"]
 
 [dependencies]
 spatialrust-core = { workspace = true }

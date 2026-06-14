@@ -12,6 +12,9 @@ mod plane;
 #[cfg(feature = "segment-euclidean")]
 mod cluster;
 
+#[cfg(feature = "segment-region-growing")]
+mod region_growing;
+
 pub use cloud::{extract_indices, extract_mask, with_labels};
 pub use segmenter::PointCloudSegmenter;
 
@@ -23,4 +26,9 @@ pub use plane::{
 #[cfg(feature = "segment-euclidean")]
 pub use cluster::{
     EuclideanClusterConfig, EuclideanClusterResult, EuclideanClusterExtractor,
+};
+
+#[cfg(feature = "segment-region-growing")]
+pub use region_growing::{
+    RegionGrowingConfig, RegionGrowingResult, RegionGrowingSegmenter,
 };

@@ -91,6 +91,11 @@ pub use spatialrust_segmentation::{
     EuclideanClusterConfig, EuclideanClusterResult, EuclideanClusterExtractor,
 };
 
+#[cfg(feature = "segment-region-growing")]
+pub use spatialrust_segmentation::{
+    RegionGrowingConfig, RegionGrowingResult, RegionGrowingSegmenter,
+};
+
 #[cfg(feature = "register-icp")]
 pub use spatialrust_registration::{
     estimate_rigid_transform, transform_point_cloud, IcpConfig, IcpRegistration,

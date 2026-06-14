@@ -56,6 +56,8 @@ jobs:
             args: -p spatialrust-features --features feature-normal
           - name: spatialrust-segmentation
             args: -p spatialrust-segmentation --all-features
+          - name: spatialrust-segmentation-region-growing-meta
+            args: -p spatialrust --features segment-region-growing
           - name: spatialrust-registration-icp
             args: -p spatialrust-registration --features register-icp
           - name: spatialrust-pipeline-mvp
