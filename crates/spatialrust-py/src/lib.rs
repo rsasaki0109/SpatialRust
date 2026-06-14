@@ -23,7 +23,9 @@ use spatialrust::registration::{
     GicpConfig, GicpRegistration, IcpConfig, IcpRegistration, NdtConfig, NdtRegistration,
     PointCloudRegistration, PointToPlaneIcp, PointToPlaneIcpConfig, RegistrationResult,
 };
-use spatialrust::segmentation::{RegionGrowingConfig, RegionGrowingSegmenter};
+use spatialrust::segmentation::{
+    DbscanConfig, DbscanSegmenter, RegionGrowingConfig, RegionGrowingSegmenter,
+};
 use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
     StandardSchemas,
@@ -192,6 +194,56 @@ impl PyRegionResult {
     fn __repr__(&self) -> String {
         format!("RegionResult(points={}, regions={})", self.output.inner.len(), self.cluster_count)
     }
+}
+
+/// Result of DBSCAN density-based clustering.
+#[pyclass(name = "DbscanResult")]
+pub struct PyDbscanResult {
+    /// Labeled output cloud (cluster labels in the `label` field, `-1` = noise).
+    #[pyo3(get)]
+    output: PyPointCloud,
+    /// Number of clusters found.
+    #[pyo3(get)]
+    cluster_count: usize,
+    /// Size of each cluster, in label order.
+    #[pyo3(get)]
+    cluster_sizes: Vec<usize>,
+    /// Number of points classified as noise.
+    #[pyo3(get)]
+    noise_count: usize,
+}
+
+#[pymethods]
+impl PyDbscanResult {
+    /// Per-point cluster labels of the output cloud as an (N,) int32 array.
+    fn labels<'py>(&self, py: Python<'py>) -> Option<Bound<'py, PyArray1<i32>>> {
+        self.output.labels(py)
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "DbscanResult(points={}, clusters={}, noise={})",
+            self.output.inner.len(),
+            self.cluster_count,
+            self.noise_count
+        )
+    }
+}
+
+/// DBSCAN density-based clustering. Groups points with at least `min_points`
+/// neighbors within `eps`, labeling low-density points as noise (`-1`).
+#[pyfunction]
+#[pyo3(signature = (cloud, eps=0.5, min_points=10))]
+fn dbscan(cloud: &PyPointCloud, eps: f32, min_points: usize) -> PyResult<PyDbscanResult> {
+    let result = DbscanSegmenter::new(DbscanConfig::new(eps, min_points))
+        .segment(&cloud.inner)
+        .map_err(to_py_err)?;
+    Ok(PyDbscanResult {
+        output: PyPointCloud { inner: result.cloud },
+        cluster_count: result.cluster_count,
+        cluster_sizes: result.cluster_sizes,
+        noise_count: result.noise_count,
+    })
 }
 
 /// Reads a point cloud from a file (PCD/PLY/LAS/COPC by extension).
@@ -438,6 +490,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPointCloud>()?;
     m.add_class::<PyPipelineResult>()?;
     m.add_class::<PyRegionResult>()?;
+    m.add_class::<PyDbscanResult>()?;
     m.add_class::<PyRegistrationResult>()?;
     m.add_function(wrap_pyfunction!(read, m)?)?;
     m.add_function(wrap_pyfunction!(write, m)?)?;
@@ -446,6 +499,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(radius_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(region_growing, m)?)?;
+    m.add_function(wrap_pyfunction!(dbscan, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;

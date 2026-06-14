@@ -12,6 +12,9 @@ mod plane;
 #[cfg(feature = "segment-euclidean")]
 mod cluster;
 
+#[cfg(feature = "segment-dbscan")]
+mod dbscan;
+
 #[cfg(feature = "segment-region-growing")]
 mod region_growing;
 
@@ -23,6 +26,9 @@ pub use plane::{PlaneModel, RansacPlaneConfig, RansacPlaneSegmentation, RansacPl
 
 #[cfg(feature = "segment-euclidean")]
 pub use cluster::{EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult};
+
+#[cfg(feature = "segment-dbscan")]
+pub use dbscan::{DbscanConfig, DbscanResult, DbscanSegmenter};
 
 #[cfg(feature = "segment-region-growing")]
 pub use region_growing::{RegionGrowingConfig, RegionGrowingResult, RegionGrowingSegmenter};

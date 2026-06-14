@@ -39,6 +39,10 @@ segment-euclidean = [
     "spatialrust-segmentation/segment-euclidean",
     "spatialrust-search/search-kdtree",
 ]
+segment-dbscan = [
+    "spatialrust-segmentation/segment-dbscan",
+    "spatialrust-search/search-kdtree",
+]
 segment-region-growing = [
     "spatialrust-segmentation/segment-region-growing",
     "spatialrust-search/search-kdtree",

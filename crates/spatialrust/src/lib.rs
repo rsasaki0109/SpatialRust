@@ -97,6 +97,9 @@ pub use spatialrust_segmentation::{
     EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult,
 };
 
+#[cfg(feature = "segment-dbscan")]
+pub use spatialrust_segmentation::{DbscanConfig, DbscanResult, DbscanSegmenter};
+
 #[cfg(feature = "segment-region-growing")]
 pub use spatialrust_segmentation::{
     RegionGrowingConfig, RegionGrowingResult, RegionGrowingSegmenter,

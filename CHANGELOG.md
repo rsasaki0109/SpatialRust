@@ -26,6 +26,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **GPU normal estimation** (`spatialrust-features`, `feature-normal-gpu`): a wgpu
   path with a fully-GPU uniform-grid radius neighbor search (covariance + Jacobi
   eigensolver), up to ~50× faster than the CPU KD-tree estimator at 500k points.
+- **DBSCAN segmentation** (`spatialrust-segmentation`, `segment-dbscan`):
+  density-based clustering with explicit noise labeling, exposed in the Python
+  bindings (`dbscan`).
 - **Region growing segmentation** (`spatialrust-segmentation`,
   `segment-region-growing`): normal-smoothness region growing with curvature
   seeding.
