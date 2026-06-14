@@ -17,8 +17,8 @@ use spatialrust::features::{FeatureEstimator, NormalEstimationConfig, NormalEsti
 use spatialrust::filtering::{VoxelGridDownsample, VoxelGridDownsampleConfig};
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
 use spatialrust::registration::{
-    GicpConfig, GicpRegistration, IcpConfig, IcpRegistration, PointCloudRegistration,
-    PointToPlaneIcp, PointToPlaneIcpConfig, RegistrationResult,
+    GicpConfig, GicpRegistration, IcpConfig, IcpRegistration, NdtConfig, NdtRegistration,
+    PointCloudRegistration, PointToPlaneIcp, PointToPlaneIcpConfig, RegistrationResult,
 };
 use spatialrust::segmentation::{RegionGrowingConfig, RegionGrowingSegmenter};
 use spatialrust::{
@@ -382,6 +382,22 @@ fn register_gicp(
     Ok(PyRegistrationResult::from_result(&result))
 }
 
+/// NDT (Normal Distributions Transform) registration. `resolution` is the target
+/// voxel size used to build per-cell Gaussians.
+#[pyfunction]
+#[pyo3(signature = (source, target, resolution=1.0, max_iterations=35))]
+fn register_ndt(
+    source: &PyPointCloud,
+    target: &PyPointCloud,
+    resolution: f32,
+    max_iterations: usize,
+) -> PyResult<PyRegistrationResult> {
+    let config = NdtConfig { resolution, max_iterations, ..NdtConfig::default() };
+    let result =
+        NdtRegistration::new(config).align(&source.inner, &target.inner).map_err(to_py_err)?;
+    Ok(PyRegistrationResult::from_result(&result))
+}
+
 /// SpatialRust — PyTorch for Spatial Computing.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
@@ -399,5 +415,6 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;
+    m.add_function(wrap_pyfunction!(register_ndt, m)?)?;
     Ok(())
 }

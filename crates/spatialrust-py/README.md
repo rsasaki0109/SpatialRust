@@ -65,6 +65,7 @@ reloaded = sr.read("labeled.las")
 | `register_icp(source, target, max_correspondence_distance=1.0, max_iterations=50)` | Point-to-point ICP |
 | `register_point_to_plane(source, target, ..., k_neighbors=20)` | Point-to-plane ICP (normals estimated on target) |
 | `register_gicp(source, target, ..., k_neighbors=20)` | Generalized ICP (plane-to-plane) |
+| `register_ndt(source, target, resolution=1.0, max_iterations=35)` | NDT (Normal Distributions Transform) |
 
 `register_*` return a `RegistrationResult` with `.transform()` (4x4 NumPy
 matrix mapping source into the target frame), `.fitness`, `.iterations`, and
@@ -73,8 +74,11 @@ matrix mapping source into the target frame), `.fitness`, `.iterations`, and
 ## Example
 
 ```bash
-python examples/segment_room.py --png room.png
+python examples/segment_room.py --png room.png        # segmentation pipeline
+python examples/register_scans.py --png reg.png        # two-scan registration
 ```
 
-Synthesizes a scan-like room, runs the pipeline, and writes a labeled cloud plus
-a top-down preview.
+`segment_room.py` synthesizes a scan-like room, runs the pipeline, and writes a
+labeled cloud plus a top-down preview. `register_scans.py` makes a second scan by
+applying a known misalignment, then aligns it back with each registration backend
+(ICP, point-to-plane, GICP, NDT) and renders a before/after preview.

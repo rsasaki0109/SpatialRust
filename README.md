@@ -141,6 +141,17 @@ sr.write("labeled.las", result.output)            # LAS/PCD/PLY/COPC by extensio
   <img src="docs/assets/python_segmentation.png" alt="Top-down view of five neon clusters segmented from a synthetic room scan via a single Python run_pipeline() call" width="540">
 </p>
 
+Registration is callable too — align two scans with ICP / point-to-plane / GICP / NDT:
+
+```python
+result = sr.register_gicp(source, target)   # also: register_icp / _point_to_plane / _ndt
+T = result.transform()                       # 4x4 matrix mapping source -> target
+```
+
+<p align="center">
+  <img src="docs/assets/python_registration.png" alt="Before/after of two scans aligned by SpatialRust: a misaligned orange source scan snaps onto the blue target after registration" width="760">
+</p>
+
 Build the extension with [maturin](https://www.maturin.rs/) and reproduce the image above:
 
 ```bash
