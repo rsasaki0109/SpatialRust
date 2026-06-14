@@ -128,7 +128,7 @@ cd crates/spatialrust-py && maturin develop --release
 python examples/segment_room.py --png ../../docs/assets/python_segmentation.png
 ```
 
-See [crates/spatialrust-py/README.md](crates/spatialrust-py/README.md) for the full Python API.
+Prebuilt `abi3` wheels (CPython 3.8+) are produced by CI and published to PyPI on tagged releases (`pip install spatialrust`). See [crates/spatialrust-py/README.md](crates/spatialrust-py/README.md) for the full Python API.
 
 ## Quick start
 

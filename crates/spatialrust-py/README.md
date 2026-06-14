@@ -5,12 +5,24 @@ Python bindings for [SpatialRust](https://github.com/rsasaki0109/SpatialRust) â€
 downsampling, RANSAC plane segmentation, Euclidean clustering) with NumPy interop
 and no C++ binding layer.
 
-## Build & install
+## Install
+
+Prebuilt `abi3` wheels (CPython 3.8+, Linux x86_64/aarch64) are built by the
+[`Python wheels`](../../.github/workflows/python-wheels.yml) CI workflow and
+published to PyPI on tagged releases:
+
+```bash
+pip install spatialrust
+```
+
+## Build from source
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install maturin numpy
 maturin develop --release        # builds the Rust extension into the venv
+# or build a wheel:
+maturin build --release --out dist
 ```
 
 ## Quickstart
