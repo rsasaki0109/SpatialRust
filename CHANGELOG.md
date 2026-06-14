@@ -29,6 +29,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     no initial guess via Fast Point Feature Histograms and a RANSAC pose search,
     exposed in the Python bindings (`register_fpfh_ransac`).
   - Registration backend selection in the MVP pipeline (`MvpRegistrationMethod`).
+- **ISS keypoint detection** (`spatialrust-features`, `feature-iss`): Intrinsic
+  Shape Signatures saliency with non-maximum suppression, returning a sparse
+  keypoint sub-cloud; exposed in the Python bindings (`iss_keypoints`).
 - **GPU normal estimation** (`spatialrust-features`, `feature-normal-gpu`): a wgpu
   path with a fully-GPU uniform-grid radius neighbor search (covariance + Jacobi
   eigensolver), up to ~50× faster than the CPU KD-tree estimator at 500k points.

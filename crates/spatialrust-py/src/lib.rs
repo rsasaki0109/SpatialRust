@@ -13,7 +13,10 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 use spatialrust::core::{PointBuffer, PointBufferSet, SpatialMetadata};
-use spatialrust::features::{FeatureEstimator, NormalEstimationConfig, NormalEstimator};
+use spatialrust::features::{
+    FeatureEstimator, IssKeypointConfig, IssKeypointDetector, NormalEstimationConfig,
+    NormalEstimator,
+};
 use spatialrust::filtering::{
     Aabb, CropBox, PassThrough, PointCloudFilter, RadiusOutlierConfig, RadiusOutlierRemoval,
     StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
@@ -427,6 +430,25 @@ fn pass_through(
     Ok(PyPointCloud { inner })
 }
 
+/// Intrinsic Shape Signatures (ISS) keypoints: returns a sparse sub-cloud of
+/// geometrically salient points (corners), useful as a front-end for
+/// feature-based registration.
+#[pyfunction]
+#[pyo3(signature = (cloud, salient_radius=0.2, non_max_radius=0.15, gamma_21=0.975, gamma_32=0.975, min_neighbors=5))]
+fn iss_keypoints(
+    cloud: &PyPointCloud,
+    salient_radius: f32,
+    non_max_radius: f32,
+    gamma_21: f32,
+    gamma_32: f32,
+    min_neighbors: usize,
+) -> PyResult<PyPointCloud> {
+    let config =
+        IssKeypointConfig { salient_radius, non_max_radius, gamma_21, gamma_32, min_neighbors };
+    let result = IssKeypointDetector::new(config).detect(&cloud.inner).map_err(to_py_err)?;
+    Ok(PyPointCloud { inner: result.keypoints })
+}
+
 /// Statistical Outlier Removal: drops points whose mean distance to their `k`
 /// nearest neighbors is more than `std_mul` standard deviations above the mean.
 #[pyfunction]
@@ -686,6 +708,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(voxel_downsample, m)?)?;
     m.add_function(wrap_pyfunction!(crop_box, m)?)?;
     m.add_function(wrap_pyfunction!(pass_through, m)?)?;
+    m.add_function(wrap_pyfunction!(iss_keypoints, m)?)?;
     m.add_function(wrap_pyfunction!(statistical_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(radius_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;

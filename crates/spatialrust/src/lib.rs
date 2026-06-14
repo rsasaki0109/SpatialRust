@@ -86,6 +86,9 @@ pub use spatialrust_features::{
     NormalEstimationConfig, NormalEstimationResult, NormalEstimator,
 };
 
+#[cfg(feature = "feature-iss")]
+pub use spatialrust_features::{IssKeypointConfig, IssKeypointDetector, IssKeypointResult};
+
 #[cfg(feature = "feature-normal-gpu")]
 pub use spatialrust_features::GpuNormalEstimator;
 

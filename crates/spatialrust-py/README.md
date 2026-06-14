@@ -65,6 +65,7 @@ reloaded = sr.read("labeled.las")
 | `statistical_outlier_removal(cloud, k_neighbors=16, std_mul=1.0)` | Drop points far from their k-NN (SOR) |
 | `radius_outlier_removal(cloud, radius=0.5, min_neighbors=4)` | Drop points with too few neighbors in radius (ROR) |
 | `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline |
+| `iss_keypoints(cloud, salient_radius=0.2, non_max_radius=0.15, ...)` | ISS keypoints (sparse salient sub-cloud) |
 | `region_growing(cloud, k_neighbors=30, smoothness_deg=3.0, min_region_size=10)` | Estimate normals, then grow smooth regions |
 | `dbscan(cloud, eps=0.5, min_points=10)` | Density-based clustering with noise labeling (`-1`) |
 | `ransac_sphere(cloud, distance_threshold=0.02, ...)` | Fit the dominant sphere (center, radius, inliers/outliers) |

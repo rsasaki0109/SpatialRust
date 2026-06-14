@@ -6,6 +6,9 @@
 mod estimator;
 mod neighborhood;
 
+#[cfg(feature = "feature-iss")]
+mod iss;
+
 #[cfg(feature = "feature-normal")]
 mod normal;
 
@@ -14,6 +17,9 @@ mod normal_gpu;
 
 pub use estimator::FeatureEstimator;
 pub use neighborhood::{KdTreeNeighborhood, NeighborhoodProvider};
+
+#[cfg(feature = "feature-iss")]
+pub use iss::{IssKeypointConfig, IssKeypointDetector, IssKeypointResult};
 
 #[cfg(feature = "feature-normal")]
 pub use normal::{

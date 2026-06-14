@@ -62,6 +62,10 @@ jobs:
             args: -p spatialrust --features filter-crop
           - name: spatialrust-features-normal
             args: -p spatialrust-features --features feature-normal
+          - name: spatialrust-features-iss
+            args: -p spatialrust-features --features feature-iss
+          - name: spatialrust-features-iss-meta
+            args: -p spatialrust --features feature-iss
           - name: spatialrust-features-normal-gpu
             args: -p spatialrust-features --features feature-normal-gpu
           - name: spatialrust-features-normal-gpu-meta
