@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::{BuildHasherDefault, Hasher};
 
 use spatialrust_core::{
     DType, DeviceKind, ExecutionPolicy, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet,
@@ -7,6 +8,47 @@ use spatialrust_core::{
 use spatialrust_math::Vec3;
 
 use crate::filter::PointCloudFilter;
+
+/// Voxel keys are small integer tuples, so a fast multiply-rotate hasher (à la
+/// FxHash) beats the default SipHash by a wide margin on the cell map.
+#[derive(Default)]
+struct VoxelKeyHasher {
+    hash: u64,
+}
+
+impl VoxelKeyHasher {
+    #[inline]
+    fn mix(&mut self, value: u64) {
+        const K: u64 = 0x517c_c1b7_2722_0a95;
+        self.hash = (self.hash.rotate_left(5) ^ value).wrapping_mul(K);
+    }
+}
+
+impl Hasher for VoxelKeyHasher {
+    #[inline]
+    fn finish(&self) -> u64 {
+        self.hash
+    }
+
+    #[inline]
+    fn write_i64(&mut self, i: i64) {
+        self.mix(i as u64);
+    }
+
+    #[inline]
+    fn write_u64(&mut self, i: u64) {
+        self.mix(i);
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        for &b in bytes {
+            self.mix(u64::from(b));
+        }
+    }
+}
+
+/// Cell map keyed by integer voxel coordinates, using the fast voxel hasher.
+type VoxelCellMap = HashMap<(i64, i64, i64), VoxelCell, BuildHasherDefault<VoxelKeyHasher>>;
 
 /// Voxel aggregation strategy.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -313,8 +355,8 @@ fn build_voxel_cells_cpu(
     z: &[f32],
     origin: Vec3<f32>,
     inv_leaf: f32,
-) -> HashMap<(i64, i64, i64), VoxelCell> {
-    let mut cells: HashMap<(i64, i64, i64), VoxelCell> = HashMap::new();
+) -> VoxelCellMap {
+    let mut cells = VoxelCellMap::default();
     for index in 0..x.len() {
         let key = voxel_key(x[index], y[index], z[index], origin, inv_leaf);
         cells.entry(key).or_default().indices.push(index);
@@ -329,13 +371,13 @@ fn build_voxel_cells_gpu(
     z: &[f32],
     origin: Vec3<f32>,
     inv_leaf: f32,
-) -> SpatialResult<HashMap<(i64, i64, i64), VoxelCell>> {
+) -> SpatialResult<VoxelCellMap> {
     use spatialrust_gpu::{compute_voxel_keys, WgpuRuntime};
 
     let runtime = WgpuRuntime::shared()?;
     let keys = compute_voxel_keys(&runtime, x, y, z, [origin.x, origin.y, origin.z], inv_leaf)?;
 
-    let mut cells: HashMap<(i64, i64, i64), VoxelCell> = HashMap::new();
+    let mut cells = VoxelCellMap::default();
     for (index, key) in keys.into_iter().enumerate() {
         cells.entry(key).or_default().indices.push(index);
     }
@@ -665,7 +707,7 @@ fn build_voxel_cells_gpu(
     _z: &[f32],
     _origin: Vec3<f32>,
     _inv_leaf: f32,
-) -> SpatialResult<HashMap<(i64, i64, i64), VoxelCell>> {
+) -> SpatialResult<VoxelCellMap> {
     Err(SpatialError::InvalidArgument(
         "GPU voxel downsampling requires the filter-voxel-gpu feature".to_owned(),
     ))
