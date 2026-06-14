@@ -1,0 +1,20 @@
+[package]
+name = "spatialrust-metrics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Point cloud comparison metrics for SpatialRust"
+
+[features]
+default = ["metrics-distance"]
+metrics-distance = ["dep:spatialrust-search"]
+
+[dependencies]
+spatialrust-core = { workspace = true }
+spatialrust-search = { workspace = true, optional = true, features = ["search-kdtree"] }
+
+[dev-dependencies]
+spatialrust-core = { workspace = true }

@@ -12,6 +12,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   clouds, `read`/`write` (PCD/PLY/LAS/COPC), `voxel_downsample`, `run_pipeline`,
   `region_growing`, and registration (`register_icp`, `register_point_to_plane`,
   `register_gicp`, `register_ndt`). Built as `abi3` wheels (CPython 3.8+).
+- **Point cloud metrics** crate (`spatialrust-metrics`, `metrics-distance`):
+  symmetric Chamfer and Hausdorff distances (plus directed statistics) for
+  scoring registration / reconstruction against a reference, exposed in the
+  Python bindings (`chamfer_distance`, `hausdorff_distance`).
 - **Farthest Point Sampling** in `spatialrust-filtering` (`filter-fps`): even
   spatial downsampling to a target point count (the standard front-end for
   learned point-cloud models), exposed in the Python bindings

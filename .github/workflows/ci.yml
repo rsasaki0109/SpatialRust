@@ -108,6 +108,10 @@ jobs:
             args: -p spatialrust-registration --features register-fpfh
           - name: spatialrust-registration-fpfh-meta
             args: -p spatialrust --features register-fpfh
+          - name: spatialrust-metrics
+            args: -p spatialrust-metrics --features metrics-distance
+          - name: spatialrust-metrics-meta
+            args: -p spatialrust --features metrics-distance
           - name: spatialrust-pipeline-mvp
             args: -p spatialrust-pipeline --features pipeline-mvp
           - name: spatialrust-pipeline-mvp-gpu

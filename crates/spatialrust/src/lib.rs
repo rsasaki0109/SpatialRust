@@ -12,6 +12,7 @@ pub use spatialrust_filtering as filtering;
 pub use spatialrust_gpu as gpu;
 pub use spatialrust_io as io;
 pub use spatialrust_math as math;
+pub use spatialrust_metrics as metrics;
 pub use spatialrust_pipeline as pipeline;
 pub use spatialrust_registration as registration;
 pub use spatialrust_search as search;
@@ -140,6 +141,11 @@ pub use spatialrust_registration::{NdtConfig, NdtRegistration};
 
 #[cfg(feature = "register-fpfh")]
 pub use spatialrust_registration::{FpfhRansacConfig, FpfhRansacRegistration};
+
+#[cfg(feature = "metrics-distance")]
+pub use spatialrust_metrics::{
+    chamfer_distance, cloud_distances, hausdorff_distance, CloudDistances,
+};
 
 #[cfg(feature = "pipeline-mvp")]
 pub use spatialrust_pipeline::{

@@ -23,6 +23,7 @@ use spatialrust::filtering::{
     StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
     VoxelGridDownsampleConfig,
 };
+use spatialrust::metrics::{chamfer_distance as chamfer, hausdorff_distance as hausdorff};
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
 use spatialrust::registration::{
     FpfhRansacConfig, FpfhRansacRegistration, GicpConfig, GicpRegistration, IcpConfig,
@@ -369,6 +370,20 @@ fn ransac_cylinder(
         inliers: PyPointCloud { inner: result.inliers },
         outliers: PyPointCloud { inner: result.outliers },
     })
+}
+
+/// Symmetric Chamfer distance between two clouds (sum of mean squared
+/// nearest-neighbor distances in both directions). Zero for identical clouds.
+#[pyfunction]
+fn chamfer_distance(a: &PyPointCloud, b: &PyPointCloud) -> PyResult<f64> {
+    chamfer(&a.inner, &b.inner).map_err(to_py_err)
+}
+
+/// Symmetric Hausdorff distance between two clouds (the largest nearest-neighbor
+/// distance in either direction). Captures the worst-case discrepancy.
+#[pyfunction]
+fn hausdorff_distance(a: &PyPointCloud, b: &PyPointCloud) -> PyResult<f64> {
+    hausdorff(&a.inner, &b.inner).map_err(to_py_err)
 }
 
 /// Reads a point cloud from a file (PCD/PLY/LAS/COPC by extension).
@@ -749,6 +764,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(dbscan, m)?)?;
     m.add_function(wrap_pyfunction!(ransac_sphere, m)?)?;
     m.add_function(wrap_pyfunction!(ransac_cylinder, m)?)?;
+    m.add_function(wrap_pyfunction!(chamfer_distance, m)?)?;
+    m.add_function(wrap_pyfunction!(hausdorff_distance, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;

@@ -97,6 +97,7 @@ pipeline-mvp-gpu = [
     "filter-voxel-gpu",
 ]
 gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
+metrics-distance = ["spatialrust-metrics/metrics-distance"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
@@ -109,6 +110,7 @@ spatialrust-features = { workspace = true }
 spatialrust-segmentation = { workspace = true }
 spatialrust-registration = { workspace = true }
 spatialrust-pipeline = { workspace = true }
+spatialrust-metrics = { workspace = true, default-features = false }
 
 [dev-dependencies]
 
