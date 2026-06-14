@@ -9,6 +9,9 @@ mod segmenter;
 #[cfg(feature = "segment-ransac-plane")]
 mod plane;
 
+#[cfg(feature = "segment-multi-plane")]
+mod multi_plane;
+
 #[cfg(feature = "segment-euclidean")]
 mod cluster;
 
@@ -29,6 +32,9 @@ pub use segmenter::PointCloudSegmenter;
 
 #[cfg(feature = "segment-ransac-plane")]
 pub use plane::{PlaneModel, RansacPlaneConfig, RansacPlaneSegmentation, RansacPlaneSegmenter};
+
+#[cfg(feature = "segment-multi-plane")]
+pub use multi_plane::{MultiPlaneConfig, MultiPlaneSegmentation, MultiPlaneSegmenter};
 
 #[cfg(feature = "segment-euclidean")]
 pub use cluster::{EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult};

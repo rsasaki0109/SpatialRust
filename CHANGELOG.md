@@ -83,6 +83,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **GPU normal estimation** (`spatialrust-features`, `feature-normal-gpu`): a wgpu
   path with a fully-GPU uniform-grid radius neighbor search (covariance + Jacobi
   eigensolver), up to ~50× faster than the CPU KD-tree estimator at 500k points.
+- **Multi-plane segmentation** (`spatialrust-segmentation`,
+  `segment-multi-plane`): sequential RANSAC that extracts the N dominant planes
+  (floor, walls, ceiling) and labels each point by plane index, exposed in the
+  Python bindings as `segment_multi_plane`.
 - **DBSCAN segmentation** (`spatialrust-segmentation`, `segment-dbscan`):
   density-based clustering with explicit noise labeling, exposed in the Python
   bindings (`dbscan`).
@@ -119,6 +123,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- RANSAC plane sampling drew indices from the low (short-period) bits of its
+  LCG; it now uses the well-mixed high bits via multiply-shift, making plane
+  fits more reliable (this is what let multi-plane extraction find every plane).
 - Gated the `io-copc-http` integration test behind its feature so
   `cargo test --workspace` builds with default features.
 - Resolved pre-existing rustfmt and clippy drift surfaced by current stable

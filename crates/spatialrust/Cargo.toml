@@ -51,6 +51,7 @@ feature-normal-gpu = [
     "gpu-wgpu",
 ]
 segment-ransac-plane = ["spatialrust-segmentation/segment-ransac-plane"]
+segment-multi-plane = ["spatialrust-segmentation/segment-multi-plane"]
 segment-euclidean = [
     "spatialrust-segmentation/segment-euclidean",
     "spatialrust-search/search-kdtree",

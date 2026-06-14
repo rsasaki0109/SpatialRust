@@ -33,8 +33,9 @@ use spatialrust::registration::{
     PointToPlaneIcpConfig, RegistrationResult,
 };
 use spatialrust::segmentation::{
-    DbscanConfig, DbscanSegmenter, GroundConfig, GroundSegmenter, RansacCylinderSegmenter,
-    RansacPrimitiveConfig, RansacSphereSegmenter, RegionGrowingConfig, RegionGrowingSegmenter,
+    DbscanConfig, DbscanSegmenter, GroundConfig, GroundSegmenter, MultiPlaneConfig,
+    MultiPlaneSegmenter, RansacCylinderSegmenter, RansacPrimitiveConfig, RansacSphereSegmenter,
+    RegionGrowingConfig, RegionGrowingSegmenter,
 };
 use spatialrust::transform::{
     apply_transform as apply_tf, bounding_box as bbox, centroid as cloud_centroid, merge_clouds,
@@ -265,6 +266,64 @@ fn dbscan(cloud: &PyPointCloud, eps: f32, min_points: usize) -> PyResult<PyDbsca
         cluster_count: result.cluster_count,
         cluster_sizes: result.cluster_sizes,
         noise_count: result.noise_count,
+    })
+}
+
+/// Result of multi-plane segmentation.
+#[pyclass(name = "MultiPlaneResult")]
+pub struct PyMultiPlaneResult {
+    /// Labeled cloud: `label` field holds the plane index, `-1` = unassigned.
+    #[pyo3(get)]
+    output: PyPointCloud,
+    /// Number of planes extracted.
+    #[pyo3(get)]
+    plane_count: usize,
+    /// Point count of each plane, in extraction order.
+    #[pyo3(get)]
+    plane_sizes: Vec<usize>,
+    /// Each plane as `(nx, ny, nz, d)` (Hessian form `n·p + d = 0`).
+    #[pyo3(get)]
+    planes: Vec<(f32, f32, f32, f32)>,
+}
+
+#[pymethods]
+impl PyMultiPlaneResult {
+    /// Per-point plane labels of the output cloud as an (N,) int32 array.
+    fn labels<'py>(&self, py: Python<'py>) -> Option<Bound<'py, PyArray1<i32>>> {
+        self.output.labels(py)
+    }
+
+    fn __repr__(&self) -> String {
+        format!("MultiPlaneResult(points={}, planes={})", self.output.inner.len(), self.plane_count)
+    }
+}
+
+/// Sequentially extracts up to `max_planes` dominant planes (floor, walls,
+/// ceiling, …) with RANSAC, labeling each point by plane index (`-1` =
+/// unassigned).
+#[pyfunction]
+#[pyo3(signature = (cloud, max_planes=4, distance_threshold=0.02, min_inliers=100, max_iterations=1000))]
+fn segment_multi_plane(
+    cloud: &PyPointCloud,
+    max_planes: usize,
+    distance_threshold: f32,
+    min_inliers: usize,
+    max_iterations: usize,
+) -> PyResult<PyMultiPlaneResult> {
+    let config = MultiPlaneConfig {
+        max_planes,
+        distance_threshold,
+        min_inliers,
+        max_iterations,
+        ..MultiPlaneConfig::default()
+    };
+    let result = MultiPlaneSegmenter::new(config).segment(&cloud.inner).map_err(to_py_err)?;
+    let planes = result.planes.iter().map(|p| (p.normal.x, p.normal.y, p.normal.z, p.d)).collect();
+    Ok(PyMultiPlaneResult {
+        output: PyPointCloud { inner: result.labeled },
+        plane_count: result.planes.len(),
+        plane_sizes: result.plane_sizes,
+        planes,
     })
 }
 
@@ -1053,6 +1112,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyRegionResult>()?;
     m.add_class::<PyDbscanResult>()?;
     m.add_class::<PyGroundResult>()?;
+    m.add_class::<PyMultiPlaneResult>()?;
     m.add_class::<PySphereResult>()?;
     m.add_class::<PyCylinderResult>()?;
     m.add_class::<PyRegistrationResult>()?;
@@ -1072,6 +1132,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(region_growing, m)?)?;
     m.add_function(wrap_pyfunction!(dbscan, m)?)?;
     m.add_function(wrap_pyfunction!(ground_segmentation, m)?)?;
+    m.add_function(wrap_pyfunction!(segment_multi_plane, m)?)?;
     m.add_function(wrap_pyfunction!(ransac_sphere, m)?)?;
     m.add_function(wrap_pyfunction!(ransac_cylinder, m)?)?;
     m.add_function(wrap_pyfunction!(chamfer_distance, m)?)?;

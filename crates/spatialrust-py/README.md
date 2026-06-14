@@ -76,6 +76,7 @@ reloaded = sr.read("labeled.las")
 | `region_growing(cloud, k_neighbors=30, smoothness_deg=3.0, min_region_size=10)` | Estimate normals, then grow smooth regions |
 | `dbscan(cloud, eps=0.5, min_points=10)` | Density-based clustering with noise labeling (`-1`) |
 | `ground_segmentation(cloud, cell_size=0.5, height_threshold=0.2, ...)` | Grid-based ground / non-ground split |
+| `segment_multi_plane(cloud, max_planes=4, distance_threshold=0.02, ...)` | Sequential RANSAC: label the N dominant planes |
 | `ransac_sphere(cloud, distance_threshold=0.02, ...)` | Fit the dominant sphere (center, radius, inliers/outliers) |
 | `ransac_cylinder(cloud, distance_threshold=0.02, ...)` | Fit the dominant cylinder (axis, radius, inliers/outliers) |
 | `register_icp(source, target, max_correspondence_distance=1.0, max_iterations=50)` | Point-to-point ICP |

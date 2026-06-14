@@ -116,6 +116,9 @@ pub use spatialrust_segmentation::{
     RansacPlaneSegmentation, RansacPlaneSegmenter,
 };
 
+#[cfg(feature = "segment-multi-plane")]
+pub use spatialrust_segmentation::{MultiPlaneConfig, MultiPlaneSegmentation, MultiPlaneSegmenter};
+
 #[cfg(feature = "segment-euclidean")]
 pub use spatialrust_segmentation::{
     EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult,

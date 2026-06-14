@@ -11,6 +11,7 @@ description = "Point cloud segmentation for SpatialRust"
 [features]
 default = ["segment-ransac-plane", "segment-euclidean"]
 segment-ransac-plane = []
+segment-multi-plane = ["segment-ransac-plane"]
 segment-euclidean = ["dep:spatialrust-search"]
 segment-dbscan = ["dep:spatialrust-search"]
 segment-ground = []

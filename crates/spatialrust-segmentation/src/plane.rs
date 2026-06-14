@@ -182,7 +182,11 @@ impl Rng {
     }
 
     fn next_usize(&mut self, upper: usize) -> usize {
-        (self.next_u64() as usize) % upper
+        // Use the high, well-mixed bits of the LCG (its low bits have a short
+        // period) and map them into `0..upper` with a multiply-shift, which
+        // keeps the sampling uniform enough for RANSAC.
+        let high = self.next_u64() >> 32;
+        ((high * upper as u64) >> 32) as usize
     }
 }
 
