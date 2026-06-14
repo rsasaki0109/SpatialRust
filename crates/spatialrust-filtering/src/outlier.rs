@@ -7,7 +7,7 @@
 use spatialrust_core::{
     HasPositions3, PointBuffer, PointBufferSet, PointCloud, SpatialError, SpatialResult,
 };
-use spatialrust_search::{KdTree, NearestNeighborIndex, RadiusSearchIndex};
+use spatialrust_search::{KdTree, NearestNeighborIndex};
 
 use crate::filter::PointCloudFilter;
 
@@ -169,12 +169,13 @@ impl RadiusOutlierRemoval {
         let (x, y, z) = input.positions3()?;
         let tree = KdTree::from_slices(x, y, z);
 
+        // The query point itself is in the tree, so requiring `min_neighbors`
+        // *other* points within radius means reaching `min_neighbors + 1` total.
+        // `radius_reaches` early-exits at that threshold without allocating.
+        let target = self.config.min_neighbors + 1;
         let mut keep = vec![false; len];
         for i in 0..len {
-            let neighbors = tree.radius_search(x[i], y[i], z[i], self.config.radius);
-            // radius_search includes the query point itself when it is indexed.
-            let others = neighbors.iter().filter(|n| n.index != i).count();
-            keep[i] = others >= self.config.min_neighbors;
+            keep[i] = tree.radius_reaches(x[i], y[i], z[i], self.config.radius, target);
         }
         Ok(keep)
     }

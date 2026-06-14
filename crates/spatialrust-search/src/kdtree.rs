@@ -192,6 +192,75 @@ impl KdTree {
             self.radius_recursive(far, qx, qy, qz, radius_sq, out);
         }
     }
+
+    /// Returns whether at least `target` points lie within `radius` of the
+    /// query, stopping as soon as the threshold is reached. Unlike
+    /// [`radius_search`](RadiusSearchIndex::radius_search) this allocates nothing
+    /// and early-exits, which is much faster for density tests (outlier removal).
+    #[must_use]
+    pub fn radius_reaches(&self, x: f32, y: f32, z: f32, radius: f32, target: usize) -> bool {
+        if target == 0 {
+            return true;
+        }
+        if self.is_empty() || radius < 0.0 {
+            return false;
+        }
+        let mut count = 0usize;
+        self.radius_count_recursive(self.root, x, y, z, radius * radius, target, &mut count)
+    }
+
+    /// Accumulates points within `radius_sq` into `count`; returns `true` as soon
+    /// as `count` reaches `target` so the search can short-circuit.
+    fn radius_count_recursive(
+        &self,
+        node: u32,
+        qx: f32,
+        qy: f32,
+        qz: f32,
+        radius_sq: f32,
+        target: usize,
+        count: &mut usize,
+    ) -> bool {
+        if node == INVALID_NODE {
+            return false;
+        }
+
+        if self.is_leaf(node) {
+            let start = self.nodes_start[node as usize] as usize;
+            let end = self.nodes_end[node as usize] as usize;
+            for order_index in start..end {
+                let (_, px, py, pz) = self.ordered_point(order_index as u32);
+                if squared_distance(px, py, pz, qx, qy, qz) <= radius_sq {
+                    *count += 1;
+                    if *count >= target {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        let axis = self.nodes_axis[node as usize];
+        let split = self.nodes_split[node as usize];
+        let diff = match axis {
+            0 => qx - split,
+            1 => qy - split,
+            _ => qz - split,
+        };
+        let (near, far) = if diff <= 0.0 {
+            (self.nodes_left[node as usize], self.nodes_right[node as usize])
+        } else {
+            (self.nodes_right[node as usize], self.nodes_left[node as usize])
+        };
+
+        if self.radius_count_recursive(near, qx, qy, qz, radius_sq, target, count) {
+            return true;
+        }
+        if diff * diff <= radius_sq {
+            return self.radius_count_recursive(far, qx, qy, qz, radius_sq, target, count);
+        }
+        false
+    }
 }
 
 impl SpatialIndex for KdTree {
@@ -472,6 +541,17 @@ mod tests {
         expected.sort_by_key(|n| n.index);
         actual.sort_by_key(|n| n.index);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn radius_reaches_matches_radius_search_count() {
+        let (x, y, z) = sample_cloud();
+        let tree = KdTree::from_slices(&x, &y, &z);
+        let count = tree.radius_search(2.0, 0.0, 0.0, 1.5).len();
+        // True for any target up to the real count, false beyond it.
+        assert!(tree.radius_reaches(2.0, 0.0, 0.0, 1.5, count));
+        assert!(!tree.radius_reaches(2.0, 0.0, 0.0, 1.5, count + 1));
+        assert!(tree.radius_reaches(2.0, 0.0, 0.0, 1.5, 0));
     }
 
     #[test]
