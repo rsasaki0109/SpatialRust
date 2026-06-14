@@ -82,6 +82,19 @@ Normal estimation has an optional wgpu path (`GpuNormalEstimator`, `feature-norm
 
 (A k-nearest mode that keeps neighbor search on the CPU is also available but only ~1.1× — see [notes](notes/2026-06-15_gpu_normals_bench.md).) Reproduce: `cargo bench -p spatialrust-features --features feature-normal-gpu --bench normals`.
 
+### Registration methods
+
+Four registration backends, compared on a synthetic box corner (7500 points, small misalignment):
+
+| Method | Recovery error | Time | Notes |
+| --- | ---: | ---: | --- |
+| ICP (point-to-point) | 0.0196 m | ~147 ms | slow to converge on planar surfaces |
+| **Point-to-plane ICP** | 0.0007 m | **~6.5 ms** | best speed/accuracy balance |
+| GICP | **0.0006 m** | ~26 ms | most accurate; per-point covariance |
+| NDT | 0.0008 m | ~8.7 ms | voxel distributions + Levenberg–Marquardt |
+
+See [notes](notes/2026-06-15_registration_bench.md). Reproduce: `cargo bench -p spatialrust-registration --features register-icp,register-icp-point-to-plane,register-gicp,register-ndt --bench registration`.
+
 ## Status
 
 MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and registration (ICP point-to-point/point-to-plane, GICP, NDT). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.

@@ -22,3 +22,14 @@ spatialrust-search = { workspace = true, optional = true, features = ["search-kd
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "registration"
+harness = false
+required-features = [
+    "register-icp",
+    "register-icp-point-to-plane",
+    "register-gicp",
+    "register-ndt",
+]
