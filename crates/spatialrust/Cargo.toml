@@ -137,3 +137,8 @@ required-features = ["mvp"]
 name = "readme_mvp_preview"
 path = "examples/readme_mvp_preview.rs"
 required-features = ["mvp"]
+
+[[example]]
+name = "bench_ops"
+path = "examples/bench_ops.rs"
+required-features = ["mvp", "filter-outlier"]
