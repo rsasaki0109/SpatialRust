@@ -898,6 +898,52 @@ fn mvp_cli_scan_like_copc_bounds_resolution_reduces_input_points() {
 }
 
 #[cfg(feature = "mvp")]
+#[test]
+fn mvp_cli_repeat_logs_per_iteration_timing() {
+    use std::process::Command;
+
+    const POINT_COUNT: usize = 5_000;
+    let input_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_repeat_in_{}.copc.laz",
+        std::process::id()
+    ));
+    write_scan_like_copc_fixture(&input_path, POINT_COUNT);
+    let output_path = std::env::temp_dir().join(format!(
+        "spatialrust_mvp_cli_repeat_out_{}.copc.laz",
+        std::process::id()
+    ));
+
+    let bin = env!("CARGO_BIN_EXE_spatialrust-mvp");
+    let output = Command::new(bin)
+        .args([
+            "--leaf-size",
+            "4.0",
+            "--voxel-policy",
+            "cpu",
+            "--repeat",
+            "2",
+            input_path.to_str().unwrap(),
+            output_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("run repeat CLI");
+    assert!(
+        output.status.success(),
+        "repeat CLI failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("repeat 1/2 elapsed:"));
+    assert!(stderr.contains("repeat 2/2 elapsed:"));
+    assert!(stderr.contains("repeat summary:"));
+    assert!(stderr.contains("repeat=2"));
+
+    let _ = std::fs::remove_file(input_path);
+    let _ = std::fs::remove_file(output_path);
+}
+
+#[cfg(feature = "mvp")]
 fn scan_like_roi_bounds() -> spatialrust::CopcBounds {
     spatialrust::CopcBounds::from_ranges((0.0, 40.0), (0.0, 20.0), (-0.01, 0.5))
 }

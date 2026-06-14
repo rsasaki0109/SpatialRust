@@ -48,6 +48,7 @@ Options:
                              COPC spatial query bounds (requires COPC input)
   --resolution <METERS>      COPC max point spacing LOD (requires COPC input; uses root bounds
                              when --bounds is omitted)
+  --repeat <N>               Run the MVP pipeline N times (default: 1); logs per-iteration timing
   -h, --help                 Show this help
 "
     );
@@ -139,6 +140,27 @@ fn parse_resolution(value: &str) -> Result<f64, String> {
         .validate()
         .map_err(|error| format!("invalid COPC resolution: {error}"))?;
     Ok(resolution)
+}
+
+fn parse_repeat(value: &str) -> Result<usize, String> {
+    let repeat: usize = value
+        .parse()
+        .map_err(|_| format!("invalid repeat count `{value}`"))?;
+    if repeat == 0 {
+        return Err("--repeat requires a positive integer".to_string());
+    }
+    Ok(repeat)
+}
+
+fn log_repeat_summary(timings: &[std::time::Duration]) {
+    let min = timings.iter().min().copied().expect("repeat timings");
+    let max = timings.iter().max().copied().expect("repeat timings");
+    let total: std::time::Duration = timings.iter().sum();
+    let avg = total / timings.len() as u32;
+    eprintln!(
+        "repeat summary: min={min:.3?} max={max:.3?} avg={avg:.3?} (n={})",
+        timings.len()
+    );
 }
 
 fn is_http_copc_input(input: &str) -> bool {
@@ -275,6 +297,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut voxel_mode = VoxelAggregationMode::Centroid;
     let mut voxel_policy = ExecutionPolicy::Auto;
     let mut copc = CopcQueryOptions::default();
+    let mut repeat = 1_usize;
     let mut input_path = None;
     let mut output_path = None;
 
@@ -312,6 +335,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let value = args.next().ok_or("--resolution requires a numeric value")?;
                 copc.resolution = Some(parse_resolution(&value)?);
             }
+            "--repeat" => {
+                let value = args.next().ok_or("--repeat requires a positive integer")?;
+                repeat = parse_repeat(&value)?;
+            }
             value if value.starts_with('-') => {
                 return Err(format!("unknown option `{value}`").into());
             }
@@ -346,12 +373,27 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     eprintln!(
-        "running MVP pipeline (leaf_size={leaf_size}, voxel_mode={}, voxel_policy={voxel_policy:?})",
+        "running MVP pipeline (leaf_size={leaf_size}, voxel_mode={}, voxel_policy={voxel_policy:?}, repeat={repeat})",
         voxel_mode_label(voxel_mode),
     );
-    let started = Instant::now();
-    let result = MvpPipeline::new(config).run(&input)?;
-    let elapsed = started.elapsed();
+    let pipeline = MvpPipeline::new(config);
+    let mut timings = Vec::with_capacity(repeat);
+    let mut result = None;
+    for index in 0..repeat {
+        let started = Instant::now();
+        let run_result = pipeline.run(&input)?;
+        let elapsed = started.elapsed();
+        timings.push(elapsed);
+        if repeat > 1 {
+            eprintln!("repeat {}/{} elapsed: {elapsed:.3?}", index + 1, repeat);
+        }
+        result = Some(run_result);
+    }
+    if repeat > 1 {
+        log_repeat_summary(&timings);
+    }
+    let result = result.expect("pipeline produced no result");
+    let elapsed = *timings.last().expect("repeat timings");
 
     write_point_cloud_file(&output_path, &result.output)?;
 
@@ -382,8 +424,8 @@ fn main() -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::{
-        build_voxel_config, detect_input_format, parse_bounds, parse_resolution, parse_voxel_mode,
-        CopcQueryOptions,
+        build_voxel_config, detect_input_format, parse_bounds, parse_repeat, parse_resolution,
+        parse_voxel_mode, CopcQueryOptions,
     };
     use spatialrust::{CopcQuery, PointCloudFileFormat, VoxelAggregationMode};
 
@@ -413,6 +455,19 @@ mod tests {
     fn parse_resolution_rejects_non_positive() {
         assert!(parse_resolution("0").is_err());
         assert!(parse_resolution("-1").is_err());
+    }
+
+    #[test]
+    fn parse_repeat_accepts_positive_integers() {
+        assert_eq!(parse_repeat("1").unwrap(), 1);
+        assert_eq!(parse_repeat("3").unwrap(), 3);
+    }
+
+    #[test]
+    fn parse_repeat_rejects_zero_and_invalid() {
+        assert!(parse_repeat("0").is_err());
+        assert!(parse_repeat("-1").is_err());
+        assert!(parse_repeat("abc").is_err());
     }
 
     #[test]

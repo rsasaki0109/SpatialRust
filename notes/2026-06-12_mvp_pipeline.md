@@ -9,13 +9,14 @@ MVP チェーン（PCD/LAS/COPC/HTTP COPC → voxel → normals → RANSAC plane
 | 項目 | 結果 |
 |------|------|
 | 実行日 | 2026-06-12 |
-| テスト (`mvp`) | `cargo test -p spatialrust --features mvp --test mvp_pipeline` → **22 passed**, 1 ignored |
-| テスト (`mvp` + GPU) | **26 passed**, 3 ignored |
+| テスト (`mvp`) | `cargo test -p spatialrust --features mvp --test mvp_pipeline` → **23 passed**, 1 ignored |
+| テスト (`mvp` + GPU) | **27 passed**, 3 ignored |
 | HTTP COPC CLI | `cargo test -p spatialrust --features mvp,mvp-http --test mvp_http_copc_cli` → **1 passed** |
-| CLI bin テスト | `cargo test -p spatialrust --features mvp --bin spatialrust-mvp` → **11 passed** |
+| CLI bin テスト | `cargo test -p spatialrust --features mvp --bin spatialrust-mvp` → **13 passed** |
 | パイプライン段 | voxel → normal → plane → cluster → optional ICP |
 | CLI voxel | `--voxel-mode centroid\|approximate`、`--voxel-policy auto\|cpu\|gpu` |
 | COPC query | `--bounds`、`--resolution`、HTTP(S) URL（`mvp-http`） |
+| ベンチ | `--repeat N`（反復計測 + summary、Epic 53） |
 
 ### Feature 早見
 
@@ -46,9 +47,9 @@ cargo run -p spatialrust --features mvp,mvp-http --bin spatialrust-mvp -- \
 ## 未確認/要確認項目
 
 - 外部実スキャン COPC / HTTP URL での end-to-end
-- CLI 初回 Auto/GPU の wgpu cold init コスト低減（daemon / `--repeat`）
+- CLI 初回 Auto/GPU の wgpu cold init コスト低減（`--repeat` で warm 計測可能、Epic 53）
 
 ## 次アクション
 
 1. 外部 COPC URL / 実スキャンファイルがあれば HTTP CLI / multiplier 曲線を再実行
-2. 必要なら CLI `--repeat N` ベンチモード
+2. `--repeat` 付き release プローブを approximate Auto 1M LAS で記録
