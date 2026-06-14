@@ -72,7 +72,15 @@ End-to-end centroid filter latency (leaf=4.0), measured via `cargo bench -p spat
 
 Reproduce: `cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.
 
-Normal estimation also has an optional wgpu path (`GpuNormalEstimator`, `feature-normal-gpu`) that offloads the per-point covariance + eigen step to the GPU. The gain is modest (~1.1× at 100k–200k points) because KD-tree neighbor search stays on the CPU and dominates — see [notes](notes/2026-06-15_gpu_normals_bench.md). Reproduce: `cargo bench -p spatialrust-features --features feature-normal-gpu --bench normals`.
+Normal estimation has an optional wgpu path (`GpuNormalEstimator`, `feature-normal-gpu`). In **radius mode** the neighbor search runs entirely on the GPU via a uniform grid (covariance + Jacobi eigensolver included), which is **up to ~50× faster** than the CPU KD-tree estimator:
+
+| Points | CPU (KD-tree) | GPU grid | Speedup |
+| ---: | ---: | ---: | :--- |
+| 100k | ~220 ms | **~8.6 ms** | ~26× |
+| 200k | ~442 ms | **~15 ms** | ~29× |
+| 500k | ~1.47 s | **~29 ms** | ~50× |
+
+(A k-nearest mode that keeps neighbor search on the CPU is also available but only ~1.1× — see [notes](notes/2026-06-15_gpu_normals_bench.md).) Reproduce: `cargo bench -p spatialrust-features --features feature-normal-gpu --bench normals`.
 
 ## Status
 
@@ -94,7 +102,7 @@ One dataflow, eleven crates — each pipeline stage maps to the crate that imple
 | `spatialrust-io` | Point cloud readers/writers (PCD, PLY, LAS, COPC) |
 | `spatialrust-search` | KD-tree spatial search |
 | `spatialrust-filtering` | Voxel downsample and filters |
-| `spatialrust-features` | Normal estimation (CPU + optional wgpu) |
+| `spatialrust-features` | Normal estimation (CPU + optional wgpu, incl. GPU grid neighbor search) |
 | `spatialrust-segmentation` | RANSAC plane, Euclidean clustering, region growing |
 | `spatialrust-registration` | Registration: ICP (point-to-point, point-to-plane), GICP, NDT |
 | `spatialrust-pipeline` | Composable MVP pipelines |

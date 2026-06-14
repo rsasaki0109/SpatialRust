@@ -1,5 +1,5 @@
 use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
-use spatialrust_gpu::{estimate_normals_gpu, WgpuRuntime};
+use spatialrust_gpu::{estimate_normals_gpu, estimate_normals_grid_gpu, WgpuRuntime};
 use spatialrust_math::Vec3;
 
 use crate::neighborhood::{KdTreeNeighborhood, NeighborhoodProvider};
@@ -37,23 +37,27 @@ impl GpuNormalEstimator {
 
         let (x, y, z) = input.positions3()?;
         let n = input.len();
-        let k = self.config.k_neighbors.max(1);
-
-        // CPU neighbor search; flatten to a fixed `n * k` index grid for the GPU.
-        let neighborhood = KdTreeNeighborhood::from_point_cloud(input)?;
-        let mut flat = Vec::with_capacity(n * k);
-        for index in 0..n {
-            let mut neighbors = neighborhood.query_k(index, k)?;
-            if neighbors.is_empty() {
-                neighbors.push(index);
-            }
-            for slot in 0..k {
-                flat.push(neighbors[slot % neighbors.len()] as u32);
-            }
-        }
-
         let runtime = WgpuRuntime::shared()?;
-        let gpu_normals = estimate_normals_gpu(&runtime, x, y, z, &flat, k as u32)?;
+
+        // With a search radius, run the neighbor search entirely on the GPU via a
+        // uniform grid. Otherwise use CPU KD-tree k-NN feeding the GPU eigensolver.
+        let gpu_normals = if let Some(radius) = self.config.search_radius {
+            estimate_normals_grid_gpu(&runtime, x, y, z, radius)?
+        } else {
+            let k = self.config.k_neighbors.max(1);
+            let neighborhood = KdTreeNeighborhood::from_point_cloud(input)?;
+            let mut flat = Vec::with_capacity(n * k);
+            for index in 0..n {
+                let mut neighbors = neighborhood.query_k(index, k)?;
+                if neighbors.is_empty() {
+                    neighbors.push(index);
+                }
+                for slot in 0..k {
+                    flat.push(neighbors[slot % neighbors.len()] as u32);
+                }
+            }
+            estimate_normals_gpu(&runtime, x, y, z, &flat, k as u32)?
+        };
 
         let mut nx = Vec::with_capacity(n);
         let mut ny = Vec::with_capacity(n);
@@ -117,5 +121,33 @@ mod tests {
             assert!(nx[index].abs() < 0.1 && ny[index].abs() < 0.1);
         }
         assert!(output.field("curvature").is_ok());
+    }
+
+    #[test]
+    fn estimates_plane_normals_on_gpu_grid() {
+        // Radius mode runs the neighbor search entirely on the GPU.
+        if WgpuRuntime::shared().is_err() {
+            return;
+        }
+
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for i in 0..12 {
+            for j in 0..12 {
+                builder.push_point([i as f32 * 0.1, j as f32 * 0.1, 0.0]).unwrap();
+            }
+        }
+        let cloud = builder.build().unwrap();
+
+        let estimator = GpuNormalEstimator::new(NormalEstimationConfig {
+            search_radius: Some(0.25),
+            viewpoint: Some(Vec3::new(0.0, 0.0, 10.0)),
+            ..Default::default()
+        });
+        let output = estimator.estimate(&cloud).unwrap();
+
+        let (_, _, nz) = output.normals3().unwrap();
+        for index in 0..output.len() {
+            assert!(nz[index] > 0.99, "normal not vertical: {}", nz[index]);
+        }
     }
 }

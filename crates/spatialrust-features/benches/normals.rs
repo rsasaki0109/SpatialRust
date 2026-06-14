@@ -29,6 +29,11 @@ fn bench_normals(c: &mut Criterion) {
     let config = NormalEstimationConfig::k_neighbors(20);
     let cpu = NormalEstimator::new(config);
     let gpu = GpuNormalEstimator::new(config);
+    // Radius mode runs the neighbor search entirely on the GPU (uniform grid).
+    let gpu_grid = GpuNormalEstimator::new(NormalEstimationConfig {
+        search_radius: Some(0.12),
+        ..NormalEstimationConfig::default()
+    });
 
     for point_count in [10_000_usize, 50_000, 100_000, 200_000, 500_000] {
         let input = synthetic_surface(point_count);
@@ -44,6 +49,12 @@ fn bench_normals(c: &mut Criterion) {
         group.bench_function("gpu", |bencher| {
             bencher.iter(|| {
                 black_box(gpu.estimate(&input).expect("gpu normals"));
+            });
+        });
+
+        group.bench_function("gpu_grid", |bencher| {
+            bencher.iter(|| {
+                black_box(gpu_grid.estimate(&input).expect("gpu grid normals"));
             });
         });
 
