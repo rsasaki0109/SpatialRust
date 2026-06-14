@@ -11,6 +11,7 @@ description = "Point cloud registration for SpatialRust"
 [features]
 default = ["register-icp"]
 register-icp = ["dep:spatialrust-search"]
+register-icp-point-to-plane = ["dep:spatialrust-search"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
