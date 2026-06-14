@@ -261,6 +261,19 @@ impl VoxelGridDownsample {
             }
         }
 
+        // Fast path: the common centroid + average case (the default config and
+        // what PCL's VoxelGrid does) is a single pass that resolves field
+        // buffers once and accumulates per-cell sums into flat arrays, avoiding a
+        // per-cell index Vec and a string-keyed field lookup per point.
+        if matches!(
+            policy,
+            ExecutionPolicy::Auto | ExecutionPolicy::CpuSingle | ExecutionPolicy::CpuParallel
+        ) && self.config.mode == VoxelAggregationMode::Centroid
+            && self.config.attribute_policy == AttributeAggregation::Average
+        {
+            return filter_cpu_centroid_fast(input, x, y, z, origin, inv_leaf);
+        }
+
         let cells = match policy {
             ExecutionPolicy::Gpu(DeviceKind::Wgpu) => {
                 build_voxel_cells_gpu(x, y, z, origin, inv_leaf)?
@@ -347,6 +360,81 @@ fn count_non_position_f32_fields(schema: &PointSchema) -> usize {
 #[derive(Clone, Debug, Default)]
 struct VoxelCell {
     indices: Vec<usize>,
+}
+
+/// Single-pass centroid voxel downsampling for the default (Centroid + Average)
+/// case. Resolves every field's buffer once, then accumulates per-cell sums into
+/// flat arrays keyed by a sequential cell id, so there is no per-cell allocation
+/// and no per-point field lookup.
+fn filter_cpu_centroid_fast(
+    input: &PointCloud,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    origin: Vec3<f32>,
+    inv_leaf: f32,
+) -> SpatialResult<PointCloud> {
+    let schema = input.schema().clone();
+    let fields = schema.fields();
+    let n_fields = fields.len();
+
+    // Resolve each field's backing buffer once.
+    let field_buffers: Vec<&PointBuffer> =
+        fields.iter().map(|f| input.field(&f.name)).collect::<SpatialResult<_>>()?;
+
+    let mut key_to_id: HashMap<(i64, i64, i64), u32, BuildHasherDefault<VoxelKeyHasher>> =
+        HashMap::default();
+    let mut keys: Vec<(i64, i64, i64)> = Vec::new();
+    let mut counts: Vec<u32> = Vec::new();
+    // Flat `cell * n_fields + field` accumulator of f64 sums.
+    let mut sums: Vec<f64> = Vec::new();
+
+    for i in 0..x.len() {
+        let key = voxel_key(x[i], y[i], z[i], origin, inv_leaf);
+        let id = *key_to_id.entry(key).or_insert_with(|| {
+            let id = counts.len() as u32;
+            counts.push(0);
+            keys.push(key);
+            sums.extend(std::iter::repeat(0.0).take(n_fields));
+            id
+        }) as usize;
+        counts[id] += 1;
+        let base = id * n_fields;
+        for (fi, buffer) in field_buffers.iter().enumerate() {
+            sums[base + fi] += f64::from(read_buffer_f32(buffer, i));
+        }
+    }
+
+    // Deterministic output: emit cells in voxel-key order.
+    let mut order: Vec<u32> = (0..counts.len() as u32).collect();
+    order.sort_by_key(|&id| keys[id as usize]);
+
+    let mut buffers = PointBufferSet::new();
+    for field in fields {
+        buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, counts.len()));
+    }
+    for &id in &order {
+        let id = id as usize;
+        let inv_count = 1.0 / f64::from(counts[id]);
+        let base = id * n_fields;
+        for (fi, field) in fields.iter().enumerate() {
+            push_field(&mut buffers, field, (sums[base + fi] * inv_count) as f32)?;
+        }
+    }
+
+    PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
+}
+
+/// Reads any numeric buffer column as `f32` by index.
+fn read_buffer_f32(buffer: &PointBuffer, index: usize) -> f32 {
+    match buffer {
+        PointBuffer::F32(v) => v[index],
+        PointBuffer::F64(v) => v[index] as f32,
+        PointBuffer::U8(v) => f32::from(v[index]),
+        PointBuffer::U16(v) => f32::from(v[index]),
+        PointBuffer::U32(v) => v[index] as f32,
+        PointBuffer::I32(v) => v[index] as f32,
+    }
 }
 
 fn build_voxel_cells_cpu(
