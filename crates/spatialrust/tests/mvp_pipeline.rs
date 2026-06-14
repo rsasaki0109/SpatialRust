@@ -1944,6 +1944,63 @@ fn probe_xyzinormal_approximate_auto_cli_release() {
 }
 
 #[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+fn elapsed_ms(duration: std::time::Duration) -> f64 {
+    duration.as_secs_f64() * 1_000.0
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
+#[test]
+#[ignore = "manual release probe for in-process GPU warmup"]
+fn probe_xyzinormal_approximate_auto_gpu_warmup() {
+    use std::time::Instant;
+
+    use spatialrust::{DeviceKind, ExecutionPolicy, MvpPipeline};
+
+    if std::env::var("SPATIALRUST_PROBE_RELEASE").is_err() {
+        return;
+    }
+
+    const POINT_COUNT: usize = 1_000_000;
+    let cloud = sample_xyzinormal_plane_grid(POINT_COUNT);
+
+    let mut gpu_config = mvp_xyzinormal_approximate_auto_config();
+    gpu_config.voxel_policy = ExecutionPolicy::Gpu(DeviceKind::Wgpu);
+    let gpu_pipeline = MvpPipeline::new(gpu_config);
+
+    let gpu_cold_started = Instant::now();
+    gpu_pipeline
+        .run(&cloud)
+        .expect("gpu approximate Auto MVP cold");
+    let gpu_cold_ms = elapsed_ms(gpu_cold_started.elapsed());
+
+    let gpu_warm_started = Instant::now();
+    gpu_pipeline
+        .run(&cloud)
+        .expect("gpu approximate Auto MVP warm");
+    let gpu_warm_ms = elapsed_ms(gpu_warm_started.elapsed());
+
+    let mut cpu_config = mvp_xyzinormal_approximate_auto_config();
+    cpu_config.voxel_policy = ExecutionPolicy::CpuSingle;
+    let cpu_started = Instant::now();
+    MvpPipeline::new(cpu_config)
+        .run(&cloud)
+        .expect("cpu approximate Auto MVP");
+    let cpu_ms = elapsed_ms(cpu_started.elapsed());
+
+    let auto_started = Instant::now();
+    MvpPipeline::new(mvp_xyzinormal_approximate_auto_config())
+        .run(&cloud)
+        .expect("auto approximate Auto MVP");
+    let auto_ms = elapsed_ms(auto_started.elapsed());
+
+    eprintln!("in-process xyzinormal approximate @1M (custom MVP config, no LAS IO):");
+    eprintln!("cpu: {cpu_ms:.3}ms");
+    eprintln!("auto (warm shared runtime): {auto_ms:.3}ms");
+    eprintln!("gpu cold (includes WgpuRuntime::shared init): {gpu_cold_ms:.3}ms");
+    eprintln!("gpu warm (shared runtime reused): {gpu_warm_ms:.3}ms");
+}
+
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
 #[test]
 fn mvp_xyzinormal_approximate_auto_1m_smoke() {
     use spatialrust::{HasIntensity, HasNormals3, HasPositions3, MvpPipeline};

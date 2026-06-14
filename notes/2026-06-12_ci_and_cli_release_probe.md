@@ -45,5 +45,5 @@ Epic 46–50 の退行防止のため **CI テスト行列**を拡張し、Epic 
 
 ## 次アクション
 
-1. Epic 46–51 を `push!` でまとめて commit/push
-2. 外部 COPC URL / 実スキャンファイルがあれば HTTP CLI / multiplier 曲線を再実行
+1. 外部 COPC URL / 実スキャンファイルがあれば HTTP CLI / multiplier 曲線を再実行
+2. 必要なら CLI `--repeat N` ベンチモード
