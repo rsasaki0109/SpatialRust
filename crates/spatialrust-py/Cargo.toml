@@ -23,6 +23,7 @@ spatialrust = { path = "../spatialrust", features = [
     "transform-ops",
     "feature-iss",
     "feature-normal-orient",
+    "feature-boundary",
     "filter-outlier",
     "filter-crop",
     "filter-fps",

@@ -6,6 +6,9 @@
 mod estimator;
 mod neighborhood;
 
+#[cfg(feature = "feature-boundary")]
+mod boundary;
+
 #[cfg(feature = "feature-iss")]
 mod iss;
 
@@ -20,6 +23,9 @@ mod normal_gpu;
 
 pub use estimator::FeatureEstimator;
 pub use neighborhood::{KdTreeNeighborhood, NeighborhoodProvider};
+
+#[cfg(feature = "feature-boundary")]
+pub use boundary::{BoundaryConfig, BoundaryDetector, BoundaryResult};
 
 #[cfg(feature = "feature-iss")]
 pub use iss::{IssKeypointConfig, IssKeypointDetector, IssKeypointResult};

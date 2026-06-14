@@ -40,6 +40,10 @@ feature-normal-orient = [
     "spatialrust-features/feature-normal-orient",
     "spatialrust-search/search-kdtree",
 ]
+feature-boundary = [
+    "spatialrust-features/feature-boundary",
+    "spatialrust-search/search-kdtree",
+]
 feature-normal-gpu = [
     "spatialrust-features/feature-normal-gpu",
     "feature-normal",

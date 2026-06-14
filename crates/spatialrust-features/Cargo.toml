@@ -13,6 +13,7 @@ default = ["feature-normal"]
 feature-normal = []
 feature-iss = []
 feature-normal-orient = []
+feature-boundary = []
 feature-normal-gpu = ["feature-normal", "dep:spatialrust-gpu"]
 
 [dependencies]

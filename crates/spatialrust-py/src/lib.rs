@@ -14,8 +14,9 @@ use pyo3::prelude::*;
 
 use spatialrust::core::{PointBuffer, PointBufferSet, SpatialMetadata};
 use spatialrust::features::{
-    orient_normals_consistent, FeatureEstimator, IssKeypointConfig, IssKeypointDetector,
-    NormalEstimationConfig, NormalEstimator, NormalOrientationConfig,
+    orient_normals_consistent, BoundaryConfig, BoundaryDetector, FeatureEstimator,
+    IssKeypointConfig, IssKeypointDetector, NormalEstimationConfig, NormalEstimator,
+    NormalOrientationConfig,
 };
 use spatialrust::filtering::{
     Aabb, CropBox, FarthestPointSampling, FarthestPointSamplingConfig, MlsConfig, MlsSmoothing,
@@ -512,6 +513,26 @@ fn farthest_point_sampling(
     Ok(PyPointCloud { inner })
 }
 
+/// Detects boundary / edge points (hole rims, scan edges): estimates normals,
+/// then flags points whose tangent-plane neighbors leave a large angular gap.
+/// Returns a sparse sub-cloud of the boundary points.
+#[pyfunction]
+#[pyo3(signature = (cloud, search_radius=0.1, angle_threshold=1.5708, min_neighbors=5, k_neighbors=20))]
+fn detect_boundary(
+    cloud: &PyPointCloud,
+    search_radius: f32,
+    angle_threshold: f32,
+    min_neighbors: usize,
+    k_neighbors: usize,
+) -> PyResult<PyPointCloud> {
+    let with_normals = NormalEstimator::new(NormalEstimationConfig::k_neighbors(k_neighbors))
+        .estimate(&cloud.inner)
+        .map_err(to_py_err)?;
+    let config = BoundaryConfig { search_radius, angle_threshold, min_neighbors };
+    let result = BoundaryDetector::new(config).detect(&with_normals).map_err(to_py_err)?;
+    Ok(PyPointCloud { inner: result.boundary })
+}
+
 /// Moving Least Squares smoothing: projects each point onto a local polynomial
 /// surface fit to its neighborhood, removing scanner noise while preserving
 /// curvature. `polynomial_order` is 1 (plane) or 2 (quadratic).
@@ -941,6 +962,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pass_through, m)?)?;
     m.add_function(wrap_pyfunction!(iss_keypoints, m)?)?;
     m.add_function(wrap_pyfunction!(orient_normals, m)?)?;
+    m.add_function(wrap_pyfunction!(detect_boundary, m)?)?;
     m.add_function(wrap_pyfunction!(mls_smooth, m)?)?;
     m.add_function(wrap_pyfunction!(farthest_point_sampling, m)?)?;
     m.add_function(wrap_pyfunction!(statistical_outlier_removal, m)?)?;

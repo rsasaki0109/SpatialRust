@@ -100,6 +100,9 @@ pub use spatialrust_features::{IssKeypointConfig, IssKeypointDetector, IssKeypoi
 #[cfg(feature = "feature-normal-orient")]
 pub use spatialrust_features::{orient_normals_consistent, NormalOrientationConfig};
 
+#[cfg(feature = "feature-boundary")]
+pub use spatialrust_features::{BoundaryConfig, BoundaryDetector, BoundaryResult};
+
 #[cfg(feature = "feature-normal-gpu")]
 pub use spatialrust_features::GpuNormalEstimator;
 
