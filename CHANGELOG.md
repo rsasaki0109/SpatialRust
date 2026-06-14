@@ -37,6 +37,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   seeding.
 - Benchmarks comparing CPU vs GPU normal estimation and the four registration
   backends (speed + accuracy), with writeups under `notes/`.
+- End-to-end Python example (`end_to_end.py`): outlier removal → downsample →
+  DBSCAN → FPFH global registration → ICP refinement, rendered as a four-panel
+  figure; accepts a real scan via `--input`.
 - CI: Python wheel build/publish workflow; benchmark-compile and per-feature
   test matrix entries for all new features.
 
