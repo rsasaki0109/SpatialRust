@@ -268,29 +268,29 @@ fn estimate_normal_from_neighbors(
     _center_index: usize,
     neighbors: &[usize],
 ) -> Option<(Vec3<f32>, f32)> {
-    let mut mean_x = 0.0_f64;
-    let mut mean_y = 0.0_f64;
-    let mut mean_z = 0.0_f64;
+    let mut mean_x = 0.0_f32;
+    let mut mean_y = 0.0_f32;
+    let mut mean_z = 0.0_f32;
     for &index in neighbors {
-        mean_x += f64::from(x[index]);
-        mean_y += f64::from(y[index]);
-        mean_z += f64::from(z[index]);
+        mean_x += x[index];
+        mean_y += y[index];
+        mean_z += z[index];
     }
-    let count = neighbors.len() as f64;
+    let count = neighbors.len() as f32;
     mean_x /= count;
     mean_y /= count;
     mean_z /= count;
 
-    let mut c00 = 0.0_f64;
-    let mut c11 = 0.0_f64;
-    let mut c22 = 0.0_f64;
-    let mut c01 = 0.0_f64;
-    let mut c02 = 0.0_f64;
-    let mut c12 = 0.0_f64;
+    let mut c00 = 0.0_f32;
+    let mut c11 = 0.0_f32;
+    let mut c22 = 0.0_f32;
+    let mut c01 = 0.0_f32;
+    let mut c02 = 0.0_f32;
+    let mut c12 = 0.0_f32;
     for &index in neighbors {
-        let dx = f64::from(x[index]) - mean_x;
-        let dy = f64::from(y[index]) - mean_y;
-        let dz = f64::from(z[index]) - mean_z;
+        let dx = x[index] - mean_x;
+        let dy = y[index] - mean_y;
+        let dz = z[index] - mean_z;
         c00 += dx * dx;
         c11 += dy * dy;
         c22 += dz * dz;
@@ -310,36 +310,39 @@ fn estimate_normal_from_neighbors(
 }
 
 fn smallest_eigenpair_for_covariance(
-    c00: f64,
-    c11: f64,
-    c22: f64,
-    c01: f64,
-    c02: f64,
-    c12: f64,
+    c00: f32,
+    c11: f32,
+    c22: f32,
+    c01: f32,
+    c02: f32,
+    c12: f32,
 ) -> Option<(Vec3<f32>, f32)> {
     let eigenvalues = symmetric_eigenvalues3(c00, c11, c22, c01, c02, c12);
     let lambda = eigenvalues[0];
     let normal =
         eigenvector_for_eigenvalue(c00, c11, c22, c01, c02, c12, lambda).unwrap_or_else(|| {
-            let covariance =
-                Mat3::<f64>::from_rows([c00, c01, c02], [c01, c11, c12], [c02, c12, c22]);
+            let covariance = Mat3::<f64>::from_rows(
+                [c00 as f64, c01 as f64, c02 as f64],
+                [c01 as f64, c11 as f64, c12 as f64],
+                [c02 as f64, c12 as f64, c22 as f64],
+            );
             let eigen = symmetric_eigen3(covariance);
             Vec3::new(
-                eigen.eigenvectors.m[0][0],
-                eigen.eigenvectors.m[1][0],
-                eigen.eigenvectors.m[2][0],
+                eigen.eigenvectors.m[0][0] as f32,
+                eigen.eigenvectors.m[1][0] as f32,
+                eigen.eigenvectors.m[2][0] as f32,
             )
             .normalize()
         });
 
     let sum = eigenvalues[0] + eigenvalues[1] + eigenvalues[2];
-    let curvature = if sum > 0.0 { (eigenvalues[0] / sum) as f32 } else { 0.0 };
-    Some((Vec3::new(normal.x as f32, normal.y as f32, normal.z as f32).normalize(), curvature))
+    let curvature = if sum > 0.0 { eigenvalues[0] / sum } else { 0.0 };
+    Some((normal.normalize(), curvature))
 }
 
-fn symmetric_eigenvalues3(c00: f64, c11: f64, c22: f64, c01: f64, c02: f64, c12: f64) -> [f64; 3] {
+fn symmetric_eigenvalues3(c00: f32, c11: f32, c22: f32, c01: f32, c02: f32, c12: f32) -> [f32; 3] {
     let p1 = c01 * c01 + c02 * c02 + c12 * c12;
-    if p1 <= f64::EPSILON {
+    if p1 <= f32::EPSILON {
         let mut values = [c00, c11, c22];
         values.sort_by(|a, b| a.partial_cmp(b).unwrap());
         return values;
@@ -351,7 +354,7 @@ fn symmetric_eigenvalues3(c00: f64, c11: f64, c22: f64, c01: f64, c02: f64, c12:
     let b22 = c22 - q;
     let p2 = b00 * b00 + b11 * b11 + b22 * b22 + 2.0 * p1;
     let p = (p2 / 6.0).sqrt();
-    if p <= f64::EPSILON {
+    if p <= f32::EPSILON {
         return [q, q, q];
     }
 
@@ -368,7 +371,7 @@ fn symmetric_eigenvalues3(c00: f64, c11: f64, c22: f64, c01: f64, c02: f64, c12:
     let phi = r.acos() / 3.0;
 
     let largest = q + 2.0 * p * phi.cos();
-    let smallest = q + 2.0 * p * (phi + 2.0 * std::f64::consts::PI / 3.0).cos();
+    let smallest = q + 2.0 * p * (phi + 2.0 * std::f32::consts::PI / 3.0).cos();
     let middle = 3.0 * q - largest - smallest;
     let mut values = [smallest, middle, largest];
     values.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -376,14 +379,14 @@ fn symmetric_eigenvalues3(c00: f64, c11: f64, c22: f64, c01: f64, c02: f64, c12:
 }
 
 fn eigenvector_for_eigenvalue(
-    c00: f64,
-    c11: f64,
-    c22: f64,
-    c01: f64,
-    c02: f64,
-    c12: f64,
-    lambda: f64,
-) -> Option<Vec3<f64>> {
+    c00: f32,
+    c11: f32,
+    c22: f32,
+    c01: f32,
+    c02: f32,
+    c12: f32,
+    lambda: f32,
+) -> Option<Vec3<f32>> {
     let row0 = Vec3::new(c00 - lambda, c01, c02);
     let row1 = Vec3::new(c01, c11 - lambda, c12);
     let row2 = Vec3::new(c02, c12, c22 - lambda);
@@ -466,6 +469,19 @@ mod tests {
         builder.build().unwrap()
     }
 
+    fn tilted_plane_cloud() -> spatialrust_core::PointCloud {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for x in 0..7 {
+            for y in 0..7 {
+                let fx = x as f32 * 0.2;
+                let fy = y as f32 * 0.2;
+                let z = 0.2 * fx - 0.3 * fy + 0.1;
+                builder.push_point([fx, fy, z]).unwrap();
+            }
+        }
+        builder.build().unwrap()
+    }
+
     #[test]
     fn estimates_plane_normals_upwards() {
         let input = plane_cloud();
@@ -482,6 +498,25 @@ mod tests {
         let (_, _, nz) = output.normals3().unwrap();
         for value in nz {
             assert!((*value - 1.0).abs() < 0.1, "expected upward normal, got {value}");
+        }
+    }
+
+    #[test]
+    fn estimates_tilted_plane_normals() {
+        let input = tilted_plane_cloud();
+        let estimator = NormalEstimator::new(NormalEstimationConfig {
+            k_neighbors: 12,
+            min_neighbors: 3,
+            viewpoint: Some(Vec3::new(0.0, 0.0, 10.0)),
+            ..NormalEstimationConfig::default()
+        });
+        let output = estimator.estimate(&input).unwrap();
+        let (nx, ny, nz) = output.normals3().unwrap();
+        let expected = Vec3::new(-0.2, 0.3, 1.0).normalize();
+
+        for index in 0..input.len() {
+            let actual = Vec3::new(nx[index], ny[index], nz[index]).normalize();
+            assert!(actual.dot(expected) > 0.98, "tilted plane normal was {actual:?}");
         }
     }
 
