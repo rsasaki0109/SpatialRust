@@ -1,22 +1,59 @@
 #!/usr/bin/env bash
-# Runs the SpatialRust-vs-PCL benchmark on an identical synthetic cloud and
+# Runs the SpatialRust-vs-PCL benchmark on an identical public PCL cloud and
 # prints a side-by-side timing table.
 #
 # Prerequisites:
-#   - libpcl-dev (headers + libs), g++, eigen3
-#   - the SpatialRust Python extension installed in ../../.venv (maturin develop)
+#   - libpcl-dev (headers + libs), g++, eigen3, Python
+#   - NumPy + the SpatialRust Python extension only for --synthetic
 #
-# Usage: bench/pcl_comparison/run.sh [N_POINTS]
+# Usage:
+#   bench/pcl_comparison/run.sh
+#   bench/pcl_comparison/run.sh --input cloud.pcd
+#   bench/pcl_comparison/run.sh --synthetic 200000
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-N="${1:-200000}"
-PCD="/tmp/bench_cloud.pcd"
+PCD="$ROOT/target/bench-data/table_scene_lms400.pcd"
 PY="$ROOT/.venv/bin/python"
+if [ ! -x "$PY" ]; then
+  PY="${PYTHON:-python3}"
+fi
 
-echo "== generating $N-point cloud =="
-"$PY" "$HERE/gen_cloud.py" --points "$N" --out "$PCD"
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --input)
+      PCD="$2"
+      shift 2
+      ;;
+    --synthetic)
+      N="$2"
+      PCD="/tmp/bench_cloud_${N}.pcd"
+      echo "== generating $N-point synthetic cloud =="
+      "$PY" "$HERE/gen_cloud.py" --points "$N" --out "$PCD"
+      shift 2
+      ;;
+    *)
+      if [[ "$1" =~ ^[0-9]+$ ]]; then
+        N="$1"
+        PCD="/tmp/bench_cloud_${N}.pcd"
+        echo "== generating $N-point synthetic cloud =="
+        "$PY" "$HERE/gen_cloud.py" --points "$N" --out "$PCD"
+        shift
+      else
+        PCD="$1"
+        shift
+      fi
+      ;;
+  esac
+done
+
+if [ ! -f "$PCD" ]; then
+  echo "== fetching public PCL table_scene_lms400 sample =="
+  "$PY" "$HERE/fetch_public_cloud.py" --out "$PCD"
+else
+  echo "== using input cloud $PCD =="
+fi
 
 echo "== building benches =="
 cargo build --release --manifest-path "$ROOT/Cargo.toml" -p spatialrust \

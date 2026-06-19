@@ -61,7 +61,25 @@ def run(command: List[CommandArg], **kwargs) -> subprocess.CompletedProcess:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("points", nargs="?", type=int, default=200_000)
+    parser.add_argument(
+        "points",
+        nargs="?",
+        type=int,
+        default=None,
+        help="Legacy shorthand for --synthetic-points",
+    )
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=None,
+        help="Existing PCD file to benchmark instead of the public PCL sample",
+    )
+    parser.add_argument(
+        "--synthetic-points",
+        type=int,
+        default=None,
+        help="Generate a deterministic synthetic cloud with this many requested points",
+    )
     parser.add_argument(
         "--python",
         type=Path,
@@ -72,18 +90,31 @@ def main() -> None:
 
     root = repo_root()
     python = args.python or venv_python(root)
-    pcd = Path(tempfile.gettempdir()) / "bench_cloud.pcd"
+    if args.input is not None and (args.points is not None or args.synthetic_points is not None):
+        parser.error("--input cannot be combined with synthetic point-count arguments")
 
-    run(
-        [
-            python,
-            root / "bench" / "pcl_comparison" / "gen_cloud.py",
-            "--points",
-            str(args.points),
-            "--out",
-            pcd,
-        ]
-    )
+    if args.input is not None:
+        pcd = args.input
+        print(f"== using input cloud {pcd} ==", file=sys.stderr)
+    else:
+        synthetic_points = args.synthetic_points if args.synthetic_points is not None else args.points
+        if synthetic_points is not None:
+            pcd = Path(tempfile.gettempdir()) / f"bench_cloud_{synthetic_points}.pcd"
+            run(
+                [
+                    python,
+                    root / "bench" / "pcl_comparison" / "gen_cloud.py",
+                    "--points",
+                    str(synthetic_points),
+                    "--out",
+                    pcd,
+                ]
+            )
+        else:
+            sys.path.insert(0, str(root / "bench" / "pcl_comparison"))
+            from fetch_public_cloud import ensure_public_cloud
+
+            pcd = ensure_public_cloud()
 
     run(
         [

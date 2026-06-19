@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param(
-    [int]$Points = 200000,
+    [int]$Points = 0,
+    [int]$SyntheticPoints = 0,
+    [string]$InputPcd = "",
     [string]$VcpkgRoot = "C:\vcpkg",
     [string]$Msys2Root = "C:\msys64",
     [string]$Triplet = "x64-mingw-dynamic-release-bigobj"
@@ -11,7 +13,7 @@ $ErrorActionPreference = "Stop"
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root = (Resolve-Path (Join-Path $Here "..\..")).Path
 $BuildDir = Join-Path $Root "target\pcl-bench"
-$Pcd = Join-Path $BuildDir "bench_cloud.pcd"
+$BenchDataDir = Join-Path $Root "target\bench-data"
 $SrOut = Join-Path $BuildDir "sr_out.csv"
 $PclOut = Join-Path $BuildDir "pcl_out.csv"
 $OverlayTriplets = Join-Path $Here "vcpkg-triplets"
@@ -43,10 +45,24 @@ if (-not $Cargo) {
 }
 
 New-Item -ItemType Directory -Force $BuildDir | Out-Null
+New-Item -ItemType Directory -Force $BenchDataDir | Out-Null
 $env:PATH = "$VcpkgBin;$MingwBin;$MsysUsrBin;$env:PATH"
 
-Write-Host "== generating $Points-point cloud =="
-& $Python (Join-Path $Here "gen_cloud.py") --points $Points --out $Pcd
+if ($InputPcd) {
+    $Pcd = (Resolve-Path $InputPcd).Path
+    Write-Host "== using input cloud $Pcd =="
+} else {
+    $RequestedPoints = if ($SyntheticPoints -gt 0) { $SyntheticPoints } elseif ($Points -gt 0) { $Points } else { 0 }
+    if ($RequestedPoints -gt 0) {
+        $Pcd = Join-Path $BuildDir "bench_cloud_$RequestedPoints.pcd"
+        Write-Host "== generating $RequestedPoints-point synthetic cloud =="
+        & $Python (Join-Path $Here "gen_cloud.py") --points $RequestedPoints --out $Pcd
+    } else {
+        $Pcd = Join-Path $BenchDataDir "table_scene_lms400.pcd"
+        Write-Host "== fetching public PCL table_scene_lms400 sample =="
+        & $Python (Join-Path $Here "fetch_public_cloud.py") --out $Pcd
+    }
+}
 
 Write-Host "== building SpatialRust bench =="
 & $Cargo build --release --manifest-path (Join-Path $Root "Cargo.toml") -p spatialrust --example bench_ops --features mvp,filter-outlier

@@ -92,37 +92,37 @@ Normal estimation has an optional wgpu path (`GpuNormalEstimator`, `feature-norm
 
 ### vs PCL
 
-A reproducible, apples-to-apples comparison against [PCL](https://pointclouds.org/) 1.15.1 — both libraries process the **same** 210k-point scan with matching parameters ([harness](bench/pcl_comparison/)). Values below are from a local Windows release run using MSYS2 g++ 16.1.0 and vcpkg; rerun the harness before publishing fresh cross-machine numbers.
+A reproducible, apples-to-apples comparison against [PCL](https://pointclouds.org/) 1.15.1 — both libraries process the **same** public PCL `table_scene_lms400.pcd` scan (460,400 points) with matching parameters ([harness](bench/pcl_comparison/)). Values below are from a local Windows release run using MSYS2 g++ 16.1.0 and vcpkg; rerun the harness before publishing fresh cross-machine numbers.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File bench\pcl_comparison\run.ps1 -Points 200000
+powershell -ExecutionPolicy Bypass -File bench\pcl_comparison\run.ps1
 ```
 
 | Operation | SpatialRust | PCL | |
 | --- | ---: | ---: | :--- |
-| Radius Outlier Removal | **0.0597 s** | 0.9998 s | **16.75× faster** |
-| Statistical Outlier Removal | **0.1786 s** | 1.1352 s | **6.36× faster** |
-| Normal estimation (k=10) | **0.1514 s** | 1.0885 s | **7.19× faster** |
-| Voxel downsample | **0.0068 s** | 0.0099 s | **1.46× faster** |
+| Radius Outlier Removal | **0.0899 s** | 1.8784 s | **20.89× faster** |
+| Statistical Outlier Removal | **0.1664 s** | 2.0933 s | **12.58× faster** |
+| Normal estimation (k=10) | **0.1461 s** | 1.9750 s | **13.52× faster** |
+| Voxel downsample | **0.0104 s** | 0.0181 s | **1.74× faster** |
 
 SpatialRust wins **4 of 4** against this PCL run; voxel downsampling now uses a specialized XYZ centroid path with compact `u32` voxel keys for the common min-origin case.
 
 ### vs Open3D
 
-An Open3D comparison harness is available at [bench/open3d_comparison](bench/open3d_comparison/). It runs the same generated PCD through SpatialRust and Open3D with matching voxel, normal, statistical outlier, and radius outlier parameters:
+An Open3D comparison harness is available at [bench/open3d_comparison](bench/open3d_comparison/). It runs the same public PCL `table_scene_lms400.pcd` scan through SpatialRust and Open3D with matching voxel, normal, statistical outlier, and radius outlier parameters:
 
 ```bash
-python bench/open3d_comparison/run.py 200000
+python bench/open3d_comparison/run.py
 ```
 
-Indicative local result on one Windows machine (Open3D 0.19.0, Python 3.12, 210k generated points):
+Indicative local result on one Windows machine (Open3D 0.19.0, Python 3.12, 460,400-point public PCL sample):
 
 | Operation | SpatialRust | Open3D | |
 | --- | ---: | ---: | :--- |
-| Voxel downsample | **0.006 s** | 0.024 s | **3.7× faster** |
-| Normal estimation | **0.13 s** | 0.21 s | **1.6× faster** |
-| Statistical Outlier Removal | **0.16 s** | 0.27 s | **1.7× faster** |
-| Radius Outlier Removal | **0.057 s** | 2.59 s | **45× faster** |
+| Voxel downsample | **0.0132 s** | 0.0234 s | **1.77× faster** |
+| Normal estimation | **0.1997 s** | 0.4946 s | **2.48× faster** |
+| Statistical Outlier Removal | **0.2105 s** | 0.6565 s | **3.12× faster** |
+| Radius Outlier Removal | **0.1049 s** | 66.4701 s | **633.65× faster** |
 
 Record CPU, Open3D version, Python version, and thread settings before publishing new numbers.
 
