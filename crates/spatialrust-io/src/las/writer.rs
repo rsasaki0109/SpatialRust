@@ -211,7 +211,7 @@ fn apply_las_field(
 
 #[cfg(test)]
 mod tests {
-    use super::{write_las, write_las_file, LasWriteFormat};
+    use super::{write_las, LasWriteFormat};
     use spatialrust_core::PointCloudBuilder;
     use std::io::Cursor;
 
@@ -238,6 +238,8 @@ mod tests {
     #[cfg(feature = "io-laz")]
     #[test]
     fn writes_laz_file() {
+        use super::write_las_file;
+
         let mut builder = PointCloudBuilder::xyz();
         builder.push_point([0.0, 0.0, 0.0]).unwrap();
         let cloud = builder.build().unwrap();

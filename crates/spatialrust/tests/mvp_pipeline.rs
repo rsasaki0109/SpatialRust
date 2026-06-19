@@ -644,7 +644,7 @@ fn parse_duration_debug_ms(value: &str) -> f64 {
     panic!("unsupported elapsed format `{value}`");
 }
 
-#[cfg(feature = "mvp")]
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
 fn parse_cli_repeat_iteration_ms(stderr: &[u8], iteration: usize, total: usize) -> f64 {
     let prefix = format!("repeat {iteration}/{total} elapsed:");
     let text = String::from_utf8_lossy(stderr);
@@ -655,7 +655,7 @@ fn parse_cli_repeat_iteration_ms(stderr: &[u8], iteration: usize, total: usize) 
     parse_duration_debug_ms(value.trim())
 }
 
-#[cfg(feature = "mvp")]
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
 fn parse_cli_repeat_summary_ms(stderr: &[u8]) -> (f64, f64, f64) {
     let text = String::from_utf8_lossy(stderr);
     let line = text
@@ -1183,7 +1183,7 @@ fn sample_xyzinormal_plane_cloud() -> spatialrust::PointCloud {
     builder.build().unwrap()
 }
 
-#[cfg(feature = "mvp")]
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
 fn sample_xyzinormal_plane_grid(point_count: usize) -> spatialrust::PointCloud {
     use spatialrust::{PointCloudBuilder, StandardSchemas};
 
@@ -1204,7 +1204,7 @@ fn sample_xyzinormal_plane_grid(point_count: usize) -> spatialrust::PointCloud {
     builder.build().unwrap()
 }
 
-#[cfg(feature = "mvp")]
+#[cfg(all(feature = "mvp", feature = "pipeline-mvp-gpu"))]
 fn mvp_xyzinormal_approximate_auto_config() -> spatialrust::MvpPipelineConfig {
     use spatialrust::{
         EuclideanClusterConfig, MvpPipelineConfig, NormalEstimationConfig, RansacPlaneConfig, Vec3,

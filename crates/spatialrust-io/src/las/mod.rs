@@ -4,6 +4,7 @@ mod reader;
 mod schema;
 mod writer;
 
+#[cfg(feature = "io-copc")]
 pub(crate) use reader::{metadata_from_las_header, point_cloud_from_las_points};
 pub use reader::{read_las, read_las_file, LasReader};
 pub use schema::{

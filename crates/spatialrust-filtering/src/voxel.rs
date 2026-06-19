@@ -120,8 +120,8 @@ pub struct VoxelGridDownsampleConfig {
     /// centroid ~500k, approximate-first ~2M (1M end-to-end still CPU-favored).
     ///
     /// Approximate-first Auto also consults the input schema: clouds with
-    /// [`APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS`] or more non-position F32 fields
-    /// (e.g. `point_xyzinormal`) use [`DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY`].
+    /// `APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS` or more non-position F32 fields
+    /// (e.g. `point_xyzinormal`) use `DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY`.
     pub gpu_min_points: Option<usize>,
 }
 
@@ -160,7 +160,7 @@ impl VoxelGridDownsampleConfig {
     /// Returns the point-count threshold used by [`ExecutionPolicy::Auto`].
     ///
     /// Approximate-first mode raises the effective threshold to
-    /// [`DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY`] when the schema carries many F32
+    /// `DEFAULT_GPU_MIN_POINTS_APPROXIMATE_HEAVY` when the schema carries many F32
     /// attributes (Epic 38 regression, Epic 46 crossover at 1M+).
     #[must_use]
     pub fn effective_gpu_min_points(&self, schema: &PointSchema) -> Option<usize> {
