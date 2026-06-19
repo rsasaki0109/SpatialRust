@@ -40,6 +40,16 @@ impl Hasher for VoxelKeyHasher {
         self.mix(i);
     }
 
+    #[inline]
+    fn write_u32(&mut self, i: u32) {
+        self.mix(u64::from(i));
+    }
+
+    #[inline]
+    fn write_i32(&mut self, i: i32) {
+        self.mix(i as u64);
+    }
+
     fn write(&mut self, bytes: &[u8]) {
         for &b in bytes {
             self.mix(u64::from(b));
@@ -49,6 +59,8 @@ impl Hasher for VoxelKeyHasher {
 
 /// Cell map keyed by integer voxel coordinates, using the fast voxel hasher.
 type VoxelCellMap = HashMap<(i64, i64, i64), VoxelCell, BuildHasherDefault<VoxelKeyHasher>>;
+type XyzVoxelCellMap = HashMap<(i64, i64, i64), usize, BuildHasherDefault<VoxelKeyHasher>>;
+type XyzVoxelCellMapU32 = HashMap<(u32, u32, u32), usize, BuildHasherDefault<VoxelKeyHasher>>;
 
 /// Voxel aggregation strategy.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -225,8 +237,15 @@ impl VoxelGridDownsample {
         }
 
         let (x, y, z) = input.positions3()?;
-        let origin = self.config.origin.unwrap_or_else(|| compute_min_corner(x, y, z));
         let inv_leaf = 1.0 / self.config.leaf_size;
+        let (origin, u32_voxel_keys) = match self.config.origin {
+            Some(origin) => (origin, false),
+            None => {
+                let (min, max) = compute_bounds(x, y, z);
+                (min, fits_u32_voxel_key(min, max, inv_leaf))
+            }
+        };
+        let origin_is_min = self.config.origin.is_none();
         let policy = self.resolve_policy(input, policy);
 
         if matches!(policy, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
@@ -271,7 +290,16 @@ impl VoxelGridDownsample {
         ) && self.config.mode == VoxelAggregationMode::Centroid
             && self.config.attribute_policy == AttributeAggregation::Average
         {
-            return filter_cpu_centroid_fast(input, x, y, z, origin, inv_leaf);
+            return filter_cpu_centroid_fast(
+                input,
+                x,
+                y,
+                z,
+                origin,
+                inv_leaf,
+                origin_is_min,
+                u32_voxel_keys,
+            );
         }
 
         let cells = match policy {
@@ -373,7 +401,22 @@ fn filter_cpu_centroid_fast(
     z: &[f32],
     origin: Vec3<f32>,
     inv_leaf: f32,
+    origin_is_min: bool,
+    u32_voxel_keys: bool,
 ) -> SpatialResult<PointCloud> {
+    if let Some(output) = filter_cpu_xyz_centroid_fast(
+        input,
+        x,
+        y,
+        z,
+        origin,
+        inv_leaf,
+        origin_is_min,
+        u32_voxel_keys,
+    )? {
+        return Ok(output);
+    }
+
     let schema = input.schema().clone();
     let fields = schema.fields();
     let n_fields = fields.len();
@@ -390,7 +433,11 @@ fn filter_cpu_centroid_fast(
     let mut sums: Vec<f64> = Vec::new();
 
     for i in 0..x.len() {
-        let key = voxel_key(x[i], y[i], z[i], origin, inv_leaf);
+        let key = if origin_is_min {
+            voxel_key_nonnegative(x[i], y[i], z[i], origin, inv_leaf)
+        } else {
+            voxel_key(x[i], y[i], z[i], origin, inv_leaf)
+        };
         let id = *key_to_id.entry(key).or_insert_with(|| {
             let id = counts.len() as u32;
             counts.push(0);
@@ -423,6 +470,155 @@ fn filter_cpu_centroid_fast(
     }
 
     PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct XyzVoxelCell {
+    sum_x: f32,
+    sum_y: f32,
+    sum_z: f32,
+    count: u32,
+}
+
+fn filter_cpu_xyz_centroid_fast(
+    input: &PointCloud,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    origin: Vec3<f32>,
+    inv_leaf: f32,
+    origin_is_min: bool,
+    u32_voxel_keys: bool,
+) -> SpatialResult<Option<PointCloud>> {
+    let schema = input.schema();
+    if !is_plain_xyz_f32_schema(schema) {
+        return Ok(None);
+    }
+
+    let expected_cells = (x.len() / 2).max(16).min(1_048_576);
+    let mut cells = Vec::<XyzVoxelCell>::with_capacity(expected_cells);
+    if u32_voxel_keys {
+        let mut key_to_id = XyzVoxelCellMapU32::with_capacity_and_hasher(
+            expected_cells,
+            BuildHasherDefault::<VoxelKeyHasher>::default(),
+        );
+        for i in 0..x.len() {
+            let key = voxel_key_nonnegative_u32(x[i], y[i], z[i], origin, inv_leaf);
+            let id = xyz_cell_id_u32(&mut key_to_id, &mut cells, key);
+            let cell = &mut cells[id];
+            cell.sum_x += x[i];
+            cell.sum_y += y[i];
+            cell.sum_z += z[i];
+            cell.count += 1;
+        }
+    } else if origin_is_min {
+        let mut key_to_id = XyzVoxelCellMap::with_capacity_and_hasher(
+            expected_cells,
+            BuildHasherDefault::<VoxelKeyHasher>::default(),
+        );
+        for i in 0..x.len() {
+            let key = voxel_key_nonnegative(x[i], y[i], z[i], origin, inv_leaf);
+            let id = xyz_cell_id(&mut key_to_id, &mut cells, key);
+            let cell = &mut cells[id];
+            cell.sum_x += x[i];
+            cell.sum_y += y[i];
+            cell.sum_z += z[i];
+            cell.count += 1;
+        }
+    } else {
+        let mut key_to_id = XyzVoxelCellMap::with_capacity_and_hasher(
+            expected_cells,
+            BuildHasherDefault::<VoxelKeyHasher>::default(),
+        );
+        for i in 0..x.len() {
+            let key = voxel_key(x[i], y[i], z[i], origin, inv_leaf);
+            let id = xyz_cell_id(&mut key_to_id, &mut cells, key);
+            let cell = &mut cells[id];
+            cell.sum_x += x[i];
+            cell.sum_y += y[i];
+            cell.sum_z += z[i];
+            cell.count += 1;
+        }
+    }
+
+    let mut out_x = Vec::with_capacity(cells.len());
+    let mut out_y = Vec::with_capacity(cells.len());
+    let mut out_z = Vec::with_capacity(cells.len());
+    for cell in cells {
+        let inv_count = 1.0 / cell.count as f32;
+        out_x.push(cell.sum_x * inv_count);
+        out_y.push(cell.sum_y * inv_count);
+        out_z.push(cell.sum_z * inv_count);
+    }
+
+    let mut out_x = Some(out_x);
+    let mut out_y = Some(out_y);
+    let mut out_z = Some(out_z);
+    let mut buffers = PointBufferSet::new();
+    for field in schema.fields() {
+        let values = match field.semantic {
+            FieldSemantic::PositionX => out_x.take().expect("x emitted once"),
+            FieldSemantic::PositionY => out_y.take().expect("y emitted once"),
+            FieldSemantic::PositionZ => out_z.take().expect("z emitted once"),
+            _ => return Ok(None),
+        };
+        buffers.insert(field.name.clone(), PointBuffer::from_f32(values));
+    }
+
+    PointCloud::try_from_parts(schema.clone(), buffers, input.metadata().clone()).map(Some)
+}
+
+fn xyz_cell_id(
+    key_to_id: &mut XyzVoxelCellMap,
+    cells: &mut Vec<XyzVoxelCell>,
+    key: (i64, i64, i64),
+) -> usize {
+    match key_to_id.entry(key) {
+        std::collections::hash_map::Entry::Occupied(entry) => *entry.get(),
+        std::collections::hash_map::Entry::Vacant(entry) => {
+            let id = cells.len();
+            cells.push(XyzVoxelCell::default());
+            entry.insert(id);
+            id
+        }
+    }
+}
+
+fn xyz_cell_id_u32(
+    key_to_id: &mut XyzVoxelCellMapU32,
+    cells: &mut Vec<XyzVoxelCell>,
+    key: (u32, u32, u32),
+) -> usize {
+    match key_to_id.entry(key) {
+        std::collections::hash_map::Entry::Occupied(entry) => *entry.get(),
+        std::collections::hash_map::Entry::Vacant(entry) => {
+            let id = cells.len();
+            cells.push(XyzVoxelCell::default());
+            entry.insert(id);
+            id
+        }
+    }
+}
+
+fn is_plain_xyz_f32_schema(schema: &PointSchema) -> bool {
+    if schema.fields().len() != 3 {
+        return false;
+    }
+    let mut seen_x = false;
+    let mut seen_y = false;
+    let mut seen_z = false;
+    for field in schema.fields() {
+        if !matches!(field.dtype, DType::F32 | DType::F16) {
+            return false;
+        }
+        match field.semantic {
+            FieldSemantic::PositionX => seen_x = true,
+            FieldSemantic::PositionY => seen_y = true,
+            FieldSemantic::PositionZ => seen_z = true,
+            _ => return false,
+        }
+    }
+    seen_x && seen_y && seen_z
 }
 
 /// Reads any numeric buffer column as `f32` by index.
@@ -801,20 +997,59 @@ fn build_voxel_cells_gpu(
     ))
 }
 
-fn compute_min_corner(x: &[f32], y: &[f32], z: &[f32]) -> Vec3<f32> {
+fn compute_bounds(x: &[f32], y: &[f32], z: &[f32]) -> (Vec3<f32>, Vec3<f32>) {
     let mut min = Vec3::new(x[0], y[0], z[0]);
+    let mut max = min;
     for index in 1..x.len() {
         min.x = min.x.min(x[index]);
         min.y = min.y.min(y[index]);
         min.z = min.z.min(z[index]);
+        max.x = max.x.max(x[index]);
+        max.y = max.y.max(y[index]);
+        max.z = max.z.max(z[index]);
     }
-    min
+    (min, max)
+}
+
+fn fits_u32_voxel_key(min: Vec3<f32>, max: Vec3<f32>, inv_leaf: f32) -> bool {
+    let limit = u32::MAX as f32;
+    ((max.x - min.x) * inv_leaf) <= limit
+        && ((max.y - min.y) * inv_leaf) <= limit
+        && ((max.z - min.z) * inv_leaf) <= limit
 }
 
 fn voxel_key(x: f32, y: f32, z: f32, origin: Vec3<f32>, inv_leaf: f32) -> (i64, i64, i64) {
     let ix = ((x - origin.x) * inv_leaf).floor() as i64;
     let iy = ((y - origin.y) * inv_leaf).floor() as i64;
     let iz = ((z - origin.z) * inv_leaf).floor() as i64;
+    (ix, iy, iz)
+}
+
+#[inline]
+fn voxel_key_nonnegative(
+    x: f32,
+    y: f32,
+    z: f32,
+    origin: Vec3<f32>,
+    inv_leaf: f32,
+) -> (i64, i64, i64) {
+    let ix = ((x - origin.x) * inv_leaf) as i64;
+    let iy = ((y - origin.y) * inv_leaf) as i64;
+    let iz = ((z - origin.z) * inv_leaf) as i64;
+    (ix, iy, iz)
+}
+
+#[inline]
+fn voxel_key_nonnegative_u32(
+    x: f32,
+    y: f32,
+    z: f32,
+    origin: Vec3<f32>,
+    inv_leaf: f32,
+) -> (u32, u32, u32) {
+    let ix = ((x - origin.x) * inv_leaf) as u32;
+    let iy = ((y - origin.y) * inv_leaf) as u32;
+    let iz = ((z - origin.z) * inv_leaf) as u32;
     (ix, iy, iz)
 }
 
@@ -963,6 +1198,7 @@ mod tests {
     #[cfg(feature = "filter-voxel-gpu")]
     use spatialrust_core::HasNormals3;
     use spatialrust_core::{HasIntensity, HasPositions3, PointCloudBuilder, StandardSchemas};
+    use spatialrust_math::Vec3;
 
     #[test]
     fn centroid_downsample_reduces_points() {
@@ -982,6 +1218,45 @@ mod tests {
         let (x, _, _) = output.positions3().unwrap();
         assert!((x[0] - 0.05).abs() < 1e-5);
         assert!((x[1] - 1.05).abs() < 1e-5);
+    }
+
+    #[test]
+    fn explicit_origin_uses_floor_for_negative_voxels() {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        builder.push_point([-0.6, 0.0, 0.0]).unwrap();
+        builder.push_point([-0.1, 0.0, 0.0]).unwrap();
+        builder.push_point([0.1, 0.0, 0.0]).unwrap();
+        let input = builder.build().unwrap();
+
+        let mut config = VoxelGridDownsampleConfig::centroid(1.0).without_gpu_min_points();
+        config.origin = Some(Vec3::new(0.0, 0.0, 0.0));
+        let output = VoxelGridDownsample::new(config).filter(&input).unwrap();
+
+        let (x, _, _) = output.positions3().unwrap();
+        assert_eq!(output.len(), 2);
+        assert!((x[0] - -0.35).abs() < 1e-5);
+        assert!((x[1] - 0.1).abs() < 1e-5);
+    }
+
+    #[test]
+    fn default_origin_fast_path_matches_explicit_min_origin() {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for point in
+            [[-1.2, 0.0, 0.0], [-1.1, 0.1, 0.0], [-0.7, 0.0, 0.0], [0.4, 1.0, 0.0], [0.6, 1.0, 0.0]]
+        {
+            builder.push_point(point).unwrap();
+        }
+        let input = builder.build().unwrap();
+
+        let default_output = VoxelGridDownsample::new(VoxelGridDownsampleConfig::centroid(0.5))
+            .filter(&input)
+            .unwrap();
+
+        let mut config = VoxelGridDownsampleConfig::centroid(0.5);
+        config.origin = Some(Vec3::new(-1.2, 0.0, 0.0));
+        let explicit_output = VoxelGridDownsample::new(config).filter(&input).unwrap();
+
+        assert_eq!(default_output, explicit_output);
     }
 
     #[test]

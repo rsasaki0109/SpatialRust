@@ -22,26 +22,34 @@ parameters.
 bench/pcl_comparison/run.sh 200000
 ```
 
+On Windows, the repository also includes a CMake/vcpkg runner. It expects MSYS2
+UCRT64 tools under `C:\msys64` and PCL installed by vcpkg under `C:\vcpkg`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File bench\pcl_comparison\run.ps1 -Points 200000
+```
+
 The script generates the cloud (`gen_cloud.py`), builds the SpatialRust
 `bench_ops` example and the PCL `pcl_bench.cpp`, runs both, and prints a table.
 
 ## Indicative results
 
-Measured on one machine (PCL 1.14, release builds, 210k points). Throughput
-varies by CPU; run it yourself for numbers on your hardware.
+Measured on one Windows machine (PCL 1.15.1 via vcpkg, MSYS2 g++ 16.1.0,
+release builds, 210k points). Throughput varies by CPU; run it yourself for
+numbers on your hardware.
 
 | Operation | SpatialRust | PCL | Speedup |
 | --- | ---: | ---: | ---: |
-| Radius Outlier Removal | 0.10 s | 0.33 s | **3.2× faster** |
-| Statistical Outlier Removal | 0.29 s | 0.51 s | **1.8× faster** |
-| Normal estimation | 0.33 s | 0.48 s | **1.5× faster** |
-| Voxel downsample | 0.022 s | 0.011 s | 0.51× (PCL ~2× faster) |
+| Radius Outlier Removal | 0.0597 s | 0.9998 s | **16.75× faster** |
+| Statistical Outlier Removal | 0.1786 s | 1.1352 s | **6.36× faster** |
+| Normal estimation | 0.1514 s | 1.0885 s | **7.19× faster** |
+| Voxel downsample | 0.0068 s | 0.0099 s | **1.46× faster** |
 
 SpatialRust is faster on neighborhood-statistics and density operations (radius
 outlier removal uses an early-exit density test; normals and SOR win too; voxel
-downsampling uses a single-pass accumulator). PCL's hand-tuned hashed voxel grid
-keeps a ~2× edge on downsampling. These are honest single-run numbers, including
-where PCL wins.
+downsampling uses a specialized XYZ centroid path with compact `u32` voxel keys
+for the common min-origin case). These are honest single-run numbers; rerun the
+harness on your target hardware before making a portability claim.
 
 > Note: comparisons use each library's straightforward default API on a CPU,
 > single-threaded where that is the default. They are indicative, not a

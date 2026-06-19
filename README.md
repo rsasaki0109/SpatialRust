@@ -92,16 +92,39 @@ Normal estimation has an optional wgpu path (`GpuNormalEstimator`, `feature-norm
 
 ### vs PCL
 
-A reproducible, apples-to-apples comparison against [PCL](https://pointclouds.org/) 1.14 — both libraries process the **same** 210k-point scan with matching parameters ([harness](bench/pcl_comparison/)):
+A reproducible, apples-to-apples comparison against [PCL](https://pointclouds.org/) 1.15.1 — both libraries process the **same** 210k-point scan with matching parameters ([harness](bench/pcl_comparison/)). Values below are from a local Windows release run using MSYS2 g++ 16.1.0 and vcpkg; rerun the harness before publishing fresh cross-machine numbers.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File bench\pcl_comparison\run.ps1 -Points 200000
+```
 
 | Operation | SpatialRust | PCL | |
 | --- | ---: | ---: | :--- |
-| Radius Outlier Removal | **0.10 s** | 0.33 s | **3.2× faster** |
-| Statistical Outlier Removal | **0.29 s** | 0.51 s | **1.8× faster** |
-| Normal estimation (k=10) | **0.33 s** | 0.48 s | **1.5× faster** |
-| Voxel downsample | 0.022 s | **0.011 s** | PCL ~2× |
+| Radius Outlier Removal | **0.0597 s** | 0.9998 s | **16.75× faster** |
+| Statistical Outlier Removal | **0.1786 s** | 1.1352 s | **6.36× faster** |
+| Normal estimation (k=10) | **0.1514 s** | 1.0885 s | **7.19× faster** |
+| Voxel downsample | **0.0068 s** | 0.0099 s | **1.46× faster** |
 
-SpatialRust wins **3 of 4** — neighborhood-statistics and density operations are faster (radius outlier removal uses an early-exit density test; voxel downsampling uses a single-pass accumulator). PCL's hand-tuned hashed voxel grid keeps a ~2× edge on downsampling. Honest single-machine numbers, wins and losses both. Reproduce: `bench/pcl_comparison/run.sh`.
+SpatialRust wins **4 of 4** against this PCL run; voxel downsampling now uses a specialized XYZ centroid path with compact `u32` voxel keys for the common min-origin case.
+
+### vs Open3D
+
+An Open3D comparison harness is available at [bench/open3d_comparison](bench/open3d_comparison/). It runs the same generated PCD through SpatialRust and Open3D with matching voxel, normal, statistical outlier, and radius outlier parameters:
+
+```bash
+python bench/open3d_comparison/run.py 200000
+```
+
+Indicative local result on one Windows machine (Open3D 0.19.0, Python 3.12, 210k generated points):
+
+| Operation | SpatialRust | Open3D | |
+| --- | ---: | ---: | :--- |
+| Voxel downsample | **0.006 s** | 0.024 s | **3.7× faster** |
+| Normal estimation | **0.13 s** | 0.21 s | **1.6× faster** |
+| Statistical Outlier Removal | **0.16 s** | 0.27 s | **1.7× faster** |
+| Radius Outlier Removal | **0.057 s** | 2.59 s | **45× faster** |
+
+Record CPU, Open3D version, Python version, and thread settings before publishing new numbers.
 
 ### Registration methods
 

@@ -5,9 +5,10 @@
 //! returns before downstream estimation (normals, registration, segmentation).
 
 use spatialrust_core::{
-    HasPositions3, PointBuffer, PointBufferSet, PointCloud, SpatialError, SpatialResult,
+    DType, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet, PointCloud, PointField,
+    SpatialError, SpatialResult,
 };
-use spatialrust_search::{KdTree, NearestNeighborIndex};
+use spatialrust_search::KdTree;
 
 use crate::filter::PointCloudFilter;
 
@@ -75,19 +76,7 @@ impl StatisticalOutlierRemoval {
 
         // Mean distance to the k nearest neighbors (excluding the point itself).
         let mut mean_dist = vec![0.0_f32; len];
-        for i in 0..len {
-            let neighbors = tree.nearest_k(x[i], y[i], z[i], self.config.k_neighbors + 1);
-            let mut sum = 0.0_f32;
-            let mut count = 0_u32;
-            for neighbor in neighbors {
-                if neighbor.index == i {
-                    continue;
-                }
-                sum += neighbor.distance_squared.sqrt();
-                count += 1;
-            }
-            mean_dist[i] = if count == 0 { 0.0 } else { sum / count as f32 };
-        }
+        fill_mean_neighbor_distances(self.config.k_neighbors, &tree, x, y, z, &mut mean_dist);
 
         let n = len as f64;
         let mean: f64 = mean_dist.iter().map(|&d| d as f64).sum::<f64>() / n;
@@ -107,6 +96,69 @@ impl PointCloudFilter for StatisticalOutlierRemoval {
     fn filter(&self, input: &PointCloud) -> SpatialResult<PointCloud> {
         let mask = self.keep_mask(input)?;
         gather_mask(input, &mask)
+    }
+}
+
+fn fill_mean_neighbor_distances(
+    k_neighbors: usize,
+    tree: &KdTree,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    mean_dist: &mut [f32],
+) {
+    let worker_count = outlier_worker_count(mean_dist.len());
+    if worker_count == 1 {
+        fill_mean_neighbor_distances_chunk(k_neighbors, tree, x, y, z, 0, mean_dist);
+        return;
+    }
+
+    let chunk_size = mean_dist.len().div_ceil(worker_count);
+    std::thread::scope(|scope| {
+        for (chunk_index, chunk) in mean_dist.chunks_mut(chunk_size).enumerate() {
+            let start = chunk_index * chunk_size;
+            scope.spawn(move || {
+                fill_mean_neighbor_distances_chunk(k_neighbors, tree, x, y, z, start, chunk);
+            });
+        }
+    });
+}
+
+fn outlier_worker_count(len: usize) -> usize {
+    let available = std::thread::available_parallelism().map_or(1, |count| count.get());
+    let useful = (len / 16_384).max(1);
+    available.min(useful)
+}
+
+fn fill_mean_neighbor_distances_chunk(
+    k_neighbors: usize,
+    tree: &KdTree,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    start: usize,
+    mean_dist: &mut [f32],
+) {
+    let mut neighbors = Vec::with_capacity(k_neighbors.saturating_add(1));
+    for (offset, mean) in mean_dist.iter_mut().enumerate() {
+        let i = start + offset;
+        tree.nearest_k_unsorted_into(
+            x[i],
+            y[i],
+            z[i],
+            k_neighbors.saturating_add(1),
+            &mut neighbors,
+        );
+        let mut sum = 0.0_f32;
+        let mut count = 0_u32;
+        for neighbor in &neighbors {
+            if neighbor.index == i {
+                continue;
+            }
+            sum += neighbor.distance_squared.sqrt();
+            count += 1;
+        }
+        *mean = if count == 0 { 0.0 } else { sum / count as f32 };
     }
 }
 
@@ -174,9 +226,7 @@ impl RadiusOutlierRemoval {
         // `radius_reaches` early-exits at that threshold without allocating.
         let target = self.config.min_neighbors + 1;
         let mut keep = vec![false; len];
-        for i in 0..len {
-            keep[i] = tree.radius_reaches(x[i], y[i], z[i], self.config.radius, target);
-        }
+        fill_radius_reaches_mask(&tree, x, y, z, self.config.radius, target, &mut keep);
         Ok(keep)
     }
 }
@@ -192,8 +242,54 @@ impl PointCloudFilter for RadiusOutlierRemoval {
     }
 }
 
+fn fill_radius_reaches_mask(
+    tree: &KdTree,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    radius: f32,
+    target: usize,
+    keep: &mut [bool],
+) {
+    let worker_count = outlier_worker_count(keep.len());
+    if worker_count == 1 {
+        fill_radius_reaches_mask_chunk(tree, x, y, z, radius, target, 0, keep);
+        return;
+    }
+
+    let chunk_size = keep.len().div_ceil(worker_count);
+    std::thread::scope(|scope| {
+        for (chunk_index, chunk) in keep.chunks_mut(chunk_size).enumerate() {
+            let start = chunk_index * chunk_size;
+            scope.spawn(move || {
+                fill_radius_reaches_mask_chunk(tree, x, y, z, radius, target, start, chunk);
+            });
+        }
+    });
+}
+
+fn fill_radius_reaches_mask_chunk(
+    tree: &KdTree,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    radius: f32,
+    target: usize,
+    start: usize,
+    keep: &mut [bool],
+) {
+    for (offset, keep_point) in keep.iter_mut().enumerate() {
+        let i = start + offset;
+        *keep_point = tree.radius_reaches(x[i], y[i], z[i], radius, target);
+    }
+}
+
 /// Builds a new cloud from the points where `mask` is true, preserving schema.
 fn gather_mask(input: &PointCloud, mask: &[bool]) -> SpatialResult<PointCloud> {
+    if let Some(output) = gather_xyz_mask(input, mask)? {
+        return Ok(output);
+    }
+
     let indices: Vec<usize> =
         mask.iter().enumerate().filter_map(|(i, &keep)| keep.then_some(i)).collect();
 
@@ -203,6 +299,48 @@ fn gather_mask(input: &PointCloud, mask: &[bool]) -> SpatialResult<PointCloud> {
         buffers.insert(field.name.clone(), gather_buffer(source, &indices));
     }
     PointCloud::try_from_parts(input.schema().clone(), buffers, input.metadata().clone())
+}
+
+fn gather_xyz_mask(input: &PointCloud, mask: &[bool]) -> SpatialResult<Option<PointCloud>> {
+    let schema = input.schema();
+    if schema.len() != 3 {
+        return Ok(None);
+    }
+
+    let Some(x_field) = xyz_f32_field(input, FieldSemantic::PositionX) else {
+        return Ok(None);
+    };
+    let Some(y_field) = xyz_f32_field(input, FieldSemantic::PositionY) else {
+        return Ok(None);
+    };
+    let Some(z_field) = xyz_f32_field(input, FieldSemantic::PositionZ) else {
+        return Ok(None);
+    };
+
+    let (x, y, z) = input.positions3()?;
+    let output_len = mask.iter().filter(|&&keep| keep).count();
+    let mut out_x = Vec::with_capacity(output_len);
+    let mut out_y = Vec::with_capacity(output_len);
+    let mut out_z = Vec::with_capacity(output_len);
+
+    for (index, &keep) in mask.iter().enumerate() {
+        if keep {
+            out_x.push(x[index]);
+            out_y.push(y[index]);
+            out_z.push(z[index]);
+        }
+    }
+
+    let mut buffers = PointBufferSet::new();
+    buffers.insert(x_field.name.clone(), PointBuffer::from_f32(out_x));
+    buffers.insert(y_field.name.clone(), PointBuffer::from_f32(out_y));
+    buffers.insert(z_field.name.clone(), PointBuffer::from_f32(out_z));
+    PointCloud::try_from_parts(schema.clone(), buffers, input.metadata().clone()).map(Some)
+}
+
+fn xyz_f32_field(input: &PointCloud, semantic: FieldSemantic) -> Option<&PointField> {
+    let field = input.schema().find_semantic(semantic)?;
+    (field.dtype == DType::F32 && field.components == 1).then_some(field)
 }
 
 fn gather_buffer(source: &PointBuffer, indices: &[usize]) -> PointBuffer {

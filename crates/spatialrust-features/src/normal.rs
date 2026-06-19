@@ -1,11 +1,11 @@
 use spatialrust_core::{
     DType, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet, PointCloud, PointField,
-    PointSchema, SpatialResult,
+    PointSchema, SpatialError, SpatialResult,
 };
 use spatialrust_math::{symmetric_eigen3, Mat3, Vec3};
+use spatialrust_search::{KdTree, Neighbor, RadiusSearchIndex};
 
 use crate::estimator::FeatureEstimator;
-use crate::neighborhood::{KdTreeNeighborhood, NeighborhoodProvider};
 
 /// Configuration for covariance-based normal estimation.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -70,9 +70,12 @@ impl NormalEstimator {
         if input.is_empty() {
             return Ok((input.clone(), NormalEstimationResult::default()));
         }
+        if self.config.search_radius.is_some_and(|radius| radius < 0.0) {
+            return Err(SpatialError::InvalidArgument("search_radius must be non-negative".into()));
+        }
 
         let (x, y, z) = input.positions3()?;
-        let neighborhood = KdTreeNeighborhood::from_point_cloud(input)?;
+        let tree = KdTree::from_slices(x, y, z);
 
         let mut nx = vec![f32::NAN; input.len()];
         let mut ny = vec![f32::NAN; input.len()];
@@ -81,46 +84,47 @@ impl NormalEstimator {
         let mut valid_count = 0usize;
         let mut invalid_count = 0usize;
 
-        for index in 0..input.len() {
-            let neighbors = self.query_neighbors(&neighborhood, index)?;
-            if neighbors.len() < self.config.min_neighbors {
-                invalid_count += 1;
-                continue;
+        let worker_count = normal_worker_count(input.len());
+        if worker_count == 1 {
+            let chunk = estimate_normal_range(self.config, &tree, x, y, z, 0, input.len());
+            nx = chunk.nx;
+            ny = chunk.ny;
+            nz = chunk.nz;
+            curvature = chunk.curvature;
+            valid_count = chunk.valid_count;
+            invalid_count = chunk.invalid_count;
+        } else {
+            let chunk_size = input.len().div_ceil(worker_count);
+            let chunks = std::thread::scope(|scope| {
+                let mut handles = Vec::new();
+                let config = self.config;
+                let tree_ref = &tree;
+                for start in (0..input.len()).step_by(chunk_size) {
+                    let end = (start + chunk_size).min(input.len());
+                    handles.push(scope.spawn(move || {
+                        estimate_normal_range(config, tree_ref, x, y, z, start, end)
+                    }));
+                }
+
+                handles
+                    .into_iter()
+                    .map(|handle| handle.join().expect("normal estimation worker panicked"))
+                    .collect::<Vec<_>>()
+            });
+
+            for chunk in chunks {
+                let end = chunk.start + chunk.nx.len();
+                nx[chunk.start..end].copy_from_slice(&chunk.nx);
+                ny[chunk.start..end].copy_from_slice(&chunk.ny);
+                nz[chunk.start..end].copy_from_slice(&chunk.nz);
+                curvature[chunk.start..end].copy_from_slice(&chunk.curvature);
+                valid_count += chunk.valid_count;
+                invalid_count += chunk.invalid_count;
             }
-
-            let Some((normal, curv)) = estimate_normal_from_neighbors(x, y, z, index, &neighbors)
-            else {
-                invalid_count += 1;
-                continue;
-            };
-
-            let oriented = if let Some(viewpoint) = self.config.viewpoint {
-                orient_normal_towards_viewpoint(normal, point_xyz(x, y, z, index), viewpoint)
-            } else {
-                normal
-            };
-
-            nx[index] = oriented.x;
-            ny[index] = oriented.y;
-            nz[index] = oriented.z;
-            curvature[index] = curv;
-            valid_count += 1;
         }
 
         let output = build_output_cloud(input, nx, ny, nz, curvature)?;
         Ok((output, NormalEstimationResult { valid_count, invalid_count }))
-    }
-
-    fn query_neighbors(
-        &self,
-        neighborhood: &KdTreeNeighborhood,
-        index: usize,
-    ) -> SpatialResult<Vec<usize>> {
-        if let Some(radius) = self.config.search_radius {
-            neighborhood.query_radius(index, radius)
-        } else {
-            neighborhood.query_k(index, self.config.k_neighbors)
-        }
     }
 }
 
@@ -131,6 +135,108 @@ impl FeatureEstimator for NormalEstimator {
 
     fn estimate(&self, input: &PointCloud) -> SpatialResult<PointCloud> {
         self.estimate_with_diagnostics(input).map(|(cloud, _)| cloud)
+    }
+}
+
+#[derive(Debug)]
+struct NormalChunk {
+    start: usize,
+    nx: Vec<f32>,
+    ny: Vec<f32>,
+    nz: Vec<f32>,
+    curvature: Vec<f32>,
+    valid_count: usize,
+    invalid_count: usize,
+}
+
+fn normal_worker_count(len: usize) -> usize {
+    let available = std::thread::available_parallelism().map_or(1, |count| count.get());
+    let useful = (len / 16_384).max(1);
+    available.min(useful)
+}
+
+fn estimate_normal_range(
+    config: NormalEstimationConfig,
+    tree: &KdTree,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    start: usize,
+    end: usize,
+) -> NormalChunk {
+    let len = end - start;
+    let mut nx = vec![f32::NAN; len];
+    let mut ny = vec![f32::NAN; len];
+    let mut nz = vec![f32::NAN; len];
+    let mut curvature = vec![0.0_f32; len];
+    let mut valid_count = 0usize;
+    let mut invalid_count = 0usize;
+    let mut neighbor_buffer = Vec::with_capacity(config.k_neighbors.saturating_add(1));
+    let mut index_buffer = Vec::with_capacity(config.k_neighbors);
+
+    for index in start..end {
+        query_neighbors_into(config, tree, x, y, z, index, &mut neighbor_buffer, &mut index_buffer);
+        let local = index - start;
+        if index_buffer.len() < config.min_neighbors {
+            invalid_count += 1;
+            continue;
+        }
+
+        let Some((normal, curv)) = estimate_normal_from_neighbors(x, y, z, index, &index_buffer)
+        else {
+            invalid_count += 1;
+            continue;
+        };
+
+        let oriented = if let Some(viewpoint) = config.viewpoint {
+            orient_normal_towards_viewpoint(normal, point_xyz(x, y, z, index), viewpoint)
+        } else {
+            normal
+        };
+
+        nx[local] = oriented.x;
+        ny[local] = oriented.y;
+        nz[local] = oriented.z;
+        curvature[local] = curv;
+        valid_count += 1;
+    }
+
+    NormalChunk { start, nx, ny, nz, curvature, valid_count, invalid_count }
+}
+
+fn query_neighbors_into(
+    config: NormalEstimationConfig,
+    tree: &KdTree,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    index: usize,
+    neighbor_buffer: &mut Vec<Neighbor>,
+    index_buffer: &mut Vec<usize>,
+) {
+    index_buffer.clear();
+    if let Some(radius) = config.search_radius {
+        for neighbor in tree.radius_search(x[index], y[index], z[index], radius) {
+            if neighbor.index != index {
+                index_buffer.push(neighbor.index);
+            }
+        }
+    } else {
+        tree.nearest_k_unsorted_into(
+            x[index],
+            y[index],
+            z[index],
+            config.k_neighbors.saturating_add(1),
+            neighbor_buffer,
+        );
+        for neighbor in neighbor_buffer.iter() {
+            if neighbor.index != index {
+                index_buffer.push(neighbor.index);
+                if index_buffer.len() == config.k_neighbors {
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -193,25 +299,111 @@ fn estimate_normal_from_neighbors(
         c12 += dy * dz;
     }
     let inv = 1.0 / count;
-    let covariance = Mat3::<f64>::from_rows(
-        [c00 * inv, c01 * inv, c02 * inv],
-        [c01 * inv, c11 * inv, c12 * inv],
-        [c02 * inv, c12 * inv, c22 * inv],
-    );
-
-    let eigen = symmetric_eigen3(covariance);
-
-    let normal = Vec3::new(
-        eigen.eigenvectors.m[0][0] as f32,
-        eigen.eigenvectors.m[1][0] as f32,
-        eigen.eigenvectors.m[2][0] as f32,
+    smallest_eigenpair_for_covariance(
+        c00 * inv,
+        c11 * inv,
+        c22 * inv,
+        c01 * inv,
+        c02 * inv,
+        c12 * inv,
     )
-    .normalize();
+}
 
-    let sum = eigen.eigenvalues[0] + eigen.eigenvalues[1] + eigen.eigenvalues[2];
-    let curvature = if sum > 0.0 { (eigen.eigenvalues[0] / sum) as f32 } else { 0.0 };
+fn smallest_eigenpair_for_covariance(
+    c00: f64,
+    c11: f64,
+    c22: f64,
+    c01: f64,
+    c02: f64,
+    c12: f64,
+) -> Option<(Vec3<f32>, f32)> {
+    let eigenvalues = symmetric_eigenvalues3(c00, c11, c22, c01, c02, c12);
+    let lambda = eigenvalues[0];
+    let normal =
+        eigenvector_for_eigenvalue(c00, c11, c22, c01, c02, c12, lambda).unwrap_or_else(|| {
+            let covariance =
+                Mat3::<f64>::from_rows([c00, c01, c02], [c01, c11, c12], [c02, c12, c22]);
+            let eigen = symmetric_eigen3(covariance);
+            Vec3::new(
+                eigen.eigenvectors.m[0][0],
+                eigen.eigenvectors.m[1][0],
+                eigen.eigenvectors.m[2][0],
+            )
+            .normalize()
+        });
 
-    Some((normal, curvature))
+    let sum = eigenvalues[0] + eigenvalues[1] + eigenvalues[2];
+    let curvature = if sum > 0.0 { (eigenvalues[0] / sum) as f32 } else { 0.0 };
+    Some((Vec3::new(normal.x as f32, normal.y as f32, normal.z as f32).normalize(), curvature))
+}
+
+fn symmetric_eigenvalues3(c00: f64, c11: f64, c22: f64, c01: f64, c02: f64, c12: f64) -> [f64; 3] {
+    let p1 = c01 * c01 + c02 * c02 + c12 * c12;
+    if p1 <= f64::EPSILON {
+        let mut values = [c00, c11, c22];
+        values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        return values;
+    }
+
+    let q = (c00 + c11 + c22) / 3.0;
+    let b00 = c00 - q;
+    let b11 = c11 - q;
+    let b22 = c22 - q;
+    let p2 = b00 * b00 + b11 * b11 + b22 * b22 + 2.0 * p1;
+    let p = (p2 / 6.0).sqrt();
+    if p <= f64::EPSILON {
+        return [q, q, q];
+    }
+
+    let inv_p = 1.0 / p;
+    let n00 = b00 * inv_p;
+    let n11 = b11 * inv_p;
+    let n22 = b22 * inv_p;
+    let n01 = c01 * inv_p;
+    let n02 = c02 * inv_p;
+    let n12 = c12 * inv_p;
+    let det = n00 * (n11 * n22 - n12 * n12) - n01 * (n01 * n22 - n12 * n02)
+        + n02 * (n01 * n12 - n11 * n02);
+    let r = (det * 0.5).clamp(-1.0, 1.0);
+    let phi = r.acos() / 3.0;
+
+    let largest = q + 2.0 * p * phi.cos();
+    let smallest = q + 2.0 * p * (phi + 2.0 * std::f64::consts::PI / 3.0).cos();
+    let middle = 3.0 * q - largest - smallest;
+    let mut values = [smallest, middle, largest];
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    values
+}
+
+fn eigenvector_for_eigenvalue(
+    c00: f64,
+    c11: f64,
+    c22: f64,
+    c01: f64,
+    c02: f64,
+    c12: f64,
+    lambda: f64,
+) -> Option<Vec3<f64>> {
+    let row0 = Vec3::new(c00 - lambda, c01, c02);
+    let row1 = Vec3::new(c01, c11 - lambda, c12);
+    let row2 = Vec3::new(c02, c12, c22 - lambda);
+
+    let candidates = [row0.cross(row1), row0.cross(row2), row1.cross(row2)];
+    let mut best = candidates[0];
+    let mut best_norm = best.length_squared();
+    for candidate in candidates.into_iter().skip(1) {
+        let norm = candidate.length_squared();
+        if norm > best_norm {
+            best = candidate;
+            best_norm = norm;
+        }
+    }
+
+    if best_norm <= 1e-24 {
+        None
+    } else {
+        Some(best.normalize())
+    }
 }
 
 pub(crate) fn build_output_cloud(
