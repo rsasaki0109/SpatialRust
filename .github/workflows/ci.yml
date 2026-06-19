@@ -43,9 +43,11 @@ jobs:
       # The per-feature matrix tests each feature alone; this enforces clippy on
       # every feature-gated library module and that all features build and test
       # together. (`--lib` keeps the default-feature `--all-targets` clippy job as
-      # the gate for tests/examples.) GPU tests are ignored on the GPU-less runner.
+      # the gate for tests/examples.) Runtime GPU tests need a wgpu adapter, so
+      # the all-features job compiles them but does not execute them on GitHub's
+      # GPU-less hosted runner.
       - run: cargo clippy --workspace --all-features --lib -- -D warnings
-      - run: cargo test --workspace --all-features
+      - run: cargo test --workspace --all-features --no-run
 
   test:
     name: Test (${{ matrix.name }})
@@ -214,8 +216,22 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build and test
         run: |
-          cargo test ${{ matrix.args }}
-          cargo test --doc ${{ matrix.args }}
+          case "${{ matrix.name }}" in
+            spatialrust-gpu-crate|spatialrust-filter-voxel-gpu|spatialrust-mvp-gpu-integration)
+              cargo test ${{ matrix.args }} --no-run
+              ;;
+            *)
+              cargo test ${{ matrix.args }}
+              ;;
+          esac
+
+          case "${{ matrix.args }}" in
+            *"--test"*)
+              ;;
+            *)
+              cargo test --doc ${{ matrix.args }}
+              ;;
+          esac
 
   python-bindings:
     name: Python bindings (${{ matrix.python }})
@@ -277,8 +293,8 @@ jobs:
       - name: Detect unexpected unsafe usage
         run: |
           set -euo pipefail
-          rg '#!\[(deny|allow|warn)\(unsafe_code\)\]' crates -n
-          if rg '\bunsafe\b' crates/spatialrust-core crates/spatialrust-math crates/spatialrust-io crates/spatialrust/src; then
+          grep -R -n -E '#!\[(deny|allow|warn)\(unsafe_code\)\]' crates
+          if grep -R -n -w unsafe crates/spatialrust-core crates/spatialrust-math crates/spatialrust-io crates/spatialrust/src; then
             echo "Unexpected unsafe usage in audited crates"
             exit 1
           fi

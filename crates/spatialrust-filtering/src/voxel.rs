@@ -495,7 +495,7 @@ fn filter_cpu_xyz_centroid_fast(
         return Ok(None);
     }
 
-    let expected_cells = (x.len() / 2).max(16).min(1_048_576);
+    let expected_cells = (x.len() / 2).clamp(16, 1_048_576);
     let mut cells = Vec::<XyzVoxelCell>::with_capacity(expected_cells);
     if u32_voxel_keys {
         let mut key_to_id = XyzVoxelCellMapU32::with_capacity_and_hasher(

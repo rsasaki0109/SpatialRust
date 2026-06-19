@@ -415,7 +415,7 @@ fn mvp_copc_query_pipeline() {
     use spatialrust::EuclideanClusterConfig;
     use spatialrust::{
         read_copc_file_with_query, write_copc_file, CopcBounds, CopcQuery, ExecutionPolicy,
-        HasPositions3, MvpPipeline, MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder,
+        MvpPipeline, MvpPipelineConfig, NormalEstimationConfig, PointCloudBuilder,
         RansacPlaneConfig, Vec3,
     };
 
