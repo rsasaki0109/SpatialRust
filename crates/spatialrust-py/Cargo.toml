@@ -7,7 +7,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["SpatialRust Contributors"]
 repository = "https://github.com/rsasaki0109/SpatialRust"
-description = "Python bindings for SpatialRust — PyTorch for Spatial Computing"
+description = "Python bindings for SpatialRust point cloud processing"
 
 [lib]
 # Importable module name: `import spatialrust`

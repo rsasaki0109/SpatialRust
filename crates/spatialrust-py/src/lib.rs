@@ -1102,7 +1102,7 @@ fn range_image<'py>(
     Ok(arr.into_pyarray_bound(py))
 }
 
-/// SpatialRust — PyTorch for Spatial Computing.
+/// SpatialRust Python bindings.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
 fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {

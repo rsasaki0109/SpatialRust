@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "spatialrust"
-description = "PyTorch for Spatial Computing — native-Rust point cloud processing for Python"
+description = "Native-Rust point cloud processing for Python"
 requires-python = ">=3.8"
 license = { text = "MIT OR Apache-2.0" }
 authors = [{ name = "SpatialRust Contributors" }]

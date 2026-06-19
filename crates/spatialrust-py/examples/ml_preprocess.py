@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """SpatialRust as a point-cloud preprocessing front-end for learned models.
 
-Runs the canonical "PyTorch for Spatial Computing" data pipeline on one scan and
-emits the tensors a model would consume:
+Runs the native point-cloud pipeline on one scan and emits the tensors a model
+would consume:
 
   load -> Statistical Outlier Removal -> unit-sphere normalize -> Farthest Point
   Sampling -> {voxel occupancy grid, LiDAR range image, k-NN graph edge_index}

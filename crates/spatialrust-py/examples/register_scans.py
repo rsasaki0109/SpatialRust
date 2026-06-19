@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Two-scan registration demo using the SpatialRust Python bindings.
 
-Synthesizes a scan-like room (floor + two walls + objects), makes a second
-"scan" by applying a known rigid misalignment, then aligns it back with each
-registration backend (point-to-plane ICP, GICP, NDT) and reports the recovered
-error. Optionally renders a before/after top-down preview.
+Loads a scan or synthesizes a small fallback scene, makes a second "scan" by
+applying a known rigid misalignment, then aligns it back with each registration
+backend (point-to-plane ICP, GICP, NDT) and reports the recovered error.
+Optionally renders a before/after top-down preview.
 
 Usage:
     python examples/register_scans.py
+    python examples/register_scans.py --input scan.pcd
     python examples/register_scans.py --png registration.png
 
 Requires NumPy; the PNG step additionally uses Matplotlib.
@@ -58,13 +59,21 @@ def apply(transform: np.ndarray, pts: np.ndarray) -> np.ndarray:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", default=None, help="scan file (PCD/PLY/LAS/COPC)")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--yaw", type=float, default=6.0, help="misalignment yaw [deg]")
+    parser.add_argument("--leaf", type=float, default=0.05, help="input voxel leaf size")
     parser.add_argument("--png", default=None, help="write a before/after preview")
     args = parser.parse_args()
 
     print(f"SpatialRust {sr.__version__}")
-    target_np = synthesize_room(args.seed)
+    if args.input:
+        target_cloud = sr.voxel_downsample(sr.read(args.input), args.leaf, "auto")
+        target_np = target_cloud.xyz()
+        print(f"loaded target     : {len(target_cloud):,} points from {args.input} (leaf={args.leaf})")
+    else:
+        target_np = synthesize_room(args.seed)
+        print("target fixture    : generated room fallback")
     misalign = rigid(args.yaw, np.array([0.2, -0.15, 0.05], np.float32))
     source_np = apply(misalign, target_np)
 

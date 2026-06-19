@@ -5,6 +5,8 @@ Produces two GIFs under docs/assets/:
   - clusters_rotating.gif : a multi-object scene rotated and colored by DBSCAN.
   - voxelize_rotating.gif  : the same scene voxelized into an occupancy grid.
 
+Pass --input to render both from a real scan instead of the generated fallback.
+
 Requires NumPy, Matplotlib, and Pillow.
 """
 from __future__ import annotations
@@ -33,6 +35,14 @@ def synth(seed: int = 0) -> np.ndarray:
     ]).astype(np.float32)
 
 
+def load_cloud(input_path, seed):
+    if input_path:
+        cloud = sr.read(input_path)
+        print(f"loaded {len(cloud):,} points from {input_path}")
+        return cloud, True
+    return sr.PointCloud.from_xyz(synth(seed)), False
+
+
 def style_3d(ax, title):
     ax.set_facecolor(BG)
     ax.set_title(title, color=FG, fontsize=13)
@@ -43,19 +53,34 @@ def style_3d(ax, title):
         pass
 
 
-def clusters_gif(path, frames, fps):
+def clusters_gif(path, frames, fps, input_path=None, seed=0):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.animation import FuncAnimation, PillowWriter
 
-    cloud = sr.PointCloud.from_xyz(synth())
-    clean = sr.statistical_outlier_removal(cloud, 16, 2.0)
-    small = sr.voxel_downsample(clean, 0.06, "auto")
-    seg = sr.dbscan(small, eps=0.3, min_points=8)
-    pts = small.xyz()
-    labels = seg.labels()
-    noise = labels < 0
+    cloud, real_scan = load_cloud(input_path, seed)
+    if real_scan:
+        result = sr.run_pipeline(
+            cloud,
+            leaf_size=0.03,
+            plane_distance=0.025,
+            cluster_tolerance=0.06,
+            min_cluster_size=8,
+            policy="auto",
+        )
+        pts = result.output.xyz()
+        labels = result.labels()
+        noise = labels < 0
+        title = f"MVP clusters: {result.cluster_count}"
+    else:
+        clean = sr.statistical_outlier_removal(cloud, 16, 2.0)
+        small = sr.voxel_downsample(clean, 0.06, "auto")
+        seg = sr.dbscan(small, eps=0.3, min_points=8)
+        pts = small.xyz()
+        labels = seg.labels()
+        noise = labels < 0
+        title = f"DBSCAN: {seg.cluster_count} clusters"
 
     fig = plt.figure(figsize=(5, 5), dpi=80)
     fig.patch.set_facecolor(BG)
@@ -66,7 +91,7 @@ def clusters_gif(path, frames, fps):
         ax.scatter(pts[noise, 0], pts[noise, 1], pts[noise, 2], c="#475569", s=3, alpha=0.4)
         p = pts[~noise]
         ax.scatter(p[:, 0], p[:, 1], p[:, 2], c=labels[~noise] % 20, cmap="tab20", s=6)
-        style_3d(ax, f"DBSCAN: {seg.cluster_count} clusters")
+        style_3d(ax, title)
         ax.view_init(elev=28, azim=i * 360 / frames)
 
     anim = FuncAnimation(fig, draw, frames=frames, interval=1000 / fps)
@@ -75,14 +100,17 @@ def clusters_gif(path, frames, fps):
     print(f"wrote {path} ({os.path.getsize(path) // 1024} KB)")
 
 
-def voxelize_gif(path, frames, fps):
+def voxelize_gif(path, frames, fps, input_path=None, seed=0):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.animation import FuncAnimation, PillowWriter
 
-    cloud = sr.PointCloud.from_xyz(synth())
-    grid, origin, vsize = sr.voxelize(cloud, voxel_size=0.35, mode="occupancy")
+    cloud, real_scan = load_cloud(input_path, seed)
+    voxel_size = 0.08 if real_scan else 0.35
+    if real_scan:
+        cloud = sr.voxel_downsample(cloud, voxel_size, "auto")
+    grid, origin, vsize = sr.voxelize(cloud, voxel_size=voxel_size, mode="occupancy")
     # grid is (nz, ny, nx); matplotlib voxels wants (nx, ny, nz).
     occ = np.transpose(grid, (2, 1, 0)) > 0
     colors = np.empty(occ.shape + (4,), dtype=float)
@@ -108,13 +136,27 @@ def main() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     assets = os.path.normpath(os.path.join(here, "..", "..", "..", "docs", "assets"))
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", default=None, help="scan file (PCD/PLY/LAS/COPC)")
+    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--frames", type=int, default=36)
     parser.add_argument("--fps", type=int, default=15)
     parser.add_argument("--outdir", default=assets)
     args = parser.parse_args()
 
-    clusters_gif(os.path.join(args.outdir, "clusters_rotating.gif"), args.frames, args.fps)
-    voxelize_gif(os.path.join(args.outdir, "voxelize_rotating.gif"), args.frames, args.fps)
+    clusters_gif(
+        os.path.join(args.outdir, "clusters_rotating.gif"),
+        args.frames,
+        args.fps,
+        args.input,
+        args.seed,
+    )
+    voxelize_gif(
+        os.path.join(args.outdir, "voxelize_rotating.gif"),
+        args.frames,
+        args.fps,
+        args.input,
+        args.seed,
+    )
 
 
 if __name__ == "__main__":

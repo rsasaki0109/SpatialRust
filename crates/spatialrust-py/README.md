@@ -1,9 +1,8 @@
 # spatialrust (Python)
 
 Python bindings for [SpatialRust](https://github.com/rsasaki0109/SpatialRust) —
-**PyTorch for Spatial Computing**. Native-Rust point cloud processing (IO, voxel
-downsampling, RANSAC plane segmentation, Euclidean clustering) with NumPy interop
-and no C++ binding layer.
+native-Rust point cloud processing (IO, voxel downsampling, RANSAC plane
+segmentation, Euclidean clustering) with NumPy interop and no C++ binding layer.
 
 ## Install
 
@@ -117,22 +116,23 @@ matrix mapping source into the target frame), `.fitness`, `.iterations`, and
 ## Example
 
 ```bash
-python examples/segment_room.py --png room.png        # segmentation pipeline
+python examples/segment_room.py --input scan.pcd --png room.png  # segmentation pipeline
 python examples/register_scans.py --png reg.png        # two-scan registration
 python examples/end_to_end.py --png demo.png           # full clean->cluster->register
 python examples/make_gifs.py                            # rotating cluster + voxel GIFs
 python examples/ml_preprocess.py --png ml.png          # point cloud -> ML tensors
 ```
 
-`segment_room.py` synthesizes a scan-like room, runs the pipeline, and writes a
-labeled cloud plus a top-down preview. `register_scans.py` makes a second scan by
-applying a known misalignment, then aligns it back with each registration backend
-(ICP, point-to-plane, GICP, NDT) and renders a before/after preview.
+`segment_room.py` loads a real scan, runs the pipeline, and writes a labeled
+cloud plus a top-down preview; without `--input`, it falls back to a generated
+room fixture. `register_scans.py` makes a second scan by applying a known
+misalignment, then aligns it back with each registration backend (ICP,
+point-to-plane, GICP, NDT) and renders a before/after preview.
 
 `end_to_end.py` runs the full workflow on one cloud — Statistical Outlier
 Removal, voxel downsampling, DBSCAN clustering, then FPFH + RANSAC global
 registration refined by ICP — and renders a four-panel figure of each stage. It
 takes `--input scan.pcd` to run on a real scan (PCD/PLY/LAS/COPC), falling back
-to a synthetic multi-object scene:
+to a generated multi-object fixture:
 
 ![end-to-end pipeline](../../docs/assets/python_end_to_end.png)

@@ -15,7 +15,7 @@
 <rect width="1280" height="640" fill="url(#bg)"/>
 <rect width="1280" height="640" fill="url(#glow)"/>
 <text x="80" y="150" fill="#f8fafc" font-family="ui-sans-serif, system-ui, sans-serif" font-size="80" font-weight="800">SpatialRust</text>
-<text x="82" y="210" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="700">PyTorch for Spatial Computing</text>
+<text x="82" y="210" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="700">Rust-native spatial computing</text>
 <text x="82" y="262" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="24">Point clouds · wgpu · COPC · RANSAC · ICP — native Rust</text>
 <rect x="80" y="300" width="230" height="40" rx="16" fill="#0b1224" stroke="#334155"/>
 <rect x="326" y="300" width="150" height="40" rx="16" fill="#0b1224" stroke="#334155"/>

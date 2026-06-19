@@ -82,6 +82,10 @@ fn read_pcd_body<R: BufRead>(
             let payload = read_binary_payload(reader, header.point_step() * header.points)?;
             decode_binary_payload(header, &schema, &payload, &mut buffers)?;
         }
+        PcdDataKind::BinaryCompressed => {
+            let payload = read_binary_compressed_payload(reader)?;
+            decode_binary_compressed_payload(header, &schema, &payload, &mut buffers)?;
+        }
     }
 
     PointCloud::try_from_parts(schema, buffers, metadata).map_err(IoError::from)
@@ -151,6 +155,72 @@ fn parse_packed_rgb(token: &str) -> Result<(f32, f32, f32), IoError> {
     Ok((((bits >> 16) & 0xFF) as f32, ((bits >> 8) & 0xFF) as f32, (bits & 0xFF) as f32))
 }
 
+fn read_binary_compressed_payload<R: BufRead>(reader: &mut R) -> Result<Vec<u8>, IoError> {
+    let mut size_buf = [0_u8; 4];
+    reader.read_exact(&mut size_buf)?;
+    let compressed_size = u32::from_le_bytes(size_buf) as usize;
+    reader.read_exact(&mut size_buf)?;
+    let uncompressed_size = u32::from_le_bytes(size_buf) as usize;
+
+    let compressed = read_binary_payload(reader, compressed_size)?;
+    lzf_decompress(&compressed, uncompressed_size)
+}
+
+fn lzf_decompress(input: &[u8], output_len: usize) -> Result<Vec<u8>, IoError> {
+    let mut output = vec![0_u8; output_len];
+    let mut ip = 0usize;
+    let mut op = 0usize;
+
+    while ip < input.len() {
+        let ctrl = input[ip];
+        ip += 1;
+
+        if ctrl < 32 {
+            let len = ctrl as usize + 1;
+            if ip + len > input.len() || op + len > output.len() {
+                return Err(pcd_format("truncated LZF literal run in binary_compressed PCD"));
+            }
+            output[op..op + len].copy_from_slice(&input[ip..ip + len]);
+            ip += len;
+            op += len;
+            continue;
+        }
+
+        let mut len = (ctrl >> 5) as usize;
+        let mut reference_offset = ((ctrl as usize & 0x1f) << 8) + 1;
+        if len == 7 {
+            if ip >= input.len() {
+                return Err(pcd_format("truncated LZF length in binary_compressed PCD"));
+            }
+            len += input[ip] as usize;
+            ip += 1;
+        }
+        if ip >= input.len() {
+            return Err(pcd_format("truncated LZF back-reference in binary_compressed PCD"));
+        }
+        reference_offset += input[ip] as usize;
+        ip += 1;
+
+        let copy_len = len + 2;
+        if reference_offset > op || op + copy_len > output.len() {
+            return Err(pcd_format("invalid LZF back-reference in binary_compressed PCD"));
+        }
+        let ref_start = op - reference_offset;
+        for offset in 0..copy_len {
+            output[op + offset] = output[ref_start + offset];
+        }
+        op += copy_len;
+    }
+
+    if op != output.len() {
+        return Err(pcd_format(format!(
+            "LZF payload size mismatch: expected {}, decoded {op}",
+            output.len()
+        )));
+    }
+    Ok(output)
+}
+
 fn decode_binary_payload(
     header: &PcdHeader,
     schema: &PointSchema,
@@ -174,6 +244,47 @@ fn decode_binary_payload(
     Ok(())
 }
 
+fn decode_binary_compressed_payload(
+    header: &PcdHeader,
+    schema: &PointSchema,
+    payload: &[u8],
+    buffers: &mut PointBufferSet,
+) -> Result<(), IoError> {
+    let point_step = header.point_step();
+    if payload.len() != point_step * header.points {
+        return Err(pcd_format(format!(
+            "binary_compressed payload size mismatch: expected {}, found {}",
+            point_step * header.points,
+            payload.len()
+        )));
+    }
+
+    let mut field_base = 0usize;
+    for field in &header.fields {
+        let field_step = field.byte_size();
+        for point_index in 0..header.points {
+            let point_base = field_base + point_index * field_step;
+            if field.name.eq_ignore_ascii_case("rgb") && field.count == 1 && field.size == 4 {
+                let chunk = &payload[point_base..point_base + 4];
+                let bits = u32::from_le_bytes(chunk.try_into().expect("rgb chunk"));
+                push_to_field(buffers, schema, "r", ((bits >> 16) & 0xFF) as f32)?;
+                push_to_field(buffers, schema, "g", ((bits >> 8) & 0xFF) as f32)?;
+                push_to_field(buffers, schema, "b", (bits & 0xFF) as f32)?;
+                continue;
+            }
+
+            for component in 0..field.count {
+                let scalar_start = point_base + component * field.size;
+                let scalar_end = scalar_start + field.size;
+                let value = read_binary_scalar(field, &payload[scalar_start..scalar_end])?;
+                push_to_field(buffers, schema, &field.name, value)?;
+            }
+        }
+        field_base += field_step * header.points;
+    }
+    Ok(())
+}
+
 fn decode_binary_point(
     fields: &[crate::pcd::schema::PcdFieldSpec],
     bytes: &[u8],
@@ -186,10 +297,11 @@ fn decode_binary_point(
         if offset + size > bytes.len() {
             return Err(pcd_parse("truncated binary PCD point"));
         }
-        let chunk = &bytes[offset..offset + size];
+        let field_start = offset;
         offset += size;
 
         if field.name.eq_ignore_ascii_case("rgb") && field.count == 1 && field.size == 4 {
+            let chunk = &bytes[field_start..field_start + 4];
             let bits = u32::from_le_bytes(chunk.try_into().expect("rgb chunk"));
             push_to_field(buffers, schema, "r", ((bits >> 16) & 0xFF) as f32)?;
             push_to_field(buffers, schema, "g", ((bits >> 8) & 0xFF) as f32)?;
@@ -197,8 +309,10 @@ fn decode_binary_point(
             continue;
         }
 
-        for _ in 0..field.count {
-            let value = read_binary_scalar(field, chunk)?;
+        for component in 0..field.count {
+            let scalar_start = field_start + component * field.size;
+            let scalar_end = scalar_start + field.size;
+            let value = read_binary_scalar(field, &bytes[scalar_start..scalar_end])?;
             push_to_field(buffers, schema, &field.name, value)?;
         }
     }
@@ -309,6 +423,38 @@ DATA ascii
 1.0 0.0 0.0 0.8
 ";
 
+    fn binary_compressed_xyz_sample() -> Vec<u8> {
+        let header = b"\
+# .PCD v0.7 - Point Cloud Data file format
+VERSION 0.7
+FIELDS x y z
+SIZE 4 4 4
+TYPE F F F
+COUNT 1 1 1
+WIDTH 2
+HEIGHT 1
+VIEWPOINT 0 0 0 1 0 0 0
+POINTS 2
+DATA binary_compressed
+";
+        let mut uncompressed = Vec::new();
+        // PCL binary_compressed stores fields as structure-of-arrays:
+        // x0, x1, y0, y1, z0, z1 for this XYZ sample.
+        for value in [1.0_f32, 2.0, 3.0, 4.0, 5.0, 6.0] {
+            uncompressed.extend_from_slice(&value.to_le_bytes());
+        }
+
+        let mut compressed = Vec::with_capacity(uncompressed.len() + 1);
+        compressed.push((uncompressed.len() - 1) as u8);
+        compressed.extend_from_slice(&uncompressed);
+
+        let mut data = header.to_vec();
+        data.extend_from_slice(&(compressed.len() as u32).to_le_bytes());
+        data.extend_from_slice(&(uncompressed.len() as u32).to_le_bytes());
+        data.extend_from_slice(&compressed);
+        data
+    }
+
     #[test]
     fn reads_ascii_xyz() {
         let mut reader = Cursor::new(SAMPLE_XYZ_ASCII.as_bytes());
@@ -359,5 +505,16 @@ DATA ascii
         let loaded = read_pcd(&mut reader).unwrap();
         let (x, _, _) = loaded.positions3().unwrap();
         assert!((x[0] - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn reads_binary_compressed_xyz() {
+        let data = binary_compressed_xyz_sample();
+        let mut reader = Cursor::new(data);
+        let loaded = read_pcd(&mut reader).unwrap();
+        let (x, y, z) = loaded.positions3().unwrap();
+        assert_eq!(x, &[1.0, 2.0]);
+        assert_eq!(y, &[3.0, 4.0]);
+        assert_eq!(z, &[5.0, 6.0]);
     }
 }

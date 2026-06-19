@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """End-to-end SpatialRust pipeline from Python.
 
-Synthesizes a scan-like room (dominant floor plane + furniture-like objects),
-runs the native-Rust MVP pipeline (voxel downsample -> normals -> RANSAC plane
--> Euclidean clustering), prints a reproducible summary, and optionally writes a
-labeled point cloud and a top-down PNG preview.
+Loads a scan or synthesizes a small fallback scene, runs the native-Rust MVP
+pipeline (voxel downsample -> normals -> RANSAC plane -> Euclidean clustering),
+prints a reproducible summary, and optionally writes a labeled point cloud and a
+top-down PNG preview.
 
 Usage:
     python examples/segment_room.py
+    python examples/segment_room.py --input scan.pcd
     python examples/segment_room.py --out labeled.las --png room.png
 
 Requires only NumPy. The PNG step additionally uses Matplotlib if installed.
@@ -48,6 +49,7 @@ def synthesize_room(seed: int = 0) -> np.ndarray:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", default=None, help="scan file (PCD/PLY/LAS/COPC)")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--leaf-size", type=float, default=0.08)
     parser.add_argument("--cluster-tolerance", type=float, default=0.30)
@@ -59,9 +61,14 @@ def main() -> None:
     parser.add_argument("--png", default=None, help="write a top-down PNG preview")
     args = parser.parse_args()
 
-    pts = synthesize_room(args.seed)
-    cloud = sr.PointCloud.from_xyz(pts)
     print(f"SpatialRust {sr.__version__}")
+    if args.input:
+        cloud = sr.read(args.input)
+        print(f"input file       : {args.input}")
+    else:
+        pts = synthesize_room(args.seed)
+        cloud = sr.PointCloud.from_xyz(pts)
+        print("input fixture    : generated room fallback")
     print(f"input cloud      : {len(cloud):>7,} points")
 
     result = sr.run_pipeline(

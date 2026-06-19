@@ -12,19 +12,85 @@ use std::{
 };
 
 use spatialrust::{
-    EuclideanClusterConfig, HasPositions3, MvpPipeline, MvpPipelineConfig, MvpPipelineResult,
-    NormalEstimationConfig, PointCloud, PointCloudBuilder, RansacPlaneConfig, Vec3,
+    read_point_cloud_file, EuclideanClusterConfig, HasPositions3, MvpPipeline, MvpPipelineConfig,
+    MvpPipelineResult, NormalEstimationConfig, PointCloud, PointCloudBuilder, RansacPlaneConfig,
+    Vec3,
 };
 
 const GIF_WIDTH: u32 = 720;
 const GIF_HEIGHT: u32 = 480;
 const HERO_WIDTH: u32 = 1280;
 const HERO_HEIGHT: u32 = 540;
+const PUBLIC_SCENE_URL: &str =
+    "https://raw.githubusercontent.com/PointCloudLibrary/data/master/tutorials/table_scene_lms400.pcd";
+const PUBLIC_SCENE_FILE: &str = "table_scene_lms400.pcd";
+const PUBLIC_SCENE_MAX_POINTS: usize = 80_000;
 
 fn sample_scene() -> PointCloud {
-    rich_sample_scene()
+    public_sample_scene().unwrap_or_else(|error| {
+        panic!(
+            "failed to load public README scene: {error}\n\
+             set SPATIALRUST_README_CLOUD to a local PCD/PLY/LAS/COPC file, \
+             or install curl so the PCL sample can be downloaded"
+        )
+    })
 }
 
+fn default_public_scene_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../target/readme-data")
+        .join(PUBLIC_SCENE_FILE)
+}
+
+fn public_sample_scene() -> Result<PointCloud, String> {
+    let path = match std::env::var_os("SPATIALRUST_README_CLOUD") {
+        Some(path) => PathBuf::from(path),
+        None => {
+            let path = default_public_scene_path();
+            ensure_public_scene(&path)?;
+            path
+        }
+    };
+    let cloud = read_point_cloud_file(&path)
+        .map_err(|error| format!("read {}: {error}", path.display()))?;
+    Ok(decimate_xyz_cloud(&cloud, PUBLIC_SCENE_MAX_POINTS)?)
+}
+
+fn ensure_public_scene(path: &Path) -> Result<(), String> {
+    if path.exists() {
+        return Ok(());
+    }
+
+    let parent = path.parent().ok_or_else(|| format!("missing parent for {}", path.display()))?;
+    fs::create_dir_all(parent).map_err(|error| format!("create {}: {error}", parent.display()))?;
+
+    let status = Command::new("curl")
+        .args(["-L", "--fail", "--silent", "--show-error", "--output"])
+        .arg(path)
+        .arg(PUBLIC_SCENE_URL)
+        .status()
+        .map_err(|error| format!("spawn curl: {error}"))?;
+    if !status.success() {
+        let _ = fs::remove_file(path);
+        return Err(format!("download {PUBLIC_SCENE_URL} failed with {status}"));
+    }
+    Ok(())
+}
+
+fn decimate_xyz_cloud(input: &PointCloud, max_points: usize) -> Result<PointCloud, String> {
+    let (x, y, z) = input.positions3().map_err(|error| error.to_string())?;
+    let stride = input.len().div_ceil(max_points).max(1);
+    let mut builder = PointCloudBuilder::xyz();
+    for index in (0..input.len()).step_by(stride) {
+        let point = [x[index], y[index], z[index]];
+        if point.iter().all(|value| value.is_finite()) {
+            builder.push_point(point).map_err(|error| error.to_string())?;
+        }
+    }
+    builder.build().map_err(|error| error.to_string())
+}
+
+#[allow(dead_code)]
 fn rich_sample_scene() -> PointCloud {
     let mut builder = PointCloudBuilder::xyz();
 
@@ -131,7 +197,7 @@ fn rich_sample_scene() -> PointCloud {
 
 fn pipeline_config() -> MvpPipelineConfig {
     MvpPipelineConfig {
-        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(0.12),
+        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(0.03),
         normals: NormalEstimationConfig {
             k_neighbors: 8,
             min_neighbors: 3,
@@ -139,14 +205,14 @@ fn pipeline_config() -> MvpPipelineConfig {
             ..NormalEstimationConfig::default()
         },
         plane: RansacPlaneConfig {
-            distance_threshold: 0.05,
+            distance_threshold: 0.025,
             max_iterations: 500,
             min_inliers: 40,
             seed: 17,
         },
         cluster: EuclideanClusterConfig {
-            cluster_tolerance: 0.18,
-            min_cluster_size: 2,
+            cluster_tolerance: 0.06,
+            min_cluster_size: 8,
             max_cluster_size: usize::MAX,
         },
         icp: None,
@@ -448,7 +514,7 @@ impl Canvas {
 
     fn draw_title(&mut self, width: u32) {
         self.draw_char_line(width, 36, 34, "SpatialRust", Rgb(248, 250, 252), 2);
-        self.draw_char_line(width, 36, 62, "PyTorch for Spatial Computing", Rgb(56, 189, 248), 1);
+        self.draw_char_line(width, 36, 62, "Rust-native spatial computing", Rgb(56, 189, 248), 1);
     }
 
     fn draw_char_line(&mut self, width: u32, x: i32, y: i32, text: &str, color: Rgb, scale: i32) {
@@ -862,8 +928,9 @@ fn draw_bounds_box(
 /// the recentered region of interest, mirroring the `--bounds` CLI flag.
 fn render_copc_frames(input: &PointCloud, temp_dir: &Path) {
     let (min, max) = bounds_xy(input);
-    let b_min = [0.65_f32, 0.30_f32];
-    let b_max = [1.78_f32, 1.36_f32];
+    let span = [(max[0] - min[0]).max(1e-3), (max[1] - min[1]).max(1e-3)];
+    let b_min = [min[0] + span[0] * 0.30, min[1] + span[1] * 0.28];
+    let b_max = [min[0] + span[0] * 0.70, min[1] + span[1] * 0.72];
     let (x, y, _) = input.positions3().expect("positions");
     let inside =
         |i: usize| x[i] >= b_min[0] && x[i] <= b_max[0] && y[i] >= b_min[1] && y[i] <= b_max[1];
@@ -1425,7 +1492,7 @@ fn render_social_card() -> String {
     );
     svg.push('\n');
     svg.push_str(
-        r##"<text x="82" y="210" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="700">PyTorch for Spatial Computing</text>"##,
+        r##"<text x="82" y="210" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="700">Rust-native spatial computing</text>"##,
     );
     svg.push('\n');
     svg.push_str(

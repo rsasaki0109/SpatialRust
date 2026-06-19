@@ -2,7 +2,7 @@
 
 Design version: **v0.1 Master Architecture Draft**
 
-North star: **PyTorch for Spatial Computing**
+North star: **Rust-native spatial computing**
 
 ## Core decisions
 

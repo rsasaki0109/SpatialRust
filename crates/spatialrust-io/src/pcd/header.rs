@@ -10,6 +10,8 @@ pub enum PcdDataKind {
     Ascii,
     /// Binary little-endian payload.
     Binary,
+    /// LZF-compressed binary payload.
+    BinaryCompressed,
 }
 
 /// Parsed PCD header.
@@ -119,6 +121,7 @@ impl PcdHeader {
                 data = Some(match rest.trim().to_ascii_lowercase().as_str() {
                     "ascii" => PcdDataKind::Ascii,
                     "binary" => PcdDataKind::Binary,
+                    "binary_compressed" => PcdDataKind::BinaryCompressed,
                     other => return Err(pcd_format(format!("unsupported DATA mode `{other}`"))),
                 });
                 break;

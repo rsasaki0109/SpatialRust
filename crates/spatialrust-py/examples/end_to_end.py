@@ -133,10 +133,20 @@ def main() -> None:
     print(f"+ ICP refine      : converged={icp.converged} max|T-T*|={err(refined_T):.4f}")
 
     if args.png:
-        _save_png(raw, cleaned_xyz, small.xyz(), seg, target_xyz, source_xyz, aligned_xyz, args.png)
+        _save_png(
+            raw,
+            cleaned_xyz,
+            small.xyz(),
+            seg,
+            target_xyz,
+            source_xyz,
+            aligned_xyz,
+            args.png,
+            input_loaded=bool(args.input),
+        )
 
 
-def _save_png(raw, cleaned, small, seg, target, source, aligned, path):
+def _save_png(raw, cleaned, small, seg, target, source, aligned, path, input_loaded=False):
     try:
         import matplotlib
 
@@ -162,7 +172,8 @@ def _save_png(raw, cleaned, small, seg, target, source, aligned, path):
     # (a) raw scan with outliers highlighted.
     ax = axes[0, 0]
     ax.scatter(raw[:, 0], raw[:, 1], c="#64748b", s=2, linewidths=0, alpha=0.5)
-    style(ax, f"1. Raw scan ({len(raw):,} pts, with speckle)")
+    raw_suffix = "" if input_loaded else ", with speckle"
+    style(ax, f"1. Raw scan ({len(raw):,} pts{raw_suffix})")
 
     # (b) cleaned + downsampled.
     ax = axes[0, 1]
