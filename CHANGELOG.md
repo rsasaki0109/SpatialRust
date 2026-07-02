@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+### Added
+
+- **MVP normal backend selection**: `MvpPipelineConfig::normal_policy`,
+  `NormalEstimator::estimate_with_policy`, and CLI `--normal-policy auto|cpu|gpu`
+  (included in `pipeline-mvp-gpu` / `feature-normal-gpu`).
+
 ## [1.0.0] — 2026-07-03
 
 First stable release: **Stable** APIs in `docs/API_STABILITY.md`, MVP pipeline +

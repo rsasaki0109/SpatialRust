@@ -45,6 +45,7 @@ Options:
   --voxel-mode <MODE>        centroid | approximate (default: centroid)
   --voxel-policy <POLICY>    auto | cpu | gpu (default: auto)
   --plane-policy <POLICY>      auto | cpu | gpu (default: auto; gpu requires pipeline-mvp-gpu)
+  --normal-policy <POLICY>     auto | cpu | gpu (default: auto; gpu requires pipeline-mvp-gpu)
   --bounds <MINX,MINY,MINZ,MAXX,MAXY,MAXZ>
                              COPC spatial query bounds (requires COPC input)
   --resolution <METERS>      COPC max point spacing LOD (requires COPC input; uses root bounds
@@ -82,6 +83,10 @@ fn parse_voxel_policy(value: &str) -> Result<ExecutionPolicy, String> {
 
 fn parse_plane_policy(value: &str) -> Result<ExecutionPolicy, String> {
     parse_execution_policy(value, "plane")
+}
+
+fn parse_normal_policy(value: &str) -> Result<ExecutionPolicy, String> {
+    parse_execution_policy(value, "normal")
 }
 
 fn parse_voxel_mode(value: &str) -> Result<VoxelAggregationMode, String> {
@@ -288,6 +293,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut voxel_mode = VoxelAggregationMode::Centroid;
     let mut voxel_policy = ExecutionPolicy::Auto;
     let mut plane_policy = ExecutionPolicy::Auto;
+    let mut normal_policy = ExecutionPolicy::Auto;
     let mut copc = CopcQueryOptions::default();
     let mut repeat = 1_usize;
     let mut input_path = None;
@@ -314,6 +320,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--plane-policy" => {
                 let value = args.next().ok_or("--plane-policy requires auto, cpu, or gpu")?;
                 plane_policy = parse_plane_policy(&value)?;
+            }
+            "--normal-policy" => {
+                let value = args.next().ok_or("--normal-policy requires auto, cpu, or gpu")?;
+                normal_policy = parse_normal_policy(&value)?;
             }
             "--bounds" => {
                 let value = args.next().ok_or("--bounds requires 6 comma-separated values")?;
@@ -358,11 +368,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         voxel: build_voxel_config(leaf_size, voxel_mode),
         voxel_policy,
         plane_policy,
+        normal_policy,
         ..MvpPipelineConfig::default()
     };
 
     eprintln!(
-        "running MVP pipeline (leaf_size={leaf_size}, voxel_mode={}, voxel_policy={voxel_policy:?}, plane_policy={plane_policy:?}, repeat={repeat})",
+        "running MVP pipeline (leaf_size={leaf_size}, voxel_mode={}, voxel_policy={voxel_policy:?}, plane_policy={plane_policy:?}, normal_policy={normal_policy:?}, repeat={repeat})",
         voxel_mode_label(voxel_mode),
     );
     let pipeline = MvpPipeline::new(config);

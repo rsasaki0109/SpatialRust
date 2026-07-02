@@ -1,11 +1,19 @@
 use spatialrust_core::{
-    DType, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet, PointCloud, PointField,
-    PointSchema, SpatialError, SpatialResult,
+    DType, ExecutionPolicy, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet, PointCloud,
+    PointField, PointSchema, SpatialError, SpatialResult,
 };
+#[cfg(feature = "feature-normal-gpu")]
+use spatialrust_core::DeviceKind;
 use spatialrust_math::{symmetric_eigen3, Mat3, Vec3};
 use spatialrust_search::{KdTree, Neighbor, RadiusSearchIndex};
 
 use crate::estimator::FeatureEstimator;
+
+/// Minimum point count before GPU normal estimation is selected under `Auto`.
+///
+/// The k-NN GPU path (default MVP config) modestly wins at large counts; the
+/// radius/grid GPU path is much faster but requires `search_radius`.
+pub const DEFAULT_GPU_MIN_POINTS_NORMAL: usize = 10_000;
 
 /// Configuration for covariance-based normal estimation.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -18,11 +26,21 @@ pub struct NormalEstimationConfig {
     pub min_neighbors: usize,
     /// Optional viewpoint used to orient normals consistently.
     pub viewpoint: Option<Vec3<f32>>,
+    /// Minimum input point count before GPU execution is considered under `Auto`.
+    ///
+    /// `None` always uses GPU when requested.
+    pub gpu_min_points: Option<usize>,
 }
 
 impl Default for NormalEstimationConfig {
     fn default() -> Self {
-        Self { k_neighbors: 20, search_radius: None, min_neighbors: 3, viewpoint: None }
+        Self {
+            k_neighbors: 20,
+            search_radius: None,
+            min_neighbors: 3,
+            viewpoint: None,
+            gpu_min_points: Some(DEFAULT_GPU_MIN_POINTS_NORMAL),
+        }
     }
 }
 
@@ -30,7 +48,26 @@ impl NormalEstimationConfig {
     /// Creates a k-NN normal estimation config.
     #[must_use]
     pub const fn k_neighbors(k_neighbors: usize) -> Self {
-        Self { k_neighbors, search_radius: None, min_neighbors: 3, viewpoint: None }
+        Self {
+            k_neighbors,
+            search_radius: None,
+            min_neighbors: 3,
+            viewpoint: None,
+            gpu_min_points: Some(DEFAULT_GPU_MIN_POINTS_NORMAL),
+        }
+    }
+
+    /// Disables the GPU point-count heuristic so GPU is always used when requested.
+    #[must_use]
+    pub const fn without_gpu_min_points(mut self) -> Self {
+        self.gpu_min_points = None;
+        self
+    }
+
+    /// Returns the point-count threshold used by [`ExecutionPolicy::Auto`].
+    #[must_use]
+    pub const fn effective_gpu_min_points(&self) -> Option<usize> {
+        self.gpu_min_points
     }
 }
 
@@ -125,6 +162,52 @@ impl NormalEstimator {
 
         let output = build_output_cloud(input, nx, ny, nz, curvature)?;
         Ok((output, NormalEstimationResult { valid_count, invalid_count }))
+    }
+
+    /// Estimates normals using the given execution policy.
+    ///
+    /// With the `feature-normal-gpu` feature, [`ExecutionPolicy::Auto`] and
+    /// [`ExecutionPolicy::Gpu`] run covariance analysis on wgpu when the input
+    /// meets [`NormalEstimationConfig::effective_gpu_min_points`].
+    pub fn estimate_with_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<PointCloud> {
+        #[cfg(feature = "feature-normal-gpu")]
+        {
+            let resolved = self.resolve_policy(input, policy);
+            if matches!(resolved, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
+                return crate::normal_gpu::GpuNormalEstimator::new(self.config).estimate(input);
+            }
+        }
+
+        let _ = policy;
+        self.estimate(input)
+    }
+
+    #[cfg(feature = "feature-normal-gpu")]
+    fn should_use_gpu(&self, input: &PointCloud) -> bool {
+        self.config
+            .effective_gpu_min_points()
+            .is_none_or(|min_points| input.len() >= min_points)
+    }
+
+    #[cfg(feature = "feature-normal-gpu")]
+    fn resolve_policy(&self, input: &PointCloud, policy: ExecutionPolicy) -> ExecutionPolicy {
+        match policy {
+            ExecutionPolicy::Auto => {
+                if self.should_use_gpu(input) {
+                    ExecutionPolicy::Gpu(DeviceKind::Wgpu)
+                } else {
+                    ExecutionPolicy::CpuSingle
+                }
+            }
+            ExecutionPolicy::Gpu(DeviceKind::Wgpu) if !self.should_use_gpu(input) => {
+                ExecutionPolicy::CpuSingle
+            }
+            other => other,
+        }
     }
 }
 

@@ -111,6 +111,7 @@ pipeline-mvp-gpu = [
     "spatialrust-pipeline/pipeline-mvp-gpu",
     "filter-voxel-gpu",
     "segment-ransac-plane-gpu",
+    "feature-normal-gpu",
 ]
 gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
 metrics-distance = ["spatialrust-metrics/metrics-distance"]

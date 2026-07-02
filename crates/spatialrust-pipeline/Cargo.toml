@@ -14,6 +14,7 @@ pipeline-mvp = []
 pipeline-mvp-gpu = [
     "spatialrust-filtering/filter-voxel-gpu",
     "spatialrust-segmentation/segment-ransac-plane-gpu",
+    "spatialrust-features/feature-normal-gpu",
 ]
 
 [dependencies]

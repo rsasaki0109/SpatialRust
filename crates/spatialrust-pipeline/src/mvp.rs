@@ -4,7 +4,7 @@
 //! and optional ICP registration.
 
 use spatialrust_core::{ExecutionPolicy, PointCloud, SpatialResult};
-use spatialrust_features::{FeatureEstimator, NormalEstimationConfig, NormalEstimator};
+use spatialrust_features::{NormalEstimationConfig, NormalEstimator};
 use spatialrust_filtering::{VoxelGridDownsample, VoxelGridDownsampleConfig};
 use spatialrust_math::Isometry3;
 use spatialrust_registration::{
@@ -66,6 +66,8 @@ pub struct MvpPipelineConfig {
     pub voxel_policy: ExecutionPolicy,
     /// Execution policy for the RANSAC plane segmentation stage.
     pub plane_policy: ExecutionPolicy,
+    /// Execution policy for normal estimation.
+    pub normal_policy: ExecutionPolicy,
 }
 
 impl Default for MvpPipelineConfig {
@@ -78,6 +80,7 @@ impl Default for MvpPipelineConfig {
             icp: None,
             voxel_policy: ExecutionPolicy::Auto,
             plane_policy: ExecutionPolicy::Auto,
+            normal_policy: ExecutionPolicy::Auto,
         }
     }
 }
@@ -131,7 +134,8 @@ impl MvpPipeline {
         let downsampled = VoxelGridDownsample::new(self.config.voxel)
             .filter_with_policy(input, self.config.voxel_policy)?;
 
-        let with_normals = NormalEstimator::new(self.config.normals).estimate(&downsampled)?;
+        let with_normals = NormalEstimator::new(self.config.normals)
+            .estimate_with_policy(&downsampled, self.config.normal_policy)?;
 
         let plane = RansacPlaneSegmenter::new(self.config.plane)
             .segment_with_policy(&with_normals, self.config.plane_policy)?;
@@ -394,5 +398,19 @@ mod tests {
 
         let result = pipeline.run(&sample_cloud()).unwrap();
         assert!(result.plane.inlier_count >= 10);
+    }
+
+    #[cfg(feature = "pipeline-mvp-gpu")]
+    #[test]
+    fn runs_with_gpu_normal_policy() {
+        use spatialrust_core::{DeviceKind, ExecutionPolicy};
+
+        let pipeline = MvpPipeline::new(MvpPipelineConfig {
+            normal_policy: ExecutionPolicy::Gpu(DeviceKind::Wgpu),
+            ..Default::default()
+        });
+
+        let result = pipeline.run(&sample_cloud()).unwrap();
+        assert!(result.with_normals.field("normal_x").is_ok());
     }
 }
