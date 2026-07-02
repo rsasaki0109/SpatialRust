@@ -11,6 +11,7 @@ description = "Point cloud segmentation for SpatialRust"
 [features]
 default = ["segment-ransac-plane", "segment-euclidean"]
 segment-ransac-plane = []
+segment-ransac-plane-gpu = ["segment-ransac-plane", "dep:spatialrust-gpu"]
 segment-multi-plane = ["segment-ransac-plane"]
 segment-euclidean = ["dep:spatialrust-search"]
 segment-dbscan = ["dep:spatialrust-search"]
@@ -22,6 +23,7 @@ segment-region-growing = ["dep:spatialrust-search"]
 spatialrust-core = { workspace = true }
 spatialrust-math = { workspace = true }
 spatialrust-search = { workspace = true, optional = true, features = ["search-kdtree"] }
+spatialrust-gpu = { workspace = true, optional = true, features = ["gpu-wgpu"] }
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }

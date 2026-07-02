@@ -40,9 +40,13 @@ pub use kernels::{
     reduce_voxel_average_f32_gpu_buffers, reduce_voxel_average_f32_multi_gpu,
     reduce_voxel_centroids_xyz, reduce_voxel_centroids_xyz_and_average_multi_gpu,
     reduce_voxel_centroids_xyz_and_gather_first_multi_gpu, reduce_voxel_centroids_xyz_gpu_buffers,
-    GpuCovariance, GpuNormal, GpuVoxelKeyBuffers, GpuVoxelSegments, VoxelApproximateFirstGpuResult,
+    GpuCovariance, GpuNormal, GpuPlaneScore, GpuVoxelKeyBuffers, GpuVoxelSegments,
+    score_ransac_plane_hypotheses_gpu, VoxelApproximateFirstGpuResult,
     VoxelCentroidGpuResult, VoxelSegments,
 };
 
 #[cfg(feature = "gpu-wgpu")]
 pub use runtime::{WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS, MULTI_GATHER4_STORAGE_BUFFERS};
+
+#[cfg(feature = "gpu-wgpu")]
+pub use upload_cache::GpuBufferPool;

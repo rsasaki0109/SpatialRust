@@ -34,6 +34,9 @@ mod voxel_segments_gpu;
 mod voxel_gather;
 
 #[cfg(feature = "gpu-wgpu")]
+mod ransac_plane;
+
+#[cfg(feature = "gpu-wgpu")]
 mod voxel_pipeline;
 
 #[cfg(feature = "gpu-wgpu")]
@@ -76,6 +79,9 @@ pub use voxel_sort::{build_voxel_segments_gpu, build_voxel_segments_gpu_from_key
 pub use voxel_segments_gpu::{
     build_voxel_segments_from_positions_gpu, build_voxel_segments_from_positions_gpu_buffers,
 };
+
+#[cfg(feature = "gpu-wgpu")]
+pub use ransac_plane::{score_ransac_plane_hypotheses_gpu, GpuPlaneScore};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use voxel_pipeline::{

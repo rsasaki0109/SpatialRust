@@ -116,6 +116,7 @@ fn mvp_load_voxel_normals_plane_cluster() {
         max_iterations: 500,
         min_inliers: 10,
         seed: 11,
+        ..Default::default()
     })
     .segment(&with_normals)
     .unwrap();
@@ -216,6 +217,7 @@ fn mvp_full_pipeline_roundtrip() {
             max_iterations: 500,
             min_inliers: 10,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.3,
@@ -292,6 +294,7 @@ fn mvp_las_pipeline_roundtrip() {
             max_iterations: 500,
             min_inliers: 10,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.3,
@@ -366,6 +369,7 @@ fn mvp_copc_pipeline_roundtrip() {
             max_iterations: 500,
             min_inliers: 10,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.3,
@@ -454,6 +458,7 @@ fn mvp_copc_query_pipeline() {
             max_iterations: 500,
             min_inliers: 10,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.3,
@@ -522,6 +527,7 @@ fn mvp_copc_resolution_query_pipeline() {
             max_iterations: 500,
             min_inliers: 1,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.3,
@@ -1224,6 +1230,7 @@ fn mvp_xyzinormal_approximate_auto_config() -> spatialrust::MvpPipelineConfig {
             max_iterations: 200,
             min_inliers: 10,
             seed: 42,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 1.0,
@@ -1254,6 +1261,7 @@ fn mvp_xyzinormal_base_config() -> spatialrust::MvpPipelineConfig {
             max_iterations: 500,
             min_inliers: 10,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.3,
@@ -1375,6 +1383,7 @@ fn mvp_composite_base_config() -> spatialrust::MvpPipelineConfig {
             max_iterations: 500,
             min_inliers: 10,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.3,
@@ -1550,6 +1559,7 @@ fn mvp_large_scale_xyzi_pipeline_smoke() {
             max_iterations: 200,
             min_inliers: 10,
             seed: 42,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 1.0,
@@ -1617,6 +1627,7 @@ fn mvp_scan_like_base_config() -> spatialrust::MvpPipelineConfig {
             max_iterations: 200,
             min_inliers: 10,
             seed: 42,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 1.0,
@@ -1775,6 +1786,7 @@ fn mvp_approximate_voxel_mode_pipeline() {
             max_iterations: 500,
             min_inliers: 10,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.3,

@@ -105,6 +105,7 @@ impl MultiPlaneSegmenter {
                 min_inliers: self.config.min_inliers,
                 // Vary the seed per plane so successive fits explore differently.
                 seed: self.config.seed.wrapping_add(plane_index as u64),
+                ..Default::default()
             };
             let Ok(result) = RansacPlaneSegmenter::new(config).segment(&sub) else {
                 // No plane with enough inliers remains.

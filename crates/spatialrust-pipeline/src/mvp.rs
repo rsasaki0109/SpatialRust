@@ -64,6 +64,8 @@ pub struct MvpPipelineConfig {
     pub icp: Option<MvpIcpConfig>,
     /// Execution policy for the voxel downsampling stage.
     pub voxel_policy: ExecutionPolicy,
+    /// Execution policy for the RANSAC plane segmentation stage.
+    pub plane_policy: ExecutionPolicy,
 }
 
 impl Default for MvpPipelineConfig {
@@ -75,6 +77,7 @@ impl Default for MvpPipelineConfig {
             cluster: EuclideanClusterConfig::default(),
             icp: None,
             voxel_policy: ExecutionPolicy::Auto,
+            plane_policy: ExecutionPolicy::Auto,
         }
     }
 }
@@ -130,7 +133,8 @@ impl MvpPipeline {
 
         let with_normals = NormalEstimator::new(self.config.normals).estimate(&downsampled)?;
 
-        let plane = RansacPlaneSegmenter::new(self.config.plane).segment(&with_normals)?;
+        let plane = RansacPlaneSegmenter::new(self.config.plane)
+            .segment_with_policy(&with_normals, self.config.plane_policy)?;
 
         let clusters =
             EuclideanClusterExtractor::new(self.config.cluster).extract(&plane.outliers)?;
@@ -235,6 +239,7 @@ mod tests {
                 max_iterations: 500,
                 min_inliers: 10,
                 seed: 17,
+                ..Default::default()
             },
             cluster: EuclideanClusterConfig {
                 cluster_tolerance: 0.3,
@@ -269,6 +274,7 @@ mod tests {
                 max_iterations: 500,
                 min_inliers: 10,
                 seed: 17,
+                ..Default::default()
             },
             cluster: EuclideanClusterConfig {
                 cluster_tolerance: 0.3,
@@ -322,6 +328,7 @@ mod tests {
                 max_iterations: 500,
                 min_inliers: 10,
                 seed: 17,
+                ..Default::default()
             },
             cluster: EuclideanClusterConfig {
                 cluster_tolerance: 0.3,
@@ -373,5 +380,19 @@ mod tests {
 
         let result = pipeline.run(&sample_cloud()).unwrap();
         assert!(!result.downsampled.is_empty());
+    }
+
+    #[cfg(feature = "pipeline-mvp-gpu")]
+    #[test]
+    fn runs_with_gpu_plane_policy() {
+        use spatialrust_core::{DeviceKind, ExecutionPolicy};
+
+        let pipeline = MvpPipeline::new(MvpPipelineConfig {
+            plane_policy: ExecutionPolicy::Gpu(DeviceKind::Wgpu),
+            ..Default::default()
+        });
+
+        let result = pipeline.run(&sample_cloud()).unwrap();
+        assert!(result.plane.inlier_count >= 10);
     }
 }

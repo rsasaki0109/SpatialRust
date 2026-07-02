@@ -11,7 +11,10 @@ description = "Composable processing pipelines for SpatialRust"
 [features]
 default = ["pipeline-mvp"]
 pipeline-mvp = []
-pipeline-mvp-gpu = ["spatialrust-filtering/filter-voxel-gpu"]
+pipeline-mvp-gpu = [
+    "spatialrust-filtering/filter-voxel-gpu",
+    "spatialrust-segmentation/segment-ransac-plane-gpu",
+]
 
 [dependencies]
 spatialrust-core = { workspace = true }

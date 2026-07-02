@@ -51,6 +51,7 @@ fn mvp_config(voxel_policy: ExecutionPolicy) -> MvpPipelineConfig {
             max_iterations: 200,
             min_inliers: 10,
             seed: 42,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 1.0,

@@ -44,6 +44,7 @@ Options:
   --leaf-size <METERS>       Voxel leaf size (default: 0.05)
   --voxel-mode <MODE>        centroid | approximate (default: centroid)
   --voxel-policy <POLICY>    auto | cpu | gpu (default: auto)
+  --plane-policy <POLICY>      auto | cpu | gpu (default: auto; gpu requires pipeline-mvp-gpu)
   --bounds <MINX,MINY,MINZ,MAXX,MAXY,MAXZ>
                              COPC spatial query bounds (requires COPC input)
   --resolution <METERS>      COPC max point spacing LOD (requires COPC input; uses root bounds
@@ -54,16 +55,16 @@ Options:
     );
 }
 
-fn parse_voxel_policy(value: &str) -> Result<ExecutionPolicy, String> {
+fn parse_execution_policy(value: &str, stage: &str) -> Result<ExecutionPolicy, String> {
     match value.to_ascii_lowercase().as_str() {
         "auto" => Ok(ExecutionPolicy::Auto),
         "cpu" => Ok(ExecutionPolicy::CpuSingle),
         "gpu" => {
             #[cfg(not(feature = "pipeline-mvp-gpu"))]
             {
-                return Err(
-                    "GPU voxel policy requires `--features mvp,pipeline-mvp-gpu`".to_string()
-                );
+                return Err(format!(
+                    "GPU {stage} policy requires `--features mvp,pipeline-mvp-gpu`"
+                ));
             }
             #[cfg(feature = "pipeline-mvp-gpu")]
             {
@@ -71,8 +72,16 @@ fn parse_voxel_policy(value: &str) -> Result<ExecutionPolicy, String> {
                 Ok(ExecutionPolicy::Gpu(DeviceKind::Wgpu))
             }
         }
-        other => Err(format!("unknown voxel policy `{other}` (expected auto, cpu, or gpu)")),
+        other => Err(format!("unknown {stage} policy `{other}` (expected auto, cpu, or gpu)")),
     }
+}
+
+fn parse_voxel_policy(value: &str) -> Result<ExecutionPolicy, String> {
+    parse_execution_policy(value, "voxel")
+}
+
+fn parse_plane_policy(value: &str) -> Result<ExecutionPolicy, String> {
+    parse_execution_policy(value, "plane")
 }
 
 fn parse_voxel_mode(value: &str) -> Result<VoxelAggregationMode, String> {
@@ -278,6 +287,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut leaf_size = 0.05_f32;
     let mut voxel_mode = VoxelAggregationMode::Centroid;
     let mut voxel_policy = ExecutionPolicy::Auto;
+    let mut plane_policy = ExecutionPolicy::Auto;
     let mut copc = CopcQueryOptions::default();
     let mut repeat = 1_usize;
     let mut input_path = None;
@@ -300,6 +310,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--voxel-policy" => {
                 let value = args.next().ok_or("--voxel-policy requires auto, cpu, or gpu")?;
                 voxel_policy = parse_voxel_policy(&value)?;
+            }
+            "--plane-policy" => {
+                let value = args.next().ok_or("--plane-policy requires auto, cpu, or gpu")?;
+                plane_policy = parse_plane_policy(&value)?;
             }
             "--bounds" => {
                 let value = args.next().ok_or("--bounds requires 6 comma-separated values")?;
@@ -343,11 +357,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let config = MvpPipelineConfig {
         voxel: build_voxel_config(leaf_size, voxel_mode),
         voxel_policy,
+        plane_policy,
         ..MvpPipelineConfig::default()
     };
 
     eprintln!(
-        "running MVP pipeline (leaf_size={leaf_size}, voxel_mode={}, voxel_policy={voxel_policy:?}, repeat={repeat})",
+        "running MVP pipeline (leaf_size={leaf_size}, voxel_mode={}, voxel_policy={voxel_policy:?}, plane_policy={plane_policy:?}, repeat={repeat})",
         voxel_mode_label(voxel_mode),
     );
     let pipeline = MvpPipeline::new(config);

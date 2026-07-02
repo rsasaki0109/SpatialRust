@@ -257,7 +257,14 @@ cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
   --bounds 0,0,-1,100,100,1 --resolution 0.5 scan.copc.laz roi.copc.laz
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
   --resolution 0.5 scan.copc.laz coarse.copc.laz
+cargo run -p spatialrust --features pipeline-mvp-gpu --bin spatialrust-mvp -- \
+  --plane-policy auto scan.las labeled.las
 ```
+
+GPU RANSAC plane scoring (wgpu) is available with `pipeline-mvp-gpu` or
+`segment-ransac-plane-gpu`. `--plane-policy auto` selects GPU from ~2k points
+(MVP downsampled scenes) and shows ~11× speedup on full 460k clouds in local
+release measurements (`bench/ransac_plane/`).
 
 ### Library
 
@@ -289,14 +296,27 @@ PCD/PLY/LAS/COPC -> voxel downsample -> normals -> plane RANSAC -> clustering ->
   <img src="docs/assets/readme_mvp_pipeline.gif" alt="Top-down 2D view of the MVP pipeline stages on the public PCL table_scene_lms400 point cloud: input scan, voxel grid, plane RANSAC, and Euclidean clusters" width="640">
 </p>
 
-GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode).
+GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode). GPU RANSAC plane scoring uses the same policy surface (`--plane-policy`, `MvpPipelineConfig::plane_policy`).
 
 ```bash
 cargo test -p spatialrust-gpu --features gpu-wgpu
 cargo test -p spatialrust --features filter-voxel-gpu
+cargo test -p spatialrust --features mvp,pipeline-mvp-gpu --test mvp_public_copc
 cargo test -p spatialrust --features mvp mvp_copc_pipeline_roundtrip
 cargo test -p spatialrust --features mvp mvp_copc_query_pipeline
+python bench/public_copc/run.py
+python bench/ransac_plane/run.py
 ```
+
+### Python (PyG demo)
+
+After `maturin develop` in `crates/spatialrust-py/`:
+
+```bash
+python crates/spatialrust-py/examples/pyg_pointnet_demo.py
+```
+
+See also `crates/spatialrust-py/examples/make_gifs.py` and `examples/ml_preprocess.py`.
 
 ## README visuals
 

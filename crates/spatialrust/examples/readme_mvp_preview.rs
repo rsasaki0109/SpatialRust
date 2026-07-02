@@ -209,6 +209,7 @@ fn pipeline_config() -> MvpPipelineConfig {
             max_iterations: 500,
             min_inliers: 40,
             seed: 17,
+            ..Default::default()
         },
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.06,

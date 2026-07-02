@@ -1,7 +1,12 @@
-use spatialrust_core::{HasPositions3, PointCloud, SpatialError, SpatialResult};
-use spatialrust_math::{symmetric_eigen3, Mat3, Vec3};
+use spatialrust_core::{ExecutionPolicy, HasPositions3, PointCloud, SpatialError, SpatialResult};
+#[cfg(feature = "segment-ransac-plane-gpu")]
+use spatialrust_core::DeviceKind;
+use spatialrust_math::Vec3;
 
 use crate::cloud::extract_mask;
+use crate::plane_ransac::{
+    collect_inliers, plane_from_indices, refine_plane_from_inliers, Rng, sample_indices,
+};
 use crate::segmenter::PointCloudSegmenter;
 
 /// Plane model in Hessian form: `normal · p + d = 0` with unit normal.
@@ -33,6 +38,14 @@ impl PlaneModel {
     }
 }
 
+/// Minimum point count before GPU RANSAC plane scoring is selected under `Auto`.
+///
+/// Full-cloud bench on the public PCL `table_scene_lms400` sample (460k points,
+/// 1000 iterations) showed ~11× GPU speedup. After MVP-style voxel downsampling
+/// (leaf=0.05) + normals the same scene is ~2k points and GPU remains ~2.7×
+/// faster in local release measurements.
+pub const DEFAULT_GPU_MIN_POINTS_PLANE: usize = 2_000;
+
 /// Configuration for RANSAC plane segmentation.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RansacPlaneConfig {
@@ -44,11 +57,21 @@ pub struct RansacPlaneConfig {
     pub min_inliers: usize,
     /// Seed for deterministic sampling in tests.
     pub seed: u64,
+    /// Minimum input point count before GPU execution is considered under `Auto`.
+    ///
+    /// `None` always uses GPU when requested.
+    pub gpu_min_points: Option<usize>,
 }
 
 impl Default for RansacPlaneConfig {
     fn default() -> Self {
-        Self { distance_threshold: 0.01, max_iterations: 1_000, min_inliers: 3, seed: 42 }
+        Self {
+            distance_threshold: 0.01,
+            max_iterations: 1_000,
+            min_inliers: 3,
+            seed: 42,
+            gpu_min_points: Some(DEFAULT_GPU_MIN_POINTS_PLANE),
+        }
     }
 }
 
@@ -56,7 +79,26 @@ impl RansacPlaneConfig {
     /// Creates a config with the given distance threshold.
     #[must_use]
     pub const fn with_distance_threshold(distance_threshold: f32) -> Self {
-        Self { distance_threshold, max_iterations: 1_000, min_inliers: 3, seed: 42 }
+        Self {
+            distance_threshold,
+            max_iterations: 1_000,
+            min_inliers: 3,
+            seed: 42,
+            gpu_min_points: Some(DEFAULT_GPU_MIN_POINTS_PLANE),
+        }
+    }
+
+    /// Disables the GPU point-count heuristic so GPU is always used when requested.
+    #[must_use]
+    pub const fn without_gpu_min_points(mut self) -> Self {
+        self.gpu_min_points = None;
+        self
+    }
+
+    /// Returns the point-count threshold used by [`ExecutionPolicy::Auto`].
+    #[must_use]
+    pub const fn effective_gpu_min_points(&self) -> Option<usize> {
+        self.gpu_min_points
     }
 }
 
@@ -94,6 +136,56 @@ impl RansacPlaneSegmenter {
 
     /// Segments the dominant plane and returns inlier/outlier clouds.
     pub fn segment(&self, input: &PointCloud) -> SpatialResult<RansacPlaneSegmentation> {
+        self.segment_with_policy(input, ExecutionPolicy::CpuSingle)
+    }
+
+    /// Segments the dominant plane using the given execution policy.
+    ///
+    /// With the `segment-ransac-plane-gpu` feature, [`ExecutionPolicy::Auto`] and
+    /// [`ExecutionPolicy::Gpu`] run hypothesis scoring on wgpu when the input meets
+    /// [`RansacPlaneConfig::effective_gpu_min_points`].
+    pub fn segment_with_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<RansacPlaneSegmentation> {
+        #[cfg(feature = "segment-ransac-plane-gpu")]
+        {
+            let resolved = self.resolve_policy(input, policy);
+            if matches!(resolved, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
+                return crate::plane_gpu::GpuRansacPlaneSegmenter::new(self.config).segment(input);
+            }
+        }
+
+        let _ = policy;
+        self.segment_cpu(input)
+    }
+
+    #[cfg(feature = "segment-ransac-plane-gpu")]
+    fn should_use_gpu(&self, input: &PointCloud) -> bool {
+        self.config
+            .effective_gpu_min_points()
+            .is_none_or(|min_points| input.len() >= min_points)
+    }
+
+    #[cfg(feature = "segment-ransac-plane-gpu")]
+    fn resolve_policy(&self, input: &PointCloud, policy: ExecutionPolicy) -> ExecutionPolicy {
+        match policy {
+            ExecutionPolicy::Auto => {
+                if self.should_use_gpu(input) {
+                    ExecutionPolicy::Gpu(DeviceKind::Wgpu)
+                } else {
+                    ExecutionPolicy::CpuSingle
+                }
+            }
+            ExecutionPolicy::Gpu(DeviceKind::Wgpu) if !self.should_use_gpu(input) => {
+                ExecutionPolicy::CpuSingle
+            }
+            other => other,
+        }
+    }
+
+    fn segment_cpu(&self, input: &PointCloud) -> SpatialResult<RansacPlaneSegmentation> {
         if input.is_empty() {
             return Err(SpatialError::InvalidArgument(
                 "cannot segment plane from empty point cloud".to_owned(),
@@ -127,32 +219,7 @@ impl RansacPlaneSegmenter {
             }
         }
 
-        if best_inliers.len() < self.config.min_inliers {
-            return Err(SpatialError::InvalidArgument(format!(
-                "RANSAC found only {} inliers, minimum is {}",
-                best_inliers.len(),
-                self.config.min_inliers
-            )));
-        }
-
-        let model =
-            refine_plane_from_inliers(x, y, z, &best_inliers).or(best_model).ok_or_else(|| {
-                SpatialError::InvalidArgument("failed to refine plane model".to_owned())
-            })?;
-
-        let mut inlier_mask = vec![false; len];
-        for index in &best_inliers {
-            inlier_mask[*index] = true;
-        }
-        let mut outlier_mask = inlier_mask.clone();
-        for selected in &mut outlier_mask {
-            *selected = !*selected;
-        }
-
-        let inliers = extract_mask(input, &inlier_mask)?;
-        let outliers = extract_mask(input, &outlier_mask)?;
-
-        Ok(RansacPlaneSegmentation { inlier_count: best_inliers.len(), model, inliers, outliers })
+        finalize_plane_segmentation(input, x, y, z, &self.config, best_inliers, best_model)
     }
 
     /// Returns only the outlier cloud after removing the dominant plane.
@@ -161,146 +228,47 @@ impl RansacPlaneSegmenter {
     }
 }
 
+pub(crate) fn finalize_plane_segmentation(
+    input: &PointCloud,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    config: &RansacPlaneConfig,
+    best_inliers: Vec<usize>,
+    best_model: Option<PlaneModel>,
+) -> SpatialResult<RansacPlaneSegmentation> {
+    if best_inliers.len() < config.min_inliers {
+        return Err(SpatialError::InvalidArgument(format!(
+            "RANSAC found only {} inliers, minimum is {}",
+            best_inliers.len(),
+            config.min_inliers
+        )));
+    }
+
+    let model = refine_plane_from_inliers(x, y, z, &best_inliers)
+        .or(best_model)
+        .ok_or_else(|| SpatialError::InvalidArgument("failed to refine plane model".to_owned()))?;
+
+    let len = input.len();
+    let mut inlier_mask = vec![false; len];
+    for index in &best_inliers {
+        inlier_mask[*index] = true;
+    }
+    let mut outlier_mask = inlier_mask.clone();
+    for selected in &mut outlier_mask {
+        *selected = !*selected;
+    }
+
+    let inliers = extract_mask(input, &inlier_mask)?;
+    let outliers = extract_mask(input, &outlier_mask)?;
+
+    Ok(RansacPlaneSegmentation { inlier_count: best_inliers.len(), model, inliers, outliers })
+}
+
 impl PointCloudSegmenter for RansacPlaneSegmenter {
     fn name(&self) -> &'static str {
         "RansacPlaneSegmenter"
     }
-}
-
-struct Rng {
-    state: u64,
-}
-
-impl Rng {
-    fn new(seed: u64) -> Self {
-        Self { state: seed.max(1) }
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        self.state = self.state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
-        self.state
-    }
-
-    fn next_usize(&mut self, upper: usize) -> usize {
-        // Use the high, well-mixed bits of the LCG (its low bits have a short
-        // period) and map them into `0..upper` with a multiply-shift, which
-        // keeps the sampling uniform enough for RANSAC.
-        let high = self.next_u64() >> 32;
-        ((high * upper as u64) >> 32) as usize
-    }
-}
-
-fn sample_indices(rng: &mut Rng, len: usize) -> Option<[usize; 3]> {
-    if len < 3 {
-        return None;
-    }
-
-    let mut indices = [0usize; 3];
-    indices[0] = rng.next_usize(len);
-    indices[1] = rng.next_usize(len);
-    while indices[1] == indices[0] {
-        indices[1] = rng.next_usize(len);
-    }
-    indices[2] = rng.next_usize(len);
-    while indices[2] == indices[0] || indices[2] == indices[1] {
-        indices[2] = rng.next_usize(len);
-    }
-    Some(indices)
-}
-
-fn plane_from_indices(x: &[f32], y: &[f32], z: &[f32], indices: [usize; 3]) -> Option<PlaneModel> {
-    let points = [
-        Vec3::new(x[indices[0]], y[indices[0]], z[indices[0]]),
-        Vec3::new(x[indices[1]], y[indices[1]], z[indices[1]]),
-        Vec3::new(x[indices[2]], y[indices[2]], z[indices[2]]),
-    ];
-    plane_from_points(points[0], points[1], points[2])
-}
-
-fn plane_from_points(p0: Vec3<f32>, p1: Vec3<f32>, p2: Vec3<f32>) -> Option<PlaneModel> {
-    let v1 = p1 - p0;
-    let v2 = p2 - p0;
-    let mut normal = v1.cross(v2);
-    if normal.length_squared() < 1e-12 {
-        return None;
-    }
-    normal = normal.normalize();
-    let d = -normal.dot(p0);
-    Some(PlaneModel { normal, d })
-}
-
-fn collect_inliers(
-    x: &[f32],
-    y: &[f32],
-    z: &[f32],
-    model: &PlaneModel,
-    threshold: f32,
-) -> Vec<usize> {
-    x.iter()
-        .enumerate()
-        .filter_map(|(index, &px)| {
-            (model.distance_xyz(px, y[index], z[index]) <= threshold).then_some(index)
-        })
-        .collect()
-}
-
-fn refine_plane_from_inliers(
-    x: &[f32],
-    y: &[f32],
-    z: &[f32],
-    inliers: &[usize],
-) -> Option<PlaneModel> {
-    if inliers.len() < 3 {
-        return None;
-    }
-
-    let count = inliers.len() as f64;
-    let mut mean_x = 0.0_f64;
-    let mut mean_y = 0.0_f64;
-    let mut mean_z = 0.0_f64;
-    for &index in inliers {
-        mean_x += f64::from(x[index]);
-        mean_y += f64::from(y[index]);
-        mean_z += f64::from(z[index]);
-    }
-    mean_x /= count;
-    mean_y /= count;
-    mean_z /= count;
-
-    let mut c00 = 0.0_f64;
-    let mut c11 = 0.0_f64;
-    let mut c22 = 0.0_f64;
-    let mut c01 = 0.0_f64;
-    let mut c02 = 0.0_f64;
-    let mut c12 = 0.0_f64;
-    for &index in inliers {
-        let dx = f64::from(x[index]) - mean_x;
-        let dy = f64::from(y[index]) - mean_y;
-        let dz = f64::from(z[index]) - mean_z;
-        c00 += dx * dx;
-        c11 += dy * dy;
-        c22 += dz * dz;
-        c01 += dx * dy;
-        c02 += dx * dz;
-        c12 += dy * dz;
-    }
-    let inv = 1.0 / count;
-    let covariance = Mat3::<f64>::from_rows(
-        [c00 * inv, c01 * inv, c02 * inv],
-        [c01 * inv, c11 * inv, c12 * inv],
-        [c02 * inv, c12 * inv, c22 * inv],
-    );
-
-    let eigen = symmetric_eigen3(covariance);
-    let normal = Vec3::new(
-        eigen.eigenvectors.m[0][0] as f32,
-        eigen.eigenvectors.m[1][0] as f32,
-        eigen.eigenvectors.m[2][0] as f32,
-    )
-    .normalize();
-    let centroid = Vec3::new(mean_x as f32, mean_y as f32, mean_z as f32);
-    let d = -normal.dot(centroid);
-    Some(PlaneModel { normal, d })
 }
 
 #[cfg(test)]
@@ -329,6 +297,7 @@ mod tests {
             max_iterations: 500,
             min_inliers: 50,
             seed: 7,
+            ..Default::default()
         });
         let result = segmenter.segment(&input).unwrap();
         assert_eq!(result.inlier_count, 100);
@@ -350,6 +319,7 @@ mod tests {
             max_iterations: 500,
             min_inliers: 50,
             seed: 7,
+            ..Default::default()
         });
         let outliers = segmenter.extract_outliers(&input).unwrap();
         let (_, _, z) = outliers.positions3().unwrap();

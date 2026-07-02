@@ -9,6 +9,12 @@ mod segmenter;
 #[cfg(feature = "segment-ransac-plane")]
 mod plane;
 
+#[cfg(feature = "segment-ransac-plane")]
+mod plane_ransac;
+
+#[cfg(all(feature = "segment-ransac-plane", feature = "segment-ransac-plane-gpu"))]
+mod plane_gpu;
+
 #[cfg(feature = "segment-multi-plane")]
 mod multi_plane;
 
@@ -31,7 +37,10 @@ pub use cloud::{extract_indices, extract_mask, with_labels};
 pub use segmenter::PointCloudSegmenter;
 
 #[cfg(feature = "segment-ransac-plane")]
-pub use plane::{PlaneModel, RansacPlaneConfig, RansacPlaneSegmentation, RansacPlaneSegmenter};
+pub use plane::{PlaneModel, RansacPlaneConfig, RansacPlaneSegmentation, RansacPlaneSegmenter, DEFAULT_GPU_MIN_POINTS_PLANE};
+
+#[cfg(all(feature = "segment-ransac-plane", feature = "segment-ransac-plane-gpu"))]
+pub use plane_gpu::GpuRansacPlaneSegmenter;
 
 #[cfg(feature = "segment-multi-plane")]
 pub use multi_plane::{MultiPlaneConfig, MultiPlaneSegmentation, MultiPlaneSegmenter};

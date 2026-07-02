@@ -113,8 +113,11 @@ pub use spatialrust_features::GpuNormalEstimator;
 #[cfg(feature = "segment-ransac-plane")]
 pub use spatialrust_segmentation::{
     extract_indices, extract_mask, with_labels, PlaneModel, PointCloudSegmenter, RansacPlaneConfig,
-    RansacPlaneSegmentation, RansacPlaneSegmenter,
+    RansacPlaneSegmentation, RansacPlaneSegmenter, DEFAULT_GPU_MIN_POINTS_PLANE,
 };
+
+#[cfg(feature = "segment-ransac-plane-gpu")]
+pub use spatialrust_segmentation::GpuRansacPlaneSegmenter;
 
 #[cfg(feature = "segment-multi-plane")]
 pub use spatialrust_segmentation::{MultiPlaneConfig, MultiPlaneSegmentation, MultiPlaneSegmenter};

@@ -3,7 +3,7 @@ use std::sync::{Arc, OnceLock};
 use spatialrust_core::{SpatialError, SpatialResult};
 
 use crate::pipeline_cache::ComputePipelineCache;
-use crate::upload_cache::GpuUploadPool;
+use crate::upload_cache::GpuBufferPool;
 
 /// Headless wgpu runtime for compute-only workloads.
 #[cfg(feature = "gpu-wgpu")]
@@ -13,7 +13,7 @@ pub struct WgpuRuntime {
     queue: wgpu::Queue,
     pipelines: OnceLock<ComputePipelineCache>,
     max_gather_channels: u32,
-    upload_pool: GpuUploadPool,
+    upload_pool: GpuBufferPool,
 }
 
 /// Minimum storage buffers required for the 4-channel gather kernel.
@@ -68,6 +68,21 @@ impl WgpuRuntime {
         self.max_gather_channels
     }
 
+    /// Returns the reusable storage-buffer pool owned by this runtime.
+    #[must_use]
+    pub fn buffer_pool(&self) -> &GpuBufferPool {
+        &self.upload_pool
+    }
+
+    /// Uploads a POD slice into a reusable pooled storage buffer.
+    pub fn upload_pod_storage<T: bytemuck::Pod>(
+        &self,
+        label: &'static str,
+        data: &[T],
+    ) -> SpatialResult<wgpu::Buffer> {
+        self.upload_pool.upload_pod_storage(self, label, data)
+    }
+
     /// Uploads `f32` values into a reusable pooled storage buffer.
     pub fn upload_f32_storage(
         &self,
@@ -77,9 +92,23 @@ impl WgpuRuntime {
         self.upload_pool.upload_f32_storage(self, label, data)
     }
 
+    /// Uploads `u32` values into a reusable pooled storage buffer.
+    pub fn upload_u32_storage(
+        &self,
+        label: &'static str,
+        data: &[u32],
+    ) -> SpatialResult<wgpu::Buffer> {
+        self.upload_pool.upload_u32_storage(self, label, data)
+    }
+
     /// Returns a storage buffer to the upload pool for reuse.
     pub fn recycle_storage(&self, byte_len: u64, buffer: wgpu::Buffer) {
-        self.upload_pool.recycle_storage(byte_len, buffer);
+        self.upload_pool.recycle(byte_len, buffer);
+    }
+
+    /// Clears all buffers cached in the upload pool.
+    pub fn clear_buffer_pool(&self) {
+        self.upload_pool.clear();
     }
 
     async fn new_headless_async() -> SpatialResult<Self> {
@@ -125,7 +154,7 @@ impl WgpuRuntime {
             queue,
             pipelines: OnceLock::new(),
             max_gather_channels,
-            upload_pool: GpuUploadPool::default(),
+            upload_pool: GpuBufferPool::default(),
         })
     }
 }

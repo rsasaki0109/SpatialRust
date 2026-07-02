@@ -51,6 +51,10 @@ feature-normal-gpu = [
     "gpu-wgpu",
 ]
 segment-ransac-plane = ["spatialrust-segmentation/segment-ransac-plane"]
+segment-ransac-plane-gpu = [
+    "spatialrust-segmentation/segment-ransac-plane-gpu",
+    "gpu-wgpu",
+]
 segment-multi-plane = ["spatialrust-segmentation/segment-multi-plane"]
 segment-euclidean = [
     "spatialrust-segmentation/segment-euclidean",
@@ -106,6 +110,7 @@ pipeline-mvp = ["spatialrust-pipeline/pipeline-mvp"]
 pipeline-mvp-gpu = [
     "spatialrust-pipeline/pipeline-mvp-gpu",
     "filter-voxel-gpu",
+    "segment-ransac-plane-gpu",
 ]
 gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
 metrics-distance = ["spatialrust-metrics/metrics-distance"]
@@ -144,3 +149,15 @@ required-features = ["mvp"]
 name = "bench_ops"
 path = "examples/bench_ops.rs"
 required-features = ["mvp", "filter-outlier"]
+
+[[example]]
+name = "bench_ransac_plane"
+path = "examples/bench_ransac_plane.rs"
+required-features = [
+    "segment-ransac-plane",
+    "segment-ransac-plane-gpu",
+    "io-pcd",
+    "gpu-wgpu",
+    "filter-voxel",
+    "feature-normal",
+]

@@ -4,10 +4,47 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Versioning policy (from 1.0.0)
+
+From **1.0.0** onward SpatialRust follows SemVer strictly:
+
+- **MAJOR** — breaking changes to APIs marked **Stable** in
+  [`docs/API_STABILITY.md`](docs/API_STABILITY.md)
+- **MINOR** — backward-compatible features; deprecations may land here
+- **PATCH** — bug fixes and documentation corrections only
+
+Breaking changes to **Stable** symbols require a major release, a CHANGELOG
+entry, and migration notes. Deprecations are announced in a minor release and
+removed no sooner than the next major (see `docs/API_STABILITY.md`).
+
 ## [Unreleased]
+
+## [1.0.0] — 2026-07-03
+
+First stable release: **Stable** APIs in `docs/API_STABILITY.md`, MVP pipeline +
+COPC IO, wgpu acceleration paths behind feature flags, and Python bindings with
+stubtest CI.
 
 ### Added
 
+- **Public COPC validation** (`bench/public_copc/`): reproducible harness and
+  integration test `mvp_public_copc` exercising bounds/resolution partial reads
+  on the public PCL `table_scene_lms400` sample through the MVP pipeline.
+- **GPU RANSAC plane scoring** (`segment-ransac-plane-gpu`): WGSL inlier-count
+  kernel, `GpuRansacPlaneSegmenter`, and `RansacPlaneSegmenter::segment_with_policy`
+  with `ExecutionPolicy` selection (~11× on 460k points, ~2.7× after MVP
+  downsampling in local release measurements).
+- **MVP plane backend selection**: `MvpPipelineConfig::plane_policy`,
+  `pipeline-mvp-gpu` feature, and CLI `--plane-policy auto|cpu|gpu`.
+- **RANSAC plane benchmark** (`bench/ransac_plane/`): CPU vs GPU timing harness
+  with optional `--mvp-leaf` MVP-preprocess path.
+- **Public GPU buffer pool** (`GpuBufferPool` on `WgpuRuntime`): explicit
+  upload/recycle for wgpu storage buffers (`upload_pod_storage`,
+  `upload_u32_storage`, `clear_buffer_pool`).
+- **PyG PointNet++ demo** (`crates/spatialrust-py/examples/pyg_pointnet_demo.py`):
+  SpatialRust preprocessing → PyTorch Geometric tensors.
+- **API stability guide** (`docs/API_STABILITY.md`): stability tiers and v1.0
+  release checklist.
 - **PCL comparison benchmark** (`bench/pcl_comparison/`): a reproducible,
   apples-to-apples timing harness against PCL 1.14 on voxel downsampling, normal
   estimation, and outlier removal, plus rotating cluster/voxel README GIFs
@@ -115,6 +152,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Plane Auto threshold**: `DEFAULT_GPU_MIN_POINTS_PLANE` lowered from 100,000
+  to 2,000 so MVP downsampled clouds (~2k points on the reference sample) select
+  GPU under `Auto`; override with `RansacPlaneConfig::gpu_min_points`.
 - Performance: radius outlier removal is **~16× faster** (1.70 s → 0.10 s on
   210k points) via a new `KdTree::radius_reaches` early-exit density test that
   stops once enough neighbors are found and allocates nothing. `radius_search`
@@ -158,5 +198,6 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - COPC partial reads (bounds + LOD) in the library and `spatialrust-mvp` CLI.
 - wgpu voxel downsampling with automatic CPU/GPU policy selection.
 
-[Unreleased]: https://github.com/rsasaki0109/SpatialRust/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/rsasaki0109/SpatialRust/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/rsasaki0109/SpatialRust/releases/tag/v1.0.0
 [0.1.0]: https://github.com/rsasaki0109/SpatialRust/releases/tag/v0.1.0
