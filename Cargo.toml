@@ -30,19 +30,19 @@ rust-version = "1.75"
 description = "Next-generation spatial computing framework for Rust"
 
 [workspace.dependencies]
-spatialrust-core = { path = "crates/spatialrust-core", version = "0.1.0" }
-spatialrust-math = { path = "crates/spatialrust-math", version = "0.1.0" }
-spatialrust-io = { path = "crates/spatialrust-io", version = "0.1.0" }
-spatialrust-gpu = { path = "crates/spatialrust-gpu", version = "0.1.0" }
-spatialrust-search = { path = "crates/spatialrust-search", version = "0.1.0" }
-spatialrust-filtering = { path = "crates/spatialrust-filtering", version = "0.1.0" }
-spatialrust-features = { path = "crates/spatialrust-features", version = "0.1.0" }
-spatialrust-segmentation = { path = "crates/spatialrust-segmentation", version = "0.1.0" }
-spatialrust-registration = { path = "crates/spatialrust-registration", version = "0.1.0" }
-spatialrust-pipeline = { path = "crates/spatialrust-pipeline", version = "0.1.0" }
-spatialrust-metrics = { path = "crates/spatialrust-metrics", version = "0.1.0", default-features = false }
-spatialrust-transform = { path = "crates/spatialrust-transform", version = "0.1.0", default-features = false }
-spatialrust-voxelize = { path = "crates/spatialrust-voxelize", version = "0.1.0", default-features = false }
+spatialrust-core = { path = "crates/spatialrust-core", version = "1.0.0" }
+spatialrust-math = { path = "crates/spatialrust-math", version = "1.0.0" }
+spatialrust-io = { path = "crates/spatialrust-io", version = "1.0.0" }
+spatialrust-gpu = { path = "crates/spatialrust-gpu", version = "1.0.0" }
+spatialrust-search = { path = "crates/spatialrust-search", version = "1.0.0" }
+spatialrust-filtering = { path = "crates/spatialrust-filtering", version = "1.0.0" }
+spatialrust-features = { path = "crates/spatialrust-features", version = "1.0.0" }
+spatialrust-segmentation = { path = "crates/spatialrust-segmentation", version = "1.0.0" }
+spatialrust-registration = { path = "crates/spatialrust-registration", version = "1.0.0" }
+spatialrust-pipeline = { path = "crates/spatialrust-pipeline", version = "1.0.0" }
+spatialrust-metrics = { path = "crates/spatialrust-metrics", version = "1.0.0", default-features = false }
+spatialrust-transform = { path = "crates/spatialrust-transform", version = "1.0.0", default-features = false }
+spatialrust-voxelize = { path = "crates/spatialrust-voxelize", version = "1.0.0", default-features = false }
 
 bytemuck = { version = "1", features = ["derive"] }
 las = "0.9"

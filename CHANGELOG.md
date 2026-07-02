@@ -167,6 +167,8 @@ stubtest CI.
 
 ### Fixed
 
+- Workspace `[workspace.dependencies]` version requirements aligned to `1.0.0`
+  so `cargo build` resolves after the release version bump.
 - **Python binding tests**: a pytest suite (`crates/spatialrust-py/tests/`)
   covering the NumPy ⇄ Rust boundary of every exported function (shapes, dtypes,
   keyword signatures, and sane results on synthetic clouds), wired into CI as a
