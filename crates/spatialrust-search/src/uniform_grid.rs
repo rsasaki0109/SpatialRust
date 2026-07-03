@@ -106,6 +106,52 @@ pub fn euclidean_cluster_roots(
     let (sorted, cell_start) = build_grid(x, y, z, origin, dims, cluster_tolerance);
     let radius_sq = cluster_tolerance * cluster_tolerance;
 
+    #[cfg(feature = "parallel")]
+    if point_count >= PARALLEL_CLUSTER_MIN_POINTS {
+        return Ok(cluster_roots_parallel(
+            point_count,
+            x,
+            y,
+            z,
+            origin,
+            dims,
+            cluster_tolerance,
+            radius_sq,
+            &sorted,
+            &cell_start,
+        ));
+    }
+
+    Ok(cluster_roots_sequential(
+        point_count,
+        x,
+        y,
+        z,
+        origin,
+        dims,
+        cluster_tolerance,
+        radius_sq,
+        &sorted,
+        &cell_start,
+    ))
+}
+
+/// Minimum point count before the `parallel` feature uses threaded union-find.
+#[cfg(feature = "parallel")]
+const PARALLEL_CLUSTER_MIN_POINTS: usize = 4_096;
+
+fn cluster_roots_sequential(
+    point_count: usize,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    origin: [f32; 3],
+    dims: [u32; 3],
+    cluster_tolerance: f32,
+    radius_sq: f32,
+    sorted: &[u32],
+    cell_start: &[u32],
+) -> Vec<u32> {
     let mut parent: Vec<u32> = (0..point_count as u32).collect();
 
     for index in 0..point_count {
@@ -118,18 +164,124 @@ pub fn euclidean_cluster_roots(
             dims,
             cluster_tolerance,
             radius_sq,
-            &sorted,
-            &cell_start,
+            sorted,
+            cell_start,
         ) {
             union_min_root(&mut parent, index as u32, neighbor as u32);
         }
     }
 
+    compress_roots(&mut parent, point_count)
+}
+
+#[cfg(feature = "parallel")]
+fn cluster_roots_parallel(
+    point_count: usize,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    origin: [f32; 3],
+    dims: [u32; 3],
+    cluster_tolerance: f32,
+    radius_sq: f32,
+    sorted: &[u32],
+    cell_start: &[u32],
+) -> Vec<u32> {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::sync::Arc;
+
+    let parent: Arc<[AtomicU32]> = (0..point_count as u32)
+        .map(AtomicU32::new)
+        .collect::<Vec<_>>()
+        .into();
+
+    let thread_count = std::thread::available_parallelism()
+        .map_or(1, |count| count.get())
+        .min(point_count)
+        .max(1);
+    let chunk = point_count.div_ceil(thread_count);
+
+    std::thread::scope(|scope| {
+        for thread in 0..thread_count {
+            let start = thread * chunk;
+            if start >= point_count {
+                break;
+            }
+            let end = (start + chunk).min(point_count);
+            let parent = Arc::clone(&parent);
+            scope.spawn(move || {
+                for index in start..end {
+                    for neighbor in grid_radius_neighbors(
+                        index,
+                        x,
+                        y,
+                        z,
+                        origin,
+                        dims,
+                        cluster_tolerance,
+                        radius_sq,
+                        sorted,
+                        cell_start,
+                    ) {
+                        atomic_union_min_root(&parent, index as u32, neighbor as u32);
+                    }
+                }
+            });
+        }
+    });
+
+    let mut parent_vec: Vec<u32> = parent
+        .iter()
+        .map(|slot| slot.load(Ordering::Relaxed))
+        .collect();
+    compress_roots(&mut parent_vec, point_count)
+}
+
+#[cfg(feature = "parallel")]
+fn atomic_union_min_root(parent: &[std::sync::atomic::AtomicU32], a: u32, b: u32) {
+    use std::sync::atomic::Ordering;
+
+    let mut ra = atomic_find_root(parent, a);
+    let mut rb = atomic_find_root(parent, b);
+    while ra != rb {
+        let (min_root, max_root) = if ra < rb { (ra, rb) } else { (rb, ra) };
+        match parent[max_root as usize].compare_exchange(
+            max_root,
+            min_root,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        ) {
+            Ok(_) => return,
+            Err(current) => {
+                if current == min_root {
+                    return;
+                }
+                ra = atomic_find_root(parent, a);
+                rb = atomic_find_root(parent, b);
+            }
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+fn atomic_find_root(parent: &[std::sync::atomic::AtomicU32], mut index: u32) -> u32 {
+    use std::sync::atomic::Ordering;
+
+    loop {
+        let parent_index = parent[index as usize].load(Ordering::Relaxed);
+        if parent_index == index {
+            return index;
+        }
+        index = parent_index;
+    }
+}
+
+fn compress_roots(parent: &mut [u32], point_count: usize) -> Vec<u32> {
     let mut roots = vec![0u32; point_count];
     for index in 0..point_count {
-        roots[index] = find_root(&mut parent, index as u32);
+        roots[index] = find_root(parent, index as u32);
     }
-    Ok(roots)
+    roots
 }
 
 fn find_root(parent: &mut [u32], mut index: u32) -> u32 {
@@ -146,13 +298,20 @@ fn find_root(parent: &mut [u32], mut index: u32) -> u32 {
 }
 
 fn union_min_root(parent: &mut [u32], a: u32, b: u32) {
-    let ra = find_root(parent, a);
-    let rb = find_root(parent, b);
+    let ra = find_root_readonly(parent, a);
+    let rb = find_root_readonly(parent, b);
     if ra == rb {
         return;
     }
     let (min_root, max_root) = if ra < rb { (ra, rb) } else { (rb, ra) };
     parent[max_root as usize] = min_root;
+}
+
+fn find_root_readonly(parent: &[u32], mut index: u32) -> u32 {
+    while parent[index as usize] != index {
+        index = parent[index as usize];
+    }
+    index
 }
 
 fn grid_radius_neighbors<'a>(

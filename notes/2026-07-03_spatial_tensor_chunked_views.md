@@ -26,8 +26,8 @@ views yet.
 
 ## Next steps
 
-- `SpatialIndex` trait for chunked neighbor queries
-- Optional AoSoA packing (interleaved xyz within chunk) behind feature flag
+- GPU upload helper for `AoSoAXyzChunk` (wgpu staging)
+- Wire parallel chunk queries into feature estimation hot paths
 - DLPack export of chunk views for AI integration
 
 [`PointCloud`]: ../../crates/spatialrust-core/src/pointcloud.rs

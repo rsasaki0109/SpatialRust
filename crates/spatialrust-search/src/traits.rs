@@ -16,6 +16,11 @@ pub trait SpatialIndex {
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    /// Suggested [`SpatialTensor`](spatialrust_core::SpatialTensor) chunk size for parallel queries.
+    fn preferred_chunk_size(&self) -> usize {
+        spatialrust_core::DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE
+    }
 }
 
 /// Exact nearest neighbor queries.

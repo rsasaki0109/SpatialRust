@@ -8,6 +8,9 @@ use spatialrust_search::{KdTree, RadiusSearchIndex};
 use crate::cloud::with_labels;
 use crate::segmenter::PointCloudSegmenter;
 
+/// Minimum point count before GPU Euclidean clustering uses KD-tree BFS instead of grid UF.
+pub const DEFAULT_GPU_KDTREE_MIN_POINTS: usize = 50_000;
+
 /// Minimum point count before GPU Euclidean clustering is selected under `Auto`.
 pub const DEFAULT_GPU_MIN_POINTS_EUCLIDEAN: usize = 2_000;
 

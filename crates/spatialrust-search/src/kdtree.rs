@@ -2,7 +2,10 @@ use std::cmp::Ordering;
 
 use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
 
-use crate::{NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex};
+use crate::{
+    chunked::{ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex, ChunkQueryRange},
+    NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex,
+};
 
 const LEAF_SIZE: usize = 16;
 const SEARCH_STACK_SIZE: usize = 64;
@@ -355,6 +358,57 @@ impl RadiusSearchIndex for KdTree {
         // Intentionally unsorted: callers count or iterate neighbors, and
         // sorting every query dominates radius search on dense clouds.
         out
+    }
+}
+
+impl ChunkedRadiusSearchIndex for KdTree {
+    fn radius_search_chunk_into(
+        &self,
+        x: &[f32],
+        y: &[f32],
+        z: &[f32],
+        chunk: ChunkQueryRange,
+        radius: f32,
+        out: &mut Vec<(usize, Neighbor)>,
+    ) {
+        if self.is_empty() || radius < 0.0 || chunk.is_empty() {
+            return;
+        }
+
+        let radius_sq = radius * radius;
+        let mut scratch = Vec::new();
+        for index in chunk {
+            scratch.clear();
+            self.radius_recursive(self.root, x[index], y[index], z[index], radius_sq, &mut scratch);
+            for neighbor in scratch.drain(..) {
+                out.push((index, neighbor));
+            }
+        }
+    }
+}
+
+impl ChunkedNearestNeighborIndex for KdTree {
+    fn nearest_k_chunk_into(
+        &self,
+        x: &[f32],
+        y: &[f32],
+        z: &[f32],
+        chunk: ChunkQueryRange,
+        k: usize,
+        out: &mut Vec<(usize, Neighbor)>,
+    ) {
+        if chunk.is_empty() || k == 0 {
+            return;
+        }
+
+        let mut scratch = Vec::new();
+        for index in chunk {
+            scratch.clear();
+            self.nearest_k_unsorted_into(x[index], y[index], z[index], k, &mut scratch);
+            for neighbor in scratch.drain(..) {
+                out.push((index, neighbor));
+            }
+        }
     }
 }
 

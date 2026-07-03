@@ -54,7 +54,7 @@ pub use multi_plane::{MultiPlaneConfig, MultiPlaneSegmentation, MultiPlaneSegmen
 #[cfg(feature = "segment-euclidean")]
 pub use cluster::{
     EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult,
-    DEFAULT_GPU_MIN_POINTS_EUCLIDEAN,
+    DEFAULT_GPU_KDTREE_MIN_POINTS, DEFAULT_GPU_MIN_POINTS_EUCLIDEAN,
 };
 
 #[cfg(all(feature = "segment-euclidean", feature = "segment-euclidean-gpu"))]

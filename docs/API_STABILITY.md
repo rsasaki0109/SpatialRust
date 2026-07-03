@@ -34,8 +34,8 @@ until their individual 1.0 milestones.
 
 | Symbol | Notes |
 | --- | --- |
-| Chunked AoSoA views | Not yet exposed; schema may extend |
 | `SpatialTensor`, `SpatialTensorChunk` | Provisional chunked views over `PointCloud` (`spatial_tensor()`) |
+| `AoSoAXyzChunk`, `SpatialTensorChunk::pack_xyz*` | Provisional interleaved chunk packing (`tensor-aoso`) |
 
 ### Rules (unchanged at 1.0)
 
@@ -71,7 +71,7 @@ spatialrust-<area> / feature-<name>
 | Crate | 1.0 status | Notes |
 | --- | --- | --- |
 | `spatialrust-math` | Stable primitives | `Vec3`, `Mat4`, `Isometry3` |
-| `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree` |
+| `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |
 | `spatialrust-filtering` | Provisional | GPU thresholds may move |
 | `spatialrust-features` | Provisional | Normal GPU path still tuning |
 | `spatialrust-segmentation` | Provisional | RANSAC configs may extend; **GPU plane scoring** behind `segment-ransac-plane-gpu` |

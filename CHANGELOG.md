@@ -52,6 +52,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - **Shared `uniform_grid` module** (Epic 68): `spatialrust-search` hosts grid
   bounds/build/cluster roots; GPU normals and cluster paths reuse it
   (`notes/2026-07-03_cpu_grid_euclidean_cluster.md`).
+- **GPU cluster adaptive backend** (Epic 69): dense scans (≥50k pts) use KD-tree
+  BFS in `GpuEuclideanClusterExtractor`; smaller clouds use parallel grid UF with
+  deferred path compression (`notes/2026-07-03_gpu_euclidean_cluster_epic69.md`).
+- **Chunked spatial index queries** (Epic 70): `ChunkedRadiusSearchIndex`,
+  `ChunkedNearestNeighborIndex`, and `SpatialTensor` staging helpers in
+  `spatialrust-search` (`notes/2026-07-03_spatial_index_chunked_queries.md`).
+- **Parallel chunked queries** (Epic 71): threaded `SpatialTensor` chunk dispatch
+  via `spatialrust-search/parallel` (`notes/2026-07-03_parallel_chunked_queries.md`).
+- **AoSoA chunk packing** (Epic 72): interleaved XYZ buffers per chunk behind
+  `tensor-aoso` (`notes/2026-07-03_aoso_chunk_packing.md`).
 
 ## [1.0.0] — 2026-07-03
 

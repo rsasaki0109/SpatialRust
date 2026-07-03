@@ -1,4 +1,7 @@
-use crate::{NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex};
+use crate::{
+    chunked::{ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex, ChunkQueryRange},
+    NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex,
+};
 
 /// Reference index using brute-force search for correctness tests.
 #[derive(Clone, Debug)]
@@ -37,6 +40,42 @@ impl NearestNeighborIndex for BruteForceIndex {
 impl RadiusSearchIndex for BruteForceIndex {
     fn radius_search(&self, x: f32, y: f32, z: f32, radius: f32) -> Vec<Neighbor> {
         brute_force_radius(&self.x, &self.y, &self.z, x, y, z, radius)
+    }
+}
+
+impl ChunkedRadiusSearchIndex for BruteForceIndex {
+    fn radius_search_chunk_into(
+        &self,
+        x: &[f32],
+        y: &[f32],
+        z: &[f32],
+        chunk: ChunkQueryRange,
+        radius: f32,
+        out: &mut Vec<(usize, Neighbor)>,
+    ) {
+        for index in chunk {
+            for neighbor in self.radius_search_at(x, y, z, index, radius) {
+                out.push((index, neighbor));
+            }
+        }
+    }
+}
+
+impl ChunkedNearestNeighborIndex for BruteForceIndex {
+    fn nearest_k_chunk_into(
+        &self,
+        x: &[f32],
+        y: &[f32],
+        z: &[f32],
+        chunk: ChunkQueryRange,
+        k: usize,
+        out: &mut Vec<(usize, Neighbor)>,
+    ) {
+        for index in chunk {
+            for neighbor in self.nearest_k(x[index], y[index], z[index], k) {
+                out.push((index, neighbor));
+            }
+        }
     }
 }
 

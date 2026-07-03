@@ -1,14 +1,18 @@
 use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
 use spatialrust_search::euclidean_cluster_roots;
 
-use crate::cluster::{finalize_euclidean_clusters, EuclideanClusterConfig, EuclideanClusterResult};
+use crate::cluster::{
+    extract_cpu_roots, finalize_euclidean_clusters, DEFAULT_GPU_KDTREE_MIN_POINTS,
+    EuclideanClusterConfig, EuclideanClusterResult,
+};
 use crate::segmenter::PointCloudSegmenter;
 
 /// Grid-accelerated Euclidean cluster extractor.
 ///
-/// Connected components use uniform-grid union-find (same radius graph as the
-/// CPU KD-tree path); cluster size filtering and label remapping reuse the CPU
-/// helpers so results match [`EuclideanClusterExtractor`] partition semantics.
+/// Connected components use uniform-grid union-find for smaller clouds and KD-tree
+/// BFS for dense scans (see [`DEFAULT_GPU_KDTREE_MIN_POINTS`]); cluster size
+/// filtering and label remapping reuse the CPU helpers so results match
+/// [`EuclideanClusterExtractor`] partition semantics.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GpuEuclideanClusterExtractor {
     config: EuclideanClusterConfig,
@@ -38,7 +42,11 @@ impl GpuEuclideanClusterExtractor {
         }
 
         let (x, y, z) = input.positions3()?;
-        let roots = euclidean_cluster_roots(x, y, z, self.config.cluster_tolerance)?;
+        let roots = if input.len() >= DEFAULT_GPU_KDTREE_MIN_POINTS {
+            extract_cpu_roots(input, self.config)?
+        } else {
+            euclidean_cluster_roots(x, y, z, self.config.cluster_tolerance)?
+        };
         finalize_euclidean_clusters(input, &roots, self.config)
     }
 }

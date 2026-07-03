@@ -14,7 +14,11 @@ segment-ransac-plane = []
 segment-ransac-plane-gpu = ["segment-ransac-plane", "dep:spatialrust-gpu"]
 segment-multi-plane = ["segment-ransac-plane"]
 segment-euclidean = ["dep:spatialrust-search"]
-segment-euclidean-gpu = ["segment-euclidean", "dep:spatialrust-gpu"]
+segment-euclidean-gpu = [
+    "segment-euclidean",
+    "dep:spatialrust-gpu",
+    "spatialrust-search/parallel",
+]
 segment-dbscan = ["dep:spatialrust-search"]
 segment-ground = []
 segment-ransac-primitives = []

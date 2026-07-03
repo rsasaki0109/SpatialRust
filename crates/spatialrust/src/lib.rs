@@ -26,6 +26,9 @@ pub use spatialrust_core::{
     PointSchema, SpatialAlgorithm, SpatialError, SpatialMetadata, SpatialResult, SpatialTensor,
     SpatialTensorChunk, StandardSchemas, Timestamp, DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE,
 };
+
+#[cfg(feature = "tensor-aoso")]
+pub use spatialrust_core::AoSoAXyzChunk;
 pub use spatialrust_io::IoError;
 pub use spatialrust_math::{
     approx_eq, approx_eq_f64, f32_eps, f64_eps, smallest_eigenvector, solve_linear_system,
@@ -65,8 +68,16 @@ pub use spatialrust_io::{
 
 #[cfg(feature = "search-kdtree")]
 pub use spatialrust_search::{
-    brute_force_knn, brute_force_radius, BruteForceIndex, KdTree, NearestNeighborIndex, Neighbor,
-    RadiusSearchIndex, SpatialIndex,
+    brute_force_knn, brute_force_radius, nearest_k_spatial_tensor, radius_search_spatial_tensor,
+    BruteForceIndex, ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex, ChunkQueryRange,
+    KdTree, NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex,
+};
+
+#[cfg(feature = "search-parallel")]
+pub use spatialrust_search::{
+    nearest_k_spatial_tensor_parallel, nearest_k_spatial_tensor_parallel_into,
+    radius_search_spatial_tensor_parallel, radius_search_spatial_tensor_parallel_into,
+    PARALLEL_CHUNK_QUERY_MIN_POINTS,
 };
 
 #[cfg(feature = "search-graph")]

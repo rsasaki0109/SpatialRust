@@ -12,6 +12,7 @@ description = "Core data model and traits for SpatialRust"
 default = []
 serde = ["dep:serde", "spatialrust-math/serde"]
 bytemuck = ["dep:bytemuck"]
+tensor-aoso = []
 
 [dependencies]
 spatialrust-math = { workspace = true }

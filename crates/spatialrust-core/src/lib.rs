@@ -16,6 +16,9 @@ mod pointcloud;
 mod schema;
 mod tensor;
 
+#[cfg(feature = "tensor-aoso")]
+mod tensor_aoso;
+
 pub use algorithm::SpatialAlgorithm;
 pub use buffer::{PointBuffer, PointBufferSet};
 pub use capabilities::{HasIntensity, HasNormals3, HasPositions3};
@@ -28,3 +31,6 @@ pub use schema::{DType, FieldSemantic, PointField, PointSchema, StandardSchemas}
 pub use tensor::{
     SpatialTensor, SpatialTensorChunk, SpatialTensorFieldChunk, DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE,
 };
+
+#[cfg(feature = "tensor-aoso")]
+pub use tensor_aoso::AoSoAXyzChunk;
