@@ -43,6 +43,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   the spatial extent would exceed the wgpu cell cap.
 - MVP integration tests: `EuclideanClusterConfig` partial initializers include
   `..Default::default()` for `gpu_min_points`.
+- **GPU Euclidean cluster label propagation**: iteration count scales with grid
+  span and point count; CPU fallback when propagation does not converge
+  (`notes/2026-07-03_gpu_euclidean_cluster_fix.md`).
 
 ## [1.0.0] — 2026-07-03
 

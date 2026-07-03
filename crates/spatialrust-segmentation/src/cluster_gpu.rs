@@ -39,7 +39,11 @@ impl GpuEuclideanClusterExtractor {
 
         let (x, y, z) = input.positions3()?;
         let runtime = WgpuRuntime::shared()?;
-        let roots = euclidean_cluster_roots_gpu(&runtime, x, y, z, self.config.cluster_tolerance)?;
+        let roots =
+            match euclidean_cluster_roots_gpu(&runtime, x, y, z, self.config.cluster_tolerance) {
+                Ok(roots) => roots,
+                Err(_) => crate::cluster::extract_cpu_roots(input, self.config)?,
+            };
         finalize_euclidean_clusters(input, &roots, self.config)
     }
 }
@@ -82,5 +86,50 @@ mod tests {
         let result = extractor.extract(&input).unwrap();
         assert_eq!(result.cluster_count, 3);
         assert!(result.cluster_sizes.iter().all(|&size| size == 9));
+    }
+
+    fn long_chain(len: usize, spacing: f32) -> spatialrust_core::PointCloud {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for index in 0..len {
+            builder.push_point([index as f32 * spacing, 0.0, 0.0]).unwrap();
+        }
+        builder.build().unwrap()
+    }
+
+    #[test]
+    fn gpu_matches_cpu_on_long_chain() {
+        use crate::cluster::EuclideanClusterExtractor;
+
+        let input = long_chain(300, 1.0);
+        let config = EuclideanClusterConfig {
+            cluster_tolerance: 1.5,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+            gpu_min_points: None,
+            ..Default::default()
+        };
+        let cpu = EuclideanClusterExtractor::new(config).extract(&input).unwrap();
+        let gpu = GpuEuclideanClusterExtractor::new(config).extract(&input).unwrap();
+        assert_eq!(cpu.cluster_count, 1);
+        assert_eq!(gpu.cluster_count, cpu.cluster_count);
+        assert_eq!(gpu.cluster_sizes, cpu.cluster_sizes);
+    }
+
+    #[test]
+    fn gpu_matches_cpu_on_three_clusters() {
+        use crate::cluster::EuclideanClusterExtractor;
+
+        let input = three_clusters();
+        let config = EuclideanClusterConfig {
+            cluster_tolerance: 1.5,
+            min_cluster_size: 3,
+            max_cluster_size: usize::MAX,
+            gpu_min_points: None,
+            ..Default::default()
+        };
+        let cpu = EuclideanClusterExtractor::new(config).extract(&input).unwrap();
+        let gpu = GpuEuclideanClusterExtractor::new(config).extract(&input).unwrap();
+        assert_eq!(gpu.cluster_count, cpu.cluster_count);
+        assert_eq!(gpu.cluster_sizes, cpu.cluster_sizes);
     }
 }

@@ -216,7 +216,7 @@ pub(crate) fn finalize_euclidean_clusters(
     })
 }
 
-fn extract_cpu_roots(
+pub(crate) fn extract_cpu_roots(
     input: &PointCloud,
     config: EuclideanClusterConfig,
 ) -> SpatialResult<Vec<u32>> {

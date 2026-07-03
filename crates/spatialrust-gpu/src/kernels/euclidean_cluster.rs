@@ -6,7 +6,12 @@ use crate::kernels::normals_grid::{build_grid, grid_bounds};
 use crate::runtime::WgpuRuntime;
 
 const WORKGROUP_SIZE: u32 = 256;
-const MAX_LABEL_PROPAGATION_ITERS: u32 = 128;
+/// Upper cap for label-propagation iterations (Jacobi min-label).
+const MAX_LABEL_PROPAGATION_ITERS: u32 = 16_384;
+/// Minimum iterations even for tiny grids.
+const MIN_LABEL_PROPAGATION_ITERS: u32 = 128;
+/// Check for convergence every N iterations (readback).
+const CONVERGENCE_CHECK_INTERVAL: u32 = 64;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
@@ -185,60 +190,150 @@ pub fn euclidean_cluster_roots_gpu(
         cache: None,
     });
 
-    let max_iters = MAX_LABEL_PROPAGATION_ITERS.min(point_count as u32);
+    let max_iters = label_propagation_iterations(dims, point_count);
     let mut read_from_a = true;
+    let mut labels_host = labels_a;
 
-    for _ in 0..max_iters {
+    for iter in 0..max_iters {
         let (labels_in, labels_out) = if read_from_a {
             (&label_buffer_a, &label_buffer_b)
         } else {
             (&label_buffer_b, &label_buffer_a)
         };
 
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("euclidean-cluster-bind-group"),
-            layout: &pipeline.get_bind_group_layout(0),
-            entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: x_buffer.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 2, resource: y_buffer.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 3, resource: z_buffer.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 4, resource: sorted_buffer.as_entire_binding() },
-                wgpu::BindGroupEntry {
-                    binding: 5,
-                    resource: cell_start_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry { binding: 6, resource: labels_in.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 7, resource: labels_out.as_entire_binding() },
-            ],
-        });
-
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("euclidean-cluster"),
-        });
-        {
-            let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some("euclidean-cluster-pass"),
-                timestamp_writes: None,
-            });
-            pass.set_pipeline(&pipeline);
-            pass.set_bind_group(0, &bind_group, &[]);
-            pass.dispatch_workgroups(point_count.div_ceil(WORKGROUP_SIZE as usize) as u32, 1, 1);
-        }
-        queue.submit(Some(encoder.finish()));
+        dispatch_label_pass(
+            device,
+            queue,
+            &pipeline,
+            &uniform_buffer,
+            &x_buffer,
+            &y_buffer,
+            &z_buffer,
+            &sorted_buffer,
+            &cell_start_buffer,
+            labels_in,
+            labels_out,
+            point_count,
+        )?;
         read_from_a = !read_from_a;
+
+        let is_last = iter + 1 == max_iters;
+        let should_check = is_last || (iter + 1) % CONVERGENCE_CHECK_INTERVAL == 0;
+        if should_check {
+            let final_buffer = if read_from_a { &label_buffer_a } else { &label_buffer_b };
+            let current = read_storage_u32(device, queue, final_buffer, point_count)?;
+            if current == labels_host {
+                recycle_cluster_buffers(
+                    runtime,
+                    x,
+                    y,
+                    z,
+                    &sorted,
+                    &cell_start,
+                    x_buffer,
+                    y_buffer,
+                    z_buffer,
+                    sorted_buffer,
+                    cell_start_buffer,
+                );
+                return Ok(current);
+            }
+            labels_host = current;
+        }
     }
 
-    let final_buffer = if read_from_a { &label_buffer_a } else { &label_buffer_b };
-    let roots = read_storage_u32(device, queue, final_buffer, point_count)?;
+    recycle_cluster_buffers(
+        runtime,
+        x,
+        y,
+        z,
+        &sorted,
+        &cell_start,
+        x_buffer,
+        y_buffer,
+        z_buffer,
+        sorted_buffer,
+        cell_start_buffer,
+    );
 
+    Err(SpatialError::InvalidArgument(
+        "gpu euclidean label propagation did not converge within iteration cap".to_owned(),
+    ))
+}
+
+/// Iteration count for Jacobi min-label propagation.
+///
+/// Thin chains can need up to `point_count - 1` hops; dense volumes are bounded
+/// by the grid span when cell size equals tolerance.
+fn label_propagation_iterations(dims: [u32; 3], point_count: usize) -> u32 {
+    let grid_span = dims[0].saturating_add(dims[1]).saturating_add(dims[2]);
+    let path_bound = point_count.saturating_sub(1) as u32;
+    grid_span.max(path_bound).max(MIN_LABEL_PROPAGATION_ITERS).min(MAX_LABEL_PROPAGATION_ITERS)
+}
+
+fn dispatch_label_pass(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    pipeline: &wgpu::ComputePipeline,
+    uniform_buffer: &wgpu::Buffer,
+    x_buffer: &wgpu::Buffer,
+    y_buffer: &wgpu::Buffer,
+    z_buffer: &wgpu::Buffer,
+    sorted_buffer: &wgpu::Buffer,
+    cell_start_buffer: &wgpu::Buffer,
+    labels_in: &wgpu::Buffer,
+    labels_out: &wgpu::Buffer,
+    point_count: usize,
+) -> SpatialResult<()> {
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("euclidean-cluster-bind-group"),
+        layout: &pipeline.get_bind_group_layout(0),
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: x_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: y_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: z_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 4, resource: sorted_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 5, resource: cell_start_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 6, resource: labels_in.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 7, resource: labels_out.as_entire_binding() },
+        ],
+    });
+
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("euclidean-cluster"),
+    });
+    {
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some("euclidean-cluster-pass"),
+            timestamp_writes: None,
+        });
+        pass.set_pipeline(pipeline);
+        pass.set_bind_group(0, &bind_group, &[]);
+        pass.dispatch_workgroups(point_count.div_ceil(WORKGROUP_SIZE as usize) as u32, 1, 1);
+    }
+    queue.submit(Some(encoder.finish()));
+    Ok(())
+}
+
+fn recycle_cluster_buffers(
+    runtime: &WgpuRuntime,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    sorted: &[u32],
+    cell_start: &[u32],
+    x_buffer: wgpu::Buffer,
+    y_buffer: wgpu::Buffer,
+    z_buffer: wgpu::Buffer,
+    sorted_buffer: wgpu::Buffer,
+    cell_start_buffer: wgpu::Buffer,
+) {
     runtime.recycle_storage(std::mem::size_of_val(x) as u64, x_buffer);
     runtime.recycle_storage(std::mem::size_of_val(y) as u64, y_buffer);
     runtime.recycle_storage(std::mem::size_of_val(z) as u64, z_buffer);
-    runtime.recycle_storage(std::mem::size_of_val(sorted.as_slice()) as u64, sorted_buffer);
-    runtime.recycle_storage(std::mem::size_of_val(cell_start.as_slice()) as u64, cell_start_buffer);
-
-    Ok(roots)
+    runtime.recycle_storage(std::mem::size_of_val(sorted) as u64, sorted_buffer);
+    runtime.recycle_storage(std::mem::size_of_val(cell_start) as u64, cell_start_buffer);
 }
 
 fn read_storage_u32(
@@ -278,4 +373,17 @@ fn read_storage_u32(
     drop(data);
     staging.unmap();
     Ok(values)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::label_propagation_iterations;
+
+    #[test]
+    fn iteration_count_scales_with_grid_span_and_point_count() {
+        assert_eq!(label_propagation_iterations([1, 1, 1], 10), 128);
+        assert_eq!(label_propagation_iterations([200, 200, 40], 460_400), 16_384);
+        assert_eq!(label_propagation_iterations([1, 1, 1], 400), 400);
+        assert_eq!(label_propagation_iterations([10_000, 1, 1], 500), 16_384);
+    }
 }
