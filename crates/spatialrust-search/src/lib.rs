@@ -7,6 +7,7 @@
 
 mod brute;
 mod chunked;
+mod staging;
 mod traits;
 mod uniform_grid;
 
@@ -23,6 +24,10 @@ pub use brute::{brute_force_knn, brute_force_radius, BruteForceIndex};
 pub use chunked::{
     nearest_k_spatial_tensor, radius_search_spatial_tensor, ChunkedNearestNeighborIndex,
     ChunkedRadiusSearchIndex, ChunkQueryRange,
+};
+pub use staging::{
+    parallel_index_for_each, parallel_index_ranges, parallel_worker_count,
+    parallel_worker_count_with_chunk, PARALLEL_STAGING_MIN_POINTS,
 };
 pub use traits::{NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex};
 pub use uniform_grid::{

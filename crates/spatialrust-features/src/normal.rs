@@ -5,7 +5,7 @@ use spatialrust_core::{
     PointField, PointSchema, SpatialError, SpatialResult,
 };
 use spatialrust_math::{symmetric_eigen3, Mat3, Vec3};
-use spatialrust_search::{KdTree, Neighbor, RadiusSearchIndex};
+use spatialrust_search::{parallel_worker_count, KdTree, Neighbor, RadiusSearchIndex};
 
 use crate::estimator::FeatureEstimator;
 
@@ -121,7 +121,7 @@ impl NormalEstimator {
         let mut valid_count = 0usize;
         let mut invalid_count = 0usize;
 
-        let worker_count = normal_worker_count(input.len());
+        let worker_count = parallel_worker_count(input.len());
         if worker_count == 1 {
             let chunk = estimate_normal_range(self.config, &tree, x, y, z, 0, input.len());
             nx = chunk.nx;
@@ -131,15 +131,15 @@ impl NormalEstimator {
             valid_count = chunk.valid_count;
             invalid_count = chunk.invalid_count;
         } else {
-            let chunk_size = input.len().div_ceil(worker_count);
             let chunks = std::thread::scope(|scope| {
+                use spatialrust_search::parallel_index_ranges;
+
                 let mut handles = Vec::new();
                 let config = self.config;
                 let tree_ref = &tree;
-                for start in (0..input.len()).step_by(chunk_size) {
-                    let end = (start + chunk_size).min(input.len());
+                for range in parallel_index_ranges(input.len(), worker_count) {
                     handles.push(scope.spawn(move || {
-                        estimate_normal_range(config, tree_ref, x, y, z, start, end)
+                        estimate_normal_range(config, tree_ref, x, y, z, range.start, range.end)
                     }));
                 }
 
@@ -245,11 +245,6 @@ struct NormalChunk {
     invalid_count: usize,
 }
 
-fn normal_worker_count(len: usize) -> usize {
-    let available = std::thread::available_parallelism().map_or(1, |count| count.get());
-    let useful = (len / 16_384).max(1);
-    available.min(useful)
-}
 
 fn estimate_normal_range(
     config: NormalEstimationConfig,

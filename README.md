@@ -267,7 +267,7 @@ selects GPU from ~2k points for plane/cluster MVP paths and ~10k for normals.
 When GPU normals run without an explicit `search_radius`, MVP derives one from
 the voxel leaf (`normal_gpu_radius_scale`, default `2.0`) to use the fast grid path.
 Full-cloud plane bench: ~11× speedup (`bench/ransac_plane/`). Cluster bench:
-`bench/euclidean_cluster/` — grid union-find path matches CPU clusters; ~1.15× on MVP ~1.4k pts, ~0.56× on 460k full cloud (CPU KD-tree still faster at that scale).
+`bench/euclidean_cluster/` — grid union-find path matches CPU clusters; ~1.15× on MVP ~1.4k pts, ~1.0× on 460k full cloud (GPU KD-tree BFS path, Epic 69).
 
 ### Library
 
@@ -296,7 +296,7 @@ PCD/PLY/LAS/COPC -> voxel downsample -> normals -> plane RANSAC -> clustering ->
 ```
 
 <p align="center">
-  <img src="docs/assets/readme_mvp_pipeline.gif" alt="Top-down 2D view of the MVP pipeline stages on the public PCL table_scene_lms400 point cloud: input scan, voxel grid, plane RANSAC, and Euclidean clusters" width="640">
+  <img src="docs/assets/readme_mvp_pipeline.gif" alt="Terminal-style receipt of a real SpatialRust MVP run on the public PCL table_scene_lms400 cloud: left panel shows the evolving top-down result, right panel types measured load, voxel, plane, and cluster counts" width="640">
 </p>
 
 GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode). GPU plane, normal, and Euclidean clustering use the same policy flags (`--plane-policy`, `--normal-policy`, `--cluster-policy`).
@@ -330,7 +330,7 @@ The main README pipeline visuals use the public PCL [`table_scene_lms400.pcd`](h
 cargo run -p spatialrust --features mvp --example readme_mvp_preview
 ```
 
-Outputs: `readme_hero.gif` (header), `readme_mvp_preview.svg` (pipeline panel), `copc_query.gif` (COPC partial read), `benchmark_voxel.svg` (Performance chart), `architecture.svg` (crates diagram), `readme_mvp_pipeline.gif` (compact 2D view), and `social_preview.svg`.
+Outputs: `readme_hero.gif` (header), `readme_mvp_preview.svg` (pipeline panel), `copc_query.gif` (COPC partial read), `benchmark_voxel.svg` (Performance chart), `architecture.svg` (crates diagram), `readme_mvp_pipeline.gif` (pipeline receipt: measured log + top-down result), and `social_preview.svg`.
 
 Use `SPATIALRUST_README_CLOUD=/path/to/cloud.pcd` to render the same assets from another local public dataset.
 

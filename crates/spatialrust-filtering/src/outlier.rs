@@ -8,7 +8,7 @@ use spatialrust_core::{
     DType, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet, PointCloud, PointField,
     SpatialError, SpatialResult,
 };
-use spatialrust_search::KdTree;
+use spatialrust_search::{parallel_worker_count, KdTree};
 
 use crate::filter::PointCloudFilter;
 
@@ -107,7 +107,7 @@ fn fill_mean_neighbor_distances(
     z: &[f32],
     mean_dist: &mut [f32],
 ) {
-    let worker_count = outlier_worker_count(mean_dist.len());
+    let worker_count = parallel_worker_count(mean_dist.len());
     if worker_count == 1 {
         fill_mean_neighbor_distances_chunk(k_neighbors, tree, x, y, z, 0, mean_dist);
         return;
@@ -122,12 +122,6 @@ fn fill_mean_neighbor_distances(
             });
         }
     });
-}
-
-fn outlier_worker_count(len: usize) -> usize {
-    let available = std::thread::available_parallelism().map_or(1, |count| count.get());
-    let useful = (len / 16_384).max(1);
-    available.min(useful)
 }
 
 fn fill_mean_neighbor_distances_chunk(
@@ -251,7 +245,7 @@ fn fill_radius_reaches_mask(
     target: usize,
     keep: &mut [bool],
 ) {
-    let worker_count = outlier_worker_count(keep.len());
+    let worker_count = parallel_worker_count(keep.len());
     if worker_count == 1 {
         fill_radius_reaches_mask_chunk(tree, x, y, z, radius, target, 0, keep);
         return;

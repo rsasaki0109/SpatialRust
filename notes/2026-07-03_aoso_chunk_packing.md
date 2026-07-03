@@ -31,7 +31,7 @@ cargo test -p spatialrust-core --features tensor-aoso
 
 ## Next steps
 
-- GPU upload helper wrapping `AoSoAXyzChunk` for wgpu staging
+- Kernel dispatch consuming `GpuAoSoXyzChunk` buffers (Epic 74 upload done)
 - Normals / intensity interleaved packers
 - DLPack export of chunk views
 

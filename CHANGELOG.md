@@ -62,6 +62,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   via `spatialrust-search/parallel` (`notes/2026-07-03_parallel_chunked_queries.md`).
 - **AoSoA chunk packing** (Epic 72): interleaved XYZ buffers per chunk behind
   `tensor-aoso` (`notes/2026-07-03_aoso_chunk_packing.md`).
+- **Parallel staging hot paths** (Epic 73): shared index-range staging in
+  `spatialrust-search` wired into CPU normals and outlier filters
+  (`notes/2026-07-03_parallel_staging_hot_paths.md`).
+- **AoSoA GPU upload** (Epic 74): `GpuAoSoXyzChunk` and
+  `upload_spatial_tensor_xyz_chunks` behind `gpu-aoso-staging`
+  (`notes/2026-07-03_aoso_gpu_upload.md`).
 
 ## [1.0.0] — 2026-07-03
 

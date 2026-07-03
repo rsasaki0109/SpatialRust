@@ -121,6 +121,7 @@ pipeline-mvp-gpu = [
     "segment-euclidean-gpu",
 ]
 gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
+gpu-aoso-staging = ["gpu-wgpu", "tensor-aoso", "spatialrust-gpu/gpu-aoso-staging"]
 metrics-distance = ["spatialrust-metrics/metrics-distance"]
 transform-ops = ["spatialrust-transform/transform-ops"]
 voxelize-occupancy = ["spatialrust-voxelize/voxelize-occupancy"]

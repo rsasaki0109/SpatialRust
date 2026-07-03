@@ -11,6 +11,7 @@ description = "GPU runtime and device buffers for SpatialRust"
 [features]
 default = []
 gpu-wgpu = ["dep:wgpu", "dep:bytemuck", "dep:pollster"]
+gpu-aoso-staging = ["gpu-wgpu", "spatialrust-core/tensor-aoso"]
 gpu-cuda = []
 
 [dependencies]

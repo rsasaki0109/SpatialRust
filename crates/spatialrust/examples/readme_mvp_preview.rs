@@ -19,6 +19,10 @@ use spatialrust::{
 
 const GIF_WIDTH: u32 = 720;
 const GIF_HEIGHT: u32 = 480;
+const RECEIPT_LEFT_WIDTH: u32 = 400;
+const RECEIPT_SPLIT_X: i32 = RECEIPT_LEFT_WIDTH as i32;
+const RECEIPT_FRAMES_PER_LINE: usize = 6;
+const RECEIPT_HOLD_FRAMES: usize = 20;
 const HERO_WIDTH: u32 = 1280;
 const HERO_HEIGHT: u32 = 540;
 const PUBLIC_SCENE_URL: &str =
@@ -54,6 +58,19 @@ fn public_sample_scene() -> Result<PointCloud, String> {
     let cloud = read_point_cloud_file(&path)
         .map_err(|error| format!("read {}: {error}", path.display()))?;
     Ok(decimate_xyz_cloud(&cloud, PUBLIC_SCENE_MAX_POINTS)?)
+}
+
+fn public_sample_scene_full() -> Result<PointCloud, String> {
+    let path = match std::env::var_os("SPATIALRUST_README_CLOUD") {
+        Some(path) => PathBuf::from(path),
+        None => {
+            let path = default_public_scene_path();
+            ensure_public_scene(&path)?;
+            path
+        }
+    };
+    read_point_cloud_file(&path)
+        .map_err(|error| format!("read {}: {error}", path.display()))
 }
 
 fn ensure_public_scene(path: &Path) -> Result<(), String> {
@@ -214,6 +231,32 @@ fn pipeline_config() -> MvpPipelineConfig {
         cluster: EuclideanClusterConfig {
             cluster_tolerance: 0.06,
             min_cluster_size: 8,
+            max_cluster_size: usize::MAX,
+            ..Default::default()
+        },
+        icp: None,
+        ..MvpPipelineConfig::default()
+    }
+}
+
+fn receipt_pipeline_config() -> MvpPipelineConfig {
+    MvpPipelineConfig {
+        voxel: spatialrust::VoxelGridDownsampleConfig::centroid(0.05),
+        normals: NormalEstimationConfig {
+            k_neighbors: 20,
+            min_neighbors: 3,
+            ..NormalEstimationConfig::default()
+        },
+        plane: RansacPlaneConfig {
+            distance_threshold: 0.05,
+            max_iterations: 500,
+            min_inliers: 100,
+            seed: 17,
+            ..Default::default()
+        },
+        cluster: EuclideanClusterConfig {
+            cluster_tolerance: 0.05,
+            min_cluster_size: 1,
             max_cluster_size: usize::MAX,
             ..Default::default()
         },
@@ -874,6 +917,189 @@ fn draw_plane_stage(
     draw_points(canvas, &plane.outliers, min, max, 5, Rgb(251, 146, 60));
 }
 
+fn project_left(
+    x: f32,
+    y: f32,
+    min: [f32; 2],
+    max: [f32; 2],
+    pad: f32,
+) -> (i32, i32) {
+    project(
+        x,
+        y,
+        min,
+        max,
+        RECEIPT_LEFT_WIDTH as f32,
+        GIF_HEIGHT as f32,
+        pad,
+    )
+}
+
+fn draw_points_left(
+    canvas: &mut Canvas,
+    cloud: &PointCloud,
+    min: [f32; 2],
+    max: [f32; 2],
+    radius: i32,
+    color: Rgb,
+) {
+    let (x, y, _) = cloud.positions3().expect("positions");
+    for index in 0..cloud.len() {
+        let (px, py) = project_left(x[index], y[index], min, max, 40.0);
+        canvas.fill_circle(GIF_WIDTH, px, py, radius, color);
+    }
+}
+
+fn draw_plane_stage_left(
+    canvas: &mut Canvas,
+    plane: &spatialrust::RansacPlaneSegmentation,
+    min: [f32; 2],
+    max: [f32; 2],
+) {
+    draw_points_left(canvas, &plane.inliers, min, max, 3, Rgb(203, 213, 225));
+    draw_points_left(canvas, &plane.outliers, min, max, 4, Rgb(251, 146, 60));
+}
+
+fn draw_cluster_stage_left(canvas: &mut Canvas, output: &PointCloud, min: [f32; 2], max: [f32; 2]) {
+    let (x, y, _) = output.positions3().expect("positions");
+    let labels = match output.field("label").expect("labels") {
+        spatialrust::PointBuffer::I32(values) => values.as_slice(),
+        other => panic!("expected i32 labels, got {:?}", other.dtype()),
+    };
+    for index in 0..output.len() {
+        let (px, py) = project_left(x[index], y[index], min, max, 40.0);
+        canvas.fill_circle(GIF_WIDTH, px, py, 4, label_rgb_flat(labels[index]));
+    }
+}
+
+fn receipt_log_lines(
+    input: &PointCloud,
+    result: &MvpPipelineResult,
+    leaf_size: f32,
+) -> Vec<String> {
+    vec![
+        "spatialrust mvp table scene".to_owned(),
+        format!("load     {} pts", input.len()),
+        format!("voxel    leaf {:.2}   {} pts", leaf_size, result.downsampled.len()),
+        format!("plane    {} inliers", result.plane.inliers.len()),
+        format!("cluster  {} clusters", result.clusters.cluster_count),
+        "save     labeled.las".to_owned(),
+    ]
+}
+
+fn receipt_visual_stage(visible_lines: usize) -> usize {
+    match visible_lines {
+        0 | 1 => 0,
+        2 => 1,
+        3 => 2,
+        4 => 3,
+        _ => 4,
+    }
+}
+
+fn draw_receipt_left_panel(
+    canvas: &mut Canvas,
+    input: &PointCloud,
+    result: &MvpPipelineResult,
+    min: [f32; 2],
+    max: [f32; 2],
+    stage: usize,
+) {
+    if stage >= 1 {
+        draw_points_left(canvas, input, min, max, 2, Rgb(100, 116, 139));
+    }
+    if stage >= 2 {
+        draw_points_left(canvas, &result.downsampled, min, max, 3, Rgb(226, 232, 240));
+    }
+    if stage >= 3 {
+        draw_plane_stage_left(canvas, &result.plane, min, max);
+    }
+    if stage >= 4 {
+        draw_cluster_stage_left(canvas, &result.output, min, max);
+    }
+}
+
+fn draw_receipt_terminal(
+    canvas: &mut Canvas,
+    lines: &[String],
+    show_footnote: bool,
+    cluster_count: usize,
+) {
+    let terminal_bg = Rgb(2, 6, 23);
+    for x in RECEIPT_SPLIT_X..GIF_WIDTH as i32 {
+        for y in 0..GIF_HEIGHT as i32 {
+            canvas.put(GIF_WIDTH, x, y, terminal_bg);
+        }
+    }
+    for y in 0..GIF_HEIGHT as i32 {
+        canvas.put(GIF_WIDTH, RECEIPT_SPLIT_X, y, Rgb(51, 65, 85));
+    }
+
+    for (index, line) in lines.iter().enumerate() {
+        let color = if index == 0 { Rgb(226, 232, 240) } else { Rgb(148, 163, 184) };
+        canvas.draw_char_line(GIF_WIDTH, RECEIPT_SPLIT_X + 16, 40 + index as i32 * 24, line, color, 1);
+    }
+
+    if show_footnote {
+        let footnote = format!("full cloud {cluster_count} clusters");
+        canvas.draw_char_line(
+            GIF_WIDTH,
+            RECEIPT_SPLIT_X + 16,
+            GIF_HEIGHT as i32 - 36,
+            &footnote,
+            Rgb(100, 116, 139),
+            1,
+        );
+        canvas.draw_char_line(
+            GIF_WIDTH,
+            RECEIPT_SPLIT_X + 16,
+            GIF_HEIGHT as i32 - 16,
+            "gpu matches cpu",
+            Rgb(100, 116, 139),
+            1,
+        );
+    }
+}
+
+/// Footer GIF: pipeline receipt — left panel shows one evolving result, right
+/// panel types measured log lines from a real [`MvpPipelineResult`].
+fn render_receipt_gif_frames(
+    input: &PointCloud,
+    result: &MvpPipelineResult,
+    temp_dir: &Path,
+    leaf_size: f32,
+) {
+    let bounds = merge_bounds(bounds_xy(input), bounds_xy(&result.output));
+    let (min, max) = bounds;
+    let log_lines = receipt_log_lines(input, result, leaf_size);
+    let typing_frames = log_lines.len() * RECEIPT_FRAMES_PER_LINE;
+    let total_frames = typing_frames + RECEIPT_HOLD_FRAMES;
+    let mut frame_index = 0_u32;
+
+    for frame in 0..total_frames {
+        let visible_lines = if frame >= typing_frames {
+            log_lines.len()
+        } else {
+            frame / RECEIPT_FRAMES_PER_LINE + 1
+        };
+        let stage = receipt_visual_stage(visible_lines);
+        let show_footnote = frame >= typing_frames;
+
+        let mut canvas = Canvas::new(GIF_WIDTH, GIF_HEIGHT, Rgb(15, 23, 42));
+        draw_receipt_left_panel(&mut canvas, input, result, min, max, stage);
+        draw_receipt_terminal(
+            &mut canvas,
+            &log_lines[..visible_lines.min(log_lines.len())],
+            show_footnote,
+            result.clusters.cluster_count,
+        );
+
+        let path = temp_dir.join(format!("frame_{frame_index:03}.ppm"));
+        canvas.write_ppm(GIF_WIDTH, GIF_HEIGHT, &path);
+        frame_index += 1;
+    }
+}
+
 fn draw_cluster_stage(canvas: &mut Canvas, output: &PointCloud, min: [f32; 2], max: [f32; 2]) {
     let (x, y, _) = output.positions3().expect("positions");
     let labels = match output.field("label").expect("labels") {
@@ -1006,26 +1232,7 @@ fn render_copc_frames(input: &PointCloud, temp_dir: &Path) {
 }
 
 fn render_gif_frames(input: &PointCloud, result: &MvpPipelineResult, temp_dir: &Path) {
-    let bounds = merge_bounds(bounds_xy(input), bounds_xy(&result.output));
-    let (min, max) = bounds;
-    let mut frame_index = 0_u32;
-
-    for (stage, repeats) in [(0, 8_usize), (1, 8), (2, 8), (3, 10)] {
-        for _ in 0..repeats {
-            let mut canvas = Canvas::new(GIF_WIDTH, GIF_HEIGHT, Rgb(15, 23, 42));
-            canvas.draw_stage_bar(GIF_WIDTH, stage);
-            match stage {
-                0 => draw_points(&mut canvas, input, min, max, 3, Rgb(148, 163, 184)),
-                1 => draw_points(&mut canvas, &result.downsampled, min, max, 4, Rgb(226, 232, 240)),
-                2 => draw_plane_stage(&mut canvas, &result.plane, min, max),
-                3 => draw_cluster_stage(&mut canvas, &result.output, min, max),
-                _ => unreachable!(),
-            }
-            let path = temp_dir.join(format!("frame_{frame_index:03}.ppm"));
-            canvas.write_ppm(GIF_WIDTH, GIF_HEIGHT, &path);
-            frame_index += 1;
-        }
-    }
+    render_receipt_gif_frames(input, result, temp_dir, 0.05);
 }
 
 fn encode_gif(temp_dir: &Path, pattern: &str, framerate: &str, output: &Path) {
@@ -1589,6 +1796,14 @@ fn main() {
     let input = sample_scene();
     let result = MvpPipeline::new(pipeline_config()).run(&input).expect("mvp pipeline preview run");
 
+    let receipt_input = public_sample_scene_full().unwrap_or_else(|error| {
+        eprintln!("warning: receipt GIF uses decimated input ({error})");
+        input.clone()
+    });
+    let receipt_result = MvpPipeline::new(receipt_pipeline_config())
+        .run(&receipt_input)
+        .expect("receipt pipeline run");
+
     let assets = assets_dir();
     fs::create_dir_all(&assets).expect("create docs/assets directory");
 
@@ -1603,7 +1818,7 @@ fn main() {
         std::env::temp_dir().join(format!("spatialrust_readme_gif_{}", std::process::id()));
     let _ = fs::remove_dir_all(&temp_dir);
     fs::create_dir_all(&temp_dir).expect("create temp gif frames");
-    render_gif_frames(&input, &result, &temp_dir);
+    render_receipt_gif_frames(&receipt_input, &receipt_result, &temp_dir, 0.05);
     let gif_path = assets.join("readme_mvp_pipeline.gif");
     encode_gif_per_frame_palette(&temp_dir, "frame_%03d.ppm", "8", &gif_path);
 

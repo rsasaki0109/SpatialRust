@@ -23,6 +23,9 @@ mod upload_cache;
 #[cfg(feature = "gpu-wgpu")]
 mod runtime;
 
+#[cfg(feature = "gpu-aoso-staging")]
+mod aoso_staging;
+
 pub use buffer::DeviceBuffer;
 pub use device::{GpuDevice, WgpuDevice};
 
@@ -51,3 +54,6 @@ pub use runtime::{WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS, MULTI_GATHER4_STOR
 
 #[cfg(feature = "gpu-wgpu")]
 pub use upload_cache::GpuBufferPool;
+
+#[cfg(feature = "gpu-aoso-staging")]
+pub use aoso_staging::{upload_spatial_tensor_xyz_chunks, GpuAoSoXyzChunk};
