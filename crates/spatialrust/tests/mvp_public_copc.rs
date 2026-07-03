@@ -25,12 +25,13 @@ fn public_pcd_path() -> Option<PathBuf> {
     None
 }
 
-fn require_public_pcd() -> PathBuf {
-    public_pcd_path().unwrap_or_else(|| {
-        panic!(
-            "public PCD not found; fetch it first:\n  \
+fn skip_without_public_pcd() -> Option<PathBuf> {
+    public_pcd_path().or_else(|| {
+        eprintln!(
+            "skipping public COPC validation (PCD not found); fetch with:\n  \
              python bench/public_copc/run.py --fetch-only"
-        )
+        );
+        None
     })
 }
 
@@ -80,7 +81,9 @@ fn mvp_public_pcd_copc_bounds_resolution_and_pipeline() {
         write_copc_file_with_params, CopcQuery, CopcWriterParams, MvpPipeline, MvpPipelineConfig,
     };
 
-    let pcd_path = require_public_pcd();
+    let Some(pcd_path) = skip_without_public_pcd() else {
+        return;
+    };
     let cloud = read_point_cloud_file(&pcd_path).expect("read public PCD");
     assert!(cloud.len() > 10_000, "unexpected point count: {}", cloud.len());
 
