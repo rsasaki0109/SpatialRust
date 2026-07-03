@@ -1,14 +1,14 @@
 use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
-use spatialrust_gpu::{euclidean_cluster_roots_gpu, WgpuRuntime};
+use spatialrust_gpu::euclidean_cluster_roots_grid;
 
 use crate::cluster::{finalize_euclidean_clusters, EuclideanClusterConfig, EuclideanClusterResult};
 use crate::segmenter::PointCloudSegmenter;
 
-/// GPU-accelerated Euclidean cluster extractor.
+/// Grid-accelerated Euclidean cluster extractor.
 ///
-/// Connected components are found with uniform-grid label propagation on wgpu;
-/// cluster size filtering and label remapping reuse the CPU helpers so results
-/// match [`EuclideanClusterExtractor`] partition semantics.
+/// Connected components use uniform-grid union-find (same radius graph as the
+/// CPU KD-tree path); cluster size filtering and label remapping reuse the CPU
+/// helpers so results match [`EuclideanClusterExtractor`] partition semantics.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GpuEuclideanClusterExtractor {
     config: EuclideanClusterConfig,
@@ -27,7 +27,7 @@ impl GpuEuclideanClusterExtractor {
         self.config
     }
 
-    /// Clusters the input cloud on the GPU.
+    /// Clusters the input cloud using the grid union-find backend.
     pub fn extract(&self, input: &PointCloud) -> SpatialResult<EuclideanClusterResult> {
         if input.is_empty() {
             return Ok(EuclideanClusterResult {
@@ -38,12 +38,7 @@ impl GpuEuclideanClusterExtractor {
         }
 
         let (x, y, z) = input.positions3()?;
-        let runtime = WgpuRuntime::shared()?;
-        let roots =
-            match euclidean_cluster_roots_gpu(&runtime, x, y, z, self.config.cluster_tolerance) {
-                Ok(roots) => roots,
-                Err(_) => crate::cluster::extract_cpu_roots(input, self.config)?,
-            };
+        let roots = euclidean_cluster_roots_grid(x, y, z, self.config.cluster_tolerance)?;
         finalize_euclidean_clusters(input, &roots, self.config)
     }
 }

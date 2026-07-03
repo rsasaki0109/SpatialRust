@@ -110,8 +110,9 @@ impl EuclideanClusterExtractor {
     /// Clusters the input cloud using the given execution policy.
     ///
     /// With the `segment-euclidean-gpu` feature, [`ExecutionPolicy::Auto`] and
-    /// [`ExecutionPolicy::Gpu`] run connected-component labeling on wgpu when the
-    /// input meets [`EuclideanClusterConfig::effective_gpu_min_points`].
+    /// [`ExecutionPolicy::Gpu`] run grid union-find clustering when the input
+    /// meets [`EuclideanClusterConfig::effective_gpu_min_points`] and the uniform
+    /// grid fits within the cell cap.
     pub fn extract_with_policy(
         &self,
         input: &PointCloud,
