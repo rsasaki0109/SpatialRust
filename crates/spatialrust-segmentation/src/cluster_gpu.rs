@@ -1,10 +1,7 @@
 use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
 use spatialrust_gpu::{euclidean_cluster_roots_gpu, WgpuRuntime};
 
-use crate::cluster::{
-    finalize_euclidean_clusters, EuclideanClusterConfig,
-    EuclideanClusterResult,
-};
+use crate::cluster::{finalize_euclidean_clusters, EuclideanClusterConfig, EuclideanClusterResult};
 use crate::segmenter::PointCloudSegmenter;
 
 /// GPU-accelerated Euclidean cluster extractor.

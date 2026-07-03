@@ -23,8 +23,8 @@ pub use spatialrust_voxelize as voxelize;
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
     HasNormals3, HasPositions3, PointBuffer, PointCloud, PointCloudBuilder, PointField,
-    PointSchema, SpatialAlgorithm, SpatialError, SpatialMetadata, SpatialResult, StandardSchemas,
-    Timestamp,
+    PointSchema, SpatialAlgorithm, SpatialError, SpatialMetadata, SpatialResult, SpatialTensor,
+    SpatialTensorChunk, StandardSchemas, Timestamp, DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE,
 };
 pub use spatialrust_io::IoError;
 pub use spatialrust_math::{

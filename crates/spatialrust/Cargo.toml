@@ -167,3 +167,16 @@ required-features = [
     "filter-voxel",
     "feature-normal",
 ]
+
+[[example]]
+name = "bench_euclidean_cluster"
+path = "examples/bench_euclidean_cluster.rs"
+required-features = [
+    "segment-euclidean",
+    "segment-euclidean-gpu",
+    "segment-ransac-plane",
+    "io-pcd",
+    "gpu-wgpu",
+    "filter-voxel",
+    "feature-normal",
+]

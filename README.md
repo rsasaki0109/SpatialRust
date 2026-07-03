@@ -264,7 +264,10 @@ cargo run -p spatialrust --features pipeline-mvp-gpu --bin spatialrust-mvp -- \
 GPU stages (wgpu) share one policy surface: `--voxel-policy`, `--plane-policy`,
 `--normal-policy`, `--cluster-policy` (or `MvpPipelineConfig::*_policy`). Auto
 selects GPU from ~2k points for plane/cluster MVP paths and ~10k for normals.
-Full-cloud plane bench: ~11× speedup (`bench/ransac_plane/`).
+When GPU normals run without an explicit `search_radius`, MVP derives one from
+the voxel leaf (`normal_gpu_radius_scale`, default `2.0`) to use the fast grid path.
+Full-cloud plane bench: ~11× speedup (`bench/ransac_plane/`). Cluster bench:
+`bench/euclidean_cluster/` (GPU wins on dense full-cloud input; MVP ~1.4k points stay CPU-faster).
 
 ### Library
 
@@ -306,6 +309,7 @@ cargo test -p spatialrust --features mvp mvp_copc_pipeline_roundtrip
 cargo test -p spatialrust --features mvp mvp_copc_query_pipeline
 python bench/public_copc/run.py
 python bench/ransac_plane/run.py
+python bench/euclidean_cluster/run.py
 ```
 
 ### Python (PyG demo)

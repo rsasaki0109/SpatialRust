@@ -35,7 +35,7 @@ until their individual 1.0 milestones.
 | Symbol | Notes |
 | --- | --- |
 | Chunked AoSoA views | Not yet exposed; schema may extend |
-| `SpatialTensor` name | Architecture alias for future tensor views |
+| `SpatialTensor`, `SpatialTensorChunk` | Provisional chunked views over `PointCloud` (`spatial_tensor()`) |
 
 ### Rules (unchanged at 1.0)
 
@@ -84,7 +84,7 @@ spatialrust-<area> / feature-<name>
 - `spatialrust-ros2` (not started)
 - `spatialrust-ai` / ONNX / DLPack export (not started)
 - `gpu-cuda` backend (feature placeholder only)
-- `SpatialTensor` chunked views (design only)
+- `SpatialTensor` chunked views (provisional API in `spatialrust-core`)
 
 ## Deprecation policy (from 1.0 onward)
 

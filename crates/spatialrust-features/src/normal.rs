@@ -186,6 +186,12 @@ impl NormalEstimator {
         self.estimate(input)
     }
 
+    /// Returns whether the given policy selects the GPU backend for this input.
+    #[cfg(feature = "feature-normal-gpu")]
+    pub fn selects_gpu_backend(&self, input: &PointCloud, policy: ExecutionPolicy) -> bool {
+        matches!(self.resolve_policy(input, policy), ExecutionPolicy::Gpu(DeviceKind::Wgpu))
+    }
+
     #[cfg(feature = "feature-normal-gpu")]
     fn should_use_gpu(&self, input: &PointCloud) -> bool {
         self.config.effective_gpu_min_points().map_or(true, |min_points| input.len() >= min_points)

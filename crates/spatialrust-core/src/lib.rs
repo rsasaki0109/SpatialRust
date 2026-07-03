@@ -14,6 +14,7 @@ mod execution;
 mod metadata;
 mod pointcloud;
 mod schema;
+mod tensor;
 
 pub use algorithm::SpatialAlgorithm;
 pub use buffer::{PointBuffer, PointBufferSet};
@@ -24,3 +25,6 @@ pub use execution::ExecutionPolicy;
 pub use metadata::{FrameId, SpatialMetadata, Timestamp};
 pub use pointcloud::{PointCloud, PointCloudBuilder};
 pub use schema::{DType, FieldSemantic, PointField, PointSchema, StandardSchemas};
+pub use tensor::{
+    SpatialTensor, SpatialTensorChunk, SpatialTensorFieldChunk, DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE,
+};

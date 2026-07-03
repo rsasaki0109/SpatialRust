@@ -25,9 +25,17 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   propagation, `GpuEuclideanClusterExtractor`,
   `EuclideanClusterExtractor::extract_with_policy`, MVP `cluster_policy`, and CLI
   `--cluster-policy auto|cpu|gpu`.
+- **Euclidean cluster benchmark** (`bench/euclidean_cluster/`): CPU vs GPU timing
+  harness with optional `--mvp-leaf` preprocess path
+  (`notes/2026-07-03_euclidean_cluster_bench.md`).
 - **MVP normal backend selection**: `MvpPipelineConfig::normal_policy`,
   `NormalEstimator::estimate_with_policy`, and CLI `--normal-policy auto|cpu|gpu`
   (included in `pipeline-mvp-gpu` / `feature-normal-gpu`).
+- **MVP GPU normal radius**: `MvpPipelineConfig::normal_gpu_radius_scale` derives
+  `search_radius` from voxel leaf when the wgpu backend is selected, enabling the
+  GPU uniform-grid path (`notes/2026-07-03_mvp_normal_gpu_grid_radius.md`).
+- **Provisional `SpatialTensor` chunked views** (`spatialrust-core`): zero-copy
+  chunk iteration over `PointCloud` columns (`notes/2026-07-03_spatial_tensor_chunked_views.md`).
 
 ## [1.0.0] — 2026-07-03
 

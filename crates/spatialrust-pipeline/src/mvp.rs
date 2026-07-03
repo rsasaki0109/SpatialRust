@@ -68,6 +68,8 @@ pub struct MvpPipelineConfig {
     pub plane_policy: ExecutionPolicy,
     /// Execution policy for normal estimation.
     pub normal_policy: ExecutionPolicy,
+    /// Optional multiplier for GPU normal grid radius (`leaf_size * scale`) under GPU Auto/Gpu.
+    pub normal_gpu_radius_scale: f32,
     /// Execution policy for Euclidean clustering.
     pub cluster_policy: ExecutionPolicy,
 }
@@ -83,6 +85,7 @@ impl Default for MvpPipelineConfig {
             voxel_policy: ExecutionPolicy::Auto,
             plane_policy: ExecutionPolicy::Auto,
             normal_policy: ExecutionPolicy::Auto,
+            normal_gpu_radius_scale: 2.0,
             cluster_policy: ExecutionPolicy::Auto,
         }
     }
@@ -137,7 +140,27 @@ impl MvpPipeline {
         let downsampled = VoxelGridDownsample::new(self.config.voxel)
             .filter_with_policy(input, self.config.voxel_policy)?;
 
-        let with_normals = NormalEstimator::new(self.config.normals)
+        let normal_config = {
+            #[cfg(feature = "pipeline-mvp-gpu")]
+            {
+                let mut config = self.config.normals;
+                let estimator = NormalEstimator::new(config);
+                if config.search_radius.is_none()
+                    && estimator.selects_gpu_backend(&downsampled, self.config.normal_policy)
+                {
+                    config.search_radius = Some(
+                        (self.config.voxel.leaf_size * self.config.normal_gpu_radius_scale)
+                            .max(1e-4),
+                    );
+                }
+                config
+            }
+            #[cfg(not(feature = "pipeline-mvp-gpu"))]
+            {
+                self.config.normals
+            }
+        };
+        let with_normals = NormalEstimator::new(normal_config)
             .estimate_with_policy(&downsampled, self.config.normal_policy)?;
 
         let plane = RansacPlaneSegmenter::new(self.config.plane)
@@ -413,6 +436,24 @@ mod tests {
 
         let pipeline = MvpPipeline::new(MvpPipelineConfig {
             normal_policy: ExecutionPolicy::Gpu(DeviceKind::Wgpu),
+            ..Default::default()
+        });
+
+        let result = pipeline.run(&sample_cloud()).unwrap();
+        assert!(result.with_normals.field("normal_x").is_ok());
+    }
+
+    #[cfg(feature = "pipeline-mvp-gpu")]
+    #[test]
+    fn auto_normal_policy_derives_gpu_radius_from_voxel_leaf() {
+        use spatialrust_core::ExecutionPolicy;
+        use spatialrust_features::NormalEstimationConfig;
+
+        let pipeline = MvpPipeline::new(MvpPipelineConfig {
+            voxel: spatialrust_filtering::VoxelGridDownsampleConfig::centroid(0.05),
+            normals: NormalEstimationConfig { search_radius: None, ..Default::default() },
+            normal_policy: ExecutionPolicy::Auto,
+            normal_gpu_radius_scale: 2.0,
             ..Default::default()
         });
 
