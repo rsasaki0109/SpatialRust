@@ -21,6 +21,9 @@ mod multi_plane;
 #[cfg(feature = "segment-euclidean")]
 mod cluster;
 
+#[cfg(all(feature = "segment-euclidean", feature = "segment-euclidean-gpu"))]
+mod cluster_gpu;
+
 #[cfg(feature = "segment-dbscan")]
 mod dbscan;
 
@@ -49,7 +52,13 @@ pub use plane_gpu::GpuRansacPlaneSegmenter;
 pub use multi_plane::{MultiPlaneConfig, MultiPlaneSegmentation, MultiPlaneSegmenter};
 
 #[cfg(feature = "segment-euclidean")]
-pub use cluster::{EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult};
+pub use cluster::{
+    EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult,
+    DEFAULT_GPU_MIN_POINTS_EUCLIDEAN,
+};
+
+#[cfg(all(feature = "segment-euclidean", feature = "segment-euclidean-gpu"))]
+pub use cluster_gpu::GpuEuclideanClusterExtractor;
 
 #[cfg(feature = "segment-dbscan")]
 pub use dbscan::{DbscanConfig, DbscanResult, DbscanSegmenter};

@@ -68,6 +68,8 @@ pub struct MvpPipelineConfig {
     pub plane_policy: ExecutionPolicy,
     /// Execution policy for normal estimation.
     pub normal_policy: ExecutionPolicy,
+    /// Execution policy for Euclidean clustering.
+    pub cluster_policy: ExecutionPolicy,
 }
 
 impl Default for MvpPipelineConfig {
@@ -81,6 +83,7 @@ impl Default for MvpPipelineConfig {
             voxel_policy: ExecutionPolicy::Auto,
             plane_policy: ExecutionPolicy::Auto,
             normal_policy: ExecutionPolicy::Auto,
+            cluster_policy: ExecutionPolicy::Auto,
         }
     }
 }
@@ -140,8 +143,8 @@ impl MvpPipeline {
         let plane = RansacPlaneSegmenter::new(self.config.plane)
             .segment_with_policy(&with_normals, self.config.plane_policy)?;
 
-        let clusters =
-            EuclideanClusterExtractor::new(self.config.cluster).extract(&plane.outliers)?;
+        let clusters = EuclideanClusterExtractor::new(self.config.cluster)
+            .extract_with_policy(&plane.outliers, self.config.cluster_policy)?;
 
         let registration = if let Some(icp_config) = &self.config.icp {
             // Point-to-plane aligns against the normal-bearing cloud; the others
@@ -249,6 +252,7 @@ mod tests {
                 cluster_tolerance: 0.3,
                 min_cluster_size: 1,
                 max_cluster_size: usize::MAX,
+                ..Default::default()
             },
             icp: None,
             ..Default::default()
@@ -284,6 +288,7 @@ mod tests {
                 cluster_tolerance: 0.3,
                 min_cluster_size: 1,
                 max_cluster_size: usize::MAX,
+                ..Default::default()
             },
             icp: Some(MvpIcpConfig {
                 icp: IcpConfig {
@@ -338,6 +343,7 @@ mod tests {
                 cluster_tolerance: 0.3,
                 min_cluster_size: 1,
                 max_cluster_size: usize::MAX,
+                ..Default::default()
             },
             icp: Some(MvpIcpConfig {
                 icp: IcpConfig {
@@ -412,5 +418,19 @@ mod tests {
 
         let result = pipeline.run(&sample_cloud()).unwrap();
         assert!(result.with_normals.field("normal_x").is_ok());
+    }
+
+    #[cfg(feature = "pipeline-mvp-gpu")]
+    #[test]
+    fn runs_with_gpu_cluster_policy() {
+        use spatialrust_core::{DeviceKind, ExecutionPolicy};
+
+        let pipeline = MvpPipeline::new(MvpPipelineConfig {
+            cluster_policy: ExecutionPolicy::Gpu(DeviceKind::Wgpu),
+            ..Default::default()
+        });
+
+        let result = pipeline.run(&sample_cloud()).unwrap();
+        assert!(result.clusters.cluster_count >= 1);
     }
 }

@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **GPU Euclidean clustering** (`segment-euclidean-gpu`): WGSL uniform-grid label
+  propagation, `GpuEuclideanClusterExtractor`,
+  `EuclideanClusterExtractor::extract_with_policy`, MVP `cluster_policy`, and CLI
+  `--cluster-policy auto|cpu|gpu`.
 - **MVP normal backend selection**: `MvpPipelineConfig::normal_policy`,
   `NormalEstimator::estimate_with_policy`, and CLI `--normal-policy auto|cpu|gpu`
   (included in `pipeline-mvp-gpu` / `feature-normal-gpu`).

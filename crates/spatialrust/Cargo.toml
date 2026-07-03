@@ -60,6 +60,10 @@ segment-euclidean = [
     "spatialrust-segmentation/segment-euclidean",
     "spatialrust-search/search-kdtree",
 ]
+segment-euclidean-gpu = [
+    "spatialrust-segmentation/segment-euclidean-gpu",
+    "gpu-wgpu",
+]
 segment-dbscan = [
     "spatialrust-segmentation/segment-dbscan",
     "spatialrust-search/search-kdtree",
@@ -112,6 +116,7 @@ pipeline-mvp-gpu = [
     "filter-voxel-gpu",
     "segment-ransac-plane-gpu",
     "feature-normal-gpu",
+    "segment-euclidean-gpu",
 ]
 gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
 metrics-distance = ["spatialrust-metrics/metrics-distance"]

@@ -258,15 +258,13 @@ cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
 cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
   --resolution 0.5 scan.copc.laz coarse.copc.laz
 cargo run -p spatialrust --features pipeline-mvp-gpu --bin spatialrust-mvp -- \
-  --plane-policy auto --normal-policy auto scan.las labeled.las
+  --plane-policy auto --normal-policy auto --cluster-policy auto scan.las labeled.las
 ```
 
-GPU RANSAC plane scoring (wgpu) is available with `pipeline-mvp-gpu` or
-`segment-ransac-plane-gpu`. GPU normal estimation uses the same policy surface
-(`--normal-policy`, `MvpPipelineConfig::normal_policy`; Auto selects GPU from
-~10k points). Plane Auto selects GPU from ~2k points
-(MVP downsampled scenes) and shows ~11× speedup on full 460k clouds in local
-release measurements (`bench/ransac_plane/`).
+GPU stages (wgpu) share one policy surface: `--voxel-policy`, `--plane-policy`,
+`--normal-policy`, `--cluster-policy` (or `MvpPipelineConfig::*_policy`). Auto
+selects GPU from ~2k points for plane/cluster MVP paths and ~10k for normals.
+Full-cloud plane bench: ~11× speedup (`bench/ransac_plane/`).
 
 ### Library
 
@@ -298,7 +296,7 @@ PCD/PLY/LAS/COPC -> voxel downsample -> normals -> plane RANSAC -> clustering ->
   <img src="docs/assets/readme_mvp_pipeline.gif" alt="Top-down 2D view of the MVP pipeline stages on the public PCL table_scene_lms400 point cloud: input scan, voxel grid, plane RANSAC, and Euclidean clusters" width="640">
 </p>
 
-GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode). GPU RANSAC plane and normal estimation use the same policy surface (`--plane-policy`, `--normal-policy`, `MvpPipelineConfig::plane_policy`, `normal_policy`).
+GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode). GPU plane, normal, and Euclidean clustering use the same policy flags (`--plane-policy`, `--normal-policy`, `--cluster-policy`).
 
 ```bash
 cargo test -p spatialrust-gpu --features gpu-wgpu
