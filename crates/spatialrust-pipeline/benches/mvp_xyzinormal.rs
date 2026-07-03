@@ -40,6 +40,7 @@ fn mvp_config(voxel_policy: ExecutionPolicy) -> MvpPipelineConfig {
             max_cluster_size: usize::MAX,
         },
         icp: None,
+        ..Default::default()
     }
 }
 

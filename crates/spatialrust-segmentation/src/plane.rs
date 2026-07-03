@@ -1,11 +1,11 @@
-use spatialrust_core::{ExecutionPolicy, HasPositions3, PointCloud, SpatialError, SpatialResult};
 #[cfg(feature = "segment-ransac-plane-gpu")]
 use spatialrust_core::DeviceKind;
+use spatialrust_core::{ExecutionPolicy, HasPositions3, PointCloud, SpatialError, SpatialResult};
 use spatialrust_math::Vec3;
 
 use crate::cloud::extract_mask;
 use crate::plane_ransac::{
-    collect_inliers, plane_from_indices, refine_plane_from_inliers, Rng, sample_indices,
+    collect_inliers, plane_from_indices, refine_plane_from_inliers, sample_indices, Rng,
 };
 use crate::segmenter::PointCloudSegmenter;
 
@@ -163,9 +163,7 @@ impl RansacPlaneSegmenter {
 
     #[cfg(feature = "segment-ransac-plane-gpu")]
     fn should_use_gpu(&self, input: &PointCloud) -> bool {
-        self.config
-            .effective_gpu_min_points()
-            .is_none_or(|min_points| input.len() >= min_points)
+        self.config.effective_gpu_min_points().map_or(true, |min_points| input.len() >= min_points)
     }
 
     #[cfg(feature = "segment-ransac-plane-gpu")]

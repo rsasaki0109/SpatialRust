@@ -1,9 +1,9 @@
+#[cfg(feature = "feature-normal-gpu")]
+use spatialrust_core::DeviceKind;
 use spatialrust_core::{
     DType, ExecutionPolicy, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet, PointCloud,
     PointField, PointSchema, SpatialError, SpatialResult,
 };
-#[cfg(feature = "feature-normal-gpu")]
-use spatialrust_core::DeviceKind;
 use spatialrust_math::{symmetric_eigen3, Mat3, Vec3};
 use spatialrust_search::{KdTree, Neighbor, RadiusSearchIndex};
 
@@ -188,9 +188,7 @@ impl NormalEstimator {
 
     #[cfg(feature = "feature-normal-gpu")]
     fn should_use_gpu(&self, input: &PointCloud) -> bool {
-        self.config
-            .effective_gpu_min_points()
-            .is_none_or(|min_points| input.len() >= min_points)
+        self.config.effective_gpu_min_points().map_or(true, |min_points| input.len() >= min_points)
     }
 
     #[cfg(feature = "feature-normal-gpu")]

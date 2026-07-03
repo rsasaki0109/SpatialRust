@@ -81,15 +81,7 @@ impl GpuRansacPlaneSegmenter {
             Vec::new()
         };
 
-        finalize_plane_segmentation(
-            input,
-            x,
-            y,
-            z,
-            &self.config,
-            best_inliers,
-            Some(best_model),
-        )
+        finalize_plane_segmentation(input, x, y, z, &self.config, best_inliers, Some(best_model))
     }
 }
 

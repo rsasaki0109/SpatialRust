@@ -16,7 +16,10 @@ fn public_pcd_path() -> Option<PathBuf> {
     }
 
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    for relative in ["../../target/bench-data/table_scene_lms400.pcd", "../../target/readme-data/table_scene_lms400.pcd"] {
+    for relative in [
+        "../../target/bench-data/table_scene_lms400.pcd",
+        "../../target/readme-data/table_scene_lms400.pcd",
+    ] {
         let candidate = manifest.join(relative);
         if candidate.is_file() {
             return Some(candidate);
@@ -49,11 +52,7 @@ fn inner_roi_bounds(cloud: &spatialrust::PointCloud, fraction: f32) -> spatialru
         max[1] = max[1].max(y[i]);
         max[2] = max[2].max(z[i]);
     }
-    let center = [
-        0.5 * (min[0] + max[0]),
-        0.5 * (min[1] + max[1]),
-        0.5 * (min[2] + max[2]),
-    ];
+    let center = [0.5 * (min[0] + max[0]), 0.5 * (min[1] + max[1]), 0.5 * (min[2] + max[2])];
     let half = [
         0.5 * fraction * (max[0] - min[0]),
         0.5 * fraction * (max[1] - min[1]),
@@ -87,17 +86,12 @@ fn mvp_public_pcd_copc_bounds_resolution_and_pipeline() {
     let cloud = read_point_cloud_file(&pcd_path).expect("read public PCD");
     assert!(cloud.len() > 10_000, "unexpected point count: {}", cloud.len());
 
-    let copc_path = std::env::temp_dir().join(format!(
-        "spatialrust_public_copc_{}.copc.laz",
-        std::process::id()
-    ));
+    let copc_path = std::env::temp_dir()
+        .join(format!("spatialrust_public_copc_{}.copc.laz", std::process::id()));
     write_copc_file_with_params(
         &copc_path,
         &cloud,
-        &CopcWriterParams {
-            max_points_per_node: 512,
-            max_depth: 10,
-        },
+        &CopcWriterParams { max_points_per_node: 512, max_depth: 10 },
     )
     .expect("write public COPC");
 
@@ -106,8 +100,9 @@ fn mvp_public_pcd_copc_bounds_resolution_and_pipeline() {
     let roi_bounds = inner_roi_bounds(&cloud, 0.6);
     let coarse_resolution = info.spacing * 4.0;
 
-    let bounds_only_count =
-        read_copc_file_with_query(&copc_path, &CopcQuery::bounds(roi_bounds)).expect("bounds query").len();
+    let bounds_only_count = read_copc_file_with_query(&copc_path, &CopcQuery::bounds(roi_bounds))
+        .expect("bounds query")
+        .len();
     let combined_count = read_copc_file_with_query(
         &copc_path,
         &CopcQuery::with_resolution(roi_bounds, coarse_resolution),
@@ -156,8 +151,9 @@ fn mvp_http_autzen_copc_bounds_smoke() {
         (info.root_bounds.min[1], info.root_bounds.min[1] + 100.0),
         (info.root_bounds.min[2], info.root_bounds.min[2] + 5.0),
     );
-    let bounds_count =
-        read_copc_url_with_query(AUTZEN_URL, Some(&CopcQuery::bounds(roi))).expect("autzen bounds").len();
+    let bounds_count = read_copc_url_with_query(AUTZEN_URL, Some(&CopcQuery::bounds(roi)))
+        .expect("autzen bounds")
+        .len();
 
     assert!(full_count > bounds_count);
     eprintln!("HTTP Autzen COPC smoke");

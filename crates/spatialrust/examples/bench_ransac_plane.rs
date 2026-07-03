@@ -12,8 +12,8 @@ use std::time::{Duration, Instant};
 
 use spatialrust::{
     read_point_cloud_file, FeatureEstimator, GpuRansacPlaneSegmenter, NormalEstimationConfig,
-    NormalEstimator, PointCloudFilter, RansacPlaneConfig, RansacPlaneSegmenter, VoxelGridDownsample,
-    VoxelGridDownsampleConfig,
+    NormalEstimator, PointCloudFilter, RansacPlaneConfig, RansacPlaneSegmenter,
+    VoxelGridDownsample, VoxelGridDownsampleConfig,
 };
 
 fn parse_usize(flag: &str, default: usize) -> usize {
@@ -82,10 +82,7 @@ fn summarize(label: &str, samples: &[(Duration, usize)], iterations: usize) {
     let total: Duration = samples.iter().map(|(elapsed, _)| *elapsed).sum();
     let avg = total / samples.len().max(1) as u32;
     let inliers = samples.last().map(|(_, count)| *count).unwrap_or(0);
-    println!(
-        "{label},{:.4},{inliers},{iterations}",
-        avg.as_secs_f64()
-    );
+    println!("{label},{:.4},{inliers},{iterations}", avg.as_secs_f64());
 }
 
 fn main() {
@@ -97,11 +94,7 @@ fn main() {
     let warmup = parse_usize("--warmup", 1);
     let repeat = parse_usize("--repeat", 3);
     let config = config_from_args();
-    let mvp_leaf = if has_flag("--mvp-leaf") {
-        Some(parse_f32("--mvp-leaf", 0.05))
-    } else {
-        None
-    };
+    let mvp_leaf = if has_flag("--mvp-leaf") { Some(parse_f32("--mvp-leaf", 0.05)) } else { None };
 
     let mut cloud = read_point_cloud_file(&path).expect("failed to read cloud");
     if let Some(leaf_size) = mvp_leaf {

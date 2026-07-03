@@ -72,10 +72,7 @@ impl GpuBufferPool {
     /// Returns the number of buffers currently held in the pool.
     #[must_use]
     pub fn cached_buffer_count(&self) -> usize {
-        self.free
-            .lock()
-            .map(|free| free.values().map(Vec::len).sum())
-            .unwrap_or(0)
+        self.free.lock().map(|free| free.values().map(Vec::len).sum()).unwrap_or(0)
     }
 
     fn take_storage(

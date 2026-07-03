@@ -109,9 +109,7 @@ pub fn score_ransac_plane_hypotheses_gpu(
     distance_threshold: f32,
 ) -> SpatialResult<Vec<GpuPlaneScore>> {
     if x.len() != y.len() || x.len() != z.len() {
-        return Err(SpatialError::InvalidArgument(
-            "xyz arrays must have equal length".to_owned(),
-        ));
+        return Err(SpatialError::InvalidArgument("xyz arrays must have equal length".to_owned()));
     }
     if hypotheses.is_empty() {
         return Ok(Vec::new());
@@ -187,9 +185,8 @@ pub fn score_ransac_plane_hypotheses_gpu(
         ],
     });
 
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("ransac-plane"),
-    });
+    let mut encoder = device
+        .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("ransac-plane") });
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("ransac-plane-pass"),
@@ -197,11 +194,7 @@ pub fn score_ransac_plane_hypotheses_gpu(
         });
         pass.set_pipeline(&pipeline);
         pass.set_bind_group(0, &bind_group, &[]);
-        pass.dispatch_workgroups(
-            hypothesis_count.div_ceil(WORKGROUP_SIZE as usize) as u32,
-            1,
-            1,
-        );
+        pass.dispatch_workgroups(hypothesis_count.div_ceil(WORKGROUP_SIZE as usize) as u32, 1, 1);
     }
     queue.submit(Some(encoder.finish()));
 
@@ -235,18 +228,9 @@ pub fn score_ransac_plane_hypotheses_gpu(
     drop(data);
     staging.unmap();
 
-    runtime.recycle_storage(
-        (point_count * std::mem::size_of::<f32>()) as u64,
-        x_buffer,
-    );
-    runtime.recycle_storage(
-        (point_count * std::mem::size_of::<f32>()) as u64,
-        y_buffer,
-    );
-    runtime.recycle_storage(
-        (point_count * std::mem::size_of::<f32>()) as u64,
-        z_buffer,
-    );
+    runtime.recycle_storage(std::mem::size_of_val(x) as u64, x_buffer);
+    runtime.recycle_storage(std::mem::size_of_val(y) as u64, y_buffer);
+    runtime.recycle_storage(std::mem::size_of_val(z) as u64, z_buffer);
 
     Ok(scores)
 }
@@ -270,15 +254,8 @@ mod tests {
             }
         }
         let hypotheses = [[0u32, 1, 10], [5, 15, 50]];
-        let scores = score_ransac_plane_hypotheses_gpu(
-            &runtime,
-            &x,
-            &y,
-            &z,
-            &hypotheses,
-            0.05,
-        )
-        .expect("gpu scores");
+        let scores = score_ransac_plane_hypotheses_gpu(&runtime, &x, &y, &z, &hypotheses, 0.05)
+            .expect("gpu scores");
         assert_eq!(scores.len(), 2);
         assert!(scores.iter().all(|score: &GpuPlaneScore| score.inlier_count >= 90));
         assert!(scores[0].normal[2].abs() > 0.9);

@@ -54,7 +54,12 @@ pub(crate) fn generate_hypotheses(len: usize, max_iterations: usize, seed: u64) 
     out
 }
 
-pub(crate) fn plane_from_indices(x: &[f32], y: &[f32], z: &[f32], indices: [usize; 3]) -> Option<PlaneModel> {
+pub(crate) fn plane_from_indices(
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    indices: [usize; 3],
+) -> Option<PlaneModel> {
     let points = [
         Vec3::new(x[indices[0]], y[indices[0]], z[indices[0]]),
         Vec3::new(x[indices[1]], y[indices[1]], z[indices[1]]),
