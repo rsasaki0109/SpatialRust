@@ -1,5 +1,5 @@
 use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
-use spatialrust_gpu::euclidean_cluster_roots_grid;
+use spatialrust_search::euclidean_cluster_roots;
 
 use crate::cluster::{finalize_euclidean_clusters, EuclideanClusterConfig, EuclideanClusterResult};
 use crate::segmenter::PointCloudSegmenter;
@@ -38,7 +38,7 @@ impl GpuEuclideanClusterExtractor {
         }
 
         let (x, y, z) = input.positions3()?;
-        let roots = euclidean_cluster_roots_grid(x, y, z, self.config.cluster_tolerance)?;
+        let roots = euclidean_cluster_roots(x, y, z, self.config.cluster_tolerance)?;
         finalize_euclidean_clusters(input, &roots, self.config)
     }
 }

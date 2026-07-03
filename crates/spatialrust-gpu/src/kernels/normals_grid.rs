@@ -5,10 +5,11 @@ use wgpu::util::DeviceExt;
 use crate::kernels::normals::GpuNormal;
 use crate::runtime::WgpuRuntime;
 
+use spatialrust_search::{build_grid, grid_bounds};
+
+pub use spatialrust_search::uniform_grid_fits;
+
 const WORKGROUP_SIZE: u32 = 256;
-/// Upper bound on dense grid cells to avoid pathological memory use; callers
-/// should fall back to the CPU/KD-tree path when exceeded.
-const MAX_CELLS: u64 = 64_000_000;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
@@ -347,87 +348,6 @@ pub fn estimate_normals_grid_gpu(
     staging.unmap();
 
     Ok(normals)
-}
-
-pub(crate) fn grid_bounds(
-    x: &[f32],
-    y: &[f32],
-    z: &[f32],
-    radius: f32,
-) -> SpatialResult<([f32; 3], [u32; 3])> {
-    let mut min = [f32::INFINITY; 3];
-    let mut max = [f32::NEG_INFINITY; 3];
-    for index in 0..x.len() {
-        for (axis, value) in [x[index], y[index], z[index]].into_iter().enumerate() {
-            min[axis] = min[axis].min(value);
-            max[axis] = max[axis].max(value);
-        }
-    }
-    let inv_cell = 1.0 / radius;
-    let mut dims = [0u32; 3];
-    for axis in 0..3 {
-        let span = ((max[axis] - min[axis]) * inv_cell).floor() as i64 + 1;
-        dims[axis] = span.max(1) as u32;
-    }
-    let cells = dims[0] as u64 * dims[1] as u64 * dims[2] as u64;
-    if cells > MAX_CELLS {
-        return Err(SpatialError::InvalidArgument(format!(
-            "grid would need {cells} cells (cap {MAX_CELLS}); use a larger radius or the CPU path"
-        )));
-    }
-    Ok((min, dims))
-}
-
-/// Returns whether a uniform grid with the given cell size fits the GPU cell cap.
-pub fn uniform_grid_fits(x: &[f32], y: &[f32], z: &[f32], cell_size: f32) -> bool {
-    grid_bounds(x, y, z, cell_size).is_ok()
-}
-
-/// Counting-sort points into grid cells, returning sorted indices and CSR offsets.
-pub(crate) fn build_grid(
-    x: &[f32],
-    y: &[f32],
-    z: &[f32],
-    origin: [f32; 3],
-    dims: [u32; 3],
-    radius: f32,
-) -> (Vec<u32>, Vec<u32>) {
-    let inv_cell = 1.0 / radius;
-    let n = x.len();
-    let num_cells = dims[0] as usize * dims[1] as usize * dims[2] as usize;
-
-    let cell_of = |index: usize| -> usize {
-        let cx = (((x[index] - origin[0]) * inv_cell).floor() as i64).clamp(0, dims[0] as i64 - 1)
-            as usize;
-        let cy = (((y[index] - origin[1]) * inv_cell).floor() as i64).clamp(0, dims[1] as i64 - 1)
-            as usize;
-        let cz = (((z[index] - origin[2]) * inv_cell).floor() as i64).clamp(0, dims[2] as i64 - 1)
-            as usize;
-        (cz * dims[1] as usize + cy) * dims[0] as usize + cx
-    };
-
-    let mut counts = vec![0u32; num_cells + 1];
-    for index in 0..n {
-        counts[cell_of(index)] += 1;
-    }
-    // Prefix sum -> cell_start (CSR offsets).
-    let mut acc = 0u32;
-    for slot in counts.iter_mut() {
-        let c = *slot;
-        *slot = acc;
-        acc += c;
-    }
-    let cell_start = counts; // now offsets, length num_cells+1, last == n
-
-    let mut cursor = cell_start.clone();
-    let mut sorted = vec![0u32; n];
-    for index in 0..n {
-        let cell = cell_of(index);
-        let slot = cursor[cell];
-        sorted[slot as usize] = index as u32;
-        cursor[cell] = slot + 1;
-    }
-    (sorted, cell_start)
 }
 
 #[cfg(test)]

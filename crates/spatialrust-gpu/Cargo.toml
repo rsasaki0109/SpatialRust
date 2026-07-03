@@ -16,6 +16,7 @@ gpu-cuda = []
 [dependencies]
 spatialrust-core = { workspace = true }
 spatialrust-math = { workspace = true }
+spatialrust-search = { workspace = true }
 thiserror = { workspace = true }
 wgpu = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }

@@ -2,8 +2,8 @@ use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
 use wgpu::util::DeviceExt;
 
-use crate::kernels::normals_grid::{build_grid, grid_bounds};
 use crate::runtime::WgpuRuntime;
+use spatialrust_search::{build_grid, grid_bounds};
 
 const WORKGROUP_SIZE: u32 = 256;
 

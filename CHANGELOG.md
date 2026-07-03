@@ -49,6 +49,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - **Grid union-find clustering** (Epic 67): replace WGSL Jacobi loops with CPU
   grid UF in `euclidean_cluster_roots_grid` (~4× faster on 460k pts, MVP path
   ~1.15×; `notes/2026-07-03_gpu_euclidean_cluster_speedup.md`).
+- **Shared `uniform_grid` module** (Epic 68): `spatialrust-search` hosts grid
+  bounds/build/cluster roots; GPU normals and cluster paths reuse it
+  (`notes/2026-07-03_cpu_grid_euclidean_cluster.md`).
 
 ## [1.0.0] — 2026-07-03
 

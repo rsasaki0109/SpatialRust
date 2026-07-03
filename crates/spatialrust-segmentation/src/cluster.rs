@@ -138,7 +138,7 @@ impl EuclideanClusterExtractor {
         let Ok((x, y, z)) = input.positions3() else {
             return false;
         };
-        spatialrust_gpu::uniform_grid_fits(x, y, z, self.config.cluster_tolerance)
+        spatialrust_search::uniform_grid_fits(x, y, z, self.config.cluster_tolerance)
     }
 
     #[cfg(feature = "segment-euclidean-gpu")]

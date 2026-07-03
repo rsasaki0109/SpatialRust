@@ -7,6 +7,7 @@
 
 mod brute;
 mod traits;
+mod uniform_grid;
 
 #[cfg(feature = "search-kdtree")]
 mod kdtree;
@@ -16,6 +17,9 @@ mod graph;
 
 pub use brute::{brute_force_knn, brute_force_radius, BruteForceIndex};
 pub use traits::{NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex};
+pub use uniform_grid::{
+    build_grid, euclidean_cluster_roots, grid_bounds, uniform_grid_fits, MAX_UNIFORM_GRID_CELLS,
+};
 
 #[cfg(feature = "search-kdtree")]
 pub use kdtree::KdTree;
