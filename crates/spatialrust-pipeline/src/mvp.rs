@@ -148,10 +148,12 @@ impl MvpPipeline {
                 if config.search_radius.is_none()
                     && estimator.selects_gpu_backend(&downsampled, self.config.normal_policy)
                 {
-                    config.search_radius = Some(
-                        (self.config.voxel.leaf_size * self.config.normal_gpu_radius_scale)
-                            .max(1e-4),
-                    );
+                    let radius = (self.config.voxel.leaf_size
+                        * self.config.normal_gpu_radius_scale)
+                        .max(1e-4);
+                    if estimator.gpu_grid_fits(&downsampled, radius) {
+                        config.search_radius = Some(radius);
+                    }
                 }
                 config
             }

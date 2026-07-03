@@ -49,7 +49,7 @@ pub use gpu_segments::GpuVoxelSegments;
 pub use normals::{estimate_normals_gpu, GpuNormal};
 
 #[cfg(feature = "gpu-wgpu")]
-pub use normals_grid::estimate_normals_grid_gpu;
+pub use normals_grid::{estimate_normals_grid_gpu, uniform_grid_fits};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use covariances_grid::{estimate_plane_covariances_grid_gpu, GpuCovariance};

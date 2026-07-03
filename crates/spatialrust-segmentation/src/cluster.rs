@@ -120,7 +120,9 @@ impl EuclideanClusterExtractor {
         #[cfg(feature = "segment-euclidean-gpu")]
         {
             let resolved = self.resolve_policy(input, policy);
-            if matches!(resolved, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
+            if matches!(resolved, ExecutionPolicy::Gpu(DeviceKind::Wgpu))
+                && self.gpu_grid_fits(input)
+            {
                 return crate::cluster_gpu::GpuEuclideanClusterExtractor::new(self.config)
                     .extract(input);
             }
@@ -128,6 +130,14 @@ impl EuclideanClusterExtractor {
 
         let _ = policy;
         self.extract(input)
+    }
+
+    #[cfg(feature = "segment-euclidean-gpu")]
+    fn gpu_grid_fits(&self, input: &PointCloud) -> bool {
+        let Ok((x, y, z)) = input.positions3() else {
+            return false;
+        };
+        spatialrust_gpu::uniform_grid_fits(x, y, z, self.config.cluster_tolerance)
     }
 
     #[cfg(feature = "segment-euclidean-gpu")]

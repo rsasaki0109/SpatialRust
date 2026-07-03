@@ -215,6 +215,7 @@ fn pipeline_config() -> MvpPipelineConfig {
             cluster_tolerance: 0.06,
             min_cluster_size: 8,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()

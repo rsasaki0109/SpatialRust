@@ -127,6 +127,7 @@ fn mvp_load_voxel_normals_plane_cluster() {
         cluster_tolerance: 1.5,
         min_cluster_size: 1,
         max_cluster_size: usize::MAX,
+        ..Default::default()
     })
     .extract(&plane.outliers)
     .unwrap();
@@ -223,6 +224,7 @@ fn mvp_full_pipeline_roundtrip() {
             cluster_tolerance: 0.3,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: Some(MvpIcpConfig {
             icp: IcpConfig {
@@ -300,6 +302,7 @@ fn mvp_las_pipeline_roundtrip() {
             cluster_tolerance: 0.3,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: Some(MvpIcpConfig {
             icp: IcpConfig {
@@ -375,6 +378,7 @@ fn mvp_copc_pipeline_roundtrip() {
             cluster_tolerance: 0.3,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: Some(MvpIcpConfig {
             icp: IcpConfig {
@@ -464,6 +468,7 @@ fn mvp_copc_query_pipeline() {
             cluster_tolerance: 0.3,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()
@@ -533,6 +538,7 @@ fn mvp_copc_resolution_query_pipeline() {
             cluster_tolerance: 0.3,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()
@@ -1236,6 +1242,7 @@ fn mvp_xyzinormal_approximate_auto_config() -> spatialrust::MvpPipelineConfig {
             cluster_tolerance: 1.0,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()
@@ -1267,6 +1274,7 @@ fn mvp_xyzinormal_base_config() -> spatialrust::MvpPipelineConfig {
             cluster_tolerance: 0.3,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()
@@ -1389,6 +1397,7 @@ fn mvp_composite_base_config() -> spatialrust::MvpPipelineConfig {
             cluster_tolerance: 0.3,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()
@@ -1565,6 +1574,7 @@ fn mvp_large_scale_xyzi_pipeline_smoke() {
             cluster_tolerance: 1.0,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()
@@ -1633,6 +1643,7 @@ fn mvp_scan_like_base_config() -> spatialrust::MvpPipelineConfig {
             cluster_tolerance: 1.0,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()
@@ -1792,6 +1803,7 @@ fn mvp_approximate_voxel_mode_pipeline() {
             cluster_tolerance: 0.3,
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
+            ..Default::default()
         },
         icp: None,
         ..MvpPipelineConfig::default()

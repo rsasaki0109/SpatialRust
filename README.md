@@ -267,7 +267,7 @@ selects GPU from ~2k points for plane/cluster MVP paths and ~10k for normals.
 When GPU normals run without an explicit `search_radius`, MVP derives one from
 the voxel leaf (`normal_gpu_radius_scale`, default `2.0`) to use the fast grid path.
 Full-cloud plane bench: ~11× speedup (`bench/ransac_plane/`). Cluster bench:
-`bench/euclidean_cluster/` (GPU wins on dense full-cloud input; MVP ~1.4k points stay CPU-faster).
+`bench/euclidean_cluster/` (MVP ~1.4k points stay CPU-faster; full-cloud GPU path needs tuning).
 
 ### Library
 

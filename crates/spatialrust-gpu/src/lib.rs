@@ -41,8 +41,9 @@ pub use kernels::{
     reduce_voxel_average_f32_multi_gpu, reduce_voxel_centroids_xyz,
     reduce_voxel_centroids_xyz_and_average_multi_gpu,
     reduce_voxel_centroids_xyz_and_gather_first_multi_gpu, reduce_voxel_centroids_xyz_gpu_buffers,
-    score_ransac_plane_hypotheses_gpu, GpuCovariance, GpuNormal, GpuPlaneScore, GpuVoxelKeyBuffers,
-    GpuVoxelSegments, VoxelApproximateFirstGpuResult, VoxelCentroidGpuResult, VoxelSegments,
+    score_ransac_plane_hypotheses_gpu, uniform_grid_fits, GpuCovariance, GpuNormal, GpuPlaneScore,
+    GpuVoxelKeyBuffers, GpuVoxelSegments, VoxelApproximateFirstGpuResult, VoxelCentroidGpuResult,
+    VoxelSegments,
 };
 
 #[cfg(feature = "gpu-wgpu")]

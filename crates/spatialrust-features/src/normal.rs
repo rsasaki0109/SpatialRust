@@ -192,6 +192,15 @@ impl NormalEstimator {
         matches!(self.resolve_policy(input, policy), ExecutionPolicy::Gpu(DeviceKind::Wgpu))
     }
 
+    /// Returns whether a GPU uniform-grid normal pass fits the input bounds at `radius`.
+    #[cfg(feature = "feature-normal-gpu")]
+    pub fn gpu_grid_fits(&self, input: &PointCloud, radius: f32) -> bool {
+        let Ok((x, y, z)) = input.positions3() else {
+            return false;
+        };
+        spatialrust_gpu::uniform_grid_fits(x, y, z, radius)
+    }
+
     #[cfg(feature = "feature-normal-gpu")]
     fn should_use_gpu(&self, input: &PointCloud) -> bool {
         self.config.effective_gpu_min_points().map_or(true, |min_points| input.len() >= min_points)

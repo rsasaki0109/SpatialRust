@@ -378,6 +378,11 @@ pub(crate) fn grid_bounds(
     Ok((min, dims))
 }
 
+/// Returns whether a uniform grid with the given cell size fits the GPU cell cap.
+pub fn uniform_grid_fits(x: &[f32], y: &[f32], z: &[f32], cell_size: f32) -> bool {
+    grid_bounds(x, y, z, cell_size).is_ok()
+}
+
 /// Counting-sort points into grid cells, returning sorted indices and CSR offsets.
 pub(crate) fn build_grid(
     x: &[f32],

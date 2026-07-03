@@ -37,6 +37,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - **Provisional `SpatialTensor` chunked views** (`spatialrust-core`): zero-copy
   chunk iteration over `PointCloud` columns (`notes/2026-07-03_spatial_tensor_chunked_views.md`).
 
+### Fixed
+
+- GPU uniform-grid stages (Euclidean cluster, MVP normal radius) fall back to CPU when
+  the spatial extent would exceed the wgpu cell cap.
+- MVP integration tests: `EuclideanClusterConfig` partial initializers include
+  `..Default::default()` for `gpu_min_points`.
+
 ## [1.0.0] — 2026-07-03
 
 First stable release: **Stable** APIs in `docs/API_STABILITY.md`, MVP pipeline +
