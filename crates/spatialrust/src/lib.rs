@@ -125,7 +125,11 @@ pub use spatialrust_segmentation::{MultiPlaneConfig, MultiPlaneSegmentation, Mul
 #[cfg(feature = "segment-euclidean")]
 pub use spatialrust_segmentation::{
     EuclideanClusterConfig, EuclideanClusterExtractor, EuclideanClusterResult,
+    DEFAULT_GPU_MIN_POINTS_EUCLIDEAN,
 };
+
+#[cfg(feature = "segment-euclidean-gpu")]
+pub use spatialrust_segmentation::GpuEuclideanClusterExtractor;
 
 #[cfg(feature = "segment-dbscan")]
 pub use spatialrust_segmentation::{DbscanConfig, DbscanResult, DbscanSegmenter};
