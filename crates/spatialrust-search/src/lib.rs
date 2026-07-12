@@ -22,8 +22,8 @@ mod graph;
 
 pub use brute::{brute_force_knn, brute_force_radius, BruteForceIndex};
 pub use chunked::{
-    nearest_k_spatial_tensor, radius_search_spatial_tensor, ChunkedNearestNeighborIndex,
-    ChunkedRadiusSearchIndex, ChunkQueryRange,
+    nearest_k_spatial_tensor, radius_search_spatial_tensor, ChunkQueryRange,
+    ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex,
 };
 pub use staging::{
     parallel_index_for_each, parallel_index_ranges, parallel_worker_count,

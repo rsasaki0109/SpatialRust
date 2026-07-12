@@ -82,7 +82,14 @@ mod tests {
         builder.push_point([1.0, 2.0, 3.0]).unwrap();
         builder.push_point([4.0, 5.0, 6.0]).unwrap();
         let cloud = builder.build().unwrap();
-        let packed = cloud.spatial_tensor_chunks(4).unwrap().chunks().next().unwrap().pack_xyz(&cloud).unwrap();
+        let packed = cloud
+            .spatial_tensor_chunks(4)
+            .unwrap()
+            .chunks()
+            .next()
+            .unwrap()
+            .pack_xyz(&cloud)
+            .unwrap();
 
         let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
         let gpu_chunk = GpuAoSoXyzChunk::upload(&runtime, "aoso-upload-test", &packed).unwrap();

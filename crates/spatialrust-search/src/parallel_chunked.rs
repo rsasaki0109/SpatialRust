@@ -141,7 +141,7 @@ mod tests {
     }
 
     fn sort_neighbors(neighbors: &mut [(usize, crate::Neighbor)]) {
-        neighbors.sort_by(|a, b| (a.0, a.1.index).cmp(&(b.0, b.1.index)));
+        neighbors.sort_by_key(|a| (a.0, a.1.index));
     }
 
     #[test]
@@ -155,9 +155,7 @@ mod tests {
         let mut sequential = Vec::new();
         radius_search_spatial_tensor(&tree, &x, &y, &z, &tensor, 0.02, &mut sequential);
 
-        let mut parallel = radius_search_spatial_tensor_parallel(
-            &tree, &x, &y, &z, &tensor, 0.02,
-        );
+        let mut parallel = radius_search_spatial_tensor_parallel(&tree, &x, &y, &z, &tensor, 0.02);
 
         sort_neighbors(&mut sequential);
         sort_neighbors(&mut parallel);
@@ -174,8 +172,7 @@ mod tests {
         let mut sequential = Vec::new();
         nearest_k_spatial_tensor(&tree, &x, &y, &z, &tensor, 8, &mut sequential);
 
-        let mut parallel =
-            nearest_k_spatial_tensor_parallel(&tree, &x, &y, &z, &tensor, 8);
+        let mut parallel = nearest_k_spatial_tensor_parallel(&tree, &x, &y, &z, &tensor, 8);
 
         sort_neighbors(&mut sequential);
         sort_neighbors(&mut parallel);
@@ -192,8 +189,7 @@ mod tests {
         let mut sequential = Vec::new();
         radius_search_spatial_tensor(&tree, &x, &y, &z, &tensor, 0.05, &mut sequential);
 
-        let mut parallel =
-            radius_search_spatial_tensor_parallel(&tree, &x, &y, &z, &tensor, 0.05);
+        let mut parallel = radius_search_spatial_tensor_parallel(&tree, &x, &y, &z, &tensor, 0.05);
 
         sort_neighbors(&mut sequential);
         sort_neighbors(&mut parallel);

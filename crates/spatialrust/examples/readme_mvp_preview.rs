@@ -57,7 +57,7 @@ fn public_sample_scene() -> Result<PointCloud, String> {
     };
     let cloud = read_point_cloud_file(&path)
         .map_err(|error| format!("read {}: {error}", path.display()))?;
-    Ok(decimate_xyz_cloud(&cloud, PUBLIC_SCENE_MAX_POINTS)?)
+    decimate_xyz_cloud(&cloud, PUBLIC_SCENE_MAX_POINTS)
 }
 
 fn public_sample_scene_full() -> Result<PointCloud, String> {
@@ -69,8 +69,7 @@ fn public_sample_scene_full() -> Result<PointCloud, String> {
             path
         }
     };
-    read_point_cloud_file(&path)
-        .map_err(|error| format!("read {}: {error}", path.display()))
+    read_point_cloud_file(&path).map_err(|error| format!("read {}: {error}", path.display()))
 }
 
 fn ensure_public_scene(path: &Path) -> Result<(), String> {
@@ -334,6 +333,7 @@ fn project(
     (px.round() as i32, py.round() as i32)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn iso_project(
     x: f32,
     y: f32,
@@ -514,7 +514,7 @@ impl Canvas {
             }
         }
 
-        for index in 0..4 {
+        for (index, label) in labels.iter().enumerate() {
             let cx = 170 + index as i32 * 240;
             let active = index == stage;
             let dot = if active { Rgb(56, 189, 248) } else { Rgb(71, 85, 105) };
@@ -523,7 +523,7 @@ impl Canvas {
             }
             self.fill_circle(width, cx, footer_top + 18, if active { 6 } else { 4 }, dot);
             let label_x = cx + if active { 26 } else { 16 };
-            self.draw_label_chip(width, label_x, footer_top + 12, labels[index], active);
+            self.draw_label_chip(width, label_x, footer_top + 12, label, active);
         }
     }
 
@@ -586,6 +586,7 @@ impl Canvas {
         }
     }
 
+    #[allow(dead_code)]
     fn draw_stage_bar(&mut self, width: u32, stage: usize) {
         let bar_y = 18;
         for index in 0..4 {
@@ -594,7 +595,7 @@ impl Canvas {
             let color = if active { Rgb(56, 189, 248) } else { Rgb(51, 65, 85) };
             for x in x0..x0 + 150 {
                 for y in bar_y..bar_y + 6 {
-                    self.put(width, x as i32, y as i32, color);
+                    self.put(width, x as i32, y, color);
                 }
             }
         }
@@ -891,6 +892,7 @@ fn label_rgb_flat(label: i32) -> Rgb {
     label_rgb(label)
 }
 
+#[allow(dead_code)]
 fn draw_points(
     canvas: &mut Canvas,
     cloud: &PointCloud,
@@ -907,6 +909,7 @@ fn draw_points(
     }
 }
 
+#[allow(dead_code)]
 fn draw_plane_stage(
     canvas: &mut Canvas,
     plane: &spatialrust::RansacPlaneSegmentation,
@@ -917,22 +920,8 @@ fn draw_plane_stage(
     draw_points(canvas, &plane.outliers, min, max, 5, Rgb(251, 146, 60));
 }
 
-fn project_left(
-    x: f32,
-    y: f32,
-    min: [f32; 2],
-    max: [f32; 2],
-    pad: f32,
-) -> (i32, i32) {
-    project(
-        x,
-        y,
-        min,
-        max,
-        RECEIPT_LEFT_WIDTH as f32,
-        GIF_HEIGHT as f32,
-        pad,
-    )
+fn project_left(x: f32, y: f32, min: [f32; 2], max: [f32; 2], pad: f32) -> (i32, i32) {
+    project(x, y, min, max, RECEIPT_LEFT_WIDTH as f32, GIF_HEIGHT as f32, pad)
 }
 
 fn draw_points_left(
@@ -1037,7 +1026,14 @@ fn draw_receipt_terminal(
 
     for (index, line) in lines.iter().enumerate() {
         let color = if index == 0 { Rgb(226, 232, 240) } else { Rgb(148, 163, 184) };
-        canvas.draw_char_line(GIF_WIDTH, RECEIPT_SPLIT_X + 16, 40 + index as i32 * 24, line, color, 1);
+        canvas.draw_char_line(
+            GIF_WIDTH,
+            RECEIPT_SPLIT_X + 16,
+            40 + index as i32 * 24,
+            line,
+            color,
+            1,
+        );
     }
 
     if show_footnote {
@@ -1074,8 +1070,6 @@ fn render_receipt_gif_frames(
     let log_lines = receipt_log_lines(input, result, leaf_size);
     let typing_frames = log_lines.len() * RECEIPT_FRAMES_PER_LINE;
     let total_frames = typing_frames + RECEIPT_HOLD_FRAMES;
-    let mut frame_index = 0_u32;
-
     for frame in 0..total_frames {
         let visible_lines = if frame >= typing_frames {
             log_lines.len()
@@ -1094,12 +1088,12 @@ fn render_receipt_gif_frames(
             result.clusters.cluster_count,
         );
 
-        let path = temp_dir.join(format!("frame_{frame_index:03}.ppm"));
+        let path = temp_dir.join(format!("frame_{frame:03}.ppm"));
         canvas.write_ppm(GIF_WIDTH, GIF_HEIGHT, &path);
-        frame_index += 1;
     }
 }
 
+#[allow(dead_code)]
 fn draw_cluster_stage(canvas: &mut Canvas, output: &PointCloud, min: [f32; 2], max: [f32; 2]) {
     let (x, y, _) = output.positions3().expect("positions");
     let labels = match output.field("label").expect("labels") {
@@ -1231,6 +1225,7 @@ fn render_copc_frames(input: &PointCloud, temp_dir: &Path) {
     }
 }
 
+#[allow(dead_code)]
 fn render_gif_frames(input: &PointCloud, result: &MvpPipelineResult, temp_dir: &Path) {
     render_receipt_gif_frames(input, result, temp_dir, 0.05);
 }

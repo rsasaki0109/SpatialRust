@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
 
 use crate::{
-    chunked::{ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex, ChunkQueryRange},
+    chunked::{ChunkQueryRange, ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex},
     NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex,
 };
 

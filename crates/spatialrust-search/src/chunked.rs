@@ -114,8 +114,8 @@ mod tests {
             }
         }
 
-        chunked.sort_by(|a, b| (a.0, a.1.index).cmp(&(b.0, b.1.index)));
-        expected.sort_by(|a, b| (a.0, a.1.index).cmp(&(b.0, b.1.index)));
+        chunked.sort_by_key(|a| (a.0, a.1.index));
+        expected.sort_by_key(|a| (a.0, a.1.index));
         assert_eq!(chunked, expected);
     }
 
@@ -151,8 +151,8 @@ mod tests {
         let mut full_out = Vec::new();
         tree.radius_search_chunk_into(&x, &y, &z, 0..x.len(), 1.5, &mut full_out);
 
-        tensor_out.sort_by(|a, b| (a.0, a.1.index).cmp(&(b.0, b.1.index)));
-        full_out.sort_by(|a, b| (a.0, a.1.index).cmp(&(b.0, b.1.index)));
+        tensor_out.sort_by_key(|a| (a.0, a.1.index));
+        full_out.sort_by_key(|a| (a.0, a.1.index));
         assert_eq!(tensor_out, full_out);
     }
 
@@ -175,18 +175,22 @@ mod tests {
         tree.nearest_k_chunk_into(&x, &y, &z, 0..x.len(), 2, &mut full_out);
 
         tensor_out.sort_by(|a, b| {
-            a.0.cmp(&b.0).then(
-                a.1.distance_squared
-                    .partial_cmp(&b.1.distance_squared)
-                    .unwrap_or(std::cmp::Ordering::Equal),
-            ).then(a.1.index.cmp(&b.1.index))
+            a.0.cmp(&b.0)
+                .then(
+                    a.1.distance_squared
+                        .partial_cmp(&b.1.distance_squared)
+                        .unwrap_or(std::cmp::Ordering::Equal),
+                )
+                .then(a.1.index.cmp(&b.1.index))
         });
         full_out.sort_by(|a, b| {
-            a.0.cmp(&b.0).then(
-                a.1.distance_squared
-                    .partial_cmp(&b.1.distance_squared)
-                    .unwrap_or(std::cmp::Ordering::Equal),
-            ).then(a.1.index.cmp(&b.1.index))
+            a.0.cmp(&b.0)
+                .then(
+                    a.1.distance_squared
+                        .partial_cmp(&b.1.distance_squared)
+                        .unwrap_or(std::cmp::Ordering::Equal),
+                )
+                .then(a.1.index.cmp(&b.1.index))
         });
         assert_eq!(tensor_out, full_out);
     }

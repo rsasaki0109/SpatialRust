@@ -69,10 +69,9 @@ pub use spatialrust_io::{
 #[cfg(feature = "search-kdtree")]
 pub use spatialrust_search::{
     brute_force_knn, brute_force_radius, nearest_k_spatial_tensor, parallel_index_for_each,
-    parallel_index_ranges, parallel_worker_count, PARALLEL_STAGING_MIN_POINTS,
-    radius_search_spatial_tensor, BruteForceIndex, ChunkedNearestNeighborIndex,
-    ChunkedRadiusSearchIndex, ChunkQueryRange, KdTree, NearestNeighborIndex, Neighbor,
-    RadiusSearchIndex, SpatialIndex,
+    parallel_index_ranges, parallel_worker_count, radius_search_spatial_tensor, BruteForceIndex,
+    ChunkQueryRange, ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex, KdTree,
+    NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex, PARALLEL_STAGING_MIN_POINTS,
 };
 
 #[cfg(feature = "search-parallel")]

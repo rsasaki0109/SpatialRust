@@ -245,7 +245,6 @@ struct NormalChunk {
     invalid_count: usize,
 }
 
-
 fn estimate_normal_range(
     config: NormalEstimationConfig,
     tree: &KdTree,

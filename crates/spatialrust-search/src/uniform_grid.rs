@@ -140,6 +140,7 @@ pub fn euclidean_cluster_roots(
 #[cfg(feature = "parallel")]
 const PARALLEL_CLUSTER_MIN_POINTS: usize = 4_096;
 
+#[allow(clippy::too_many_arguments)]
 fn cluster_roots_sequential(
     point_count: usize,
     x: &[f32],
@@ -175,6 +176,7 @@ fn cluster_roots_sequential(
 }
 
 #[cfg(feature = "parallel")]
+#[allow(clippy::too_many_arguments)]
 fn cluster_roots_parallel(
     point_count: usize,
     x: &[f32],
@@ -190,15 +192,11 @@ fn cluster_roots_parallel(
     use std::sync::atomic::{AtomicU32, Ordering};
     use std::sync::Arc;
 
-    let parent: Arc<[AtomicU32]> = (0..point_count as u32)
-        .map(AtomicU32::new)
-        .collect::<Vec<_>>()
-        .into();
+    let parent: Arc<[AtomicU32]> =
+        (0..point_count as u32).map(AtomicU32::new).collect::<Vec<_>>().into();
 
-    let thread_count = std::thread::available_parallelism()
-        .map_or(1, |count| count.get())
-        .min(point_count)
-        .max(1);
+    let thread_count =
+        std::thread::available_parallelism().map_or(1, |count| count.get()).min(point_count).max(1);
     let chunk = point_count.div_ceil(thread_count);
 
     std::thread::scope(|scope| {
@@ -230,10 +228,7 @@ fn cluster_roots_parallel(
         }
     });
 
-    let mut parent_vec: Vec<u32> = parent
-        .iter()
-        .map(|slot| slot.load(Ordering::Relaxed))
-        .collect();
+    let mut parent_vec: Vec<u32> = parent.iter().map(|slot| slot.load(Ordering::Relaxed)).collect();
     compress_roots(&mut parent_vec, point_count)
 }
 
@@ -278,8 +273,8 @@ fn atomic_find_root(parent: &[std::sync::atomic::AtomicU32], mut index: u32) -> 
 
 fn compress_roots(parent: &mut [u32], point_count: usize) -> Vec<u32> {
     let mut roots = vec![0u32; point_count];
-    for index in 0..point_count {
-        roots[index] = find_root(parent, index as u32);
+    for (index, root) in roots.iter_mut().enumerate() {
+        *root = find_root(parent, index as u32);
     }
     roots
 }
@@ -314,6 +309,7 @@ fn find_root_readonly(parent: &[u32], mut index: u32) -> u32 {
     index
 }
 
+#[allow(clippy::too_many_arguments)]
 fn grid_radius_neighbors<'a>(
     index: usize,
     x: &'a [f32],
@@ -331,9 +327,7 @@ fn grid_radius_neighbors<'a>(
         x,
         y,
         z,
-        origin,
         dims,
-        inv_cell: 1.0 / tolerance,
         radius_sq,
         sorted,
         cell_start,
@@ -355,9 +349,7 @@ struct GridRadiusNeighbors<'a> {
     x: &'a [f32],
     y: &'a [f32],
     z: &'a [f32],
-    origin: [f32; 3],
     dims: [u32; 3],
-    inv_cell: f32,
     radius_sq: f32,
     sorted: &'a [u32],
     cell_start: &'a [u32],

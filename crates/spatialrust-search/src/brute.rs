@@ -1,5 +1,5 @@
 use crate::{
-    chunked::{ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex, ChunkQueryRange},
+    chunked::{ChunkQueryRange, ChunkedNearestNeighborIndex, ChunkedRadiusSearchIndex},
     NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex,
 };
 

@@ -134,13 +134,11 @@ impl<'a> SpatialTensorFieldChunk<'a> {
 
 impl PointCloud {
     /// Returns a provisional chunked view for AoSoA-style iteration.
-    #[must_use]
     pub fn spatial_tensor_chunks(&self, chunk_size: usize) -> SpatialResult<SpatialTensor<'_>> {
         SpatialTensor::new(self, chunk_size)
     }
 
     /// Returns a chunked view using [`DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE`].
-    #[must_use]
     pub fn spatial_tensor(&self) -> SpatialResult<SpatialTensor<'_>> {
         self.spatial_tensor_chunks(DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE)
     }

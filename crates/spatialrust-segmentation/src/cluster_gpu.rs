@@ -2,8 +2,8 @@ use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
 use spatialrust_search::euclidean_cluster_roots;
 
 use crate::cluster::{
-    extract_cpu_roots, finalize_euclidean_clusters, DEFAULT_GPU_KDTREE_MIN_POINTS,
-    EuclideanClusterConfig, EuclideanClusterResult,
+    extract_cpu_roots, finalize_euclidean_clusters, EuclideanClusterConfig, EuclideanClusterResult,
+    DEFAULT_GPU_KDTREE_MIN_POINTS,
 };
 use crate::segmenter::PointCloudSegmenter;
 
@@ -84,7 +84,7 @@ mod tests {
             cluster_tolerance: 1.5,
             min_cluster_size: 3,
             max_cluster_size: usize::MAX,
-            ..Default::default()
+            gpu_min_points: None,
         });
         let result = extractor.extract(&input).unwrap();
         assert_eq!(result.cluster_count, 3);
@@ -109,7 +109,6 @@ mod tests {
             min_cluster_size: 1,
             max_cluster_size: usize::MAX,
             gpu_min_points: None,
-            ..Default::default()
         };
         let cpu = EuclideanClusterExtractor::new(config).extract(&input).unwrap();
         let gpu = GpuEuclideanClusterExtractor::new(config).extract(&input).unwrap();
@@ -128,7 +127,6 @@ mod tests {
             min_cluster_size: 3,
             max_cluster_size: usize::MAX,
             gpu_min_points: None,
-            ..Default::default()
         };
         let cpu = EuclideanClusterExtractor::new(config).extract(&input).unwrap();
         let gpu = GpuEuclideanClusterExtractor::new(config).extract(&input).unwrap();
