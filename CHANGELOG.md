@@ -68,6 +68,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - **AoSoA GPU upload** (Epic 74): `GpuAoSoXyzChunk` and
   `upload_spatial_tensor_xyz_chunks` behind `gpu-aoso-staging`
   (`notes/2026-07-03_aoso_gpu_upload.md`).
+- **AoSoA GPU voxel dispatch** (Epic 75): voxel keys are computed directly from
+  uploaded interleaved XYZ chunks without re-uploading separate coordinate
+  columns (`notes/2026-07-13_aoso_gpu_voxel_dispatch.md`).
 
 ## [1.0.0] — 2026-07-03
 

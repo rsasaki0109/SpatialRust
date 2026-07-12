@@ -4,6 +4,8 @@
 pub struct ComputePipelineCache {
     /// Voxel key generation pipelines.
     pub voxel_keys: VoxelKeysPipelines,
+    /// Interleaved AoSoA voxel key generation pipelines.
+    pub voxel_keys_aoso: VoxelKeysAoSoPipelines,
     /// Bitonic sort pipelines.
     pub voxel_sort: VoxelSortPipelines,
     /// Sort-entry construction pipelines.
@@ -23,6 +25,16 @@ pub struct VoxelKeysPipelines {
     /// Bind group layout for voxel key dispatch.
     pub bind_group_layout: wgpu::BindGroupLayout,
     /// Main voxel key compute pipeline.
+    pub pipeline: wgpu::ComputePipeline,
+    _pipeline_layout: wgpu::PipelineLayout,
+    _shader: wgpu::ShaderModule,
+}
+
+/// Cached pipelines for voxel keys from interleaved XYZ positions.
+pub struct VoxelKeysAoSoPipelines {
+    /// Bind group layout for interleaved voxel key dispatch.
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    /// Main interleaved voxel key compute pipeline.
     pub pipeline: wgpu::ComputePipeline,
     _pipeline_layout: wgpu::PipelineLayout,
     _shader: wgpu::ShaderModule,
@@ -148,6 +160,7 @@ impl ComputePipelineCache {
     pub(crate) fn new(device: &wgpu::Device) -> Self {
         Self {
             voxel_keys: VoxelKeysPipelines::new(device),
+            voxel_keys_aoso: VoxelKeysAoSoPipelines::new(device),
             voxel_sort: VoxelSortPipelines::new(device),
             voxel_sort_build: VoxelSortBuildPipelines::new(device),
             voxel_sort_filter: VoxelSortFilterPipelines::new(device),
@@ -155,6 +168,33 @@ impl ComputePipelineCache {
             voxel_reduce: VoxelReducePipelines::new(device),
             voxel_gather: VoxelGatherPipelines::new(device),
         }
+    }
+}
+
+impl VoxelKeysAoSoPipelines {
+    fn new(device: &wgpu::Device) -> Self {
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("voxel-key-aoso-layout"),
+            entries: &[uniform_entry(0), storage_entry(1, true), storage_entry(2, false)],
+        });
+        let shader = load_shader(
+            device,
+            "voxel-key-aoso-shader",
+            include_str!("shaders/voxel_keys_aoso.wgsl"),
+        );
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("voxel-key-aoso-pipeline-layout"),
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[],
+        });
+        let pipeline = build_compute_pipeline(
+            device,
+            &pipeline_layout,
+            &shader,
+            "voxel-key-aoso-pipeline",
+            "main",
+        );
+        Self { bind_group_layout, pipeline, _pipeline_layout: pipeline_layout, _shader: shader }
     }
 }
 

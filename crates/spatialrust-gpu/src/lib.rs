@@ -56,4 +56,6 @@ pub use runtime::{WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS, MULTI_GATHER4_STOR
 pub use upload_cache::GpuBufferPool;
 
 #[cfg(feature = "gpu-aoso-staging")]
-pub use aoso_staging::{upload_spatial_tensor_xyz_chunks, GpuAoSoXyzChunk};
+pub use aoso_staging::{
+    compute_voxel_keys_aoso_chunks, upload_spatial_tensor_xyz_chunks, GpuAoSoXyzChunk,
+};
