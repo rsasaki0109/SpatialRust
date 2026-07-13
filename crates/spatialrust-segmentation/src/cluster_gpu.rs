@@ -12,7 +12,7 @@ use crate::segmenter::PointCloudSegmenter;
 /// Connected components use uniform-grid union-find for smaller clouds and KD-tree
 /// BFS for dense scans (see [`DEFAULT_GPU_KDTREE_MIN_POINTS`]); cluster size
 /// filtering and label remapping reuse the CPU helpers so results match
-/// [`EuclideanClusterExtractor`] partition semantics.
+/// [`crate::EuclideanClusterExtractor`] partition semantics.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GpuEuclideanClusterExtractor {
     config: EuclideanClusterConfig,

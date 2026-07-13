@@ -232,6 +232,13 @@ stubtest CI.
 
 ### Changed
 
+- Split the AoSoA GPU staging implementation into focused `types`, `upload`,
+  `attributes`, `normals`, `voxel`, and `tests` modules without changing its
+  public API or measured performance
+  (`notes/2026-07-13_aoso_module_cleanup.md`).
+- Restrict internal normal-shader re-exports to `gpu-aoso-staging`, fixing
+  `-D warnings` failures in narrower GPU/segmentation CI feature jobs.
+
 - **Plane Auto threshold**: `DEFAULT_GPU_MIN_POINTS_PLANE` lowered from 100,000
   to 2,000 so MVP downsampled clouds (~2k points on the reference sample) select
   GPU under `Auto`; override with `RansacPlaneConfig::gpu_min_points`.
