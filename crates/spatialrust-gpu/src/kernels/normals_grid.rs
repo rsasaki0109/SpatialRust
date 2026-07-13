@@ -22,7 +22,7 @@ struct GridUniform {
     _pad1: f32,
 }
 
-const NORMALS_GRID_WGSL: &str = r#"
+pub(crate) const NORMALS_GRID_WGSL: &str = r#"
 struct Params {
     origin: vec4<f32>,
     dims: vec4<u32>,

@@ -28,5 +28,10 @@ name = "voxel_pipeline"
 harness = false
 required-features = ["gpu-wgpu"]
 
+[[bench]]
+name = "aoso_frame_pipeline"
+harness = false
+required-features = ["gpu-aoso-staging"]
+
 [dev-dependencies]
 criterion = { workspace = true }

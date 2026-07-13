@@ -28,7 +28,7 @@ pub use spatialrust_core::{
 };
 
 #[cfg(feature = "tensor-aoso")]
-pub use spatialrust_core::AoSoAXyzChunk;
+pub use spatialrust_core::{AoSoAAttributeChunk, AoSoAAttributeLayout, AoSoAXyzChunk};
 pub use spatialrust_io::IoError;
 pub use spatialrust_math::{
     approx_eq, approx_eq_f64, f32_eps, f64_eps, smallest_eigenvector, solve_linear_system,

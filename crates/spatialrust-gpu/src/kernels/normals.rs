@@ -24,7 +24,7 @@ pub struct GpuNormal {
     pub curvature: f32,
 }
 
-const NORMALS_WGSL: &str = r#"
+pub(crate) const NORMALS_WGSL: &str = r#"
 struct Params { point_count: u32, k: u32, pad0: u32, pad1: u32, };
 
 @group(0) @binding(0) var<uniform> params: Params;

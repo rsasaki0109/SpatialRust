@@ -71,6 +71,33 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - **AoSoA GPU voxel dispatch** (Epic 75): voxel keys are computed directly from
   uploaded interleaved XYZ chunks without re-uploading separate coordinate
   columns (`notes/2026-07-13_aoso_gpu_voxel_dispatch.md`).
+- **AoSoA GPU voxel pipeline** (Epic 76): uploaded chunks are combined with
+  GPU-to-GPU copies and flow through global key, sort/segment, and interleaved
+  centroid reduction stages without intermediate readbacks
+  (`notes/2026-07-13_aoso_gpu_voxel_pipeline.md`).
+- **GPU-resident AoSoA result** (Epic 77): centroid results retain the combined
+  interleaved position buffer for downstream kernels, with safe buffer access
+  and explicit recycling (`notes/2026-07-13_gpu_resident_aoso_result.md`).
+- **AoSoA attribute layouts** (Epic 78): explicit XYZ/intensity/normal
+  stride-offset metadata, capability-based chunk packers, GPU upload wrappers,
+  and global voxel `Average` / `First` aggregation
+  (`notes/2026-07-13_aoso_attribute_layouts.md`).
+- **AoSoA GPU normal chaining** (Epic 79): retained interleaved XYZ buffers feed
+  normal estimation without position re-upload, and normal/curvature output can
+  remain GPU-resident until explicit readback
+  (`notes/2026-07-13_aoso_gpu_normals.md`).
+- **GPU sparse radius grid** (Epic 80): radius cell keys, sorting, segment
+  compaction, sparse neighbor lookup, and normal estimation run directly from
+  retained AoSoA positions without CPU neighbor upload or dense cell allocation
+  (`notes/2026-07-13_gpu_sparse_radius_grid.md`).
+- **GPU-resident spatial frame** (Epic 81): schema-aware ownership of positions,
+  segments, radius grids, normals, and attributes with device validation,
+  explicit readback/recycling, transfer receipts, and a chained voxel-to-normal
+  pipeline (`notes/2026-07-13_gpu_spatial_frame.md`).
+- **Frame-native GPU operations** (Epic 82): radius-grid rebuilding, normal
+  replacement, and attribute reduction execute through `GpuSpatialFrame`, with
+  device/length validation, old-buffer recycling, and receipt updates
+  (`notes/2026-07-13_frame_native_gpu_operations.md`).
 
 ## [1.0.0] — 2026-07-03
 

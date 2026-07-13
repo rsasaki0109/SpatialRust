@@ -33,4 +33,4 @@ pub use tensor::{
 };
 
 #[cfg(feature = "tensor-aoso")]
-pub use tensor_aoso::AoSoAXyzChunk;
+pub use tensor_aoso::{AoSoAAttributeChunk, AoSoAAttributeLayout, AoSoAXyzChunk};

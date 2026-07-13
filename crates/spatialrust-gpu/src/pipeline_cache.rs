@@ -6,6 +6,10 @@ pub struct ComputePipelineCache {
     pub voxel_keys: VoxelKeysPipelines,
     /// Interleaved AoSoA voxel key generation pipelines.
     pub voxel_keys_aoso: VoxelKeysAoSoPipelines,
+    /// Interleaved AoSoA centroid reduction pipelines.
+    pub voxel_reduce_aoso: VoxelReduceAoSoPipelines,
+    /// Interleaved AoSoA attribute reduction pipelines.
+    pub voxel_reduce_attributes_aoso: VoxelReduceAttributesAoSoPipelines,
     /// Bitonic sort pipelines.
     pub voxel_sort: VoxelSortPipelines,
     /// Sort-entry construction pipelines.
@@ -35,6 +39,26 @@ pub struct VoxelKeysAoSoPipelines {
     /// Bind group layout for interleaved voxel key dispatch.
     pub bind_group_layout: wgpu::BindGroupLayout,
     /// Main interleaved voxel key compute pipeline.
+    pub pipeline: wgpu::ComputePipeline,
+    _pipeline_layout: wgpu::PipelineLayout,
+    _shader: wgpu::ShaderModule,
+}
+
+/// Cached pipelines for centroid reduction from interleaved XYZ positions.
+pub struct VoxelReduceAoSoPipelines {
+    /// Bind group layout for interleaved centroid reduction.
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    /// Main interleaved centroid reduction pipeline.
+    pub pipeline: wgpu::ComputePipeline,
+    _pipeline_layout: wgpu::PipelineLayout,
+    _shader: wgpu::ShaderModule,
+}
+
+/// Cached pipelines for interleaved attribute record reduction.
+pub struct VoxelReduceAttributesAoSoPipelines {
+    /// Bind group layout for attribute reduction.
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    /// Main attribute reduction pipeline.
     pub pipeline: wgpu::ComputePipeline,
     _pipeline_layout: wgpu::PipelineLayout,
     _shader: wgpu::ShaderModule,
@@ -161,6 +185,8 @@ impl ComputePipelineCache {
         Self {
             voxel_keys: VoxelKeysPipelines::new(device),
             voxel_keys_aoso: VoxelKeysAoSoPipelines::new(device),
+            voxel_reduce_aoso: VoxelReduceAoSoPipelines::new(device),
+            voxel_reduce_attributes_aoso: VoxelReduceAttributesAoSoPipelines::new(device),
             voxel_sort: VoxelSortPipelines::new(device),
             voxel_sort_build: VoxelSortBuildPipelines::new(device),
             voxel_sort_filter: VoxelSortFilterPipelines::new(device),
@@ -168,6 +194,72 @@ impl ComputePipelineCache {
             voxel_reduce: VoxelReducePipelines::new(device),
             voxel_gather: VoxelGatherPipelines::new(device),
         }
+    }
+}
+
+impl VoxelReduceAttributesAoSoPipelines {
+    fn new(device: &wgpu::Device) -> Self {
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("voxel-reduce-attributes-aoso-layout"),
+            entries: &[
+                uniform_entry(0),
+                storage_entry(1, true),
+                storage_entry(2, true),
+                storage_entry(3, true),
+                storage_entry(4, false),
+            ],
+        });
+        let shader = load_shader(
+            device,
+            "voxel-reduce-attributes-aoso-shader",
+            include_str!("shaders/voxel_reduce_attributes_aoso.wgsl"),
+        );
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("voxel-reduce-attributes-aoso-pipeline-layout"),
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[],
+        });
+        let pipeline = build_compute_pipeline(
+            device,
+            &pipeline_layout,
+            &shader,
+            "voxel-reduce-attributes-aoso-pipeline",
+            "main",
+        );
+        Self { bind_group_layout, pipeline, _pipeline_layout: pipeline_layout, _shader: shader }
+    }
+}
+
+impl VoxelReduceAoSoPipelines {
+    fn new(device: &wgpu::Device) -> Self {
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("voxel-reduce-aoso-layout"),
+            entries: &[
+                uniform_entry(0),
+                storage_entry(1, true),
+                storage_entry(2, true),
+                storage_entry(3, true),
+                storage_entry(4, false),
+            ],
+        });
+        let shader = load_shader(
+            device,
+            "voxel-reduce-aoso-shader",
+            include_str!("shaders/voxel_reduce_aoso.wgsl"),
+        );
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("voxel-reduce-aoso-pipeline-layout"),
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[],
+        });
+        let pipeline = build_compute_pipeline(
+            device,
+            &pipeline_layout,
+            &shader,
+            "voxel-reduce-aoso-pipeline",
+            "main",
+        );
+        Self { bind_group_layout, pipeline, _pipeline_layout: pipeline_layout, _shader: shader }
     }
 }
 

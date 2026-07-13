@@ -85,7 +85,9 @@ impl GpuBufferPool {
             return runtime.device().create_buffer(&wgpu::BufferDescriptor {
                 label: Some(label),
                 size: 4,
-                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                usage: wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::COPY_DST
+                    | wgpu::BufferUsages::COPY_SRC,
                 mapped_at_creation: false,
             });
         }
@@ -99,7 +101,9 @@ impl GpuBufferPool {
         runtime.device().create_buffer(&wgpu::BufferDescriptor {
             label: Some(label),
             size: byte_len,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         })
     }

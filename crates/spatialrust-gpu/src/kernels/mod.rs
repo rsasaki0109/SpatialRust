@@ -46,8 +46,12 @@ mod voxel_pipeline;
 pub use gpu_segments::GpuVoxelSegments;
 
 #[cfg(feature = "gpu-wgpu")]
+pub(crate) use normals::NORMALS_WGSL;
+#[cfg(feature = "gpu-wgpu")]
 pub use normals::{estimate_normals_gpu, GpuNormal};
 
+#[cfg(feature = "gpu-wgpu")]
+pub(crate) use normals_grid::NORMALS_GRID_WGSL;
 #[cfg(feature = "gpu-wgpu")]
 pub use normals_grid::{estimate_normals_grid_gpu, uniform_grid_fits};
 

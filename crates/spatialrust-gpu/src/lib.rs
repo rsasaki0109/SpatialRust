@@ -26,6 +26,9 @@ mod runtime;
 #[cfg(feature = "gpu-aoso-staging")]
 mod aoso_staging;
 
+#[cfg(feature = "gpu-aoso-staging")]
+mod gpu_frame;
+
 pub use buffer::DeviceBuffer;
 pub use device::{GpuDevice, WgpuDevice};
 
@@ -57,5 +60,15 @@ pub use upload_cache::GpuBufferPool;
 
 #[cfg(feature = "gpu-aoso-staging")]
 pub use aoso_staging::{
-    compute_voxel_keys_aoso_chunks, upload_spatial_tensor_xyz_chunks, GpuAoSoXyzChunk,
+    build_radius_grid_aoso_gpu, compute_voxel_keys_aoso_chunks,
+    downsample_voxel_centroid_aoso_chunks, estimate_normals_aoso_gpu,
+    estimate_normals_radius_grid_aoso_gpu, reduce_voxel_attributes_aoso_chunks,
+    upload_spatial_tensor_attribute_chunks, upload_spatial_tensor_xyz_chunks,
+    AoSoAAttributeAggregation, AoSoAAttributeReduction, AoSoAVoxelCentroidResult,
+    GpuAoSoAttributeChunk, GpuAoSoNormals, GpuAoSoRadiusGrid, GpuAoSoXyzBuffer, GpuAoSoXyzChunk,
+};
+
+#[cfg(feature = "gpu-aoso-staging")]
+pub use gpu_frame::{
+    run_aoso_voxel_normal_frame, GpuExecutionReceipt, GpuFrameCapability, GpuSpatialFrame,
 };
