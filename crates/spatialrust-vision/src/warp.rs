@@ -2,22 +2,8 @@
 
 use spatialrust_image::{Image, ImageView};
 
-use crate::{Interpolation, PixelComponent, VisionError, VisionResult};
-
-/// Out-of-bounds sampling behavior for geometric image operations.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum BorderMode<T, const CHANNELS: usize> {
-    /// Returns a fixed pixel outside the source image.
-    Constant([T; CHANNELS]),
-    /// Repeats the closest edge pixel.
-    Replicate,
-    /// Reflects including the edge pixel (`fedcba|abcdefgh|hgfedc`).
-    Reflect,
-    /// Reflects without repeating the edge (`gfedcb|abcdefgh|gfedcb`).
-    Reflect101,
-    /// Periodically wraps source coordinates.
-    Wrap,
-}
+use crate::border::{constant_pixel, fetch};
+use crate::{BorderMode, Interpolation, PixelComponent, VisionError, VisionResult};
 
 /// A source-to-destination 2D affine transform.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -205,17 +191,6 @@ fn warp_with_mapping<T: PixelComponent, const CHANNELS: usize>(
     Ok(Image::try_new_with_metadata(output_width, output_height, output, input.metadata())?)
 }
 
-fn constant_pixel<T: PixelComponent, const CHANNELS: usize>(
-    border: BorderMode<T, CHANNELS>,
-) -> [T; CHANNELS] {
-    match border {
-        BorderMode::Constant(pixel) => pixel,
-        BorderMode::Replicate | BorderMode::Reflect | BorderMode::Reflect101 | BorderMode::Wrap => {
-            std::array::from_fn(|_| T::from_f64(0.0))
-        }
-    }
-}
-
 fn sample<T: PixelComponent, const CHANNELS: usize>(
     input: ImageView<'_, T, CHANNELS>,
     x: f64,
@@ -291,67 +266,10 @@ fn sample_bicubic<T: PixelComponent, const CHANNELS: usize>(
     std::array::from_fn(|channel| T::from_f64(sums[channel] / total_weight))
 }
 
-fn fetch<T: PixelComponent, const CHANNELS: usize>(
-    input: ImageView<'_, T, CHANNELS>,
-    x: isize,
-    y: isize,
-    border: BorderMode<T, CHANNELS>,
-) -> [T; CHANNELS] {
-    if x >= 0 && y >= 0 && x < input.width() as isize && y < input.height() as isize {
-        return *input.get(x as usize, y as usize).expect("coordinate checked");
-    }
-    match border {
-        BorderMode::Constant(pixel) => pixel,
-        BorderMode::Replicate => {
-            let ix = x.clamp(0, input.width().saturating_sub(1) as isize) as usize;
-            let iy = y.clamp(0, input.height().saturating_sub(1) as isize) as usize;
-            *input.get(ix, iy).expect("replicated coordinate")
-        }
-        BorderMode::Reflect => {
-            let ix = border_index(x, input.width(), false);
-            let iy = border_index(y, input.height(), false);
-            *input.get(ix, iy).expect("reflected coordinate")
-        }
-        BorderMode::Reflect101 => {
-            let ix = border_index(x, input.width(), true);
-            let iy = border_index(y, input.height(), true);
-            *input.get(ix, iy).expect("reflected coordinate")
-        }
-        BorderMode::Wrap => {
-            let ix = x.rem_euclid(input.width() as isize) as usize;
-            let iy = y.rem_euclid(input.height() as isize) as usize;
-            *input.get(ix, iy).expect("wrapped coordinate")
-        }
-    }
-}
-
-fn border_index(mut index: isize, length: usize, reflect101: bool) -> usize {
-    if length <= 1 {
-        return 0;
-    }
-    let length = length as isize;
-    while index < 0 || index >= length {
-        index = if index < 0 {
-            if reflect101 {
-                -index
-            } else {
-                -index - 1
-            }
-        } else if reflect101 {
-            2 * length - index - 2
-        } else {
-            2 * length - index - 1
-        };
-    }
-    index as usize
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{
-        remap, warp_affine, warp_perspective, AffineTransform, BorderMode, PerspectiveTransform,
-    };
-    use crate::Interpolation;
+    use super::{remap, warp_affine, warp_perspective, AffineTransform, PerspectiveTransform};
+    use crate::{BorderMode, Interpolation};
     use spatialrust_image::Image;
 
     #[test]

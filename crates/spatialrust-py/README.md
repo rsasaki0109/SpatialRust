@@ -24,6 +24,26 @@ maturin develop --release        # builds the Rust extension into the venv
 maturin build --release --out dist
 ```
 
+ONNX Runtime is intentionally not part of the default wheel. Enable its CPU
+backend explicitly when building an inference wheel:
+
+```bash
+maturin develop --release --features onnxruntime
+```
+
+`OnnxRuntimeSession.run()` uses named CPU I/O Binding by default. Pass
+`copy=True` only when an explicit host conversion is acceptable.
+
+Feature2D is available in the default wheel. `harris_keypoints`,
+`shi_tomasi_keypoints`, and `fast_keypoints` return immutable keypoint metadata;
+`orb_features` returns those keypoints with a `uint8[N, 32]` descriptor matrix.
+Use `match_binary_descriptors` for Hamming distance or
+`match_float_descriptors` for Euclidean distance, with optional ratio,
+cross-check, and maximum-distance filters.
+
+Geometry bindings expose `estimate_homography_ransac`, `solve_pnp`, and
+`stereo_block_match` for NumPy `float64` / grayscale workflows.
+
 ## Test
 
 The bindings have a pytest suite (`tests/`) that exercises the NumPy ⇄ Rust

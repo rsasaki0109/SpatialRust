@@ -1,0 +1,215 @@
+# SpatialRust development roadmap
+
+This document is the canonical registry for active Epic identifiers,
+dependencies, scope, and completion gates. New Epic numbers must be reserved
+here before implementation begins.
+
+## Numbering
+
+Historical work used parallel point-cloud/GPU and image-planning tracks, which
+caused identifiers 75–79 to appear in both sets of notes. Those historical note
+titles remain unchanged. Canonical cross-project numbering resumes at Epic 83,
+after the GPU-resident frame work recorded through Epic 82.
+
+## Long-term 2D → AI → 3D program
+
+| Epic | Status | Depends on | Deliverable |
+| --- | --- | --- | --- |
+| 83 | Complete | Image foundation | `spatialrust-image-io`: bounded stream/memory codecs and metadata |
+| 84 | Complete | 83 | Shared CPU imgproc kernels, filters, morphology, thresholds, histograms, Canny, pyramids |
+| 85 | Complete | 83–84 | `spatialrust-tensor`, DLPack 1.x versioned ABI, explicit copy/device semantics |
+| 86 | Complete | 85 | `spatialrust-ai`, backend traits, ONNX Runtime CPU and explicit I/O binding |
+| 87 | Complete | 84 | Feature2D data model, corners, FAST/ORB, descriptors and matching |
+| 88 | Complete | 84, 87 | Camera geometry, robust multiview estimation, motion and stereo |
+| 89 | Planned | 84–85 | Explicit `GpuImage` upload/readback and chainable wgpu vision kernels |
+| 90 | Planned | 86, 88–89 | Model adapters and image → AI → point-cloud end-to-end pipelines |
+
+Dependency flow:
+
+```text
+image-io -> CPU imgproc -> tensor/DLPack -> ONNX inference
+                    \-> Feature2D -> camera geometry/motion
+CPU imgproc + tensor/DLPack -> explicit wgpu vision
+ONNX + geometry + wgpu vision -> model adapters and 2D-to-3D demos
+```
+
+## North star after Epic 90: perception to spatial intelligence
+
+SpatialRust's long-term goal is to become the Rust-native data plane and
+execution framework that turns synchronized sensor streams into queryable,
+replayable, and actionable spatial worlds. A user should be able to move from
+capture to geometry, AI inference, mapping, semantic understanding, simulation,
+and robot action without replacing the core data model or accepting hidden
+host/device copies.
+
+Epic 83–90 is the foundation program. The following identifiers are reserved
+for its successor program; their implementation scope is refined only after the
+foundation contracts they depend on are stable.
+
+| Epic | Status | Depends on | Long-term outcome |
+| --- | --- | --- | --- |
+| 91 | Reserved | 85, 90 | Spatial records and streams: schema evolution, chunked/out-of-core execution, Arrow C Data/Stream/Device interoperability |
+| 92 | Reserved | 88, 91 | Sensor-time and frame graph: calibrated multimodal synchronization, deterministic replay, MCAP integration |
+| 93 | Reserved | 87–88, 92 | Localization and mapping: visual/RGB-D/lidar odometry, pose graphs, loop closure, relocalization |
+| 94 | Reserved | 89, 93 | Scene reconstruction: TSDF, surfels, meshes, and a feature-gated Gaussian scene representation and renderer |
+| 95 | Reserved | 90–94 | Semantic spatial intelligence: open-vocabulary detections, embeddings on spatial entities, multimodal fusion and search |
+| 96 | Reserved | 91–95 | Embodied-AI data workflows: episodes, annotation, augmentation, evaluation, model provenance and reproducible replay |
+| 97 | Reserved | 92–96 | Production robotics runtime: ROS 2 type adaptation/negotiation, bounded pipelines, tracing and failure diagnostics |
+| 98 | Reserved | 94–97 | Scene and digital-twin interchange through dedicated glTF and OpenUSD adapters |
+| 99 | Reserved | 89, 91, 97 | Explicit edge/distributed execution: graph partitioning, backpressure and named device/network transfers |
+| 100 | Reserved | 91–99 | Platform stability milestone: API compatibility, conformance suites, security audits, performance budgets and LTS policy |
+
+Success is measured by end-to-end capabilities rather than crate count:
+
+1. Record a synchronized camera/depth/lidar/IMU episode and replay it
+   deterministically through the same bounded execution graph.
+2. Produce geometry, trajectories, semantic entities, uncertainty, and model
+   provenance in one versioned spatial schema.
+3. Share host and device data through explicit, testable ownership boundaries;
+   every unavoidable copy is named and measurable.
+4. Run the same safe public pipeline on desktop, robot, and edge targets while
+   heavy runtimes remain optional dedicated features.
+5. Export runtime assets through glTF and composed digital-twin scenes through
+   OpenUSD without making either format a dependency of `spatialrust-core`.
+
+The successor Goal is activated only after Epic 83–90 completes. Until then,
+these reservations guide interfaces but do not expand the active Epic's scope.
+
+## Program invariants
+
+- `spatialrust-core` remains independent of image codecs and AI runtimes.
+- Codec, ONNX, CUDA, TensorRT, DirectML, and similar dependencies are opt-in
+  features in dedicated crates.
+- CPU/GPU transfers are named, explicit operations. Production APIs do not
+  silently migrate data or read GPU results back to the host.
+- Public APIs are safe. `unsafe` is restricted to audited FFI and GPU boundaries.
+- Data models and capability contracts land before broad algorithm families.
+
+## Completion gates for every Epic
+
+1. Correctness tests for supported dtypes, strided ROI input, degenerate sizes,
+   and invalid input.
+2. Property or fuzz tests for parsers and correctness-critical transforms.
+3. Numerical comparison with an authoritative implementation such as OpenCV,
+   DLPack consumers, or ONNX Runtime reference output.
+4. CPU/GPU benchmarks at representative 640p, 1080p, and 4K sizes where the
+   operation is performance-sensitive.
+5. Each feature builds alone with default features disabled; the workspace
+   default does not acquire optional heavy runtimes.
+6. Python bindings and type stubs for user-facing workflows.
+7. Rustdoc, architecture, API-stability, changelog, and reproducibility notes.
+
+## Epic 83 acceptance criteria
+
+- Decode PNG, JPEG, and PNM from paths, arbitrary readers, and memory bytes.
+- Keep TIFF and OpenEXR behind independent features.
+- Enforce compressed-input, width, height, decoded-pixel, and allocation limits.
+- Preserve source format, sample/color type, and Exif orientation metadata;
+  optionally apply orientation to decoded pixels.
+- Encode supported owned image variants to paths, seekable writers, and bytes.
+- Test exact lossless round trips, bounded failure, orientation transforms,
+  malformed input, feature-alone builds, and rustdoc.
+
+## Epic 84 delivery slices
+
+Epic 84 extends `spatialrust-vision` without introducing a second image owner or
+an implicit CPU/GPU runtime. Work lands in dependency order:
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 84A | Complete | Shared border sampling, validated kernels, correlation/filter2D, separable filters, box and Gaussian blur | `imgproc-filter` |
+| 84B | Complete | Median and bilateral filters, Sobel/Scharr/Laplacian, Gaussian pyramids | `imgproc-filter` |
+| 84C | Complete | Structuring elements, erode/dilate, open/close/gradient/top-hat/black-hat | `imgproc-morphology` |
+| 84D | Complete | Fixed/adaptive/Otsu thresholds, histograms, equalization/CLAHE, integral images | `imgproc-analysis` |
+| 84E | Complete | Non-maximum suppression and hysteresis-based Canny edge detection | `imgproc-canny` |
+
+The shared filter contract follows the established image-processing convention
+that filter2D performs correlation unless callers explicitly reverse a kernel.
+Multi-channel inputs are processed independently and every neighborhood API
+requires an explicit border mode. Existing `warp::BorderMode` remains source
+compatible while its sampling contract moves to a shared module.
+
+Epic 84 is complete when every slice supports strided ROI input, rejects empty
+or invalid kernels deterministically, has property tests for degenerate images,
+matches documented OpenCV behavior within per-operation tolerances, and ships
+feature-alone builds, Python bindings/stubs, rustdoc, and 640p/1080p/4K
+benchmarks for the performance-sensitive kernels.
+
+## Epic 85 delivery slices
+
+Epic 85 introduces a runtime-independent tensor crate. It does not rename or
+replace `spatialrust-core::SpatialTensor`, which remains the chunked point-cloud
+view used by existing algorithms.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 85A | Complete | Dtype, shape, signed element strides, byte offset, device, owned/borrowed CPU storage | `tensor` |
+| 85B | Complete | Zero-copy packed/planar image and point-field bridges plus explicit packing copies | `tensor-image`, `tensor-spatial` |
+| 85C | Complete | Audited DLPack major-version 1 managed-tensor import/export with minor-version checks | `tensor-dlpack` |
+| 85D | Complete | Python `__dlpack__`, `__dlpack_device__`, NumPy/PyTorch interoperability | Python tensor bindings |
+
+Host byte slices are only exposed for host-accessible devices. Backend device
+copies remain named operations owned by backend crates. DLPack exchange uses
+the versioned managed-tensor ABI and makes ownership/deleter transfer explicit.
+
+## Epic 86 delivery slices
+
+Epic 86 isolates inference runtimes from tensor metadata and the workspace
+default build. Copy permission and device placement are part of each run or
+binding request rather than backend side effects.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 86A | Complete | Runtime-independent backend/session, model metadata, named dynamic I/O, copy policy, and binding contracts | `ai` |
+| 86B | Complete | ONNX Runtime CPU EP, session options, typed input/output conversion, dynamic model metadata | `ai-onnxruntime` |
+| 86C | Complete | Zero-copy typed CPU inputs, runtime-retained outputs, caller-preallocated outputs, and output-to-input chaining | `ai-onnxruntime` |
+| 86D | Complete | Python session API, Python ONNX Runtime numerical comparison, stubs, and 640p/1080p/4K binding benchmark | Python `onnxruntime` feature |
+
+CUDA, TensorRT, and DirectML remain separately compiled provider features; no
+provider is selected implicitly. The current optional `ort` 2.0.0-rc.12
+adapter requires Rust 1.88, while default and runtime-independent `ai` builds
+retain the workspace MSRV because they do not resolve or compile `ort`.
+
+Raw byte allocations for multi-byte elements are never cast into backend tensor
+pointers. Callers use typed constructors or authorize an explicit copy. Bound
+ONNX Runtime CPU outputs retain their runtime allocation behind
+`HostTensorStorage`, allowing the output to become another bound input without
+an intermediate host allocation.
+
+## Epic 87 delivery slices
+
+Feature2D keeps keypoint metadata and descriptor representation independent of
+any detector. Binary and float descriptor matrices carry their distance
+semantics explicitly, and matching never changes device placement.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 87A | Complete | `Keypoint2`, checked binary/float `DescriptorBuffer`, paired `FeatureSet2`, bounded `FeatureMatch` | `vision-feature2d` |
+| 87B | Complete | Harris, Shi–Tomasi, and exact FAST-9/16 coordinates, scores, and non-maximum suppression | `vision-feature2d` |
+| 87C | Complete | Multi-scale oriented FAST plus stable 256-bit rotated BRIEF, brute-force Hamming/L2 matching, ratio/cross-check filters | `vision-feature2d` |
+| 87D | Complete | Python NumPy workflow, OpenCV comparison, property tests, and 640p/1080p/4K Criterion coverage | Python vision bindings |
+
+SpatialRust ORB uses a documented fixed-seed BRIEF table, not OpenCV's private
+learned table, so descriptor bits are stable within SpatialRust but do not claim
+OpenCV bit identity. Detector repeatability and BFMatcher distance compatibility
+are measured separately. The initial scalar CPU implementation establishes the
+contract and correctness baseline; Epic 89 may accelerate it without changing
+host/device transfer semantics.
+
+## Epic 88 delivery slices
+
+Geometry stays independent of `feature2d` and `dense`. Multiview models and
+absolute pose share one robust-estimation contract. Stereo remaps are returned as
+caller-owned maps for explicit `warp::remap`; disparity reprojects to packed
+`Image` buffers rather than dense-map wrappers.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 88A | Complete | `PointCorrespondence2`, `CameraMatrix3`, projective models, robust options, pose/triangulation result types | `vision-geometry` |
+| 88B | Complete | Normalized DLT + deterministic RANSAC for H/F/E; triangulation; essential pose disambiguation | `vision-geometry` |
+| 88C | Complete | EPnP-class PnP with iterative refine and RANSAC; sparse pyramidal Lucas–Kanade tracks | `vision-geometry` |
+| 88D | Complete | Stereo rig, rectify maps, block-matching disparity, depth/XYZ reproject; Python; OpenCV comparison; Criterion | Python + `vision-geometry` |
+
+Essential/pose and StereoBM comparisons document residual and disparity tolerances
+rather than claiming bit-identical OpenCV matrices. Scalar CPU is the correctness
+baseline; Epic 89 may accelerate kernels without changing host/device semantics.

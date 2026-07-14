@@ -21,6 +21,81 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Canonical 2D → AI → 3D roadmap and image IO (Epic 83)**: `docs/ROADMAP.md`
+  reserves Epics 83–90; new `spatialrust-image-io` provides bounded path,
+  reader/writer, and memory PNG/JPEG/PNM codecs, independently gated TIFF and
+  OpenEXR, typed pixels, Exif orientation handling, Python/NumPy bindings,
+  property tests, and 640p/1080p/4K decode benchmarks.
+
+- **Shared CPU filters (Epic 84A–84B)**: `spatialrust-vision` now exposes a
+  common `BorderMode`, validated 1D/2D kernels, OpenCV-style filter2D
+  correlation, explicit convolution, f32-output and separable filters, and
+  normalized box/Gaussian blur, median and bilateral filters, signed
+  Sobel/Scharr/Laplacian derivatives, and Gaussian pyramids. The feature
+  includes strided-view property coverage, Python bindings/stubs, OpenCV
+  comparison, and 640p/1080p/4K benchmarks.
+
+- **CPU morphology (Epic 84C)**: validated rectangular, cross, elliptical,
+  diamond, and custom structuring elements; explicit-anchor erode/dilate;
+  open/close/gradient/top-hat/black-hat operations; additive feature and meta
+  feature; u8/u16/f32 and strided-view tests; Python bindings; exact OpenCV
+  comparisons; and 640p/1080p/4K benchmarks.
+
+- **CPU image analysis (Epic 84D)**: fixed and adaptive thresholds, u8/u16
+  Otsu selection, masked configurable histograms, exact u8 equalization,
+  contrast-limited adaptive equalization, and checked summed-area tables;
+  additive Rust/meta features, Python bindings/stubs, strided properties,
+  OpenCV comparisons, and representative-resolution benchmarks.
+
+- **Canny edge detection (Epic 84E)**: configurable 3/5/7 Sobel apertures,
+  L1/L2 gradient magnitude, directional non-maximum suppression, 8-neighbor
+  hysteresis, and inspectable intermediate stages; additive Rust/meta features,
+  strided and property tests, Python binding/stub, 640p/1080p/4K benchmark, and
+  exact OpenCV comparison across all six aperture/magnitude combinations.
+
+- **Tensor foundation (Epic 85A)**: new dependency-light `spatialrust-tensor`
+  crate with byte-addressable dtype, arbitrary-rank shape, signed element
+  strides, checked byte offsets/spans, explicit device identity, safe borrowed
+  CPU views, and named owned copies. Non-host device memory cannot be exposed as
+  a Rust byte slice, and the meta-crate integration is opt-in through `tensor`.
+
+- **Image/spatial tensor bridges (Epic 85B)**: packed interleaved images expose
+  zero-copy HWC views, packed planar images expose zero-copy CHW views, and
+  Schema-SoA `f32` point fields expose zero-copy one-dimensional views. Explicit
+  `pack_*` operations handle padded/ROI images, with feature-alone tests and
+  640p/1080p/4K packing benchmarks.
+
+- **DLPack and Python tensor interoperability (Epic 85C–85D)**: audited
+  `DLManagedTensorVersioned` major-version 1 CPU import/export, explicit deleter
+  transfer, read-only/copy flags, signed strides and byte offsets, malformed ABI
+  rejection, and zero-copy Python `__dlpack__`/`__dlpack_device__`. NumPy and
+  PyTorch round trips preserve allocations and producer lifetimes; device or
+  host copy requests remain explicit.
+
+- **Inference contracts and ONNX Runtime CPU (Epic 86)**: new optional
+  `spatialrust-ai` crate with named dynamic model metadata, stable backend and
+  session traits, explicit input/output copy permissions, CPU ONNX Runtime,
+  separately gated CUDA/TensorRT/DirectML providers, typed zero-copy I/O
+  Binding, caller-preallocated u8/u16/f32 outputs, runtime-allocation retention,
+  output-to-input chaining, Python bindings/stubs, reference-runtime comparison,
+  and 640p/1080p/4K Criterion coverage. Multi-byte raw storage is rejected at
+  zero-copy boundaries instead of being cast from an under-aligned byte buffer.
+
+- **Feature2D and ORB matching (Epic 87)**: checked keypoint, binary/float
+  descriptor, feature-set, and match contracts; Harris and Shi–Tomasi corners;
+  OpenCV-exact FAST-9/16 detection and scores; deterministic multi-scale ORB
+  with 256-bit rotated BRIEF; Hamming/L2 brute-force matching with ratio,
+  cross-check, and distance filters; Python/NumPy bindings and stubs; property
+  tests, OpenCV comparison, and 640p/1080p/4K Criterion baselines.
+
+- **Camera geometry, motion, and stereo (Epic 88)**: checked correspondence and
+  projective contracts; normalized DLT and deterministic RANSAC for homography,
+  fundamental, and essential matrices; triangulation and essential pose
+  disambiguation; EPnP-class PnP with iterative refine and RANSAC; sparse
+  pyramidal Lucas–Kanade tracking; stereo rig, rectify remap grids, SAD block
+  matching, and disparity-to-depth/XYZ reproject; Python bindings; OpenCV
+  comparison with documented tolerances; property tests; and Criterion coverage.
+
 - **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
   planar/interleaved layouts and color metadata in `spatialrust-image`; new
   feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,

@@ -9,6 +9,10 @@ authors = ["SpatialRust Contributors"]
 repository = "https://github.com/rsasaki0109/SpatialRust"
 description = "Python bindings for SpatialRust point cloud processing"
 
+[features]
+default = []
+onnxruntime = ["spatialrust/ai-onnxruntime"]
+
 [lib]
 # Importable module name: `import spatialrust`
 name = "spatialrust"
@@ -42,6 +46,8 @@ spatialrust = { path = "../spatialrust", features = [
     "register-fpfh",
     "camera-rgbd",
     "vision-full",
+    "image-io-standard",
+    "tensor-dlpack",
 ] }
 
 # Keep this crate out of the main Rust workspace so `cargo test --workspace`

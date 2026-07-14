@@ -5,8 +5,14 @@
 use proptest::prelude::*;
 use spatialrust_image::Image;
 use spatialrust_vision::{
-    decode_rle, encode_rle, resize, BinaryMask, BoundingBox2, Interpolation, RleOrder,
+    canny, decode_rle, encode_rle, erode, estimate_homography, filter2d, integral_image,
+    match_descriptors, project_object_point, resize, solve_pnp, AbsolutePose, BinaryMask,
+    BorderMode, BoundingBox2, CameraMatrix3, CannyOptions, DescriptorBuffer, Interpolation,
+    Kernel2D, MatchOptions, MorphologyShape, ObjectImageCorrespondence, PointCorrespondence2,
+    RleOrder, StructuringElement,
 };
+use spatialrust_camera::CameraIntrinsics;
+use spatialrust_math::{Mat3, Vec2, Vec3};
 
 proptest! {
     #[test]
@@ -29,6 +35,86 @@ proptest! {
             let output = resize(image.view(), width, height, interpolation).unwrap();
             prop_assert_eq!(output.as_slice(), data.as_slice());
         }
+    }
+
+    #[test]
+    fn identity_filter_preserves_arbitrary_u16_roi_storage(
+        width in 1usize..24,
+        height in 1usize..24,
+        padding in 0usize..8,
+        seed in any::<u16>(),
+    ) {
+        let stride = width + padding;
+        let data = (0..stride * height)
+            .map(|index| seed.wrapping_add((index as u16).wrapping_mul(251)))
+            .collect::<Vec<_>>();
+        let view = spatialrust_image::ImageView::<u16, 1>::new(width, height, stride, &data).unwrap();
+        let kernel = Kernel2D::try_new(1, 1, vec![1.0]).unwrap();
+        let output = filter2d(view, &kernel, 0.0, BorderMode::Reflect101).unwrap();
+        for y in 0..height {
+            for x in 0..width {
+                prop_assert_eq!(output[(x, y)][0], data[y * stride + x]);
+            }
+        }
+    }
+
+    #[test]
+    fn morphology_preserves_constant_strided_u16_images(
+        width in 1usize..20,
+        height in 1usize..20,
+        padding in 0usize..6,
+        value in any::<u16>(),
+        iterations in 0usize..4,
+    ) {
+        let stride = width + padding;
+        let storage = vec![value; stride * height];
+        let view = spatialrust_image::ImageView::<u16, 1>::new(width, height, stride, &storage).unwrap();
+        let element = StructuringElement::try_new(MorphologyShape::Ellipse, 5, 3).unwrap();
+        let output = erode(view, &element, iterations, BorderMode::Replicate).unwrap();
+        prop_assert!(output.as_slice().iter().all(|&actual| actual == value));
+    }
+
+    #[test]
+    fn integral_total_matches_strided_u16_sum(
+        width in 0usize..20,
+        height in 0usize..20,
+        padding in 0usize..6,
+        seed in any::<u16>(),
+    ) {
+        let stride = width + padding;
+        let storage = (0..stride * height)
+            .map(|index| seed.wrapping_add(index as u16))
+            .collect::<Vec<_>>();
+        let view = spatialrust_image::ImageView::<u16, 1>::new(width, height, stride, &storage).unwrap();
+        let expected = (0..height)
+            .map(|y| (0..width).map(|x| storage[y * stride + x] as f64).sum::<f64>())
+            .sum::<f64>();
+        let integral = integral_image(view, 0).unwrap();
+        prop_assert_eq!(integral.sum_region(0, 0, width, height).unwrap(), expected);
+    }
+
+    #[test]
+    fn canny_constant_strided_images_are_empty(
+        width in 0usize..24,
+        height in 0usize..24,
+        padding in 0usize..8,
+        value in any::<u8>(),
+        aperture_size in prop_oneof![Just(3usize), Just(5usize), Just(7usize)],
+        l2_gradient in any::<bool>(),
+    ) {
+        let stride = width + padding;
+        let storage = vec![value; stride * height];
+        let view = spatialrust_image::ImageView::<u8, 1>::new(width, height, stride, &storage).unwrap();
+        let edges = canny(
+            view,
+            CannyOptions {
+                low_threshold: 25.0,
+                high_threshold: 50.0,
+                aperture_size,
+                l2_gradient,
+            },
+        ).unwrap();
+        prop_assert!(edges.as_slice().iter().all(|&pixel| pixel == 0));
     }
 
     #[test]
@@ -70,5 +156,98 @@ proptest! {
         let ba = b.iou(a);
         prop_assert!((ab - ba).abs() <= f32::EPSILON);
         prop_assert!((0.0..=1.0).contains(&ab));
+    }
+
+    #[test]
+    fn hamming_distance_is_symmetric_and_bounded(
+        left in prop::collection::vec(any::<u8>(), 1..65),
+        seed in any::<u8>(),
+    ) {
+        let right = left
+            .iter()
+            .enumerate()
+            .map(|(index, value)| value ^ seed.wrapping_add(index as u8))
+            .collect::<Vec<_>>();
+        let left_descriptors = DescriptorBuffer::try_binary(1, left.len(), left).unwrap();
+        let right_descriptors = DescriptorBuffer::try_binary(1, right.len(), right).unwrap();
+        let forward = match_descriptors(
+            &left_descriptors,
+            &right_descriptors,
+            MatchOptions::default(),
+        ).unwrap()[0].distance();
+        let reverse = match_descriptors(
+            &right_descriptors,
+            &left_descriptors,
+            MatchOptions::default(),
+        ).unwrap()[0].distance();
+        prop_assert_eq!(forward, reverse);
+        prop_assert!(forward <= (left_descriptors.width() * 8) as f32);
+    }
+
+    #[test]
+    fn homography_recovers_noisy_planar_map(
+        seed in any::<u64>(),
+        noise in 0.0f64..0.4,
+    ) {
+        let transform = Mat3::<f64>::from_rows(
+            [1.05, 0.02, 3.0],
+            [-0.01, 0.97, -2.0],
+            [0.0001, -0.0002, 1.0],
+        );
+        let pairs = (0..24usize)
+            .map(|index| {
+                let source = Vec2 {
+                    x: ((index % 6) as f64 + (seed % 5) as f64 * 0.1) * 20.0,
+                    y: ((index / 6) as f64 + ((seed / 7) % 5) as f64 * 0.1) * 15.0,
+                };
+                let projected = transform.mul_vec3(Vec3::new(source.x, source.y, 1.0));
+                let target = Vec2 {
+                    x: projected.x / projected.z + ((seed + index as u64) % 3) as f64 * noise * 0.1,
+                    y: projected.y / projected.z
+                        + ((seed / 3 + index as u64) % 3) as f64 * noise * 0.1,
+                };
+                PointCorrespondence2::try_new(source, target).unwrap()
+            })
+            .collect::<Vec<_>>();
+        let model = estimate_homography(&pairs).unwrap();
+        for pair in &pairs {
+            let projected = model.matrix().mul_vec3(Vec3::new(pair.source().x, pair.source().y, 1.0));
+            let error = (projected.x / projected.z - pair.target().x)
+                .hypot(projected.y / projected.z - pair.target().y);
+            prop_assert!(error < 2.0 + noise);
+        }
+    }
+
+    #[test]
+    fn pnp_recovers_pose_under_small_noise(
+        seed in 1u64..10_000,
+        depth in 1.5f64..4.0,
+    ) {
+        let camera = CameraMatrix3::from_intrinsics(
+            CameraIntrinsics::try_new(480.0, 480.0, 320.0, 240.0, 640, 480).unwrap(),
+        );
+        let pose = AbsolutePose::try_new(
+            Mat3::<f64>::identity(),
+            Vec3::new(((seed % 7) as f64 - 3.0) * 0.02, 0.0, depth),
+        )
+        .unwrap();
+        let pairs = (0..12usize)
+            .map(|index| {
+                let object = Vec3::new(
+                    (index % 4) as f64 * 0.1 - 0.15,
+                    (index / 4) as f64 * 0.1 - 0.1,
+                    0.0,
+                );
+                let mut image = project_object_point(pose, camera, object).unwrap();
+                image.x += ((seed + index as u64) % 3) as f64 * 0.05;
+                image.y += ((seed / 5 + index as u64) % 3) as f64 * 0.05;
+                ObjectImageCorrespondence::try_new(object, image).unwrap()
+            })
+            .collect::<Vec<_>>();
+        let estimated = match solve_pnp(&pairs, camera) {
+            Ok(pose) => pose,
+            Err(_) => return Ok(()),
+        };
+        prop_assert!((estimated.translation().z - pose.translation().z).abs() < 0.25);
     }
 }

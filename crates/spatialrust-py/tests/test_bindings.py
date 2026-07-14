@@ -469,3 +469,246 @@ def test_fpfh_ransac_returns_transform():
     res = sr.register_fpfh_ransac(src, tgt, feature_radius=0.5,
                                   max_correspondence_distance=0.2, ransac_iterations=500)
     assert res.transform().shape == (4, 4)
+def test_png_image_io_roundtrip(tmp_path):
+    image = np.arange(5 * 7 * 3, dtype=np.uint8).reshape(5, 7, 3)
+    path = tmp_path / "roundtrip.png"
+    sr.write_image(str(path), image[:, ::-1], "png")
+    decoded, metadata = sr.read_image(str(path))
+    np.testing.assert_array_equal(decoded, image[:, ::-1])
+    assert metadata.format == "png"
+    assert metadata.color_type == "Rgb8"
+    assert metadata.orientation in (0, 1)
+    assert "ImageMetadata(" in repr(metadata)
+
+
+def test_filter2d_and_gaussian_preserve_rgb_shape():
+    image = np.arange(7 * 9 * 3, dtype=np.uint8).reshape(7, 9, 3)
+    identity = sr.filter2d_image(image[:, ::-1], np.array([[1.0]], dtype=np.float64))
+    np.testing.assert_array_equal(identity, image[:, ::-1])
+    blurred = sr.gaussian_blur_image(image, 5, 3, 1.2, 0.8)
+    assert blurred.shape == image.shape
+    assert blurred.dtype == np.uint8
+
+
+def test_advanced_filters_and_pyramid_shapes():
+    image = np.arange(9 * 11 * 3, dtype=np.uint8).reshape(9, 11, 3)
+    assert sr.median_blur_image(image[:, ::-1], 3).shape == image.shape
+    assert sr.bilateral_filter_image(image, 3, 20.0, 2.0).shape == image.shape
+    gray = image[..., 0]
+    for derivative in (
+        sr.sobel_image(gray, 1, 0),
+        sr.scharr_image(gray, 0, 1),
+        sr.laplacian_image(gray),
+    ):
+        assert derivative.shape == gray.shape
+        assert derivative.dtype == np.float32
+    down = sr.pyr_down_image(image)
+    assert down.shape == (5, 6, 3)
+    assert sr.pyr_up_image(down).shape == (10, 12, 3)
+
+
+def test_morphology_operations_and_noncontiguous_input():
+    mask = np.zeros((9, 11), dtype=np.uint8)
+    mask[2:7, 3:8] = 255
+    for operation in ("erode", "dilate", "open", "close", "gradient", "tophat", "blackhat"):
+        output = sr.morphology_image(mask[:, ::-1], operation, 3, 3, "ellipse", 2)
+        assert output.shape == mask.shape
+        assert output.dtype == np.uint8
+
+
+def test_threshold_histogram_clahe_and_integral_contracts():
+    image = np.arange(9 * 11, dtype=np.uint8).reshape(9, 11)[:, ::-1]
+    assert sr.threshold_image(image, 40).shape == image.shape
+    selected, otsu = sr.otsu_threshold_image(image)
+    assert 0 <= selected <= 255 and otsu.shape == image.shape
+    for method in ("mean", "gaussian"):
+        assert sr.adaptive_threshold_image(image, 5, 2.0, method).shape == image.shape
+    histogram = sr.histogram_image(image)
+    assert histogram.shape == (256,) and int(histogram.sum()) == image.size
+    assert sr.equalize_histogram_image(image).shape == image.shape
+    assert sr.clahe_image(image, 2.0, 3, 2).shape == image.shape
+    integral = sr.integral_image_u8(image)
+    assert integral.shape == (image.shape[0] + 1, image.shape[1] + 1)
+    assert integral[-1, -1] == pytest.approx(float(image.sum()))
+
+
+def test_canny_image_binary_output_and_noncontiguous_input():
+    image = np.zeros((17, 19), dtype=np.uint8)
+    image[4:13, 6:14] = 255
+    edges = sr.canny_image(image[:, ::-1], 50.0, 100.0, 3, True)
+    assert edges.shape == image.shape
+    assert edges.dtype == np.uint8
+    assert set(np.unique(edges)).issubset({0, 255})
+    assert np.count_nonzero(edges) > 0
+
+
+def test_feature2d_corner_detectors_and_keypoint_metadata():
+    image = np.zeros((25, 29), dtype=np.uint8)
+    image[5:19, 7:22] = 255
+    harris = sr.harris_keypoints(image[:, ::-1], 20, 0.01, 1.0, 3, 3, 0.04)
+    shi = sr.shi_tomasi_keypoints(image, 20, 0.01, 1.0, 3, 3)
+    assert len(harris) >= 4 and len(shi) >= 4
+    assert all(point.size == 3.0 and point.angle_degrees is None for point in harris)
+    impulse = np.zeros((9, 9), dtype=np.uint8)
+    impulse[4, 4] = 255
+    fast = sr.fast_keypoints(impulse, 20, True)
+    assert len(fast) == 1
+    assert (fast[0].x, fast[0].y, fast[0].size) == (4.0, 4.0, 7.0)
+    assert "Keypoint2(" in repr(fast[0])
+
+
+def test_orb_features_and_descriptor_matchers():
+    yy, xx = np.indices((96, 112), dtype=np.int32)
+    image = ((xx * 37 + yy * 19) ^ (xx * yy * 3) ^ ((xx // 8 + yy // 8) * 127)).astype(np.uint8)
+    keypoints, descriptors = sr.orb_features(image[:, ::-1], max_features=60, edge_threshold=16)
+    assert 0 < len(keypoints) <= 60
+    assert descriptors.shape == (len(keypoints), 32)
+    assert descriptors.dtype == np.uint8
+    assert all(point.angle_degrees is not None for point in keypoints)
+
+    matches = sr.match_binary_descriptors(descriptors, descriptors, cross_check=True)
+    assert len(matches) == len(keypoints)
+    assert all(query == train and distance == 0.0 for query, train, distance in matches)
+
+    query = np.array([[0.0, 0.0], [10.0, 10.0]], dtype=np.float32)
+    train = np.array([[1.0, 0.0], [3.0, 0.0], [10.0, 9.0]], dtype=np.float32)
+    assert sr.match_float_descriptors(query, train, cross_check=True, ratio=0.8) == [
+        (0, 0, 1.0),
+        (1, 2, 1.0),
+    ]
+
+
+def test_geometry_homography_pnp_and_stereo():
+    source = np.array(
+        [[0.0, 0.0], [40.0, 0.0], [0.0, 30.0], [40.0, 30.0], [20.0, 15.0], [10.0, 5.0]],
+        dtype=np.float64,
+    )
+    h = np.array([[1.05, 0.01, 2.0], [-0.02, 0.98, -1.5], [0.0001, 0.0, 1.0]], dtype=np.float64)
+    target = []
+    for point in source:
+        projected = h @ np.array([point[0], point[1], 1.0])
+        target.append([projected[0] / projected[2], projected[1] / projected[2]])
+    target = np.asarray(target, dtype=np.float64)
+    matrix, inliers, residuals = sr.estimate_homography_ransac(source, target, threshold=1.0)
+    assert matrix.shape == (3, 3)
+    assert inliers.dtype == np.bool_
+    assert residuals.shape == (source.shape[0],)
+    assert int(inliers.sum()) >= 4
+
+    objects = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.2, 0.0, 0.0],
+            [0.0, 0.15, 0.0],
+            [0.0, 0.0, 0.1],
+            [0.1, 0.05, 0.05],
+            [0.05, -0.05, 0.02],
+        ],
+        dtype=np.float64,
+    )
+    fx = fy = 500.0
+    cx, cy = 320.0, 240.0
+    rotation = np.eye(3, dtype=np.float64)
+    translation = np.array([0.1, -0.05, 2.5], dtype=np.float64)
+    images = []
+    for point in objects:
+        camera = rotation @ point + translation
+        images.append([fx * camera[0] / camera[2] + cx, fy * camera[1] / camera[2] + cy])
+    images = np.asarray(images, dtype=np.float64)
+    recovered_r, recovered_t = sr.solve_pnp(objects, images, fx, fy, cx, cy)
+    assert recovered_r.shape == (3, 3)
+    assert recovered_t.shape == (3,)
+    assert abs(recovered_t[2] - translation[2]) < 0.05
+
+    width, height = 96, 64
+    disparity = 12
+    yy, xx = np.indices((height, width), dtype=np.int32)
+    left = ((xx * 17 + yy * 29) % 200 + 20).astype(np.uint8)
+    right = np.zeros_like(left)
+    right[:, : width - disparity] = left[:, disparity:]
+    disparity_map = sr.stereo_block_match(
+        left, right, window_size=11, min_disparity=1, num_disparities=32, uniqueness_ratio=5.0
+    )
+    assert disparity_map.shape == (height, width)
+    assert abs(float(disparity_map[height // 2, width // 2]) - float(disparity)) <= 1.0
+
+
+@pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.float32])
+def test_tensor_dlpack_zero_copy_export(dtype):
+    source = np.arange(3 * 5, dtype=dtype).reshape(3, 5)[:, ::-1]
+    tensor = sr.tensor_copy_from_numpy(source)
+    first = np.from_dlpack(tensor)
+    second = np.from_dlpack(tensor)
+    np.testing.assert_array_equal(first, source)
+    assert first.dtype == source.dtype
+    assert first.shape == source.shape
+    assert first.__array_interface__["data"][0] == second.__array_interface__["data"][0]
+    assert not first.flags.writeable
+    assert tensor.__dlpack_device__() == (1, 0)
+    assert "Tensor(shape=" in repr(tensor)
+
+
+def test_tensor_dlpack_copy_and_device_requests_are_explicit():
+    tensor = sr.tensor_copy_from_numpy(np.arange(8, dtype=np.uint8))
+    copied = tensor.copy()
+    assert np.from_dlpack(copied).__array_interface__["data"][0] != np.from_dlpack(
+        tensor
+    ).__array_interface__["data"][0]
+    with pytest.raises(BufferError):
+        tensor.__dlpack__(copy=True)
+    with pytest.raises(BufferError):
+        tensor.__dlpack__(dl_device=(2, 0))
+
+
+def test_onnxruntime_dynamic_named_binding_matches_reference(tmp_path):
+    model = bytes(
+        [
+            8, 8, 18, 16, 115, 112, 97, 116, 105, 97, 108, 114, 117, 115, 116, 45, 116,
+            101, 115, 116, 58, 106, 10, 27, 10, 5, 105, 110, 112, 117, 116, 10, 5, 105,
+            110, 112, 117, 116, 18, 6, 111, 117, 116, 112, 117, 116, 34, 3, 65, 100, 100,
+            18, 14, 100, 111, 117, 98, 108, 101, 95, 100, 121, 110, 97, 109, 105, 99, 90,
+            28, 10, 5, 105, 110, 112, 117, 116, 18, 19, 10, 17, 8, 1, 18, 13, 10, 7,
+            18, 5, 98, 97, 116, 99, 104, 10, 2, 8, 3, 98, 29, 10, 6, 111, 117, 116,
+            112, 117, 116, 18, 19, 10, 17, 8, 1, 18, 13, 10, 7, 18, 5, 98, 97, 116,
+            99, 104, 10, 2, 8, 3, 66, 4, 10, 0, 16, 13,
+        ]
+    )
+    path = tmp_path / "double_dynamic.onnx"
+    path.write_bytes(model)
+    try:
+        session = sr.OnnxRuntimeSession(str(path), deterministic=True)
+    except RuntimeError as error:
+        if "without the `onnxruntime` feature" in str(error):
+            pytest.skip("extension was intentionally built without ONNX Runtime")
+        raise
+
+    source = np.arange(12, dtype=np.float32).reshape(4, 3)
+    inputs = {"input": sr.tensor_copy_from_numpy(source)}
+    assert session.inputs == [("input", "float32", ["batch", "3"])]
+    bound = np.from_dlpack(session.run(inputs)["output"])
+    copied = np.from_dlpack(session.run(inputs, copy=True)["output"])
+    expected = source * 2.0
+    np.testing.assert_array_equal(bound, expected)
+    np.testing.assert_array_equal(copied, expected)
+
+    try:
+        import onnxruntime as reference_runtime
+    except ImportError:
+        return
+    reference = reference_runtime.InferenceSession(
+        str(path), providers=["CPUExecutionProvider"]
+    ).run(None, {"input": source})[0]
+    np.testing.assert_array_equal(bound, reference)
+
+
+@pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.float32])
+def test_tensor_zero_copy_dlpack_import_retains_producer(dtype):
+    source = np.arange(12, dtype=dtype).reshape(3, 4)
+    imported = sr.tensor_view_from_dlpack(source)
+    assert imported.shape == [3, 4]
+    assert imported.dtype == np.dtype(dtype).name
+    assert imported.version[0] == 1
+    del source
+    copied = np.from_dlpack(imported.copy())
+    np.testing.assert_array_equal(copied, np.arange(12, dtype=dtype).reshape(3, 4))
+    assert "DLPackTensorView(" in repr(imported)

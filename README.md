@@ -157,8 +157,11 @@ One dataflow, focused crates — each pipeline stage maps to the crate that impl
 | `spatialrust-core` | Point schema, metadata, execution traits |
 | `spatialrust-math` | Vec/Mat/Pose math primitives |
 | `spatialrust-image` | Typed image buffers and zero-copy strided views |
+| `spatialrust-image-io` | Bounded PNG/JPEG/PNM codecs; opt-in TIFF/OpenEXR |
+| `spatialrust-tensor` | Runtime-independent dtype/shape/stride/device ownership and DLPack |
+| `spatialrust-ai` | Explicit-copy inference contracts and opt-in ONNX Runtime providers |
 | `spatialrust-camera` | Pinhole/Brown–Conrady camera models and RGB-D conversion |
-| `spatialrust-vision` | Resize/preprocess, warps, detection postprocess, masks, and dense spatial maps |
+| `spatialrust-vision` | CPU filters, Feature2D/ORB matching, resize/preprocess, warps, detection postprocess, masks, and dense spatial maps |
 | `spatialrust-io` | Point cloud readers/writers (PCD, PLY, LAS, COPC) |
 | `spatialrust-search` | KD-tree search, k-NN / radius graphs |
 | `spatialrust-filtering` | Voxel / FPS downsample, outlier removal, crop, MLS |
@@ -219,6 +222,26 @@ cloud = sr.point_map_to_point_cloud(points, confidence, 0.5)
 The reproducible algorithm comparison is in
 `bench/opencv_vision_comparison/`; the complete synthetic demo is
 `crates/spatialrust-py/examples/vision_ai_pipeline.py`.
+
+The same feature includes Harris, Shi–Tomasi, exact FAST-9/16, multi-scale ORB,
+and checked Hamming/L2 descriptor matching. Python exposes `orb_features` and
+NumPy matcher functions; OpenCV is used only by the numerical comparison suite.
+
+An ONNX Runtime wheel is opt-in (`maturin develop --features onnxruntime`). Its
+Python API uses named CPU I/O Binding by default; `copy=True` is the explicit
+fallback for inputs that must be repacked:
+
+```python
+session = sr.OnnxRuntimeSession("model.onnx", deterministic=True)
+input_tensor = sr.tensor_copy_from_numpy(chw)
+outputs = session.run({"images": input_tensor})
+scores = np.from_dlpack(outputs["scores"])
+```
+
+The Rust features are `ai`, `ai-onnxruntime`, and separate
+`ai-onnxruntime-{cuda,tensorrt,directml}` provider gates. The optional ONNX
+Runtime adapter currently has a feature-specific Rust 1.88 MSRV; it does not
+raise the default workspace MSRV.
 
 <p align="center">
   <img src="docs/assets/python_segmentation.png" alt="Top-down view of clusters segmented from the public PCL table_scene_lms400 point cloud via a single Python run_pipeline() call" width="540">

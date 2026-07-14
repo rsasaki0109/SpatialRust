@@ -13,10 +13,16 @@ default = []
 resize = []
 preprocess = ["resize"]
 warp = ["resize"]
+imgproc-filter = []
+imgproc-morphology = []
+imgproc-analysis = []
+imgproc-canny = ["imgproc-filter"]
+feature2d = ["imgproc-filter", "resize"]
+geometry = ["dep:spatialrust-camera"]
 detection = []
 dense = ["detection"]
 spatial = ["dense", "dep:spatialrust-core", "dep:spatialrust-camera"]
-full = ["preprocess", "warp", "detection", "dense", "spatial"]
+full = ["preprocess", "warp", "imgproc-filter", "imgproc-morphology", "imgproc-analysis", "imgproc-canny", "feature2d", "geometry", "detection", "dense", "spatial"]
 
 [dependencies]
 spatialrust-image.workspace = true
@@ -33,3 +39,33 @@ proptest.workspace = true
 name = "preprocess"
 harness = false
 required-features = ["preprocess"]
+
+[[bench]]
+name = "filter"
+harness = false
+required-features = ["imgproc-filter"]
+
+[[bench]]
+name = "morphology"
+harness = false
+required-features = ["imgproc-morphology"]
+
+[[bench]]
+name = "analysis"
+harness = false
+required-features = ["imgproc-analysis"]
+
+[[bench]]
+name = "canny"
+harness = false
+required-features = ["imgproc-canny"]
+
+[[bench]]
+name = "feature2d"
+harness = false
+required-features = ["feature2d"]
+
+[[bench]]
+name = "geometry"
+harness = false
+required-features = ["geometry"]

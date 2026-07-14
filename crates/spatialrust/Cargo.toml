@@ -127,17 +127,44 @@ transform-ops = ["spatialrust-transform/transform-ops"]
 voxelize-occupancy = ["spatialrust-voxelize/voxelize-occupancy"]
 voxelize-range-image = ["spatialrust-voxelize/voxelize-range-image"]
 image = ["dep:spatialrust-image"]
-camera-rgbd = ["image", "dep:spatialrust-camera"]
+tensor = ["dep:spatialrust-tensor"]
+tensor-image = ["tensor", "image", "spatialrust-tensor/image"]
+tensor-spatial = ["tensor", "spatialrust-tensor/spatial"]
+tensor-dlpack = ["tensor", "spatialrust-tensor/dlpack"]
+ai = ["tensor", "dep:spatialrust-ai"]
+ai-onnxruntime = ["ai", "spatialrust-ai/onnxruntime"]
+ai-onnxruntime-cuda = ["ai-onnxruntime", "spatialrust-ai/onnxruntime-cuda"]
+ai-onnxruntime-tensorrt = ["ai-onnxruntime-cuda", "spatialrust-ai/onnxruntime-tensorrt"]
+ai-onnxruntime-directml = ["ai-onnxruntime", "spatialrust-ai/onnxruntime-directml"]
+image-io = ["image", "dep:spatialrust-image-io"]
+image-io-standard = ["image-io", "spatialrust-image-io/standard"]
+image-io-tiff = ["image-io", "spatialrust-image-io/tiff"]
+image-io-openexr = ["image-io", "spatialrust-image-io/openexr"]
+image-io-full = ["image-io-standard", "image-io-tiff", "image-io-openexr"]
+camera = ["dep:spatialrust-camera"]
+camera-rgbd = ["image", "camera"]
 vision = ["image", "dep:spatialrust-vision"]
 vision-resize = ["vision", "spatialrust-vision/resize"]
 vision-preprocess = ["vision-resize", "spatialrust-vision/preprocess"]
 vision-warp = ["vision-resize", "spatialrust-vision/warp"]
+vision-imgproc-filter = ["vision", "spatialrust-vision/imgproc-filter"]
+vision-imgproc-morphology = ["vision", "spatialrust-vision/imgproc-morphology"]
+vision-imgproc-analysis = ["vision", "spatialrust-vision/imgproc-analysis"]
+vision-imgproc-canny = ["vision-imgproc-filter", "spatialrust-vision/imgproc-canny"]
+vision-feature2d = ["vision", "spatialrust-vision/feature2d"]
+vision-geometry = ["vision", "camera", "spatialrust-vision/geometry"]
 vision-detection = ["vision", "spatialrust-vision/detection"]
 vision-dense = ["vision-detection", "spatialrust-vision/dense"]
 vision-spatial = ["vision-dense", "camera-rgbd", "spatialrust-vision/spatial"]
 vision-full = [
     "vision-preprocess",
     "vision-warp",
+    "vision-imgproc-filter",
+    "vision-imgproc-morphology",
+    "vision-imgproc-analysis",
+    "vision-imgproc-canny",
+    "vision-feature2d",
+    "vision-geometry",
     "vision-detection",
     "vision-dense",
     "vision-spatial",
@@ -158,6 +185,9 @@ spatialrust-metrics = { workspace = true }
 spatialrust-transform = { workspace = true }
 spatialrust-voxelize = { workspace = true }
 spatialrust-image = { workspace = true, optional = true }
+spatialrust-tensor = { workspace = true, optional = true }
+spatialrust-ai = { workspace = true, optional = true }
+spatialrust-image-io = { workspace = true, optional = true }
 spatialrust-camera = { workspace = true, optional = true }
 spatialrust-vision = { workspace = true, optional = true }
 
