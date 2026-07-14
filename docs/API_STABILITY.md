@@ -60,7 +60,10 @@ until their individual 1.0 milestones.
 | MVP CLI flags | `--bounds`, `--resolution`, `--repeat` may gain aliases |
 | HTTP COPC (`mvp-http`) | URL IO is stable; timeout/retry policy may change |
 | Image/camera (`image`, `camera-rgbd`) | Typed image, calibration, distortion, and RGB-D APIs are provisional |
-| Vision (`vision-*`) | CPU preprocessing, warp, detection, masks, and dense spatial bridges are provisional |
+| Image IO (`image-io-*`) | Bounded codecs, typed decoded pixels, and source metadata are provisional |
+| Vision (`vision-*`) | CPU preprocessing, Feature2D contracts/detectors/matchers, warp, detection, masks, and dense spatial bridges are provisional |
+| Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
+| AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, and ONNX Runtime adapter APIs are provisional |
 
 ## Algorithm crates
 
@@ -74,8 +77,11 @@ spatialrust-<area> / feature-<name>
 | --- | --- | --- |
 | `spatialrust-math` | Stable primitives | `Vec3`, `Mat4`, `Isometry3` |
 | `spatialrust-image` | Provisional | Packed ownership and strided CPU views; no hidden device transfers |
+| `spatialrust-image-io` | Provisional | Standard codecs by default; TIFF/OpenEXR independently gated |
+| `spatialrust-tensor` | Provisional | Generic tensor descriptors, explicit CPU ownership, image/spatial bridges, and feature-gated DLPack major-version 1 ABI |
+| `spatialrust-ai` | Provisional | Runtime-independent session contract; ONNX Runtime CPU and hardware providers are independently gated |
 | `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |
-| `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms and explicit point-cloud bridges |
+| `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms, checked Feature2D descriptors/matches, shared border/kernel contracts, and explicit point-cloud bridges |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |
 | `spatialrust-filtering` | Provisional | GPU thresholds may move |
 | `spatialrust-features` | Provisional | Normal GPU path still tuning |
@@ -87,7 +93,6 @@ spatialrust-<area> / feature-<name>
 ## Explicitly out of 1.0 scope
 
 - `spatialrust-ros2` (not started)
-- `spatialrust-ai` / ONNX / DLPack export (not started)
 - `gpu-cuda` backend (feature placeholder only)
 - `SpatialTensor` chunked views (provisional API in `spatialrust-core`)
 

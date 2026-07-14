@@ -20,10 +20,16 @@ pub use spatialrust_segmentation as segmentation;
 pub use spatialrust_transform as transform;
 pub use spatialrust_voxelize as voxelize;
 
-#[cfg(feature = "camera-rgbd")]
+#[cfg(feature = "ai")]
+pub use spatialrust_ai as ai;
+#[cfg(feature = "camera")]
 pub use spatialrust_camera as camera;
 #[cfg(feature = "image")]
 pub use spatialrust_image as image;
+#[cfg(feature = "image-io")]
+pub use spatialrust_image_io as image_io;
+#[cfg(feature = "tensor")]
+pub use spatialrust_tensor as tensor;
 #[cfg(feature = "vision")]
 pub use spatialrust_vision as vision;
 
@@ -208,6 +214,13 @@ pub use spatialrust_voxelize::{range_image, RangeImage, RangeImageConfig};
 pub use spatialrust_image::{
     AlphaMode, ColorRange, ColorSpace, GrayImage, Image, ImageError, ImageLayout, ImageMetadata,
     ImageRegion, ImageView, ImageViewMut, PlanarImage, PlanarImageView, RgbImage,
+};
+
+#[cfg(feature = "image-io")]
+pub use spatialrust_image_io::{
+    decode_bytes, decode_path, decode_reader, encode_bytes, encode_path, encode_writer,
+    DecodeLimits, DecodeOptions, DecodedImage, DecodedMetadata, DecodedPixels, EncodeOptions,
+    ImageFileFormat, ImageIoError, Orientation, SourceColorType,
 };
 
 #[cfg(feature = "camera-rgbd")]

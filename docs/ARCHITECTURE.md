@@ -2,7 +2,7 @@
 
 Design version: **v0.1 Master Architecture Draft**
 
-North star: **Rust-native spatial computing**
+North star: **Rust-native spatial intelligence: capture, understand, reconstruct, and act**
 
 ## Core decisions
 
@@ -23,8 +23,10 @@ North star: **Rust-native spatial computing**
 - `spatialrust-io` — readers/writers (feature-gated formats)
 - `spatialrust-gpu` — device buffers and GPU runtime
 - `spatialrust-image` — typed CPU image buffers and strided zero-copy views
+- `spatialrust-image-io` — bounded, feature-gated image codecs and source metadata
+- `spatialrust-tensor` — runtime-independent tensor metadata, CPU ownership, and DLPack boundary
 - `spatialrust-camera` — camera models, distortion, and RGB-D/point-cloud bridge
-- `spatialrust-vision` — feature-gated CPU preprocessing, warps, detection, masks, and dense maps
+- `spatialrust-vision` — feature-gated CPU preprocessing, Feature2D, warps, detection, masks, and dense maps
 
 ## MVP scope
 
@@ -54,15 +56,30 @@ Image and camera dependency direction:
 
 ```
 math -> image
+math -> image -> image-io
 math -> image -> vision
+math -> image -> tensor -> ai
 math + image + core -> camera -> vision::spatial/rgbd/odometry
 ```
 
 `spatialrust-image` remains independent of `spatialrust-core`. GPU image storage
 must use a dedicated backend and explicit upload/readback APIs.
-`spatialrust-vision` keeps preprocessing, warp, detection, dense-map, and spatial
+`spatialrust-image-io` depends on storage, never the reverse; standard codecs
+are additive, while TIFF and OpenEXR remain independently gated.
+`spatialrust-vision` keeps preprocessing, Feature2D, warp, detection, dense-map, and spatial
 bridges in separate additive features. CPU APIs never perform implicit device
 copies; future GPU/CUDA implementations belong behind explicit backend features.
+Its `imgproc-*` features share one border extrapolation contract; `filter2d`
+means correlation, while true convolution is an explicitly named operation.
+`spatialrust-tensor` is distinct from the point-cloud chunk iterator named
+`spatialrust-core::SpatialTensor`; it owns generic dtype/shape/stride/device
+contracts and never performs implicit host/device transfers.
+`spatialrust-ai` depends on `spatialrust-tensor`, never the reverse. Its default
+build defines only backend/session and explicit-copy contracts. ONNX Runtime and
+each hardware execution provider are additive features. Runtime-owned CPU
+outputs cross back through the runtime-independent `HostTensorStorage` trait,
+so their allocator lifetime can be retained without copying or adding an ONNX
+dependency to the tensor crate.
 
 ## Roadmap epics
 
@@ -73,5 +90,13 @@ copies; future GPU/CUDA implementations belong behind explicit backend features.
 | 3 | Robotics adoption (ROS2/Autoware/Nav2) |
 | 4 | AI integration |
 | 5 | Spatial computing platform |
+
+The canonical post-foundation horizon is reserved as Epic 91–100 in
+`docs/ROADMAP.md`. It extends the existing tensor, image, geometry, GPU, and AI
+contracts into synchronized sensor replay, mapping, semantic spatial data,
+embodied-AI evaluation, robotics execution, scene interchange, and explicit
+edge/distributed execution. These capabilities remain outside
+`spatialrust-core`; the core supplies stable schemas and capability traits while
+dedicated crates own Arrow, MCAP, ROS 2, OpenUSD, glTF, and runtime dependencies.
 
 See the full master architecture document in project planning materials for trait-level design, ADRs, and Codex execution tasks (Epics 0–13).

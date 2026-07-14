@@ -15,6 +15,9 @@ members = [
     "crates/spatialrust-transform",
     "crates/spatialrust-voxelize",
     "crates/spatialrust-image",
+    "crates/spatialrust-image-io",
+    "crates/spatialrust-tensor",
+    "crates/spatialrust-ai",
     "crates/spatialrust-camera",
     "crates/spatialrust-vision",
 ]
@@ -47,6 +50,9 @@ spatialrust-metrics = { path = "crates/spatialrust-metrics", version = "1.0.0", 
 spatialrust-transform = { path = "crates/spatialrust-transform", version = "1.0.0", default-features = false }
 spatialrust-voxelize = { path = "crates/spatialrust-voxelize", version = "1.0.0", default-features = false }
 spatialrust-image = { path = "crates/spatialrust-image", version = "1.0.0" }
+spatialrust-image-io = { path = "crates/spatialrust-image-io", version = "1.0.0", default-features = false }
+spatialrust-tensor = { path = "crates/spatialrust-tensor", version = "1.0.0", default-features = false }
+spatialrust-ai = { path = "crates/spatialrust-ai", version = "1.0.0", default-features = false }
 spatialrust-camera = { path = "crates/spatialrust-camera", version = "1.0.0" }
 spatialrust-vision = { path = "crates/spatialrust-vision", version = "1.0.0", default-features = false }
 
@@ -63,6 +69,10 @@ thiserror = "2"
 wgpu = "24"
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1"
+image = { version = "0.24.9", default-features = false }
+kamadak-exif = "0.6.1"
+exr = { version = "=1.72.0", default-features = false }
+tempfile = "3"
 
 [profile.release]
 lto = "thin"

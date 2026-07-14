@@ -6,13 +6,26 @@
 
 // PyO3's `#[pyfunction]` expansion emits `.into()` on already-`PyErr` results.
 #![allow(clippy::useless_conversion)]
+#![deny(unsafe_code)]
+
+#[allow(unsafe_code)]
+mod dlpack_capsule;
 
 use numpy::ndarray::{Array2, Array3};
 use numpy::{
-    IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray1, PyReadonlyArray2, PyReadonlyArray3,
+    IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray1, PyReadonlyArray2,
+    PyReadonlyArray3, PyReadonlyArrayDyn, PyUntypedArrayMethods,
 };
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyBufferError, PyRuntimeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
+
+#[cfg(feature = "onnxruntime")]
+use spatialrust::ai::{
+    CopyPolicy as AiCopyPolicy, InferenceBackend, IoBinding as AiIoBinding, ModelSession,
+    ModelSource, NamedTensors as AiNamedTensors, OnnxRuntimeBackend, OutputBinding,
+    RunOptions as AiRunOptions, SessionOptions as AiSessionOptions,
+};
 
 use spatialrust::core::{PointBuffer, PointBufferSet, SpatialMetadata};
 use spatialrust::features::{
@@ -25,6 +38,10 @@ use spatialrust::filtering::{
     PassThrough, PointCloudFilter, RadiusOutlierConfig, RadiusOutlierRemoval,
     StatisticalOutlierConfig, StatisticalOutlierRemoval, VoxelGridDownsample,
     VoxelGridDownsampleConfig,
+};
+use spatialrust::image_io::{
+    decode_path as decode_image_path, encode_path as encode_image_path, DecodeOptions,
+    DecodedMetadata, DecodedPixels, EncodeOptions, ImageFileFormat,
 };
 use spatialrust::math::Mat4;
 use spatialrust::metrics::{chamfer_distance as chamfer, hausdorff_distance as hausdorff};
@@ -39,19 +56,36 @@ use spatialrust::segmentation::{
     MultiPlaneSegmenter, RansacCylinderSegmenter, RansacPrimitiveConfig, RansacSphereSegmenter,
     RegionGrowingConfig, RegionGrowingSegmenter,
 };
+use spatialrust::tensor::{
+    DataType as TensorDataType, Device as TensorDevice, DlpackImport, TensorBuffer,
+    TensorDescriptor,
+};
 use spatialrust::transform::{
     apply_transform as apply_tf, bounding_box as bbox, centroid as cloud_centroid, merge_clouds,
     normalize_unit_sphere as normalize_unit, oriented_bounding_box as obb, recenter as recenter_op,
     scale_cloud,
 };
 use spatialrust::vision::{
-    approximate_polygon as approximate_contour, connected_components as label_components,
-    decode_rle as decode_mask_runs, encode_rle as encode_mask_runs,
-    find_contours as trace_contours, letterbox as letterbox_op, nms as nms_op,
-    pack_chw as pack_chw_op, point_map_to_point_cloud as point_map_to_cloud, remap as remap_op,
-    resize as resize_op, rgb_to_gray as rgb_to_gray_op, rgb_to_hsv as rgb_to_hsv_op,
-    soft_nms as soft_nms_op, BinaryMask, BorderMode, BoundingBox2, ConfidenceMap, Connectivity,
-    Interpolation, MaskRle, PointMap, RleOrder, SoftNmsMethod,
+    adaptive_threshold as adaptive_threshold_op, approximate_polygon as approximate_contour,
+    bilateral_filter as bilateral_filter_op, canny as canny_op, clahe as clahe_op,
+    connected_components as label_components, decode_rle as decode_mask_runs,
+    detect_and_describe_orb as detect_and_describe_orb_op,
+    detect_fast as detect_fast_op, detect_harris as detect_harris_op,
+    detect_shi_tomasi as detect_shi_tomasi_op, encode_rle as encode_mask_runs,
+    equalize_histogram as equalize_histogram_op, filter2d as filter2d_op,
+    find_contours as trace_contours, gaussian_blur as gaussian_blur_op,
+    histogram_u8 as histogram_u8_op, integral_image as integral_image_op,
+    laplacian as laplacian_op, letterbox as letterbox_op, median_blur as median_blur_op,
+    morphology_ex as morphology_ex_op, nms as nms_op, otsu_threshold_u8 as otsu_threshold_u8_op,
+    pack_chw as pack_chw_op, point_map_to_point_cloud as point_map_to_cloud,
+    pyr_down as pyr_down_op, pyr_up as pyr_up_op, remap as remap_op, resize as resize_op,
+    rgb_to_gray as rgb_to_gray_op, rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op,
+    sobel as sobel_op, soft_nms as soft_nms_op, threshold as threshold_op, AdaptiveThresholdMethod,
+    BinaryMask, BorderMode, BoundingBox2, CannyOptions, ConfidenceMap, Connectivity,
+    match_descriptors as match_descriptors_op, CornerSelectionOptions, DescriptorBuffer,
+    FastOptions, HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions,
+    MorphologyOperation, MorphologyShape, OrbOptions, OrbScoreType, PointMap, RleOrder,
+    ShiTomasiOptions, SoftNmsMethod, StructuringElement, ThresholdType,
 };
 use spatialrust::voxelize::{
     range_image as range_image_proj, voxelize as voxelize_grid, RangeImageConfig, VoxelFill,
@@ -77,6 +111,516 @@ fn to_py_err<E: std::fmt::Display>(err: E) -> PyErr {
     PyValueError::new_err(err.to_string())
 }
 
+#[pyclass(name = "Tensor")]
+#[derive(Clone)]
+struct PyTensor {
+    inner: TensorBuffer,
+}
+
+#[pyclass(name = "Keypoint2", frozen)]
+#[derive(Clone, Copy)]
+struct PyKeypoint2 {
+    inner: Keypoint2,
+}
+
+#[pymethods]
+impl PyKeypoint2 {
+    #[getter]
+    fn x(&self) -> f32 {
+        self.inner.x()
+    }
+
+    #[getter]
+    fn y(&self) -> f32 {
+        self.inner.y()
+    }
+
+    #[getter]
+    fn size(&self) -> f32 {
+        self.inner.size()
+    }
+
+    #[getter]
+    fn angle_degrees(&self) -> Option<f32> {
+        self.inner.angle_degrees()
+    }
+
+    #[getter]
+    fn response(&self) -> f32 {
+        self.inner.response()
+    }
+
+    #[getter]
+    fn octave(&self) -> i32 {
+        self.inner.octave()
+    }
+
+    #[getter]
+    fn class_id(&self) -> Option<i32> {
+        self.inner.class_id()
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Keypoint2(x={}, y={}, size={}, angle_degrees={:?}, response={})",
+            self.x(),
+            self.y(),
+            self.size(),
+            self.angle_degrees(),
+            self.response()
+        )
+    }
+}
+
+#[pyclass(name = "OnnxRuntimeSession", unsendable)]
+struct PyOnnxRuntimeSession {
+    #[cfg(feature = "onnxruntime")]
+    inner: Box<dyn ModelSession>,
+}
+
+#[pymethods]
+impl PyOnnxRuntimeSession {
+    #[new]
+    #[pyo3(signature = (path, *, intra_threads=None, inter_threads=None, deterministic=false))]
+    fn new(
+        path: String,
+        intra_threads: Option<usize>,
+        inter_threads: Option<usize>,
+        deterministic: bool,
+    ) -> PyResult<Self> {
+        #[cfg(feature = "onnxruntime")]
+        {
+            let options = AiSessionOptions {
+                intra_threads,
+                inter_threads,
+                deterministic,
+                ..AiSessionOptions::default()
+            };
+            let inner = OnnxRuntimeBackend
+                .create_session(&ModelSource::Path(path.into()), &options)
+                .map_err(to_py_err)?;
+            Ok(Self { inner })
+        }
+        #[cfg(not(feature = "onnxruntime"))]
+        {
+            let _ = (path, intra_threads, inter_threads, deterministic);
+            Err(PyRuntimeError::new_err(
+                "this SpatialRust Python module was built without the `onnxruntime` feature",
+            ))
+        }
+    }
+
+    /// Returns `(name, dtype, dimensions)` metadata for model inputs.
+    #[getter]
+    fn inputs(&self) -> Vec<(String, String, Vec<String>)> {
+        #[cfg(feature = "onnxruntime")]
+        {
+            self.inner.model_info().inputs.iter().map(python_tensor_spec).collect()
+        }
+        #[cfg(not(feature = "onnxruntime"))]
+        {
+            Vec::new()
+        }
+    }
+
+    /// Returns `(name, dtype, dimensions)` metadata for model outputs.
+    #[getter]
+    fn outputs(&self) -> Vec<(String, String, Vec<String>)> {
+        #[cfg(feature = "onnxruntime")]
+        {
+            self.inner.model_info().outputs.iter().map(python_tensor_spec).collect()
+        }
+        #[cfg(not(feature = "onnxruntime"))]
+        {
+            Vec::new()
+        }
+    }
+
+    /// Runs named tensors; zero-copy CPU I/O binding is the default.
+    #[pyo3(signature = (inputs, *, copy=false))]
+    fn run<'py>(
+        &mut self,
+        py: Python<'py>,
+        inputs: &Bound<'py, PyDict>,
+        copy: bool,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        #[cfg(feature = "onnxruntime")]
+        {
+            let mut named = AiNamedTensors::new();
+            for (name, value) in inputs.iter() {
+                let name = name.extract::<String>()?;
+                let tensor = value.extract::<PyRef<'_, PyTensor>>()?;
+                named.insert(name, tensor.inner.clone()).map_err(to_py_err)?;
+            }
+            let outputs = if copy {
+                self.inner
+                    .run_with_options(
+                        named,
+                        AiRunOptions {
+                            input_copy: AiCopyPolicy::Allow,
+                            output_copy: AiCopyPolicy::Allow,
+                        },
+                    )
+                    .map_err(to_py_err)?
+            } else {
+                let destinations = self
+                    .inner
+                    .model_info()
+                    .outputs
+                    .iter()
+                    .map(|spec| OutputBinding::Allocate {
+                        name: spec.name.clone(),
+                        device: TensorDevice::CPU,
+                    })
+                    .collect();
+                let mut binding = AiIoBinding::try_new(named, destinations).map_err(to_py_err)?;
+                self.inner.run_with_binding(&mut binding).map_err(to_py_err)?;
+                binding.into_results().ok_or_else(|| {
+                    PyRuntimeError::new_err("ONNX Runtime completed without bound results")
+                })?
+            };
+            let result = PyDict::new_bound(py);
+            for (name, tensor) in outputs.into_values() {
+                result.set_item(name, Py::new(py, PyTensor { inner: tensor })?)?;
+            }
+            Ok(result)
+        }
+        #[cfg(not(feature = "onnxruntime"))]
+        {
+            let _ = (py, inputs, copy);
+            Err(PyRuntimeError::new_err(
+                "this SpatialRust Python module was built without the `onnxruntime` feature",
+            ))
+        }
+    }
+}
+
+#[cfg(feature = "onnxruntime")]
+fn python_tensor_spec(spec: &spatialrust::ai::TensorSpec) -> (String, String, Vec<String>) {
+    let dimensions = spec
+        .shape
+        .iter()
+        .map(|dimension| match dimension {
+            spatialrust::ai::Dimension::Fixed(value) => value.to_string(),
+            spatialrust::ai::Dimension::Dynamic => "?".into(),
+            spatialrust::ai::Dimension::Symbol(value) => value.clone(),
+        })
+        .collect();
+    (spec.name.clone(), tensor_dtype_name(spec.dtype), dimensions)
+}
+
+#[pyclass(name = "DLPackTensorView", unsendable)]
+struct PyDlpackTensorView {
+    inner: DlpackImport,
+}
+
+#[pymethods]
+impl PyDlpackTensorView {
+    #[getter]
+    fn shape(&self) -> Vec<usize> {
+        self.inner.descriptor().shape().to_vec()
+    }
+
+    #[getter]
+    fn dtype(&self) -> String {
+        tensor_dtype_name(self.inner.descriptor().dtype())
+    }
+
+    #[getter]
+    fn version(&self) -> (u32, u32) {
+        self.inner.version()
+    }
+
+    /// Makes ownership independent of the DLPack producer with an explicit copy.
+    fn copy(&self) -> PyResult<PyTensor> {
+        Ok(PyTensor { inner: self.inner.view().map_err(to_py_err)?.to_owned_copy() })
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "DLPackTensorView(shape={:?}, dtype='{}', device='cpu', version={:?})",
+            self.shape(),
+            self.dtype(),
+            self.version()
+        )
+    }
+}
+
+fn tensor_dtype_name(dtype: TensorDataType) -> String {
+    match dtype {
+        TensorDataType::U8 => "uint8".into(),
+        TensorDataType::U16 => "uint16".into(),
+        TensorDataType::F32 => "float32".into(),
+        _ => format!("{:?}{}x{}", dtype.code(), dtype.bits(), dtype.lanes()),
+    }
+}
+
+#[pymethods]
+impl PyTensor {
+    #[getter]
+    fn shape(&self) -> Vec<usize> {
+        self.inner.descriptor().shape().to_vec()
+    }
+
+    #[getter]
+    fn dtype(&self) -> String {
+        tensor_dtype_name(self.inner.descriptor().dtype())
+    }
+
+    /// Returns the DLPack CPU device tuple.
+    fn __dlpack_device__(&self) -> (i32, i32) {
+        (1, 0)
+    }
+
+    /// Exports a read-only, zero-copy DLPack major-version 1 capsule.
+    #[pyo3(signature = (stream=None, *, max_version=None, dl_device=None, copy=None))]
+    fn __dlpack__(
+        &self,
+        py: Python<'_>,
+        stream: Option<Py<PyAny>>,
+        max_version: Option<(u32, u32)>,
+        dl_device: Option<(i32, i32)>,
+        copy: Option<bool>,
+    ) -> PyResult<Py<PyAny>> {
+        if stream.is_some() {
+            return Err(PyBufferError::new_err("CPU DLPack export requires stream=None"));
+        }
+        if max_version.is_some_and(|version| version.0 < 1) {
+            return Err(PyBufferError::new_err(
+                "consumer does not support the DLPack versioned ABI",
+            ));
+        }
+        if dl_device.is_some_and(|device| device != (1, 0)) {
+            return Err(PyBufferError::new_err(
+                "Tensor is CPU-resident; explicit device transfer is required",
+            ));
+        }
+        if copy == Some(true) {
+            return Err(PyBufferError::new_err(
+                "implicit DLPack copies are disabled; call Tensor.copy() explicitly",
+            ));
+        }
+        dlpack_capsule::export_tensor(py, &self.inner).map_err(to_py_err)
+    }
+
+    /// Makes an explicit host-to-host allocation copy.
+    fn copy(&self) -> Self {
+        Self { inner: self.inner.to_owned_copy() }
+    }
+
+    fn __repr__(&self) -> String {
+        format!("Tensor(shape={:?}, dtype='{}', device='cpu')", self.shape(), self.dtype())
+    }
+}
+
+/// Copies a NumPy uint8, uint16, or float32 array into packed CPU tensor storage.
+#[pyfunction]
+fn tensor_copy_from_numpy(array: &Bound<'_, PyAny>) -> PyResult<PyTensor> {
+    if let Ok(array) = array.extract::<PyReadonlyArrayDyn<'_, u8>>() {
+        let shape = array.shape().to_vec();
+        let bytes = array.as_array().iter().copied().collect::<Vec<_>>();
+        let descriptor = TensorDescriptor::contiguous(TensorDataType::U8, shape, TensorDevice::CPU);
+        return Ok(PyTensor {
+            inner: TensorBuffer::try_new(bytes, descriptor).map_err(to_py_err)?,
+        });
+    }
+    if let Ok(array) = array.extract::<PyReadonlyArrayDyn<'_, u16>>() {
+        let shape = array.shape().to_vec();
+        let values = array.as_array().iter().copied().collect::<Vec<_>>();
+        let descriptor =
+            TensorDescriptor::contiguous(TensorDataType::U16, shape, TensorDevice::CPU);
+        return Ok(PyTensor {
+            inner: TensorBuffer::try_from_u16(values, descriptor).map_err(to_py_err)?,
+        });
+    }
+    if let Ok(array) = array.extract::<PyReadonlyArrayDyn<'_, f32>>() {
+        let shape = array.shape().to_vec();
+        let values = array.as_array().iter().copied().collect::<Vec<_>>();
+        let descriptor =
+            TensorDescriptor::contiguous(TensorDataType::F32, shape, TensorDevice::CPU);
+        return Ok(PyTensor {
+            inner: TensorBuffer::try_from_f32(values, descriptor).map_err(to_py_err)?,
+        });
+    }
+    Err(PyTypeError::new_err("expected a NumPy uint8, uint16, or float32 array"))
+}
+
+/// Takes ownership of a producer's CPU DLPack capsule without copying its allocation.
+#[pyfunction]
+fn tensor_view_from_dlpack(producer: &Bound<'_, PyAny>) -> PyResult<PyDlpackTensorView> {
+    let inner = dlpack_capsule::import_tensor(producer)?;
+    Ok(PyDlpackTensorView { inner })
+}
+
+fn parse_image_format(format: &str) -> PyResult<ImageFileFormat> {
+    match format.to_ascii_lowercase().as_str() {
+        "png" => Ok(ImageFileFormat::Png),
+        "jpg" | "jpeg" => Ok(ImageFileFormat::Jpeg),
+        "pnm" | "pbm" | "pgm" | "ppm" => Ok(ImageFileFormat::Pnm),
+        other => Err(PyValueError::new_err(format!(
+            "unsupported image format `{other}` (expected: png, jpeg, or pnm)"
+        ))),
+    }
+}
+
+/// Source metadata returned alongside a decoded NumPy image.
+#[pyclass(name = "ImageMetadata", frozen)]
+#[derive(Clone)]
+struct PyImageMetadata {
+    inner: DecodedMetadata,
+}
+
+#[pymethods]
+impl PyImageMetadata {
+    #[getter]
+    fn format(&self) -> String {
+        self.inner.format.to_string()
+    }
+
+    #[getter]
+    fn color_type(&self) -> String {
+        format!("{:?}", self.inner.source_color_type)
+    }
+
+    #[getter]
+    fn orientation(&self) -> u8 {
+        self.inner.orientation as u8
+    }
+
+    #[getter]
+    fn orientation_applied(&self) -> bool {
+        self.inner.orientation_applied
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "ImageMetadata(format='{}', color_type='{}', orientation={}, orientation_applied={})",
+            self.format(),
+            self.color_type(),
+            self.orientation(),
+            self.orientation_applied()
+        )
+    }
+}
+
+/// Decodes PNG, JPEG, or PNM into an owned NumPy array and source metadata.
+#[pyfunction]
+#[pyo3(signature = (path, apply_orientation=true))]
+fn read_image<'py>(
+    py: Python<'py>,
+    path: &str,
+    apply_orientation: bool,
+) -> PyResult<(Py<PyAny>, PyImageMetadata)> {
+    let decoded =
+        decode_image_path(path, DecodeOptions { apply_orientation, ..Default::default() })
+            .map_err(to_py_err)?;
+    let metadata = PyImageMetadata { inner: decoded.metadata() };
+    let (height, width) = (decoded.height(), decoded.width());
+    macro_rules! array2 {
+        ($image:expr) => {
+            Array2::from_shape_vec((height, width), $image.into_vec())
+                .map_err(to_py_err)?
+                .into_pyarray_bound(py)
+                .into_any()
+                .unbind()
+        };
+    }
+    macro_rules! array3 {
+        ($image:expr, $channels:expr) => {
+            Array3::from_shape_vec((height, width, $channels), $image.into_vec())
+                .map_err(to_py_err)?
+                .into_pyarray_bound(py)
+                .into_any()
+                .unbind()
+        };
+    }
+    let array = match decoded.into_pixels() {
+        DecodedPixels::Gray8(image) => array2!(image),
+        DecodedPixels::GrayAlpha8(image) => array3!(image, 2),
+        DecodedPixels::Rgb8(image) => array3!(image, 3),
+        DecodedPixels::Rgba8(image) => array3!(image, 4),
+        DecodedPixels::Gray16(image) => array2!(image),
+        DecodedPixels::GrayAlpha16(image) => array3!(image, 2),
+        DecodedPixels::Rgb16(image) => array3!(image, 3),
+        DecodedPixels::Rgba16(image) => array3!(image, 4),
+        DecodedPixels::Rgb32Float(image) => array3!(image, 3),
+        DecodedPixels::Rgba32Float(image) => array3!(image, 4),
+    };
+    Ok((array, metadata))
+}
+
+/// Encodes a uint8/uint16 NumPy image as PNG, JPEG, or PNM.
+#[pyfunction]
+#[pyo3(signature = (path, image, format, jpeg_quality=90))]
+fn write_image(
+    path: &str,
+    image: &Bound<'_, PyAny>,
+    format: &str,
+    jpeg_quality: u8,
+) -> PyResult<()> {
+    let format = parse_image_format(format)?;
+    let pixels = if let Ok(array) = image.extract::<PyReadonlyArray2<'_, u8>>() {
+        let view = array.as_array();
+        let shape = view.shape();
+        DecodedPixels::Gray8(
+            Image::try_new(shape[1], shape[0], view.iter().copied().collect())
+                .map_err(to_py_err)?,
+        )
+    } else if let Ok(array) = image.extract::<PyReadonlyArray2<'_, u16>>() {
+        let view = array.as_array();
+        let shape = view.shape();
+        DecodedPixels::Gray16(
+            Image::try_new(shape[1], shape[0], view.iter().copied().collect())
+                .map_err(to_py_err)?,
+        )
+    } else if let Ok(array) = image.extract::<PyReadonlyArray3<'_, u8>>() {
+        let view = array.as_array();
+        let shape = view.shape();
+        let packed = view.iter().copied().collect();
+        match shape[2] {
+            2 => DecodedPixels::GrayAlpha8(
+                Image::try_new(shape[1], shape[0], packed).map_err(to_py_err)?,
+            ),
+            3 => {
+                DecodedPixels::Rgb8(Image::try_new(shape[1], shape[0], packed).map_err(to_py_err)?)
+            }
+            4 => {
+                DecodedPixels::Rgba8(Image::try_new(shape[1], shape[0], packed).map_err(to_py_err)?)
+            }
+            channels => {
+                return Err(PyValueError::new_err(format!(
+                    "expected 2, 3, or 4 channels, found {channels}"
+                )))
+            }
+        }
+    } else if let Ok(array) = image.extract::<PyReadonlyArray3<'_, u16>>() {
+        let view = array.as_array();
+        let shape = view.shape();
+        let packed = view.iter().copied().collect();
+        match shape[2] {
+            2 => DecodedPixels::GrayAlpha16(
+                Image::try_new(shape[1], shape[0], packed).map_err(to_py_err)?,
+            ),
+            3 => {
+                DecodedPixels::Rgb16(Image::try_new(shape[1], shape[0], packed).map_err(to_py_err)?)
+            }
+            4 => DecodedPixels::Rgba16(
+                Image::try_new(shape[1], shape[0], packed).map_err(to_py_err)?,
+            ),
+            channels => {
+                return Err(PyValueError::new_err(format!(
+                    "expected 2, 3, or 4 channels, found {channels}"
+                )))
+            }
+        }
+    } else {
+        return Err(PyValueError::new_err(
+            "expected a uint8 or uint16 NumPy array shaped (H, W) or (H, W, C)",
+        ));
+    };
+    encode_image_path(path, &pixels, EncodeOptions { format, jpeg_quality }).map_err(to_py_err)
+}
+
 fn parse_policy(policy: &str) -> PyResult<ExecutionPolicy> {
     match policy.to_lowercase().as_str() {
         "auto" => Ok(ExecutionPolicy::Auto),
@@ -97,6 +641,17 @@ fn parse_interpolation(interpolation: &str) -> PyResult<Interpolation> {
         other => Err(PyValueError::new_err(format!(
             "unknown interpolation `{other}` (expected: nearest, bilinear, bicubic, area)"
         ))),
+    }
+}
+
+fn parse_threshold_type(value: &str) -> PyResult<ThresholdType> {
+    match value.to_ascii_lowercase().as_str() {
+        "binary" => Ok(ThresholdType::Binary),
+        "binary_inv" | "binary-inv" => Ok(ThresholdType::BinaryInv),
+        "truncate" | "trunc" => Ok(ThresholdType::Truncate),
+        "to_zero" | "to-zero" => Ok(ThresholdType::ToZero),
+        "to_zero_inv" | "to-zero-inv" => Ok(ThresholdType::ToZeroInv),
+        other => Err(PyValueError::new_err(format!("unknown threshold type `{other}`"))),
     }
 }
 
@@ -1204,6 +1759,622 @@ fn rgbd_to_point_cloud(
     Ok(PyPointCloud { inner })
 }
 
+/// Correlates an RGB image with a 2D float64 kernel using Reflect101 borders.
+#[pyfunction]
+#[pyo3(signature = (image, kernel, delta=0.0))]
+fn filter2d_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    kernel: PyReadonlyArray2<'_, f64>,
+    delta: f64,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let kernel_view = kernel.as_array();
+    let shape = kernel_view.shape();
+    let kernel = Kernel2D::try_new(shape[1], shape[0], kernel_view.iter().copied().collect())
+        .map_err(to_py_err)?;
+    let output =
+        filter2d_op(image.view(), &kernel, delta, BorderMode::Reflect101).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((image.height(), image.width(), 3), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Applies a normalized Gaussian blur to an RGB image using Reflect101 borders.
+#[pyfunction]
+#[pyo3(signature = (image, kernel_width, kernel_height, sigma_x, sigma_y=None))]
+fn gaussian_blur_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    kernel_width: usize,
+    kernel_height: usize,
+    sigma_x: f64,
+    sigma_y: Option<f64>,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output = gaussian_blur_op(
+        image.view(),
+        kernel_width,
+        kernel_height,
+        sigma_x,
+        sigma_y.unwrap_or(sigma_x),
+        BorderMode::Reflect101,
+    )
+    .map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((image.height(), image.width(), 3), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Applies an odd-aperture median filter to an RGB image.
+#[pyfunction]
+fn median_blur_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    kernel_size: usize,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output =
+        median_blur_op(image.view(), kernel_size, BorderMode::Replicate).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((image.height(), image.width(), 3), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Applies an RGB bilateral filter using Reflect101 borders.
+#[pyfunction]
+fn bilateral_filter_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    diameter: usize,
+    sigma_color: f64,
+    sigma_space: f64,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output = bilateral_filter_op(
+        image.view(),
+        diameter,
+        sigma_color,
+        sigma_space,
+        BorderMode::Reflect101,
+    )
+    .map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((image.height(), image.width(), 3), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Computes a signed float32 Sobel derivative from a grayscale uint8 image.
+#[pyfunction]
+#[pyo3(signature = (image, dx, dy, kernel_size=3, scale=1.0, delta=0.0))]
+fn sobel_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    dx: usize,
+    dy: usize,
+    kernel_size: usize,
+    scale: f64,
+    delta: f64,
+) -> PyResult<Bound<'py, PyArray2<f32>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let output = sobel_op(image.view(), dx, dy, kernel_size, scale, delta, BorderMode::Reflect101)
+        .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Computes a signed float32 Scharr derivative from a grayscale uint8 image.
+#[pyfunction]
+#[pyo3(signature = (image, dx, dy, scale=1.0, delta=0.0))]
+fn scharr_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    dx: usize,
+    dy: usize,
+    scale: f64,
+    delta: f64,
+) -> PyResult<Bound<'py, PyArray2<f32>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let output =
+        scharr_op(image.view(), dx, dy, scale, delta, BorderMode::Reflect101).map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Computes a signed float32 Laplacian from a grayscale uint8 image.
+#[pyfunction]
+#[pyo3(signature = (image, kernel_size=1, scale=1.0, delta=0.0))]
+fn laplacian_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    kernel_size: usize,
+    scale: f64,
+    delta: f64,
+) -> PyResult<Bound<'py, PyArray2<f32>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let output = laplacian_op(image.view(), kernel_size, scale, delta, BorderMode::Reflect101)
+        .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Reduces an RGB image with the canonical Gaussian pyramid kernel.
+#[pyfunction]
+fn pyr_down_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output = pyr_down_op(image.view(), BorderMode::Reflect101).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((output.height(), output.width(), 3), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Doubles an RGB image with the canonical Gaussian pyramid kernel.
+#[pyfunction]
+fn pyr_up_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output = pyr_up_op(image.view(), BorderMode::Reflect101).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((output.height(), output.width(), 3), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Applies grayscale erosion, dilation, or a composite morphology operation.
+#[pyfunction]
+#[pyo3(signature = (image, operation, kernel_width, kernel_height, shape="rect", iterations=1))]
+fn morphology_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    operation: &str,
+    kernel_width: usize,
+    kernel_height: usize,
+    shape: &str,
+    iterations: usize,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let shape = match shape.to_ascii_lowercase().as_str() {
+        "rect" | "rectangle" => MorphologyShape::Rect,
+        "cross" => MorphologyShape::Cross,
+        "ellipse" | "elliptical" => MorphologyShape::Ellipse,
+        "diamond" => MorphologyShape::Diamond,
+        other => {
+            return Err(PyValueError::new_err(format!(
+                "unknown morphology shape `{other}` (expected: rect, cross, ellipse, diamond)"
+            )))
+        }
+    };
+    let element =
+        StructuringElement::try_new(shape, kernel_width, kernel_height).map_err(to_py_err)?;
+    let operation = operation.to_ascii_lowercase();
+    let output = match operation.as_str() {
+        "erode" => {
+            spatialrust::vision::erode(image.view(), &element, iterations, BorderMode::Replicate)
+        }
+        "dilate" => {
+            spatialrust::vision::dilate(image.view(), &element, iterations, BorderMode::Replicate)
+        }
+        "open" => morphology_ex_op(
+            image.view(),
+            MorphologyOperation::Open,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        "close" => morphology_ex_op(
+            image.view(),
+            MorphologyOperation::Close,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        "gradient" => morphology_ex_op(
+            image.view(),
+            MorphologyOperation::Gradient,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        "tophat" | "top-hat" => morphology_ex_op(
+            image.view(),
+            MorphologyOperation::TopHat,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        "blackhat" | "black-hat" => morphology_ex_op(
+            image.view(),
+            MorphologyOperation::BlackHat,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        other => {
+            return Err(PyValueError::new_err(format!("unknown morphology operation `{other}`")))
+        }
+    }
+    .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Applies a fixed threshold to a grayscale uint8 image.
+#[pyfunction]
+#[pyo3(signature = (image, threshold, max_value=255, threshold_type="binary"))]
+fn threshold_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    threshold: f64,
+    max_value: u8,
+    threshold_type: &str,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let output = threshold_op(
+        image.view(),
+        threshold,
+        f64::from(max_value),
+        parse_threshold_type(threshold_type)?,
+    )
+    .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Selects and applies an Otsu threshold, returning `(threshold, image)`.
+#[pyfunction]
+#[pyo3(signature = (image, max_value=255, threshold_type="binary"))]
+fn otsu_threshold_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    max_value: u8,
+    threshold_type: &str,
+) -> PyResult<(u8, Bound<'py, PyArray2<u8>>)> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let (selected, output) =
+        otsu_threshold_u8_op(image.view(), max_value, parse_threshold_type(threshold_type)?)
+            .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok((selected, array.into_pyarray_bound(py)))
+}
+
+/// Applies mean or Gaussian adaptive thresholding.
+#[pyfunction]
+#[pyo3(signature = (image, block_size, c, method="mean", max_value=255, threshold_type="binary"))]
+fn adaptive_threshold_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    block_size: usize,
+    c: f64,
+    method: &str,
+    max_value: u8,
+    threshold_type: &str,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let method = match method.to_ascii_lowercase().as_str() {
+        "mean" => AdaptiveThresholdMethod::Mean,
+        "gaussian" => AdaptiveThresholdMethod::Gaussian,
+        other => return Err(PyValueError::new_err(format!("unknown adaptive method `{other}`"))),
+    };
+    let output = adaptive_threshold_op(
+        image.view(),
+        max_value,
+        method,
+        parse_threshold_type(threshold_type)?,
+        block_size,
+        c,
+        BorderMode::Replicate,
+    )
+    .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Returns the exact 256-bin grayscale histogram.
+#[pyfunction]
+fn histogram_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+) -> PyResult<Bound<'py, PyArray1<u64>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    Ok(histogram_u8_op(image.view()).into_pyarray_bound(py))
+}
+
+/// Equalizes a grayscale uint8 histogram.
+#[pyfunction]
+fn equalize_histogram_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let output = equalize_histogram_op(image.view()).map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Applies contrast-limited adaptive histogram equalization.
+#[pyfunction]
+#[pyo3(signature = (image, clip_limit=2.0, tiles_x=8, tiles_y=8))]
+fn clahe_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    clip_limit: f64,
+    tiles_x: usize,
+    tiles_y: usize,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let output = clahe_op(image.view(), clip_limit, tiles_x, tiles_y).map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Computes the `(H + 1, W + 1)` float64 summed-area table.
+#[pyfunction]
+fn integral_image_u8<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let integral = integral_image_op(image.view(), 0).map_err(to_py_err)?;
+    let array =
+        Array2::from_shape_vec((integral.height(), integral.width()), integral.as_slice().to_vec())
+            .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Detects edges in a grayscale uint8 image with Canny hysteresis.
+#[pyfunction]
+#[pyo3(signature = (image, low_threshold, high_threshold, aperture_size=3, l2_gradient=false))]
+fn canny_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    low_threshold: f64,
+    high_threshold: f64,
+    aperture_size: usize,
+    l2_gradient: bool,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let output = canny_op(
+        image.view(),
+        CannyOptions { low_threshold, high_threshold, aperture_size, l2_gradient },
+    )
+    .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+fn corner_selection_options(
+    max_corners: usize,
+    quality_level: f32,
+    min_distance: f32,
+    block_size: usize,
+    gradient_size: usize,
+) -> CornerSelectionOptions {
+    CornerSelectionOptions {
+        max_corners,
+        quality_level,
+        min_distance,
+        block_size,
+        gradient_size,
+        border: BorderMode::Reflect101,
+    }
+}
+
+/// Detects strongest-first Harris keypoints in a grayscale uint8 image.
+#[pyfunction]
+#[pyo3(signature = (image, max_corners=0, quality_level=0.01, min_distance=1.0, block_size=3, gradient_size=3, k=0.04))]
+#[allow(clippy::too_many_arguments)]
+fn harris_keypoints(
+    image: PyReadonlyArray2<'_, u8>,
+    max_corners: usize,
+    quality_level: f32,
+    min_distance: f32,
+    block_size: usize,
+    gradient_size: usize,
+    k: f32,
+) -> PyResult<Vec<PyKeypoint2>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let options = HarrisOptions {
+        selection: corner_selection_options(
+            max_corners,
+            quality_level,
+            min_distance,
+            block_size,
+            gradient_size,
+        ),
+        k,
+    };
+    Ok(detect_harris_op(image.view(), options)
+        .map_err(to_py_err)?
+        .into_iter()
+        .map(|inner| PyKeypoint2 { inner })
+        .collect())
+}
+
+/// Detects strongest-first Shi–Tomasi keypoints in a grayscale uint8 image.
+#[pyfunction]
+#[pyo3(signature = (image, max_corners=0, quality_level=0.01, min_distance=1.0, block_size=3, gradient_size=3))]
+fn shi_tomasi_keypoints(
+    image: PyReadonlyArray2<'_, u8>,
+    max_corners: usize,
+    quality_level: f32,
+    min_distance: f32,
+    block_size: usize,
+    gradient_size: usize,
+) -> PyResult<Vec<PyKeypoint2>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let options = ShiTomasiOptions {
+        selection: corner_selection_options(
+            max_corners,
+            quality_level,
+            min_distance,
+            block_size,
+            gradient_size,
+        ),
+    };
+    Ok(detect_shi_tomasi_op(image.view(), options)
+        .map_err(to_py_err)?
+        .into_iter()
+        .map(|inner| PyKeypoint2 { inner })
+        .collect())
+}
+
+/// Detects scan-ordered FAST-9/16 keypoints in a grayscale uint8 image.
+#[pyfunction]
+#[pyo3(signature = (image, threshold=10, nonmax_suppression=true))]
+fn fast_keypoints(
+    image: PyReadonlyArray2<'_, u8>,
+    threshold: u8,
+    nonmax_suppression: bool,
+) -> PyResult<Vec<PyKeypoint2>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    Ok(detect_fast_op(image.view(), FastOptions { threshold, nonmax_suppression })
+        .map_err(to_py_err)?
+        .into_iter()
+        .map(|inner| PyKeypoint2 { inner })
+        .collect())
+}
+
+/// Detects ORB keypoints and returns `(keypoints, uint8[N, 32] descriptors)`.
+#[pyfunction]
+#[pyo3(signature = (image, max_features=500, scale_factor=1.2, levels=8, edge_threshold=31, fast_threshold=20, patch_size=31, score_type="harris"))]
+#[allow(clippy::too_many_arguments)]
+fn orb_features<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    max_features: usize,
+    scale_factor: f32,
+    levels: usize,
+    edge_threshold: usize,
+    fast_threshold: u8,
+    patch_size: usize,
+    score_type: &str,
+) -> PyResult<(Vec<PyKeypoint2>, Bound<'py, PyArray2<u8>>)> {
+    let image = gray_u8_image_from_numpy(image)?;
+    let score_type = match score_type {
+        "harris" => OrbScoreType::Harris,
+        "fast" => OrbScoreType::Fast,
+        _ => return Err(PyValueError::new_err("score_type must be 'harris' or 'fast'")),
+    };
+    let features = detect_and_describe_orb_op(
+        image.view(),
+        OrbOptions {
+            max_features,
+            scale_factor,
+            levels,
+            edge_threshold,
+            fast_threshold,
+            patch_size,
+            score_type,
+        },
+    )
+    .map_err(to_py_err)?;
+    let keypoints = features
+        .keypoints()
+        .iter()
+        .copied()
+        .map(|inner| PyKeypoint2 { inner })
+        .collect();
+    let descriptors = Array2::from_shape_vec(
+        (features.descriptors().len(), features.descriptors().width()),
+        features.descriptors().binary_data().expect("ORB descriptors are binary").to_vec(),
+    )
+    .map_err(to_py_err)?
+    .into_pyarray_bound(py);
+    Ok((keypoints, descriptors))
+}
+
+fn descriptor_match_tuples(
+    query: DescriptorBuffer,
+    train: DescriptorBuffer,
+    cross_check: bool,
+    ratio: Option<f32>,
+    max_distance: Option<f32>,
+) -> PyResult<Vec<(usize, usize, f32)>> {
+    Ok(match_descriptors_op(
+        &query,
+        &train,
+        MatchOptions { cross_check, ratio, max_distance },
+    )
+    .map_err(to_py_err)?
+    .into_iter()
+    .map(|feature_match| {
+        (
+            feature_match.query_index(),
+            feature_match.train_index(),
+            feature_match.distance(),
+        )
+    })
+    .collect())
+}
+
+/// Brute-force Hamming matching for two `uint8[N, D]` descriptor matrices.
+#[pyfunction]
+#[pyo3(signature = (query, train, cross_check=false, ratio=None, max_distance=None))]
+fn match_binary_descriptors(
+    query: PyReadonlyArray2<'_, u8>,
+    train: PyReadonlyArray2<'_, u8>,
+    cross_check: bool,
+    ratio: Option<f32>,
+    max_distance: Option<f32>,
+) -> PyResult<Vec<(usize, usize, f32)>> {
+    let query_shape = query.shape();
+    let train_shape = train.shape();
+    let query = DescriptorBuffer::try_binary(
+        query_shape[0],
+        query_shape[1],
+        query.as_array().iter().copied().collect(),
+    )
+    .map_err(to_py_err)?;
+    let train = DescriptorBuffer::try_binary(
+        train_shape[0],
+        train_shape[1],
+        train.as_array().iter().copied().collect(),
+    )
+    .map_err(to_py_err)?;
+    descriptor_match_tuples(query, train, cross_check, ratio, max_distance)
+}
+
+/// Brute-force Euclidean matching for two `float32[N, D]` descriptor matrices.
+#[pyfunction]
+#[pyo3(signature = (query, train, cross_check=false, ratio=None, max_distance=None))]
+fn match_float_descriptors(
+    query: PyReadonlyArray2<'_, f32>,
+    train: PyReadonlyArray2<'_, f32>,
+    cross_check: bool,
+    ratio: Option<f32>,
+    max_distance: Option<f32>,
+) -> PyResult<Vec<(usize, usize, f32)>> {
+    let query_shape = query.shape();
+    let train_shape = train.shape();
+    let query = DescriptorBuffer::try_float32(
+        query_shape[0],
+        query_shape[1],
+        query.as_array().iter().copied().collect(),
+    )
+    .map_err(to_py_err)?;
+    let train = DescriptorBuffer::try_float32(
+        train_shape[0],
+        train_shape[1],
+        train.as_array().iter().copied().collect(),
+    )
+    .map_err(to_py_err)?;
+    descriptor_match_tuples(query, train, cross_check, ratio, max_distance)
+}
+
 /// Resizes an `(H, W, 3)` uint8 RGB image.
 #[pyfunction]
 #[pyo3(signature = (image, width, height, interpolation="bilinear"))]
@@ -1533,6 +2704,11 @@ fn point_map_to_point_cloud(
 #[pyo3(name = "spatialrust")]
 fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    m.add_class::<PyImageMetadata>()?;
+    m.add_class::<PyTensor>()?;
+    m.add_class::<PyKeypoint2>()?;
+    m.add_class::<PyOnnxRuntimeSession>()?;
+    m.add_class::<PyDlpackTensorView>()?;
     m.add_class::<PyPointCloud>()?;
     m.add_class::<PyPipelineResult>()?;
     m.add_class::<PyRegionResult>()?;
@@ -1542,6 +2718,16 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySphereResult>()?;
     m.add_class::<PyCylinderResult>()?;
     m.add_class::<PyRegistrationResult>()?;
+    m.add_function(wrap_pyfunction!(read_image, m)?)?;
+    m.add_function(wrap_pyfunction!(tensor_copy_from_numpy, m)?)?;
+    m.add_function(wrap_pyfunction!(tensor_view_from_dlpack, m)?)?;
+    m.add_function(wrap_pyfunction!(harris_keypoints, m)?)?;
+    m.add_function(wrap_pyfunction!(shi_tomasi_keypoints, m)?)?;
+    m.add_function(wrap_pyfunction!(fast_keypoints, m)?)?;
+    m.add_function(wrap_pyfunction!(orb_features, m)?)?;
+    m.add_function(wrap_pyfunction!(match_binary_descriptors, m)?)?;
+    m.add_function(wrap_pyfunction!(match_float_descriptors, m)?)?;
+    m.add_function(wrap_pyfunction!(write_image, m)?)?;
     m.add_function(wrap_pyfunction!(read, m)?)?;
     m.add_function(wrap_pyfunction!(write, m)?)?;
     m.add_function(wrap_pyfunction!(voxel_downsample, m)?)?;
@@ -1574,6 +2760,24 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(voxelize, m)?)?;
     m.add_function(wrap_pyfunction!(range_image, m)?)?;
     m.add_function(wrap_pyfunction!(rgbd_to_point_cloud, m)?)?;
+    m.add_function(wrap_pyfunction!(filter2d_image, m)?)?;
+    m.add_function(wrap_pyfunction!(gaussian_blur_image, m)?)?;
+    m.add_function(wrap_pyfunction!(median_blur_image, m)?)?;
+    m.add_function(wrap_pyfunction!(bilateral_filter_image, m)?)?;
+    m.add_function(wrap_pyfunction!(sobel_image, m)?)?;
+    m.add_function(wrap_pyfunction!(scharr_image, m)?)?;
+    m.add_function(wrap_pyfunction!(laplacian_image, m)?)?;
+    m.add_function(wrap_pyfunction!(pyr_down_image, m)?)?;
+    m.add_function(wrap_pyfunction!(pyr_up_image, m)?)?;
+    m.add_function(wrap_pyfunction!(morphology_image, m)?)?;
+    m.add_function(wrap_pyfunction!(threshold_image, m)?)?;
+    m.add_function(wrap_pyfunction!(otsu_threshold_image, m)?)?;
+    m.add_function(wrap_pyfunction!(adaptive_threshold_image, m)?)?;
+    m.add_function(wrap_pyfunction!(histogram_image, m)?)?;
+    m.add_function(wrap_pyfunction!(equalize_histogram_image, m)?)?;
+    m.add_function(wrap_pyfunction!(clahe_image, m)?)?;
+    m.add_function(wrap_pyfunction!(integral_image_u8, m)?)?;
+    m.add_function(wrap_pyfunction!(canny_image, m)?)?;
     m.add_function(wrap_pyfunction!(resize_image, m)?)?;
     m.add_function(wrap_pyfunction!(letterbox_image, m)?)?;
     m.add_function(wrap_pyfunction!(normalize_image_chw, m)?)?;
