@@ -63,6 +63,12 @@ def test_exports_present():
     for name in (
         "PointCloud", "voxel_downsample", "dbscan", "register_icp",
         "voxelize", "knn_graph", "chamfer_distance", "oriented_bounding_box",
+        "rgbd_to_point_cloud",
+        "resize_image", "letterbox_image", "normalize_image_chw",
+        "rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
+        "nms", "soft_nms", "connected_components_image",
+        "find_mask_contours", "encode_mask_rle", "decode_mask_rle",
+        "point_map_to_point_cloud",
     ):
         assert hasattr(sr, name), f"missing export: {name}"
 
@@ -89,6 +95,95 @@ def test_from_xyz_rejects_bad_shape():
 
 def test_unlabeled_cloud_has_no_labels(plane):
     assert plane.labels() is None
+
+
+def test_rgbd_to_point_cloud():
+    depth = np.array([[1.0, 0.0], [np.nan, 2.0]], dtype=np.float32)
+    color = np.array(
+        [[[10, 11, 12], [20, 21, 22]], [[30, 31, 32], [40, 41, 42]]],
+        dtype=np.uint8,
+    )
+    cloud = sr.rgbd_to_point_cloud(depth, color, 2.0, 2.0, 0.0, 0.0)
+    assert len(cloud) == 2
+    assert {"x", "y", "z", "r", "g", "b"}.issubset(set(cloud.field_names()))
+    np.testing.assert_allclose(
+        cloud.xyz(), np.array([[0.0, 0.0, 1.0], [1.0, 1.0, 2.0]], dtype=np.float32)
+    )
+
+
+def test_image_resize_letterbox_and_normalize():
+    image = np.array(
+        [[[255, 0, 0], [0, 255, 0]], [[0, 0, 255], [255, 255, 255]]],
+        dtype=np.uint8,
+    )
+    resized = sr.resize_image(image, 4, 4, interpolation="nearest")
+    assert resized.shape == (4, 4, 3)
+    np.testing.assert_array_equal(resized[0, 0], image[0, 0])
+
+    letterboxed, transform = sr.letterbox_image(image, 4, 6, fill=(7, 8, 9))
+    assert letterboxed.shape == (6, 4, 3)
+    assert transform == (2.0, 0, 1, 4, 4)
+    np.testing.assert_array_equal(letterboxed[0, 0], [7, 8, 9])
+
+    chw = sr.normalize_image_chw(image)
+    assert chw.shape == (3, 2, 2)
+    assert chw.dtype == np.float32
+    np.testing.assert_allclose(chw[:, 0, 0], [1.0, 0.0, 0.0], atol=1e-6)
+
+
+def test_image_color_and_remap():
+    image = np.array([[[255, 0, 0], [0, 255, 0]]], dtype=np.uint8)
+    gray = sr.rgb_to_gray_image(image)
+    assert gray.shape == (1, 2)
+    np.testing.assert_allclose(gray, [[76, 150]], atol=1)
+    hsv = sr.rgb_to_hsv_image(image)
+    np.testing.assert_array_equal(hsv[0, 0], [0, 255, 255])
+    np.testing.assert_array_equal(hsv[0, 1], [60, 255, 255])
+
+    map_x = np.array([[0.0, 1.0]], dtype=np.float32)
+    map_y = np.zeros((1, 2), dtype=np.float32)
+    remapped = sr.remap_image(image, map_x, map_y, interpolation="nearest")
+    np.testing.assert_array_equal(remapped, image)
+
+
+def test_detection_nms_and_soft_nms():
+    boxes = np.array(
+        [[0, 0, 10, 10], [1, 1, 9, 9], [20, 20, 30, 30]], dtype=np.float32
+    )
+    scores = np.array([0.9, 0.8, 0.7], dtype=np.float32)
+    np.testing.assert_array_equal(sr.nms(boxes, scores), [0, 2])
+    indices, updated = sr.soft_nms(boxes, scores, method="linear")
+    assert indices[0] == 0
+    assert len(indices) == len(updated) == 3
+    assert updated[-1] < 0.8
+
+
+def test_mask_components_contours_and_rle():
+    mask = np.zeros((5, 7), dtype=np.uint8)
+    mask[1:3, 1:3] = 1
+    mask[2:4, 5:7] = 1
+    labels, stats = sr.connected_components_image(mask, connectivity=4)
+    assert labels.shape == mask.shape
+    assert labels.dtype == np.uint32
+    assert sorted(stat[1] for stat in stats) == [4, 4]
+    contours = sr.find_mask_contours(mask)
+    assert len(contours) == 2
+
+    for coco in (False, True):
+        counts = sr.encode_mask_rle(mask, coco=coco)
+        decoded = sr.decode_mask_rle(7, 5, counts, coco=coco)
+        np.testing.assert_array_equal(decoded, mask)
+
+
+def test_point_map_to_point_cloud_filters_invalid_and_low_confidence():
+    points = np.array(
+        [[[0, 0, 1], [1, 0, 1]], [[0, 1, np.nan], [1, 1, 2]]], dtype=np.float32
+    )
+    confidence = np.array([[0.9, 0.2], [1.0, 0.8]], dtype=np.float32)
+    cloud = sr.point_map_to_point_cloud(points, confidence, min_confidence=0.5)
+    np.testing.assert_allclose(
+        cloud.xyz(), np.array([[0, 0, 1], [1, 1, 2]], dtype=np.float32)
+    )
 
 
 # --------------------------------------------------------------------------- #

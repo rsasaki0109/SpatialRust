@@ -126,6 +126,22 @@ metrics-distance = ["spatialrust-metrics/metrics-distance"]
 transform-ops = ["spatialrust-transform/transform-ops"]
 voxelize-occupancy = ["spatialrust-voxelize/voxelize-occupancy"]
 voxelize-range-image = ["spatialrust-voxelize/voxelize-range-image"]
+image = ["dep:spatialrust-image"]
+camera-rgbd = ["image", "dep:spatialrust-camera"]
+vision = ["image", "dep:spatialrust-vision"]
+vision-resize = ["vision", "spatialrust-vision/resize"]
+vision-preprocess = ["vision-resize", "spatialrust-vision/preprocess"]
+vision-warp = ["vision-resize", "spatialrust-vision/warp"]
+vision-detection = ["vision", "spatialrust-vision/detection"]
+vision-dense = ["vision-detection", "spatialrust-vision/dense"]
+vision-spatial = ["vision-dense", "camera-rgbd", "spatialrust-vision/spatial"]
+vision-full = [
+    "vision-preprocess",
+    "vision-warp",
+    "vision-detection",
+    "vision-dense",
+    "vision-spatial",
+]
 
 [dependencies]
 spatialrust-core = { workspace = true }
@@ -141,6 +157,9 @@ spatialrust-pipeline = { workspace = true }
 spatialrust-metrics = { workspace = true }
 spatialrust-transform = { workspace = true }
 spatialrust-voxelize = { workspace = true }
+spatialrust-image = { workspace = true, optional = true }
+spatialrust-camera = { workspace = true, optional = true }
+spatialrust-vision = { workspace = true, optional = true }
 
 [dev-dependencies]
 

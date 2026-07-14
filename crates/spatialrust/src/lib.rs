@@ -20,6 +20,13 @@ pub use spatialrust_segmentation as segmentation;
 pub use spatialrust_transform as transform;
 pub use spatialrust_voxelize as voxelize;
 
+#[cfg(feature = "camera-rgbd")]
+pub use spatialrust_camera as camera;
+#[cfg(feature = "image")]
+pub use spatialrust_image as image;
+#[cfg(feature = "vision")]
+pub use spatialrust_vision as vision;
+
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
     HasNormals3, HasPositions3, PointBuffer, PointCloud, PointCloudBuilder, PointField,
@@ -196,6 +203,21 @@ pub use spatialrust_voxelize::{voxelize, OccupancyGrid, VoxelFill, VoxelGridConf
 
 #[cfg(feature = "voxelize-range-image")]
 pub use spatialrust_voxelize::{range_image, RangeImage, RangeImageConfig};
+
+#[cfg(feature = "image")]
+pub use spatialrust_image::{
+    AlphaMode, ColorRange, ColorSpace, GrayImage, Image, ImageError, ImageLayout, ImageMetadata,
+    ImageRegion, ImageView, ImageViewMut, PlanarImage, PlanarImageView, RgbImage,
+};
+
+#[cfg(feature = "camera-rgbd")]
+pub use spatialrust_camera::{
+    depth_to_point_cloud, rgbd_to_point_cloud, BrownConrady, CameraError, CameraIntrinsics,
+    DepthConversionOptions, PinholeCamera, RgbdError,
+};
+
+#[cfg(feature = "vision")]
+pub use spatialrust_vision::*;
 
 #[cfg(feature = "pipeline-mvp")]
 pub use spatialrust_pipeline::{

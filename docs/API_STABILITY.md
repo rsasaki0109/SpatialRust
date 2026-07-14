@@ -59,6 +59,8 @@ until their individual 1.0 milestones.
 | --- | --- |
 | MVP CLI flags | `--bounds`, `--resolution`, `--repeat` may gain aliases |
 | HTTP COPC (`mvp-http`) | URL IO is stable; timeout/retry policy may change |
+| Image/camera (`image`, `camera-rgbd`) | Typed image, calibration, distortion, and RGB-D APIs are provisional |
+| Vision (`vision-*`) | CPU preprocessing, warp, detection, masks, and dense spatial bridges are provisional |
 
 ## Algorithm crates
 
@@ -71,13 +73,16 @@ spatialrust-<area> / feature-<name>
 | Crate | 1.0 status | Notes |
 | --- | --- | --- |
 | `spatialrust-math` | Stable primitives | `Vec3`, `Mat4`, `Isometry3` |
+| `spatialrust-image` | Provisional | Packed ownership and strided CPU views; no hidden device transfers |
+| `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |
+| `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms and explicit point-cloud bridges |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |
 | `spatialrust-filtering` | Provisional | GPU thresholds may move |
 | `spatialrust-features` | Provisional | Normal GPU path still tuning |
 | `spatialrust-segmentation` | Provisional | RANSAC configs may extend; **GPU plane scoring** behind `segment-ransac-plane-gpu` |
 | `spatialrust-registration` | Provisional | New backends (TEASER++, etc.) expected |
 | `spatialrust-gpu` | Provisional | `WgpuRuntime`, `GpuBufferPool` upload/recycle API stable; kernel APIs still tuning |
-| `spatialrust-py` | Stable user surface | Stubs enforced by `mypy.stubtest` in CI |
+| `spatialrust-py` | Stable user surface | Stubs enforced by `mypy.stubtest`; new vision functions remain provisional with the Rust APIs |
 
 ## Explicitly out of 1.0 scope
 
