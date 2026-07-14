@@ -43,7 +43,7 @@ use spatialrust::image_io::{
     decode_path as decode_image_path, encode_path as encode_image_path, DecodeOptions,
     DecodedMetadata, DecodedPixels, EncodeOptions, ImageFileFormat,
 };
-use spatialrust::math::Mat4;
+use spatialrust::math::{Mat3, Mat4, Vec2, Vec3};
 use spatialrust::metrics::{chamfer_distance as chamfer, hausdorff_distance as hausdorff};
 use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
 use spatialrust::registration::{
@@ -69,23 +69,26 @@ use spatialrust::vision::{
     adaptive_threshold as adaptive_threshold_op, approximate_polygon as approximate_contour,
     bilateral_filter as bilateral_filter_op, canny as canny_op, clahe as clahe_op,
     connected_components as label_components, decode_rle as decode_mask_runs,
-    detect_and_describe_orb as detect_and_describe_orb_op,
-    detect_fast as detect_fast_op, detect_harris as detect_harris_op,
-    detect_shi_tomasi as detect_shi_tomasi_op, encode_rle as encode_mask_runs,
-    equalize_histogram as equalize_histogram_op, filter2d as filter2d_op,
+    detect_and_describe_orb as detect_and_describe_orb_op, detect_fast as detect_fast_op,
+    detect_harris as detect_harris_op, detect_shi_tomasi as detect_shi_tomasi_op,
+    encode_rle as encode_mask_runs, equalize_histogram as equalize_histogram_op,
+    estimate_homography_ransac as estimate_homography_ransac_op, filter2d as filter2d_op,
     find_contours as trace_contours, gaussian_blur as gaussian_blur_op,
     histogram_u8 as histogram_u8_op, integral_image as integral_image_op,
-    laplacian as laplacian_op, letterbox as letterbox_op, median_blur as median_blur_op,
+    laplacian as laplacian_op, letterbox as letterbox_op,
+    match_descriptors as match_descriptors_op, median_blur as median_blur_op,
     morphology_ex as morphology_ex_op, nms as nms_op, otsu_threshold_u8 as otsu_threshold_u8_op,
     pack_chw as pack_chw_op, point_map_to_point_cloud as point_map_to_cloud,
     pyr_down as pyr_down_op, pyr_up as pyr_up_op, remap as remap_op, resize as resize_op,
     rgb_to_gray as rgb_to_gray_op, rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op,
-    sobel as sobel_op, soft_nms as soft_nms_op, threshold as threshold_op, AdaptiveThresholdMethod,
-    BinaryMask, BorderMode, BoundingBox2, CannyOptions, ConfidenceMap, Connectivity,
-    match_descriptors as match_descriptors_op, CornerSelectionOptions, DescriptorBuffer,
-    FastOptions, HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions,
-    MorphologyOperation, MorphologyShape, OrbOptions, OrbScoreType, PointMap, RleOrder,
-    ShiTomasiOptions, SoftNmsMethod, StructuringElement, ThresholdType,
+    sobel as sobel_op, soft_nms as soft_nms_op, solve_pnp as solve_pnp_op,
+    stereo_block_match as stereo_block_match_op, threshold as threshold_op,
+    AdaptiveThresholdMethod, BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions,
+    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer, FastOptions,
+    HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions,
+    MorphologyOperation, MorphologyShape, ObjectImageCorrespondence, OrbOptions, OrbScoreType,
+    PointCorrespondence2, PointMap, RobustEstimationOptions, RleOrder, ShiTomasiOptions,
+    SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType, AbsolutePose,
 };
 use spatialrust::voxelize::{
     range_image as range_image_proj, voxelize as voxelize_grid, RangeImageConfig, VoxelFill,
@@ -2297,6 +2300,144 @@ fn orb_features<'py>(
     Ok((keypoints, descriptors))
 }
 
+fn correspondences_from_numpy(
+    source: PyReadonlyArray2<'_, f64>,
+    target: PyReadonlyArray2<'_, f64>,
+) -> PyResult<Vec<PointCorrespondence2>> {
+    let source = source.as_array();
+    let target = target.as_array();
+    if source.shape() != target.shape() || source.ndim() != 2 || source.shape()[1] != 2 {
+        return Err(PyValueError::new_err("source/target must be Nx2 float64 arrays"));
+    }
+    source
+        .outer_iter()
+        .zip(target.outer_iter())
+        .map(|(src, dst)| {
+            PointCorrespondence2::try_new(
+                Vec2 { x: src[0], y: src[1] },
+                Vec2 { x: dst[0], y: dst[1] },
+            )
+            .map_err(to_py_err)
+        })
+        .collect()
+}
+
+fn mat3_to_numpy<'py>(py: Python<'py>, matrix: Mat3<f64>) -> Bound<'py, PyArray2<f64>> {
+    let mut values = Vec::with_capacity(9);
+    for row in &matrix.m {
+        values.extend_from_slice(row);
+    }
+    Array2::from_shape_vec((3, 3), values)
+        .expect("3x3")
+        .into_pyarray_bound(py)
+}
+
+/// Estimates a homography with deterministic RANSAC.
+///
+/// Returns `(matrix[3,3], inliers[N], residuals[N])`.
+#[pyfunction]
+#[pyo3(signature = (source, target, threshold=1.0, confidence=0.99, max_iterations=2000, seed=0))]
+fn estimate_homography_ransac<'py>(
+    py: Python<'py>,
+    source: PyReadonlyArray2<'_, f64>,
+    target: PyReadonlyArray2<'_, f64>,
+    threshold: f64,
+    confidence: f64,
+    max_iterations: usize,
+    seed: u64,
+) -> PyResult<(Bound<'py, PyArray2<f64>>, Bound<'py, PyArray1<bool>>, Bound<'py, PyArray1<f64>>)> {
+    let pairs = correspondences_from_numpy(source, target)?;
+    let estimate = estimate_homography_ransac_op(
+        &pairs,
+        RobustEstimationOptions { threshold, confidence, max_iterations, seed },
+    )
+    .map_err(to_py_err)?;
+    Ok((
+        mat3_to_numpy(py, estimate.model().matrix()),
+        numpy::PyArray1::from_vec_bound(py, estimate.inliers().to_vec()),
+        numpy::PyArray1::from_vec_bound(py, estimate.residuals().to_vec()),
+    ))
+}
+
+/// Solves PnP for object points `Nx3` and image points `Nx2`.
+///
+/// Camera intrinsics are `fx, fy, cx, cy`. Returns `(rotation[3,3], translation[3])`.
+#[pyfunction]
+#[pyo3(signature = (object_points, image_points, fx, fy, cx, cy, width=640, height=480))]
+#[allow(clippy::too_many_arguments)]
+fn solve_pnp<'py>(
+    py: Python<'py>,
+    object_points: PyReadonlyArray2<'_, f64>,
+    image_points: PyReadonlyArray2<'_, f64>,
+    fx: f64,
+    fy: f64,
+    cx: f64,
+    cy: f64,
+    width: usize,
+    height: usize,
+) -> PyResult<(Bound<'py, PyArray2<f64>>, Bound<'py, PyArray1<f64>>)> {
+    let objects = object_points.as_array();
+    let images = image_points.as_array();
+    if objects.ndim() != 2
+        || images.ndim() != 2
+        || objects.shape()[1] != 3
+        || images.shape()[1] != 2
+        || objects.shape()[0] != images.shape()[0]
+    {
+        return Err(PyValueError::new_err(
+            "object_points must be Nx3 and image_points Nx2 with matching N",
+        ));
+    }
+    let pairs = objects
+        .outer_iter()
+        .zip(images.outer_iter())
+        .map(|(object, image)| {
+            ObjectImageCorrespondence::try_new(
+                Vec3::new(object[0], object[1], object[2]),
+                Vec2 { x: image[0], y: image[1] },
+            )
+            .map_err(to_py_err)
+        })
+        .collect::<PyResult<Vec<_>>>()?;
+    let camera = CameraMatrix3::from_intrinsics(
+        CameraIntrinsics::try_new(fx, fy, cx, cy, width, height).map_err(to_py_err)?,
+    );
+    let pose: AbsolutePose = solve_pnp_op(&pairs, camera).map_err(to_py_err)?;
+    let translation = numpy::PyArray1::from_vec_bound(
+        py,
+        vec![pose.translation().x, pose.translation().y, pose.translation().z],
+    );
+    Ok((mat3_to_numpy(py, pose.rotation()), translation))
+}
+
+/// Dense SAD stereo block matching on rectified grayscale images.
+#[pyfunction]
+#[pyo3(signature = (left, right, window_size=15, min_disparity=0, num_disparities=64, uniqueness_ratio=15.0))]
+fn stereo_block_match<'py>(
+    py: Python<'py>,
+    left: PyReadonlyArray2<'_, u8>,
+    right: PyReadonlyArray2<'_, u8>,
+    window_size: usize,
+    min_disparity: i32,
+    num_disparities: i32,
+    uniqueness_ratio: f32,
+) -> PyResult<Bound<'py, PyArray2<f32>>> {
+    let left = gray_u8_image_from_numpy(left)?;
+    let right = gray_u8_image_from_numpy(right)?;
+    let disparity = stereo_block_match_op(
+        left.view(),
+        right.view(),
+        StereoBmOptions { window_size, min_disparity, num_disparities, uniqueness_ratio },
+    )
+    .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec(
+        (disparity.height(), disparity.width()),
+        disparity.as_slice().to_vec(),
+    )
+    .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
 fn descriptor_match_tuples(
     query: DescriptorBuffer,
     train: DescriptorBuffer,
@@ -2725,6 +2866,9 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(shi_tomasi_keypoints, m)?)?;
     m.add_function(wrap_pyfunction!(fast_keypoints, m)?)?;
     m.add_function(wrap_pyfunction!(orb_features, m)?)?;
+    m.add_function(wrap_pyfunction!(estimate_homography_ransac, m)?)?;
+    m.add_function(wrap_pyfunction!(solve_pnp, m)?)?;
+    m.add_function(wrap_pyfunction!(stereo_block_match, m)?)?;
     m.add_function(wrap_pyfunction!(match_binary_descriptors, m)?)?;
     m.add_function(wrap_pyfunction!(match_float_descriptors, m)?)?;
     m.add_function(wrap_pyfunction!(write_image, m)?)?;

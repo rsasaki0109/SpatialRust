@@ -18,6 +18,7 @@ __all__: list[str] = [
     "CylinderResult", "RegistrationResult", "read_image",
     "tensor_copy_from_numpy", "tensor_view_from_dlpack", "harris_keypoints",
     "shi_tomasi_keypoints", "fast_keypoints", "orb_features",
+    "estimate_homography_ransac", "solve_pnp", "stereo_block_match",
     "match_binary_descriptors", "match_float_descriptors", "write_image", "read",
     "write", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
     "orient_normals", "detect_boundary", "mls_smooth", "farthest_point_sampling",
@@ -41,6 +42,8 @@ __all__: list[str] = [
 
 # Convenient aliases for the array shapes the bindings exchange.
 _F32Array = NDArray[np.float32]  # positions, grids, range images, transforms
+_F64Array = NDArray[np.float64]
+_BoolArray = NDArray[np.bool_]
 _I32Array = NDArray[np.int32]  # labels, edge_index
 _U32Array = NDArray[np.uint32]
 _Vec3 = tuple[float, float, float]
@@ -633,6 +636,32 @@ def orb_features(
     patch_size: int = ...,
     score_type: str = ...,
 ) -> tuple[list[Keypoint2], _U8Array]: ...
+def estimate_homography_ransac(
+    source: _F64Array,
+    target: _F64Array,
+    threshold: float = ...,
+    confidence: float = ...,
+    max_iterations: int = ...,
+    seed: int = ...,
+) -> tuple[_F64Array, _BoolArray, _F64Array]: ...
+def solve_pnp(
+    object_points: _F64Array,
+    image_points: _F64Array,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    width: int = ...,
+    height: int = ...,
+) -> tuple[_F64Array, _F64Array]: ...
+def stereo_block_match(
+    left: _U8Array,
+    right: _U8Array,
+    window_size: int = ...,
+    min_disparity: int = ...,
+    num_disparities: int = ...,
+    uniqueness_ratio: float = ...,
+) -> _F32Array: ...
 def match_binary_descriptors(
     query: _U8Array,
     train: _U8Array,

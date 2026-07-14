@@ -578,6 +578,61 @@ def test_orb_features_and_descriptor_matchers():
     ]
 
 
+def test_geometry_homography_pnp_and_stereo():
+    source = np.array(
+        [[0.0, 0.0], [40.0, 0.0], [0.0, 30.0], [40.0, 30.0], [20.0, 15.0], [10.0, 5.0]],
+        dtype=np.float64,
+    )
+    h = np.array([[1.05, 0.01, 2.0], [-0.02, 0.98, -1.5], [0.0001, 0.0, 1.0]], dtype=np.float64)
+    target = []
+    for point in source:
+        projected = h @ np.array([point[0], point[1], 1.0])
+        target.append([projected[0] / projected[2], projected[1] / projected[2]])
+    target = np.asarray(target, dtype=np.float64)
+    matrix, inliers, residuals = sr.estimate_homography_ransac(source, target, threshold=1.0)
+    assert matrix.shape == (3, 3)
+    assert inliers.dtype == np.bool_
+    assert residuals.shape == (source.shape[0],)
+    assert int(inliers.sum()) >= 4
+
+    objects = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.2, 0.0, 0.0],
+            [0.0, 0.15, 0.0],
+            [0.0, 0.0, 0.1],
+            [0.1, 0.05, 0.05],
+            [0.05, -0.05, 0.02],
+        ],
+        dtype=np.float64,
+    )
+    fx = fy = 500.0
+    cx, cy = 320.0, 240.0
+    rotation = np.eye(3, dtype=np.float64)
+    translation = np.array([0.1, -0.05, 2.5], dtype=np.float64)
+    images = []
+    for point in objects:
+        camera = rotation @ point + translation
+        images.append([fx * camera[0] / camera[2] + cx, fy * camera[1] / camera[2] + cy])
+    images = np.asarray(images, dtype=np.float64)
+    recovered_r, recovered_t = sr.solve_pnp(objects, images, fx, fy, cx, cy)
+    assert recovered_r.shape == (3, 3)
+    assert recovered_t.shape == (3,)
+    assert abs(recovered_t[2] - translation[2]) < 0.05
+
+    width, height = 96, 64
+    disparity = 12
+    yy, xx = np.indices((height, width), dtype=np.int32)
+    left = ((xx * 17 + yy * 29) % 200 + 20).astype(np.uint8)
+    right = np.zeros_like(left)
+    right[:, : width - disparity] = left[:, disparity:]
+    disparity_map = sr.stereo_block_match(
+        left, right, window_size=11, min_disparity=1, num_disparities=32, uniqueness_ratio=5.0
+    )
+    assert disparity_map.shape == (height, width)
+    assert abs(float(disparity_map[height // 2, width // 2]) - float(disparity)) <= 1.0
+
+
 @pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.float32])
 def test_tensor_dlpack_zero_copy_export(dtype):
     source = np.arange(3 * 5, dtype=dtype).reshape(3, 5)[:, ::-1]

@@ -5,10 +5,14 @@
 use proptest::prelude::*;
 use spatialrust_image::Image;
 use spatialrust_vision::{
-    canny, decode_rle, encode_rle, erode, filter2d, integral_image, match_descriptors, resize,
-    BinaryMask, BorderMode, BoundingBox2, CannyOptions, DescriptorBuffer, Interpolation, Kernel2D,
-    MatchOptions, MorphologyShape, RleOrder, StructuringElement,
+    canny, decode_rle, encode_rle, erode, estimate_homography, filter2d, integral_image,
+    match_descriptors, project_object_point, resize, solve_pnp, AbsolutePose, BinaryMask,
+    BorderMode, BoundingBox2, CameraMatrix3, CannyOptions, DescriptorBuffer, Interpolation,
+    Kernel2D, MatchOptions, MorphologyShape, ObjectImageCorrespondence, PointCorrespondence2,
+    RleOrder, StructuringElement,
 };
+use spatialrust_camera::CameraIntrinsics;
+use spatialrust_math::{Mat3, Vec2, Vec3};
 
 proptest! {
     #[test]
@@ -178,5 +182,72 @@ proptest! {
         ).unwrap()[0].distance();
         prop_assert_eq!(forward, reverse);
         prop_assert!(forward <= (left_descriptors.width() * 8) as f32);
+    }
+
+    #[test]
+    fn homography_recovers_noisy_planar_map(
+        seed in any::<u64>(),
+        noise in 0.0f64..0.4,
+    ) {
+        let transform = Mat3::<f64>::from_rows(
+            [1.05, 0.02, 3.0],
+            [-0.01, 0.97, -2.0],
+            [0.0001, -0.0002, 1.0],
+        );
+        let pairs = (0..24usize)
+            .map(|index| {
+                let source = Vec2 {
+                    x: ((index % 6) as f64 + (seed % 5) as f64 * 0.1) * 20.0,
+                    y: ((index / 6) as f64 + ((seed / 7) % 5) as f64 * 0.1) * 15.0,
+                };
+                let projected = transform.mul_vec3(Vec3::new(source.x, source.y, 1.0));
+                let target = Vec2 {
+                    x: projected.x / projected.z + ((seed + index as u64) % 3) as f64 * noise * 0.1,
+                    y: projected.y / projected.z
+                        + ((seed / 3 + index as u64) % 3) as f64 * noise * 0.1,
+                };
+                PointCorrespondence2::try_new(source, target).unwrap()
+            })
+            .collect::<Vec<_>>();
+        let model = estimate_homography(&pairs).unwrap();
+        for pair in &pairs {
+            let projected = model.matrix().mul_vec3(Vec3::new(pair.source().x, pair.source().y, 1.0));
+            let error = (projected.x / projected.z - pair.target().x)
+                .hypot(projected.y / projected.z - pair.target().y);
+            prop_assert!(error < 2.0 + noise);
+        }
+    }
+
+    #[test]
+    fn pnp_recovers_pose_under_small_noise(
+        seed in 1u64..10_000,
+        depth in 1.5f64..4.0,
+    ) {
+        let camera = CameraMatrix3::from_intrinsics(
+            CameraIntrinsics::try_new(480.0, 480.0, 320.0, 240.0, 640, 480).unwrap(),
+        );
+        let pose = AbsolutePose::try_new(
+            Mat3::<f64>::identity(),
+            Vec3::new(((seed % 7) as f64 - 3.0) * 0.02, 0.0, depth),
+        )
+        .unwrap();
+        let pairs = (0..12usize)
+            .map(|index| {
+                let object = Vec3::new(
+                    (index % 4) as f64 * 0.1 - 0.15,
+                    (index / 4) as f64 * 0.1 - 0.1,
+                    0.0,
+                );
+                let mut image = project_object_point(pose, camera, object).unwrap();
+                image.x += ((seed + index as u64) % 3) as f64 * 0.05;
+                image.y += ((seed / 5 + index as u64) % 3) as f64 * 0.05;
+                ObjectImageCorrespondence::try_new(object, image).unwrap()
+            })
+            .collect::<Vec<_>>();
+        let estimated = match solve_pnp(&pairs, camera) {
+            Ok(pose) => pose,
+            Err(_) => return Ok(()),
+        };
+        prop_assert!((estimated.translation().z - pose.translation().z).abs() < 0.25);
     }
 }

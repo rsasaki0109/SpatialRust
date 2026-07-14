@@ -6,7 +6,8 @@ Laplacian, Gaussian pyramids, morphology, thresholds, histograms, CLAHE, integra
 and Canny across 3/5/7 Sobel apertures and L1/L2 gradients;
 Harris, Shi–Tomasi, and FAST-9/16 keypoint coordinates/order (plus exact FAST scores);
 Hamming/L2 brute-force nearest matches; ORB keypoint repeatability and descriptor layout;
-four resize filters; RGB-to-gray/HSV conversion;
+homography transfer residuals, PnP translation vs OpenCV, and StereoBM center disparity
+on a synthetic textured pair; four resize filters; RGB-to-gray/HSV conversion;
 bilinear remap; NMS; and connected-component areas.
 
 From the repository root, after installing the editable Python extension:

@@ -41,6 +41,9 @@ Use `match_binary_descriptors` for Hamming distance or
 `match_float_descriptors` for Euclidean distance, with optional ratio,
 cross-check, and maximum-distance filters.
 
+Geometry bindings expose `estimate_homography_ransac`, `solve_pnp`, and
+`stereo_block_match` for NumPy `float64` / grayscale workflows.
+
 ## Test
 
 The bindings have a pytest suite (`tests/`) that exercises the NumPy ⇄ Rust

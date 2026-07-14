@@ -26,7 +26,7 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 - `spatialrust-image-io` — bounded, feature-gated image codecs and source metadata
 - `spatialrust-tensor` — runtime-independent tensor metadata, CPU ownership, and DLPack boundary
 - `spatialrust-camera` — camera models, distortion, and RGB-D/point-cloud bridge
-- `spatialrust-vision` — feature-gated CPU preprocessing, Feature2D, warps, detection, masks, and dense maps
+- `spatialrust-vision` — feature-gated CPU preprocessing, Feature2D, geometry/multiview, warps, detection, masks, and dense maps
 
 ## MVP scope
 
@@ -66,8 +66,10 @@ math + image + core -> camera -> vision::spatial/rgbd/odometry
 must use a dedicated backend and explicit upload/readback APIs.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
-`spatialrust-vision` keeps preprocessing, Feature2D, warp, detection, dense-map, and spatial
-bridges in separate additive features. CPU APIs never perform implicit device
+`spatialrust-vision` keeps preprocessing, Feature2D, geometry/multiview (H/F/E,
+PnP, sparse LK, stereo BM), warp, detection, dense-map, and spatial bridges in
+separate additive features. Geometry depends on `spatialrust-camera` only and does
+not pull Feature2D or dense-map types. CPU APIs never perform implicit device
 copies; future GPU/CUDA implementations belong behind explicit backend features.
 Its `imgproc-*` features share one border extrapolation contract; `filter2d`
 means correlation, while true convolution is an explicitly named operation.

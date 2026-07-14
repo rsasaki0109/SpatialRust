@@ -58,6 +58,28 @@ impl CameraMatrix3 {
         Self { matrix, inverse }
     }
 
+    /// Builds a checked pinhole `K` with analytic inverse (zero skew).
+    pub(crate) fn try_from_pinhole(
+        fx: f64,
+        fy: f64,
+        cx: f64,
+        cy: f64,
+    ) -> VisionResult<Self> {
+        if ![fx, fy, cx, cy].into_iter().all(f64::is_finite) || fx <= 0.0 || fy <= 0.0 {
+            return Err(VisionError::InvalidParameter(
+                "pinhole camera matrix requires finite positive focal lengths".into(),
+            ));
+        }
+        Ok(Self {
+            matrix: Mat3::from_rows([fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]),
+            inverse: Mat3::from_rows(
+                [1.0 / fx, 0.0, -cx / fx],
+                [0.0, 1.0 / fy, -cy / fy],
+                [0.0, 0.0, 1.0],
+            ),
+        })
+    }
+
     /// Returns the row-major intrinsic matrix `K`.
     pub const fn matrix(self) -> Mat3<f64> {
         self.matrix
@@ -175,25 +197,10 @@ pub struct RelativePose {
 impl RelativePose {
     /// Creates a checked proper rotation and finite non-zero translation.
     pub fn try_new(rotation: Mat3<f64>, translation: Vec3<f64>) -> VisionResult<Self> {
-        if rotation.m.iter().flatten().any(|value| !value.is_finite())
-            || ![translation.x, translation.y, translation.z].into_iter().all(f64::is_finite)
-        {
+        validate_rotation(rotation, "relative pose")?;
+        if ![translation.x, translation.y, translation.z].into_iter().all(f64::is_finite) {
             return Err(VisionError::InvalidParameter(
-                "relative pose elements must be finite".into(),
-            ));
-        }
-        let orthogonality = rotation.transpose().mul_mat3(rotation);
-        let identity = Mat3::<f64>::identity();
-        let maximum_error = orthogonality
-            .m
-            .iter()
-            .flatten()
-            .zip(identity.m.iter().flatten())
-            .map(|(actual, expected)| (actual - expected).abs())
-            .fold(0.0_f64, f64::max);
-        if maximum_error > 1e-6 || determinant(rotation) < 1.0 - 1e-6 {
-            return Err(VisionError::InvalidParameter(
-                "relative pose rotation must be a proper orthonormal matrix".into(),
+                "relative pose translation must be finite".into(),
             ));
         }
         if translation.length() <= f64::EPSILON {
@@ -213,6 +220,92 @@ impl RelativePose {
     pub const fn translation(self) -> Vec3<f64> {
         self.translation
     }
+}
+
+/// Object-to-camera pose `X_cam = R X_obj + t` used by absolute orientation (PnP).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct AbsolutePose {
+    rotation: Mat3<f64>,
+    translation: Vec3<f64>,
+}
+
+impl AbsolutePose {
+    /// Creates a checked proper rotation and finite translation (may be zero).
+    pub fn try_new(rotation: Mat3<f64>, translation: Vec3<f64>) -> VisionResult<Self> {
+        validate_rotation(rotation, "absolute pose")?;
+        if ![translation.x, translation.y, translation.z].into_iter().all(f64::is_finite) {
+            return Err(VisionError::InvalidParameter(
+                "absolute pose translation must be finite".into(),
+            ));
+        }
+        Ok(Self { rotation, translation })
+    }
+
+    /// Returns the object-to-camera rotation.
+    pub const fn rotation(self) -> Mat3<f64> {
+        self.rotation
+    }
+
+    /// Returns the object-to-camera translation.
+    pub const fn translation(self) -> Vec3<f64> {
+        self.translation
+    }
+
+    /// Transforms an object-frame point into the camera frame.
+    #[must_use]
+    pub fn transform_point(self, point: Vec3<f64>) -> Vec3<f64> {
+        self.rotation.mul_vec3(point) + self.translation
+    }
+}
+
+/// One ordered object-to-image correspondence for absolute pose estimation.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ObjectImageCorrespondence {
+    object: Vec3<f64>,
+    image: Vec2<f64>,
+}
+
+impl ObjectImageCorrespondence {
+    /// Creates a correspondence with finite object and image coordinates.
+    pub fn try_new(object: Vec3<f64>, image: Vec2<f64>) -> VisionResult<Self> {
+        if ![object.x, object.y, object.z, image.x, image.y].into_iter().all(f64::is_finite) {
+            return Err(VisionError::InvalidParameter(
+                "object-image correspondence coordinates must be finite".into(),
+            ));
+        }
+        Ok(Self { object, image })
+    }
+
+    /// Returns the object-frame point.
+    pub const fn object(self) -> Vec3<f64> {
+        self.object
+    }
+
+    /// Returns the image-plane pixel.
+    pub const fn image(self) -> Vec2<f64> {
+        self.image
+    }
+}
+
+fn validate_rotation(rotation: Mat3<f64>, name: &str) -> VisionResult<()> {
+    if rotation.m.iter().flatten().any(|value| !value.is_finite()) {
+        return Err(VisionError::InvalidParameter(format!("{name} rotation must be finite")));
+    }
+    let orthogonality = rotation.transpose().mul_mat3(rotation);
+    let identity = Mat3::<f64>::identity();
+    let maximum_error = orthogonality
+        .m
+        .iter()
+        .flatten()
+        .zip(identity.m.iter().flatten())
+        .map(|(actual, expected)| (actual - expected).abs())
+        .fold(0.0_f64, f64::max);
+    if maximum_error > 1e-6 || determinant(rotation) < 1.0 - 1e-6 {
+        return Err(VisionError::InvalidParameter(format!(
+            "{name} rotation must be a proper orthonormal matrix"
+        )));
+    }
+    Ok(())
 }
 
 /// One two-view triangulation with cheirality and reprojection diagnostics.

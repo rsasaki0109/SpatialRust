@@ -20,7 +20,7 @@ after the GPU-resident frame work recorded through Epic 82.
 | 85 | Complete | 83–84 | `spatialrust-tensor`, DLPack 1.x versioned ABI, explicit copy/device semantics |
 | 86 | Complete | 85 | `spatialrust-ai`, backend traits, ONNX Runtime CPU and explicit I/O binding |
 | 87 | Complete | 84 | Feature2D data model, corners, FAST/ORB, descriptors and matching |
-| 88 | In progress | 84, 87 | Camera geometry, robust multiview estimation, motion and stereo |
+| 88 | Complete | 84, 87 | Camera geometry, robust multiview estimation, motion and stereo |
 | 89 | Planned | 84–85 | Explicit `GpuImage` upload/readback and chainable wgpu vision kernels |
 | 90 | Planned | 86, 88–89 | Model adapters and image → AI → point-cloud end-to-end pipelines |
 
@@ -195,3 +195,21 @@ OpenCV bit identity. Detector repeatability and BFMatcher distance compatibility
 are measured separately. The initial scalar CPU implementation establishes the
 contract and correctness baseline; Epic 89 may accelerate it without changing
 host/device transfer semantics.
+
+## Epic 88 delivery slices
+
+Geometry stays independent of `feature2d` and `dense`. Multiview models and
+absolute pose share one robust-estimation contract. Stereo remaps are returned as
+caller-owned maps for explicit `warp::remap`; disparity reprojects to packed
+`Image` buffers rather than dense-map wrappers.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 88A | Complete | `PointCorrespondence2`, `CameraMatrix3`, projective models, robust options, pose/triangulation result types | `vision-geometry` |
+| 88B | Complete | Normalized DLT + deterministic RANSAC for H/F/E; triangulation; essential pose disambiguation | `vision-geometry` |
+| 88C | Complete | EPnP-class PnP with iterative refine and RANSAC; sparse pyramidal Lucas–Kanade tracks | `vision-geometry` |
+| 88D | Complete | Stereo rig, rectify maps, block-matching disparity, depth/XYZ reproject; Python; OpenCV comparison; Criterion | Python + `vision-geometry` |
+
+Essential/pose and StereoBM comparisons document residual and disparity tolerances
+rather than claiming bit-identical OpenCV matrices. Scalar CPU is the correctness
+baseline; Epic 89 may accelerate kernels without changing host/device semantics.

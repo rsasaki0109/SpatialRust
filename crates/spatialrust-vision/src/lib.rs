@@ -35,6 +35,10 @@ mod matcher;
 mod morphology;
 #[cfg(feature = "geometry")]
 mod multiview;
+#[cfg(feature = "geometry")]
+mod optical_flow;
+#[cfg(feature = "geometry")]
+mod pnp;
 #[cfg(feature = "feature2d")]
 mod orb;
 #[cfg(feature = "preprocess")]
@@ -43,6 +47,8 @@ mod preprocess;
 mod resize;
 #[cfg(feature = "spatial")]
 mod spatial;
+#[cfg(feature = "geometry")]
+mod stereo;
 #[cfg(feature = "warp")]
 mod warp;
 
@@ -75,6 +81,10 @@ pub use matcher::*;
 pub use morphology::*;
 #[cfg(feature = "geometry")]
 pub use multiview::*;
+#[cfg(feature = "geometry")]
+pub use optical_flow::*;
+#[cfg(feature = "geometry")]
+pub use pnp::*;
 #[cfg(feature = "feature2d")]
 pub use orb::*;
 #[cfg(feature = "preprocess")]
@@ -83,5 +93,7 @@ pub use preprocess::*;
 pub use resize::*;
 #[cfg(feature = "spatial")]
 pub use spatial::*;
+#[cfg(feature = "geometry")]
+pub use stereo::*;
 #[cfg(feature = "warp")]
 pub use warp::*;

@@ -382,6 +382,103 @@ def main() -> None:
     if areas != areas_cv:
         raise AssertionError(f"component areas mismatch: {areas} != {areas_cv}")
 
+    # Geometry: planar homography residual agreement (not scale-normalized identity).
+    source = np.array(
+        [[10.0, 12.0], [70.0, 14.0], [18.0, 55.0], [66.0, 60.0], [40.0, 34.0], [28.0, 22.0]],
+        dtype=np.float64,
+    )
+    homography = np.array(
+        [[1.04, 0.015, 2.5], [-0.02, 0.97, -1.25], [0.0002, -0.0001, 1.0]],
+        dtype=np.float64,
+    )
+    target = []
+    for point in source:
+        projected = homography @ np.array([point[0], point[1], 1.0])
+        target.append([projected[0] / projected[2], projected[1] / projected[2]])
+    target = np.asarray(target, dtype=np.float64)
+    estimated, inliers, residuals = sr.estimate_homography_ransac(
+        source, target, threshold=1.0, seed=3
+    )
+    estimated_cv, mask_cv = cv2.findHomography(source, target, method=0)
+    max_residual = float(np.max(residuals))
+    results["homography_max_residual"] = max_residual
+    results["homography_inliers"] = int(np.sum(inliers))
+    if max_residual > 1e-6 or estimated_cv is None:
+        raise AssertionError(f"homography residual {max_residual} too large")
+    # Compare transfer error of both models; allow tiny numeric disagreement.
+    def transfer_error(matrix: np.ndarray) -> float:
+        errors = []
+        for src, dst in zip(source, target):
+            projected = matrix @ np.array([src[0], src[1], 1.0])
+            errors.append(
+                np.hypot(projected[0] / projected[2] - dst[0], projected[1] / projected[2] - dst[1])
+            )
+        return float(np.max(errors))
+
+    transfer_sr = transfer_error(estimated)
+    transfer_cv = transfer_error(estimated_cv)
+    results["homography_transfer_sr"] = transfer_sr
+    results["homography_transfer_cv"] = transfer_cv
+    if transfer_sr > 1e-5 or transfer_cv > 1e-5:
+        raise AssertionError("homography transfer error exceeds tolerance")
+
+    objects = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.25, 0.0, 0.0],
+            [0.0, 0.2, 0.0],
+            [0.0, 0.0, 0.15],
+            [0.1, 0.1, 0.05],
+            [0.05, -0.08, 0.02],
+            [-0.1, 0.05, 0.08],
+            [0.12, 0.04, -0.03],
+        ],
+        dtype=np.float64,
+    )
+    fx = fy = 500.0
+    cx = cy = 240.0
+    true_r = np.eye(3, dtype=np.float64)
+    true_t = np.array([0.12, -0.04, 2.4], dtype=np.float64)
+    images = []
+    for point in objects:
+        camera = true_r @ point + true_t
+        images.append([fx * camera[0] / camera[2] + cx, fy * camera[1] / camera[2] + cy])
+    images = np.asarray(images, dtype=np.float64)
+    rotation, translation = sr.solve_pnp(objects, images, fx, fy, cx, cy, 480, 480)
+    ok_cv, rvec, tvec = cv2.solvePnP(
+        objects.astype(np.float64),
+        images.astype(np.float64),
+        np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]]),
+        None,
+        flags=cv2.SOLVEPNP_ITERATIVE,
+    )
+    if not ok_cv:
+        raise AssertionError("OpenCV solvePnP failed")
+    t_error = float(np.linalg.norm(translation - tvec.reshape(3)))
+    results["pnp_translation_l2_vs_opencv"] = t_error
+    if abs(translation[2] - true_t[2]) > 0.05 or t_error > 0.05:
+        raise AssertionError(f"PnP translation disagreement {t_error}")
+    _ = rotation  # shape already checked by consumer use
+
+    width, height = 128, 96
+    disparity = 16
+    yy, xx = np.indices((height, width), dtype=np.int32)
+    left = ((xx * 17 + yy * 29) % 200 + 20).astype(np.uint8)
+    right = np.zeros_like(left)
+    right[:, : width - disparity] = left[:, disparity:]
+    disparity_sr = sr.stereo_block_match(
+        left, right, window_size=11, min_disparity=1, num_disparities=32, uniqueness_ratio=5.0
+    )
+    matcher = cv2.StereoBM_create(numDisparities=32, blockSize=11)
+    disparity_cv = matcher.compute(left, right).astype(np.float32) / 16.0
+    center = (height // 2, width // 2)
+    results["stereo_bm_sr_center"] = float(disparity_sr[center])
+    results["stereo_bm_cv_center"] = float(disparity_cv[center])
+    if abs(float(disparity_sr[center]) - float(disparity)) > 1.0:
+        raise AssertionError("SpatialRust StereoBM center disparity incorrect")
+    if abs(float(disparity_cv[center]) - float(disparity)) > 1.5:
+        raise AssertionError("OpenCV StereoBM center disparity unexpected for synthetic pair")
+
     results["status"] = "pass"
     print(json.dumps(results, indent=2, sort_keys=True))
 

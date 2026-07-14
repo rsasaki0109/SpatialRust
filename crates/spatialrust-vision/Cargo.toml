@@ -64,3 +64,8 @@ required-features = ["imgproc-canny"]
 name = "feature2d"
 harness = false
 required-features = ["feature2d"]
+
+[[bench]]
+name = "geometry"
+harness = false
+required-features = ["geometry"]

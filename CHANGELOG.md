@@ -88,6 +88,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   cross-check, and distance filters; Python/NumPy bindings and stubs; property
   tests, OpenCV comparison, and 640p/1080p/4K Criterion baselines.
 
+- **Camera geometry, motion, and stereo (Epic 88)**: checked correspondence and
+  projective contracts; normalized DLT and deterministic RANSAC for homography,
+  fundamental, and essential matrices; triangulation and essential pose
+  disambiguation; EPnP-class PnP with iterative refine and RANSAC; sparse
+  pyramidal Lucas–Kanade tracking; stereo rig, rectify remap grids, SAD block
+  matching, and disparity-to-depth/XYZ reproject; Python bindings; OpenCV
+  comparison with documented tolerances; property tests; and Criterion coverage.
+
 - **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
   planar/interleaved layouts and color metadata in `spatialrust-image`; new
   feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,
