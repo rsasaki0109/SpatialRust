@@ -22,6 +22,9 @@ North star: **Rust-native spatial computing**
 - `spatialrust-math` — Vec/Mat/Pose math
 - `spatialrust-io` — readers/writers (feature-gated formats)
 - `spatialrust-gpu` — device buffers and GPU runtime
+- `spatialrust-image` — typed CPU image buffers and strided zero-copy views
+- `spatialrust-camera` — camera models, distortion, and RGB-D/point-cloud bridge
+- `spatialrust-vision` — feature-gated CPU preprocessing, warps, detection, masks, and dense maps
 
 ## MVP scope
 
@@ -46,6 +49,20 @@ math -> core -> search/geometry/io/gpu -> algorithms -> integration
 ```
 
 Forbidden: `core -> io`, `core -> gpu impl`, `core -> ros2`, `core -> ai`.
+
+Image and camera dependency direction:
+
+```
+math -> image
+math -> image -> vision
+math + image + core -> camera -> vision::spatial/rgbd/odometry
+```
+
+`spatialrust-image` remains independent of `spatialrust-core`. GPU image storage
+must use a dedicated backend and explicit upload/readback APIs.
+`spatialrust-vision` keeps preprocessing, warp, detection, dense-map, and spatial
+bridges in separate additive features. CPU APIs never perform implicit device
+copies; future GPU/CUDA implementations belong behind explicit backend features.
 
 ## Roadmap epics
 

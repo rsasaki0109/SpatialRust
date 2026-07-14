@@ -8,7 +8,9 @@
 #![allow(clippy::useless_conversion)]
 
 use numpy::ndarray::{Array2, Array3};
-use numpy::{IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray2};
+use numpy::{
+    IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray1, PyReadonlyArray2, PyReadonlyArray3,
+};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -42,6 +44,15 @@ use spatialrust::transform::{
     normalize_unit_sphere as normalize_unit, oriented_bounding_box as obb, recenter as recenter_op,
     scale_cloud,
 };
+use spatialrust::vision::{
+    approximate_polygon as approximate_contour, connected_components as label_components,
+    decode_rle as decode_mask_runs, encode_rle as encode_mask_runs,
+    find_contours as trace_contours, letterbox as letterbox_op, nms as nms_op,
+    pack_chw as pack_chw_op, point_map_to_point_cloud as point_map_to_cloud, remap as remap_op,
+    resize as resize_op, rgb_to_gray as rgb_to_gray_op, rgb_to_hsv as rgb_to_hsv_op,
+    soft_nms as soft_nms_op, BinaryMask, BorderMode, BoundingBox2, ConfidenceMap, Connectivity,
+    Interpolation, MaskRle, PointMap, RleOrder, SoftNmsMethod,
+};
 use spatialrust::voxelize::{
     range_image as range_image_proj, voxelize as voxelize_grid, RangeImageConfig, VoxelFill,
     VoxelGridConfig,
@@ -53,6 +64,14 @@ use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
     StandardSchemas,
 };
+use spatialrust::{
+    rgbd_to_point_cloud as rgbd_to_cloud, BrownConrady, CameraIntrinsics, DepthConversionOptions,
+    Image, PinholeCamera,
+};
+
+type Vec3Tuple = (f32, f32, f32);
+type OrientedBoundingBoxTuple = (Vec3Tuple, Vec3Tuple, Vec<Vec3Tuple>);
+type ComponentStats = Vec<(u32, usize, (f32, f32, f32, f32))>;
 
 fn to_py_err<E: std::fmt::Display>(err: E) -> PyErr {
     PyValueError::new_err(err.to_string())
@@ -67,6 +86,33 @@ fn parse_policy(policy: &str) -> PyResult<ExecutionPolicy> {
             "unknown execution policy `{other}` (expected: auto, cpu, cpu-single)"
         ))),
     }
+}
+
+fn parse_interpolation(interpolation: &str) -> PyResult<Interpolation> {
+    match interpolation.to_lowercase().as_str() {
+        "nearest" => Ok(Interpolation::Nearest),
+        "bilinear" | "linear" => Ok(Interpolation::Bilinear),
+        "bicubic" | "cubic" => Ok(Interpolation::Bicubic),
+        "area" => Ok(Interpolation::Area),
+        other => Err(PyValueError::new_err(format!(
+            "unknown interpolation `{other}` (expected: nearest, bilinear, bicubic, area)"
+        ))),
+    }
+}
+
+fn rgb_image_from_numpy(array: PyReadonlyArray3<'_, u8>) -> PyResult<Image<u8, 3>> {
+    let view = array.as_array();
+    let shape = view.shape();
+    if shape.len() != 3 || shape[2] != 3 {
+        return Err(PyValueError::new_err("expected an (H, W, 3) uint8 RGB array"));
+    }
+    Image::try_new(shape[1], shape[0], view.iter().copied().collect()).map_err(to_py_err)
+}
+
+fn gray_u8_image_from_numpy(array: PyReadonlyArray2<'_, u8>) -> PyResult<Image<u8, 1>> {
+    let view = array.as_array();
+    let shape = view.shape();
+    Image::try_new(shape[1], shape[0], view.iter().copied().collect()).map_err(to_py_err)
 }
 
 fn cloud_from_xyz(arr: PyReadonlyArray2<'_, f32>) -> PyResult<PointCloud> {
@@ -583,7 +629,7 @@ fn farthest_point_sampling(
 /// then flags points whose tangent-plane neighbors leave a large angular gap.
 /// Returns a sparse sub-cloud of the boundary points.
 #[pyfunction]
-#[pyo3(signature = (cloud, search_radius=0.1, angle_threshold=1.5708, min_neighbors=5, k_neighbors=20))]
+#[pyo3(signature = (cloud, search_radius=0.1, angle_threshold=std::f32::consts::FRAC_PI_2, min_neighbors=5, k_neighbors=20))]
 fn detect_boundary(
     cloud: &PyPointCloud,
     search_radius: f32,
@@ -996,9 +1042,7 @@ fn bounding_box(cloud: &PyPointCloud) -> PyResult<((f32, f32, f32), (f32, f32, f
 /// Oriented (PCA) bounding box as `(center, half_extents, axes_3x3)`. The axes
 /// are returned principal-first; column `k` of `axes_3x3` is the k-th box axis.
 #[pyfunction]
-fn oriented_bounding_box(
-    cloud: &PyPointCloud,
-) -> PyResult<((f32, f32, f32), (f32, f32, f32), Vec<(f32, f32, f32)>)> {
+fn oriented_bounding_box(cloud: &PyPointCloud) -> PyResult<OrientedBoundingBoxTuple> {
     let o = obb(&cloud.inner).map_err(to_py_err)?;
     let axis = |k: usize| (o.axes.m[0][k], o.axes.m[1][k], o.axes.m[2][k]);
     Ok((
@@ -1102,6 +1146,388 @@ fn range_image<'py>(
     Ok(arr.into_pyarray_bound(py))
 }
 
+/// Converts aligned `(H, W)` float32 depth and `(H, W, 3)` uint8 RGB images
+/// into a colored point cloud. `depth_scale` converts stored values to meters.
+#[pyfunction]
+#[pyo3(signature = (
+    depth,
+    color,
+    fx,
+    fy,
+    cx,
+    cy,
+    depth_scale=1.0,
+    min_depth=f32::EPSILON,
+    max_depth=f32::INFINITY,
+    distortion=None
+))]
+#[allow(clippy::too_many_arguments)]
+fn rgbd_to_point_cloud(
+    depth: PyReadonlyArray2<'_, f32>,
+    color: PyReadonlyArray3<'_, u8>,
+    fx: f64,
+    fy: f64,
+    cx: f64,
+    cy: f64,
+    depth_scale: f32,
+    min_depth: f32,
+    max_depth: f32,
+    distortion: Option<(f64, f64, f64, f64, f64)>,
+) -> PyResult<PyPointCloud> {
+    let depth_view = depth.as_array();
+    let color_view = color.as_array();
+    let depth_shape = depth_view.shape();
+    let color_shape = color_view.shape();
+    let height = depth_shape[0];
+    let width = depth_shape[1];
+    if color_shape != [height, width, 3] {
+        return Err(PyValueError::new_err(format!(
+            "expected color shape ({height}, {width}, 3), found {:?}",
+            color_shape
+        )));
+    }
+
+    // Iteration follows logical ndarray order, so non-contiguous NumPy views
+    // are packed explicitly at the Python/native boundary.
+    let depth_image = Image::<f32, 1>::try_new(width, height, depth_view.iter().copied().collect())
+        .map_err(to_py_err)?;
+    let color_image = Image::<u8, 3>::try_new(width, height, color_view.iter().copied().collect())
+        .map_err(to_py_err)?;
+    let intrinsics = CameraIntrinsics::try_new(fx, fy, cx, cy, width, height).map_err(to_py_err)?;
+    let mut camera = PinholeCamera::new(intrinsics);
+    if let Some((k1, k2, p1, p2, k3)) = distortion {
+        camera = camera.with_distortion(BrownConrady { k1, k2, p1, p2, k3 });
+    }
+    let options = DepthConversionOptions { depth_scale, min_depth, max_depth };
+    let inner = rgbd_to_cloud(depth_image.view(), color_image.view(), &camera, options)
+        .map_err(to_py_err)?;
+    Ok(PyPointCloud { inner })
+}
+
+/// Resizes an `(H, W, 3)` uint8 RGB image.
+#[pyfunction]
+#[pyo3(signature = (image, width, height, interpolation="bilinear"))]
+fn resize_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    width: usize,
+    height: usize,
+    interpolation: &str,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output = resize_op(image.view(), width, height, parse_interpolation(interpolation)?)
+        .map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((height, width, 3), output.into_vec()).map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Letterboxes an RGB image and returns `(image, transform)`, where transform
+/// is `(scale, pad_left, pad_top, content_width, content_height)`.
+#[pyfunction]
+#[pyo3(signature = (image, width, height, interpolation="bilinear", fill=None))]
+fn letterbox_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    width: usize,
+    height: usize,
+    interpolation: &str,
+    fill: Option<(u8, u8, u8)>,
+) -> PyResult<(Bound<'py, PyArray3<u8>>, (f64, usize, usize, usize, usize))> {
+    let image = rgb_image_from_numpy(image)?;
+    let (output, transform) = letterbox_op(
+        image.view(),
+        width,
+        height,
+        parse_interpolation(interpolation)?,
+        fill.map_or([114; 3], |(r, g, b)| [r, g, b]),
+    )
+    .map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((height, width, 3), output.into_vec()).map_err(to_py_err)?;
+    Ok((
+        array.into_pyarray_bound(py),
+        (
+            transform.scale,
+            transform.pad_left,
+            transform.pad_top,
+            transform.content_width,
+            transform.content_height,
+        ),
+    ))
+}
+
+/// Normalizes RGB and packs it into a float32 `(3, H, W)` CHW tensor.
+#[pyfunction]
+#[pyo3(signature = (image, scale=1.0/255.0, mean=None, std=None))]
+fn normalize_image_chw<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    scale: f32,
+    mean: Option<(f32, f32, f32)>,
+    std: Option<(f32, f32, f32)>,
+) -> PyResult<Bound<'py, PyArray3<f32>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let mean = mean.map_or([0.0; 3], |(r, g, b)| [r, g, b]);
+    let std = std.map_or([1.0; 3], |(r, g, b)| [r, g, b]);
+    let output = pack_chw_op(image.view(), scale, mean, std).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((3, image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Converts an RGB image to an `(H, W)` grayscale image.
+#[pyfunction]
+fn rgb_to_gray_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output = rgb_to_gray_op(image.view()).map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Converts RGB to OpenCV-style uint8 HSV.
+#[pyfunction]
+fn rgb_to_hsv_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output = rgb_to_hsv_op(image.view()).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((image.height(), image.width(), 3), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Remaps an RGB image with absolute float32 source-coordinate maps.
+#[pyfunction]
+#[pyo3(signature = (image, map_x, map_y, interpolation="bilinear", fill=None))]
+fn remap_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    map_x: PyReadonlyArray2<'_, f32>,
+    map_y: PyReadonlyArray2<'_, f32>,
+    interpolation: &str,
+    fill: Option<(u8, u8, u8)>,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let mx = map_x.as_array();
+    let my = map_y.as_array();
+    if mx.shape() != my.shape() {
+        return Err(PyValueError::new_err("map_x and map_y shapes must match"));
+    }
+    let height = mx.shape()[0];
+    let width = mx.shape()[1];
+    let map_x =
+        Image::<f32, 1>::try_new(width, height, mx.iter().copied().collect()).map_err(to_py_err)?;
+    let map_y =
+        Image::<f32, 1>::try_new(width, height, my.iter().copied().collect()).map_err(to_py_err)?;
+    let output = remap_op(
+        image.view(),
+        map_x.view(),
+        map_y.view(),
+        parse_interpolation(interpolation)?,
+        BorderMode::Constant(fill.map_or([0; 3], |(r, g, b)| [r, g, b])),
+    )
+    .map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((height, width, 3), output.into_vec()).map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Greedy non-maximum suppression over `(N, 4)` xyxy boxes.
+#[pyfunction]
+#[pyo3(signature = (boxes, scores, score_threshold=0.0, iou_threshold=0.5))]
+fn nms<'py>(
+    py: Python<'py>,
+    boxes: PyReadonlyArray2<'_, f32>,
+    scores: PyReadonlyArray1<'_, f32>,
+    score_threshold: f32,
+    iou_threshold: f32,
+) -> PyResult<Bound<'py, PyArray1<i64>>> {
+    let boxes_view = boxes.as_array();
+    if boxes_view.shape().len() != 2 || boxes_view.shape()[1] != 4 {
+        return Err(PyValueError::new_err("expected boxes with shape (N, 4)"));
+    }
+    let mut native_boxes = Vec::with_capacity(boxes_view.shape()[0]);
+    for row in boxes_view.rows() {
+        native_boxes
+            .push(BoundingBox2::try_new(row[0], row[1], row[2], row[3]).map_err(to_py_err)?);
+    }
+    let scores: Vec<f32> = scores.as_array().iter().copied().collect();
+    let indices = nms_op(&native_boxes, &scores, score_threshold, iou_threshold)
+        .map_err(to_py_err)?
+        .into_iter()
+        .map(|index| index as i64)
+        .collect::<Vec<_>>();
+    Ok(indices.into_pyarray_bound(py))
+}
+
+/// Soft-NMS returning `(indices, updated_scores)`.
+#[pyfunction]
+#[pyo3(signature = (boxes, scores, score_threshold=0.001, iou_threshold=0.5, method="linear", sigma=0.5))]
+fn soft_nms(
+    boxes: PyReadonlyArray2<'_, f32>,
+    scores: PyReadonlyArray1<'_, f32>,
+    score_threshold: f32,
+    iou_threshold: f32,
+    method: &str,
+    sigma: f32,
+) -> PyResult<(Vec<usize>, Vec<f32>)> {
+    let boxes_view = boxes.as_array();
+    if boxes_view.shape().len() != 2 || boxes_view.shape()[1] != 4 {
+        return Err(PyValueError::new_err("expected boxes with shape (N, 4)"));
+    }
+    let mut native_boxes = Vec::with_capacity(boxes_view.shape()[0]);
+    for row in boxes_view.rows() {
+        native_boxes
+            .push(BoundingBox2::try_new(row[0], row[1], row[2], row[3]).map_err(to_py_err)?);
+    }
+    let method = match method.to_lowercase().as_str() {
+        "hard" => SoftNmsMethod::Hard,
+        "linear" => SoftNmsMethod::Linear,
+        "gaussian" => SoftNmsMethod::Gaussian { sigma },
+        other => return Err(PyValueError::new_err(format!("unknown Soft-NMS method `{other}`"))),
+    };
+    let scores: Vec<f32> = scores.as_array().iter().copied().collect();
+    let result = soft_nms_op(&native_boxes, &scores, score_threshold, iou_threshold, method)
+        .map_err(to_py_err)?;
+    Ok((
+        result.iter().map(|value| value.index).collect(),
+        result.iter().map(|value| value.score).collect(),
+    ))
+}
+
+/// Labels connected foreground regions in a uint8 binary mask.
+#[pyfunction]
+#[pyo3(signature = (mask, connectivity=8))]
+fn connected_components_image<'py>(
+    py: Python<'py>,
+    mask: PyReadonlyArray2<'_, u8>,
+    connectivity: u8,
+) -> PyResult<(Bound<'py, PyArray2<u32>>, ComponentStats)> {
+    let image = gray_u8_image_from_numpy(mask)?;
+    let mask =
+        BinaryMask::try_new(image.width(), image.height(), image.into_vec()).map_err(to_py_err)?;
+    let connectivity = match connectivity {
+        4 => Connectivity::Four,
+        8 => Connectivity::Eight,
+        _ => return Err(PyValueError::new_err("connectivity must be 4 or 8")),
+    };
+    let result = label_components(&mask, connectivity).map_err(to_py_err)?;
+    let stats = result
+        .components
+        .iter()
+        .map(|component| {
+            (
+                component.label,
+                component.area,
+                (
+                    component.bbox.x_min,
+                    component.bbox.y_min,
+                    component.bbox.x_max,
+                    component.bbox.y_max,
+                ),
+            )
+        })
+        .collect();
+    let labels = Array2::from_shape_vec(
+        (result.labels.height(), result.labels.width()),
+        result.labels.as_slice().to_vec(),
+    )
+    .map_err(to_py_err)?;
+    Ok((labels.into_pyarray_bound(py), stats))
+}
+
+/// Extracts and optionally simplifies mask contours.
+#[pyfunction]
+#[pyo3(signature = (mask, epsilon=0.0))]
+fn find_mask_contours(
+    mask: PyReadonlyArray2<'_, u8>,
+    epsilon: f64,
+) -> PyResult<Vec<Vec<(i32, i32)>>> {
+    let image = gray_u8_image_from_numpy(mask)?;
+    let mask =
+        BinaryMask::try_new(image.width(), image.height(), image.into_vec()).map_err(to_py_err)?;
+    trace_contours(&mask)
+        .into_iter()
+        .map(|contour| {
+            let contour = if epsilon > 0.0 {
+                approximate_contour(&contour, epsilon).map_err(to_py_err)?
+            } else {
+                contour
+            };
+            Ok(contour.points.into_iter().map(|[x, y]| (x, y)).collect())
+        })
+        .collect()
+}
+
+/// Encodes a binary mask into alternating run lengths.
+#[pyfunction]
+#[pyo3(signature = (mask, coco=true))]
+fn encode_mask_rle(mask: PyReadonlyArray2<'_, u8>, coco: bool) -> PyResult<Vec<usize>> {
+    let image = gray_u8_image_from_numpy(mask)?;
+    let mask =
+        BinaryMask::try_new(image.width(), image.height(), image.into_vec()).map_err(to_py_err)?;
+    Ok(encode_mask_runs(&mask, if coco { RleOrder::CocoColumnMajor } else { RleOrder::RowMajor })
+        .counts)
+}
+
+/// Decodes alternating mask run lengths.
+#[pyfunction]
+#[pyo3(signature = (width, height, counts, coco=true))]
+fn decode_mask_rle<'py>(
+    py: Python<'py>,
+    width: usize,
+    height: usize,
+    counts: Vec<usize>,
+    coco: bool,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let rle = MaskRle {
+        width,
+        height,
+        order: if coco { RleOrder::CocoColumnMajor } else { RleOrder::RowMajor },
+        counts,
+    };
+    let mask = decode_mask_runs(&rle).map_err(to_py_err)?;
+    let array =
+        Array2::from_shape_vec((height, width), mask.into_image().into_vec()).map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Converts an `(H, W, 3)` float32 point map into a cloud.
+#[pyfunction]
+#[pyo3(signature = (points, confidence=None, min_confidence=0.0))]
+fn point_map_to_point_cloud(
+    points: PyReadonlyArray3<'_, f32>,
+    confidence: Option<PyReadonlyArray2<'_, f32>>,
+    min_confidence: f32,
+) -> PyResult<PyPointCloud> {
+    let view = points.as_array();
+    let shape = view.shape();
+    if shape.len() != 3 || shape[2] != 3 {
+        return Err(PyValueError::new_err("expected point map shape (H, W, 3)"));
+    }
+    let point_map =
+        PointMap::try_new(shape[1], shape[0], view.iter().copied().collect()).map_err(to_py_err)?;
+    let confidence_map = if let Some(confidence) = confidence {
+        let confidence = confidence.as_array();
+        Some(
+            ConfidenceMap::try_new(
+                confidence.shape()[1],
+                confidence.shape()[0],
+                confidence.iter().copied().collect(),
+            )
+            .map_err(to_py_err)?,
+        )
+    } else {
+        None
+    };
+    let inner = point_map_to_cloud(&point_map, confidence_map.as_ref(), min_confidence)
+        .map_err(to_py_err)?;
+    Ok(PyPointCloud { inner })
+}
+
 /// SpatialRust Python bindings.
 #[pymodule]
 #[pyo3(name = "spatialrust")]
@@ -1147,6 +1573,20 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(oriented_bounding_box, m)?)?;
     m.add_function(wrap_pyfunction!(voxelize, m)?)?;
     m.add_function(wrap_pyfunction!(range_image, m)?)?;
+    m.add_function(wrap_pyfunction!(rgbd_to_point_cloud, m)?)?;
+    m.add_function(wrap_pyfunction!(resize_image, m)?)?;
+    m.add_function(wrap_pyfunction!(letterbox_image, m)?)?;
+    m.add_function(wrap_pyfunction!(normalize_image_chw, m)?)?;
+    m.add_function(wrap_pyfunction!(rgb_to_gray_image, m)?)?;
+    m.add_function(wrap_pyfunction!(rgb_to_hsv_image, m)?)?;
+    m.add_function(wrap_pyfunction!(remap_image, m)?)?;
+    m.add_function(wrap_pyfunction!(nms, m)?)?;
+    m.add_function(wrap_pyfunction!(soft_nms, m)?)?;
+    m.add_function(wrap_pyfunction!(connected_components_image, m)?)?;
+    m.add_function(wrap_pyfunction!(find_mask_contours, m)?)?;
+    m.add_function(wrap_pyfunction!(encode_mask_rle, m)?)?;
+    m.add_function(wrap_pyfunction!(decode_mask_rle, m)?)?;
+    m.add_function(wrap_pyfunction!(point_map_to_point_cloud, m)?)?;
     m.add_function(wrap_pyfunction!(knn_graph, m)?)?;
     m.add_function(wrap_pyfunction!(radius_graph, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;

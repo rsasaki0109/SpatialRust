@@ -145,7 +145,7 @@ MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling 
 
 ## Workspace crates
 
-One dataflow, eleven crates — each pipeline stage maps to the crate that implements it, all sitting on a small math/core/search foundation:
+One dataflow, focused crates — each pipeline stage maps to the crate that implements it, all sitting on a small math/core/search foundation:
 
 <p align="center">
   <img src="docs/assets/architecture.svg" alt="SpatialRust architecture: Load → Voxel → Normals → Plane → Cluster → Register → Save dataflow with implementing crates, wgpu voxel acceleration, and the core/math/search foundation" width="960">
@@ -156,6 +156,9 @@ One dataflow, eleven crates — each pipeline stage maps to the crate that imple
 | `spatialrust` | Meta crate / stable re-exports |
 | `spatialrust-core` | Point schema, metadata, execution traits |
 | `spatialrust-math` | Vec/Mat/Pose math primitives |
+| `spatialrust-image` | Typed image buffers and zero-copy strided views |
+| `spatialrust-camera` | Pinhole/Brown–Conrady camera models and RGB-D conversion |
+| `spatialrust-vision` | Resize/preprocess, warps, detection postprocess, masks, and dense spatial maps |
 | `spatialrust-io` | Point cloud readers/writers (PCD, PLY, LAS, COPC) |
 | `spatialrust-search` | KD-tree search, k-NN / radius graphs |
 | `spatialrust-filtering` | Voxel / FPS downsample, outlier removal, crop, MLS |
@@ -183,6 +186,39 @@ print(result.plane_normal)                        # dominant plane normal (nx, n
 labels = result.labels()                          # (N,) int32 cluster ids
 sr.write("labeled.las", result.output)            # LAS/PCD/PLY/COPC by extension
 ```
+
+Aligned RGB-D images feed the same point-cloud pipeline without an OpenCV
+runtime dependency:
+
+```python
+depth = np.ones((480, 640), dtype=np.float32)
+rgb = np.zeros((480, 640, 3), dtype=np.uint8)
+cloud = sr.rgbd_to_point_cloud(
+    depth, rgb, fx=525.0, fy=525.0, cx=319.5, cy=239.5
+)
+result = sr.run_pipeline(cloud, leaf_size=0.03)
+```
+
+Rust users enable `camera-rgbd`; projection/unprojection supports optional
+Brown–Conrady radial and tangential distortion. The reproducible numerical and
+timing comparison against OpenCV is under `bench/opencv_rgbd_comparison/`.
+
+The `vision-full` feature adds an AI-ready CPU image path with explicit data
+ownership: nearest/bilinear/bicubic/area resize, letterbox and CHW normalization,
+color conversion, remap/warps, IoU/NMS/Soft-NMS, connected components, contours,
+RLE masks, and depth/confidence/flow/point maps. Dense maps bridge explicitly to
+calibrated cameras and point clouds; no API performs a hidden device transfer.
+
+```python
+model_image, transform = sr.letterbox_image(rgb, 640, 640)
+chw = sr.normalize_image_chw(model_image)                  # float32 (3,H,W)
+keep = sr.nms(boxes_xyxy, scores, iou_threshold=0.5)
+cloud = sr.point_map_to_point_cloud(points, confidence, 0.5)
+```
+
+The reproducible algorithm comparison is in
+`bench/opencv_vision_comparison/`; the complete synthetic demo is
+`crates/spatialrust-py/examples/vision_ai_pipeline.py`.
 
 <p align="center">
   <img src="docs/assets/python_segmentation.png" alt="Top-down view of clusters segmented from the public PCL table_scene_lms400 point cloud via a single Python run_pipeline() call" width="540">

@@ -1,0 +1,35 @@
+[package]
+name = "spatialrust-vision"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "AI-ready image processing and vision algorithms for SpatialRust"
+
+[features]
+default = []
+resize = []
+preprocess = ["resize"]
+warp = ["resize"]
+detection = []
+dense = ["detection"]
+spatial = ["dense", "dep:spatialrust-core", "dep:spatialrust-camera"]
+full = ["preprocess", "warp", "detection", "dense", "spatial"]
+
+[dependencies]
+spatialrust-image.workspace = true
+spatialrust-math.workspace = true
+spatialrust-core = { workspace = true, optional = true }
+spatialrust-camera = { workspace = true, optional = true }
+thiserror.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+proptest.workspace = true
+
+[[bench]]
+name = "preprocess"
+harness = false
+required-features = ["preprocess"]

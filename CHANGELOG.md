@@ -21,6 +21,19 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
+  planar/interleaved layouts and color metadata in `spatialrust-image`; new
+  feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,
+  and dense spatial-map APIs; camera/point-cloud/pipeline bridges; Python/NumPy
+  bindings and stubs; property tests, OpenCV comparison, Criterion benchmark,
+  and an end-to-end vision-to-point-cloud demo.
+
+- **OpenCV-oriented image/camera foundation**: new `spatialrust-image` typed
+  packed buffers and strided zero-copy views; new `spatialrust-camera` pinhole
+  projection/unprojection, Brown–Conrady distortion, aligned depth/RGB-D to
+  XYZ/XYZRGB conversion, Python binding, MVP integration test, Criterion bench,
+  synthetic demo, and OpenCV `rgbd.depthTo3d` comparison harness.
+
 - **GPU Euclidean clustering** (`segment-euclidean-gpu`): WGSL uniform-grid label
   propagation, `GpuEuclideanClusterExtractor`,
   `EuclideanClusterExtractor::extract_with_policy`, MVP `cluster_policy`, and CLI

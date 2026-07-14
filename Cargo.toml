@@ -14,6 +14,9 @@ members = [
     "crates/spatialrust-metrics",
     "crates/spatialrust-transform",
     "crates/spatialrust-voxelize",
+    "crates/spatialrust-image",
+    "crates/spatialrust-camera",
+    "crates/spatialrust-vision",
 ]
 # spatialrust-py is a PyO3 cdylib built with maturin; keep it out of the Rust
 # workspace so `cargo test --workspace` does not require a Python toolchain.
@@ -43,6 +46,9 @@ spatialrust-pipeline = { path = "crates/spatialrust-pipeline", version = "1.0.0"
 spatialrust-metrics = { path = "crates/spatialrust-metrics", version = "1.0.0", default-features = false }
 spatialrust-transform = { path = "crates/spatialrust-transform", version = "1.0.0", default-features = false }
 spatialrust-voxelize = { path = "crates/spatialrust-voxelize", version = "1.0.0", default-features = false }
+spatialrust-image = { path = "crates/spatialrust-image", version = "1.0.0" }
+spatialrust-camera = { path = "crates/spatialrust-camera", version = "1.0.0" }
+spatialrust-vision = { path = "crates/spatialrust-vision", version = "1.0.0", default-features = false }
 
 bytemuck = { version = "1", features = ["derive"] }
 las = "0.9"
@@ -56,6 +62,7 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 wgpu = "24"
 criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1"
 
 [profile.release]
 lto = "thin"

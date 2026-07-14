@@ -15,7 +15,9 @@ __version__: str
 # Convenient aliases for the array shapes the bindings exchange.
 _F32Array = NDArray[np.float32]  # positions, grids, range images, transforms
 _I32Array = NDArray[np.int32]  # labels, edge_index
+_U32Array = NDArray[np.uint32]
 _Vec3 = tuple[float, float, float]
+_U8Array = NDArray[np.uint8]
 
 @final
 class PointCloud:
@@ -40,6 +42,83 @@ class PointCloud:
 
     def __len__(self) -> int: ...
     def __repr__(self) -> str: ...
+
+def rgbd_to_point_cloud(
+    depth: _F32Array,
+    color: _U8Array,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    depth_scale: float = ...,
+    min_depth: float = ...,
+    max_depth: float = ...,
+    distortion: Optional[tuple[float, float, float, float, float]] = ...,
+) -> PointCloud:
+    """Convert aligned depth and RGB images to an XYZRGB point cloud."""
+    ...
+
+# --------------------------------------------------------------------------- #
+# Image preprocessing, detection, masks, and dense spatial data
+# --------------------------------------------------------------------------- #
+def resize_image(
+    image: _U8Array,
+    width: int,
+    height: int,
+    interpolation: str = ...,
+) -> _U8Array: ...
+def letterbox_image(
+    image: _U8Array,
+    width: int,
+    height: int,
+    interpolation: str = ...,
+    fill: Optional[tuple[int, int, int]] = ...,
+) -> tuple[_U8Array, tuple[float, int, int, int, int]]: ...
+def normalize_image_chw(
+    image: _U8Array,
+    scale: float = ...,
+    mean: Optional[tuple[float, float, float]] = ...,
+    std: Optional[tuple[float, float, float]] = ...,
+) -> _F32Array: ...
+def rgb_to_gray_image(image: _U8Array) -> _U8Array: ...
+def rgb_to_hsv_image(image: _U8Array) -> _U8Array: ...
+def remap_image(
+    image: _U8Array,
+    map_x: _F32Array,
+    map_y: _F32Array,
+    interpolation: str = ...,
+    fill: Optional[tuple[int, int, int]] = ...,
+) -> _U8Array: ...
+def nms(
+    boxes: _F32Array,
+    scores: _F32Array,
+    score_threshold: float = ...,
+    iou_threshold: float = ...,
+) -> NDArray[np.int64]: ...
+def soft_nms(
+    boxes: _F32Array,
+    scores: _F32Array,
+    score_threshold: float = ...,
+    iou_threshold: float = ...,
+    method: str = ...,
+    sigma: float = ...,
+) -> tuple[list[int], list[float]]: ...
+def connected_components_image(
+    mask: _U8Array,
+    connectivity: int = ...,
+) -> tuple[_U32Array, list[tuple[int, int, tuple[float, float, float, float]]]]: ...
+def find_mask_contours(
+    mask: _U8Array, epsilon: float = ...
+) -> list[list[tuple[int, int]]]: ...
+def encode_mask_rle(mask: _U8Array, coco: bool = ...) -> list[int]: ...
+def decode_mask_rle(
+    width: int, height: int, counts: Sequence[int], coco: bool = ...
+) -> _U8Array: ...
+def point_map_to_point_cloud(
+    points: _F32Array,
+    confidence: Optional[_F32Array] = ...,
+    min_confidence: float = ...,
+) -> PointCloud: ...
 
 @final
 class PipelineResult:
