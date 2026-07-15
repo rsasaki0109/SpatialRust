@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 
 use spatialrust_image::{Image, ImageView};
 
-use crate::{sobel, BorderMode, VisionError, VisionResult};
+use crate::{sobel, spatial_gradient_u8, BorderMode, VisionError, VisionResult};
 
 /// Validated Canny thresholds and gradient settings.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -71,23 +71,43 @@ pub fn canny_with_intermediates(
     options: CannyOptions,
 ) -> VisionResult<CannyResult> {
     let options = options.validate()?;
-    let scale = if options.aperture_size == 7 { 1.0 / 16.0 } else { 1.0 };
-    let gradient_x = sobel(input, 1, 0, options.aperture_size, scale, 0.0, BorderMode::Replicate)?;
-    let gradient_y = sobel(input, 0, 1, options.aperture_size, scale, 0.0, BorderMode::Replicate)?;
     let width = input.width();
     let height = input.height();
     let len = width
         .checked_mul(height)
         .ok_or_else(|| VisionError::InvalidDimensions("Canny image dimensions overflow".into()))?;
-    let gx = gradient_x
-        .as_slice()
-        .iter()
-        // OpenCV's CV_16S Sobel path uses cvRound, whose supported CPU paths
-        // round half-way values to even. This matters for aperture 7's 1/16 scale.
-        .map(|&value| round_i16_ties_even(value))
-        .collect::<Vec<_>>();
-    let gy =
-        gradient_y.as_slice().iter().map(|&value| round_i16_ties_even(value)).collect::<Vec<_>>();
+    let (gradient_x, gradient_y, gx, gy) = if options.aperture_size == 3 {
+        let (gradient_x_i16, gradient_y_i16) = spatial_gradient_u8(input, BorderMode::Replicate)?;
+        let gx = gradient_x_i16.as_slice().iter().map(|&value| i32::from(value)).collect();
+        let gy = gradient_y_i16.as_slice().iter().map(|&value| i32::from(value)).collect();
+        let gradient_x = gradient_x_i16.as_slice().iter().map(|&value| f32::from(value)).collect();
+        let gradient_y = gradient_y_i16.as_slice().iter().map(|&value| f32::from(value)).collect();
+        (
+            Image::try_new_with_metadata(width, height, gradient_x, input.metadata())?,
+            Image::try_new_with_metadata(width, height, gradient_y, input.metadata())?,
+            gx,
+            gy,
+        )
+    } else {
+        let scale = if options.aperture_size == 7 { 1.0 / 16.0 } else { 1.0 };
+        let gradient_x =
+            sobel(input, 1, 0, options.aperture_size, scale, 0.0, BorderMode::Replicate)?;
+        let gradient_y =
+            sobel(input, 0, 1, options.aperture_size, scale, 0.0, BorderMode::Replicate)?;
+        let gx = gradient_x
+            .as_slice()
+            .iter()
+            // OpenCV's CV_16S Sobel path uses cvRound, whose supported CPU paths
+            // round half-way values to even. This matters for aperture 7's 1/16 scale.
+            .map(|&value| round_i16_ties_even(value))
+            .collect::<Vec<_>>();
+        let gy = gradient_y
+            .as_slice()
+            .iter()
+            .map(|&value| round_i16_ties_even(value))
+            .collect::<Vec<_>>();
+        (gradient_x, gradient_y, gx, gy)
+    };
     let comparison_magnitude = gx
         .iter()
         .zip(&gy)

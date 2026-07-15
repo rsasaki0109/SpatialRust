@@ -1,7 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use spatialrust_image::Image;
 use spatialrust_vision::{
-    bilateral_filter, gaussian_blur, median_blur, pyr_down, sobel, BorderMode,
+    bilateral_filter, gaussian_blur, median_blur, pyr_down, sobel, sobel_l1_magnitude_u8,
+    sobel_l1_magnitude_u8_into, spatial_gradient_u8, BorderMode,
 };
 
 fn benchmark_gaussian(c: &mut Criterion) {
@@ -64,5 +65,39 @@ fn benchmark_advanced_filters(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, benchmark_gaussian, benchmark_advanced_filters);
+fn benchmark_paired_sobel(c: &mut Criterion) {
+    for &(name, width, height) in &[("1080p", 1920, 1080), ("4k", 3840, 2160)] {
+        let image = Image::<u8, 1>::try_new(
+            width,
+            height,
+            (0..width * height).map(|index| ((index * 37 + 11) & 255) as u8).collect(),
+        )
+        .unwrap();
+        let mut magnitude = vec![0_i16; width * height];
+        let mut group = c.benchmark_group("paired_sobel_3x3");
+        group.sample_size(10);
+        group.throughput(Throughput::Elements((width * height) as u64));
+        group.bench_function(BenchmarkId::new("xy_allocate", name), |b| {
+            b.iter(|| spatial_gradient_u8(black_box(image.view()), BorderMode::Reflect101).unwrap())
+        });
+        group.bench_function(BenchmarkId::new("l1_allocate", name), |b| {
+            b.iter(|| {
+                sobel_l1_magnitude_u8(black_box(image.view()), BorderMode::Reflect101).unwrap()
+            })
+        });
+        group.bench_function(BenchmarkId::new("l1_reuse", name), |b| {
+            b.iter(|| {
+                sobel_l1_magnitude_u8_into(
+                    black_box(image.view()),
+                    BorderMode::Reflect101,
+                    black_box(&mut magnitude),
+                )
+                .unwrap()
+            })
+        });
+        group.finish();
+    }
+}
+
+criterion_group!(benches, benchmark_gaussian, benchmark_advanced_filters, benchmark_paired_sobel);
 criterion_main!(benches);

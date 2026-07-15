@@ -30,7 +30,8 @@ __all__: list[str] = [
     "rgbd_to_point_cloud", "depth_to_xyz", "calibrate_pinhole_camera",
     "calibrate_fisheye_angles", "dense_flow_image", "gray_world_white_balance_image",
     "stitch_panorama_pair", "filter2d_image", "gaussian_blur_image",
-    "median_blur_image", "bilateral_filter_image", "sobel_image", "scharr_image",
+    "median_blur_image", "bilateral_filter_image", "sobel_image", "spatial_gradient_image",
+    "sobel_l1_magnitude_image", "scharr_image",
     "laplacian_image", "pyr_down_image", "pyr_up_image", "MorphologyWorkspace", "morphology_image",
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
     "histogram_image", "equalize_histogram_image", "clahe_image",
@@ -48,6 +49,7 @@ _F32Array = NDArray[np.float32]  # positions, grids, range images, transforms
 _F64Array = NDArray[np.float64]
 _BoolArray = NDArray[np.bool_]
 _I32Array = NDArray[np.int32]  # labels, edge_index
+_I16Array = NDArray[np.int16]
 _U32Array = NDArray[np.uint32]
 _Vec3 = tuple[float, float, float]
 _U8Array = NDArray[np.uint8]
@@ -181,6 +183,15 @@ def sobel_image(
     scale: float = ...,
     delta: float = ...,
 ) -> _F32Array: ...
+def spatial_gradient_image(
+    image: _U8Array,
+    out_dx: Optional[_I16Array] = ...,
+    out_dy: Optional[_I16Array] = ...,
+) -> tuple[_I16Array, _I16Array]: ...
+def sobel_l1_magnitude_image(
+    image: _U8Array,
+    out: Optional[_I16Array] = ...,
+) -> _I16Array: ...
 def scharr_image(
     image: _U8Array,
     dx: int,

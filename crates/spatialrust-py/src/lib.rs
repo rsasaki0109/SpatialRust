@@ -92,7 +92,10 @@ use spatialrust::vision::{
     pyr_down as pyr_down_op, pyr_up as pyr_up_op, remap as remap_op, resize as resize_op,
     resize_into as resize_into_op, rgb_to_gray as rgb_to_gray_op,
     rgb_to_gray_into as rgb_to_gray_into_op, rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op,
-    sobel as sobel_op, soft_nms as soft_nms_op, solve_pnp as solve_pnp_op,
+    sobel as sobel_op, sobel_l1_magnitude_u8 as sobel_l1_magnitude_u8_op,
+    sobel_l1_magnitude_u8_into as sobel_l1_magnitude_u8_into_op, soft_nms as soft_nms_op,
+    solve_pnp as solve_pnp_op, spatial_gradient_u8 as spatial_gradient_u8_op,
+    spatial_gradient_u8_into as spatial_gradient_u8_into_op,
     stereo_block_match as stereo_block_match_op, stitch_panorama_pair as stitch_panorama_pair_op,
     threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BinaryMask, BorderMode,
     BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity, CornerSelectionOptions,
@@ -2146,6 +2149,121 @@ fn sobel_image<'py>(
     Ok(array.into_pyarray_bound(py))
 }
 
+/// Computes exact paired 3x3 Sobel X/Y gradients from grayscale uint8 input.
+#[pyfunction]
+#[pyo3(signature = (image, out_dx=None, out_dy=None))]
+fn spatial_gradient_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    out_dx: Option<Bound<'py, PyArray2<i16>>>,
+    out_dy: Option<Bound<'py, PyArray2<i16>>>,
+) -> PyResult<(Bound<'py, PyArray2<i16>>, Bound<'py, PyArray2<i16>>)> {
+    let image = gray_u8_image_from_numpy(image)?;
+    match (out_dx, out_dy) {
+        (None, None) => {
+            let (gradient_x, gradient_y) =
+                spatial_gradient_u8_op(image.view(), BorderMode::Reflect101).map_err(to_py_err)?;
+            let gradient_x =
+                Array2::from_shape_vec((image.height(), image.width()), gradient_x.into_vec())
+                    .map_err(to_py_err)?
+                    .into_pyarray_bound(py);
+            let gradient_y =
+                Array2::from_shape_vec((image.height(), image.width()), gradient_y.into_vec())
+                    .map_err(to_py_err)?
+                    .into_pyarray_bound(py);
+            Ok((gradient_x, gradient_y))
+        }
+        (Some(out_dx), Some(out_dy)) => {
+            {
+                let mut dx_rw = out_dx.try_readwrite().map_err(|_| {
+                    PyValueError::new_err("out_dx must not overlap the gradient input")
+                })?;
+                let mut dy_rw = out_dy.try_readwrite().map_err(|_| {
+                    PyValueError::new_err("out_dy must not overlap out_dx or the gradient input")
+                })?;
+                let mut dx_array = dx_rw.as_array_mut();
+                let mut dy_array = dy_rw.as_array_mut();
+                let expected = [image.height(), image.width()];
+                if dx_array.shape() != expected {
+                    return Err(PyValueError::new_err(format!(
+                        "out_dx shape must be ({}, {}), found {:?}",
+                        image.height(),
+                        image.width(),
+                        dx_array.shape()
+                    )));
+                }
+                if dy_array.shape() != expected {
+                    return Err(PyValueError::new_err(format!(
+                        "out_dy shape must be ({}, {}), found {:?}",
+                        image.height(),
+                        image.width(),
+                        dy_array.shape()
+                    )));
+                }
+                let Some(dx_slice) = dx_array.as_slice_mut() else {
+                    return Err(PyValueError::new_err(
+                        "out_dx must be a contiguous int16 array of shape (H, W)",
+                    ));
+                };
+                let Some(dy_slice) = dy_array.as_slice_mut() else {
+                    return Err(PyValueError::new_err(
+                        "out_dy must be a contiguous int16 array of shape (H, W)",
+                    ));
+                };
+                spatial_gradient_u8_into_op(
+                    image.view(),
+                    BorderMode::Reflect101,
+                    dx_slice,
+                    dy_slice,
+                )
+                .map_err(to_py_err)?;
+            }
+            Ok((out_dx, out_dy))
+        }
+        _ => Err(PyValueError::new_err("out_dx and out_dy must be provided together")),
+    }
+}
+
+/// Computes exact fused 3x3 Sobel L1 magnitude from grayscale uint8 input.
+#[pyfunction]
+#[pyo3(signature = (image, out=None))]
+fn sobel_l1_magnitude_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    out: Option<Bound<'py, PyArray2<i16>>>,
+) -> PyResult<Bound<'py, PyArray2<i16>>> {
+    let image = gray_u8_image_from_numpy(image)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out.try_readwrite().map_err(|_| {
+                PyValueError::new_err("out must not overlap the Sobel magnitude input")
+            })?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous int16 array of shape (H, W)",
+                ));
+            };
+            sobel_l1_magnitude_u8_into_op(image.view(), BorderMode::Reflect101, out_slice)
+                .map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let magnitude =
+        sobel_l1_magnitude_u8_op(image.view(), BorderMode::Reflect101).map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), magnitude.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
 /// Computes a signed float32 Scharr derivative from a grayscale uint8 image.
 #[pyfunction]
 #[pyo3(signature = (image, dx, dy, scale=1.0, delta=0.0))]
@@ -3700,6 +3818,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(median_blur_image, m)?)?;
     m.add_function(wrap_pyfunction!(bilateral_filter_image, m)?)?;
     m.add_function(wrap_pyfunction!(sobel_image, m)?)?;
+    m.add_function(wrap_pyfunction!(spatial_gradient_image, m)?)?;
+    m.add_function(wrap_pyfunction!(sobel_l1_magnitude_image, m)?)?;
     m.add_function(wrap_pyfunction!(scharr_image, m)?)?;
     m.add_function(wrap_pyfunction!(laplacian_image, m)?)?;
     m.add_function(wrap_pyfunction!(pyr_down_image, m)?)?;
