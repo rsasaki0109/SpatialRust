@@ -180,6 +180,7 @@ arrow-c-device = ["arrow-c-data", "spatialrust-arrow/arrow-c-device"]
 arrow-full = ["arrow-c-stream", "arrow-c-device"]
 sync = ["records", "dep:spatialrust-sync"]
 sync-mcap = ["sync", "spatialrust-sync/mcap"]
+mapping = ["sync", "dep:spatialrust-mapping"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
@@ -204,6 +205,7 @@ spatialrust-vision = { workspace = true, optional = true }
 spatialrust-records = { workspace = true, optional = true }
 spatialrust-arrow = { workspace = true, optional = true }
 spatialrust-sync = { workspace = true, optional = true }
+spatialrust-mapping = { workspace = true, optional = true }
 
 [dev-dependencies]
 

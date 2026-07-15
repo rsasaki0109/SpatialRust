@@ -67,6 +67,7 @@ until their individual 1.0 milestones.
 | Records (`records`) | Versioned `SpatialRecord`, schema compatibility/migration, and chunked record streams are provisional |
 | Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |
 | Sync (`sync`, `sync-mcap`) | Clock domains, frame graphs, stamped records, and deterministic episode replay are provisional |
+| Mapping (`mapping`) | Trajectories, relative motion estimators, pose graphs, and loop-closure candidates are provisional |
 | GPU image (`gpu-image`) | `GpuImage` upload/readback, receipts, and image compute kernels are provisional |
 
 ## Algorithm crates
@@ -87,6 +88,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-records` | Provisional | Versioned records, schema evolution, chunked host streams; Arrow-free |
 | `spatialrust-arrow` | Provisional | Arrow C Data/Stream/Device adapters; optional features only |
 | `spatialrust-sync` | Provisional | Sensor clocks, frame graphs, stamped records, deterministic replay; MCAP file codecs gated |
+| `spatialrust-mapping` | Provisional | Trajectories, synthetic odometry traits, pose graphs, loop-closure candidates |
 | `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |
 | `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms, checked Feature2D descriptors/matches, shared border/kernel contracts, and explicit point-cloud bridges |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |

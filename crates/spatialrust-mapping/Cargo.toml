@@ -1,0 +1,20 @@
+[package]
+name = "spatialrust-mapping"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Trajectories, pose graphs, and localization primitives for SpatialRust"
+
+[features]
+default = []
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-math.workspace = true
+spatialrust-sync.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]

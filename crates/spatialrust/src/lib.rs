@@ -42,6 +42,8 @@ pub use spatialrust_records as records;
 pub use spatialrust_arrow as arrow;
 #[cfg(feature = "sync")]
 pub use spatialrust_sync as sync;
+#[cfg(feature = "mapping")]
+pub use spatialrust_mapping as mapping;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
