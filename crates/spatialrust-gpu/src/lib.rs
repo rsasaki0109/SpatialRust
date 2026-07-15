@@ -56,7 +56,9 @@ pub use kernels::{
 };
 
 #[cfg(feature = "gpu-wgpu")]
-pub use runtime::{WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS, MULTI_GATHER4_STORAGE_BUFFERS};
+pub use runtime::{
+    WgpuAdapterInfo, WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS, MULTI_GATHER4_STORAGE_BUFFERS,
+};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use upload_cache::GpuBufferPool;
@@ -78,5 +80,6 @@ pub use gpu_frame::{
 
 #[cfg(feature = "gpu-image")]
 pub use image::{
-    box_blur_gpu, copy_gpu_image, rgb_to_gray_gpu, GpuImage, GpuImageBorder, GpuImageReceipt,
+    box_blur_gpu, copy_gpu_image, morphology_gpu, resize_nearest_gpu, rgb_to_gray_gpu, sobel_gpu,
+    GpuImage, GpuImageBorder, GpuImageReceipt, GpuMorphology,
 };

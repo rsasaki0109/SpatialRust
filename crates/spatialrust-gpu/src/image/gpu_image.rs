@@ -1,9 +1,11 @@
-//! Owned GPU image buffers and named upload/readback.
+//! Owned GPU image textures and named upload/readback.
 
 use spatialrust_core::{SpatialError, SpatialResult};
 use spatialrust_image::{Image, ImageMetadata, ImageView};
 
 use crate::WgpuRuntime;
+
+const BYTES_PER_TEXEL: u64 = 4;
 
 /// Transfer accounting for GPU image uploads, device copies, and readbacks.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -15,25 +17,25 @@ pub struct GpuImageReceipt {
 }
 
 impl GpuImageReceipt {
-    /// Returns bytes uploaded from host memory.
+    /// Returns physical bytes explicitly uploaded from host memory.
     #[must_use]
     pub const fn host_to_device_bytes(&self) -> u64 {
         self.host_to_device_bytes
     }
 
-    /// Returns bytes copied between GPU buffers.
+    /// Returns physical bytes copied or written by device-side stages.
     #[must_use]
     pub const fn gpu_to_gpu_bytes(&self) -> u64 {
         self.gpu_to_gpu_bytes
     }
 
-    /// Returns bytes explicitly read back to host memory.
+    /// Returns physical bytes explicitly copied back to host memory.
     #[must_use]
     pub const fn device_to_host_bytes(&self) -> u64 {
         self.device_to_host_bytes
     }
 
-    /// Returns recorded logical stages.
+    /// Returns the ordered logical transfer and kernel stage names.
     #[must_use]
     pub fn stages(&self) -> &[&'static str] {
         &self.stages
@@ -64,23 +66,23 @@ impl GpuImageReceipt {
     }
 }
 
-/// GPU-resident packed interleaved image (`u32` storage per component).
+/// GPU-resident packed image backed by an `rgba8uint` 2D texture.
+///
+/// The logical channel count remains 1..=4. Unused texture components are zero,
+/// so device storage is a predictable four bytes per pixel on every backend.
 pub struct GpuImage {
     width: u32,
     height: u32,
     channels: u32,
     device_key: usize,
-    buffer: wgpu::Buffer,
+    texture: wgpu::Texture,
     storage_bytes: u64,
     metadata: ImageMetadata,
     receipt: GpuImageReceipt,
 }
 
 impl GpuImage {
-    /// Uploads a packed or strided `u8` image view into a new GPU image.
-    ///
-    /// Strided views are packed on the host first; those host bytes are counted
-    /// in the receipt together with the device upload.
+    /// Explicitly uploads a packed or strided `u8` image into a texture.
     pub fn upload_u8<const CHANNELS: usize>(
         runtime: &WgpuRuntime,
         view: ImageView<'_, u8, CHANNELS>,
@@ -90,30 +92,48 @@ impl GpuImage {
                 "GpuImage upload supports 1..=4 channels".to_owned(),
             ));
         }
-        if view.width() == 0 || view.height() == 0 {
+        let width = u32::try_from(view.width())
+            .map_err(|_| SpatialError::InvalidArgument("GpuImage width exceeds u32".to_owned()))?;
+        let height = u32::try_from(view.height())
+            .map_err(|_| SpatialError::InvalidArgument("GpuImage height exceeds u32".to_owned()))?;
+        if width == 0 || height == 0 {
             return Err(SpatialError::InvalidArgument(
                 "GpuImage upload requires positive width and height".to_owned(),
             ));
         }
-        let packed = pack_u8_view(view);
-        let words = packed.iter().map(|&value| u32::from(value)).collect::<Vec<_>>();
-        let buffer = runtime.upload_u32_storage("gpu-image-upload", &words)?;
-        let storage_bytes = (words.len() * std::mem::size_of::<u32>()) as u64;
+        let texture = create_texture(runtime, width, height, "gpu-image-upload");
+        let texels = pack_rgba8(view);
+        runtime.queue().write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &texels,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(width * BYTES_PER_TEXEL as u32),
+                rows_per_image: Some(height),
+            },
+            extent(width, height),
+        );
+        let storage_bytes = texture_bytes(width, height);
         let mut receipt = GpuImageReceipt::default();
-        receipt.record_host_to_device(storage_bytes, "upload_u8");
+        receipt.record_host_to_device(storage_bytes, "upload_u8_texture");
         Ok(Self {
-            width: view.width() as u32,
-            height: view.height() as u32,
+            width,
+            height,
             channels: CHANNELS as u32,
             device_key: runtime_device_key(runtime),
-            buffer,
+            texture,
             storage_bytes,
             metadata: view.metadata(),
             receipt,
         })
     }
 
-    /// Reads the image back into an owned packed host `Image`.
+    /// Explicitly reads the texture back into an owned packed host image.
     pub fn readback_u8<const CHANNELS: usize>(
         &mut self,
         runtime: &WgpuRuntime,
@@ -125,31 +145,48 @@ impl GpuImage {
                 self.channels
             )));
         }
-        let word_count = self.element_count();
+        let unpadded_row = self.width * BYTES_PER_TEXEL as u32;
+        let padded_row = unpadded_row.div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+            * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+        let staging_size = u64::from(padded_row) * u64::from(self.height);
         let staging = runtime.device().create_buffer(&wgpu::BufferDescriptor {
-            label: Some("gpu-image-readback"),
-            size: self.storage_bytes,
+            label: Some("gpu-image-texture-readback"),
+            size: staging_size,
             usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        let mut encoder = runtime.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("gpu-image-readback-encoder"),
-        });
-        encoder.copy_buffer_to_buffer(&self.buffer, 0, &staging, 0, self.storage_bytes);
+        let mut encoder =
+            runtime.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("gpu-image-texture-readback-encoder"),
+            });
+        encoder.copy_texture_to_buffer(
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyBufferInfo {
+                buffer: &staging,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(padded_row),
+                    rows_per_image: Some(self.height),
+                },
+            },
+            extent(self.width, self.height),
+        );
         runtime.queue().submit(Some(encoder.finish()));
-        let words = read_staging_u32(runtime.device(), &staging, word_count)?;
-        let data = words
-            .into_iter()
-            .map(|value| u8::try_from(value.min(255)).unwrap_or(255))
-            .collect::<Vec<_>>();
-        self.receipt.record_device_to_host(self.storage_bytes, "readback_u8");
-        Image::try_new_with_metadata(
-            self.width as usize,
-            self.height as usize,
-            data,
-            self.metadata,
-        )
-        .map_err(|error| SpatialError::InvalidArgument(error.to_string()))
+        let rgba = read_staging_bytes(runtime.device(), &staging, staging_size as usize)?;
+        let mut data = Vec::with_capacity(self.width as usize * self.height as usize * CHANNELS);
+        for row in rgba.chunks_exact(padded_row as usize).take(self.height as usize) {
+            for texel in row[..unpadded_row as usize].chunks_exact(BYTES_PER_TEXEL as usize) {
+                data.extend_from_slice(&texel[..CHANNELS]);
+            }
+        }
+        self.receipt.record_device_to_host(self.storage_bytes, "readback_u8_texture");
+        Image::try_new_with_metadata(self.width as usize, self.height as usize, data, self.metadata)
+            .map_err(|error| SpatialError::InvalidArgument(error.to_string()))
     }
 
     /// Returns image width in pixels.
@@ -164,7 +201,7 @@ impl GpuImage {
         self.height
     }
 
-    /// Returns channel count.
+    /// Returns the logical component count.
     #[must_use]
     pub const fn channels(&self) -> u32 {
         self.channels
@@ -176,21 +213,16 @@ impl GpuImage {
         self.metadata
     }
 
-    /// Returns transfer accounting for this image's lifetime so far.
+    /// Returns cumulative transfer and device-stage accounting.
     #[must_use]
     pub const fn receipt(&self) -> &GpuImageReceipt {
         &self.receipt
     }
 
-    /// Returns mutable transfer accounting.
-    pub fn receipt_mut(&mut self) -> &mut GpuImageReceipt {
-        &mut self.receipt
-    }
-
-    /// Recycles the storage buffer into the runtime pool.
+    /// Drops texture storage after verifying the runtime ownership contract.
     pub fn recycle(self, runtime: &WgpuRuntime) {
         if self.validate_runtime(runtime).is_ok() {
-            runtime.recycle_storage(self.storage_bytes, self.buffer);
+            runtime.recycle_image_texture(self.width, self.height, self.texture);
         }
     }
 
@@ -203,18 +235,16 @@ impl GpuImage {
         Ok(())
     }
 
-    pub(crate) fn element_count(&self) -> usize {
-        (self.width as usize)
-            .saturating_mul(self.height as usize)
-            .saturating_mul(self.channels as usize)
-    }
-
-    pub(crate) fn storage_bytes(&self) -> u64 {
+    pub(crate) const fn storage_bytes(&self) -> u64 {
         self.storage_bytes
     }
 
-    pub(crate) fn buffer(&self) -> &wgpu::Buffer {
-        &self.buffer
+    pub(crate) const fn texture(&self) -> &wgpu::Texture {
+        &self.texture
+    }
+
+    pub(crate) fn view(&self) -> wgpu::TextureView {
+        self.texture.create_view(&wgpu::TextureViewDescriptor::default())
     }
 
     pub(crate) fn from_parts(
@@ -222,8 +252,7 @@ impl GpuImage {
         width: u32,
         height: u32,
         channels: u32,
-        buffer: wgpu::Buffer,
-        storage_bytes: u64,
+        texture: wgpu::Texture,
         metadata: ImageMetadata,
         receipt: GpuImageReceipt,
     ) -> SpatialResult<Self> {
@@ -237,33 +266,52 @@ impl GpuImage {
             height,
             channels,
             device_key: runtime_device_key(runtime),
-            buffer,
-            storage_bytes,
+            texture,
+            storage_bytes: texture_bytes(width, height),
             metadata,
             receipt,
         })
     }
 }
 
-fn pack_u8_view<const CHANNELS: usize>(view: ImageView<'_, u8, CHANNELS>) -> Vec<u8> {
-    let mut packed = Vec::with_capacity(view.width() * view.height() * CHANNELS);
+pub(crate) fn create_texture(
+    runtime: &WgpuRuntime,
+    width: u32,
+    height: u32,
+    label: &'static str,
+) -> wgpu::Texture {
+    runtime.acquire_image_texture(width, height, label)
+}
+
+fn pack_rgba8<const CHANNELS: usize>(view: ImageView<'_, u8, CHANNELS>) -> Vec<u8> {
+    let mut packed = vec![0_u8; view.width() * view.height() * BYTES_PER_TEXEL as usize];
     for y in 0..view.height() {
-        for x in 0..view.width() {
-            packed.extend_from_slice(view.get(x, y).expect("in-bounds"));
+        let source = view.row(y).expect("input row in bounds");
+        let target = &mut packed[y * view.width() * 4..(y + 1) * view.width() * 4];
+        for (pixel, texel) in source.chunks_exact(CHANNELS).zip(target.chunks_exact_mut(4)) {
+            texel[..CHANNELS].copy_from_slice(pixel);
         }
     }
     packed
+}
+
+const fn extent(width: u32, height: u32) -> wgpu::Extent3d {
+    wgpu::Extent3d { width, height, depth_or_array_layers: 1 }
+}
+
+const fn texture_bytes(width: u32, height: u32) -> u64 {
+    width as u64 * height as u64 * BYTES_PER_TEXEL
 }
 
 pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> usize {
     runtime.device() as *const wgpu::Device as usize
 }
 
-pub(crate) fn read_staging_u32(
+fn read_staging_bytes(
     device: &wgpu::Device,
     staging_buffer: &wgpu::Buffer,
     len: usize,
-) -> SpatialResult<Vec<u32>> {
+) -> SpatialResult<Vec<u8>> {
     let slice = staging_buffer.slice(..);
     let (sender, receiver) = std::sync::mpsc::channel();
     slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -274,10 +322,10 @@ pub(crate) fn read_staging_u32(
         .recv()
         .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
         .map_err(|error| {
-            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
+            SpatialError::InvalidArgument(format!("failed to map wgpu texture: {error}"))
         })?;
     let data = slice.get_mapped_range();
-    let values: Vec<u32> = bytemuck::cast_slice(&data)[..len].to_vec();
+    let values = data[..len].to_vec();
     drop(data);
     staging_buffer.unmap();
     Ok(values)

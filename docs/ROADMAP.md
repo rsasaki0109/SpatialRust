@@ -219,8 +219,9 @@ baseline; Epic 89 may accelerate kernels without changing host/device semantics.
 GPU images live in `spatialrust-gpu` behind `gpu-image`. CPU `spatialrust-vision`
 remains the numerical baseline. Kernel APIs take and return `GpuImage` and never
 imply host transfers; only named upload/readback move bytes across the host/device
-boundary. Storage is packed interleaved `u8` expanded to one `u32` value per
-component for WGSL clarity (texture path is deferred).
+boundary. Epic 89 initially used one `u32` per component for WGSL clarity;
+Epic 104 supersedes that internal representation with pooled `rgba8uint`
+textures without changing the explicit transfer contract.
 
 | Slice | Status | Scope | Feature |
 | --- | --- | --- | --- |
@@ -379,7 +380,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | 101 | Complete | 83–90 | Reproducible OpenCV correctness/performance contract, workload manifest, environment receipts, and aggregate runner |
 | 102 | Complete | 101 | Stabilize the image/camera/vision 1.0 contract and cross-platform conformance |
 | 103 | Complete | 101–102 | SIMD/parallel CPU kernel dispatch, reusable outputs, and measured allocation control |
-| 104 | Planned | 89, 101–103 | Texture-backed GPU Image v2 and device-resident resize/filter/edge/morphology chains |
+| 104 | Complete | 89, 101–103 | Texture-backed GPU Image v2 and device-resident resize/filter/edge/morphology chains |
 | 105 | Planned | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
 | 106 | Planned | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
 | 107 | Planned | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
@@ -438,3 +439,18 @@ typed RGB-to-CHW path is faster on every canonical profile. On the reference
 Windows host, reusable SpatialRust CHW measured 8.54x, 13.07x, and 16.11x faster
 than allocating `cv2.dnn.blobFromImage` at VGA, 1080p, and 4K. Public CPU APIs
 accept explicit caller storage and never perform an implicit device transfer.
+
+### Epic 104 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 104A | Complete | Replace component-expanded storage buffers with pooled `rgba8uint` 2D textures | four physical bytes/pixel and explicit texture upload/readback |
+| 104B | Complete | Texture-resident copy, RGB-to-gray, and box-filter migration | existing CPU parity tests with zero mid-chain D2H |
+| 104C | Complete | Chainable nearest resize, Sobel magnitude, erosion, and dilation | known-pixel GPU tests and transfer-stage receipt |
+| 104D | Complete | Runtime adapter/backend identity, explicit synchronization, per-device pipeline caches, and steady-state texture pool | `WgpuAdapterInfo`, `wait_idle`, recycle/acquire pool |
+| 104E | Complete | VGA/1080p/4K synchronized Criterion coverage | upload, gray+blur, and five-stage resident chain groups |
+
+The reference low-power adapter measured the five-stage resident chain at
+0.963 ms (VGA), 3.504 ms (1080p), and 13.523 ms (4K), with explicit device
+synchronization. A chain receipt contains one upload, named device stages, no
+mid-chain readback, and one readback only when the caller requests host data.

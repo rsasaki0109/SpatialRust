@@ -1,12 +1,10 @@
 //! Gray box blur on the GPU.
 
-use std::sync::OnceLock;
-
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
 use wgpu::util::DeviceExt;
 
-use crate::image::gpu_image::{GpuImage, GpuImageReceipt};
+use crate::image::gpu_image::{create_texture, GpuImage, GpuImageReceipt};
 use crate::WgpuRuntime;
 
 const WORKGROUP: u32 = 256;
@@ -46,8 +44,8 @@ struct Params {
 };
 
 @group(0) @binding(0) var<uniform> params: Params;
-@group(0) @binding(1) var<storage, read> input_px: array<u32>;
-@group(0) @binding(2) var<storage, read_write> output_px: array<u32>;
+@group(0) @binding(1) var input_px: texture_2d<u32>;
+@group(0) @binding(2) var output_px: texture_storage_2d<rgba8uint, write>;
 
 fn sample_gray(x: i32, y: i32) -> u32 {
     var sx = x;
@@ -58,7 +56,7 @@ fn sample_gray(x: i32, y: i32) -> u32 {
     } else if (sx < 0 || sy < 0 || sx >= i32(params.width) || sy >= i32(params.height)) {
         return 0u;
     }
-    return input_px[u32(sy) * params.width + u32(sx)];
+    return textureLoad(input_px, vec2<i32>(sx, sy), 0).r;
 }
 
 @compute @workgroup_size(256)
@@ -80,72 +78,70 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             count = count + 1u;
         }
     }
-    output_px[index] = (sum + count / 2u) / count;
+    let value = (sum + count / 2u) / count;
+    textureStore(output_px, vec2<i32>(x, y), vec4<u32>(value, 0u, 0u, 0u));
 }
 "#;
 
-struct BlurPipeline {
+pub(crate) struct BlurPipeline {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline: wgpu::ComputePipeline,
 }
 
-fn blur_pipeline(device: &wgpu::Device) -> &'static BlurPipeline {
-    static PIPELINE: OnceLock<BlurPipeline> = OnceLock::new();
-    PIPELINE.get_or_init(|| {
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("gpu-image-blur-bgl"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
+pub(crate) fn create_blur_pipeline(device: &wgpu::Device) -> BlurPipeline {
+    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("gpu-image-blur-bgl"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
                 },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Texture {
+                    sample_type: wgpu::TextureSampleType::Uint,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
                 },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::StorageTexture {
+                    access: wgpu::StorageTextureAccess::WriteOnly,
+                    format: wgpu::TextureFormat::Rgba8Uint,
+                    view_dimension: wgpu::TextureViewDimension::D2,
                 },
-            ],
-        });
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("gpu-image-blur-shader"),
-            source: wgpu::ShaderSource::Wgsl(BLUR_WGSL.into()),
-        });
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("gpu-image-blur-pl"),
-            bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
-        });
-        let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("gpu-image-blur-pipeline"),
-            layout: Some(&pipeline_layout),
-            module: &shader,
-            entry_point: Some("main"),
-            compilation_options: wgpu::PipelineCompilationOptions::default(),
-            cache: None,
-        });
-        BlurPipeline { bind_group_layout, pipeline }
-    })
+                count: None,
+            },
+        ],
+    });
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("gpu-image-blur-shader"),
+        source: wgpu::ShaderSource::Wgsl(BLUR_WGSL.into()),
+    });
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("gpu-image-blur-pl"),
+        bind_group_layouts: &[&bind_group_layout],
+        push_constant_ranges: &[],
+    });
+    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+        label: Some("gpu-image-blur-pipeline"),
+        layout: Some(&pipeline_layout),
+        module: &shader,
+        entry_point: Some("main"),
+        compilation_options: wgpu::PipelineCompilationOptions::default(),
+        cache: None,
+    });
+    BlurPipeline { bind_group_layout, pipeline }
 }
 
 /// Applies a square/rectangular mean box blur to a single-channel `GpuImage`.
@@ -168,15 +164,8 @@ pub fn box_blur_gpu(
         ));
     }
     let pixel_count = (source.width() as usize).saturating_mul(source.height() as usize);
-    let out_bytes = (pixel_count * std::mem::size_of::<u32>()) as u64;
-    let output = runtime.device().create_buffer(&wgpu::BufferDescriptor {
-        label: Some("gpu-image-blur-out"),
-        size: out_bytes,
-        usage: wgpu::BufferUsages::STORAGE
-            | wgpu::BufferUsages::COPY_DST
-            | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
+    let out_bytes = u64::from(source.width()) * u64::from(source.height()) * 4;
+    let output = create_texture(runtime, source.width(), source.height(), "gpu-image-blur-out");
     let params = BlurParams {
         width: source.width(),
         height: source.height(),
@@ -195,14 +184,23 @@ pub fn box_blur_gpu(
         contents: bytemuck::bytes_of(&params),
         usage: wgpu::BufferUsages::UNIFORM,
     });
-    let pipeline = blur_pipeline(runtime.device());
+    let pipeline =
+        runtime.image_blur_pipeline.get_or_init(|| create_blur_pipeline(runtime.device()));
+    let source_view = source.view();
+    let output_view = output.create_view(&wgpu::TextureViewDescriptor::default());
     let bind_group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("gpu-image-blur-bg"),
         layout: &pipeline.bind_group_layout,
         entries: &[
             wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 1, resource: source.buffer().as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 2, resource: output.as_entire_binding() },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::TextureView(&source_view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: wgpu::BindingResource::TextureView(&output_view),
+            },
         ],
     });
     let mut encoder = runtime.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -227,7 +225,6 @@ pub fn box_blur_gpu(
         source.height(),
         1,
         output,
-        out_bytes,
         source.metadata(),
         receipt,
     )
