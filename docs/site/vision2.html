@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SpatialRust Vision 2 performance program, Epics 112 through 120.">
+  <title>Vision 2 Performance Roadmap · SpatialRust</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header><nav class="wrap"><a class="brand" href="index.html">SpatialRust</a><div class="nav-links"><a href="algorithms.html">Algorithms</a><a href="vision2.html">Vision 2</a><a href="spatialrust/index.html">Rust API</a><a href="https://github.com/rsasaki0109/SpatialRust">GitHub</a></div></nav></header>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Epics 112–120</div>
+      <h1>Vision 2 performance program</h1>
+      <p class="lead">Turn measured OpenCV gaps into faster native kernels, reusable memory, explicit GPU-resident chains, and fail-closed performance evidence—without weakening accuracy or ownership contracts.</p>
+      <div class="actions"><a class="button primary" href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ROADMAP.md#vision-2-performance-program-epics-112120">Canonical roadmap</a><a class="button" href="algorithms.html">Algorithm catalog</a></div>
+    </section>
+
+    <section>
+      <h2>Delivery sequence</h2>
+      <div class="flow"><span>attribute cost</span><b>→</b><span>reuse memory</span><b>→</b><span>dispatch safely</span><b>→</b><span>accelerate kernels</span><b>→</b><span>stay on GPU</span><b>→</b><span>gate release</span></div>
+      <p class="notice">Targets compare SpatialRust with its Epic 112 baseline on the same host. OpenCV remains an accuracy and workload reference; results never imply universal superiority.</p>
+    </section>
+
+    <section class="epics">
+      <h2>Nine reviewable Epics</h2>
+      <article class="epic"><div><h3>Performance attribution</h3><p>Separate native kernel, allocation, Python conversion, upload, execution, and readback costs. Publish MPix/s, ns/pixel, memory, and thread policy.</p></div></article>
+      <article class="epic"><div><h3>Reusable outputs and workspaces</h3><p>Add caller-owned outputs and explicit scratch storage for Gaussian, Sobel, morphology, and Canny while preserving packed and strided behavior.</p></div></article>
+      <article class="epic"><div><h3>Safe CPU dispatch</h3><p>Use scalar small-image paths, packed specializations, bounded row/tile parallelism, and fully compatible generic fallbacks.</p></div></article>
+      <article class="epic"><div><h3>Resize and color</h3><p>Precompute sampling plans, accelerate common packed formats, and evaluate fused resize+gray and resize+CHW preprocessing.</p></div></article>
+      <article class="epic"><div><h3>Gaussian and Sobel</h3><p>Reuse separable intermediates, cache kernels, isolate borders, and compute paired gradients with shared traversal.</p></div></article>
+      <article class="epic"><div><h3>Morphology</h3><p>Introduce rectangular sliding min/max, small-kernel paths, ping-pong scratch, and exact generic-shape fallback.</p></div></article>
+      <article class="epic"><div><h3>Fused Canny</h3><p>Avoid materializing public intermediates in the standard path while retaining an opt-in inspectable result.</p></div></article>
+      <article class="epic"><div><h3>Explicit GPU chain</h3><p>Upload once, execute resize-to-AI stages on pooled textures, and read back only when the caller asks.</p></div></article>
+      <article class="epic"><div><h3>Vision 2 release gate</h3><p>Enforce cross-platform accuracy, native/Python performance, memory, allocation, thread, and transfer budgets.</p></div></article>
+    </section>
+
+    <section>
+      <h2>Non-negotiable contracts</h2>
+      <div class="grid">
+        <article class="card"><h3>Accuracy first</h3><p>Bounded numerical error for resize, gray, and Gaussian; exact Sobel/morphology comparison; binary F1 and IoU for Canny.</p></article>
+        <article class="card"><h3>No hidden copies</h3><p>CPU APIs remain on CPU. GPU upload/readback stages stay named, explicit, and auditable.</p></article>
+        <article class="card"><h3>Stable foundations</h3><p>Vision 1 ownership and error behavior remain compatible; new workspace surfaces are additive.</p></article>
+        <article class="card"><h3>One Epic, one PR</h3><p>Every Epic follows implement → test → commit → PR → merge with its own reproducible receipt.</p></article>
+      </div>
+    </section>
+  </main>
+  <footer><div class="wrap">The <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ROADMAP.md">repository ROADMAP</a> is authoritative for status and acceptance criteria.</div></footer>
+</body>
+</html>

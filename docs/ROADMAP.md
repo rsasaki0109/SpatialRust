@@ -562,3 +562,117 @@ unacknowledged migration policy.
 Epic 111 does not claim blanket superiority. On the dated Windows reference
 host, SpatialRust leads AI CHW preprocessing while OpenCV leads the measured
 general image kernels. Results are hardware receipts, not portable guarantees.
+
+## Vision 2 performance program (Epics 112–120)
+
+This program turns the Epic 111 evidence into a systematic optimization track.
+It covers native CPU kernels, Python end-to-end calls, explicit GPU-resident
+chains, allocation behavior, and release gates. It does not promise blanket
+OpenCV superiority: every published result names the workload, hardware,
+backend, allocation mode, and accuracy contract.
+
+| Epic | Status | Depends on | Outcome |
+| --- | --- | --- | --- |
+| 112 | Planned | 111 | Attribute native kernel, allocation, Python conversion, and transfer costs with reproducible throughput and memory receipts |
+| 113 | Planned | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
+| 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
+| 115 | Planned | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
+| 116 | Planned | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
+| 117 | Planned | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
+| 118 | Planned | 113–117 | Fused Canny fast path that avoids public intermediates unless explicitly requested |
+| 119 | Planned | 104, 115–118 | Explicit upload-once GPU-resident vision chain with no intermediate readback |
+| 120 | Planned | 112–119 | Vision 2 cross-platform correctness, speed, memory, allocation, and transfer release gate |
+
+Each Epic lands as one reviewable PR using implement → test → commit → PR →
+merge. Stable Vision 1 ownership and error contracts remain compatible;
+reusable workspace surfaces are additive. CPU APIs do not choose a GPU or copy
+to one implicitly, and GPU receipts must retain named upload/readback stages.
+
+### Epic 112 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 112A | Planned | Separate Python conversion, allocation, native kernel, upload, execution, and readback time | versioned component timing receipt |
+| 112B | Planned | Report MPix/s, ns/pixel, bytes allocated, peak workspace, and batch policy | strict finite JSON contract tests |
+| 112C | Planned | Add native Criterion counterparts for every OpenCV vision workload | VGA/1080p/4K matched workload manifest |
+| 112D | Planned | Record single-thread and default-thread CPU modes | host and thread-policy receipt |
+| 112E | Planned | Publish bottleneck attribution without changing kernels | dated baseline note and Pages update |
+
+### Epic 113 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 113A | Planned | `*_into` entry points for Gaussian, Sobel, morphology, and Canny | packed/strided identity and padding tests |
+| 113B | Planned | Explicit reusable scratch storage for multi-pass algorithms | steady-state allocation receipt |
+| 113C | Planned | Validate dimensions, metadata, overlap, and channel contracts | negative and property tests |
+| 113D | Planned | Reuse outputs through Python `out=` where supported | object-identity and numerical tests |
+
+### Epic 114 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 114A | Planned | Shared small-image scalar and large-image row/tile dispatch policy | deterministic threshold tests |
+| 114B | Planned | Packed `u8` one/three-channel and `f32` internal fast-path selection | dispatch receipt and fallback parity |
+| 114C | Planned | Preserve generic components, channels, strides, and borders as safe fallbacks | full property suite |
+| 114D | Planned | Bound worker creation and temporary memory | thread-count and peak-memory receipt |
+
+### Epic 115 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 115A | Planned | Precompute resize source coordinates and interpolation coefficients | plan reuse tests |
+| 115B | Planned | Packed bilinear/nearest/area and RGB-to-gray fast paths | OpenCV max-error contract |
+| 115C | Planned | Evaluate resize+gray and resize+CHW fusion without changing standalone APIs | fused/unfused parity and timing |
+| 115D | Planned | Improve current SpatialRust throughput by at least 5x on one canonical large profile | native and Python receipts |
+
+### Epic 116 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 116A | Planned | Reuse separable-filter intermediates and cache validated Gaussian kernels | allocation and cache tests |
+| 116B | Planned | Split border handling from contiguous interior loops | all border-mode property tests |
+| 116C | Planned | Specialized 3x3/5x5/7x7 Gaussian and paired Sobel X/Y passes | OpenCV error receipt |
+| 116D | Planned | Improve Gaussian by at least 10x and Sobel by at least 5x on one canonical large profile | native timing receipt |
+
+### Epic 117 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 117A | Planned | Separable sliding min/max for rectangular elements | naive-reference property tests |
+| 117B | Planned | Dedicated small rectangular paths and generic Cross/Ellipse/Diamond/custom-mask fallback | shape and anchor parity |
+| 117C | Planned | Ping-pong workspace for iterations and composite operations | allocation and alias tests |
+| 117D | Planned | Improve morphology by at least 20x on one canonical large profile | bit-exact OpenCV and timing receipt |
+
+### Epic 118 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 118A | Planned | Compute paired gradients, magnitude, and direction with shared traversal | intermediate parity tests |
+| 118B | Planned | Ring-buffer suppression and reusable hysteresis queue | peak-memory receipt |
+| 118C | Planned | Keep inspectable intermediates opt-in while making `canny()` allocation-light | API behavior tests |
+| 118D | Planned | Improve Canny by at least 5x on one canonical large profile | F1/IoU and timing receipt |
+
+### Epic 119 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 119A | Planned | Chain resize, gray, blur, edge, morphology, and AI packing on explicit GPU images | named stage receipt |
+| 119B | Planned | One caller-requested upload, no intermediate readback, optional final readback | transfer-ledger denial tests |
+| 119C | Planned | Reuse textures and pipelines in steady state | pool/cache receipt |
+| 119D | Planned | Compare CPU, GPU round-trip, and GPU-resident modes separately | synchronized VGA/1080p/4K receipt |
+
+### Epic 120 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 120A | Planned | Cross-platform correctness and API compatibility matrix | Linux/Windows/macOS CI |
+| 120B | Planned | Native and Python allocate/reuse performance budgets | fail-closed performance evidence |
+| 120C | Planned | Peak memory, allocation count, thread policy, and GPU transfer budgets | typed release measurements |
+| 120D | Planned | Generated algorithm/performance documentation and migration guidance | GitHub Pages and README links |
+| 120E | Planned | Vision 2 release gate and runnable receipt example | `Vision2ReleaseGate` denial tests |
+
+The improvement thresholds above compare against the checked Epic 112
+SpatialRust baseline on the same host; they are not claims against every OpenCV
+build. Accuracy gates remain workload-specific: resize/gray/Gaussian retain
+their documented bounded error, Sobel and morphology retain exact comparison,
+and Canny retains binary precision, recall, F1, and IoU requirements.

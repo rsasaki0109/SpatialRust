@@ -212,6 +212,10 @@ See [notes](notes/2026-06-15_registration_bench.md). Reproduce: `cargo bench -p 
 
 MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and registration (ICP point-to-point/point-to-plane, GICP, NDT). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.
 
+Browse the published [algorithm catalog](https://rsasaki0109.github.io/SpatialRust/algorithms.html),
+[Rust API reference](https://rsasaki0109.github.io/SpatialRust/spatialrust/index.html),
+and [Vision 2 performance program](https://rsasaki0109.github.io/SpatialRust/vision2.html).
+
 ## Workspace crates
 
 One dataflow, focused crates — each pipeline stage maps to the crate that implements it, all sitting on a small math/core/search foundation:

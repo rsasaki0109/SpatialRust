@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SpatialRust documentation: spatial computing algorithms, Rust API reference, and the Vision 2 performance roadmap.">
+  <title>SpatialRust Documentation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header><nav class="wrap"><a class="brand" href="index.html">SpatialRust</a><div class="nav-links"><a href="algorithms.html">Algorithms</a><a href="vision2.html">Vision 2</a><a href="spatialrust/index.html">Rust API</a><a href="https://github.com/rsasaki0109/SpatialRust">GitHub</a></div></nav></header>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Rust-native spatial intelligence</div>
+      <h1>Capture. Understand. Reconstruct. Act.</h1>
+      <p class="lead">A practical guide to SpatialRust's point-cloud, vision, camera, mapping, scene, GPU, and AI capabilities—backed by the complete generated Rust API.</p>
+      <div class="actions"><a class="button primary" href="algorithms.html">Explore algorithms</a><a class="button" href="spatialrust/index.html">Open API reference</a><a class="button" href="vision2.html">Vision 2 roadmap</a></div>
+    </section>
+
+    <section>
+      <h2>Choose your starting point</h2>
+      <div class="grid">
+        <article class="card"><h3>Point clouds</h3><p>Filtering, spatial search, features, segmentation, registration, voxelization, and transforms.</p></article>
+        <article class="card"><h3>Vision and RGB-D</h3><p>Image processing, local features, multiview geometry, stereo, odometry, and depth-to-world bridges.</p></article>
+        <article class="card"><h3>Scenes and mapping</h3><p>Trajectories, pose graphs, TSDF fusion, mesh extraction, surfels, and Gaussian rendering.</p></article>
+        <article class="card"><h3>GPU and AI</h3><p>Explicit wgpu image/point kernels, tensor bridges, DLPack, ONNX Runtime, and bounded execution.</p></article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Explicit data movement</h2>
+      <div class="flow"><span>typed host data</span><b>→ named upload →</b><span>device-resident work</span><b>→ requested readback →</b><span>owned result</span></div>
+      <p class="notice">CPU APIs never hide a GPU transfer. Heavy runtimes such as ONNX, ROS 2, CUDA, and codecs stay behind dedicated features and crates.</p>
+    </section>
+
+    <section>
+      <h2>Measured, not implied</h2>
+      <div class="grid">
+        <article class="card"><div class="metric">VGA → 4K</div><p>Canonical vision profiles carry accuracy, allocation, and robust timing evidence.</p></article>
+        <article class="card"><div class="metric">CPU + GPU</div><p>Round-trip and device-resident results are reported separately.</p></article>
+        <article class="card"><div class="metric">OpenCV oracle</div><p>Comparison tooling is optional and is not a production runtime dependency.</p></article>
+      </div>
+    </section>
+  </main>
+  <footer><div class="wrap">SpatialRust documentation · <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ARCHITECTURE.md">Architecture</a> · <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ROADMAP.md">Roadmap</a></div></footer>
+</body>
+</html>
