@@ -762,6 +762,26 @@ def test_canny_image_binary_output_and_noncontiguous_input():
     assert np.count_nonzero(edges) > 0
 
 
+def test_canny_image_reuses_output_and_workspace():
+    image = np.zeros((31, 37), dtype=np.uint8)
+    image[5:26, 9:29] = 255
+    expected = sr.canny_image(image, 50.0, 100.0, 3, True)
+    output = np.empty_like(image)
+    workspace = sr.CannyWorkspace()
+    actual = sr.canny_image(
+        image,
+        50.0,
+        100.0,
+        3,
+        True,
+        out=output,
+        workspace=workspace,
+    )
+    assert actual is output
+    np.testing.assert_array_equal(actual, expected)
+    assert workspace.capacity >= image.size
+
+
 def test_feature2d_corner_detectors_and_keypoint_metadata():
     image = np.zeros((25, 29), dtype=np.uint8)
     image[5:19, 7:22] = 255

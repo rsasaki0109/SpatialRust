@@ -71,8 +71,8 @@ use spatialrust::transform::{
 };
 use spatialrust::vision::{
     adaptive_threshold as adaptive_threshold_op, approximate_polygon as approximate_contour,
-    batched_nms as batched_nms_op, bilateral_filter as bilateral_filter_op, canny as canny_op,
-    clahe as clahe_op, connected_components_u8 as label_components_u8,
+    batched_nms as batched_nms_op, bilateral_filter as bilateral_filter_op,
+    canny_into as canny_into_op, clahe as clahe_op, connected_components_u8 as label_components_u8,
     decode_rle as decode_mask_runs, detect_and_describe_orb as detect_and_describe_orb_op,
     detect_fast as detect_fast_op, detect_harris as detect_harris_op,
     detect_shi_tomasi as detect_shi_tomasi_op, dilate_rect_u8_into as dilate_rect_u8_into_op,
@@ -101,13 +101,14 @@ use spatialrust::vision::{
     spatial_gradient_u8_into as spatial_gradient_u8_into_op,
     stereo_block_match as stereo_block_match_op, stitch_panorama_pair as stitch_panorama_pair_op,
     threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BilinearResizeU8Plan,
-    BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity,
-    CornerSelectionOptions, DescriptorBuffer, Detection, DistanceTransformWorkspace, FastOptions,
-    GaussianBlurU8Workspace, HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle,
-    MatchOptions, MorphologyOperation, MorphologyShape, ObjectImageCorrespondence, OrbOptions,
-    OrbScoreType, PanoramaOptions, PerspectiveTransform, PointCorrespondence2, PointMap,
-    RectMorphologyWorkspace, RgbdOdometryOptions, RleOrder, RobustEstimationOptions,
-    ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType,
+    BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions, CannyWorkspace,
+    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer, Detection,
+    DistanceTransformWorkspace, FastOptions, GaussianBlurU8Workspace, HarrisOptions, Interpolation,
+    Kernel2D, Keypoint2, MaskRle, MatchOptions, MorphologyOperation, MorphologyShape,
+    ObjectImageCorrespondence, OrbOptions, OrbScoreType, PanoramaOptions, PerspectiveTransform,
+    PointCorrespondence2, PointMap, RectMorphologyWorkspace, RgbdOdometryOptions, RleOrder,
+    RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement,
+    ThresholdType,
 };
 use spatialrust::vision::{dense_flow_block_match as dense_flow_native, DenseFlowOptions};
 use spatialrust::voxelize::{
@@ -2781,9 +2782,28 @@ fn integral_image_u8<'py>(
     Ok(array.into_pyarray_bound(py))
 }
 
+/// Reusable host scratch storage for allocation-light Canny edge detection.
+#[pyclass(name = "CannyWorkspace")]
+struct PyCannyWorkspace {
+    inner: CannyWorkspace,
+}
+
+#[pymethods]
+impl PyCannyWorkspace {
+    #[new]
+    fn new() -> Self {
+        Self { inner: CannyWorkspace::new() }
+    }
+
+    #[getter]
+    fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+}
+
 /// Detects edges in a grayscale uint8 image with Canny hysteresis.
 #[pyfunction]
-#[pyo3(signature = (image, low_threshold, high_threshold, aperture_size=3, l2_gradient=false))]
+#[pyo3(signature = (image, low_threshold, high_threshold, aperture_size=3, l2_gradient=false, out=None, workspace=None))]
 fn canny_image<'py>(
     py: Python<'py>,
     image: PyReadonlyArray2<'_, u8>,
@@ -2791,15 +2811,46 @@ fn canny_image<'py>(
     high_threshold: f64,
     aperture_size: usize,
     l2_gradient: bool,
+    out: Option<Bound<'py, PyArray2<u8>>>,
+    mut workspace: Option<PyRefMut<'_, PyCannyWorkspace>>,
 ) -> PyResult<Bound<'py, PyArray2<u8>>> {
-    let image = gray_u8_image_from_numpy(image)?;
-    let output = canny_op(
-        image.view(),
-        CannyOptions { low_threshold, high_threshold, aperture_size, l2_gradient },
-    )
-    .map_err(to_py_err)?;
-    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+    let mut packed = Vec::new();
+    let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
+    let options = CannyOptions { low_threshold, high_threshold, aperture_size, l2_gradient };
+    let mut local_workspace = CannyWorkspace::new();
+    let workspace =
+        workspace.as_deref_mut().map_or(&mut local_workspace, |workspace| &mut workspace.inner);
+    if let Some(out) = out {
+        {
+            let mut out_rw = out
+                .try_readwrite()
+                .map_err(|_| PyValueError::new_err("out must not overlap the Canny input"))?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W)",
+                ));
+            };
+            let output = ImageViewMut::new(image.width(), image.height(), image.width(), out_slice)
+                .map_err(to_py_err)?;
+            canny_into_op(image, options, output, workspace).map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let mut output = vec![0_u8; image.width() * image.height()];
+    let output_view = ImageViewMut::new(image.width(), image.height(), image.width(), &mut output)
         .map_err(to_py_err)?;
+    canny_into_op(image, options, output_view, workspace).map_err(to_py_err)?;
+    let array =
+        Array2::from_shape_vec((image.height(), image.width()), output).map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
 }
 
@@ -3882,6 +3933,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyKeypoint2>()?;
     m.add_class::<PyDistanceTransformWorkspace>()?;
     m.add_class::<PyMorphologyWorkspace>()?;
+    m.add_class::<PyCannyWorkspace>()?;
     m.add_class::<PyOnnxRuntimeSession>()?;
     m.add_class::<PyDlpackTensorView>()?;
     m.add_class::<PyPointCloud>()?;

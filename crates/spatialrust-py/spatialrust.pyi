@@ -35,7 +35,7 @@ __all__: list[str] = [
     "laplacian_image", "pyr_down_image", "pyr_up_image", "MorphologyWorkspace", "morphology_image",
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
     "histogram_image", "equalize_histogram_image", "clahe_image",
-    "integral_image_u8", "canny_image", "resize_image", "letterbox_image",
+    "integral_image_u8", "CannyWorkspace", "canny_image", "resize_image", "letterbox_image",
     "normalize_image_chw", "resize_normalize_image_chw", "rgb_to_gray_image", "resize_rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
     "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
     "find_mask_contours",
@@ -257,12 +257,23 @@ def clahe_image(
     tiles_y: int = ...,
 ) -> _U8Array: ...
 def integral_image_u8(image: _U8Array) -> NDArray[np.float64]: ...
+
+@final
+class CannyWorkspace:
+    """Reusable host scratch storage for allocation-light Canny detection."""
+
+    def __init__(self) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+
 def canny_image(
     image: _U8Array,
     low_threshold: float,
     high_threshold: float,
     aperture_size: int = ...,
     l2_gradient: bool = ...,
+    out: Optional[_U8Array] = ...,
+    workspace: Optional[CannyWorkspace] = ...,
 ) -> _U8Array: ...
 def resize_image(
     image: _U8Array,
