@@ -1,3 +1,5 @@
+use pulp::Arch;
+use rayon::prelude::*;
 use spatialrust_image::{
     ColorSpace, Image, ImageMetadata, ImageRegion, ImageView, ImageViewMut, PlanarImage,
 };
@@ -303,14 +305,15 @@ pub fn swap_red_blue<T: PixelComponent>(input: ImageView<'_, T, 3>) -> VisionRes
 
 /// Converts RGB `u8` pixels to BT.601 luma using fixed-point coefficients.
 pub fn rgb_to_gray(input: ImageView<'_, u8, 3>) -> VisionResult<Image<u8, 1>> {
-    let mut data = Vec::with_capacity(input.width() * input.height());
-    for y in 0..input.height() {
-        for pixel in input.row(y).expect("input row in bounds").chunks_exact(3) {
-            data.push(rgb_luma(pixel));
-        }
-    }
     let metadata = ImageMetadata { color_space: ColorSpace::Gray, ..input.metadata() };
-    Ok(Image::try_new_with_metadata(input.width(), input.height(), data, metadata)?)
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("gray output is too large".to_owned()))?;
+    let mut output =
+        Image::try_new_with_metadata(input.width(), input.height(), vec![0; len], metadata)?;
+    rgb_to_gray_into(input, output.view_mut())?;
+    Ok(output)
 }
 
 /// Converts RGB `u8` pixels into caller-owned gray storage without allocating.
@@ -320,22 +323,58 @@ pub fn rgb_to_gray_into(
 ) -> VisionResult<()> {
     validate_output_dimensions(input, output.width(), output.height())?;
     output.set_metadata(ImageMetadata { color_space: ColorSpace::Gray, ..input.metadata() })?;
-    for y in 0..input.height() {
-        let source = input.row(y).expect("input row in bounds");
-        let target = output.row_mut(y).expect("output row in bounds");
-        for (pixel, target_value) in source.chunks_exact(3).zip(target.iter_mut()) {
-            *target_value = rgb_luma(pixel);
+    let output_stride = output.row_stride();
+    let pixels = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("gray output is too large".to_owned()))?;
+    let arch = Arch::new();
+    if pixels >= 100_000 {
+        if input.height() >= 2_000 {
+            const ROWS_PER_TASK: usize = 8;
+            let block_stride = output_stride.checked_mul(ROWS_PER_TASK).ok_or_else(|| {
+                VisionError::InvalidDimensions("gray row block is too large".to_owned())
+            })?;
+            output.as_mut_slice().par_chunks_mut(block_stride).enumerate().for_each(
+                |(block, rows)| {
+                    arch.dispatch(|| {
+                        for (row, target) in rows.chunks_mut(output_stride).enumerate() {
+                            rgb_to_gray_row(input, block * ROWS_PER_TASK + row, target);
+                        }
+                    });
+                },
+            );
+        } else {
+            output
+                .as_mut_slice()
+                .par_chunks_mut(output_stride)
+                .enumerate()
+                .for_each(|(y, target)| arch.dispatch(|| rgb_to_gray_row(input, y, target)));
         }
+    } else {
+        output
+            .as_mut_slice()
+            .chunks_mut(output_stride)
+            .enumerate()
+            .for_each(|(y, target)| arch.dispatch(|| rgb_to_gray_row(input, y, target)));
     }
     Ok(())
 }
 
+fn rgb_to_gray_row(input: ImageView<'_, u8, 3>, y: usize, target: &mut [u8]) {
+    let source = input.row(y).expect("input row in bounds");
+    for (pixel, target_value) in source.chunks_exact(3).zip(target.iter_mut()) {
+        *target_value = rgb_luma(pixel);
+    }
+}
+
+#[inline(always)]
 fn rgb_luma(pixel: &[u8]) -> u8 {
-    ((77_u32 * u32::from(pixel[0])
-        + 150_u32 * u32::from(pixel[1])
-        + 29_u32 * u32::from(pixel[2])
-        + 128)
-        >> 8) as u8
+    ((4_899_u32 * u32::from(pixel[0])
+        + 9_617_u32 * u32::from(pixel[1])
+        + 1_868_u32 * u32::from(pixel[2])
+        + 8_192)
+        >> 14) as u8
 }
 
 /// Replicates a gray channel into RGB.
@@ -394,7 +433,9 @@ mod tests {
         rgb_to_gray, rgb_to_gray_into, rgb_to_hsv, Padding,
     };
     use crate::Interpolation;
-    use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageRegion, ImageViewMut};
+    use spatialrust_image::{
+        ColorSpace, Image, ImageMetadata, ImageRegion, ImageView, ImageViewMut,
+    };
 
     #[test]
     fn crop_and_pad_roundtrip_center() {
@@ -470,6 +511,16 @@ mod tests {
     }
 
     #[test]
+    fn rgb_to_gray_accepts_strided_input_and_preserves_metadata() {
+        let storage = [255, 0, 0, 0, 255, 0, 91, 92, 0, 0, 255, 255, 255, 255];
+        let metadata = ImageMetadata { color_space: ColorSpace::Rgb, ..Default::default() };
+        let input = ImageView::<u8, 3>::new_with_metadata(2, 2, 8, &storage, metadata).unwrap();
+        let gray = rgb_to_gray(input).unwrap();
+        assert_eq!(gray.as_slice(), &[76, 150, 29, 255]);
+        assert_eq!(gray.metadata().color_space, ColorSpace::Gray);
+    }
+
+    #[test]
     fn color_conversions_match_known_primaries() {
         let metadata = ImageMetadata { color_space: ColorSpace::Rgb, ..Default::default() };
         let image = Image::<u8, 3>::try_new_with_metadata(
@@ -479,7 +530,7 @@ mod tests {
             metadata,
         )
         .unwrap();
-        assert_eq!(rgb_to_gray(image.view()).unwrap().as_slice(), &[77, 149, 29]);
+        assert_eq!(rgb_to_gray(image.view()).unwrap().as_slice(), &[76, 150, 29]);
         assert_eq!(
             rgb_to_hsv(image.view()).unwrap().as_slice(),
             &[0, 255, 255, 60, 255, 255, 120, 255, 255]

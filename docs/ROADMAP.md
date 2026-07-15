@@ -628,7 +628,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | 115A | Complete | Precompute resize source coordinates and interpolation coefficients | reusable Q11 bilinear plan, shape/stride/padding tests |
-| 115B | In progress | Packed bilinear/nearest/area and RGB-to-gray fast paths | packed RGB8 bilinear and exact half-scale path complete; nearest/area/gray remain |
+| 115B | In progress | Packed bilinear/nearest/area and RGB-to-gray fast paths | packed RGB8 bilinear, exact half-scale, and Q14 RGB-to-gray complete; nearest/area remain |
 | 115C | Planned | Evaluate resize+gray and resize+CHW fusion without changing standalone APIs | fused/unfused parity and timing |
 | 115D | Complete | Improve current SpatialRust throughput by at least 5x on one canonical large profile | native reuse improved 47.8× at 1080p and 37.3× at 4K; VGA Python reuse is 1.10× faster than OpenCV |
 

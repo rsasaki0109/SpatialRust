@@ -154,8 +154,8 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | AI CHW preprocess, reuse vs OpenCV allocate | **SpatialRust 8.16×** | **SpatialRust 14.56×** | **SpatialRust 15.78×** |
 | Bilinear resize, allocate[^resize-2026] | OpenCV 1.19× | OpenCV 1.49× | OpenCV 1.60× |
 | Bilinear resize, reuse[^resize-2026] | **SpatialRust 1.10×** | OpenCV 2.40× | OpenCV 2.01× |
-| RGB to gray, allocate | OpenCV 11.97× | OpenCV 5.98× | OpenCV 12.98× |
-| RGB to gray, reuse | OpenCV 6.01× | OpenCV 13.81× | OpenCV 2.09× |
+| RGB to gray, allocate[^gray-2026] | OpenCV 1.73× | **SpatialRust 1.03×** | **SpatialRust 1.05×** |
+| RGB to gray, reuse[^gray-2026] | OpenCV 1.22× | OpenCV 1.08× | OpenCV 1.03× |
 | Gaussian blur 5×5[^gaussian-2026] | OpenCV 139.02× | OpenCV 3.10× | OpenCV 2.93× |
 | Sobel X 3×3 | OpenCV 14.38× | OpenCV 20.31× | OpenCV 23.30× |
 | Morphology open 5×5, allocate[^morphology-2026] | OpenCV 60.96× | OpenCV 13.34× | OpenCV 15.27× |
@@ -188,6 +188,14 @@ records the exact environment and methodology.
   4K, and 8K reuse remain OpenCV wins by 2.40×, 2.01×, and 1.85×. Canonical
   half-scale pixels are exact, and 300 arbitrary-size cases have maximum
   absolute error 1. See the [focused harness](bench/opencv_resize_comparison/).
+
+[^gray-2026]: The packed RGB8 Q14 BT.601 path uses size-aware Rayon blocks and
+  CPU target-feature dispatch. On the OpenCV 4.13 focused receipt, allocated
+  SpatialRust calls measured 0.825 ms versus 0.850 ms at 1080p and 2.338 ms
+  versus 2.452 ms at 4K. At 8K, caller-owned reuse measured 5.754 ms versus
+  5.885 ms (SpatialRust 1.02×). VGA and 1080p/4K reuse remain narrow OpenCV
+  wins. Three hundred randomized cases retain maximum absolute error 1. See
+  the [focused harness](bench/opencv_rgb_gray_comparison/).
 
 The additive paired-gradient path keeps standalone Sobel compatibility while
 also exposing exact fused 3×3 L1 magnitude (`abs(Gx) + abs(Gy)`). On a newer
@@ -288,7 +296,7 @@ The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
 | Workload | OpenCV comparison result at VGA / 1080p / 4K |
 | --- | --- |
 | Bilinear resize | Canonical half-scale exact; 300 arbitrary-size cases max error 1/255 |
-| RGB to gray | Max error 1/255; MAE 0.1333 / 0.1333 / 0.1329 |
+| RGB to gray | Max error 1/255; 99.72%–99.74% exact pixels across VGA–8K |
 | AI CHW preprocess | Max float error `5.96e-8` |
 | Gaussian blur | Canonical 5×5 profiles exact; 300 randomized 3×3/5×5/7×7 cases max error 2/255 |
 | Sobel X 3×3 | Exact values (max error 0) |
