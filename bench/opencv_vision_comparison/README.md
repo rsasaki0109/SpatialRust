@@ -22,3 +22,12 @@ when a documented numerical tolerance is exceeded. Pass `--output PATH` to
 retain the report. OpenCV is comparison/test tooling only; it is not a Rust
 runtime dependency. The shared report contract and workload registry are in
 [`../opencv_comparison`](../opencv_comparison/README.md).
+
+Epic 103 adds allocate/reuse timing for bilinear resize, RGB-to-gray, and AI
+CHW preprocessing at VGA, 1080p, and 4K. It preserves raw samples and p95 in
+the same report contract:
+
+```powershell
+python bench\opencv_vision_comparison\performance.py `
+  --output target\opencv-comparison\vision-performance.json
+```

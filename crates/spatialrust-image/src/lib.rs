@@ -590,6 +590,13 @@ impl<'a, T, const CHANNELS: usize> ImageViewMut<'a, T, CHANNELS> {
         self.metadata
     }
 
+    /// Replaces semantic metadata after validating the channel count.
+    pub fn set_metadata(&mut self, metadata: ImageMetadata) -> Result<(), ImageError> {
+        metadata.validate::<CHANNELS>()?;
+        self.metadata = metadata;
+        Ok(())
+    }
+
     /// Reborrows this mutable view as read-only.
     #[must_use]
     pub fn as_view(&self) -> ImageView<'_, T, CHANNELS> {

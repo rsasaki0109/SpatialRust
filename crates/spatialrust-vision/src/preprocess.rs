@@ -1,4 +1,6 @@
-use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageRegion, ImageView, PlanarImage};
+use spatialrust_image::{
+    ColorSpace, Image, ImageMetadata, ImageRegion, ImageView, ImageViewMut, PlanarImage,
+};
 
 use crate::{resize, Interpolation, PixelComponent, VisionError, VisionResult};
 
@@ -142,15 +144,10 @@ pub fn normalize<T: PixelComponent, const CHANNELS: usize>(
     mean: [f32; CHANNELS],
     std: [f32; CHANNELS],
 ) -> VisionResult<Image<f32, CHANNELS>> {
-    if !scale.is_finite() || std.iter().any(|value| !value.is_finite() || *value == 0.0) {
-        return Err(VisionError::InvalidParameter(
-            "normalization scale/std must be finite and std non-zero".to_owned(),
-        ));
-    }
+    validate_normalization(scale, std)?;
     let mut output = Vec::with_capacity(input.width() * input.height() * CHANNELS);
     for y in 0..input.height() {
-        for x in 0..input.width() {
-            let pixel = input.get(x, y).expect("image coordinate in bounds");
+        for pixel in input.row(y).expect("input row in bounds").chunks_exact(CHANNELS) {
             for channel in 0..CHANNELS {
                 output
                     .push((pixel[channel].to_f64() as f32 * scale - mean[channel]) / std[channel]);
@@ -160,6 +157,32 @@ pub fn normalize<T: PixelComponent, const CHANNELS: usize>(
     Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
 }
 
+/// Normalizes interleaved pixels into caller-owned `f32` storage.
+pub fn normalize_into<T: PixelComponent, const CHANNELS: usize>(
+    input: ImageView<'_, T, CHANNELS>,
+    mut output: ImageViewMut<'_, f32, CHANNELS>,
+    scale: f32,
+    mean: [f32; CHANNELS],
+    std: [f32; CHANNELS],
+) -> VisionResult<()> {
+    validate_normalization(scale, std)?;
+    validate_output_dimensions(input, output.width(), output.height())?;
+    output.set_metadata(input.metadata())?;
+    for y in 0..input.height() {
+        let source = input.row(y).expect("input row in bounds");
+        let target = output.row_mut(y).expect("output row in bounds");
+        for (source_pixel, target_pixel) in
+            source.chunks_exact(CHANNELS).zip(target.chunks_exact_mut(CHANNELS))
+        {
+            for channel in 0..CHANNELS {
+                target_pixel[channel] =
+                    (source_pixel[channel].to_f64() as f32 * scale - mean[channel]) / std[channel];
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Packs and normalizes an interleaved image into planar CHW storage.
 pub fn pack_chw<T: PixelComponent, const CHANNELS: usize>(
     input: ImageView<'_, T, CHANNELS>,
@@ -167,24 +190,97 @@ pub fn pack_chw<T: PixelComponent, const CHANNELS: usize>(
     mean: [f32; CHANNELS],
     std: [f32; CHANNELS],
 ) -> VisionResult<PlanarImage<f32, CHANNELS>> {
+    let plane_len = input.width() * input.height();
+    let mut output = vec![0.0_f32; plane_len * CHANNELS];
+    pack_chw_into(input, scale, mean, std, &mut output)?;
+    Ok(PlanarImage::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+}
+
+/// Packs and normalizes interleaved pixels into a reusable planar CHW slice.
+///
+/// Large multi-channel inputs dispatch across channels with safe scoped
+/// threads. Smaller inputs remain scalar to avoid scheduling overhead.
+pub fn pack_chw_into<T: PixelComponent, const CHANNELS: usize>(
+    input: ImageView<'_, T, CHANNELS>,
+    scale: f32,
+    mean: [f32; CHANNELS],
+    std: [f32; CHANNELS],
+    output: &mut [f32],
+) -> VisionResult<()> {
+    validate_normalization(scale, std)?;
+    let plane_len = input.width().checked_mul(input.height()).ok_or_else(|| {
+        VisionError::InvalidDimensions("CHW plane dimensions overflow".to_owned())
+    })?;
+    let required = plane_len.checked_mul(CHANNELS).ok_or_else(|| {
+        VisionError::InvalidDimensions("CHW output dimensions overflow".to_owned())
+    })?;
+    if output.len() != required {
+        return Err(VisionError::ShapeMismatch(format!(
+            "CHW output needs {required} elements, found {}",
+            output.len()
+        )));
+    }
+    if plane_len == 0 {
+        return Ok(());
+    }
+    const PARALLEL_PLANE_THRESHOLD: usize = 256 * 1024;
+    if CHANNELS > 1 && plane_len >= PARALLEL_PLANE_THRESHOLD {
+        std::thread::scope(|scope| {
+            for (channel, plane) in output.chunks_exact_mut(plane_len).enumerate() {
+                scope.spawn(move || {
+                    fill_chw_plane(input, channel, scale, mean[channel], std[channel], plane)
+                });
+            }
+        });
+    } else {
+        for (channel, plane) in output.chunks_exact_mut(plane_len).enumerate() {
+            fill_chw_plane(input, channel, scale, mean[channel], std[channel], plane);
+        }
+    }
+    Ok(())
+}
+
+fn fill_chw_plane<T: PixelComponent, const CHANNELS: usize>(
+    input: ImageView<'_, T, CHANNELS>,
+    channel: usize,
+    scale: f32,
+    mean: f32,
+    std: f32,
+    output: &mut [f32],
+) {
+    for y in 0..input.height() {
+        let row = input.row(y).expect("input row in bounds");
+        for (x, pixel) in row.chunks_exact(CHANNELS).enumerate() {
+            output[y * input.width() + x] = (pixel[channel].to_f64() as f32 * scale - mean) / std;
+        }
+    }
+}
+
+fn validate_normalization<const CHANNELS: usize>(
+    scale: f32,
+    std: [f32; CHANNELS],
+) -> VisionResult<()> {
     if !scale.is_finite() || std.iter().any(|value| !value.is_finite() || *value == 0.0) {
         return Err(VisionError::InvalidParameter(
             "normalization scale/std must be finite and std non-zero".to_owned(),
         ));
     }
-    let plane_len = input.width() * input.height();
-    let mut output = vec![0.0_f32; plane_len * CHANNELS];
-    for y in 0..input.height() {
-        for x in 0..input.width() {
-            let pixel = input.get(x, y).expect("image coordinate in bounds");
-            let index = y * input.width() + x;
-            for channel in 0..CHANNELS {
-                output[channel * plane_len + index] =
-                    (pixel[channel].to_f64() as f32 * scale - mean[channel]) / std[channel];
-            }
-        }
+    Ok(())
+}
+
+fn validate_output_dimensions<T: PixelComponent, const CHANNELS: usize>(
+    input: ImageView<'_, T, CHANNELS>,
+    output_width: usize,
+    output_height: usize,
+) -> VisionResult<()> {
+    if (input.width(), input.height()) != (output_width, output_height) {
+        return Err(VisionError::ShapeMismatch(format!(
+            "output dimensions {output_width}x{output_height} do not match input {}x{}",
+            input.width(),
+            input.height()
+        )));
     }
-    Ok(PlanarImage::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+    Ok(())
 }
 
 /// Swaps the red and blue channels of a three-channel image.
@@ -209,18 +305,37 @@ pub fn swap_red_blue<T: PixelComponent>(input: ImageView<'_, T, 3>) -> VisionRes
 pub fn rgb_to_gray(input: ImageView<'_, u8, 3>) -> VisionResult<Image<u8, 1>> {
     let mut data = Vec::with_capacity(input.width() * input.height());
     for y in 0..input.height() {
-        for x in 0..input.width() {
-            let pixel = input.get(x, y).expect("image coordinate in bounds");
-            let value = (77_u32 * u32::from(pixel[0])
-                + 150_u32 * u32::from(pixel[1])
-                + 29_u32 * u32::from(pixel[2])
-                + 128)
-                >> 8;
-            data.push(value as u8);
+        for pixel in input.row(y).expect("input row in bounds").chunks_exact(3) {
+            data.push(rgb_luma(pixel));
         }
     }
     let metadata = ImageMetadata { color_space: ColorSpace::Gray, ..input.metadata() };
     Ok(Image::try_new_with_metadata(input.width(), input.height(), data, metadata)?)
+}
+
+/// Converts RGB `u8` pixels into caller-owned gray storage without allocating.
+pub fn rgb_to_gray_into(
+    input: ImageView<'_, u8, 3>,
+    mut output: ImageViewMut<'_, u8, 1>,
+) -> VisionResult<()> {
+    validate_output_dimensions(input, output.width(), output.height())?;
+    output.set_metadata(ImageMetadata { color_space: ColorSpace::Gray, ..input.metadata() })?;
+    for y in 0..input.height() {
+        let source = input.row(y).expect("input row in bounds");
+        let target = output.row_mut(y).expect("output row in bounds");
+        for (pixel, target_value) in source.chunks_exact(3).zip(target.iter_mut()) {
+            *target_value = rgb_luma(pixel);
+        }
+    }
+    Ok(())
+}
+
+fn rgb_luma(pixel: &[u8]) -> u8 {
+    ((77_u32 * u32::from(pixel[0])
+        + 150_u32 * u32::from(pixel[1])
+        + 29_u32 * u32::from(pixel[2])
+        + 128)
+        >> 8) as u8
 }
 
 /// Replicates a gray channel into RGB.
@@ -275,10 +390,11 @@ pub fn rgb_to_hsv(input: ImageView<'_, u8, 3>) -> VisionResult<Image<u8, 3>> {
 #[cfg(test)]
 mod tests {
     use super::{
-        crop, gray_to_rgb, letterbox, normalize, pack_chw, pad, rgb_to_gray, rgb_to_hsv, Padding,
+        crop, gray_to_rgb, letterbox, normalize, normalize_into, pack_chw, pack_chw_into, pad,
+        rgb_to_gray, rgb_to_gray_into, rgb_to_hsv, Padding,
     };
     use crate::Interpolation;
-    use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageRegion};
+    use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageRegion, ImageViewMut};
 
     #[test]
     fn crop_and_pad_roundtrip_center() {
@@ -309,6 +425,48 @@ mod tests {
         assert_eq!(normalized.as_slice(), &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0]);
         let chw = pack_chw(image.view(), 0.1, [0.0; 3], [1.0; 3]).unwrap();
         assert_eq!(chw.as_slice(), &[0.0, 3.0, 1.0, 4.0, 2.0, 5.0]);
+    }
+
+    #[test]
+    fn reusable_normalize_and_chw_match_owned_outputs() {
+        let image = Image::<u8, 3>::try_new(2, 1, vec![0, 10, 20, 30, 40, 50]).unwrap();
+        let mut interleaved = vec![-1.0_f32; 9];
+        let output = ImageViewMut::<f32, 3>::new(2, 1, 9, &mut interleaved).unwrap();
+        normalize_into(image.view(), output, 0.1, [0.0; 3], [1.0; 3]).unwrap();
+        assert_eq!(
+            &interleaved[..6],
+            normalize(image.view(), 0.1, [0.0; 3], [1.0; 3]).unwrap().as_slice()
+        );
+        assert_eq!(&interleaved[6..], &[-1.0; 3]);
+
+        let mut chw = vec![0.0; 6];
+        pack_chw_into(image.view(), 0.1, [0.0; 3], [1.0; 3], &mut chw).unwrap();
+        assert_eq!(chw, pack_chw(image.view(), 0.1, [0.0; 3], [1.0; 3]).unwrap().as_slice());
+        assert!(pack_chw_into(image.view(), 1.0, [0.0; 3], [1.0; 3], &mut chw[..5]).is_err());
+
+        let empty = Image::<u8, 3>::try_new(0, 0, Vec::new()).unwrap();
+        pack_chw_into(empty.view(), 1.0, [0.0; 3], [1.0; 3], &mut []).unwrap();
+    }
+
+    #[test]
+    fn large_chw_parallel_dispatch_matches_channel_layout() {
+        let image = Image::<u8, 3>::try_new(512, 512, vec![10; 512 * 512 * 3]).unwrap();
+        let mut chw = vec![0.0; 512 * 512 * 3];
+        pack_chw_into(image.view(), 0.1, [0.0, 0.5, 1.0], [1.0; 3], &mut chw).unwrap();
+        let plane = 512 * 512;
+        assert!(chw[..plane].iter().all(|&value| value == 1.0));
+        assert!(chw[plane..2 * plane].iter().all(|&value| value == 0.5));
+        assert!(chw[2 * plane..].iter().all(|&value| value == 0.0));
+    }
+
+    #[test]
+    fn rgb_to_gray_into_accepts_strided_output() {
+        let image = Image::<u8, 3>::try_new(2, 1, vec![255, 0, 0, 0, 255, 0]).unwrap();
+        let mut storage = vec![200_u8; 4];
+        let output = ImageViewMut::<u8, 1>::new(2, 1, 4, &mut storage).unwrap();
+        rgb_to_gray_into(image.view(), output).unwrap();
+        assert_eq!(&storage[..2], rgb_to_gray(image.view()).unwrap().as_slice());
+        assert_eq!(&storage[2..], &[200, 200]);
     }
 
     #[test]

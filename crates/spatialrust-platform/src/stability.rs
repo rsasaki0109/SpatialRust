@@ -93,6 +93,10 @@ impl StabilityRegistry {
             "spatialrust-vision::BorderMode",
             "spatialrust-vision::Interpolation",
             "spatialrust-vision::resize",
+            "spatialrust-vision::resize_into",
+            "spatialrust-vision::normalize_into",
+            "spatialrust-vision::pack_chw_into",
+            "spatialrust-vision::rgb_to_gray_into",
             "spatialrust-vision::Kernel1D",
             "spatialrust-vision::Kernel2D",
             "spatialrust-vision::filter2d",
@@ -172,7 +176,7 @@ mod tests {
             registry.lookup("spatialrust-gpu::GpuImage").unwrap().class,
             ApiStabilityClass::Provisional
         );
-        assert!(registry.items().len() >= 35);
+        assert!(registry.items().len() >= 39);
         assert_eq!(registry.experimental_count(), 0);
     }
 }

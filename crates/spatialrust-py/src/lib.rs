@@ -78,21 +78,27 @@ use spatialrust::vision::{
     laplacian as laplacian_op, letterbox as letterbox_op,
     match_descriptors as match_descriptors_op, median_blur as median_blur_op,
     morphology_ex as morphology_ex_op, nms as nms_op, otsu_threshold_u8 as otsu_threshold_u8_op,
-    pack_chw as pack_chw_op, point_map_to_point_cloud as point_map_to_cloud,
-    pyr_down as pyr_down_op, pyr_up as pyr_up_op, remap as remap_op, resize as resize_op,
-    rgb_to_gray as rgb_to_gray_op, rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op,
-    sobel as sobel_op, soft_nms as soft_nms_op, solve_pnp as solve_pnp_op,
-    stereo_block_match as stereo_block_match_op, threshold as threshold_op,
-    AdaptiveThresholdMethod, BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions,
-    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer, FastOptions,
-    HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions,
-    MorphologyOperation, MorphologyShape, ObjectImageCorrespondence, OrbOptions, OrbScoreType,
-    PointCorrespondence2, PointMap, RobustEstimationOptions, RleOrder, ShiTomasiOptions,
-    SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType, AbsolutePose,
+    pack_chw as pack_chw_op, pack_chw_into as pack_chw_into_op,
+    point_map_to_point_cloud as point_map_to_cloud, pyr_down as pyr_down_op, pyr_up as pyr_up_op,
+    remap as remap_op, resize as resize_op, resize_into as resize_into_op,
+    rgb_to_gray as rgb_to_gray_op, rgb_to_gray_into as rgb_to_gray_into_op,
+    rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op, sobel as sobel_op, soft_nms as soft_nms_op,
+    solve_pnp as solve_pnp_op, stereo_block_match as stereo_block_match_op,
+    threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BinaryMask, BorderMode,
+    BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity, CornerSelectionOptions,
+    DescriptorBuffer, FastOptions, HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle,
+    MatchOptions, MorphologyOperation, MorphologyShape, ObjectImageCorrespondence, OrbOptions,
+    OrbScoreType, PointCorrespondence2, PointMap, RleOrder, RobustEstimationOptions,
+    ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType,
 };
 use spatialrust::voxelize::{
     range_image as range_image_proj, voxelize as voxelize_grid, RangeImageConfig, VoxelFill,
     VoxelGridConfig,
+};
+use spatialrust::{
+    depth_to_xyz_dense as depth_to_xyz_native, depth_to_xyz_dense_into,
+    rgbd_to_point_cloud as rgbd_to_cloud, BrownConrady, CameraIntrinsics, DepthConversionOptions,
+    Image, ImageView, ImageViewMut, PinholeCamera,
 };
 use spatialrust::{
     knn_graph as knn_graph_build, radius_graph as radius_graph_build, NeighborGraph,
@@ -100,10 +106,6 @@ use spatialrust::{
 use spatialrust::{
     read_point_cloud_file, write_point_cloud_file, ExecutionPolicy, HasPositions3, PointCloud,
     StandardSchemas,
-};
-use spatialrust::{
-    depth_to_xyz_dense as depth_to_xyz_native, depth_to_xyz_dense_into, rgbd_to_point_cloud as rgbd_to_cloud,
-    BrownConrady, CameraIntrinsics, DepthConversionOptions, Image, ImageView, PinholeCamera,
 };
 
 type Vec3Tuple = (f32, f32, f32);
@@ -665,6 +667,24 @@ fn rgb_image_from_numpy(array: PyReadonlyArray3<'_, u8>) -> PyResult<Image<u8, 3
         return Err(PyValueError::new_err("expected an (H, W, 3) uint8 RGB array"));
     }
     Image::try_new(shape[1], shape[0], view.iter().copied().collect()).map_err(to_py_err)
+}
+
+fn rgb_image_view_from_numpy<'a, 'py>(
+    array: &'a PyReadonlyArray3<'py, u8>,
+    packed: &'a mut Vec<u8>,
+) -> PyResult<ImageView<'a, u8, 3>> {
+    let shape = array.shape();
+    if shape.len() != 3 || shape[2] != 3 {
+        return Err(PyValueError::new_err("expected an (H, W, 3) uint8 RGB array"));
+    }
+    let (height, width) = (shape[0], shape[1]);
+    let data = if let Ok(slice) = array.as_slice() {
+        slice
+    } else {
+        packed.extend(array.as_array().iter().copied());
+        packed.as_slice()
+    };
+    ImageView::new(width, height, width * 3, data).map_err(to_py_err)
 }
 
 fn gray_u8_image_from_numpy(array: PyReadonlyArray2<'_, u8>) -> PyResult<Image<u8, 1>> {
@@ -1754,11 +1774,7 @@ fn depth_to_xyz<'py>(
     if let Some((k1, k2, p1, p2, k3)) = distortion {
         camera = camera.with_distortion(BrownConrady { k1, k2, p1, p2, k3 });
     }
-    let options = DepthConversionOptions {
-        depth_scale,
-        min_depth,
-        max_depth,
-    };
+    let options = DepthConversionOptions { depth_scale, min_depth, max_depth };
     if let Some(out) = out {
         {
             let mut out_rw = out.readwrite();
@@ -1850,11 +1866,7 @@ fn rgbd_to_point_cloud(
     if let Some((k1, k2, p1, p2, k3)) = distortion {
         camera = camera.with_distortion(BrownConrady { k1, k2, p1, p2, k3 });
     }
-    let options = DepthConversionOptions {
-        depth_scale,
-        min_depth,
-        max_depth,
-    };
+    let options = DepthConversionOptions { depth_scale, min_depth, max_depth };
     let inner = rgbd_to_cloud(depth_image, color_image, &camera, options).map_err(to_py_err)?;
     Ok(PyPointCloud { inner })
 }
@@ -2382,12 +2394,8 @@ fn orb_features<'py>(
         },
     )
     .map_err(to_py_err)?;
-    let keypoints = features
-        .keypoints()
-        .iter()
-        .copied()
-        .map(|inner| PyKeypoint2 { inner })
-        .collect();
+    let keypoints =
+        features.keypoints().iter().copied().map(|inner| PyKeypoint2 { inner }).collect();
     let descriptors = Array2::from_shape_vec(
         (features.descriptors().len(), features.descriptors().width()),
         features.descriptors().binary_data().expect("ORB descriptors are binary").to_vec(),
@@ -2424,9 +2432,7 @@ fn mat3_to_numpy<'py>(py: Python<'py>, matrix: Mat3<f64>) -> Bound<'py, PyArray2
     for row in &matrix.m {
         values.extend_from_slice(row);
     }
-    Array2::from_shape_vec((3, 3), values)
-        .expect("3x3")
-        .into_pyarray_bound(py)
+    Array2::from_shape_vec((3, 3), values).expect("3x3").into_pyarray_bound(py)
 }
 
 /// Estimates a homography with deterministic RANSAC.
@@ -2542,21 +2548,13 @@ fn descriptor_match_tuples(
     ratio: Option<f32>,
     max_distance: Option<f32>,
 ) -> PyResult<Vec<(usize, usize, f32)>> {
-    Ok(match_descriptors_op(
-        &query,
-        &train,
-        MatchOptions { cross_check, ratio, max_distance },
-    )
-    .map_err(to_py_err)?
-    .into_iter()
-    .map(|feature_match| {
-        (
-            feature_match.query_index(),
-            feature_match.train_index(),
-            feature_match.distance(),
-        )
-    })
-    .collect())
+    Ok(match_descriptors_op(&query, &train, MatchOptions { cross_check, ratio, max_distance })
+        .map_err(to_py_err)?
+        .into_iter()
+        .map(|feature_match| {
+            (feature_match.query_index(), feature_match.train_index(), feature_match.distance())
+        })
+        .collect())
 }
 
 /// Brute-force Hamming matching for two `uint8[N, D]` descriptor matrices.
@@ -2615,17 +2613,40 @@ fn match_float_descriptors(
 
 /// Resizes an `(H, W, 3)` uint8 RGB image.
 #[pyfunction]
-#[pyo3(signature = (image, width, height, interpolation="bilinear"))]
+#[pyo3(signature = (image, width, height, interpolation="bilinear", out=None))]
 fn resize_image<'py>(
     py: Python<'py>,
     image: PyReadonlyArray3<'_, u8>,
     width: usize,
     height: usize,
     interpolation: &str,
+    out: Option<Bound<'py, PyArray3<u8>>>,
 ) -> PyResult<Bound<'py, PyArray3<u8>>> {
-    let image = rgb_image_from_numpy(image)?;
-    let output = resize_op(image.view(), width, height, parse_interpolation(interpolation)?)
-        .map_err(to_py_err)?;
+    let mut packed = Vec::new();
+    let image = rgb_image_view_from_numpy(&image, &mut packed)?;
+    let interpolation = parse_interpolation(interpolation)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out.readwrite();
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [height, width, 3] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({height}, {width}, 3), found {:?}",
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W, 3)",
+                ));
+            };
+            let output = ImageViewMut::<u8, 3>::new(width, height, width * 3, out_slice)
+                .map_err(to_py_err)?;
+            resize_into_op(image, output, interpolation).map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let output = resize_op(image, width, height, interpolation).map_err(to_py_err)?;
     let array = Array3::from_shape_vec((height, width, 3), output.into_vec()).map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
 }
@@ -2666,18 +2687,41 @@ fn letterbox_image<'py>(
 
 /// Normalizes RGB and packs it into a float32 `(3, H, W)` CHW tensor.
 #[pyfunction]
-#[pyo3(signature = (image, scale=1.0/255.0, mean=None, std=None))]
+#[pyo3(signature = (image, scale=1.0/255.0, mean=None, std=None, out=None))]
 fn normalize_image_chw<'py>(
     py: Python<'py>,
     image: PyReadonlyArray3<'_, u8>,
     scale: f32,
     mean: Option<(f32, f32, f32)>,
     std: Option<(f32, f32, f32)>,
+    out: Option<Bound<'py, PyArray3<f32>>>,
 ) -> PyResult<Bound<'py, PyArray3<f32>>> {
-    let image = rgb_image_from_numpy(image)?;
+    let mut packed = Vec::new();
+    let image = rgb_image_view_from_numpy(&image, &mut packed)?;
     let mean = mean.map_or([0.0; 3], |(r, g, b)| [r, g, b]);
     let std = std.map_or([1.0; 3], |(r, g, b)| [r, g, b]);
-    let output = pack_chw_op(image.view(), scale, mean, std).map_err(to_py_err)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out.readwrite();
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [3, image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be (3, {}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous float32 array of shape (3, H, W)",
+                ));
+            };
+            pack_chw_into_op(image, scale, mean, std, out_slice).map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let output = pack_chw_op(image, scale, mean, std).map_err(to_py_err)?;
     let array = Array3::from_shape_vec((3, image.height(), image.width()), output.into_vec())
         .map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
@@ -2685,12 +2729,39 @@ fn normalize_image_chw<'py>(
 
 /// Converts an RGB image to an `(H, W)` grayscale image.
 #[pyfunction]
+#[pyo3(signature = (image, out=None))]
 fn rgb_to_gray_image<'py>(
     py: Python<'py>,
     image: PyReadonlyArray3<'_, u8>,
+    out: Option<Bound<'py, PyArray2<u8>>>,
 ) -> PyResult<Bound<'py, PyArray2<u8>>> {
-    let image = rgb_image_from_numpy(image)?;
-    let output = rgb_to_gray_op(image.view()).map_err(to_py_err)?;
+    let mut packed = Vec::new();
+    let image = rgb_image_view_from_numpy(&image, &mut packed)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out.readwrite();
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W)",
+                ));
+            };
+            let output =
+                ImageViewMut::<u8, 1>::new(image.width(), image.height(), image.width(), out_slice)
+                    .map_err(to_py_err)?;
+            rgb_to_gray_into_op(image, output).map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let output = rgb_to_gray_op(image).map_err(to_py_err)?;
     let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
         .map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))

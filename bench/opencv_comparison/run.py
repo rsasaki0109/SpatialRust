@@ -13,6 +13,10 @@ from report import emit_report, load_report, make_report
 ROOT = Path(__file__).resolve().parents[2]
 SUITES = {
     "vision": ROOT / "bench" / "opencv_vision_comparison" / "run.py",
+    "vision-performance": ROOT
+    / "bench"
+    / "opencv_vision_comparison"
+    / "performance.py",
     "rgbd": ROOT / "bench" / "opencv_rgbd_comparison" / "run.py",
 }
 

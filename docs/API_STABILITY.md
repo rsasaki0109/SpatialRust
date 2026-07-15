@@ -105,7 +105,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-distribute` | Provisional | Partition graphs, topo schedules, backpressure queues, named measurable transfers |
 | `spatialrust-platform` | Provisional | Stability registry, conformance summaries, security checklist, LTS policy, performance budgets, release gate |
 | `spatialrust-camera` | Stable foundation | Pinhole/Brown–Conrady and named RGB-D conversion entry points; future calibration solvers are additive and provisional |
-| `spatialrust-vision` | Stable foundation | Errors, borders, resize/filter entry points, detection/dense and Feature2D data contracts are stable; geometry/stereo/flow/AI adapters remain provisional |
+| `spatialrust-vision` | Stable foundation | Errors, borders, resize/filter entry points, reusable resize/gray/normalize/CHW outputs, detection/dense and Feature2D data contracts are stable; geometry/stereo/flow/AI adapters remain provisional |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |
 | `spatialrust-filtering` | Provisional | GPU thresholds may move |
 | `spatialrust-features` | Provisional | Normal GPU path still tuning |

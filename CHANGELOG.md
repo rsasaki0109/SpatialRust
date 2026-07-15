@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Reusable CPU vision kernels (Epic 103)**: stable caller-owned
+  `resize_into`, `rgb_to_gray_into`, `normalize_into`, and `pack_chw_into`
+  paths, NumPy `out=` bindings, size-aware safe parallel CHW packing, and a
+  VGA/1080p/4K allocation/reuse comparison receipt. The reference run records
+  both OpenCV's resize/color-conversion lead and SpatialRust's 8.54x–16.11x
+  reusable RGB-to-CHW advantage.
+
 - **Vision API conformance (Epic 102)**: a machine-readable stable/provisional
   image-camera-vision registry, a compile-and-behavior API contract, and a
   dedicated Linux/Windows/macOS CI matrix for the image, camera, and full vision

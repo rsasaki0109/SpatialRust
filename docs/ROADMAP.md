@@ -378,7 +378,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | --- | --- | --- | --- |
 | 101 | Complete | 83–90 | Reproducible OpenCV correctness/performance contract, workload manifest, environment receipts, and aggregate runner |
 | 102 | Complete | 101 | Stabilize the image/camera/vision 1.0 contract and cross-platform conformance |
-| 103 | Planned | 101–102 | SIMD/parallel CPU kernel dispatch, reusable outputs, and measured allocation control |
+| 103 | Complete | 101–102 | SIMD/parallel CPU kernel dispatch, reusable outputs, and measured allocation control |
 | 104 | Planned | 89, 101–103 | Texture-backed GPU Image v2 and device-resident resize/filter/edge/morphology chains |
 | 105 | Planned | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
 | 106 | Planned | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
@@ -422,3 +422,19 @@ and `GpuImage` remain explicitly provisional. Stable entries may gain faster
 internal dispatch without changing ownership, error, stride, or transfer
 semantics. Completion requires the dedicated three-OS CI matrix and the full
 `spatialrust-vision/full` property suite to pass.
+
+### Epic 103 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 103A | Complete | Allocation audit and caller-owned image/planar outputs | `resize_into`, `rgb_to_gray_into`, `normalize_into`, `pack_chw_into` |
+| 103B | Complete | Safe size-aware parallel dispatch for planar AI packing | scoped channel workers with scalar small-image fallback |
+| 103C | Complete | Rust and NumPy reusable-output contracts | strided Rust tests and Python `out=` identity tests |
+| 103D | Complete | VGA/1080p/4K correctness and allocation/reuse measurements against OpenCV | `opencv-vision-performance` report |
+
+Epic 103 does not claim blanket CPU kernel superiority. The comparison receipt
+records OpenCV's SIMD advantage for resize and RGB-to-gray, while SpatialRust's
+typed RGB-to-CHW path is faster on every canonical profile. On the reference
+Windows host, reusable SpatialRust CHW measured 8.54x, 13.07x, and 16.11x faster
+than allocating `cv2.dnn.blobFromImage` at VGA, 1080p, and 4K. Public CPU APIs
+accept explicit caller storage and never perform an implicit device transfer.
