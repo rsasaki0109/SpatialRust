@@ -30,6 +30,8 @@
       { "id": "multi_object_tracking", "domain": "video", "modes": ["streaming"] },
       { "id": "visual_odometry", "domain": "localization", "modes": ["correctness"] },
       { "id": "rgbd_odometry", "domain": "localization", "modes": ["correctness"] },
+      { "id": "exposure_fusion", "domain": "photography", "modes": ["allocate"] },
+      { "id": "panorama_pair", "domain": "photography", "modes": ["allocate"] },
     { "id": "depth_to_xyz", "domain": "rgbd", "modes": ["allocate", "reuse"] },
     { "id": "rgbd_to_point_cloud", "domain": "spatial-e2e", "modes": ["allocate"] },
     { "id": "ai_preprocess", "domain": "dnn-adapter", "modes": ["allocate", "reuse"] },

@@ -79,8 +79,8 @@ use spatialrust::vision::{
     estimate_homography_ransac as estimate_homography_ransac_op,
     estimate_rgbd_odometry as estimate_rgbd_odometry_op, filter2d as filter2d_op,
     find_contours as trace_contours, gaussian_blur as gaussian_blur_op,
-    histogram_u8 as histogram_u8_op, integral_image as integral_image_op,
-    laplacian as laplacian_op, letterbox as letterbox_op,
+    gray_world_white_balance as gray_world_white_balance_op, histogram_u8 as histogram_u8_op,
+    integral_image as integral_image_op, laplacian as laplacian_op, letterbox as letterbox_op,
     match_descriptors as match_descriptors_op, median_blur as median_blur_op,
     morphology_ex as morphology_ex_op, nms as nms_op, otsu_threshold_u8 as otsu_threshold_u8_op,
     pack_chw as pack_chw_op, pack_chw_into as pack_chw_into_op,
@@ -89,11 +89,12 @@ use spatialrust::vision::{
     rgb_to_gray as rgb_to_gray_op, rgb_to_gray_into as rgb_to_gray_into_op,
     rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op, sobel as sobel_op, soft_nms as soft_nms_op,
     solve_pnp as solve_pnp_op, stereo_block_match as stereo_block_match_op,
-    threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BinaryMask, BorderMode,
-    BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity, CornerSelectionOptions,
-    DescriptorBuffer, FastOptions, HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle,
-    MatchOptions, MorphologyOperation, MorphologyShape, ObjectImageCorrespondence, OrbOptions,
-    OrbScoreType, PointCorrespondence2, PointMap, RgbdOdometryOptions, RleOrder,
+    stitch_panorama_pair as stitch_panorama_pair_op, threshold as threshold_op, AbsolutePose,
+    AdaptiveThresholdMethod, BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions,
+    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer, FastOptions,
+    HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions, MorphologyOperation,
+    MorphologyShape, ObjectImageCorrespondence, OrbOptions, OrbScoreType, PanoramaOptions,
+    PerspectiveTransform, PointCorrespondence2, PointMap, RgbdOdometryOptions, RleOrder,
     RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement,
     ThresholdType,
 };
@@ -787,6 +788,56 @@ fn dense_flow_image<'py>(
     )
     .map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
+}
+
+/// Applies gray-world white balance to an RGB image.
+#[pyfunction]
+fn gray_world_white_balance_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    let image = rgb_image_from_numpy(image)?;
+    let output = gray_world_white_balance_op(image.view()).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((output.height(), output.width(), 3), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Stitches a source RGB image into target coordinates with a 3x3 homography.
+#[pyfunction]
+#[pyo3(signature = (source, target, homography, max_output_pixels=67108864))]
+fn stitch_panorama_pair<'py>(
+    py: Python<'py>,
+    source: PyReadonlyArray3<'_, u8>,
+    target: PyReadonlyArray3<'_, u8>,
+    homography: PyReadonlyArray2<'_, f64>,
+    max_output_pixels: usize,
+) -> PyResult<(Bound<'py, PyArray3<u8>>, i32, i32)> {
+    let source = rgb_image_from_numpy(source)?;
+    let target = rgb_image_from_numpy(target)?;
+    let matrix = homography.as_array();
+    if matrix.shape() != [3, 3] {
+        return Err(PyValueError::new_err("homography must have shape (3, 3)"));
+    }
+    let panorama = stitch_panorama_pair_op(
+        source.view(),
+        target.view(),
+        PerspectiveTransform {
+            matrix: [
+                [matrix[[0, 0]], matrix[[0, 1]], matrix[[0, 2]]],
+                [matrix[[1, 0]], matrix[[1, 1]], matrix[[1, 2]]],
+                [matrix[[2, 0]], matrix[[2, 1]], matrix[[2, 2]]],
+            ],
+        },
+        PanoramaOptions { max_output_pixels },
+    )
+    .map_err(to_py_err)?;
+    let (origin_x, origin_y) = (panorama.origin_x(), panorama.origin_y());
+    let image = panorama.image();
+    let array =
+        Array3::from_shape_vec((image.height(), image.width(), 3), image.as_slice().to_vec())
+            .map_err(to_py_err)?;
+    Ok((array.into_pyarray_bound(py), origin_x, origin_y))
 }
 
 fn cloud_from_xyz(arr: PyReadonlyArray2<'_, f32>) -> PyResult<PointCloud> {
@@ -3188,6 +3239,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(estimate_homography_ransac, m)?)?;
     m.add_function(wrap_pyfunction!(solve_pnp, m)?)?;
     m.add_function(wrap_pyfunction!(estimate_rgbd_odometry, m)?)?;
+    m.add_function(wrap_pyfunction!(gray_world_white_balance_image, m)?)?;
+    m.add_function(wrap_pyfunction!(stitch_panorama_pair, m)?)?;
     m.add_function(wrap_pyfunction!(stereo_block_match, m)?)?;
     m.add_function(wrap_pyfunction!(match_binary_descriptors, m)?)?;
     m.add_function(wrap_pyfunction!(match_float_descriptors, m)?)?;

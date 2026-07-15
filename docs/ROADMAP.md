@@ -384,7 +384,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | 105 | Complete | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
 | 106 | Complete | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
 | 107 | Complete | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
-| 108 | Planned | 101–107 | Feature-gated computational photography and panorama stitching |
+| 108 | Complete | 101–107 | Feature-gated computational photography and panorama stitching |
 | 109 | Planned | 97, 99, 101–108 | Bounded spatial execution graph with fusion, backpressure, and named transfer receipts |
 | 110 | Planned | 100, 101–109 | SpatialRust Vision 1.0 conformance, audits, performance budgets, examples, and migration policy |
 
@@ -500,3 +500,18 @@ The vision layer reports source-to-target motion and never invents monocular
 scale. `spatialrust-mapping` accepts scale explicitly for monocular estimates
 and preserves metric RGB-D translation. Invalid source depths are counted,
 not silently filled or copied to another device.
+
+### Epic 108 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 108A | Complete | Deterministic RGB gray-world white balance | channel-mean equality test and Python binding |
+| 108B | Complete | Aligned well-exposedness fusion | middle-gray preference test and VGA/3-exposure Criterion |
+| 108C | Complete | Bounded pairwise panorama canvas and origin receipt | translated pair geometry and pixel-budget rejection |
+| 108D | Complete | Bilinear source warp and edge-distance feather blending | overlap/non-overlap known-pixel tests |
+| 108E | Complete | Homography estimation composition and OpenCV comparison | RANSAC entry point and zero-error `warpPerspective` receipt |
+
+Photography remains a runtime-free `vision-photography` feature. Inputs must
+share dimensions/metadata where alignment requires it, panorama allocations are
+checked against a caller-visible pixel ceiling, and no codec or GPU transfer is
+performed implicitly.

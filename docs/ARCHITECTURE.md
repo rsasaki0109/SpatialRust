@@ -87,6 +87,9 @@ Visual and RGB-D odometry kernels remain in the additive `odometry` vision
 feature. Their conversion into stamped trajectory motion is a one-way optional
 bridge in `spatialrust-mapping`; monocular scale and invalid depth remain
 explicit at that boundary.
+Computational photography composes image/warp/geometry primitives behind the
+additive `photography` feature. Panorama APIs expose canvas bounds and enforce a
+pre-allocation pixel budget; codec and device execution remain separate.
 Its `imgproc-*` features share one border extrapolation contract; `filter2d`
 means correlation, while true convolution is an explicitly named operation.
 `spatialrust-tensor` is distinct from the point-cloud chunk iterator named
