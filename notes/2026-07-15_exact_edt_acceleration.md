@@ -5,7 +5,10 @@
 The exact unit-spacing Euclidean distance transform now uses a binary-row
 nearest-background pass, compact `u16` horizontal distances, cache-tiled
 transposes, a parallel Felzenszwalb–Huttenlocher column envelope, and final
-`f32` square roots. Anisotropic spacing keeps the general exact `f64` path.
+`f32` square roots. The finishing pass skips impossible sentinels when every
+row contains background, caches each column parabola height once, and splits
+large transpose/envelope stages into balanced Rayon tasks. Anisotropic spacing
+keeps the general exact `f64` path.
 
 `DistanceTransformWorkspace`, `distance_transform_edt_into`, and
 `distance_transform_edt_u8_into` make scratch/output reuse explicit. The Python
@@ -28,12 +31,18 @@ CPython 3.12. Timings are machine-specific medians.
 | Measurement | Before | After |
 | --- | ---: | ---: |
 | Native Criterion 4K allocate | 451.63 ms | about 75 ms |
-| Native Criterion 4K reusable output/workspace | unavailable | about 43 ms |
-| Python/OpenCV 4K allocate ratio | OpenCV 12.35× | OpenCV 1.63× |
-| Python/OpenCV 4K reuse ratio | unavailable | OpenCV 1.07× |
+| Native Criterion 4K canonical reusable output/workspace | unavailable | about 35 ms |
+| Native Criterion 4K OpenCV-density reusable input | unavailable | about 51 ms sustained |
+| Python/OpenCV 4K allocate ratio | OpenCV 12.35× | OpenCV 1.45× |
+| Python/OpenCV 4K reuse ratio | unavailable | **SpatialRust 1.07×** |
 
-The native reusable kernel crosses the earlier OpenCV allocate baseline, while
-the fully interleaved Python reuse comparison remains a narrow OpenCV win. No
-blanket faster-than-OpenCV claim is made. Re-run
+The fully interleaved three-sample Python reuse medians were OpenCV 43.32980 ms
+and SpatialRust 40.66090 ms at 4K, with maximum absolute error `0.0`. VGA and 1080p
+reuse remained narrow OpenCV wins (1.02× and 1.06× respectively), so no blanket
+faster-than-OpenCV claim is made. Re-run
 `bench/opencv_vision_comparison/performance.py` before quoting host-specific
 numbers.
+
+The recorded 4K reuse samples in milliseconds were OpenCV
+`[43.3298, 42.3846, 44.9554]` and SpatialRust
+`[40.6609, 39.7137, 41.7281]` after three warmups.

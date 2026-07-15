@@ -617,6 +617,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | 114C | Planned | Preserve generic components, channels, strides, and borders as safe fallbacks | full property suite |
 | 114D | Planned | Bound worker creation and temporary memory | thread-count and peak-memory receipt |
 | 114E | Complete | Exact EDT binary-row fast path, tiled transpose, and bounded pool dispatch | VGA/1080p/4K Criterion and OpenCV receipt |
+| 114F | Complete | Cache EDT parabola heights and balance column tasks for dense masks | exact OpenCV parity and 4K Python reuse win |
 
 ### Epic 115 delivery slices
 

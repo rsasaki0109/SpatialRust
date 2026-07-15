@@ -297,50 +297,73 @@ fn distance_transform_unit_into(
     workspace: &mut DistanceTransformWorkspace,
     distances: &mut [f32],
 ) {
-    horizontal_binary_distance_rows_u16(mask, width, &mut workspace.horizontal);
+    let all_rows_have_background =
+        horizontal_binary_distance_rows_u16(mask, width, &mut workspace.horizontal);
     transpose_u16(&workspace.horizontal, width, height, &mut workspace.transposed);
-    vertical_distance_columns_u16(&workspace.transposed, height, &mut workspace.column_major);
+    vertical_distance_columns_u16(
+        &workspace.transposed,
+        height,
+        all_rows_have_background,
+        &mut workspace.column_major,
+    );
     transpose_f32(&workspace.column_major, height, width, distances);
 }
 
-fn horizontal_binary_distance_rows_u16(mask: &[u8], width: usize, output: &mut [u16]) {
+fn horizontal_binary_distance_rows_u16(mask: &[u8], width: usize, output: &mut [u16]) -> bool {
     const PARALLEL_THRESHOLD: usize = 128 * 1024;
     let height = mask.len() / width;
     let threads = worker_count(height);
     if threads == 1 || mask.len() < PARALLEL_THRESHOLD {
-        horizontal_binary_distance_rows_u16_serial(mask, width, output);
-        return;
+        return horizontal_binary_distance_rows_u16_serial(mask, width, output);
     }
     let rows_per_worker = height.div_ceil(threads);
     mask.par_chunks(rows_per_worker * width)
         .zip(output.par_chunks_mut(rows_per_worker * width))
-        .for_each(|(worker_mask, worker_output)| {
-            horizontal_binary_distance_rows_u16_serial(worker_mask, width, worker_output);
-        });
+        .map(|(worker_mask, worker_output)| {
+            horizontal_binary_distance_rows_u16_serial(worker_mask, width, worker_output)
+        })
+        .all(std::convert::identity)
 }
 
-fn horizontal_binary_distance_rows_u16_serial(mask: &[u8], width: usize, output: &mut [u16]) {
+fn horizontal_binary_distance_rows_u16_serial(
+    mask: &[u8],
+    width: usize,
+    output: &mut [u16],
+) -> bool {
+    let mut all_rows_have_background = true;
     for (mask_row, output_row) in mask.chunks_exact(width).zip(output.chunks_exact_mut(width)) {
-        let mut last_background = None;
-        for x in 0..width {
-            if mask_row[x] == 0 {
-                last_background = Some(x);
-                output_row[x] = 0;
-            } else if let Some(background) = last_background {
-                output_row[x] = (x - background) as u16;
-            } else {
-                output_row[x] = u16::MAX;
-            }
+        let Some(first_background) = mask_row.iter().position(|&value| value == 0) else {
+            output_row.fill(u16::MAX);
+            all_rows_have_background = false;
+            continue;
+        };
+        for (x, value) in output_row[..first_background].iter_mut().enumerate() {
+            *value = (first_background - x) as u16;
         }
-        let mut next_background = None;
-        for x in (0..width).rev() {
+        output_row[first_background] = 0;
+        let mut distance = 0_u16;
+        for x in first_background + 1..width {
             if mask_row[x] == 0 {
-                next_background = Some(x);
-            } else if let Some(background) = next_background {
-                output_row[x] = output_row[x].min((background - x) as u16);
+                distance = 0;
+            } else {
+                distance += 1;
             }
+            output_row[x] = distance;
+        }
+
+        let last_background =
+            mask_row.iter().rposition(|&value| value == 0).expect("row has a background pixel");
+        distance = 0;
+        for x in (0..last_background).rev() {
+            if mask_row[x] == 0 {
+                distance = 0;
+            } else {
+                distance += 1;
+            }
+            output_row[x] = output_row[x].min(distance);
         }
     }
+    all_rows_have_background
 }
 
 fn transpose_u16(input: &[u16], width: usize, height: usize, output: &mut [u16]) {
@@ -350,7 +373,9 @@ fn transpose_u16(input: &[u16], width: usize, height: usize, output: &mut [u16])
         transpose_u16_columns(input, width, height, 0, output);
         return;
     }
-    let columns_per_worker = width.div_ceil(threads);
+    // Smaller chunks let Rayon overlap cache-heavy transpose work.
+    let task_count = threads.saturating_mul(2).min(width);
+    let columns_per_worker = width.div_ceil(task_count);
     output.par_chunks_mut(columns_per_worker * height).enumerate().for_each(
         |(worker_index, worker_output)| {
             let x_start = worker_index * columns_per_worker;
@@ -381,52 +406,103 @@ fn transpose_u16_columns(
     }
 }
 
-fn vertical_distance_columns_u16(columns: &[u16], height: usize, output: &mut [f32]) {
+fn vertical_distance_columns_u16(
+    columns: &[u16],
+    height: usize,
+    all_finite: bool,
+    output: &mut [f32],
+) {
     const PARALLEL_THRESHOLD: usize = 128 * 1024;
     let width = columns.len() / height;
     let threads = worker_count(width);
     if threads == 1 || columns.len() < PARALLEL_THRESHOLD {
-        vertical_distance_column_range_u16(columns, height, output);
+        if all_finite {
+            vertical_distance_column_range_u16::<true>(columns, height, output);
+        } else {
+            vertical_distance_column_range_u16::<false>(columns, height, output);
+        }
         return;
     }
-    let columns_per_worker = width.div_ceil(threads);
+    // More chunks than workers reduce the long tail caused by columns whose
+    // lower envelopes contain different numbers of parabolas.
+    let task_count = threads.saturating_mul(2).min(width);
+    let columns_per_worker = width.div_ceil(task_count);
+    if all_finite {
+        vertical_distance_columns_u16_parallel::<true>(columns, height, columns_per_worker, output);
+    } else {
+        vertical_distance_columns_u16_parallel::<false>(
+            columns,
+            height,
+            columns_per_worker,
+            output,
+        );
+    }
+}
+
+fn vertical_distance_columns_u16_parallel<const ALL_FINITE: bool>(
+    columns: &[u16],
+    height: usize,
+    columns_per_worker: usize,
+    output: &mut [f32],
+) {
     columns
         .par_chunks(columns_per_worker * height)
         .zip(output.par_chunks_mut(columns_per_worker * height))
         .for_each(|(worker_input, worker_output)| {
-            vertical_distance_column_range_u16(worker_input, height, worker_output);
+            vertical_distance_column_range_u16::<ALL_FINITE>(worker_input, height, worker_output);
         });
 }
 
-fn vertical_distance_column_range_u16(columns: &[u16], height: usize, output: &mut [f32]) {
+fn vertical_distance_column_range_u16<const ALL_FINITE: bool>(
+    columns: &[u16],
+    height: usize,
+    output: &mut [f32],
+) {
     let mut sites = vec![0_usize; height];
     let mut boundaries = vec![0.0_f64; height.saturating_add(1)];
+    let mut heights = vec![0.0_f64; height];
     for (input_column, output_column) in
         columns.chunks_exact(height).zip(output.chunks_exact_mut(height))
     {
-        distance_transform_1d_u16(input_column, output_column, &mut sites, &mut boundaries);
+        distance_transform_1d_u16::<ALL_FINITE>(
+            input_column,
+            output_column,
+            &mut sites,
+            &mut boundaries,
+            &mut heights,
+        );
     }
 }
 
-fn distance_transform_1d_u16(
+fn distance_transform_1d_u16<const ALL_FINITE: bool>(
     input: &[u16],
     output: &mut [f32],
     sites: &mut [usize],
     boundaries: &mut [f64],
+    heights: &mut [f64],
 ) {
-    let first = input.iter().position(|&value| value != u16::MAX).expect("background exists");
+    for (coordinate, (&horizontal, height)) in input.iter().zip(heights.iter_mut()).enumerate() {
+        let coordinate = coordinate as f64;
+        let horizontal = f64::from(horizontal);
+        *height = coordinate * coordinate + horizontal * horizontal;
+    }
+    let first = if ALL_FINITE {
+        0
+    } else {
+        input.iter().position(|&value| value != u16::MAX).expect("background exists")
+    };
     let mut envelope_end = 0;
     sites[0] = first;
     boundaries[0] = f64::NEG_INFINITY;
     boundaries[1] = f64::INFINITY;
-    for q in first + 1..input.len() {
-        if input[q] == u16::MAX {
+    for (q, &horizontal) in input.iter().enumerate().skip(first + 1) {
+        if !ALL_FINITE && horizontal == u16::MAX {
             continue;
         }
-        let mut intersection = parabola_intersection_u16(input, q, sites[envelope_end]);
+        let mut intersection = parabola_intersection_u16(heights, q, sites[envelope_end]);
         while envelope_end > 0 && intersection <= boundaries[envelope_end] {
             envelope_end -= 1;
-            intersection = parabola_intersection_u16(input, q, sites[envelope_end]);
+            intersection = parabola_intersection_u16(heights, q, sites[envelope_end]);
         }
         envelope_end += 1;
         sites[envelope_end] = q;
@@ -445,14 +521,8 @@ fn distance_transform_1d_u16(
     }
 }
 
-fn parabola_intersection_u16(input: &[u16], right: usize, left: usize) -> f64 {
-    let right_coordinate = right as f64;
-    let left_coordinate = left as f64;
-    let right_distance = f64::from(input[right]);
-    let left_distance = f64::from(input[left]);
-    let right_height = right_coordinate * right_coordinate + right_distance * right_distance;
-    let left_height = left_coordinate * left_coordinate + left_distance * left_distance;
-    (right_height - left_height) / (2.0 * (right_coordinate - left_coordinate))
+fn parabola_intersection_u16(heights: &[f64], right: usize, left: usize) -> f64 {
+    (heights[right] - heights[left]) / (2.0 * (right - left) as f64)
 }
 
 fn transpose_f64(input: &[f64], width: usize, height: usize, output: &mut [f64]) {
