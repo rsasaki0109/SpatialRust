@@ -26,8 +26,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build documentation
         run: cargo doc --workspace --no-deps --all-features
-      - name: Redirect index to the meta crate
-        run: echo '<meta http-equiv="refresh" content="0; url=spatialrust/index.html">' > target/doc/index.html
+      - name: Add the project guide
+        shell: bash
+        run: |
+          cp docs/site/index.html target/doc/index.html
+          cp docs/site/algorithms.html target/doc/algorithms.html
+          cp docs/site/vision2.html target/doc/vision2.html
+          cp docs/site/styles.css target/doc/styles.css
       - uses: actions/upload-pages-artifact@v3
         with:
           path: target/doc

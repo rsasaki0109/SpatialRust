@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Searchable catalog of algorithms implemented by SpatialRust.">
+  <title>Algorithm Catalog · SpatialRust</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header><nav class="wrap"><a class="brand" href="index.html">SpatialRust</a><div class="nav-links"><a href="algorithms.html">Algorithms</a><a href="vision2.html">Vision 2</a><a href="spatialrust/index.html">Rust API</a><a href="https://github.com/rsasaki0109/SpatialRust">GitHub</a></div></nav></header>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Capability map</div>
+      <h1>Algorithm catalog</h1>
+      <p class="lead">Find an algorithm by task, then follow its crate link to the generated API. Entries describe implemented public families, not future intentions.</p>
+      <div class="filters"><input id="search" type="search" placeholder="Search: ICP, Canny, TSDF, GPU…" aria-label="Search algorithms"><button class="chip active" data-filter="all">All</button><button class="chip" data-filter="point">Point cloud</button><button class="chip" data-filter="vision">Vision</button><button class="chip" data-filter="spatial">Spatial</button><button class="chip" data-filter="runtime">Runtime</button></div>
+    </section>
+
+    <div class="table-wrap">
+      <table id="catalog">
+        <thead><tr><th>Area</th><th>Algorithms and operations</th><th>Rust crate / feature</th><th>Backend</th></tr></thead>
+        <tbody>
+          <tr data-area="point"><td><strong>Filtering</strong></td><td>Pass-through, crop box, voxel-grid downsample, statistical/radius outlier removal, farthest-point sampling, moving least squares</td><td><a href="spatialrust_filtering/index.html"><code>spatialrust-filtering</code></a></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="point"><td><strong>Spatial search</strong></td><td>Brute force, k-d tree, radius/k-nearest queries, chunked parallel queries, uniform grid, k-NN/radius neighbor graphs</td><td><a href="spatialrust_search/index.html"><code>spatialrust-search</code></a></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="point"><td><strong>Point features</strong></td><td>Normal estimation and orientation, ISS keypoints, boundary detection, FPFH descriptors</td><td><a href="spatialrust_features/index.html"><code>spatialrust-features</code></a>, <a href="spatialrust_registration/index.html"><code>registration</code></a></td><td><span class="tag">CPU / GPU</span></td></tr>
+          <tr data-area="point"><td><strong>Segmentation</strong></td><td>RANSAC plane/sphere/cylinder, multi-plane, ground, Euclidean clustering, DBSCAN, region growing</td><td><a href="spatialrust_segmentation/index.html"><code>spatialrust-segmentation</code></a></td><td><span class="tag">CPU / GPU</span></td></tr>
+          <tr data-area="point"><td><strong>Registration</strong></td><td>Rigid Kabsch, point-to-point ICP, point-to-plane ICP, GICP, NDT, FPFH+RANSAC global alignment</td><td><a href="spatialrust_registration/index.html"><code>spatialrust-registration</code></a></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="point"><td><strong>Voxelization</strong></td><td>Occupancy grids, range images, voxel keys, segments, centroid/first-point reductions</td><td><a href="spatialrust_voxelize/index.html"><code>spatialrust-voxelize</code></a>, <a href="spatialrust_gpu/index.html"><code>gpu</code></a></td><td><span class="tag">CPU / GPU</span></td></tr>
+          <tr data-area="point"><td><strong>Transforms</strong></td><td>Apply transform, centroid, AABB/OBB, recenter, scale, unit-sphere normalization, merge</td><td><a href="spatialrust_transform/index.html"><code>spatialrust-transform</code></a></td><td><span class="tag">CPU</span></td></tr>
+
+          <tr data-area="vision"><td><strong>Preprocessing</strong></td><td>Crop, pad, letterbox, normalize, interleaved-to-CHW, RGB/BGR swap, RGB↔gray/HSV, reusable outputs</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>preprocess</code></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Resize and warp</strong></td><td>Nearest, bilinear, bicubic and area resize; remap; affine and perspective warp</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>resize</code>, <code>warp</code></td><td><span class="tag">CPU / GPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Filtering</strong></td><td>2D correlation/convolution, separable/box/Gaussian, median, bilateral, Sobel, Scharr, Laplacian, Gaussian pyramids</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>imgproc-filter</code></td><td><span class="tag">CPU / GPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Morphology</strong></td><td>Erode, dilate, open, close, gradient, top-hat, black-hat with Rect/Cross/Ellipse/Diamond/custom elements</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>imgproc-morphology</code></td><td><span class="tag">CPU / GPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Image analysis</strong></td><td>Fixed/Otsu/adaptive threshold, histogram, equalization, CLAHE, integral image, Canny</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>imgproc-analysis</code>, <code>imgproc-canny</code></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Local features</strong></td><td>FAST, Harris, Shi–Tomasi, ORB, descriptor matching, grid selection, pyramidal Lucas–Kanade tracking</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>feature2d</code></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Dense vision</strong></td><td>Connected components, contours, polygon approximation, mask RLE, depth/confidence/flow/point maps, NMS/Soft-NMS</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>dense</code>, <code>detection</code></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Multiview geometry</strong></td><td>Homography, fundamental/essential matrices, RANSAC, triangulation, relative pose, PnP/PnP-RANSAC</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>geometry</code></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Stereo and odometry</strong></td><td>Stereo rectification, block matching, disparity-to-depth/XYZ, monocular and RGB-D visual odometry</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>geometry</code>, <code>odometry</code></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Video</strong></td><td>Dense block flow, adaptive background model, multi-object tracker, timestamped pull sources</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>video</code></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="vision"><td><strong>Photography</strong></td><td>Gray-world white balance, exposure fusion, bounded panorama estimation, warp and feather stitching</td><td><a href="spatialrust_vision/index.html"><code>spatialrust-vision</code></a> · <code>photography</code></td><td><span class="tag">CPU</span></td></tr>
+
+          <tr data-area="spatial"><td><strong>Camera and RGB-D</strong></td><td>Pinhole/fisheye projection and distortion, mono/stereo/hand-eye calibration, point bundle adjustment, depth-to-XYZ/point-cloud</td><td><a href="spatialrust_camera/index.html"><code>spatialrust-camera</code></a></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="spatial"><td><strong>Mapping</strong></td><td>Stamped trajectories, delta motion, visual-odometry bridge, pose-graph construction, root localization, and loop-closure candidates</td><td><a href="spatialrust_mapping/index.html"><code>spatialrust-mapping</code></a></td><td><span class="tag">CPU</span></td></tr>
+          <tr data-area="spatial"><td><strong>Scene reconstruction</strong></td><td>TSDF integration, marching cubes, surfel fusion, CPU Gaussian splat rendering, triangle meshes</td><td><a href="spatialrust_scene/index.html"><code>spatialrust-scene</code></a></td><td><span class="tag">CPU / GPU features</span></td></tr>
+          <tr data-area="spatial"><td><strong>Semantic spatial</strong></td><td>Embeddings, cosine similarity, multimodal fusion, semantic search index, open-vocabulary entities</td><td><a href="spatialrust_semantic/index.html"><code>spatialrust-semantic</code></a></td><td><span class="tag">CPU</span></td></tr>
+
+          <tr data-area="runtime"><td><strong>GPU compute</strong></td><td>Explicit image upload/readback, device-resident copy/gray/blur/resize/Sobel/morphology, voxel reduction, normals, clustering, plane scoring</td><td><a href="spatialrust_gpu/index.html"><code>spatialrust-gpu</code></a></td><td><span class="tag">wgpu</span></td></tr>
+          <tr data-area="runtime"><td><strong>AI and tensors</strong></td><td>Image↔tensor packing, DLPack import/export, backend/session contracts, mock inference and optional ONNX Runtime</td><td><a href="spatialrust_tensor/index.html"><code>spatialrust-tensor</code></a>, <a href="spatialrust_ai/index.html"><code>ai</code></a></td><td><span class="tag">CPU / optional runtime</span></td></tr>
+          <tr data-area="runtime"><td><strong>Execution and distribution</strong></td><td>Typed DAG compilation, same-device fusion, bounded backpressure, partitioning, named transfers and transfer ledgers</td><td><a href="spatialrust_runtime/index.html"><code>spatialrust-runtime</code></a>, <a href="spatialrust_distribute/index.html"><code>distribute</code></a></td><td><span class="tag">Explicit placement</span></td></tr>
+          <tr data-area="runtime"><td><strong>Time and replay</strong></td><td>Clock domains, frame graphs, deterministic multimodal replay, MCAP episode round-trip</td><td><a href="spatialrust_sync/index.html"><code>spatialrust-sync</code></a></td><td><span class="tag">CPU / optional I/O</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="notice">Feature names describe Cargo gates on the algorithm crate. Exact signatures and stability are authoritative in rustdoc and <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/API_STABILITY.md">API_STABILITY.md</a>. GPU entries always require explicit device APIs.</p>
+  </main>
+  <footer><div class="wrap">Catalog source: public workspace APIs · <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ALGORITHM_CATALOG.md">Maintenance guide</a></div></footer>
+  <script>
+    const search = document.querySelector('#search');
+    const rows = [...document.querySelectorAll('#catalog tbody tr')];
+    const chips = [...document.querySelectorAll('.chip')];
+    let area = 'all';
+    function applyFilters() {
+      const query = search.value.trim().toLowerCase();
+      for (const row of rows) {
+        const areaMatch = area === 'all' || row.dataset.area === area;
+        const textMatch = !query || row.textContent.toLowerCase().includes(query);
+        row.hidden = !(areaMatch && textMatch);
+      }
+    }
+    search.addEventListener('input', applyFilters);
+    for (const chip of chips) chip.addEventListener('click', () => {
+      area = chip.dataset.filter;
+      for (const item of chips) item.classList.toggle('active', item === chip);
+      applyFilters();
+    });
+  </script>
+</body>
+</html>

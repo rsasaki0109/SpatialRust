@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Vision 2 performance roadmap and documentation site**: Epics 112–120 now
+  define cost attribution, reusable workspaces, safe CPU dispatch, resize/color,
+  Gaussian/Sobel, morphology, Canny, explicit GPU-chain, and release-gate work.
+  GitHub Pages adds a searchable cross-workspace algorithm catalog beside the
+  generated Rust API.
+
 - **OpenCV comparison methodology v2 (Epic 111)**: seeded interleaved paired
   timing, adaptive batching for sub-5-ms calls, robust dispersion and throughput
   metrics, strict finite JSON, and workload-specific numerical/edge accuracy
