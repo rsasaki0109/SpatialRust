@@ -71,7 +71,7 @@ pub struct CannyResult {
 pub struct CannyWorkspace {
     gradient_x: Vec<i16>,
     gradient_y: Vec<i16>,
-    comparison_magnitude: Vec<i32>,
+    magnitude_rows: Vec<i32>,
     states: Vec<u8>,
     strong: Vec<usize>,
 }
@@ -83,7 +83,7 @@ impl CannyWorkspace {
         Self {
             gradient_x: Vec::new(),
             gradient_y: Vec::new(),
-            comparison_magnitude: Vec::new(),
+            magnitude_rows: Vec::new(),
             states: Vec::new(),
             strong: Vec::new(),
         }
@@ -92,17 +92,23 @@ impl CannyWorkspace {
     /// Returns the reusable pixel capacity without counting the edge stack.
     #[must_use]
     pub fn capacity(&self) -> usize {
-        self.gradient_x
-            .capacity()
-            .min(self.gradient_y.capacity())
-            .min(self.comparison_magnitude.capacity())
-            .min(self.states.capacity())
+        self.gradient_x.capacity().min(self.gradient_y.capacity()).min(self.states.capacity())
     }
 
-    fn resize(&mut self, len: usize) {
+    /// Returns bytes reserved by all reusable vectors.
+    #[must_use]
+    pub fn allocated_bytes(&self) -> usize {
+        self.gradient_x.capacity() * std::mem::size_of::<i16>()
+            + self.gradient_y.capacity() * std::mem::size_of::<i16>()
+            + self.magnitude_rows.capacity() * std::mem::size_of::<i32>()
+            + self.states.capacity() * std::mem::size_of::<u8>()
+            + self.strong.capacity() * std::mem::size_of::<usize>()
+    }
+
+    fn resize(&mut self, len: usize, magnitude_elements: usize) {
         self.gradient_x.resize(len, 0);
         self.gradient_y.resize(len, 0);
-        self.comparison_magnitude.resize(len, 0);
+        self.magnitude_rows.resize(magnitude_elements, 0);
         self.states.resize(len, 1);
         self.strong.clear();
     }
@@ -174,7 +180,13 @@ fn canny_3x3_into(
     let width = input.width();
     let height = input.height();
     let len = checked_len(width, height)?;
-    workspace.resize(len);
+    let parallel = len >= 1_000_000;
+    let workers = if parallel { rayon::current_num_threads().min(height.max(1)) } else { 1 };
+    let magnitude_elements = workers
+        .checked_mul(3)
+        .and_then(|rows| rows.checked_mul(width))
+        .ok_or_else(|| VisionError::InvalidDimensions("Canny magnitude ring overflows".into()))?;
+    workspace.resize(len, magnitude_elements);
     spatial_gradient_u8_into(
         input,
         BorderMode::Replicate,
@@ -182,103 +194,58 @@ fn canny_3x3_into(
         &mut workspace.gradient_y,
     )?;
 
-    if options.l2_gradient {
-        if len >= 1_000_000 {
-            workspace.comparison_magnitude.par_iter_mut().enumerate().for_each(
-                |(index, magnitude)| {
-                    let x = i32::from(workspace.gradient_x[index]);
-                    let y = i32::from(workspace.gradient_y[index]);
-                    *magnitude = x * x + y * y;
-                },
-            );
-        } else {
-            for ((magnitude, &x), &y) in workspace
-                .comparison_magnitude
-                .iter_mut()
-                .zip(&workspace.gradient_x)
-                .zip(&workspace.gradient_y)
-            {
-                let x = i32::from(x);
-                let y = i32::from(y);
-                *magnitude = x * x + y * y;
-            }
-        }
-    } else {
-        for ((magnitude, &x), &y) in workspace
-            .comparison_magnitude
-            .iter_mut()
-            .zip(&workspace.gradient_x)
-            .zip(&workspace.gradient_y)
-        {
-            *magnitude = i32::from(x).abs() + i32::from(y).abs();
-        }
-    }
-
     let (low, high) = canny_thresholds(options);
     workspace.states.fill(1);
-    if len >= 1_000_000 {
+    if parallel {
+        let rows_per_worker = height.div_ceil(workers);
         let gradient_x = &workspace.gradient_x;
         let gradient_y = &workspace.gradient_y;
-        let magnitudes = &workspace.comparison_magnitude;
-        let strong = workspace
+        let (strong, has_weak) = workspace
             .states
-            .par_iter_mut()
+            .par_chunks_mut(rows_per_worker * width)
+            .zip(workspace.magnitude_rows.par_chunks_mut(3 * width))
             .enumerate()
-            .fold(Vec::new, |mut strong, (index, state)| {
-                let magnitude = magnitudes[index];
-                if i64::from(magnitude) > low
-                    && is_directional_maximum_i32(
-                        index % width,
-                        index / width,
-                        width,
-                        height,
-                        i32::from(gradient_x[index]),
-                        i32::from(gradient_y[index]),
-                        magnitude,
-                        magnitudes,
-                    )
-                {
-                    if i64::from(magnitude) > high {
-                        *state = 2;
-                        strong.push(index);
-                    } else {
-                        *state = 0;
-                    }
-                }
-                strong
+            .map(|(chunk, (states, magnitude_rows))| {
+                classify_canny_rows(
+                    chunk * rows_per_worker,
+                    width,
+                    height,
+                    gradient_x,
+                    gradient_y,
+                    options.l2_gradient,
+                    low,
+                    high,
+                    states,
+                    magnitude_rows,
+                )
             })
-            .reduce(Vec::new, |mut left, mut right| {
-                left.append(&mut right);
-                left
-            });
+            .reduce(
+                || (Vec::new(), false),
+                |(mut left, left_weak), (mut right, right_weak)| {
+                    left.append(&mut right);
+                    (left, left_weak || right_weak)
+                },
+            );
         workspace.strong = strong;
+        if !has_weak {
+            workspace.strong.clear();
+        }
     } else {
-        for y in 0..height {
-            let row = y * width;
-            for x in 0..width {
-                let index = row + x;
-                let magnitude = workspace.comparison_magnitude[index];
-                if i64::from(magnitude) <= low
-                    || !is_directional_maximum_i32(
-                        x,
-                        y,
-                        width,
-                        height,
-                        i32::from(workspace.gradient_x[index]),
-                        i32::from(workspace.gradient_y[index]),
-                        magnitude,
-                        &workspace.comparison_magnitude,
-                    )
-                {
-                    continue;
-                }
-                if i64::from(magnitude) > high {
-                    workspace.states[index] = 2;
-                    workspace.strong.push(index);
-                } else {
-                    workspace.states[index] = 0;
-                }
-            }
+        let (strong, has_weak) = classify_canny_rows(
+            0,
+            width,
+            height,
+            &workspace.gradient_x,
+            &workspace.gradient_y,
+            options.l2_gradient,
+            low,
+            high,
+            &mut workspace.states,
+            &mut workspace.magnitude_rows,
+        );
+        workspace.strong = strong;
+        if !has_weak {
+            workspace.strong.clear();
         }
     }
 
@@ -316,6 +283,180 @@ fn canny_3x3_into(
         }
     }
     Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn classify_canny_rows(
+    start_y: usize,
+    width: usize,
+    height: usize,
+    gradient_x: &[i16],
+    gradient_y: &[i16],
+    l2_gradient: bool,
+    low: i64,
+    high: i64,
+    states: &mut [u8],
+    magnitude_rows: &mut [i32],
+) -> (Vec<usize>, bool) {
+    if width == 0 || height == 0 || states.is_empty() {
+        return (Vec::new(), false);
+    }
+    debug_assert_eq!(magnitude_rows.len(), 3 * width);
+    let rows = states.len() / width;
+    fill_magnitude_row(
+        start_y.checked_sub(1),
+        width,
+        height,
+        gradient_x,
+        gradient_y,
+        l2_gradient,
+        &mut magnitude_rows[..width],
+    );
+    fill_magnitude_row(
+        Some(start_y),
+        width,
+        height,
+        gradient_x,
+        gradient_y,
+        l2_gradient,
+        &mut magnitude_rows[width..2 * width],
+    );
+    fill_magnitude_row(
+        start_y.checked_add(1),
+        width,
+        height,
+        gradient_x,
+        gradient_y,
+        l2_gradient,
+        &mut magnitude_rows[2 * width..],
+    );
+
+    let mut strong = Vec::new();
+    let mut has_weak = false;
+    for local_y in 0..rows {
+        let y = start_y + local_y;
+        let previous_slot = local_y % 3;
+        let current_slot = (local_y + 1) % 3;
+        let next_slot = (local_y + 2) % 3;
+        if local_y != 0 {
+            let next_y = y.checked_add(1);
+            fill_magnitude_row(
+                next_y,
+                width,
+                height,
+                gradient_x,
+                gradient_y,
+                l2_gradient,
+                &mut magnitude_rows[next_slot * width..(next_slot + 1) * width],
+            );
+        }
+        let global_row = y * width;
+        let local_row = local_y * width;
+        for x in 0..width {
+            let index = global_row + x;
+            let magnitude = magnitude_rows[current_slot * width + x];
+            if i64::from(magnitude) <= low
+                || !is_directional_maximum_ring(
+                    x,
+                    y,
+                    width,
+                    height,
+                    i32::from(gradient_x[index]),
+                    i32::from(gradient_y[index]),
+                    magnitude,
+                    magnitude_rows,
+                    previous_slot,
+                    current_slot,
+                    next_slot,
+                )
+            {
+                continue;
+            }
+            let state = &mut states[local_row + x];
+            if i64::from(magnitude) > high {
+                *state = 2;
+                strong.push(index);
+            } else {
+                *state = 0;
+                has_weak = true;
+            }
+        }
+    }
+    (strong, has_weak)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn fill_magnitude_row(
+    y: Option<usize>,
+    width: usize,
+    height: usize,
+    gradient_x: &[i16],
+    gradient_y: &[i16],
+    l2_gradient: bool,
+    output: &mut [i32],
+) {
+    let Some(y) = y.filter(|&y| y < height) else {
+        output.fill(0);
+        return;
+    };
+    let start = y * width;
+    let gradient_x = &gradient_x[start..start + width];
+    let gradient_y = &gradient_y[start..start + width];
+    if l2_gradient {
+        for ((magnitude, &x), &y) in output.iter_mut().zip(gradient_x).zip(gradient_y) {
+            let x = i32::from(x);
+            let y = i32::from(y);
+            *magnitude = x * x + y * y;
+        }
+    } else {
+        for ((magnitude, &x), &y) in output.iter_mut().zip(gradient_x).zip(gradient_y) {
+            *magnitude = i32::from(x).abs() + i32::from(y).abs();
+        }
+    }
+}
+
+#[inline]
+#[allow(clippy::too_many_arguments)]
+fn is_directional_maximum_ring(
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    gradient_x: i32,
+    gradient_y: i32,
+    magnitude: i32,
+    magnitudes: &[i32],
+    previous_slot: usize,
+    current_slot: usize,
+    next_slot: usize,
+) -> bool {
+    const TG22: i64 = 13_573;
+    let abs_x = i64::from(gradient_x.abs());
+    let abs_y_scaled = i64::from(gradient_y.abs()) << 15;
+    let tg22_x = abs_x * TG22;
+    let get = |offset_x: isize, offset_y: isize| {
+        let nx = x as isize + offset_x;
+        let ny = y as isize + offset_y;
+        if nx < 0 || ny < 0 || nx >= width as isize || ny >= height as isize {
+            0
+        } else {
+            let slot = match offset_y {
+                -1 => previous_slot,
+                0 => current_slot,
+                1 => next_slot,
+                _ => unreachable!("Canny NMS only reads adjacent rows"),
+            };
+            magnitudes[slot * width + nx as usize]
+        }
+    };
+    if abs_y_scaled < tg22_x {
+        magnitude > get(-1, 0) && magnitude >= get(1, 0)
+    } else if abs_y_scaled > tg22_x + (abs_x << 16) {
+        magnitude > get(0, -1) && magnitude >= get(0, 1)
+    } else {
+        let sign = if (gradient_x ^ gradient_y) < 0 { -1 } else { 1 };
+        magnitude > get(-sign, -1) && magnitude > get(sign, 1)
+    }
 }
 
 fn canny_thresholds(options: CannyOptions) -> (i64, i64) {
@@ -527,40 +668,6 @@ fn is_directional_maximum(
     }
 }
 
-#[inline]
-fn is_directional_maximum_i32(
-    x: usize,
-    y: usize,
-    width: usize,
-    height: usize,
-    gradient_x: i32,
-    gradient_y: i32,
-    magnitude: i32,
-    magnitudes: &[i32],
-) -> bool {
-    const TG22: i64 = 13_573;
-    let abs_x = i64::from(gradient_x.abs());
-    let abs_y_scaled = i64::from(gradient_y.abs()) << 15;
-    let tg22_x = abs_x * TG22;
-    let get = |offset_x: isize, offset_y: isize| {
-        let nx = x as isize + offset_x;
-        let ny = y as isize + offset_y;
-        if nx < 0 || ny < 0 || nx >= width as isize || ny >= height as isize {
-            0
-        } else {
-            magnitudes[ny as usize * width + nx as usize]
-        }
-    };
-    if abs_y_scaled < tg22_x {
-        magnitude > get(-1, 0) && magnitude >= get(1, 0)
-    } else if abs_y_scaled > tg22_x + (abs_x << 16) {
-        magnitude > get(0, -1) && magnitude >= get(0, 1)
-    } else {
-        let sign = if (gradient_x ^ gradient_y) < 0 { -1 } else { 1 };
-        magnitude > get(-sign, -1) && magnitude > get(sign, 1)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::{canny, canny_into, canny_with_intermediates, CannyOptions, CannyWorkspace};
@@ -657,5 +764,26 @@ mod tests {
                 assert_eq!(&storage[y * 11 + 7..(y + 1) * 11], &[17; 4]);
             }
         }
+    }
+
+    #[test]
+    fn parallel_ring_matches_intermediates_and_avoids_full_magnitude_image() {
+        let (width, height) = (1_000, 1_000);
+        let data = (0..width * height)
+            .map(|index| if (index / width) % 80 < 3 { 255 } else { 0 })
+            .collect();
+        let image = Image::<u8, 1>::try_new(width, height, data).unwrap();
+        let options = CannyOptions {
+            low_threshold: 80.0,
+            high_threshold: 160.0,
+            l2_gradient: true,
+            ..Default::default()
+        };
+        let expected = canny_with_intermediates(image.view(), options).unwrap().edges;
+        let mut actual = Image::<u8, 1>::from_pixel(width, height, [0]).unwrap();
+        let mut workspace = CannyWorkspace::new();
+        canny_into(image.view(), options, actual.view_mut(), &mut workspace).unwrap();
+        assert_eq!(actual, expected);
+        assert!(workspace.allocated_bytes() < width * height * 6);
     }
 }

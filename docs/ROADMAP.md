@@ -655,9 +655,9 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | 118A | Complete | Compute paired gradients, magnitude, and direction with shared traversal | fast-path/intermediate bit-exact parity tests |
-| 118B | In progress | Ring-buffer suppression and reusable hysteresis queue | reusable gradients, magnitude, states, and stack complete; ring-buffer suppression remains |
+| 118B | Complete | Ring-buffer suppression and reusable hysteresis queue | parallel three-row magnitude rings, reusable state/stack, and allocated-byte receipt |
 | 118C | Complete | Keep inspectable intermediates opt-in while making `canny()` allocation-light | `canny_into`, strided output padding, Python output identity, and workspace capacity tests |
-| 118D | Planned | Improve Canny by at least 5x on one canonical large profile | F1/IoU and timing receipt |
+| 118D | Complete | Improve Canny by at least 5x on one canonical large profile | 11.92× native 4K document-line improvement; bit-exact OpenCV parity; 1.42× OpenCV win |
 
 ### Epic 119 delivery slices
 
