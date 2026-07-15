@@ -1,10 +1,8 @@
 """Numerical and timing comparison with OpenCV rgbd.depthTo3d.
 
-Compares dense HxWx3 XYZ (fair), not colored PointCloud packing.
-
-Primary gate: both APIs allocate a fresh HxWx3 buffer each call
-(``cv.rgbd.depthTo3d(depth, K)`` vs ``sr.depth_to_xyz(...)``).
-Also reports fill-into reused buffers when both APIs support it.
+Gates SpatialRust processing-speed wins on:
+1. dense HxWx3 XYZ alloc + into vs ``cv.rgbd.depthTo3d``
+2. colored PointCloud vs OpenCV depthTo3d + NumPy mask/color gather
 """
 
 from __future__ import annotations
@@ -67,31 +65,50 @@ def main() -> None:
     out_cv = np.empty((height, width, 3), dtype=np.float32)
     out_sr = np.empty((height, width, 3), dtype=np.float32)
 
+    def opencv_colored_cloud():
+        pts = cv2.rgbd.depthTo3d(depth, intrinsics)
+        valid = np.isfinite(depth) & (depth > 0)
+        return pts[valid], color[valid]
+
     alloc_ratios = []
     into_ratios = []
+    cloud_ratios = []
     cv_alloc_samples = []
     sr_alloc_samples = []
     cv_into_samples = []
     sr_into_samples = []
+    cv_cloud_samples = []
+    sr_cloud_samples = []
     for _ in range(5):
         _, cv_alloc = timed(lambda: cv2.rgbd.depthTo3d(depth, intrinsics), warmup=8, repeats=40)
         _, sr_alloc = timed(lambda: sr.depth_to_xyz(depth, fx, fy, cx, cy), warmup=8, repeats=40)
         _, cv_into = timed(lambda: cv2.rgbd.depthTo3d(depth, intrinsics, out_cv), warmup=8, repeats=40)
-        _, sr_into = timed(lambda: sr.depth_to_xyz(depth, fx, fy, cx, cy, out=out_sr), warmup=8, repeats=40)
+        _, sr_into = timed(
+            lambda: sr.depth_to_xyz(depth, fx, fy, cx, cy, out=out_sr), warmup=8, repeats=40
+        )
+        _, cv_cloud = timed(opencv_colored_cloud, warmup=8, repeats=40)
+        _, sr_cloud_s = timed(
+            lambda: sr.rgbd_to_point_cloud(depth, color, fx, fy, cx, cy), warmup=8, repeats=40
+        )
         cv_alloc_samples.append(cv_alloc)
         sr_alloc_samples.append(sr_alloc)
         cv_into_samples.append(cv_into)
         sr_into_samples.append(sr_into)
+        cv_cloud_samples.append(cv_cloud)
+        sr_cloud_samples.append(sr_cloud_s)
         alloc_ratios.append(cv_alloc / sr_alloc)
         into_ratios.append(cv_into / sr_into)
-    _, sr_cloud_seconds = timed(lambda: sr.rgbd_to_point_cloud(depth, color, fx, fy, cx, cy))
+        cloud_ratios.append(cv_cloud / sr_cloud_s)
 
     cv_alloc = statistics.median(cv_alloc_samples)
     sr_alloc = statistics.median(sr_alloc_samples)
     cv_into = statistics.median(cv_into_samples)
     sr_into = statistics.median(sr_into_samples)
+    cv_cloud = statistics.median(cv_cloud_samples)
+    sr_cloud_s = statistics.median(sr_cloud_samples)
     alloc_ratio = statistics.median(alloc_ratios)
     into_ratio = statistics.median(into_ratios)
+    cloud_ratio = statistics.median(cloud_ratios)
     print(f"points: {len(actual)}")
     print(f"max dense XYZ error: {max_error_dense:.3e} m")
     print(f"max cloud XYZ error: {max_error_cloud:.3e} m")
@@ -99,12 +116,12 @@ def main() -> None:
     print(f"SpatialRust depth_to_xyz (alloc):     {sr_alloc * 1e3:.3f} ms  ({alloc_ratio:.2f}× vs OpenCV)")
     print(f"OpenCV depthTo3d (into):              {cv_into * 1e3:.3f} ms")
     print(f"SpatialRust depth_to_xyz (into out=): {sr_into * 1e3:.3f} ms  ({into_ratio:.2f}× vs OpenCV)")
-    print(f"SpatialRust rgbd_to_point_cloud:      {sr_cloud_seconds * 1e3:.3f} ms")
-    # Gate on both modes using median-of-trials to damp OS timer noise.
-    if alloc_ratio < 1.0 or into_ratio < 1.0:
+    print(f"OpenCV depth+mask+color:              {cv_cloud * 1e3:.3f} ms")
+    print(f"SpatialRust rgbd_to_point_cloud:      {sr_cloud_s * 1e3:.3f} ms  ({cloud_ratio:.2f}× vs OpenCV)")
+    if alloc_ratio < 1.0 or into_ratio < 1.0 or cloud_ratio < 1.0:
         raise SystemExit(
-            "SpatialRust depth_to_xyz slower than OpenCV "
-            f"(alloc {alloc_ratio:.2f}×, into {into_ratio:.2f}×)"
+            "SpatialRust slower than OpenCV on a gated path "
+            f"(alloc {alloc_ratio:.2f}×, into {into_ratio:.2f}×, cloud {cloud_ratio:.2f}×)"
         )
 
 

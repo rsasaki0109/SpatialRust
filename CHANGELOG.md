@@ -22,9 +22,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 ### Added
 
 - **RGB-D dense XYZ vs OpenCV**: `depth_to_xyz_dense` / `_into` with an x86_64 AVX2
-  fill path; Python `depth_to_xyz(..., out=)` for streaming reuse. The
-  `bench/opencv_rgbd_comparison` harness gates faster-or-equal medians against
-  `cv.rgbd.depthTo3d` (alloc and into).
+  fill path; Python `depth_to_xyz(..., out=)` for streaming reuse. Fast identity
+  packing for `rgbd_to_point_cloud`. The `bench/opencv_rgbd_comparison` harness
+  gates faster-or-equal medians against `cv.rgbd.depthTo3d` (alloc/into) and
+  against OpenCV depth+mask+color gather for colored clouds.
 
 - **Distributed execution deepen (Epic 99)**: `spatialrust-distribute` adds
   cycle-aware partition topological order, validated `TransferPlan` /

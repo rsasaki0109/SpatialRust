@@ -114,15 +114,6 @@ impl FastPinholeF32 {
             cy: camera.intrinsics.cy as f32,
         }
     }
-
-    #[inline]
-    fn unproject(self, px: f32, py: f32, z: f32) -> (f32, f32, f32) {
-        (
-            (px - self.cx) * self.inv_fx * z,
-            (py - self.cy) * self.inv_fy * z,
-            z,
-        )
-    }
 }
 
 /// Converts depth into a dense `H×W×3` XYZ buffer (row-major interleaved).
@@ -406,24 +397,7 @@ pub fn depth_to_point_cloud(
     let mut ys = Vec::with_capacity(capacity);
     let mut zs = Vec::with_capacity(capacity);
     if camera.distortion.is_identity() {
-        let pin = FastPinholeF32::from_camera(camera);
-        let scale = options.depth_scale;
-        let min_d = options.min_depth;
-        let max_d = options.max_depth;
-        for y in 0..depth.height() {
-            let row = depth.row(y).expect("validated row");
-            let py = y as f32;
-            for x in 0..depth.width() {
-                let meters = row[x] * scale;
-                if !(meters.is_finite() && meters >= min_d && meters <= max_d) {
-                    continue;
-                }
-                let (xx, yy, zz) = pin.unproject(x as f32, py, meters);
-                xs.push(xx);
-                ys.push(yy);
-                zs.push(zz);
-            }
-        }
+        pack_xyz_identity(depth, camera, options, &mut xs, &mut ys, &mut zs);
     } else {
         for y in 0..depth.height() {
             for x in 0..depth.width() {
@@ -448,6 +422,62 @@ pub fn depth_to_point_cloud(
         buffers,
         SpatialMetadata::default(),
     )?)
+}
+
+fn pack_xyz_identity(
+    depth: ImageView<'_, f32, 1>,
+    camera: &PinholeCamera,
+    options: DepthConversionOptions,
+    xs: &mut Vec<f32>,
+    ys: &mut Vec<f32>,
+    zs: &mut Vec<f32>,
+) {
+    let pin = FastPinholeF32::from_camera(camera);
+    let width = depth.width();
+    let x_mul: Vec<f32> = (0..width)
+        .map(|x| (x as f32 - pin.cx) * pin.inv_fx)
+        .collect();
+    let scale = options.depth_scale;
+    let min_d = options.min_depth;
+    let max_d = options.max_depth;
+    let scale_is_one = scale == 1.0;
+    let max_is_inf = !max_d.is_finite();
+    let capacity = xs.capacity();
+    debug_assert_eq!(xs.len(), 0);
+    // SAFETY: reserved capacity; write at most `capacity` then set lengths.
+    unsafe {
+        let xs_p = xs.as_mut_ptr();
+        let ys_p = ys.as_mut_ptr();
+        let zs_p = zs.as_mut_ptr();
+        let mut n = 0usize;
+        for y in 0..depth.height() {
+            let row = depth.row(y).expect("validated row");
+            let y_mul = (y as f32 - pin.cy) * pin.inv_fy;
+            for x in 0..width {
+                let meters = if scale_is_one {
+                    *row.get_unchecked(x)
+                } else {
+                    *row.get_unchecked(x) * scale
+                };
+                let valid = if max_is_inf {
+                    meters >= min_d
+                } else {
+                    meters >= min_d && meters <= max_d
+                };
+                if !valid {
+                    continue;
+                }
+                debug_assert!(n < capacity);
+                *xs_p.add(n) = *x_mul.get_unchecked(x) * meters;
+                *ys_p.add(n) = y_mul * meters;
+                *zs_p.add(n) = meters;
+                n += 1;
+            }
+        }
+        xs.set_len(n);
+        ys.set_len(n);
+        zs.set_len(n);
+    }
 }
 
 /// Converts aligned RGB and depth images into an XYZRGB point cloud.
@@ -478,29 +508,9 @@ pub fn rgbd_to_point_cloud(
     let mut gs = Vec::with_capacity(capacity);
     let mut bs = Vec::with_capacity(capacity);
     if camera.distortion.is_identity() {
-        let pin = FastPinholeF32::from_camera(camera);
-        let scale = options.depth_scale;
-        let min_d = options.min_depth;
-        let max_d = options.max_depth;
-        for y in 0..depth.height() {
-            let depth_row = depth.row(y).expect("validated row");
-            let color_row = color.row(y).expect("validated row");
-            let py = y as f32;
-            for x in 0..depth.width() {
-                let meters = depth_row[x] * scale;
-                if !(meters.is_finite() && meters >= min_d && meters <= max_d) {
-                    continue;
-                }
-                let (xx, yy, zz) = pin.unproject(x as f32, py, meters);
-                let c = x * 3;
-                xs.push(xx);
-                ys.push(yy);
-                zs.push(zz);
-                rs.push(color_row[c]);
-                gs.push(color_row[c + 1]);
-                bs.push(color_row[c + 2]);
-            }
-        }
+        pack_xyzrgb_identity(
+            depth, color, camera, options, &mut xs, &mut ys, &mut zs, &mut rs, &mut gs, &mut bs,
+        );
     } else {
         for y in 0..depth.height() {
             for x in 0..depth.width() {
@@ -532,6 +542,128 @@ pub fn rgbd_to_point_cloud(
         buffers,
         SpatialMetadata::default(),
     )?)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn pack_xyzrgb_identity(
+    depth: ImageView<'_, f32, 1>,
+    color: ImageView<'_, u8, 3>,
+    camera: &PinholeCamera,
+    options: DepthConversionOptions,
+    xs: &mut Vec<f32>,
+    ys: &mut Vec<f32>,
+    zs: &mut Vec<f32>,
+    rs: &mut Vec<u8>,
+    gs: &mut Vec<u8>,
+    bs: &mut Vec<u8>,
+) {
+    let pin = FastPinholeF32::from_camera(camera);
+    let width = depth.width();
+    let x_mul: Vec<f32> = (0..width)
+        .map(|x| (x as f32 - pin.cx) * pin.inv_fx)
+        .collect();
+    let scale = options.depth_scale;
+    let min_d = options.min_depth;
+    let max_d = options.max_depth;
+    let scale_is_one = scale == 1.0;
+    let max_is_inf = !max_d.is_finite();
+
+    // Bulk pointer writes beat six `push` hot paths once capacity is reserved.
+    let count = pack_xyzrgb_identity_raw(
+        depth,
+        color,
+        &x_mul,
+        pin,
+        scale,
+        min_d,
+        max_d,
+        scale_is_one,
+        max_is_inf,
+        xs,
+        ys,
+        zs,
+        rs,
+        gs,
+        bs,
+    );
+    debug_assert_eq!(count, xs.len());
+}
+
+#[allow(clippy::too_many_arguments, unsafe_code)]
+fn pack_xyzrgb_identity_raw(
+    depth: ImageView<'_, f32, 1>,
+    color: ImageView<'_, u8, 3>,
+    x_mul: &[f32],
+    pin: FastPinholeF32,
+    scale: f32,
+    min_d: f32,
+    max_d: f32,
+    scale_is_one: bool,
+    max_is_inf: bool,
+    xs: &mut Vec<f32>,
+    ys: &mut Vec<f32>,
+    zs: &mut Vec<f32>,
+    rs: &mut Vec<u8>,
+    gs: &mut Vec<u8>,
+    bs: &mut Vec<u8>,
+) -> usize {
+    let width = depth.width();
+    let height = depth.height();
+    let capacity = xs.capacity();
+    debug_assert!(ys.capacity() >= capacity);
+    debug_assert!(zs.capacity() >= capacity);
+    debug_assert!(rs.capacity() >= capacity);
+    debug_assert!(gs.capacity() >= capacity);
+    debug_assert!(bs.capacity() >= capacity);
+    debug_assert_eq!(xs.len(), 0);
+
+    // SAFETY: all vectors have `capacity` reserved and start empty; we write at
+    // most `capacity` elements then set lengths together.
+    unsafe {
+        let xs_p = xs.as_mut_ptr();
+        let ys_p = ys.as_mut_ptr();
+        let zs_p = zs.as_mut_ptr();
+        let rs_p = rs.as_mut_ptr();
+        let gs_p = gs.as_mut_ptr();
+        let bs_p = bs.as_mut_ptr();
+        let mut n = 0usize;
+        for y in 0..height {
+            let depth_row = depth.row(y).expect("validated row");
+            let color_row = color.row(y).expect("validated row");
+            let y_mul = (y as f32 - pin.cy) * pin.inv_fy;
+            for x in 0..width {
+                let meters = if scale_is_one {
+                    *depth_row.get_unchecked(x)
+                } else {
+                    *depth_row.get_unchecked(x) * scale
+                };
+                let valid = if max_is_inf {
+                    meters >= min_d
+                } else {
+                    meters >= min_d && meters <= max_d
+                };
+                if !valid {
+                    continue;
+                }
+                debug_assert!(n < capacity);
+                *xs_p.add(n) = *x_mul.get_unchecked(x) * meters;
+                *ys_p.add(n) = y_mul * meters;
+                *zs_p.add(n) = meters;
+                let c = x * 3;
+                *rs_p.add(n) = *color_row.get_unchecked(c);
+                *gs_p.add(n) = *color_row.get_unchecked(c + 1);
+                *bs_p.add(n) = *color_row.get_unchecked(c + 2);
+                n += 1;
+            }
+        }
+        xs.set_len(n);
+        ys.set_len(n);
+        zs.set_len(n);
+        rs.set_len(n);
+        gs.set_len(n);
+        bs.set_len(n);
+        n
+    }
 }
 
 #[cfg(test)]
