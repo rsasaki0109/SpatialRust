@@ -13,7 +13,7 @@ mod dlpack_capsule;
 
 use numpy::ndarray::{Array2, Array3};
 use numpy::{
-    IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray1, PyReadonlyArray2,
+    IntoPyArray, PyArray1, PyArray2, PyArray3, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2,
     PyReadonlyArray3, PyReadonlyArrayDyn, PyUntypedArrayMethods,
 };
 use pyo3::exceptions::{PyBufferError, PyRuntimeError, PyTypeError, PyValueError};
@@ -102,8 +102,8 @@ use spatialrust::{
     StandardSchemas,
 };
 use spatialrust::{
-    rgbd_to_point_cloud as rgbd_to_cloud, BrownConrady, CameraIntrinsics, DepthConversionOptions,
-    Image, PinholeCamera,
+    depth_to_xyz_dense as depth_to_xyz_native, depth_to_xyz_dense_into, rgbd_to_point_cloud as rgbd_to_cloud,
+    BrownConrady, CameraIntrinsics, DepthConversionOptions, Image, ImageView, PinholeCamera,
 };
 
 type Vec3Tuple = (f32, f32, f32);
@@ -1704,6 +1704,85 @@ fn range_image<'py>(
     Ok(arr.into_pyarray_bound(py))
 }
 
+/// Converts depth into a dense `(H, W, 3)` XYZ image (invalid depths → NaN).
+///
+/// Pass a contiguous `out` buffer of shape `(H, W, 3)` to fill in place and avoid
+/// per-frame allocation (typical streaming RGB-D).
+#[pyfunction]
+#[pyo3(signature = (
+    depth,
+    fx,
+    fy,
+    cx,
+    cy,
+    depth_scale=1.0,
+    min_depth=f32::EPSILON,
+    max_depth=f32::INFINITY,
+    distortion=None,
+    out=None
+))]
+#[allow(clippy::too_many_arguments)]
+fn depth_to_xyz<'py>(
+    py: Python<'py>,
+    depth: PyReadonlyArray2<'_, f32>,
+    fx: f64,
+    fy: f64,
+    cx: f64,
+    cy: f64,
+    depth_scale: f32,
+    min_depth: f32,
+    max_depth: f32,
+    distortion: Option<(f64, f64, f64, f64, f64)>,
+    out: Option<Bound<'py, PyArray3<f32>>>,
+) -> PyResult<Bound<'py, PyArray3<f32>>> {
+    let depth_view = depth.as_array();
+    let shape = depth_view.shape();
+    let height = shape[0];
+    let width = shape[1];
+    let packed;
+    let depth_slice: &[f32] = match depth_view.as_slice() {
+        Some(slice) => slice,
+        None => {
+            packed = depth_view.iter().copied().collect::<Vec<_>>();
+            packed.as_slice()
+        }
+    };
+    let depth_image =
+        ImageView::<f32, 1>::new(width, height, width, depth_slice).map_err(to_py_err)?;
+    let intrinsics = CameraIntrinsics::try_new(fx, fy, cx, cy, width, height).map_err(to_py_err)?;
+    let mut camera = PinholeCamera::new(intrinsics);
+    if let Some((k1, k2, p1, p2, k3)) = distortion {
+        camera = camera.with_distortion(BrownConrady { k1, k2, p1, p2, k3 });
+    }
+    let options = DepthConversionOptions {
+        depth_scale,
+        min_depth,
+        max_depth,
+    };
+    if let Some(out) = out {
+        {
+            let mut out_rw = out.readwrite();
+            let mut out_view = out_rw.as_array_mut();
+            if out_view.shape() != [height, width, 3] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({height}, {width}, 3), found {:?}",
+                    out_view.shape()
+                )));
+            }
+            let Some(out_slice) = out_view.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous float32 array of shape (H, W, 3)",
+                ));
+            };
+            depth_to_xyz_dense_into(depth_image, &camera, options, out_slice).map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let xyz = depth_to_xyz_native(depth_image, &camera, options).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((height, width, 3), xyz).map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
 /// Converts aligned `(H, W)` float32 depth and `(H, W, 3)` uint8 RGB images
 /// into a colored point cloud. `depth_scale` converts stored values to meters.
 #[pyfunction]
@@ -1745,20 +1824,38 @@ fn rgbd_to_point_cloud(
         )));
     }
 
-    // Iteration follows logical ndarray order, so non-contiguous NumPy views
-    // are packed explicitly at the Python/native boundary.
-    let depth_image = Image::<f32, 1>::try_new(width, height, depth_view.iter().copied().collect())
-        .map_err(to_py_err)?;
-    let color_image = Image::<u8, 3>::try_new(width, height, color_view.iter().copied().collect())
-        .map_err(to_py_err)?;
+    // Prefer contiguous NumPy buffers; only pack when strides force it.
+    let depth_owned;
+    let depth_slice: &[f32] = match depth_view.as_slice() {
+        Some(slice) => slice,
+        None => {
+            depth_owned = depth_view.iter().copied().collect::<Vec<_>>();
+            depth_owned.as_slice()
+        }
+    };
+    let color_owned;
+    let color_slice: &[u8] = match color_view.as_slice() {
+        Some(slice) => slice,
+        None => {
+            color_owned = color_view.iter().copied().collect::<Vec<_>>();
+            color_owned.as_slice()
+        }
+    };
+    let depth_image =
+        ImageView::<f32, 1>::new(width, height, width, depth_slice).map_err(to_py_err)?;
+    let color_image =
+        ImageView::<u8, 3>::new(width, height, width * 3, color_slice).map_err(to_py_err)?;
     let intrinsics = CameraIntrinsics::try_new(fx, fy, cx, cy, width, height).map_err(to_py_err)?;
     let mut camera = PinholeCamera::new(intrinsics);
     if let Some((k1, k2, p1, p2, k3)) = distortion {
         camera = camera.with_distortion(BrownConrady { k1, k2, p1, p2, k3 });
     }
-    let options = DepthConversionOptions { depth_scale, min_depth, max_depth };
-    let inner = rgbd_to_cloud(depth_image.view(), color_image.view(), &camera, options)
-        .map_err(to_py_err)?;
+    let options = DepthConversionOptions {
+        depth_scale,
+        min_depth,
+        max_depth,
+    };
+    let inner = rgbd_to_cloud(depth_image, color_image, &camera, options).map_err(to_py_err)?;
     Ok(PyPointCloud { inner })
 }
 
@@ -2903,6 +3000,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(oriented_bounding_box, m)?)?;
     m.add_function(wrap_pyfunction!(voxelize, m)?)?;
     m.add_function(wrap_pyfunction!(range_image, m)?)?;
+    m.add_function(wrap_pyfunction!(depth_to_xyz, m)?)?;
     m.add_function(wrap_pyfunction!(rgbd_to_point_cloud, m)?)?;
     m.add_function(wrap_pyfunction!(filter2d_image, m)?)?;
     m.add_function(wrap_pyfunction!(gaussian_blur_image, m)?)?;

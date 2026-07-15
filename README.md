@@ -36,12 +36,13 @@ The hero GIF above is **real MVP pipeline output** (not a mockup): it uses the p
 
 ## Why SpatialRust?
 
-| | Typical C++ stack (PCL / Open3D bindings) | SpatialRust |
+| | Typical C++ stack (PCL / Open3D / OpenCV bindings) | SpatialRust |
 | --- | --- | --- |
 | Core language | C++ + FFI glue | **Native Rust** |
-| GPU path | varies by wrapper | **wgpu voxel filter** with CPU fallback |
+| Vision runtime | OpenCV linked into the app | **OpenCV optional for tests only** — production vision is Rust |
+| GPU path | varies by wrapper | **wgpu voxel / normals** with CPU fallback |
 | COPC | bolt-on scripts | **bounds + LOD queries** in library & CLI |
-| Pipeline | glue code | **composable MVP crate** |
+| Pipeline | glue code across image + cloud libs | **one MVP + north-star graph**: IO → filter → segment → register → scene |
 
 **One command** from LAS/COPC to labeled clusters:
 
@@ -125,6 +126,29 @@ Indicative local result on one Windows machine (Open3D 0.19.0, Python 3.12, 460,
 | Radius Outlier Removal | **0.1049 s** | 66.4701 s | **633.65× faster** |
 
 Record CPU, Open3D version, Python version, and thread settings before publishing new numbers.
+
+### vs OpenCV
+
+SpatialRust is **not** “OpenCV rewritten in Rust.” OpenCV remains a strong tuned image kernel library; we use it as a **correctness oracle** ([vision harness](bench/opencv_vision_comparison/), [RGB-D harness](bench/opencv_rgbd_comparison/)), not as a production dependency. Where SpatialRust is ahead for spatial pipelines:
+
+| | OpenCV-centered stack | SpatialRust |
+| --- | --- | --- |
+| Rust production deps | Often pulls OpenCV/C++ through FFI | **No OpenCV in the Rust runtime** — pure Rust crates; OpenCV only in optional Python comparison benches |
+| 2D → 3D continuity | Image modules, then a separate point-cloud stack | **One repo**: filters/Feature2D/geometry → RGB-D → clouds → wgpu → sync/scene/export |
+| Memory / devices | `cv::Mat` habits; copies are easy to hide | **Explicit, named host↔device transfers**; production APIs forbid silent copies |
+| Safety | C++ ABI + wrappers | Public crates keep **`#![deny(unsafe_code)]`** outside audited FFI/GPU boundaries |
+| Data model | Arrays + ad-hoc metadata | **Versioned `SpatialRecord`**, schema evolution, episodes, MCAP XYZ, ROS 2 CDR PointCloud2 |
+| Reproducible ORB | Private learned BRIEF table | **Documented fixed-seed BRIEF** with interoperable Hamming distances |
+| 3D / robotics surface | Not the primary product | **COPC bounds+LOD, MVP cloud pipeline, TSDF/USDA/Gaussian, ReleaseGate** |
+
+Correctness, not speed theater: the OpenCV vision harness checks filters, morphology, analysis, Canny, keypoints, matching, and geometry against OpenCV with documented tolerances (exact pixels where we claim parity; residual/translation/disparity tolerances where OpenCV’s private contracts differ). RGB-D unprojection tracks `cv.rgbd.depthTo3d` to ~`1e-5` m.
+
+On dense `H×W×3` XYZ (320×240, OpenCL off, local Windows laptop), `spatialrust.depth_to_xyz` beats OpenCV `rgbd.depthTo3d` in the [RGB-D harness](bench/opencv_rgbd_comparison/) — about **1.4–1.5×** when both allocate, and about **2.1–2.2×** when both fill a reused buffer (`out=` / OpenCV `points3d`). Re-run the harness before quoting numbers elsewhere; x86_64 builds use an audited AVX2 fill when available.
+
+```powershell
+python bench\opencv_vision_comparison\run.py
+python bench\opencv_rgbd_comparison\run.py
+```
 
 ### Registration methods
 

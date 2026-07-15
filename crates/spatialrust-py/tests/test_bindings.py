@@ -63,7 +63,7 @@ def test_exports_present():
     for name in (
         "PointCloud", "voxel_downsample", "dbscan", "register_icp",
         "voxelize", "knn_graph", "chamfer_distance", "oriented_bounding_box",
-        "rgbd_to_point_cloud",
+        "rgbd_to_point_cloud", "depth_to_xyz",
         "resize_image", "letterbox_image", "normalize_image_chw",
         "rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
         "nms", "soft_nms", "connected_components_image",
@@ -109,6 +109,21 @@ def test_rgbd_to_point_cloud():
     np.testing.assert_allclose(
         cloud.xyz(), np.array([[0.0, 0.0, 1.0], [1.0, 1.0, 2.0]], dtype=np.float32)
     )
+
+
+def test_depth_to_xyz_dense():
+    depth = np.array([[1.0, 0.0], [np.nan, 2.0]], dtype=np.float32)
+    xyz = sr.depth_to_xyz(depth, 2.0, 2.0, 0.0, 0.0)
+    assert xyz.shape == (2, 2, 3)
+    np.testing.assert_allclose(xyz[0, 0], [0.0, 0.0, 1.0])
+    assert np.isnan(xyz[0, 1]).all()
+    assert np.isnan(xyz[1, 0]).all()
+    np.testing.assert_allclose(xyz[1, 1], [1.0, 1.0, 2.0])
+    out = np.empty((2, 2, 3), dtype=np.float32)
+    filled = sr.depth_to_xyz(depth, 2.0, 2.0, 0.0, 0.0, out=out)
+    assert filled is out
+    np.testing.assert_allclose(out[0, 0], [0.0, 0.0, 1.0])
+    assert np.isnan(out[0, 1]).all()
 
 
 def test_image_resize_letterbox_and_normalize():
