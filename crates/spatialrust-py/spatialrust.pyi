@@ -28,7 +28,8 @@ __all__: list[str] = [
     "apply_transform", "recenter", "scale", "normalize_unit_sphere", "merge",
     "centroid", "bounding_box", "oriented_bounding_box", "voxelize", "range_image",
     "rgbd_to_point_cloud", "depth_to_xyz", "calibrate_pinhole_camera",
-    "calibrate_fisheye_angles", "dense_flow_image", "filter2d_image", "gaussian_blur_image",
+    "calibrate_fisheye_angles", "dense_flow_image", "gray_world_white_balance_image",
+    "stitch_panorama_pair", "filter2d_image", "gaussian_blur_image",
     "median_blur_image", "bilateral_filter_image", "sobel_image", "scharr_image",
     "laplacian_image", "pyr_down_image", "pyr_up_image", "morphology_image",
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
@@ -705,6 +706,13 @@ def estimate_rgbd_odometry(
     depth_scale: float = ...,
     threshold: float = ...,
 ) -> tuple[_F64Array, _F64Array, _BoolArray, int]: ...
+def gray_world_white_balance_image(image: _U8Array) -> _U8Array: ...
+def stitch_panorama_pair(
+    source: _U8Array,
+    target: _U8Array,
+    homography: _F64Array,
+    max_output_pixels: int = ...,
+) -> tuple[_U8Array, int, int]: ...
 def stereo_block_match(
     left: _U8Array,
     right: _U8Array,

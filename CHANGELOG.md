@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Computational photography and panorama (Epic 108)**: gray-world white
+  balance, aligned well-exposedness fusion, bounded homography panorama canvas,
+  feather blending, Python entry points, and OpenCV warp parity receipts behind
+  an additive vision feature.
+
 - **Robust visual/RGB-D odometry integration (Epic 107)**: spatially balanced
   keypoint selection, forward/backward LK validation, scale-explicit monocular
   motion, metric depth-backed PnP, mapping `DeltaMotion` bridges, Python RGB-D

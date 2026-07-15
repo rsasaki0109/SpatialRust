@@ -63,7 +63,7 @@ until their individual 1.0 milestones.
 | Camera (`camera`, `camera-rgbd`) | Pinhole/Brown-Conrady models and explicit RGB-D conversion entry points are stable |
 | Image IO (`image-io-*`) | Bounded codecs, typed decoded pixels, and source metadata are provisional |
 | AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, mock backend, and ONNX Runtime adapter APIs are provisional |
-| Vision (`vision-*`) | Base errors/borders, resize/filter entry points, detection/dense data contracts, and Feature2D data contracts are stable; geometry, stereo, optical flow, odometry, video, and AI adapters remain provisional |
+| Vision (`vision-*`) | Base errors/borders, resize/filter entry points, detection/dense data contracts, and Feature2D data contracts are stable; geometry, stereo, optical flow, odometry, photography, video, and AI adapters remain provisional |
 | Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
 | Records (`records`) | Versioned `SpatialRecord`, schema compatibility/migration, and chunked record streams are provisional |
 | Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |

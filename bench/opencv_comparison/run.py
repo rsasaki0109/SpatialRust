@@ -21,6 +21,7 @@ SUITES = {
     "rgbd": ROOT / "bench" / "opencv_rgbd_comparison" / "run.py",
     "video": ROOT / "bench" / "opencv_video_comparison" / "run.py",
     "odometry": ROOT / "bench" / "opencv_odometry_comparison" / "run.py",
+    "photography": ROOT / "bench" / "opencv_photography_comparison" / "run.py",
 }
 
 
