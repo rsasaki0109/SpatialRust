@@ -178,6 +178,20 @@ above gives SpatialRust a measured 1.07× 4K reuse lead, with maximum error zero
 VGA and 1080p remain narrow OpenCV wins. See the
 [acceleration receipt](notes/2026-07-15_exact_edt_acceleration.md).
 
+For AI detection post-processing, the seeded Python NMS harness uses identical
+float32 boxes, scores, and thresholds and requires exact kept-index parity
+before publishing timings:
+
+| NMS candidates | OpenCV `dnn.NMSBoxes` | SpatialRust `nms` | Result |
+| ---: | ---: | ---: | ---: |
+| 100 | 0.298 ms | 0.033 ms | **SpatialRust 8.95×** |
+| 1,000 | 8.720 ms | 2.286 ms | **SpatialRust 3.82×** |
+| 8,400 (YOLO-style) | 407.086 ms | 126.562 ms | **SpatialRust 3.22×** |
+
+These Windows-host medians include each Python API call and returned indices;
+see the [NMS harness](bench/opencv_nms_comparison/) and dated
+[receipt](notes/2026-07-15_nms_opencv_acceleration.md).
+
 #### Vision accuracy
 
 The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
@@ -204,6 +218,7 @@ On dense `H×W×3` XYZ (320×240, OpenCL off, local Windows laptop), `spatialrus
 python bench\opencv_vision_comparison\run.py
 python bench\opencv_vision_comparison\performance.py
 python bench\opencv_rgbd_comparison\run.py
+python bench\opencv_nms_comparison\performance.py
 ```
 
 ### Registration methods

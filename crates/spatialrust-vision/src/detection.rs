@@ -172,10 +172,13 @@ pub fn nms(
         .filter_map(|(index, &score)| (score >= score_threshold).then_some(index))
         .collect();
     sort_indices_by_score(&mut order, scores);
+    let areas: Vec<f32> = boxes.iter().copied().map(BoundingBox2::area).collect();
     let mut keep: Vec<usize> = Vec::with_capacity(order.len());
     'candidate: for index in order {
         for &selected in &keep {
-            if boxes[index].iou(boxes[selected]) > iou_threshold {
+            if iou_with_areas(boxes[index], areas[index], boxes[selected], areas[selected])
+                > iou_threshold
+            {
                 continue 'candidate;
             }
         }
@@ -211,11 +214,17 @@ pub fn batched_nms(
         .filter_map(|(index, &score)| (score >= score_threshold).then_some(index))
         .collect();
     sort_indices_by_score(&mut order, &scores);
+    let areas: Vec<f32> = detections.iter().map(|detection| detection.bbox.area()).collect();
     let mut keep: Vec<usize> = Vec::with_capacity(order.len());
     'candidate: for index in order {
         for &selected in &keep {
             if detections[index].class_id == detections[selected].class_id
-                && detections[index].bbox.iou(detections[selected].bbox) > iou_threshold
+                && iou_with_areas(
+                    detections[index].bbox,
+                    areas[index],
+                    detections[selected].bbox,
+                    areas[selected],
+                ) > iou_threshold
             {
                 continue 'candidate;
             }
@@ -245,6 +254,7 @@ pub fn soft_nms(
         .enumerate()
         .map(|(index, score)| ScoredIndex { index, score })
         .collect();
+    let areas: Vec<f32> = boxes.iter().copied().map(BoundingBox2::area).collect();
     let mut output = Vec::new();
     while !candidates.is_empty() {
         candidates.sort_by(score_order);
@@ -254,7 +264,12 @@ pub fn soft_nms(
         }
         output.push(selected);
         for candidate in &mut candidates {
-            let overlap = boxes[selected.index].iou(boxes[candidate.index]);
+            let overlap = iou_with_areas(
+                boxes[selected.index],
+                areas[selected.index],
+                boxes[candidate.index],
+                areas[candidate.index],
+            );
             let weight = match method {
                 SoftNmsMethod::Hard => {
                     if overlap <= iou_threshold {
@@ -277,6 +292,18 @@ pub fn soft_nms(
         candidates.retain(|candidate| candidate.score >= score_threshold);
     }
     Ok(output)
+}
+
+fn iou_with_areas(left: BoundingBox2, left_area: f32, right: BoundingBox2, right_area: f32) -> f32 {
+    let intersection_width = (left.x_max.min(right.x_max) - left.x_min.max(right.x_min)).max(0.0);
+    let intersection_height = (left.y_max.min(right.y_max) - left.y_min.max(right.y_min)).max(0.0);
+    let intersection = intersection_width * intersection_height;
+    let union = left_area + right_area - intersection;
+    if union > 0.0 {
+        intersection / union
+    } else {
+        0.0
+    }
 }
 
 fn validate_nms_inputs(
@@ -325,7 +352,9 @@ fn score_order(left: &ScoredIndex, right: &ScoredIndex) -> Ordering {
 
 #[cfg(test)]
 mod tests {
-    use super::{batched_nms, nms, soft_nms, BoundingBox2, Detection, SoftNmsMethod};
+    use super::{
+        batched_nms, iou_with_areas, nms, soft_nms, BoundingBox2, Detection, SoftNmsMethod,
+    };
 
     fn bbox(x0: f32, y0: f32, x1: f32, y1: f32) -> BoundingBox2 {
         BoundingBox2::try_new(x0, y0, x1, y1).unwrap()
@@ -343,6 +372,21 @@ mod tests {
     fn nms_suppresses_lower_scored_overlap() {
         let boxes = [bbox(0.0, 0.0, 2.0, 2.0), bbox(0.1, 0.1, 2.1, 2.1), bbox(5.0, 5.0, 6.0, 6.0)];
         assert_eq!(nms(&boxes, &[0.9, 0.8, 0.7], 0.0, 0.5).unwrap(), vec![0, 2]);
+    }
+
+    #[test]
+    fn cached_area_iou_matches_public_iou() {
+        let boxes = [
+            BoundingBox2::try_new(0.0, 0.0, 20.0, 20.0).unwrap(),
+            BoundingBox2::try_new(2.0, 2.0, 18.0, 18.0).unwrap(),
+            BoundingBox2::try_new(30.0, 30.0, 45.0, 45.0).unwrap(),
+            BoundingBox2::try_new(5.0, 5.0, 5.0, 8.0).unwrap(),
+        ];
+        for &left in &boxes {
+            for &right in &boxes {
+                assert_eq!(iou_with_areas(left, left.area(), right, right.area()), left.iou(right),);
+            }
+        }
     }
 
     #[test]

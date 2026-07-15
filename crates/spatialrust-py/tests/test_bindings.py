@@ -176,6 +176,9 @@ def test_detection_nms_and_soft_nms():
     )
     scores = np.array([0.9, 0.8, 0.7], dtype=np.float32)
     np.testing.assert_array_equal(sr.nms(boxes, scores), [0, 2])
+    score_storage = np.empty(scores.size * 2, dtype=np.float32)
+    score_storage[::2] = scores
+    np.testing.assert_array_equal(sr.nms(boxes, score_storage[::2]), [0, 2])
     indices, updated = sr.soft_nms(boxes, scores, method="linear")
     assert indices[0] == 0
     assert len(indices) == len(updated) == 3
