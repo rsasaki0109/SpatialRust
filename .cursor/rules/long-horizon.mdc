@@ -1,0 +1,23 @@
+---
+description: Long-horizon delivery defaults for SpatialRust agents
+alwaysApply: true
+---
+
+# Long-horizon delivery
+
+When the user asks to work a ROADMAP range, epic sequence, or says forms like
+`iku`, `susumete`, `yatte`, `tudukete`:
+
+1. Treat it as authorization to run end-to-end without step-by-step confirmation.
+2. Default loop per deliverable: survey → ROADMAP slices → implement → tests →
+   docs/CHANGELOG/notes → commit → push → PR → merge (unless merge is unsafe).
+3. Prefer reviewable PR units (one Epic or one named slice family). Do not wait
+   for the user between those steps.
+4. Only pause for true blockers: irreversible git risk, secrets, or an explicit
+   architecture fork with irreversible public-API consequences.
+5. After merge, continue the next Epic in dependency order until the requested
+   horizon is done or a blocker is reached. Report progress briefly in Japanese
+   when the user has been using Japanese/romaji.
+6. Never add `Co-authored-by: Cursor` to commits.
+7. Keep `spatialrust-core` small; heavy formats/runtimes stay feature-gated
+   dedicated crates.

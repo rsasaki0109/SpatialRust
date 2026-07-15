@@ -64,6 +64,8 @@ until their individual 1.0 milestones.
 | AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, mock backend, and ONNX Runtime adapter APIs are provisional |
 | Vision (`vision-*`) | CPU preprocessing, Feature2D contracts/detectors/matchers, warp, detection, masks, dense spatial bridges, geometry/multiview, and AI image↔tensor adapters are provisional |
 | Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
+| Records (`records`) | Versioned `SpatialRecord`, schema compatibility/migration, and chunked record streams are provisional |
+| Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |
 | GPU image (`gpu-image`) | `GpuImage` upload/readback, receipts, and image compute kernels are provisional |
 
 ## Algorithm crates
@@ -81,6 +83,8 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-image-io` | Provisional | Standard codecs by default; TIFF/OpenEXR independently gated |
 | `spatialrust-tensor` | Provisional | Generic tensor descriptors, explicit CPU ownership, image/spatial bridges, and feature-gated DLPack major-version 1 ABI |
 | `spatialrust-ai` | Provisional | Runtime-independent session contract; ONNX Runtime CPU and hardware providers are independently gated |
+| `spatialrust-records` | Provisional | Versioned records, schema evolution, chunked host streams; Arrow-free |
+| `spatialrust-arrow` | Provisional | Arrow C Data/Stream/Device adapters; optional features only |
 | `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |
 | `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms, checked Feature2D descriptors/matches, shared border/kernel contracts, and explicit point-cloud bridges |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |
