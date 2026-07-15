@@ -166,8 +166,8 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | Morphology open 5×5, reuse[^morphology-2026] | OpenCV 60.32× | OpenCV 16.25× | OpenCV 17.78× |
 | Morphology open 511×511, allocate[^morphology-2026] | OpenCV 2.10× | **SpatialRust 2.61×** | **SpatialRust 2.40×** |
 | Morphology open 511×511, reuse[^morphology-2026] | OpenCV 2.46× | **SpatialRust 3.25×** | **SpatialRust 2.77×** |
-| Canny 3×3, reuse, document lines[^canny-2026] | OpenCV 1.77× | OpenCV 1.69× | OpenCV 1.65× |
-| Canny 3×3, reuse, sensor noise[^canny-2026] | OpenCV 3.66× | OpenCV 1.92× | OpenCV 1.79× |
+| Canny 3×3, reuse, document lines[^canny-2026] | OpenCV 1.40× | **SpatialRust 1.36×** | **SpatialRust 1.42×** |
+| Canny 3×3, reuse, sensor noise[^canny-2026] | OpenCV 3.58× | OpenCV 1.68× | OpenCV 1.57× |
 | Exact Euclidean distance transform, allocate | OpenCV 1.99× | OpenCV 1.85× | OpenCV 1.45× |
 | Exact Euclidean distance transform, reuse | OpenCV 1.02× | OpenCV 1.06× | **SpatialRust 1.07×** |
 
@@ -186,12 +186,14 @@ records the exact environment and methodology.
   5×5 latency by 20.7× at 1080p and 26.7× at 4K; OpenCV still leads the
   standalone operation.
 
-[^canny-2026]: The allocation-light 3×3 path keeps inspectable intermediates
-  opt-in, adds caller-owned output plus reusable `CannyWorkspace`, and
-  parallelizes magnitude, directional suppression, and packed output on large
-  images. The focused OpenCV 4.13 receipt is bit-exact across 300 randomized
-  images. OpenCV still leads both named workloads; the old 10.66×–12.65× row
-  described the superseded always-materialize-all-intermediates path.
+[^canny-2026]: The 3×3 fast path keeps inspectable intermediates opt-in, adds
+  caller-owned output plus reusable `CannyWorkspace`, and replaces the full
+  `i32` magnitude image with a parallel three-row-per-worker ring. When no weak
+  edges exist, it also skips unnecessary hysteresis traversal. The focused
+  OpenCV 4.13 receipt is bit-exact across 300 randomized images. Document-line
+  medians are OpenCV/SpatialRust 2.900/2.138 ms at 1080p and 11.480/8.103 ms at
+  4K. Dense sensor noise remains an OpenCV win. Native 4K document lines improve
+  from 96.914 ms inspectable to 8.134 ms ring reuse (11.92×).
 
 [^resize-2026]: The packed RGB8 half-scale path precomputes arbitrary-scale
   Q11 sampling coefficients and specializes exact 2× downsampling as a

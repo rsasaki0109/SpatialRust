@@ -25,7 +25,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   public gradient, magnitude, and suppression images only to discard them.
   Added safe strided `canny_into`, reusable `CannyWorkspace`, large-image
   parallel stages, Python `out=`/workspace support, and a focused bit-exact
-  OpenCV comparison harness.
+  OpenCV comparison harness. Epic 118B/118D replace the full comparison-
+  magnitude image with parallel three-row rings and skip hysteresis when no
+  weak edges exist; 4K document-line reuse is 11.92× faster than the inspectable
+  path and measured 1.42× faster than OpenCV.
 - **Exact Euclidean distance transform**: `spatialrust-vision` now computes
   foreground-to-nearest-background L2 distances in linear time, supports
   anisotropic pixel spacing, exposes a NumPy binding, and includes native

@@ -136,6 +136,7 @@ def main() -> None:
                 "opencv_reuse": cv_reuse,
                 "spatialrust_reuse": sr_reuse,
                 "spatialrust_reuse_speedup": cv_reuse_ms / sr_reuse_ms,
+                "spatialrust_workspace_allocated_bytes": workspace.allocated_bytes,
             }
 
     receipt = environment(opencv_version=cv2.__version__, spatialrust_version=sr.__version__)

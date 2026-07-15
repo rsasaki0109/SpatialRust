@@ -780,6 +780,7 @@ def test_canny_image_reuses_output_and_workspace():
     assert actual is output
     np.testing.assert_array_equal(actual, expected)
     assert workspace.capacity >= image.size
+    assert workspace.allocated_bytes > 0
 
 
 def test_feature2d_corner_detectors_and_keypoint_metadata():

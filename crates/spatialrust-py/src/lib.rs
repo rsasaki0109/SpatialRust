@@ -2799,6 +2799,11 @@ impl PyCannyWorkspace {
     fn capacity(&self) -> usize {
         self.inner.capacity()
     }
+
+    #[getter]
+    fn allocated_bytes(&self) -> usize {
+        self.inner.allocated_bytes()
+    }
 }
 
 /// Detects edges in a grayscale uint8 image with Canny hysteresis.

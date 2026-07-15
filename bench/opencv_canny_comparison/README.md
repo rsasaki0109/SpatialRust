@@ -13,3 +13,5 @@ profiles at VGA, 1080p, and 4K.
 
 Results are workload- and machine-specific. The report records raw interleaved
 samples, versions, thread count, OpenCL state, and caller-owned output timings.
+It also records the reusable SpatialRust workspace's reserved byte count after
+each profile.
