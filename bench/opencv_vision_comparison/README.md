@@ -23,11 +23,19 @@ retain the report. OpenCV is comparison/test tooling only; it is not a Rust
 runtime dependency. The shared report contract and workload registry are in
 [`../opencv_comparison`](../opencv_comparison/README.md).
 
-Epic 103 adds allocate/reuse timing for bilinear resize, RGB-to-gray, and AI
-CHW preprocessing at VGA, 1080p, and 4K. It preserves raw samples and p95 in
-the same report contract:
+The performance suite measures allocate/reuse bilinear resize, RGB-to-gray,
+AI CHW preprocessing, Gaussian blur, Sobel X, morphology open, and Canny at
+VGA, 1080p, and 4K. OpenCV and SpatialRust calls are seeded and interleaved;
+short calls are batched to reduce timer noise. Reports preserve raw samples,
+mean/median/p95, standard deviation, coefficient of variation, median absolute
+deviation, batch size, throughput, detailed accuracy, and the environment/thread
+receipt:
 
 ```powershell
 python bench\opencv_vision_comparison\performance.py `
   --output target\opencv-comparison\vision-performance.json
 ```
+
+The suite reports the faster implementation per workload. It intentionally
+does not impose a blanket "SpatialRust faster than OpenCV" gate: optimized
+OpenCV image kernels are expected to lead many scalar CPU paths.

@@ -368,7 +368,7 @@ RGB → mock depth → episode → MCAP XYZ round-trip → ROS 2 CDR loopback �
 TSDF/mesh → glTF JSON + USDA ASCII → Gaussian CPU soft-splat →
 `ReleaseGate` (stability/conformance/security/LTS/perf budgets).
 
-## OpenCV-outcome program (Epics 101–110)
+## OpenCV-outcome program (Epics 101–111)
 
 This program does not attempt API-count parity with OpenCV. It targets the
 Rust-native spatial workloads where typed ownership, explicit transfers, and a
@@ -387,6 +387,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | 108 | Complete | 101–107 | Feature-gated computational photography and panorama stitching |
 | 109 | Complete | 97, 99, 101–108 | Bounded spatial execution graph with fusion, backpressure, and named transfer receipts |
 | 110 | Complete | 100, 101–109 | SpatialRust Vision 1.0 conformance, audits, performance budgets, examples, and migration policy |
+| 111 | Complete | 101, 103, 110 | Bias-resistant OpenCV speed methodology, robust timing dispersion, and workload-specific accuracy metrics |
 
 ### Epic 101 acceptance criteria
 
@@ -547,3 +548,17 @@ provisional behind their named features. The release gate denies missing or
 skipped mandatory evidence, absent performance samples, over-budget samples,
 unsatisfied security audits, missing examples/comparison receipts, and an
 unacknowledged migration policy.
+
+### Epic 111 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 111A | Complete | Seeded interleaved pairs and adaptive batching for short calls | `timed_pair` contract tests |
+| 111B | Complete | Mean/median/p95, standard deviation, CV, MAD, raw samples, and throughput | v1 additive timing fields |
+| 111C | Complete | Scale-aware numerical and binary edge accuracy | MAE/RMSE/relative-L2/PSNR and F1/IoU |
+| 111D | Complete | Resize, gray, CHW, Gaussian, Sobel, morphology, and Canny at VGA/1080p/4K | dated Epic 111 receipt |
+| 111E | Complete | Strict finite JSON and honest per-workload winner reporting | report contract tests and comparison docs |
+
+Epic 111 does not claim blanket superiority. On the dated Windows reference
+host, SpatialRust leads AI CHW preprocessing while OpenCV leads the measured
+general image kernels. Results are hardware receipts, not portable guarantees.

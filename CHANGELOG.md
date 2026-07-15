@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **OpenCV comparison methodology v2 (Epic 111)**: seeded interleaved paired
+  timing, adaptive batching for sub-5-ms calls, robust dispersion and throughput
+  metrics, strict finite JSON, and workload-specific numerical/edge accuracy
+  across VGA, 1080p, and 4K. Results name the faster implementation per workload
+  instead of asserting blanket SpatialRust superiority.
+
 - **SpatialRust Vision 1.0 release gate (Epic 110)**: mandatory cross-platform,
   Python, OpenCV, GPU-transfer, unsafe-audit, fixed performance-budget, example,
   and migration-policy evidence with an executable release decision.

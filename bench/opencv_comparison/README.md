@@ -5,8 +5,10 @@ comparison with OpenCV. It separates two claims:
 
 - **correctness** reports compare numerical behavior against a documented
   tolerance;
-- **performance** reports contain raw samples plus median, p95, minimum, and
-  maximum latency. A publication must retain the environment receipt.
+- **performance** reports contain raw samples, robust dispersion statistics,
+  and per-workload throughput. Paired implementations run in seeded,
+  interleaved order; calls shorter than 5 ms are automatically batched and
+  normalized per call. A publication must retain the environment receipt.
 
 The stable v1 report envelope contains `schema_version`, `suite`, `kind`,
 `status`, `generated_at`, `environment`, and `results`. The implementation is
@@ -31,7 +33,12 @@ VGA, 1080p, and 4K profiles and the initial competitive workload set:
 11. AI preprocessing
 12. RGB-D to voxel end-to-end
 
-Not every workload is a speed gate yet. A speed claim becomes publishable only
+Exact matches use a JSON `null` PSNR (mathematically infinite) so reports remain
+strict RFC-compatible JSON. Numerical comparisons retain max/mean/RMS and
+relative-L2 error, exact-pixel fraction, and PSNR; binary edge comparisons use
+precision, recall, F1, IoU, and disagreement fraction.
+
+Not every workload is a speed gate. A speed claim becomes publishable only
 after its harness emits this report contract at all applicable profiles and the
 reproduction receipt names the machine and library versions.
 
@@ -51,6 +58,6 @@ Reports are written under `target/opencv-comparison/`. Run one suite with
 python bench\opencv_comparison\test_report.py
 ```
 
-Do not commit generated reports as universal performance claims. Store dated
+Do not treat one machine's result as a universal performance claim. Store dated
 receipts under `notes/` only when the hardware, OS, OpenCV version, SpatialRust
 commit, thread settings, and OpenCL/GPU settings are documented.
