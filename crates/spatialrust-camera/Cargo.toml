@@ -23,3 +23,7 @@ criterion.workspace = true
 [[bench]]
 name = "rgbd"
 harness = false
+
+[[bench]]
+name = "calibration"
+harness = false

@@ -381,7 +381,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | 102 | Complete | 101 | Stabilize the image/camera/vision 1.0 contract and cross-platform conformance |
 | 103 | Complete | 101–102 | SIMD/parallel CPU kernel dispatch, reusable outputs, and measured allocation control |
 | 104 | Complete | 89, 101–103 | Texture-backed GPU Image v2 and device-resident resize/filter/edge/morphology chains |
-| 105 | Planned | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
+| 105 | Complete | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
 | 106 | Planned | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
 | 107 | Planned | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
 | 108 | Planned | 101–107 | Feature-gated computational photography and panorama stitching |
@@ -454,3 +454,19 @@ The reference low-power adapter measured the five-stage resident chain at
 0.963 ms (VGA), 3.504 ms (1080p), and 13.523 ms (4K), with explicit device
 synchronization. A chain receipt contains one upload, named device stages, no
 mid-chain readback, and one readback only when the caller requests host data.
+
+### Epic 105 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 105A | Complete | Shared robust solver options and RMS/max/iteration receipts | `CalibrationOptions`, `CalibrationReport` |
+| 105B | Complete | Robust mono intrinsics and Kannala–Brandt4 fisheye fitting | synthetic outlier and angle-polynomial recovery tests |
+| 105C | Complete | Stereo and hand-eye transforms with supplied-rotation translation solves | 3D alignment and `AX = XB` residual tests |
+| 105D | Complete | Sparse fixed-camera point bundle adjustment | multi-view numerical-Jacobian convergence test |
+| 105E | Complete | Calibration workload coverage and provisional API registration | 100/1000 observation and 100-point/3-view Criterion groups |
+
+Calibration solvers live in `spatialrust-camera`, use small deterministic dense
+normal equations, and introduce no native optimizer dependency. Supplied
+rotations are checked for finite, right-handed orthonormal form. The first BA
+contract intentionally fixes calibrated camera poses and refines world points;
+joint pose/intrinsics optimization remains additive and provisional.

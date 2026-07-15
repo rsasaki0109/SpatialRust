@@ -12,6 +12,7 @@ from report import emit_report, load_report, make_report
 
 ROOT = Path(__file__).resolve().parents[2]
 SUITES = {
+    "calibration": ROOT / "bench" / "opencv_calibration_comparison" / "run.py",
     "vision": ROOT / "bench" / "opencv_vision_comparison" / "run.py",
     "vision-performance": ROOT
     / "bench"

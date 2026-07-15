@@ -27,7 +27,8 @@ __all__: list[str] = [
     "ransac_sphere", "ransac_cylinder", "chamfer_distance", "hausdorff_distance",
     "apply_transform", "recenter", "scale", "normalize_unit_sphere", "merge",
     "centroid", "bounding_box", "oriented_bounding_box", "voxelize", "range_image",
-    "rgbd_to_point_cloud", "depth_to_xyz", "filter2d_image", "gaussian_blur_image",
+    "rgbd_to_point_cloud", "depth_to_xyz", "calibrate_pinhole_camera",
+    "calibrate_fisheye_angles", "filter2d_image", "gaussian_blur_image",
     "median_blur_image", "bilateral_filter_image", "sobel_image", "scharr_image",
     "laplacian_image", "pyr_down_image", "pyr_up_image", "morphology_image",
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
@@ -115,6 +116,19 @@ def depth_to_xyz(
     If ``out`` is a contiguous ``(H, W, 3)`` float32 array it is filled in place.
     """
     ...
+
+def calibrate_pinhole_camera(
+    camera_points: _F64Array,
+    pixels: _F64Array,
+    width: int,
+    height: int,
+    huber_delta: float = ...,
+    max_iterations: int = ...,
+) -> tuple[float, float, float, float, float, float]: ...
+
+def calibrate_fisheye_angles(
+    theta: _F64Array, distorted_radius: _F64Array
+) -> tuple[float, float, float, float, float]: ...
 
 def rgbd_to_point_cloud(
     depth: _F32Array,

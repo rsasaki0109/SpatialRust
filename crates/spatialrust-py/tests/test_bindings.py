@@ -736,3 +736,38 @@ def test_tensor_zero_copy_dlpack_import_retains_producer(dtype):
     copied = np.from_dlpack(imported.copy())
     np.testing.assert_array_equal(copied, np.arange(12, dtype=dtype).reshape(3, 4))
     assert "DLPackTensorView(" in repr(imported)
+
+
+def test_calibration_bindings_recover_intrinsics_and_fisheye():
+    points = np.array(
+        [
+            [x * 0.1, y * 0.08, 2.0 + 0.03 * abs(x + y)]
+            for y in range(-3, 4)
+            for x in range(-4, 5)
+        ],
+        dtype=np.float64,
+    )
+    pixels = np.column_stack(
+        (
+            500.0 * points[:, 0] / points[:, 2] + 320.0,
+            510.0 * points[:, 1] / points[:, 2] + 240.0,
+        )
+    )
+    result = sr.calibrate_pinhole_camera(points, pixels, 640, 480)
+    np.testing.assert_allclose(result[:4], [500.0, 510.0, 320.0, 240.0], atol=1e-9)
+    assert result[4] < 1e-9
+
+    expected = np.array([0.03, -0.004, 0.0005, -0.00003])
+    theta = np.linspace(0.08, 1.0, 12, dtype=np.float64)
+    theta2 = theta * theta
+    radius = theta * (
+        1.0
+        + theta2
+        * (
+            expected[0]
+            + theta2 * (expected[1] + theta2 * (expected[2] + theta2 * expected[3]))
+        )
+    )
+    fitted = sr.calibrate_fisheye_angles(theta, radius)
+    np.testing.assert_allclose(fitted[:4], expected, atol=1e-9)
+    assert fitted[4] < 1e-12

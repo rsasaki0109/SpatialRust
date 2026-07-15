@@ -114,6 +114,7 @@ impl StabilityRegistry {
             registry.register(path, ApiStabilityClass::Stable);
         }
         let provisional = [
+            "spatialrust-camera::calibration",
             "spatialrust-vision::geometry",
             "spatialrust-vision::stereo",
             "spatialrust-vision::optical-flow",
