@@ -1,6 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use spatialrust_image::Image;
-use spatialrust_vision::{canny, CannyOptions};
+use spatialrust_vision::{
+    canny, canny_into, canny_with_intermediates, CannyOptions, CannyWorkspace,
+};
 
 fn benchmark_canny(c: &mut Criterion) {
     let mut group = c.benchmark_group("canny");
@@ -11,9 +13,30 @@ fn benchmark_canny(c: &mut Criterion) {
             .collect();
         let image = Image::<u8, 1>::try_new(width, height, data).unwrap();
         group.throughput(Throughput::Elements((width * height) as u64));
-        group.bench_function(BenchmarkId::from_parameter(name), |b| {
+        group.bench_function(BenchmarkId::new("allocate", name), |b| {
             b.iter(|| {
                 black_box(canny(image.view(), CannyOptions::default()).unwrap());
+            });
+        });
+        group.bench_function(BenchmarkId::new("inspectable", name), |b| {
+            b.iter(|| {
+                black_box(canny_with_intermediates(image.view(), CannyOptions::default()).unwrap());
+            });
+        });
+        let mut output = Image::<u8, 1>::from_pixel(width, height, [0]).unwrap();
+        let mut workspace = CannyWorkspace::new();
+        canny_into(image.view(), CannyOptions::default(), output.view_mut(), &mut workspace)
+            .unwrap();
+        group.bench_function(BenchmarkId::new("reuse", name), |b| {
+            b.iter(|| {
+                canny_into(
+                    image.view(),
+                    CannyOptions::default(),
+                    output.view_mut(),
+                    &mut workspace,
+                )
+                .unwrap();
+                black_box(output.as_slice());
             });
         });
     }

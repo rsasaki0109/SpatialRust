@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Allocation-light Canny (Epic 118A/118C)**: `canny()` no longer materializes
+  public gradient, magnitude, and suppression images only to discard them.
+  Added safe strided `canny_into`, reusable `CannyWorkspace`, large-image
+  parallel stages, Python `out=`/workspace support, and a focused bit-exact
+  OpenCV comparison harness.
 - **Exact Euclidean distance transform**: `spatialrust-vision` now computes
   foreground-to-nearest-background L2 distances in linear time, supports
   anisotropic pixel spacing, exposes a NumPy binding, and includes native
