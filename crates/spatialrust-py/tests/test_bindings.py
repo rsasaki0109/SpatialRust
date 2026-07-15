@@ -193,6 +193,9 @@ def test_detection_nms_and_soft_nms():
     assert indices[0] == 0
     assert len(indices) == len(updated) == 3
     assert updated[-1] < 0.8
+    view_indices, view_updated = sr.soft_nms(boxes, score_storage[::2], method="linear")
+    assert view_indices == indices
+    np.testing.assert_array_equal(view_updated, updated)
 
 
 def test_mask_components_contours_and_rle():

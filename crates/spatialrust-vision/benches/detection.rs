@@ -1,5 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use spatialrust_vision::{batched_nms, nms, BoundingBox2, Detection};
+use spatialrust_vision::{batched_nms, nms, soft_nms, BoundingBox2, Detection, SoftNmsMethod};
+use std::cmp::Ordering;
 
 fn benchmark_nms(c: &mut Criterion) {
     let mut group = c.benchmark_group("nms_xyxy_f32");
@@ -38,6 +39,100 @@ fn benchmark_nms(c: &mut Criterion) {
         });
     }
     group.finish();
+
+    let mut group = c.benchmark_group("soft_nms_linear_xyxy_f32");
+    group.sample_size(10);
+    for &count in &[100_usize, 1_000, 8_400] {
+        let (boxes, scores) = detections(count);
+        group.throughput(Throughput::Elements(count as u64));
+        group.bench_function(BenchmarkId::from_parameter(count), |b| {
+            b.iter(|| {
+                black_box(
+                    soft_nms(
+                        black_box(&boxes),
+                        black_box(&scores),
+                        black_box(0.25),
+                        black_box(0.5),
+                        black_box(SoftNmsMethod::Linear),
+                    )
+                    .unwrap(),
+                )
+            });
+        });
+        group.bench_function(BenchmarkId::new("sorting_baseline", count), |b| {
+            b.iter(|| {
+                black_box(soft_nms_sorting_baseline(
+                    black_box(&boxes),
+                    black_box(&scores),
+                    black_box(0.25),
+                    black_box(0.5),
+                ))
+            });
+        });
+    }
+    group.finish();
+}
+
+#[derive(Clone, Copy)]
+struct BaselineCandidate {
+    index: usize,
+    score: f32,
+}
+
+fn soft_nms_sorting_baseline(
+    boxes: &[BoundingBox2],
+    scores: &[f32],
+    score_threshold: f32,
+    iou_threshold: f32,
+) -> Vec<BaselineCandidate> {
+    let mut candidates = scores
+        .iter()
+        .copied()
+        .enumerate()
+        .map(|(index, score)| BaselineCandidate { index, score })
+        .collect::<Vec<_>>();
+    let areas = boxes.iter().copied().map(BoundingBox2::area).collect::<Vec<_>>();
+    let mut output = Vec::with_capacity(candidates.len());
+    while !candidates.is_empty() {
+        candidates.sort_by(|left, right| {
+            right
+                .score
+                .partial_cmp(&left.score)
+                .unwrap_or(Ordering::Equal)
+                .then_with(|| left.index.cmp(&right.index))
+        });
+        let selected = candidates.remove(0);
+        if selected.score < score_threshold {
+            break;
+        }
+        output.push(selected);
+        for candidate in &mut candidates {
+            let overlap = cached_iou(
+                boxes[selected.index],
+                areas[selected.index],
+                boxes[candidate.index],
+                areas[candidate.index],
+            );
+            if overlap > iou_threshold {
+                candidate.score *= 1.0 - overlap;
+            }
+        }
+        candidates.retain(|candidate| candidate.score >= score_threshold);
+    }
+    output
+}
+
+fn cached_iou(left: BoundingBox2, left_area: f32, right: BoundingBox2, right_area: f32) -> f32 {
+    let width = left.x_max.min(right.x_max) - left.x_min.max(right.x_min);
+    if width <= 0.0 {
+        return 0.0;
+    }
+    let height = left.y_max.min(right.y_max) - left.y_min.max(right.y_min);
+    if height <= 0.0 {
+        return 0.0;
+    }
+    let intersection = width * height;
+    intersection / (left_area + right_area - intersection)
 }
 
 fn detections(count: usize) -> (Vec<BoundingBox2>, Vec<f32>) {

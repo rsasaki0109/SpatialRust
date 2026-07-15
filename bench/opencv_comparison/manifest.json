@@ -49,6 +49,7 @@
     { "id": "ai_preprocess", "domain": "dnn-adapter", "modes": ["allocate", "reuse"] },
     { "id": "nms", "domain": "dnn-adapter", "modes": ["postprocess"] },
     { "id": "batched_nms", "domain": "dnn-adapter", "modes": ["postprocess"] },
+    { "id": "soft_nms", "domain": "dnn-adapter", "modes": ["linear", "gaussian"] },
     { "id": "rgbd_to_voxel", "domain": "spatial-e2e", "modes": ["allocate"] }
   ]
 }
