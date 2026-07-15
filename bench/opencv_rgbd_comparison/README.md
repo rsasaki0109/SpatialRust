@@ -14,8 +14,11 @@ pip install maturin numpy opencv-contrib-python
 cd crates/spatialrust-py
 maturin develop --release
 cd ../..
-python bench/opencv_rgbd_comparison/run.py
+python bench/opencv_rgbd_comparison/run.py --output target/opencv-comparison/rgbd.json
 ```
 
 Exits non-zero when XYZ error exceeds `1e-5` m or any gated path is slower
-than OpenCV.
+than OpenCV. The output follows the Epic 101 report contract and includes raw
+group samples, median, p95, dimensions, environment versions, and speedups.
+Use `--warmup`, `--repeats`, and `--groups` only for local diagnosis; published
+receipts must state non-default values.

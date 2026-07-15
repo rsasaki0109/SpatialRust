@@ -17,6 +17,8 @@ $env:PYTHONPATH=(Resolve-Path '.\.venv\Lib\site-packages').Path
 python bench\opencv_vision_comparison\run.py
 ```
 
-The command prints a JSON report and exits non-zero when a documented numerical
-tolerance is exceeded. OpenCV is comparison/test tooling only; it is not a Rust
-runtime dependency.
+The command prints an Epic 101 machine-readable JSON report and exits non-zero
+when a documented numerical tolerance is exceeded. Pass `--output PATH` to
+retain the report. OpenCV is comparison/test tooling only; it is not a Rust
+runtime dependency. The shared report contract and workload registry are in
+[`../opencv_comparison`](../opencv_comparison/README.md).

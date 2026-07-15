@@ -6,23 +6,37 @@ The script exits non-zero when a compatibility tolerance is exceeded.
 
 from __future__ import annotations
 
-import json
+import argparse
+import sys
+from pathlib import Path
 
 import cv2
 import numpy as np
 
 import spatialrust as sr
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from opencv_comparison.report import emit_report, environment, make_report
+
 
 def max_abs(a: np.ndarray, b: np.ndarray) -> int:
     return int(np.max(np.abs(a.astype(np.int16) - b.astype(np.int16))))
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path)
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
+    if hasattr(cv2, "ocl"):
+        cv2.ocl.setUseOpenCL(False)
     rng = np.random.default_rng(75)
     image = rng.integers(0, 256, size=(73, 97, 3), dtype=np.uint8)
     size = (61, 43)
-    results: dict[str, object] = {"opencv_version": cv2.__version__}
+    results: dict[str, object] = {}
 
     kernel = np.array([[0.0, -0.25, 0.0], [-0.25, 2.0, -0.25], [0.0, -0.25, 0.0]])
     filtered = sr.filter2d_image(image, kernel)
@@ -479,8 +493,22 @@ def main() -> None:
     if abs(float(disparity_cv[center]) - float(disparity)) > 1.5:
         raise AssertionError("OpenCV StereoBM center disparity unexpected for synthetic pair")
 
-    results["status"] = "pass"
-    print(json.dumps(results, indent=2, sort_keys=True))
+    environment_receipt = environment(
+        opencv_version=cv2.__version__,
+        spatialrust_version=sr.__version__,
+    )
+    environment_receipt["opencv_threads"] = cv2.getNumThreads()
+    environment_receipt["opencv_opencl_enabled"] = bool(
+        hasattr(cv2, "ocl") and cv2.ocl.useOpenCL()
+    )
+    report = make_report(
+        suite="opencv-vision-correctness",
+        kind="correctness",
+        status="pass",
+        environment_receipt=environment_receipt,
+        results=results,
+    )
+    emit_report(report, args.output)
 
 
 if __name__ == "__main__":

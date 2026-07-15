@@ -257,6 +257,9 @@ jobs:
           pip install maturin pytest numpy mypy
           maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
           pytest crates/spatialrust-py/tests
+          # The comparison report contract stays stdlib-only. OpenCV itself is
+          # intentionally not a production or default-CI dependency.
+          python bench/opencv_comparison/test_report.py
           # Fail the build if the .pyi type stubs drift from the runtime API.
           python -m mypy.stubtest spatialrust --ignore-missing-stub
 
