@@ -3038,8 +3038,16 @@ fn nms<'py>(
         native_boxes
             .push(BoundingBox2::try_new(row[0], row[1], row[2], row[3]).map_err(to_py_err)?);
     }
-    let scores: Vec<f32> = scores.as_array().iter().copied().collect();
-    let indices = nms_op(&native_boxes, &scores, score_threshold, iou_threshold)
+    let scores_view = scores.as_array();
+    let packed_scores;
+    let scores = match scores_view.as_slice() {
+        Some(scores) => scores,
+        None => {
+            packed_scores = scores_view.iter().copied().collect::<Vec<_>>();
+            packed_scores.as_slice()
+        }
+    };
+    let indices = nms_op(&native_boxes, scores, score_threshold, iou_threshold)
         .map_err(to_py_err)?
         .into_iter()
         .map(|index| index as i64)

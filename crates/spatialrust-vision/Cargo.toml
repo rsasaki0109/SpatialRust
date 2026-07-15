@@ -74,6 +74,11 @@ harness = false
 required-features = ["dense"]
 
 [[bench]]
+name = "detection"
+harness = false
+required-features = ["detection"]
+
+[[bench]]
 name = "canny"
 harness = false
 required-features = ["imgproc-canny"]

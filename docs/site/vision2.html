@@ -51,6 +51,7 @@
       <div class="grid">
         <article class="card"><h3>Exact EDT at 4K</h3><p>With caller-owned output and workspace reuse, SpatialRust measured 40.66 ms versus OpenCV 43.33 ms: a 1.07× lead on the recorded Windows host.</p></article>
         <article class="card"><h3>Accuracy preserved</h3><p>The VGA, 1080p, and 4K canonical masks retain maximum absolute error 0.0 against OpenCV's precise L2 distance transform.</p></article>
+        <article class="card"><h3>NMS post-processing</h3><p>SpatialRust measured 3.22× faster for 8,400 YOLO-style candidates and up to 8.95× faster for 100 candidates, with kept indices exactly matching OpenCV.</p></article>
       </div>
       <p class="notice">This is a workload- and host-specific result. VGA and 1080p reuse remain narrow OpenCV wins; the repository receipt contains the reproducible methodology.</p>
     </section>
