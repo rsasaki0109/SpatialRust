@@ -75,6 +75,7 @@ use spatialrust::vision::{
     connected_components as label_components, decode_rle as decode_mask_runs,
     detect_and_describe_orb as detect_and_describe_orb_op, detect_fast as detect_fast_op,
     detect_harris as detect_harris_op, detect_shi_tomasi as detect_shi_tomasi_op,
+    distance_transform_edt_u8_into as distance_transform_edt_u8_into_op,
     distance_transform_edt_with_spacing as distance_transform_edt_op,
     encode_rle as encode_mask_runs, equalize_histogram as equalize_histogram_op,
     estimate_homography_ransac as estimate_homography_ransac_op,
@@ -92,12 +93,12 @@ use spatialrust::vision::{
     solve_pnp as solve_pnp_op, stereo_block_match as stereo_block_match_op,
     stitch_panorama_pair as stitch_panorama_pair_op, threshold as threshold_op, AbsolutePose,
     AdaptiveThresholdMethod, BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions,
-    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer, FastOptions,
-    HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions, MorphologyOperation,
-    MorphologyShape, ObjectImageCorrespondence, OrbOptions, OrbScoreType, PanoramaOptions,
-    PerspectiveTransform, PointCorrespondence2, PointMap, RgbdOdometryOptions, RleOrder,
-    RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement,
-    ThresholdType,
+    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer,
+    DistanceTransformWorkspace, FastOptions, HarrisOptions, Interpolation, Kernel2D, Keypoint2,
+    MaskRle, MatchOptions, MorphologyOperation, MorphologyShape, ObjectImageCorrespondence,
+    OrbOptions, OrbScoreType, PanoramaOptions, PerspectiveTransform, PointCorrespondence2,
+    PointMap, RgbdOdometryOptions, RleOrder, RobustEstimationOptions, ShiTomasiOptions,
+    SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType,
 };
 use spatialrust::vision::{dense_flow_block_match as dense_flow_native, DenseFlowOptions};
 use spatialrust::voxelize::{
@@ -3122,18 +3123,106 @@ fn connected_components_image<'py>(
     Ok((labels.into_pyarray_bound(py), stats))
 }
 
+/// Reusable host scratch storage for exact unit-spacing distance transforms.
+#[pyclass(name = "DistanceTransformWorkspace")]
+struct PyDistanceTransformWorkspace {
+    inner: DistanceTransformWorkspace,
+}
+
+#[pymethods]
+impl PyDistanceTransformWorkspace {
+    #[new]
+    fn new() -> Self {
+        Self { inner: DistanceTransformWorkspace::new() }
+    }
+
+    #[getter]
+    fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+}
+
 /// Computes the exact Euclidean distance to the nearest zero-valued mask pixel.
 #[pyfunction]
-#[pyo3(signature = (mask, spacing=(1.0, 1.0)))]
+#[pyo3(signature = (mask, spacing=(1.0, 1.0), out=None, workspace=None))]
 fn distance_transform_edt<'py>(
     py: Python<'py>,
     mask: PyReadonlyArray2<'_, u8>,
     spacing: (f32, f32),
+    out: Option<Bound<'py, PyArray2<f32>>>,
+    workspace: Option<PyRefMut<'_, PyDistanceTransformWorkspace>>,
 ) -> PyResult<Bound<'py, PyArray2<f32>>> {
+    if workspace.is_some() && spacing != (1.0, 1.0) {
+        return Err(PyValueError::new_err("workspace reuse currently requires spacing=(1.0, 1.0)"));
+    }
+    let mask_view = mask.as_array();
+    let (height, width) = (mask_view.shape()[0], mask_view.shape()[1]);
+    if let Some(mut workspace) = workspace {
+        let packed;
+        let input = match mask_view.as_slice() {
+            Some(slice) => slice,
+            None => {
+                packed = mask_view.iter().copied().collect::<Vec<_>>();
+                packed.as_slice()
+            }
+        };
+        if let Some(out) = out {
+            {
+                let mut out_rw = out.readwrite();
+                let mut out_view = out_rw.as_array_mut();
+                if out_view.shape() != [height, width] {
+                    return Err(PyValueError::new_err(format!(
+                        "out shape must be ({height}, {width}), found {:?}",
+                        out_view.shape()
+                    )));
+                }
+                let Some(out_slice) = out_view.as_slice_mut() else {
+                    return Err(PyValueError::new_err(
+                        "out must be a contiguous float32 array of shape (H, W)",
+                    ));
+                };
+                distance_transform_edt_u8_into_op(
+                    input,
+                    width,
+                    height,
+                    out_slice,
+                    &mut workspace.inner,
+                )
+                .map_err(to_py_err)?;
+            }
+            return Ok(out);
+        }
+        let mut output = vec![0.0_f32; width * height];
+        distance_transform_edt_u8_into_op(input, width, height, &mut output, &mut workspace.inner)
+            .map_err(to_py_err)?;
+        let array = Array2::from_shape_vec((height, width), output).map_err(to_py_err)?;
+        return Ok(array.into_pyarray_bound(py));
+    }
+
     let image = gray_u8_image_from_numpy(mask)?;
-    let (width, height) = (image.width(), image.height());
     let binary = image.into_vec().into_iter().map(|value| u8::from(value != 0)).collect();
     let mask = BinaryMask::try_new(width, height, binary).map_err(to_py_err)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out.readwrite();
+            let mut out_view = out_rw.as_array_mut();
+            if out_view.shape() != [height, width] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({height}, {width}), found {:?}",
+                    out_view.shape()
+                )));
+            }
+            let Some(out_slice) = out_view.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous float32 array of shape (H, W)",
+                ));
+            };
+            let distances =
+                distance_transform_edt_op(&mask, spacing.0, spacing.1).map_err(to_py_err)?;
+            out_slice.copy_from_slice(distances.as_slice());
+        }
+        return Ok(out);
+    }
     let distances = distance_transform_edt_op(&mask, spacing.0, spacing.1).map_err(to_py_err)?;
     let array =
         Array2::from_shape_vec((distances.height(), distances.width()), distances.into_vec())
@@ -3238,6 +3327,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyImageMetadata>()?;
     m.add_class::<PyTensor>()?;
     m.add_class::<PyKeypoint2>()?;
+    m.add_class::<PyDistanceTransformWorkspace>()?;
     m.add_class::<PyOnnxRuntimeSession>()?;
     m.add_class::<PyDlpackTensorView>()?;
     m.add_class::<PyPointCloud>()?;

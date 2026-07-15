@@ -1,5 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use spatialrust_vision::{distance_transform_edt, BinaryMask};
+use spatialrust_vision::{
+    distance_transform_edt, distance_transform_edt_into, BinaryMask, DistanceTransformWorkspace,
+};
 
 fn benchmark_exact_distance_transform(c: &mut Criterion) {
     let mut group = c.benchmark_group("distance_transform_edt");
@@ -12,6 +14,19 @@ fn benchmark_exact_distance_transform(c: &mut Criterion) {
         group.throughput(Throughput::Elements((width * height) as u64));
         group.bench_function(BenchmarkId::from_parameter(name), |b| {
             b.iter(|| black_box(distance_transform_edt(black_box(&mask)).unwrap()));
+        });
+        let mut output = vec![0.0_f32; width * height];
+        let mut workspace = DistanceTransformWorkspace::new();
+        distance_transform_edt_into(&mask, &mut output, &mut workspace).unwrap();
+        group.bench_function(BenchmarkId::new("reuse", name), |b| {
+            b.iter(|| {
+                distance_transform_edt_into(
+                    black_box(&mask),
+                    black_box(&mut output),
+                    black_box(&mut workspace),
+                )
+                .unwrap()
+            });
         });
     }
     group.finish();

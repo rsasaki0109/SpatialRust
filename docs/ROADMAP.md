@@ -606,6 +606,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | 113B | Planned | Explicit reusable scratch storage for multi-pass algorithms | steady-state allocation receipt |
 | 113C | Planned | Validate dimensions, metadata, overlap, and channel contracts | negative and property tests |
 | 113D | Planned | Reuse outputs through Python `out=` where supported | object-identity and numerical tests |
+| 113E | Complete | Exact EDT caller-owned output and explicit reusable scratch | Rust/Python identity, capacity, and brute-force tests |
 
 ### Epic 114 delivery slices
 
@@ -615,6 +616,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | 114B | Planned | Packed `u8` one/three-channel and `f32` internal fast-path selection | dispatch receipt and fallback parity |
 | 114C | Planned | Preserve generic components, channels, strides, and borders as safe fallbacks | full property suite |
 | 114D | Planned | Bound worker creation and temporary memory | thread-count and peak-memory receipt |
+| 114E | Complete | Exact EDT binary-row fast path, tiled transpose, and bounded pool dispatch | VGA/1080p/4K Criterion and OpenCV receipt |
 
 ### Epic 115 delivery slices
 

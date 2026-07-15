@@ -338,6 +338,33 @@ def main() -> None:
             seed=113,
             min_sample_time_ms=MIN_SAMPLE_TIME_MS,
         )
+        distance_cv_out = np.empty((height, width), dtype=np.float32)
+        distance_sr_out = np.empty((height, width), dtype=np.float32)
+        distance_workspace = sr.DistanceTransformWorkspace()
+        cv2.distanceTransform(
+            distance_mask,
+            cv2.DIST_L2,
+            cv2.DIST_MASK_PRECISE,
+            dst=distance_cv_out,
+        )
+        sr.distance_transform_edt(
+            distance_mask, out=distance_sr_out, workspace=distance_workspace
+        )
+        _, _, cv_distance_reuse, sr_distance_reuse = timed_pair(
+            lambda: cv2.distanceTransform(
+                distance_mask,
+                cv2.DIST_L2,
+                cv2.DIST_MASK_PRECISE,
+                dst=distance_cv_out,
+            ),
+            lambda: sr.distance_transform_edt(
+                distance_mask, out=distance_sr_out, workspace=distance_workspace
+            ),
+            warmup=args.warmup,
+            repeats=repeats,
+            seed=114,
+            min_sample_time_ms=MIN_SAMPLE_TIME_MS,
+        )
 
         rows = (
             ("resize_bilinear", "opencv", "allocate", cv_resize_alloc),
@@ -361,6 +388,8 @@ def main() -> None:
             ("canny", "spatialrust", "allocate", sr_canny),
             ("distance_transform_edt", "opencv", "allocate", cv_distance),
             ("distance_transform_edt", "spatialrust", "allocate", sr_distance),
+            ("distance_transform_edt", "opencv", "reuse", cv_distance_reuse),
+            ("distance_transform_edt", "spatialrust", "reuse", sr_distance_reuse),
         )
         measurements.extend(
             measurement(workload, implementation, mode, width, height, timing)
@@ -380,6 +409,9 @@ def main() -> None:
             "morphology_open": speed_comparison(cv_morphology, sr_morphology),
             "canny": speed_comparison(cv_canny, sr_canny),
             "distance_transform_edt": speed_comparison(cv_distance, sr_distance),
+            "distance_transform_edt_reuse": speed_comparison(
+                cv_distance_reuse, sr_distance_reuse
+            ),
         }
 
     environment_receipt = environment(

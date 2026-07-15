@@ -22,7 +22,7 @@ geometry = ["dep:spatialrust-camera"]
 odometry = ["geometry", "feature2d"]
 photography = ["warp", "geometry"]
 detection = []
-dense = ["detection"]
+dense = ["detection", "dep:rayon"]
 spatial = ["dense", "dep:spatialrust-core", "dep:spatialrust-camera"]
 ai-adapters = ["preprocess", "dense", "detection", "dep:spatialrust-tensor", "dep:bytemuck", "spatialrust-tensor/image"]
 video = ["dense", "detection"]
@@ -37,6 +37,7 @@ spatialrust-camera = { workspace = true, optional = true }
 spatialrust-tensor = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
 thiserror.workspace = true
+rayon = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion.workspace = true
