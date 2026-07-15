@@ -19,6 +19,7 @@ SUITES = {
     / "opencv_vision_comparison"
     / "performance.py",
     "rgbd": ROOT / "bench" / "opencv_rgbd_comparison" / "run.py",
+    "video": ROOT / "bench" / "opencv_video_comparison" / "run.py",
 }
 
 

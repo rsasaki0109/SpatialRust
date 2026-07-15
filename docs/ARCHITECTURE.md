@@ -80,6 +80,9 @@ PnP, sparse LK, stereo BM), warp, detection, dense-map, and spatial bridges in
 separate additive features. Geometry depends on `spatialrust-camera` only and does
 not pull Feature2D or dense-map types. CPU APIs never perform implicit device
 copies; future GPU/CUDA implementations belong behind explicit backend features.
+Video algorithms depend on dense/detection contracts, while timestamped pull
+sources are isolated behind `video-adapters`; native codec/camera runtimes stay
+in future dedicated adapter crates/features.
 Its `imgproc-*` features share one border extrapolation contract; `filter2d`
 means correlation, while true convolution is an explicitly named operation.
 `spatialrust-tensor` is distinct from the point-cloud chunk iterator named

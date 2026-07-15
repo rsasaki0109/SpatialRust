@@ -382,7 +382,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | 103 | Complete | 101–102 | SIMD/parallel CPU kernel dispatch, reusable outputs, and measured allocation control |
 | 104 | Complete | 89, 101–103 | Texture-backed GPU Image v2 and device-resident resize/filter/edge/morphology chains |
 | 105 | Complete | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
-| 106 | Planned | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
+| 106 | Complete | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
 | 107 | Planned | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
 | 108 | Planned | 101–107 | Feature-gated computational photography and panorama stitching |
 | 109 | Planned | 97, 99, 101–108 | Bounded spatial execution graph with fusion, backpressure, and named transfer receipts |
@@ -470,3 +470,18 @@ normal equations, and introduce no native optimizer dependency. Supplied
 rotations are checked for finite, right-handed orthonormal form. The first BA
 contract intentionally fixes calibrated camera poses and refines world points;
 joint pose/intrinsics optimization remains additive and provisional.
+
+### Epic 106 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 106A | Complete | Dense deterministic integer block flow with invalid-border semantics | translated-texture test and OpenCV Farneback comparison |
+| 106B | Complete | Adaptive single-Gaussian foreground modeling | new-object mask/ratio sequence test |
+| 106C | Complete | Same-class IoU track lifecycle with monotonic IDs | confirmation, association, miss, and expiry test |
+| 106D | Complete | Pull-based timestamped stream adapter contract | `VideoFrameSource` and deterministic `MemoryVideoSource` |
+| 106E | Complete | Dedicated features, Python flow binding, and benchmark coverage | `vision-video[-adapters]`, QQVGA/QVGA Criterion |
+
+Core video algorithms stay runtime-free in `spatialrust-vision/video`. Codec,
+camera, and network integrations implement `VideoFrameSource` behind additive
+features; frames carry sequence/time explicitly and remain owned host images.
+No adapter may hide a GPU transfer.

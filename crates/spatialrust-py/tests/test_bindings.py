@@ -771,3 +771,15 @@ def test_calibration_bindings_recover_intrinsics_and_fisheye():
     fitted = sr.calibrate_fisheye_angles(theta, radius)
     np.testing.assert_allclose(fitted[:4], expected, atol=1e-9)
     assert fitted[4] < 1e-12
+
+
+def test_dense_flow_binding_recovers_translation_and_marks_border_invalid():
+    height, width = 32, 40
+    yy, xx = np.indices((height, width), dtype=np.int32)
+    previous = ((xx * 17 + yy * 29 + xx * yy * 3) % 251).astype(np.uint8)
+    next_frame = np.zeros_like(previous)
+    next_frame[1:, 2:] = previous[:-1, :-2]
+    flow = sr.dense_flow_image(previous, next_frame)
+    assert flow.shape == (height, width, 2)
+    np.testing.assert_array_equal(flow[16, 20], [2.0, 1.0])
+    assert np.isnan(flow[0, 0]).all()
