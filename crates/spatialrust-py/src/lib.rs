@@ -91,7 +91,8 @@ use spatialrust::vision::{
     nms as nms_op, otsu_threshold_u8 as otsu_threshold_u8_op, pack_chw as pack_chw_op,
     pack_chw_into as pack_chw_into_op, point_map_to_point_cloud as point_map_to_cloud,
     pyr_down as pyr_down_op, pyr_up as pyr_up_op, remap as remap_op, resize as resize_op,
-    resize_into as resize_into_op, rgb_to_gray as rgb_to_gray_op,
+    resize_into as resize_into_op, resize_rgb_to_gray as resize_rgb_to_gray_op,
+    resize_rgb_to_gray_into as resize_rgb_to_gray_into_op, rgb_to_gray as rgb_to_gray_op,
     rgb_to_gray_into as rgb_to_gray_into_op, rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op,
     sobel as sobel_op, sobel_l1_magnitude_u8 as sobel_l1_magnitude_u8_op,
     sobel_l1_magnitude_u8_into as sobel_l1_magnitude_u8_into_op, soft_nms as soft_nms_op,
@@ -3367,6 +3368,44 @@ fn rgb_to_gray_image<'py>(
     Ok(array.into_pyarray_bound(py))
 }
 
+/// Fuses bilinear resize and RGB-to-gray conversion into an `(H, W)` image.
+#[pyfunction]
+#[pyo3(signature = (image, width, height, out=None))]
+fn resize_rgb_to_gray_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    width: usize,
+    height: usize,
+    out: Option<Bound<'py, PyArray2<u8>>>,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let mut packed = Vec::new();
+    let image = rgb_image_view_from_numpy(&image, &mut packed)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out.readwrite();
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [height, width] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({height}, {width}), found {:?}",
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W)",
+                ));
+            };
+            let output =
+                ImageViewMut::<u8, 1>::new(width, height, width, out_slice).map_err(to_py_err)?;
+            resize_rgb_to_gray_into_op(image, output).map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let output = resize_rgb_to_gray_op(image, width, height).map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((height, width), output.into_vec()).map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
 /// Converts RGB to OpenCV-style uint8 HSV.
 #[pyfunction]
 fn rgb_to_hsv_image<'py>(
@@ -3886,6 +3925,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(letterbox_image, m)?)?;
     m.add_function(wrap_pyfunction!(normalize_image_chw, m)?)?;
     m.add_function(wrap_pyfunction!(rgb_to_gray_image, m)?)?;
+    m.add_function(wrap_pyfunction!(resize_rgb_to_gray_image, m)?)?;
     m.add_function(wrap_pyfunction!(rgb_to_hsv_image, m)?)?;
     m.add_function(wrap_pyfunction!(remap_image, m)?)?;
     m.add_function(wrap_pyfunction!(nms, m)?)?;

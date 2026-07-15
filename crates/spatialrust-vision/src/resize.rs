@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use spatialrust_image::{Image, ImageView, ImageViewMut};
+use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageView, ImageViewMut};
 
 use crate::{PixelComponent, VisionError, VisionResult};
 
@@ -165,6 +165,95 @@ impl BilinearResizeU8Plan {
         Ok(())
     }
 
+    /// Fuses bilinear RGB resize and BT.601 grayscale conversion into one pass.
+    ///
+    /// The result is bit-exact with this plan's RGB [`Self::resize`] followed by
+    /// SpatialRust's Q14 RGB-to-gray conversion, while avoiding the intermediate
+    /// three-channel image.
+    pub fn resize_rgb_to_gray(&self, input: ImageView<'_, u8, 3>) -> VisionResult<Image<u8, 1>> {
+        let len = self.output_width.checked_mul(self.output_height).ok_or_else(|| {
+            VisionError::InvalidDimensions("fused resize-to-gray output is too large".to_owned())
+        })?;
+        let metadata = ImageMetadata { color_space: ColorSpace::Gray, ..input.metadata() };
+        let mut output = Image::try_new_with_metadata(
+            self.output_width,
+            self.output_height,
+            vec![0; len],
+            metadata,
+        )?;
+        self.resize_rgb_to_gray_into(input, output.view_mut())?;
+        Ok(output)
+    }
+
+    /// Fuses bilinear RGB resize and BT.601 grayscale conversion into caller-owned storage.
+    pub fn resize_rgb_to_gray_into(
+        &self,
+        input: ImageView<'_, u8, 3>,
+        mut output: ImageViewMut<'_, u8, 1>,
+    ) -> VisionResult<()> {
+        if (input.width(), input.height()) != self.input_dimensions() {
+            return Err(VisionError::InvalidDimensions(format!(
+                "resize plan expects input {}x{}, found {}x{}",
+                self.input_width,
+                self.input_height,
+                input.width(),
+                input.height()
+            )));
+        }
+        if (output.width(), output.height()) != self.output_dimensions() {
+            return Err(VisionError::InvalidDimensions(format!(
+                "resize plan expects output {}x{}, found {}x{}",
+                self.output_width,
+                self.output_height,
+                output.width(),
+                output.height()
+            )));
+        }
+        output.set_metadata(ImageMetadata { color_space: ColorSpace::Gray, ..input.metadata() })?;
+        if self.output_width == 0 || self.output_height == 0 {
+            return Ok(());
+        }
+
+        let row_stride = output.row_stride();
+        let half_scale = self.input_width == self.output_width.saturating_mul(2)
+            && self.input_height == self.output_height.saturating_mul(2);
+        let run_row = |y: usize, row: &mut [u8]| {
+            if half_scale {
+                resize_half_rgb_to_gray_row(input, row, y, self.output_width);
+            } else {
+                self.resize_bilinear_rgb_to_gray_row(input, row, y);
+            }
+        };
+        if self.output_width * self.output_height >= PARALLEL_RESIZE_COMPONENTS {
+            if self.output_height >= 2_000 {
+                const ROWS_PER_TASK: usize = 8;
+                let block_stride = row_stride.checked_mul(ROWS_PER_TASK).ok_or_else(|| {
+                    VisionError::InvalidDimensions("fused resize row block is too large".to_owned())
+                })?;
+                output.as_mut_slice().par_chunks_mut(block_stride).enumerate().for_each(
+                    |(block, rows)| {
+                        for (row, target) in rows.chunks_mut(row_stride).enumerate() {
+                            run_row(block * ROWS_PER_TASK + row, target);
+                        }
+                    },
+                );
+            } else {
+                output
+                    .as_mut_slice()
+                    .par_chunks_mut(row_stride)
+                    .enumerate()
+                    .for_each(|(y, row)| run_row(y, row));
+            }
+        } else {
+            output
+                .as_mut_slice()
+                .chunks_mut(row_stride)
+                .enumerate()
+                .for_each(|(y, row)| run_row(y, row));
+        }
+        Ok(())
+    }
+
     fn resize_bilinear_row<const CHANNELS: usize>(
         &self,
         input: ImageView<'_, u8, CHANNELS>,
@@ -194,6 +283,64 @@ impl BilinearResizeU8Plan {
             }
         }
     }
+
+    fn resize_bilinear_rgb_to_gray_row(
+        &self,
+        input: ImageView<'_, u8, 3>,
+        output: &mut [u8],
+        y: usize,
+    ) {
+        let y_sample = self.y_samples[y];
+        let top = input.row(y_sample.lower).expect("planned source row");
+        let bottom = input.row(y_sample.upper).expect("planned source row");
+        let wy = u32::from(y_sample.upper_weight);
+        let inv_wy = BILINEAR_WEIGHT_SCALE - wy;
+        for (x, x_sample) in self.x_samples.iter().copied().enumerate() {
+            let wx = u32::from(x_sample.upper_weight);
+            let inv_wx = BILINEAR_WEIGHT_SCALE - wx;
+            let lower = x_sample.lower * 3;
+            let upper = x_sample.upper * 3;
+            let pixel = std::array::from_fn(|channel| {
+                bilinear_u8_component(
+                    top[lower + channel],
+                    top[upper + channel],
+                    bottom[lower + channel],
+                    bottom[upper + channel],
+                    inv_wx,
+                    wx,
+                    inv_wy,
+                    wy,
+                )
+            });
+            output[x] = rgb_luma_q14(pixel);
+        }
+    }
+}
+
+#[inline(always)]
+fn bilinear_u8_component(
+    top_left: u8,
+    top_right: u8,
+    bottom_left: u8,
+    bottom_right: u8,
+    inv_wx: u32,
+    wx: u32,
+    inv_wy: u32,
+    wy: u32,
+) -> u8 {
+    let top = u32::from(top_left) * inv_wx + u32::from(top_right) * wx;
+    let bottom = u32::from(bottom_left) * inv_wx + u32::from(bottom_right) * wx;
+    let round = 1 << (BILINEAR_WEIGHT_BITS * 2 - 1);
+    ((top * inv_wy + bottom * wy + round) >> (BILINEAR_WEIGHT_BITS * 2)) as u8
+}
+
+#[inline(always)]
+fn rgb_luma_q14(pixel: [u8; 3]) -> u8 {
+    ((4_899_u32 * u32::from(pixel[0])
+        + 9_617_u32 * u32::from(pixel[1])
+        + 1_868_u32 * u32::from(pixel[2])
+        + 8_192)
+        >> 14) as u8
 }
 
 fn bilinear_axis_samples(input_len: usize, output_len: usize) -> Vec<BilinearAxisSample> {
@@ -234,6 +381,27 @@ fn resize_half_row<const CHANNELS: usize>(
                 + u16::from(bottom[source + CHANNELS + channel]);
             output[destination + channel] = ((sum + 2) >> 2) as u8;
         }
+    }
+}
+
+fn resize_half_rgb_to_gray_row(
+    input: ImageView<'_, u8, 3>,
+    output: &mut [u8],
+    y: usize,
+    output_width: usize,
+) {
+    let top = input.row(y * 2).expect("half-scale source row");
+    let bottom = input.row(y * 2 + 1).expect("half-scale source row");
+    for (x, target) in output.iter_mut().take(output_width).enumerate() {
+        let source = x * 6;
+        let pixel = std::array::from_fn(|channel| {
+            let sum = u16::from(top[source + channel])
+                + u16::from(top[source + 3 + channel])
+                + u16::from(bottom[source + channel])
+                + u16::from(bottom[source + 3 + channel]);
+            ((sum + 2) >> 2) as u8
+        });
+        *target = rgb_luma_q14(pixel);
     }
 }
 

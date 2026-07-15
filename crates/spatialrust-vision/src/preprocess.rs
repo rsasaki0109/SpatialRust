@@ -4,7 +4,9 @@ use spatialrust_image::{
     ColorSpace, Image, ImageMetadata, ImageRegion, ImageView, ImageViewMut, PlanarImage,
 };
 
-use crate::{resize, Interpolation, PixelComponent, VisionError, VisionResult};
+use crate::{
+    resize, BilinearResizeU8Plan, Interpolation, PixelComponent, VisionError, VisionResult,
+};
 
 /// Padding applied around an image.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -361,6 +363,25 @@ pub fn rgb_to_gray_into(
     Ok(())
 }
 
+/// Fuses bilinear RGB resize and BT.601 grayscale conversion without an intermediate RGB image.
+pub fn resize_rgb_to_gray(
+    input: ImageView<'_, u8, 3>,
+    output_width: usize,
+    output_height: usize,
+) -> VisionResult<Image<u8, 1>> {
+    BilinearResizeU8Plan::new(input.width(), input.height(), output_width, output_height)?
+        .resize_rgb_to_gray(input)
+}
+
+/// Fuses bilinear RGB resize and BT.601 grayscale conversion into caller-owned storage.
+pub fn resize_rgb_to_gray_into(
+    input: ImageView<'_, u8, 3>,
+    output: ImageViewMut<'_, u8, 1>,
+) -> VisionResult<()> {
+    BilinearResizeU8Plan::new(input.width(), input.height(), output.width(), output.height())?
+        .resize_rgb_to_gray_into(input, output)
+}
+
 fn rgb_to_gray_row(input: ImageView<'_, u8, 3>, y: usize, target: &mut [u8]) {
     let source = input.row(y).expect("input row in bounds");
     for (pixel, target_value) in source.chunks_exact(3).zip(target.iter_mut()) {
@@ -430,7 +451,8 @@ pub fn rgb_to_hsv(input: ImageView<'_, u8, 3>) -> VisionResult<Image<u8, 3>> {
 mod tests {
     use super::{
         crop, gray_to_rgb, letterbox, normalize, normalize_into, pack_chw, pack_chw_into, pad,
-        rgb_to_gray, rgb_to_gray_into, rgb_to_hsv, Padding,
+        resize_rgb_to_gray, resize_rgb_to_gray_into, rgb_to_gray, rgb_to_gray_into, rgb_to_hsv,
+        Padding,
     };
     use crate::Interpolation;
     use spatialrust_image::{
@@ -518,6 +540,51 @@ mod tests {
         let gray = rgb_to_gray(input).unwrap();
         assert_eq!(gray.as_slice(), &[76, 150, 29, 255]);
         assert_eq!(gray.metadata().color_space, ColorSpace::Gray);
+    }
+
+    #[test]
+    fn fused_resize_rgb_to_gray_matches_unfused_half_scale_exactly() {
+        let metadata = ImageMetadata {
+            color_space: ColorSpace::Rgb,
+            color_range: spatialrust_image::ColorRange::Full,
+            ..ImageMetadata::default()
+        };
+        let input = Image::<u8, 3>::try_new_with_metadata(
+            8,
+            6,
+            (0..144).map(|value| (value * 53 % 256) as u8).collect(),
+            metadata,
+        )
+        .unwrap();
+        let resized =
+            crate::BilinearResizeU8Plan::new(8, 6, 4, 3).unwrap().resize(input.view()).unwrap();
+        let expected = rgb_to_gray(resized.view()).unwrap();
+        let actual = resize_rgb_to_gray(input.view(), 4, 3).unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(actual.metadata().color_space, ColorSpace::Gray);
+        assert_eq!(actual.metadata().color_range, spatialrust_image::ColorRange::Full);
+    }
+
+    #[test]
+    fn fused_resize_rgb_to_gray_matches_unfused_general_and_strided_output() {
+        let mut input_storage = vec![231_u8; 83];
+        for y in 0..5 {
+            for x in 0..15 {
+                input_storage[y * 17 + x] = (y * 41 + x * 13) as u8;
+            }
+        }
+        let input = ImageView::<u8, 3>::new(5, 5, 17, &input_storage).unwrap();
+        let resized = crate::BilinearResizeU8Plan::new(5, 5, 7, 3).unwrap().resize(input).unwrap();
+        let expected = rgb_to_gray(resized.view()).unwrap();
+        let mut output_storage = vec![199_u8; 29];
+        let output = ImageViewMut::<u8, 1>::new(7, 3, 11, &mut output_storage).unwrap();
+        resize_rgb_to_gray_into(input, output).unwrap();
+        for y in 0..3 {
+            assert_eq!(&output_storage[y * 11..y * 11 + 7], expected.view().row(y).unwrap());
+            if y < 2 {
+                assert_eq!(&output_storage[y * 11 + 7..(y + 1) * 11], &[199; 4]);
+            }
+        }
     }
 
     #[test]

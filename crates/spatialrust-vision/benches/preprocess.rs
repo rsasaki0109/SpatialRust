@@ -1,7 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use spatialrust_image::Image;
 use spatialrust_vision::{
-    letterbox, pack_chw, pack_chw_into, rgb_to_gray, rgb_to_gray_into, Interpolation,
+    letterbox, pack_chw, pack_chw_into, rgb_to_gray, rgb_to_gray_into, BilinearResizeU8Plan,
+    Interpolation,
 };
 
 fn benchmark_preprocess(c: &mut Criterion) {
@@ -50,5 +51,42 @@ fn benchmark_reusable_preprocess(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, benchmark_preprocess, benchmark_reusable_preprocess);
+fn benchmark_fused_resize_gray(c: &mut Criterion) {
+    for &(name, width, height) in
+        &[("1080p_to_540p", 1920, 1080), ("4k_to_1080p", 3840, 2160), ("8k_to_4k", 7680, 4320)]
+    {
+        let output_width = width / 2;
+        let output_height = height / 2;
+        let input = Image::<u8, 3>::try_new(width, height, vec![127; width * height * 3]).unwrap();
+        let plan = BilinearResizeU8Plan::new(width, height, output_width, output_height).unwrap();
+        let mut resized =
+            Image::<u8, 3>::try_new(output_width, output_height, vec![0; width * height * 3 / 4])
+                .unwrap();
+        let mut gray =
+            Image::<u8, 1>::try_new(output_width, output_height, vec![0; width * height / 4])
+                .unwrap();
+        let mut group = c.benchmark_group("resize_rgb_to_gray_half_rgb8");
+        group.sample_size(10);
+        group.throughput(Throughput::Elements((output_width * output_height) as u64));
+        group.bench_function(BenchmarkId::new("unfused_reuse", name), |b| {
+            b.iter(|| {
+                plan.resize_into(black_box(input.view()), resized.view_mut()).unwrap();
+                rgb_to_gray_into(resized.view(), gray.view_mut()).unwrap();
+            });
+        });
+        group.bench_function(BenchmarkId::new("fused_reuse", name), |b| {
+            b.iter(|| {
+                plan.resize_rgb_to_gray_into(black_box(input.view()), gray.view_mut()).unwrap();
+            });
+        });
+        group.finish();
+    }
+}
+
+criterion_group!(
+    benches,
+    benchmark_preprocess,
+    benchmark_reusable_preprocess,
+    benchmark_fused_resize_gray
+);
 criterion_main!(benches);
