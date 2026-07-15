@@ -98,14 +98,14 @@ use spatialrust::vision::{
     solve_pnp as solve_pnp_op, spatial_gradient_u8 as spatial_gradient_u8_op,
     spatial_gradient_u8_into as spatial_gradient_u8_into_op,
     stereo_block_match as stereo_block_match_op, stitch_panorama_pair as stitch_panorama_pair_op,
-    threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BinaryMask, BorderMode,
-    BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity, CornerSelectionOptions,
-    DescriptorBuffer, Detection, DistanceTransformWorkspace, FastOptions, GaussianBlurU8Workspace,
-    HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions, MorphologyOperation,
-    MorphologyShape, ObjectImageCorrespondence, OrbOptions, OrbScoreType, PanoramaOptions,
-    PerspectiveTransform, PointCorrespondence2, PointMap, RectMorphologyWorkspace,
-    RgbdOdometryOptions, RleOrder, RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod,
-    StereoBmOptions, StructuringElement, ThresholdType,
+    threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BilinearResizeU8Plan,
+    BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity,
+    CornerSelectionOptions, DescriptorBuffer, Detection, DistanceTransformWorkspace, FastOptions,
+    GaussianBlurU8Workspace, HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle,
+    MatchOptions, MorphologyOperation, MorphologyShape, ObjectImageCorrespondence, OrbOptions,
+    OrbScoreType, PanoramaOptions, PerspectiveTransform, PointCorrespondence2, PointMap,
+    RectMorphologyWorkspace, RgbdOdometryOptions, RleOrder, RobustEstimationOptions,
+    ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType,
 };
 use spatialrust::vision::{dense_flow_block_match as dense_flow_native, DenseFlowOptions};
 use spatialrust::voxelize::{
@@ -3213,6 +3213,10 @@ fn resize_image<'py>(
     let mut packed = Vec::new();
     let image = rgb_image_view_from_numpy(&image, &mut packed)?;
     let interpolation = parse_interpolation(interpolation)?;
+    let bilinear_plan = (interpolation == Interpolation::Bilinear)
+        .then(|| BilinearResizeU8Plan::new(image.width(), image.height(), width, height))
+        .transpose()
+        .map_err(to_py_err)?;
     if let Some(out) = out {
         {
             let mut out_rw = out.readwrite();
@@ -3230,11 +3234,19 @@ fn resize_image<'py>(
             };
             let output = ImageViewMut::<u8, 3>::new(width, height, width * 3, out_slice)
                 .map_err(to_py_err)?;
-            resize_into_op(image, output, interpolation).map_err(to_py_err)?;
+            if let Some(plan) = &bilinear_plan {
+                plan.resize_into(image, output).map_err(to_py_err)?;
+            } else {
+                resize_into_op(image, output, interpolation).map_err(to_py_err)?;
+            }
         }
         return Ok(out);
     }
-    let output = resize_op(image, width, height, interpolation).map_err(to_py_err)?;
+    let output = if let Some(plan) = &bilinear_plan {
+        plan.resize(image).map_err(to_py_err)?
+    } else {
+        resize_op(image, width, height, interpolation).map_err(to_py_err)?
+    };
     let array = Array3::from_shape_vec((height, width, 3), output.into_vec()).map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
 }

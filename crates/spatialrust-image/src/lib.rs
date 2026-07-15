@@ -635,6 +635,15 @@ impl<'a, T, const CHANNELS: usize> ImageViewMut<'a, T, CHANNELS> {
         self.data.get_mut(start..start + self.width * CHANNELS)
     }
 
+    /// Returns the complete mutable backing span, including inter-row padding.
+    ///
+    /// The final row has no required trailing padding, so the returned length is
+    /// the minimum checked span accepted by [`ImageViewMut::new`].
+    #[must_use]
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        self.data
+    }
+
     /// Creates a checked mutable zero-copy subview.
     pub fn subview(
         &mut self,

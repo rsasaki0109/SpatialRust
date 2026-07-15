@@ -138,6 +138,17 @@ def test_image_resize_letterbox_and_normalize():
     assert sr.resize_image(image, 4, 4, interpolation="nearest", out=resized_out) is resized_out
     np.testing.assert_array_equal(resized_out, resized)
 
+    bilinear_input = np.arange(8 * 8 * 3, dtype=np.uint8).reshape(8, 8, 3)[:, ::-1]
+    bilinear = sr.resize_image(bilinear_input, 4, 4, interpolation="bilinear")
+    bilinear_out = np.empty_like(bilinear)
+    assert (
+        sr.resize_image(
+            bilinear_input, 4, 4, interpolation="bilinear", out=bilinear_out
+        )
+        is bilinear_out
+    )
+    np.testing.assert_array_equal(bilinear_out, bilinear)
+
     letterboxed, transform = sr.letterbox_image(image, 4, 6, fill=(7, 8, 9))
     assert letterboxed.shape == (6, 4, 3)
     assert transform == (2.0, 0, 1, 4, 4)

@@ -152,8 +152,8 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | --- | ---: | ---: | ---: |
 | AI CHW preprocess, allocate | **SpatialRust 4.48×** | **SpatialRust 9.27×** | **SpatialRust 9.14×** |
 | AI CHW preprocess, reuse vs OpenCV allocate | **SpatialRust 8.16×** | **SpatialRust 14.56×** | **SpatialRust 15.78×** |
-| Bilinear resize, allocate | OpenCV 26.46× | OpenCV 64.02× | OpenCV 93.61× |
-| Bilinear resize, reuse | OpenCV 27.36× | OpenCV 145.81× | OpenCV 113.87× |
+| Bilinear resize, allocate[^resize-2026] | OpenCV 1.19× | OpenCV 1.49× | OpenCV 1.60× |
+| Bilinear resize, reuse[^resize-2026] | **SpatialRust 1.10×** | OpenCV 2.40× | OpenCV 2.01× |
 | RGB to gray, allocate | OpenCV 11.97× | OpenCV 5.98× | OpenCV 12.98× |
 | RGB to gray, reuse | OpenCV 6.01× | OpenCV 13.81× | OpenCV 2.09× |
 | Gaussian blur 5×5[^gaussian-2026] | OpenCV 139.02× | OpenCV 3.10× | OpenCV 2.93× |
@@ -180,6 +180,14 @@ records the exact environment and methodology.
   Against SpatialRust's generic engine, native Criterion improved allocated
   5×5 latency by 20.7× at 1080p and 26.7× at 4K; OpenCV still leads the
   standalone operation.
+
+[^resize-2026]: The packed RGB8 half-scale path precomputes arbitrary-scale
+  Q11 sampling coefficients and specializes exact 2× downsampling as a
+  row-parallel 2×2 average. On the OpenCV 4.13 focused receipt, caller-owned
+  VGA output measured 0.120 ms versus 0.133 ms (SpatialRust 1.10×); 1080p,
+  4K, and 8K reuse remain OpenCV wins by 2.40×, 2.01×, and 1.85×. Canonical
+  half-scale pixels are exact, and 300 arbitrary-size cases have maximum
+  absolute error 1. See the [focused harness](bench/opencv_resize_comparison/).
 
 The additive paired-gradient path keeps standalone Sobel compatibility while
 also exposing exact fused 3×3 L1 magnitude (`abs(Gx) + abs(Gy)`). On a newer
@@ -279,7 +287,7 @@ The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
 
 | Workload | OpenCV comparison result at VGA / 1080p / 4K |
 | --- | --- |
-| Bilinear resize | Exact pixels (max error 0) |
+| Bilinear resize | Canonical half-scale exact; 300 arbitrary-size cases max error 1/255 |
 | RGB to gray | Max error 1/255; MAE 0.1333 / 0.1333 / 0.1329 |
 | AI CHW preprocess | Max float error `5.96e-8` |
 | Gaussian blur | Canonical 5×5 profiles exact; 300 randomized 3×3/5×5/7×7 cases max error 2/255 |
