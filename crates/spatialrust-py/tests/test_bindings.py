@@ -66,7 +66,7 @@ def test_exports_present():
         "rgbd_to_point_cloud", "depth_to_xyz",
         "resize_image", "letterbox_image", "normalize_image_chw",
         "rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
-        "nms", "soft_nms", "connected_components_image",
+        "nms", "soft_nms", "connected_components_image", "distance_transform_edt",
         "find_mask_contours", "encode_mask_rle", "decode_mask_rle",
         "point_map_to_point_cloud",
     ):
@@ -197,6 +197,26 @@ def test_mask_components_contours_and_rle():
         counts = sr.encode_mask_rle(mask, coco=coco)
         decoded = sr.decode_mask_rle(7, 5, counts, coco=coco)
         np.testing.assert_array_equal(decoded, mask)
+
+
+def test_exact_euclidean_distance_transform():
+    mask = np.full((3, 4), 255, dtype=np.uint8)
+    mask[0, 0] = 0
+    actual = sr.distance_transform_edt(mask)
+    expected = np.array(
+        [
+            [0.0, 1.0, 2.0, 3.0],
+            [1.0, np.sqrt(2.0), np.sqrt(5.0), np.sqrt(10.0)],
+            [2.0, np.sqrt(5.0), np.sqrt(8.0), np.sqrt(13.0)],
+        ],
+        dtype=np.float32,
+    )
+    assert actual.dtype == np.float32
+    np.testing.assert_allclose(actual, expected, atol=1e-6)
+
+    anisotropic = sr.distance_transform_edt(mask, spacing=(2.0, 3.0))
+    assert anisotropic[0, 1] == pytest.approx(2.0)
+    assert anisotropic[1, 0] == pytest.approx(3.0)
 
 
 def test_point_map_to_point_cloud_filters_invalid_and_low_confidence():

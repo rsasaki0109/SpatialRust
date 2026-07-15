@@ -121,6 +121,8 @@ impl StabilityRegistry {
             "spatialrust-vision::video",
             "spatialrust-vision::odometry",
             "spatialrust-vision::photography",
+            "spatialrust-vision::distance_transform_edt",
+            "spatialrust-vision::distance_transform_edt_with_spacing",
             "spatialrust-runtime::execution-graph",
             "spatialrust-vision::ai-adapters",
             "spatialrust-gpu::GpuImage",

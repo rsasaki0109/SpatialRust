@@ -160,6 +160,7 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | Sobel X 3×3 | OpenCV 36.6× | OpenCV 35.6× | OpenCV 38.6× |
 | Morphology open 5×5 | OpenCV 909.0× | OpenCV 1,027.2× | OpenCV 1,082.8× |
 | Canny | OpenCV 13.0× | OpenCV 14.5× | OpenCV 15.3× |
+| Exact Euclidean distance transform | OpenCV 10.60× | OpenCV 12.63× | OpenCV 12.35× |
 
 The current CPU result is deliberately mixed: SpatialRust's fused typed CHW
 path wins, while OpenCV's tuned general-purpose image kernels lead the present
@@ -181,6 +182,7 @@ The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
 | Sobel X 3×3 | Exact values (max error 0) |
 | Morphology open 5×5 | Exact pixels (max error 0) |
 | Canny | Precision, recall, F1, and IoU all 1.0 |
+| Exact Euclidean distance transform | Exact values on canonical profiles; separate irregular-mask max float error `9.54e-7` |
 
 The broader correctness harness also checks filters, analysis, keypoints,
 matching, and geometry with documented tolerances (exact pixels where we claim

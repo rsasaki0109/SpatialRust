@@ -314,6 +314,31 @@ def main() -> None:
             min_sample_time_ms=MIN_SAMPLE_TIME_MS,
         )
 
+        distance_mask = np.where(gray_cv > 96, 255, 0).astype(np.uint8)
+        distance_cv = cv2.distanceTransform(
+            distance_mask, cv2.DIST_L2, cv2.DIST_MASK_PRECISE
+        )
+        distance_sr = sr.distance_transform_edt(distance_mask)
+        distance_accuracy = numerical_accuracy(
+            distance_cv, distance_sr, float(np.hypot(width, height))
+        )
+        accuracy[f"{profile}_distance_transform_edt"] = distance_accuracy
+        if distance_accuracy["max_absolute_error"] > 1e-5:
+            raise AssertionError(
+                f"{profile} distance-transform max error "
+                f"{distance_accuracy['max_absolute_error']} > 1e-5"
+            )
+        _, _, cv_distance, sr_distance = timed_pair(
+            lambda: cv2.distanceTransform(
+                distance_mask, cv2.DIST_L2, cv2.DIST_MASK_PRECISE
+            ),
+            lambda: sr.distance_transform_edt(distance_mask),
+            warmup=args.warmup,
+            repeats=repeats,
+            seed=113,
+            min_sample_time_ms=MIN_SAMPLE_TIME_MS,
+        )
+
         rows = (
             ("resize_bilinear", "opencv", "allocate", cv_resize_alloc),
             ("resize_bilinear", "spatialrust", "allocate", sr_resize_alloc),
@@ -334,6 +359,8 @@ def main() -> None:
             ("morphology_open", "spatialrust", "allocate", sr_morphology),
             ("canny", "opencv", "allocate", cv_canny),
             ("canny", "spatialrust", "allocate", sr_canny),
+            ("distance_transform_edt", "opencv", "allocate", cv_distance),
+            ("distance_transform_edt", "spatialrust", "allocate", sr_distance),
         )
         measurements.extend(
             measurement(workload, implementation, mode, width, height, timing)
@@ -352,6 +379,7 @@ def main() -> None:
             "sobel_x": speed_comparison(cv_sobel, sr_sobel),
             "morphology_open": speed_comparison(cv_morphology, sr_morphology),
             "canny": speed_comparison(cv_canny, sr_canny),
+            "distance_transform_edt": speed_comparison(cv_distance, sr_distance),
         }
 
     environment_receipt = environment(

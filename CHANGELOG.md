@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Exact Euclidean distance transform**: `spatialrust-vision` now computes
+  foreground-to-nearest-background L2 distances in linear time, supports
+  anisotropic pixel spacing, exposes a NumPy binding, and includes native
+  Criterion plus OpenCV `DIST_MASK_PRECISE` comparison coverage.
+
 - **Vision 2 performance roadmap and documentation site**: Epics 112–120 now
   define cost attribution, reusable workspaces, safe CPU dispatch, resize/color,
   Gaussian/Sobel, morphology, Canny, explicit GPU-chain, and release-gate work.
