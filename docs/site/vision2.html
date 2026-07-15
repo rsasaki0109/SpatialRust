@@ -45,6 +45,15 @@
         <article class="card"><h3>One Epic, one PR</h3><p>Every Epic follows implement → test → commit → PR → merge with its own reproducible receipt.</p></article>
       </div>
     </section>
+
+    <section>
+      <h2>Latest measured outcome</h2>
+      <div class="grid">
+        <article class="card"><h3>Exact EDT at 4K</h3><p>With caller-owned output and workspace reuse, SpatialRust measured 40.66 ms versus OpenCV 43.33 ms: a 1.07× lead on the recorded Windows host.</p></article>
+        <article class="card"><h3>Accuracy preserved</h3><p>The VGA, 1080p, and 4K canonical masks retain maximum absolute error 0.0 against OpenCV's precise L2 distance transform.</p></article>
+      </div>
+      <p class="notice">This is a workload- and host-specific result. VGA and 1080p reuse remain narrow OpenCV wins; the repository receipt contains the reproducible methodology.</p>
+    </section>
   </main>
   <footer><div class="wrap">The <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ROADMAP.md">repository ROADMAP</a> is authoritative for status and acceptance criteria.</div></footer>
 </body>

@@ -160,8 +160,8 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | Sobel X 3×3 | OpenCV 14.38× | OpenCV 20.31× | OpenCV 23.30× |
 | Morphology open 5×5 | OpenCV 805.78× | OpenCV 578.52× | OpenCV 774.40× |
 | Canny | OpenCV 10.66× | OpenCV 12.54× | OpenCV 12.65× |
-| Exact Euclidean distance transform, allocate | OpenCV 2.37× | OpenCV 1.99× | OpenCV 1.63× |
-| Exact Euclidean distance transform, reuse | OpenCV 1.61× | OpenCV 1.20× | OpenCV 1.07× |
+| Exact Euclidean distance transform, allocate | OpenCV 1.99× | OpenCV 1.85× | OpenCV 1.45× |
+| Exact Euclidean distance transform, reuse | OpenCV 1.02× | OpenCV 1.06× | **SpatialRust 1.07×** |
 
 The current CPU result is deliberately mixed: SpatialRust's fused typed CHW
 path wins, while OpenCV's tuned general-purpose image kernels lead the present
@@ -173,8 +173,9 @@ records the exact environment and methodology.
 The EDT fast path is exact on the canonical masks and reduced the native 4K
 allocation benchmark from 451.63 ms to about 75 ms. With caller-owned output
 and [`DistanceTransformWorkspace`](https://rsasaki0109.github.io/SpatialRust/spatialrust_vision/struct.DistanceTransformWorkspace.html),
-the native Criterion median is about 43 ms. The Python API comparison above
-still gives OpenCV a narrow 1.07× 4K reuse lead; see the
+the optimized native canonical Criterion median is about 35 ms. The Python API comparison
+above gives SpatialRust a measured 1.07× 4K reuse lead, with maximum error zero;
+VGA and 1080p remain narrow OpenCV wins. See the
 [acceleration receipt](notes/2026-07-15_exact_edt_acceleration.md).
 
 #### Vision accuracy
