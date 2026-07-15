@@ -117,6 +117,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   `records`, `arrow-c-data`, `arrow-c-stream`, `arrow-c-device`; ROADMAP 92–100
   activated with planned delivery slices.
 
+- **Sensor time and frame graphs (Epic 92)**: new `spatialrust-sync` with clock
+  domains/`SyncQuality`, stamped records, calibrated `FrameGraph` lookups,
+  in-memory `MemoryEpisode` index, and `DeterministicReplayer` topic bundling;
+  `mcap` feature reserved for file codecs; facade `sync` / `sync-mcap`.
+
 - **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
   planar/interleaved layouts and color metadata in `spatialrust-image`; new
   feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,

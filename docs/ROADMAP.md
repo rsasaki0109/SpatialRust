@@ -49,7 +49,7 @@ foundation contracts they depend on are stable.
 | Epic | Status | Depends on | Long-term outcome |
 | --- | --- | --- | --- |
 | 91 | Complete | 85, 90 | Spatial records and streams: schema evolution, chunked/out-of-core execution, Arrow C Data/Stream/Device interoperability |
-| 92 | Planned | 88, 91 | Sensor-time and frame graph: calibrated multimodal synchronization, deterministic replay, MCAP integration |
+| 92 | Complete | 88, 91 | Sensor-time and frame graph: calibrated multimodal synchronization, deterministic replay, MCAP integration |
 | 93 | Planned | 87–88, 92 | Localization and mapping: visual/RGB-D/lidar odometry, pose graphs, loop closure, relocalization |
 | 94 | Planned | 89, 93 | Scene reconstruction: TSDF, surfels, meshes, and a feature-gated Gaussian scene representation and renderer |
 | 95 | Planned | 90–94 | Semantic spatial intelligence: open-vocabulary detections, embeddings on spatial entities, multimodal fusion and search |
@@ -282,3 +282,20 @@ pulling Arrow into `spatialrust-core`.
 | 98 | Planned | 98A glTF adapter crate; 98B OpenUSD adapter crate; 98C scene compose; 98D round-trip tests |
 | 99 | Planned | 99A partition graph; 99B backpressure contracts; 99C named network transfer; 99D edge smoke |
 | 100 | Planned | 100A API freeze checklist; 100B conformance suite; 100C security audit notes; 100D LTS policy |
+
+## Epic 92 delivery slices
+
+Sensor time and frame graphs live in `spatialrust-sync`. Default builds use
+in-memory episodes; the `mcap` feature is reserved for file codecs without
+adding a heavy archive dependency to the workspace default.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 92A | Complete | `ClockId`/`ClockDomain`, `SyncQuality`, `StampedTime` | `sync` |
+| 92B | Complete | `FrameGraph` / `FrameEdge` with inverse-aware lookup | `sync` |
+| 92C | Complete | Topic channels + `MemoryEpisode` index; `mcap` feature gate reserved | `sync`, `sync-mcap` |
+| 92D | Complete | `DeterministicReplayer` with nearest-topic bundling | `sync` |
+
+Epic 92 completes when stamped multimodal records can be indexed deterministically,
+bundled within a sync window, and transformed across a calibrated frame graph
+without enabling file MCAP codecs.

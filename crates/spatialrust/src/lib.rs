@@ -40,6 +40,8 @@ pub use spatialrust_records as records;
     feature = "arrow-c-device"
 ))]
 pub use spatialrust_arrow as arrow;
+#[cfg(feature = "sync")]
+pub use spatialrust_sync as sync;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
