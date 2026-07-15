@@ -83,10 +83,51 @@ fn benchmark_fused_resize_gray(c: &mut Criterion) {
     }
 }
 
+fn benchmark_fused_resize_chw(c: &mut Criterion) {
+    for &(name, width, height, output_width, output_height) in &[
+        ("1080p_to_640", 1920, 1080, 640, 640),
+        ("4k_to_640", 3840, 2160, 640, 640),
+        ("4k_to_720p", 3840, 2160, 1280, 720),
+    ] {
+        let input = Image::<u8, 3>::try_new(width, height, vec![127; width * height * 3]).unwrap();
+        let plan = BilinearResizeU8Plan::new(width, height, output_width, output_height).unwrap();
+        let mut resized = Image::<u8, 3>::try_new(
+            output_width,
+            output_height,
+            vec![0; output_width * output_height * 3],
+        )
+        .unwrap();
+        let mut chw = vec![0.0_f32; output_width * output_height * 3];
+        let mut group = c.benchmark_group("resize_normalize_chw_rgb8");
+        group.sample_size(10);
+        group.throughput(Throughput::Elements((output_width * output_height) as u64));
+        group.bench_function(BenchmarkId::new("unfused_reuse", name), |b| {
+            b.iter(|| {
+                plan.resize_into(black_box(input.view()), resized.view_mut()).unwrap();
+                pack_chw_into(resized.view(), 1.0 / 255.0, [0.0; 3], [1.0; 3], &mut chw).unwrap();
+            });
+        });
+        group.bench_function(BenchmarkId::new("fused_reuse", name), |b| {
+            b.iter(|| {
+                plan.resize_rgb_to_chw_into(
+                    black_box(input.view()),
+                    1.0 / 255.0,
+                    [0.0; 3],
+                    [1.0; 3],
+                    &mut chw,
+                )
+                .unwrap();
+            });
+        });
+        group.finish();
+    }
+}
+
 criterion_group!(
     benches,
     benchmark_preprocess,
     benchmark_reusable_preprocess,
-    benchmark_fused_resize_gray
+    benchmark_fused_resize_gray,
+    benchmark_fused_resize_chw
 );
 criterion_main!(benches);

@@ -8,11 +8,11 @@ use spatialrust_image::Image;
 use spatialrust_math::{Mat3, Vec2, Vec3};
 use spatialrust_vision::{
     canny, decode_rle, distance_transform_edt_with_spacing, encode_rle, erode, estimate_homography,
-    filter2d, integral_image, match_descriptors, project_object_point, resize, resize_rgb_to_gray,
-    rgb_to_gray, solve_pnp, AbsolutePose, BilinearResizeU8Plan, BinaryMask, BorderMode,
-    BoundingBox2, CameraMatrix3, CannyOptions, DescriptorBuffer, Interpolation, Kernel2D,
-    MatchOptions, MorphologyShape, ObjectImageCorrespondence, PointCorrespondence2, RleOrder,
-    StructuringElement,
+    filter2d, integral_image, match_descriptors, pack_chw, project_object_point, resize,
+    resize_pack_chw, resize_rgb_to_gray, rgb_to_gray, solve_pnp, AbsolutePose,
+    BilinearResizeU8Plan, BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions,
+    DescriptorBuffer, Interpolation, Kernel2D, MatchOptions, MorphologyShape,
+    ObjectImageCorrespondence, PointCorrespondence2, RleOrder, StructuringElement,
 };
 
 proptest! {
@@ -54,6 +54,37 @@ proptest! {
         let resized = plan.resize(image.view()).unwrap();
         let expected = rgb_to_gray(resized.view()).unwrap();
         let actual = resize_rgb_to_gray(image.view(), output_width, output_height).unwrap();
+        prop_assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn fused_resize_to_chw_matches_unfused_plan(
+        width in 1usize..24,
+        height in 1usize..24,
+        output_width in 1usize..24,
+        output_height in 1usize..24,
+        seed in any::<u8>(),
+    ) {
+        let data = (0..width * height * 3)
+            .map(|index| seed.wrapping_add((index as u8).wrapping_mul(53)))
+            .collect::<Vec<_>>();
+        let image = Image::<u8, 3>::try_new(width, height, data).unwrap();
+        let plan = BilinearResizeU8Plan::new(width, height, output_width, output_height).unwrap();
+        let resized = plan.resize(image.view()).unwrap();
+        let expected = pack_chw(
+            resized.view(),
+            1.0 / 255.0,
+            [0.1, 0.2, 0.3],
+            [0.5, 1.0, 2.0],
+        ).unwrap();
+        let actual = resize_pack_chw(
+            image.view(),
+            output_width,
+            output_height,
+            1.0 / 255.0,
+            [0.1, 0.2, 0.3],
+            [0.5, 1.0, 2.0],
+        ).unwrap();
         prop_assert_eq!(actual, expected);
     }
 

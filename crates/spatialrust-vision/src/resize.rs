@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageView, ImageViewMut};
+use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageView, ImageViewMut, PlanarImage};
 
 use crate::{PixelComponent, VisionError, VisionResult};
 
@@ -254,6 +254,110 @@ impl BilinearResizeU8Plan {
         Ok(())
     }
 
+    /// Fuses bilinear RGB resize, per-channel normalization, and CHW packing.
+    ///
+    /// The result is bit-exact with this plan's RGB [`Self::resize`] followed by
+    /// SpatialRust's planar normalization for the same parameters, while avoiding
+    /// the intermediate resized RGB image.
+    pub fn resize_rgb_to_chw(
+        &self,
+        input: ImageView<'_, u8, 3>,
+        scale: f32,
+        mean: [f32; 3],
+        std: [f32; 3],
+    ) -> VisionResult<PlanarImage<f32, 3>> {
+        let plane_len = self.output_width.checked_mul(self.output_height).ok_or_else(|| {
+            VisionError::InvalidDimensions("fused resize-to-CHW plane is too large".to_owned())
+        })?;
+        let len = plane_len.checked_mul(3).ok_or_else(|| {
+            VisionError::InvalidDimensions("fused resize-to-CHW output is too large".to_owned())
+        })?;
+        let mut output = vec![0.0_f32; len];
+        self.resize_rgb_to_chw_into(input, scale, mean, std, &mut output)?;
+        Ok(PlanarImage::try_new_with_metadata(
+            self.output_width,
+            self.output_height,
+            output,
+            input.metadata(),
+        )?)
+    }
+
+    /// Fuses bilinear RGB resize, normalization, and CHW packing into a reusable slice.
+    pub fn resize_rgb_to_chw_into(
+        &self,
+        input: ImageView<'_, u8, 3>,
+        scale: f32,
+        mean: [f32; 3],
+        std: [f32; 3],
+        output: &mut [f32],
+    ) -> VisionResult<()> {
+        validate_rgb_chw_normalization(scale, std)?;
+        if (input.width(), input.height()) != self.input_dimensions() {
+            return Err(VisionError::InvalidDimensions(format!(
+                "resize plan expects input {}x{}, found {}x{}",
+                self.input_width,
+                self.input_height,
+                input.width(),
+                input.height()
+            )));
+        }
+        let plane_len = self.output_width.checked_mul(self.output_height).ok_or_else(|| {
+            VisionError::InvalidDimensions("fused resize-to-CHW plane is too large".to_owned())
+        })?;
+        let required = plane_len.checked_mul(3).ok_or_else(|| {
+            VisionError::InvalidDimensions("fused resize-to-CHW output is too large".to_owned())
+        })?;
+        if output.len() != required {
+            return Err(VisionError::ShapeMismatch(format!(
+                "CHW output needs {required} elements, found {}",
+                output.len()
+            )));
+        }
+        if plane_len == 0 {
+            return Ok(());
+        }
+
+        let half_scale = self.input_width == self.output_width.saturating_mul(2)
+            && self.input_height == self.output_height.saturating_mul(2);
+        let run_row = |plane_row: usize, target: &mut [f32]| {
+            let channel = plane_row / self.output_height;
+            let y = plane_row % self.output_height;
+            if half_scale {
+                resize_half_rgb_to_chw_row(
+                    input,
+                    target,
+                    y,
+                    channel,
+                    scale,
+                    mean[channel],
+                    std[channel],
+                );
+            } else {
+                self.resize_bilinear_rgb_to_chw_row(
+                    input,
+                    target,
+                    y,
+                    channel,
+                    scale,
+                    mean[channel],
+                    std[channel],
+                );
+            }
+        };
+        if required >= PARALLEL_RESIZE_COMPONENTS {
+            output
+                .par_chunks_mut(self.output_width)
+                .enumerate()
+                .for_each(|(plane_row, target)| run_row(plane_row, target));
+        } else {
+            output
+                .chunks_mut(self.output_width)
+                .enumerate()
+                .for_each(|(plane_row, target)| run_row(plane_row, target));
+        }
+        Ok(())
+    }
+
     fn resize_bilinear_row<const CHANNELS: usize>(
         &self,
         input: ImageView<'_, u8, CHANNELS>,
@@ -315,6 +419,50 @@ impl BilinearResizeU8Plan {
             output[x] = rgb_luma_q14(pixel);
         }
     }
+
+    #[allow(clippy::too_many_arguments)]
+    fn resize_bilinear_rgb_to_chw_row(
+        &self,
+        input: ImageView<'_, u8, 3>,
+        output: &mut [f32],
+        y: usize,
+        channel: usize,
+        scale: f32,
+        mean: f32,
+        std: f32,
+    ) {
+        let y_sample = self.y_samples[y];
+        let top = input.row(y_sample.lower).expect("planned source row");
+        let bottom = input.row(y_sample.upper).expect("planned source row");
+        let wy = u32::from(y_sample.upper_weight);
+        let inv_wy = BILINEAR_WEIGHT_SCALE - wy;
+        for (x, x_sample) in self.x_samples.iter().copied().enumerate() {
+            let wx = u32::from(x_sample.upper_weight);
+            let inv_wx = BILINEAR_WEIGHT_SCALE - wx;
+            let lower = x_sample.lower * 3 + channel;
+            let upper = x_sample.upper * 3 + channel;
+            let value = bilinear_u8_component(
+                top[lower],
+                top[upper],
+                bottom[lower],
+                bottom[upper],
+                inv_wx,
+                wx,
+                inv_wy,
+                wy,
+            );
+            output[x] = (f32::from(value) * scale - mean) / std;
+        }
+    }
+}
+
+fn validate_rgb_chw_normalization(scale: f32, std: [f32; 3]) -> VisionResult<()> {
+    if !scale.is_finite() || std.iter().any(|value| !value.is_finite() || *value == 0.0) {
+        return Err(VisionError::InvalidParameter(
+            "normalization scale/std must be finite and std non-zero".to_owned(),
+        ));
+    }
+    Ok(())
 }
 
 #[inline(always)]
@@ -402,6 +550,29 @@ fn resize_half_rgb_to_gray_row(
             ((sum + 2) >> 2) as u8
         });
         *target = rgb_luma_q14(pixel);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn resize_half_rgb_to_chw_row(
+    input: ImageView<'_, u8, 3>,
+    output: &mut [f32],
+    y: usize,
+    channel: usize,
+    scale: f32,
+    mean: f32,
+    std: f32,
+) {
+    let top = input.row(y * 2).expect("half-scale source row");
+    let bottom = input.row(y * 2 + 1).expect("half-scale source row");
+    for (x, target) in output.iter_mut().enumerate() {
+        let source = x * 6 + channel;
+        let sum = u16::from(top[source])
+            + u16::from(top[source + 3])
+            + u16::from(bottom[source])
+            + u16::from(bottom[source + 3]);
+        let value = ((sum + 2) >> 2) as u8;
+        *target = (f32::from(value) * scale - mean) / std;
     }
 }
 
