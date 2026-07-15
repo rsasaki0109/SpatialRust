@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **SpatialRust Vision 1.0 release gate (Epic 110)**: mandatory cross-platform,
+  Python, OpenCV, GPU-transfer, unsafe-audit, fixed performance-budget, example,
+  and migration-policy evidence with an executable release decision.
+
 - **Bounded spatial execution graph (Epic 109)**: deterministic DAG compilation,
   same-device linear fusion groups, bounded source admission, cross-device
   transfer validation, and per-run named copy receipts behind `runtime-graph`.

@@ -127,6 +127,10 @@ The machine-readable freeze list for the stable vision foundation is
 `vision_api_v1` compile-and-behavior test must remain green on Linux, Windows,
 and macOS. A symbol marked stable there follows the deprecation policy below;
 group-level provisional entries may evolve behind their existing feature flag.
+Every Vision 1 release candidate must additionally pass `Vision1ReleaseGate`,
+which requires named cross-platform/test/audit evidence, fixed performance
+measurements, OpenCV receipts, runnable examples, and migration-policy
+acknowledgement.
 
 1. Deprecate in minor release (`#[deprecated]` + CHANGELOG)
 2. Remove no sooner than next major release

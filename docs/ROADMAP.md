@@ -386,7 +386,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | 107 | Complete | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
 | 108 | Complete | 101–107 | Feature-gated computational photography and panorama stitching |
 | 109 | Complete | 97, 99, 101–108 | Bounded spatial execution graph with fusion, backpressure, and named transfer receipts |
-| 110 | Planned | 100, 101–109 | SpatialRust Vision 1.0 conformance, audits, performance budgets, examples, and migration policy |
+| 110 | Complete | 100, 101–109 | SpatialRust Vision 1.0 conformance, audits, performance budgets, examples, and migration policy |
 
 ### Epic 101 acceptance criteria
 
@@ -530,3 +530,20 @@ performed implicitly.
 contracts from `spatialrust-distribute`. Fusion never crosses a placement
 boundary or an explicitly named transfer. Values remain owned, and the runtime
 does not infer or execute a host/device copy on behalf of an operator.
+
+### Epic 110 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 110A | Complete | Mandatory cross-platform Rust, property, Python, OpenCV, GPU-transfer, and unsafe cases | `Vision1ReleaseGate::required_conformance_cases()` |
+| 110B | Complete | Fixed VGA/1080p CPU, 4K GPU, and explicit-copy ceilings | typed microsecond/byte measurements and denial tests |
+| 110C | Complete | Required OpenCV receipts from Epics 101 and 105–108 | seven suite identifiers checked for presence |
+| 110D | Complete | Runnable CPU workflow and release-receipt examples | `vision_1_cpu`, `vision_1_release_gate`, three-OS CI |
+| 110E | Complete | OpenCV-to-SpatialRust migration and stability policy | `docs/VISION_1_MIGRATION.md` and `vision-1` acknowledgement |
+
+Vision 1.0 freezes the stable foundation listed in `API_STABILITY.md`; additive
+geometry, odometry, photography, video, GPU, and runtime surfaces remain
+provisional behind their named features. The release gate denies missing or
+skipped mandatory evidence, absent performance samples, over-budget samples,
+unsatisfied security audits, missing examples/comparison receipts, and an
+unacknowledged migration policy.
