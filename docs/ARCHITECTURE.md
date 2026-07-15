@@ -83,6 +83,10 @@ copies; future GPU/CUDA implementations belong behind explicit backend features.
 Video algorithms depend on dense/detection contracts, while timestamped pull
 sources are isolated behind `video-adapters`; native codec/camera runtimes stay
 in future dedicated adapter crates/features.
+Visual and RGB-D odometry kernels remain in the additive `odometry` vision
+feature. Their conversion into stamped trajectory motion is a one-way optional
+bridge in `spatialrust-mapping`; monocular scale and invalid depth remain
+explicit at that boundary.
 Its `imgproc-*` features share one border extrapolation contract; `filter2d`
 means correlation, while true convolution is an explicitly named operation.
 `spatialrust-tensor` is distinct from the point-cloud chunk iterator named

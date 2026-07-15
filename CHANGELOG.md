@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Robust visual/RGB-D odometry integration (Epic 107)**: spatially balanced
+  keypoint selection, forward/backward LK validation, scale-explicit monocular
+  motion, metric depth-backed PnP, mapping `DeltaMotion` bridges, Python RGB-D
+  odometry, and an OpenCV pose receipt.
+
 - **Video recognition substrate (Epic 106)**: dense integer block flow,
   adaptive Gaussian foreground segmentation, deterministic same-class IoU
   tracking, and timestamped pull-based video source contracts. Codec/camera

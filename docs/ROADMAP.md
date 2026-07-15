@@ -383,7 +383,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | 104 | Complete | 89, 101–103 | Texture-backed GPU Image v2 and device-resident resize/filter/edge/morphology chains |
 | 105 | Complete | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
 | 106 | Complete | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
-| 107 | Planned | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
+| 107 | Complete | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
 | 108 | Planned | 101–107 | Feature-gated computational photography and panorama stitching |
 | 109 | Planned | 97, 99, 101–108 | Bounded spatial execution graph with fusion, backpressure, and named transfer receipts |
 | 110 | Planned | 100, 101–109 | SpatialRust Vision 1.0 conformance, audits, performance budgets, examples, and migration policy |
@@ -485,3 +485,18 @@ Core video algorithms stay runtime-free in `spatialrust-vision/video`. Codec,
 camera, and network integrations implement `VideoFrameSource` behind additive
 features; frames carry sequence/time explicitly and remain owned host images.
 No adapter may hide a GPU transfer.
+
+### Epic 107 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 107A | Complete | Deterministic strongest-per-cell local-feature distribution | grid ordering and response test; 4096-keypoint Criterion |
+| 107B | Complete | Bidirectional pyramidal-LK consistency filtering | per-track forward/backward errors and explicit threshold |
+| 107C | Complete | Scale-ambiguous calibrated monocular odometry | essential RANSAC, cheirality recovery, explicit caller scale |
+| 107D | Complete | Metric RGB-D odometry from source depth and pixel tracks | depth filtering, PnP RANSAC, synthetic metric translation test |
+| 107E | Complete | Mapping/Python integration and OpenCV receipt | `mapping-vision-odometry`, Python binding, `solvePnPRansac` parity |
+
+The vision layer reports source-to-target motion and never invents monocular
+scale. `spatialrust-mapping` accepts scale explicitly for monocular estimates
+and preserves metric RGB-D translation. Invalid source depths are counted,
+not silently filled or copied to another device.

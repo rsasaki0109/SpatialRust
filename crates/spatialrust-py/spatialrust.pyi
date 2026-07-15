@@ -18,7 +18,7 @@ __all__: list[str] = [
     "CylinderResult", "RegistrationResult", "read_image",
     "tensor_copy_from_numpy", "tensor_view_from_dlpack", "harris_keypoints",
     "shi_tomasi_keypoints", "fast_keypoints", "orb_features",
-    "estimate_homography_ransac", "solve_pnp", "stereo_block_match",
+    "estimate_homography_ransac", "solve_pnp", "estimate_rgbd_odometry", "stereo_block_match",
     "match_binary_descriptors", "match_float_descriptors", "write_image", "read",
     "write", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
     "orient_normals", "detect_boundary", "mls_smooth", "farthest_point_sampling",
@@ -694,6 +694,17 @@ def solve_pnp(
     width: int = ...,
     height: int = ...,
 ) -> tuple[_F64Array, _F64Array]: ...
+def estimate_rgbd_odometry(
+    depth: _F32Array,
+    source: _F64Array,
+    target: _F64Array,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    depth_scale: float = ...,
+    threshold: float = ...,
+) -> tuple[_F64Array, _F64Array, _BoolArray, int]: ...
 def stereo_block_match(
     left: _U8Array,
     right: _U8Array,
