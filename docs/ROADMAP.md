@@ -48,16 +48,16 @@ foundation contracts they depend on are stable.
 
 | Epic | Status | Depends on | Long-term outcome |
 | --- | --- | --- | --- |
-| 91 | Reserved | 85, 90 | Spatial records and streams: schema evolution, chunked/out-of-core execution, Arrow C Data/Stream/Device interoperability |
-| 92 | Reserved | 88, 91 | Sensor-time and frame graph: calibrated multimodal synchronization, deterministic replay, MCAP integration |
-| 93 | Reserved | 87–88, 92 | Localization and mapping: visual/RGB-D/lidar odometry, pose graphs, loop closure, relocalization |
-| 94 | Reserved | 89, 93 | Scene reconstruction: TSDF, surfels, meshes, and a feature-gated Gaussian scene representation and renderer |
-| 95 | Reserved | 90–94 | Semantic spatial intelligence: open-vocabulary detections, embeddings on spatial entities, multimodal fusion and search |
-| 96 | Reserved | 91–95 | Embodied-AI data workflows: episodes, annotation, augmentation, evaluation, model provenance and reproducible replay |
-| 97 | Reserved | 92–96 | Production robotics runtime: ROS 2 type adaptation/negotiation, bounded pipelines, tracing and failure diagnostics |
-| 98 | Reserved | 94–97 | Scene and digital-twin interchange through dedicated glTF and OpenUSD adapters |
-| 99 | Reserved | 89, 91, 97 | Explicit edge/distributed execution: graph partitioning, backpressure and named device/network transfers |
-| 100 | Reserved | 91–99 | Platform stability milestone: API compatibility, conformance suites, security audits, performance budgets and LTS policy |
+| 91 | Complete | 85, 90 | Spatial records and streams: schema evolution, chunked/out-of-core execution, Arrow C Data/Stream/Device interoperability |
+| 92 | Planned | 88, 91 | Sensor-time and frame graph: calibrated multimodal synchronization, deterministic replay, MCAP integration |
+| 93 | Planned | 87–88, 92 | Localization and mapping: visual/RGB-D/lidar odometry, pose graphs, loop closure, relocalization |
+| 94 | Planned | 89, 93 | Scene reconstruction: TSDF, surfels, meshes, and a feature-gated Gaussian scene representation and renderer |
+| 95 | Planned | 90–94 | Semantic spatial intelligence: open-vocabulary detections, embeddings on spatial entities, multimodal fusion and search |
+| 96 | Planned | 91–95 | Embodied-AI data workflows: episodes, annotation, augmentation, evaluation, model provenance and reproducible replay |
+| 97 | Planned | 92–96 | Production robotics runtime: ROS 2 type adaptation/negotiation, bounded pipelines, tracing and failure diagnostics |
+| 98 | Planned | 94–97 | Scene and digital-twin interchange through dedicated glTF and OpenUSD adapters |
+| 99 | Planned | 89, 91, 97 | Explicit edge/distributed execution: graph partitioning, backpressure and named device/network transfers |
+| 100 | Planned | 91–99 | Platform stability milestone: API compatibility, conformance suites, security audits, performance budgets and LTS policy |
 
 Success is measured by end-to-end capabilities rather than crate count:
 
@@ -72,8 +72,8 @@ Success is measured by end-to-end capabilities rather than crate count:
 5. Export runtime assets through glTF and composed digital-twin scenes through
    OpenUSD without making either format a dependency of `spatialrust-core`.
 
-The successor Goal is activated only after Epic 83–90 completes. Until then,
-these reservations guide interfaces but do not expand the active Epic's scope.
+The successor Goal is active. Epic 91 establishes versioned records and Arrow
+bridges; Epics 92–100 proceed in dependency order with per-Epic delivery slices.
 
 ## Program invariants
 
@@ -251,3 +251,34 @@ Epic 90 completes when an RGB image can be letterboxed into contiguous NCHW,
 run through mock inference with explicit output-copy permission, decoded to a
 `DepthMap`, and unprojected to a point cloud that feeds MVP without enabling
 `onnxruntime`.
+
+## Epic 91 delivery slices
+
+Versioned spatial records stay in `spatialrust-records` (Arrow-free). Arrow C
+Data/Stream/Device live in `spatialrust-arrow` behind independent features.
+`spatialrust-core` remains free of Arrow FFI and schema evolution APIs.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 91A | Complete | `SchemaId`/`SchemaVersion`/`SchemaDescriptor`, compatibility reports, `SpatialRecord` | `records` |
+| 91B | Complete | `SpatialRecordSource`/`Sink`, `MemoryChunkSource`/`Sink`, migrate with fill/drop policy | `records` |
+| 91C | Complete | Arrow C Data export/import for `PointCloud` struct columns | `arrow-c-data` |
+| 91D | Complete | Arrow C Stream over record sources; CPU Arrow C Device array export/import | `arrow-c-stream`, `arrow-c-device` |
+
+Epic 91 completes when a point cloud can be split into versioned records, migrated
+across compatible schema minors, and round-tripped through Arrow C Data without
+pulling Arrow into `spatialrust-core`.
+
+## Epic 92–100 delivery slices (activated)
+
+| Epic | Status | Planned first slices |
+| --- | --- | --- |
+| 92 | Planned | 92A clock domains + sync quality on records; 92B frame graph edges; 92C MCAP reader feature; 92D deterministic replay harness |
+| 93 | Planned | 93A pose types + trajectory buffer; 93B visual/RGB-D odometry CPU; 93C pose graph + loop; 93D lidar odometry path |
+| 94 | Planned | 94A TSDF volume; 94B surfel/mesh export; 94C Gaussian scene feature gate; 94D wgpu preview |
+| 95 | Planned | 95A entity embeddings on records; 95B open-vocab detection bridge; 95C multimodal fusion; 95D spatial search |
+| 96 | Planned | 96A episode schema; 96B annotation layers; 96C augmentation ops; 96D eval/provenance |
+| 97 | Planned | 97A ROS 2 type adapters feature; 97B bounded pipeline runtime; 97C tracing; 97D failure diagnostics |
+| 98 | Planned | 98A glTF adapter crate; 98B OpenUSD adapter crate; 98C scene compose; 98D round-trip tests |
+| 99 | Planned | 99A partition graph; 99B backpressure contracts; 99C named network transfer; 99D edge smoke |
+| 100 | Planned | 100A API freeze checklist; 100B conformance suite; 100C security audit notes; 100D LTS policy |

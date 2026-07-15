@@ -98,12 +98,10 @@ depending on `spatialrust-ai`.
 | 4 | AI integration |
 | 5 | Spatial computing platform |
 
-The canonical post-foundation horizon is reserved as Epic 91–100 in
-`docs/ROADMAP.md`. It extends the existing tensor, image, geometry, GPU, and AI
-contracts into synchronized sensor replay, mapping, semantic spatial data,
-embodied-AI evaluation, robotics execution, scene interchange, and explicit
-edge/distributed execution. These capabilities remain outside
-`spatialrust-core`; the core supplies stable schemas and capability traits while
-dedicated crates own Arrow, MCAP, ROS 2, OpenUSD, glTF, and runtime dependencies.
+The canonical post-foundation horizon is Epics 91–100 in `docs/ROADMAP.md`.
+Epic 91 adds `spatialrust-records` and `spatialrust-arrow` while keeping Arrow
+out of `spatialrust-core`. Epics 92–100 extend into synchronized sensor replay,
+mapping, semantic spatial data, embodied-AI evaluation, robotics execution,
+scene interchange, and explicit edge/distributed execution.
 
 See the full master architecture document in project planning materials for trait-level design, ADRs, and Codex execution tasks (Epics 0–13).

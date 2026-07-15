@@ -14,8 +14,12 @@ SpatialRust is a Rust-native spatial computing framework: point clouds, geometry
 - Explicit CPU/GPU transfers; no hidden device copies in production APIs.
 - Public APIs stay safe; restrict `unsafe` to audited GPU/FFI boundaries.
 - Prefer capability traits (`HasPositions3`, etc.) over monolithic point structs.
+- For ROADMAP ranges (for example Epic 91–100), follow
+  `.cursor/rules/long-horizon.mdc`: implement → test → commit → PR → merge
+  without waiting for step-by-step confirmation unless a true blocker appears.
 
 ## Delivery standards
 - Keep changes focused and reviewable.
 - Add tests for correctness-critical math, schema, and IO behavior.
 - Use absolute paths when referencing files in notes and reports.
+- Prefer one Epic (or named slice family) per PR on the long-horizon track.

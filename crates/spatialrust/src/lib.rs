@@ -32,6 +32,14 @@ pub use spatialrust_image_io as image_io;
 pub use spatialrust_tensor as tensor;
 #[cfg(feature = "vision")]
 pub use spatialrust_vision as vision;
+#[cfg(feature = "records")]
+pub use spatialrust_records as records;
+#[cfg(any(
+    feature = "arrow-c-data",
+    feature = "arrow-c-stream",
+    feature = "arrow-c-device"
+))]
+pub use spatialrust_arrow as arrow;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,

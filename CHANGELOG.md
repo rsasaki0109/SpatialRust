@@ -110,6 +110,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   tensor→`DepthMap`/`BinaryMask`/`Detection` decode; facade
   `ai-vision-pipeline` E2E covering RGB → mock depth → unproject → MVP.
 
+- **Spatial records and Arrow bridges (Epic 91)**: new `spatialrust-records`
+  with versioned `SpatialRecord`, schema compatibility/migration, and in-memory
+  chunked sources/sinks; new `spatialrust-arrow` with Arrow C Data export/import,
+  C Stream over record sources, and CPU C Device arrays; facade flags
+  `records`, `arrow-c-data`, `arrow-c-stream`, `arrow-c-device`; ROADMAP 92–100
+  activated with planned delivery slices.
+
 - **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
   planar/interleaved layouts and color metadata in `spatialrust-image`; new
   feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,
