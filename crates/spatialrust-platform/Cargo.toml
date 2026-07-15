@@ -1,0 +1,15 @@
+[package]
+name = "spatialrust-platform"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "API stability, conformance, security checklists, and LTS policy for SpatialRust"
+
+[features]
+default = []
+
+[dependencies]
+thiserror.workspace = true

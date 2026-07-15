@@ -127,6 +127,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   `PoseGraph` root localization, and distance-based loop-closure candidates;
   facade `mapping`.
 
+- **North-star substrate (Epics 94–100)**: new crates for scene reconstruction
+  (`spatialrust-scene` TSDF/surfel/mesh + gated Gaussians), semantic intelligence
+  (`spatialrust-semantic`), embodied episodes (`spatialrust-episode`), bounded
+  robotics runtime (`spatialrust-runtime` + `ros2` gate), glTF/OpenUSD
+  interchange (`spatialrust-interchange`), distributed execution
+  (`spatialrust-distribute`), and platform stability (`spatialrust-platform`);
+  facade `north-star` enables the stack without native heavy codecs.
+
 - **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
   planar/interleaved layouts and color metadata in `spatialrust-image`; new
   feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,
