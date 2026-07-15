@@ -61,9 +61,9 @@ until their individual 1.0 milestones.
 | HTTP COPC (`mvp-http`) | URL IO is stable; timeout/retry policy may change |
 | Image/camera (`image`, `camera-rgbd`) | Typed image, calibration, distortion, and RGB-D APIs are provisional |
 | Image IO (`image-io-*`) | Bounded codecs, typed decoded pixels, and source metadata are provisional |
-| Vision (`vision-*`) | CPU preprocessing, Feature2D contracts/detectors/matchers, warp, detection, masks, dense spatial bridges, and geometry/multiview are provisional |
+| AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, mock backend, and ONNX Runtime adapter APIs are provisional |
+| Vision (`vision-*`) | CPU preprocessing, Feature2D contracts/detectors/matchers, warp, detection, masks, dense spatial bridges, geometry/multiview, and AI image↔tensor adapters are provisional |
 | Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
-| AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, and ONNX Runtime adapter APIs are provisional |
 | GPU image (`gpu-image`) | `GpuImage` upload/readback, receipts, and image compute kernels are provisional |
 
 ## Algorithm crates

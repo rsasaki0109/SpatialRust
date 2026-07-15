@@ -39,6 +39,8 @@ mod multiview;
 mod optical_flow;
 #[cfg(feature = "geometry")]
 mod pnp;
+#[cfg(feature = "ai-adapters")]
+mod adapters;
 #[cfg(feature = "feature2d")]
 mod orb;
 #[cfg(feature = "preprocess")]
@@ -87,6 +89,8 @@ pub use optical_flow::*;
 pub use pnp::*;
 #[cfg(feature = "feature2d")]
 pub use orb::*;
+#[cfg(feature = "ai-adapters")]
+pub use adapters::*;
 #[cfg(feature = "preprocess")]
 pub use preprocess::*;
 #[cfg(feature = "resize")]

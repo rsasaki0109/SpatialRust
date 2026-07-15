@@ -53,6 +53,12 @@ impl InferenceBackend for OnnxRuntimeBackend {
         let session = match source {
             ModelSource::Path(path) => builder.commit_from_file(path).map_err(ort_error)?,
             ModelSource::Bytes(bytes) => builder.commit_from_memory(bytes).map_err(ort_error)?,
+            ModelSource::Mock(_) => {
+                return Err(AiError::Unsupported {
+                    backend: BACKEND_NAME.into(),
+                    operation: "ModelSource::Mock (use MockInferenceBackend)".into(),
+                });
+            }
         };
         let info = model_info(&session)?;
         Ok(Box::new(OnnxRuntimeSession { session, info }))
