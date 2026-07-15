@@ -3,16 +3,16 @@
 #![cfg(feature = "full")]
 
 use proptest::prelude::*;
-use spatialrust_image::Image;
-use spatialrust_vision::{
-    canny, decode_rle, encode_rle, erode, estimate_homography, filter2d, integral_image,
-    match_descriptors, project_object_point, resize, solve_pnp, AbsolutePose, BinaryMask,
-    BorderMode, BoundingBox2, CameraMatrix3, CannyOptions, DescriptorBuffer, Interpolation,
-    Kernel2D, MatchOptions, MorphologyShape, ObjectImageCorrespondence, PointCorrespondence2,
-    RleOrder, StructuringElement,
-};
 use spatialrust_camera::CameraIntrinsics;
+use spatialrust_image::Image;
 use spatialrust_math::{Mat3, Vec2, Vec3};
+use spatialrust_vision::{
+    canny, decode_rle, distance_transform_edt_with_spacing, encode_rle, erode, estimate_homography,
+    filter2d, integral_image, match_descriptors, project_object_point, resize, solve_pnp,
+    AbsolutePose, BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions,
+    DescriptorBuffer, Interpolation, Kernel2D, MatchOptions, MorphologyShape,
+    ObjectImageCorrespondence, PointCorrespondence2, RleOrder, StructuringElement,
+};
 
 proptest! {
     #[test]
@@ -136,6 +136,48 @@ proptest! {
         for order in [RleOrder::RowMajor, RleOrder::CocoColumnMajor] {
             let decoded = decode_rle(&encode_rle(&mask, order)).unwrap();
             prop_assert_eq!(decoded.image().as_slice(), data.as_slice());
+        }
+    }
+
+    #[test]
+    fn exact_distance_transform_matches_brute_force(
+        width in 1usize..16,
+        height in 1usize..16,
+        seed in any::<u64>(),
+        spacing_x in 0.1f32..4.0,
+        spacing_y in 0.1f32..4.0,
+    ) {
+        let mut state = seed;
+        let mut data = (0..width * height)
+            .map(|_| {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                (state & 1) as u8
+            })
+            .collect::<Vec<_>>();
+        let forced_background = seed as usize % data.len();
+        data[forced_background] = 0;
+        let mask = BinaryMask::try_new(width, height, data.clone()).unwrap();
+        let actual = distance_transform_edt_with_spacing(&mask, spacing_x, spacing_y).unwrap();
+        let background = data
+            .iter()
+            .enumerate()
+            .filter(|(_, value)| **value == 0)
+            .map(|(index, _)| (index % width, index / width))
+            .collect::<Vec<_>>();
+        for y in 0..height {
+            for x in 0..width {
+                let expected = background
+                    .iter()
+                    .map(|&(bx, by)| {
+                        let dx = x.abs_diff(bx) as f32 * spacing_x;
+                        let dy = y.abs_diff(by) as f32 * spacing_y;
+                        dx.hypot(dy)
+                    })
+                    .fold(f32::INFINITY, f32::min);
+                prop_assert!((actual[(x, y)][0] - expected).abs() <= 2e-5);
+            }
         }
     }
 

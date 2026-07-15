@@ -396,6 +396,18 @@ def main() -> None:
     if areas != areas_cv:
         raise AssertionError(f"component areas mismatch: {areas} != {areas_cv}")
 
+    distance_mask = np.ones((67, 89), dtype=np.uint8)
+    distance_mask[::11, ::13] = 0
+    distance_mask[20:28, 31:40] = 0
+    distance_sr = sr.distance_transform_edt(distance_mask)
+    distance_cv = cv2.distanceTransform(
+        distance_mask, cv2.DIST_L2, cv2.DIST_MASK_PRECISE
+    )
+    distance_error = float(np.max(np.abs(distance_sr - distance_cv)))
+    results["distance_transform_edt_max_f32_error"] = distance_error
+    if distance_error > 1e-5:
+        raise AssertionError(f"exact distance-transform error {distance_error} > 1e-5")
+
     # Geometry: planar homography residual agreement (not scale-normalized identity).
     source = np.array(
         [[10.0, 12.0], [70.0, 14.0], [18.0, 55.0], [66.0, 60.0], [40.0, 34.0], [28.0, 22.0]],

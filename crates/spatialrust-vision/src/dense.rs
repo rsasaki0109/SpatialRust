@@ -92,6 +92,172 @@ impl BinaryMask {
     }
 }
 
+/// Computes the exact Euclidean distance from every foreground pixel to the
+/// nearest background pixel using unit pixel spacing.
+///
+/// Background pixels have distance zero. A non-empty mask must contain at
+/// least one background pixel; otherwise the finite distance is undefined and
+/// an error is returned. The implementation applies the separable linear-time
+/// squared-distance transform by Felzenszwalb and Huttenlocher.
+///
+/// See <https://doi.org/10.4086/toc.2012.v008a019>.
+pub fn distance_transform_edt(mask: &BinaryMask) -> VisionResult<Image<f32, 1>> {
+    distance_transform_edt_with_spacing(mask, 1.0, 1.0)
+}
+
+/// Computes the exact Euclidean distance transform with physical pixel spacing.
+///
+/// `spacing_x` and `spacing_y` are the positive finite distances between
+/// adjacent pixel centers along each axis. The output is expressed in those
+/// physical units.
+pub fn distance_transform_edt_with_spacing(
+    mask: &BinaryMask,
+    spacing_x: f32,
+    spacing_y: f32,
+) -> VisionResult<Image<f32, 1>> {
+    if !spacing_x.is_finite() || spacing_x <= 0.0 {
+        return Err(VisionError::InvalidParameter(
+            "distance-transform x spacing must be finite and positive".to_owned(),
+        ));
+    }
+    if !spacing_y.is_finite() || spacing_y <= 0.0 {
+        return Err(VisionError::InvalidParameter(
+            "distance-transform y spacing must be finite and positive".to_owned(),
+        ));
+    }
+
+    let width = mask.width();
+    let height = mask.height();
+    let len = width.checked_mul(height).ok_or_else(|| {
+        VisionError::InvalidDimensions("distance-transform size overflows".into())
+    })?;
+    if len == 0 {
+        return Ok(Image::try_new_with_metadata(
+            width,
+            height,
+            Vec::new(),
+            ImageMetadata { color_space: ColorSpace::Gray, ..Default::default() },
+        )?);
+    }
+    if mask.area() == len {
+        return Err(VisionError::InvalidParameter(
+            "distance transform requires at least one background pixel".to_owned(),
+        ));
+    }
+
+    let mut horizontal = vec![f64::INFINITY; len];
+    let mut source = vec![f64::INFINITY; width.max(height)];
+    let mut transformed = vec![0.0_f64; width.max(height)];
+    let mut sites = vec![0_usize; width.max(height)];
+    let mut boundaries = vec![0.0_f64; width.max(height).saturating_add(1)];
+
+    for y in 0..height {
+        for (x, value) in source[..width].iter_mut().enumerate() {
+            *value = if mask.contains(x, y) { f64::INFINITY } else { 0.0 };
+        }
+        squared_distance_transform_1d(
+            &source[..width],
+            f64::from(spacing_x).powi(2),
+            &mut transformed[..width],
+            &mut sites[..width],
+            &mut boundaries[..=width],
+        );
+        horizontal[y * width..(y + 1) * width].copy_from_slice(&transformed[..width]);
+    }
+
+    let mut squared = vec![0.0_f64; len];
+    for x in 0..width {
+        for y in 0..height {
+            source[y] = horizontal[y * width + x];
+        }
+        squared_distance_transform_1d(
+            &source[..height],
+            f64::from(spacing_y).powi(2),
+            &mut transformed[..height],
+            &mut sites[..height],
+            &mut boundaries[..=height],
+        );
+        for y in 0..height {
+            squared[y * width + x] = transformed[y];
+        }
+    }
+
+    let distances = squared.into_iter().map(|value| value.sqrt() as f32).collect();
+    Ok(Image::try_new_with_metadata(
+        width,
+        height,
+        distances,
+        ImageMetadata { color_space: ColorSpace::Gray, ..Default::default() },
+    )?)
+}
+
+fn squared_distance_transform_1d(
+    input: &[f64],
+    coordinate_scale_squared: f64,
+    output: &mut [f64],
+    sites: &mut [usize],
+    boundaries: &mut [f64],
+) {
+    debug_assert_eq!(input.len(), output.len());
+    debug_assert!(sites.len() >= input.len());
+    debug_assert!(boundaries.len() > input.len());
+    if input.is_empty() {
+        return;
+    }
+
+    let Some(first) = input.iter().position(|value| value.is_finite()) else {
+        output.fill(f64::INFINITY);
+        return;
+    };
+    let mut envelope_end = 0_usize;
+    sites[0] = first;
+    boundaries[0] = f64::NEG_INFINITY;
+    boundaries[1] = f64::INFINITY;
+
+    for q in first + 1..input.len() {
+        if !input[q].is_finite() {
+            continue;
+        }
+        let mut intersection =
+            parabola_intersection(input, coordinate_scale_squared, q, sites[envelope_end]);
+        while envelope_end > 0 && intersection <= boundaries[envelope_end] {
+            envelope_end -= 1;
+            intersection =
+                parabola_intersection(input, coordinate_scale_squared, q, sites[envelope_end]);
+        }
+        envelope_end += 1;
+        sites[envelope_end] = q;
+        boundaries[envelope_end] = intersection;
+        boundaries[envelope_end + 1] = f64::INFINITY;
+    }
+
+    let mut envelope = 0_usize;
+    for (q, value) in output.iter_mut().enumerate() {
+        while boundaries[envelope + 1] < q as f64 {
+            envelope += 1;
+        }
+        let site = sites[envelope];
+        let delta = q as f64 - site as f64;
+        *value = coordinate_scale_squared.mul_add(delta * delta, input[site]);
+    }
+}
+
+fn parabola_intersection(
+    input: &[f64],
+    coordinate_scale_squared: f64,
+    right: usize,
+    left: usize,
+) -> f64 {
+    let right_coordinate = right as f64;
+    let left_coordinate = left as f64;
+    let right_height =
+        coordinate_scale_squared.mul_add(right_coordinate * right_coordinate, input[right]);
+    let left_height =
+        coordinate_scale_squared.mul_add(left_coordinate * left_coordinate, input[left]);
+    (right_height - left_height)
+        / (2.0 * coordinate_scale_squared * (right_coordinate - left_coordinate))
+}
+
 /// Connected-component label image (`0` is background).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LabelImage {
@@ -631,8 +797,9 @@ impl PointMap {
 #[cfg(test)]
 mod tests {
     use super::{
-        approximate_polygon, connected_components, decode_rle, encode_rle, find_contours,
-        BinaryMask, Connectivity, DepthMap, FlowField, PointMap, RleOrder,
+        approximate_polygon, connected_components, decode_rle, distance_transform_edt,
+        distance_transform_edt_with_spacing, encode_rle, find_contours, BinaryMask, Connectivity,
+        DepthMap, FlowField, PointMap, RleOrder,
     };
     use spatialrust_image::Image;
 
@@ -669,6 +836,52 @@ mod tests {
             let encoded = encode_rle(&mask, order);
             assert_eq!(decode_rle(&encoded).unwrap(), mask);
         }
+    }
+
+    #[test]
+    fn exact_distance_transform_matches_known_grid() {
+        let mask = BinaryMask::try_new(4, 3, vec![0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]).unwrap();
+        let distances = distance_transform_edt(&mask).unwrap();
+        let expected = [
+            0.0,
+            1.0,
+            2.0,
+            3.0,
+            1.0,
+            2.0_f32.sqrt(),
+            5.0_f32.sqrt(),
+            10.0_f32.sqrt(),
+            2.0,
+            5.0_f32.sqrt(),
+            8.0_f32.sqrt(),
+            13.0_f32.sqrt(),
+        ];
+        for (&actual, expected) in distances.as_slice().iter().zip(expected) {
+            assert!((actual - expected).abs() <= 1e-6, "{actual} != {expected}");
+        }
+    }
+
+    #[test]
+    fn distance_transform_respects_anisotropic_spacing() {
+        let mask = BinaryMask::try_new(3, 2, vec![0, 1, 1, 1, 1, 1]).unwrap();
+        let distances = distance_transform_edt_with_spacing(&mask, 2.0, 3.0).unwrap();
+        let expected = [0.0, 2.0, 4.0, 3.0, 13.0_f32.sqrt(), 5.0];
+        for (&actual, expected) in distances.as_slice().iter().zip(expected) {
+            assert!((actual - expected).abs() <= 1e-6, "{actual} != {expected}");
+        }
+    }
+
+    #[test]
+    fn distance_transform_defines_empty_and_rejects_missing_background() {
+        let empty = BinaryMask::try_new(0, 0, Vec::new()).unwrap();
+        assert!(distance_transform_edt(&empty).unwrap().as_slice().is_empty());
+
+        let foreground = BinaryMask::try_new(2, 2, vec![1; 4]).unwrap();
+        assert!(distance_transform_edt(&foreground).is_err());
+        let background = BinaryMask::try_new(2, 2, vec![0; 4]).unwrap();
+        assert_eq!(distance_transform_edt(&background).unwrap().as_slice(), &[0.0; 4]);
+        assert!(distance_transform_edt_with_spacing(&background, 0.0, 1.0).is_err());
+        assert!(distance_transform_edt_with_spacing(&background, 1.0, f32::NAN).is_err());
     }
 
     #[test]

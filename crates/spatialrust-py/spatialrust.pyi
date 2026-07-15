@@ -36,7 +36,8 @@ __all__: list[str] = [
     "histogram_image", "equalize_histogram_image", "clahe_image",
     "integral_image_u8", "canny_image", "resize_image", "letterbox_image",
     "normalize_image_chw", "rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
-    "nms", "soft_nms", "connected_components_image", "find_mask_contours",
+    "nms", "soft_nms", "connected_components_image", "distance_transform_edt",
+    "find_mask_contours",
     "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
     "radius_graph", "register_icp", "register_point_to_plane", "register_gicp",
     "register_ndt", "register_fpfh_ransac", "register_fpfh_keypoints",
@@ -284,6 +285,9 @@ def connected_components_image(
     mask: _U8Array,
     connectivity: int = ...,
 ) -> tuple[_U32Array, list[tuple[int, int, tuple[float, float, float, float]]]]: ...
+def distance_transform_edt(
+    mask: _U8Array, spacing: tuple[float, float] = ...
+) -> _F32Array: ...
 def find_mask_contours(
     mask: _U8Array, epsilon: float = ...
 ) -> list[list[tuple[int, int]]]: ...

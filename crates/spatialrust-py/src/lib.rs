@@ -75,6 +75,7 @@ use spatialrust::vision::{
     connected_components as label_components, decode_rle as decode_mask_runs,
     detect_and_describe_orb as detect_and_describe_orb_op, detect_fast as detect_fast_op,
     detect_harris as detect_harris_op, detect_shi_tomasi as detect_shi_tomasi_op,
+    distance_transform_edt_with_spacing as distance_transform_edt_op,
     encode_rle as encode_mask_runs, equalize_histogram as equalize_histogram_op,
     estimate_homography_ransac as estimate_homography_ransac_op,
     estimate_rgbd_odometry as estimate_rgbd_odometry_op, filter2d as filter2d_op,
@@ -3121,6 +3122,25 @@ fn connected_components_image<'py>(
     Ok((labels.into_pyarray_bound(py), stats))
 }
 
+/// Computes the exact Euclidean distance to the nearest zero-valued mask pixel.
+#[pyfunction]
+#[pyo3(signature = (mask, spacing=(1.0, 1.0)))]
+fn distance_transform_edt<'py>(
+    py: Python<'py>,
+    mask: PyReadonlyArray2<'_, u8>,
+    spacing: (f32, f32),
+) -> PyResult<Bound<'py, PyArray2<f32>>> {
+    let image = gray_u8_image_from_numpy(mask)?;
+    let (width, height) = (image.width(), image.height());
+    let binary = image.into_vec().into_iter().map(|value| u8::from(value != 0)).collect();
+    let mask = BinaryMask::try_new(width, height, binary).map_err(to_py_err)?;
+    let distances = distance_transform_edt_op(&mask, spacing.0, spacing.1).map_err(to_py_err)?;
+    let array =
+        Array2::from_shape_vec((distances.height(), distances.width()), distances.into_vec())
+            .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
 /// Extracts and optionally simplifies mask contours.
 #[pyfunction]
 #[pyo3(signature = (mask, epsilon=0.0))]
@@ -3308,6 +3328,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(nms, m)?)?;
     m.add_function(wrap_pyfunction!(soft_nms, m)?)?;
     m.add_function(wrap_pyfunction!(connected_components_image, m)?)?;
+    m.add_function(wrap_pyfunction!(distance_transform_edt, m)?)?;
     m.add_function(wrap_pyfunction!(find_mask_contours, m)?)?;
     m.add_function(wrap_pyfunction!(encode_mask_rle, m)?)?;
     m.add_function(wrap_pyfunction!(decode_mask_rle, m)?)?;
