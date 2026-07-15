@@ -37,6 +37,8 @@ mod morphology;
 mod multiview;
 #[cfg(feature = "geometry")]
 mod optical_flow;
+#[cfg(feature = "odometry")]
+mod odometry;
 #[cfg(feature = "geometry")]
 mod pnp;
 #[cfg(feature = "ai-adapters")]
@@ -87,6 +89,8 @@ pub use morphology::*;
 pub use multiview::*;
 #[cfg(feature = "geometry")]
 pub use optical_flow::*;
+#[cfg(feature = "odometry")]
+pub use odometry::*;
 #[cfg(feature = "geometry")]
 pub use pnp::*;
 #[cfg(feature = "feature2d")]

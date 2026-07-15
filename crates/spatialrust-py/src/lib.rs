@@ -76,7 +76,8 @@ use spatialrust::vision::{
     detect_and_describe_orb as detect_and_describe_orb_op, detect_fast as detect_fast_op,
     detect_harris as detect_harris_op, detect_shi_tomasi as detect_shi_tomasi_op,
     encode_rle as encode_mask_runs, equalize_histogram as equalize_histogram_op,
-    estimate_homography_ransac as estimate_homography_ransac_op, filter2d as filter2d_op,
+    estimate_homography_ransac as estimate_homography_ransac_op,
+    estimate_rgbd_odometry as estimate_rgbd_odometry_op, filter2d as filter2d_op,
     find_contours as trace_contours, gaussian_blur as gaussian_blur_op,
     histogram_u8 as histogram_u8_op, integral_image as integral_image_op,
     laplacian as laplacian_op, letterbox as letterbox_op,
@@ -92,8 +93,9 @@ use spatialrust::vision::{
     BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity, CornerSelectionOptions,
     DescriptorBuffer, FastOptions, HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle,
     MatchOptions, MorphologyOperation, MorphologyShape, ObjectImageCorrespondence, OrbOptions,
-    OrbScoreType, PointCorrespondence2, PointMap, RleOrder, RobustEstimationOptions,
-    ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType,
+    OrbScoreType, PointCorrespondence2, PointMap, RgbdOdometryOptions, RleOrder,
+    RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement,
+    ThresholdType,
 };
 use spatialrust::vision::{dense_flow_block_match as dense_flow_native, DenseFlowOptions};
 use spatialrust::voxelize::{
@@ -2607,6 +2609,61 @@ fn solve_pnp<'py>(
     Ok((mat3_to_numpy(py, pose.rotation()), translation))
 }
 
+/// Estimates metric RGB-D odometry from source depth and pixel tracks.
+#[pyfunction]
+#[pyo3(signature = (depth, source, target, fx, fy, cx, cy, depth_scale=1.0, threshold=1.0))]
+#[allow(clippy::too_many_arguments)]
+fn estimate_rgbd_odometry<'py>(
+    py: Python<'py>,
+    depth: PyReadonlyArray2<'_, f32>,
+    source: PyReadonlyArray2<'_, f64>,
+    target: PyReadonlyArray2<'_, f64>,
+    fx: f64,
+    fy: f64,
+    cx: f64,
+    cy: f64,
+    depth_scale: f64,
+    threshold: f64,
+) -> PyResult<(
+    Bound<'py, PyArray2<f64>>,
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray1<bool>>,
+    usize,
+)> {
+    let depth_view = depth.as_array();
+    let (height, width) = (depth_view.shape()[0], depth_view.shape()[1]);
+    let depth_image = Image::<f32, 1>::try_new(width, height, depth_view.iter().copied().collect())
+        .map_err(to_py_err)?;
+    let pairs = correspondences_from_numpy(source, target)?;
+    let camera = CameraMatrix3::from_intrinsics(
+        CameraIntrinsics::try_new(fx, fy, cx, cy, width, height).map_err(to_py_err)?,
+    );
+    let estimate = estimate_rgbd_odometry_op(
+        depth_image.view(),
+        &pairs,
+        camera,
+        RgbdOdometryOptions {
+            depth_scale,
+            robust: RobustEstimationOptions { threshold, ..Default::default() },
+            ..Default::default()
+        },
+    )
+    .map_err(to_py_err)?;
+    Ok((
+        mat3_to_numpy(py, estimate.pose.rotation()),
+        numpy::PyArray1::from_vec_bound(
+            py,
+            vec![
+                estimate.pose.translation().x,
+                estimate.pose.translation().y,
+                estimate.pose.translation().z,
+            ],
+        ),
+        numpy::PyArray1::from_vec_bound(py, estimate.inliers),
+        estimate.rejected_depth_count,
+    ))
+}
+
 /// Dense SAD stereo block matching on rectified grayscale images.
 #[pyfunction]
 #[pyo3(signature = (left, right, window_size=15, min_disparity=0, num_disparities=64, uniqueness_ratio=15.0))]
@@ -3130,6 +3187,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(orb_features, m)?)?;
     m.add_function(wrap_pyfunction!(estimate_homography_ransac, m)?)?;
     m.add_function(wrap_pyfunction!(solve_pnp, m)?)?;
+    m.add_function(wrap_pyfunction!(estimate_rgbd_odometry, m)?)?;
     m.add_function(wrap_pyfunction!(stereo_block_match, m)?)?;
     m.add_function(wrap_pyfunction!(match_binary_descriptors, m)?)?;
     m.add_function(wrap_pyfunction!(match_float_descriptors, m)?)?;

@@ -19,13 +19,14 @@ imgproc-analysis = []
 imgproc-canny = ["imgproc-filter"]
 feature2d = ["imgproc-filter", "resize"]
 geometry = ["dep:spatialrust-camera"]
+odometry = ["geometry", "feature2d"]
 detection = []
 dense = ["detection"]
 spatial = ["dense", "dep:spatialrust-core", "dep:spatialrust-camera"]
 ai-adapters = ["preprocess", "dense", "detection", "dep:spatialrust-tensor", "dep:bytemuck", "spatialrust-tensor/image"]
 video = ["dense", "detection"]
 video-adapters = ["video"]
-full = ["preprocess", "warp", "imgproc-filter", "imgproc-morphology", "imgproc-analysis", "imgproc-canny", "feature2d", "geometry", "detection", "dense", "spatial", "ai-adapters", "video-adapters"]
+full = ["preprocess", "warp", "imgproc-filter", "imgproc-morphology", "imgproc-analysis", "imgproc-canny", "feature2d", "geometry", "odometry", "detection", "dense", "spatial", "ai-adapters", "video-adapters"]
 
 [dependencies]
 spatialrust-image.workspace = true
@@ -84,3 +85,8 @@ required-features = ["geometry"]
 name = "video"
 harness = false
 required-features = ["video"]
+
+[[bench]]
+name = "odometry"
+harness = false
+required-features = ["odometry"]

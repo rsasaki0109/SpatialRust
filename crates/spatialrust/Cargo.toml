@@ -154,6 +154,8 @@ vision-imgproc-analysis = ["vision", "spatialrust-vision/imgproc-analysis"]
 vision-imgproc-canny = ["vision-imgproc-filter", "spatialrust-vision/imgproc-canny"]
 vision-feature2d = ["vision", "spatialrust-vision/feature2d"]
 vision-geometry = ["vision", "camera", "spatialrust-vision/geometry"]
+vision-odometry = ["vision-geometry", "vision-feature2d", "spatialrust-vision/odometry"]
+mapping-vision-odometry = ["vision-odometry", "mapping", "spatialrust-mapping/vision-odometry"]
 vision-detection = ["vision", "spatialrust-vision/detection"]
 vision-dense = ["vision-detection", "spatialrust-vision/dense"]
 vision-spatial = ["vision-dense", "camera-rgbd", "spatialrust-vision/spatial"]
@@ -169,6 +171,7 @@ vision-full = [
     "vision-imgproc-canny",
     "vision-feature2d",
     "vision-geometry",
+    "vision-odometry",
     "vision-detection",
     "vision-dense",
     "vision-spatial",
