@@ -150,17 +150,18 @@ ratio; these are machine-specific measurements, not universal guarantees.
 
 | Workload | VGA | 1080p | 4K |
 | --- | ---: | ---: | ---: |
-| AI CHW preprocess, allocate | **SpatialRust 4.52×** | **SpatialRust 7.19×** | **SpatialRust 10.51×** |
-| AI CHW preprocess, reuse vs OpenCV allocate | **SpatialRust 8.54×** | **SpatialRust 11.46×** | **SpatialRust 17.13×** |
-| Bilinear resize, allocate | OpenCV 28.3× | OpenCV 61.0× | OpenCV 62.8× |
-| Bilinear resize, reuse | OpenCV 28.6× | OpenCV 110.8× | OpenCV 124.0× |
-| RGB to gray, allocate | OpenCV 11.9× | OpenCV 8.8× | OpenCV 12.8× |
-| RGB to gray, reuse | OpenCV 6.4× | OpenCV 12.5× | OpenCV 8.6× |
-| Gaussian blur 5×5 | OpenCV 125.1× | OpenCV 121.6× | OpenCV 177.8× |
-| Sobel X 3×3 | OpenCV 36.6× | OpenCV 35.6× | OpenCV 38.6× |
-| Morphology open 5×5 | OpenCV 909.0× | OpenCV 1,027.2× | OpenCV 1,082.8× |
-| Canny | OpenCV 13.0× | OpenCV 14.5× | OpenCV 15.3× |
-| Exact Euclidean distance transform | OpenCV 10.60× | OpenCV 12.63× | OpenCV 12.35× |
+| AI CHW preprocess, allocate | **SpatialRust 4.48×** | **SpatialRust 9.27×** | **SpatialRust 9.14×** |
+| AI CHW preprocess, reuse vs OpenCV allocate | **SpatialRust 8.16×** | **SpatialRust 14.56×** | **SpatialRust 15.78×** |
+| Bilinear resize, allocate | OpenCV 26.46× | OpenCV 64.02× | OpenCV 93.61× |
+| Bilinear resize, reuse | OpenCV 27.36× | OpenCV 145.81× | OpenCV 113.87× |
+| RGB to gray, allocate | OpenCV 11.97× | OpenCV 5.98× | OpenCV 12.98× |
+| RGB to gray, reuse | OpenCV 6.01× | OpenCV 13.81× | OpenCV 2.09× |
+| Gaussian blur 5×5 | OpenCV 139.02× | OpenCV 107.91× | OpenCV 167.28× |
+| Sobel X 3×3 | OpenCV 14.38× | OpenCV 20.31× | OpenCV 23.30× |
+| Morphology open 5×5 | OpenCV 805.78× | OpenCV 578.52× | OpenCV 774.40× |
+| Canny | OpenCV 10.66× | OpenCV 12.54× | OpenCV 12.65× |
+| Exact Euclidean distance transform, allocate | OpenCV 2.37× | OpenCV 1.99× | OpenCV 1.63× |
+| Exact Euclidean distance transform, reuse | OpenCV 1.61× | OpenCV 1.20× | OpenCV 1.07× |
 
 The current CPU result is deliberately mixed: SpatialRust's fused typed CHW
 path wins, while OpenCV's tuned general-purpose image kernels lead the present
@@ -168,6 +169,13 @@ SpatialRust scalar paths. Full medians, p95, dispersion, throughput, and raw
 samples are produced by the [performance harness](bench/opencv_vision_comparison/performance.py);
 the dated [Epic 111 receipt](notes/2026-07-15_epic111_opencv_comparison_v2.md)
 records the exact environment and methodology.
+
+The EDT fast path is exact on the canonical masks and reduced the native 4K
+allocation benchmark from 451.63 ms to about 75 ms. With caller-owned output
+and [`DistanceTransformWorkspace`](https://rsasaki0109.github.io/SpatialRust/spatialrust_vision/struct.DistanceTransformWorkspace.html),
+the native Criterion median is about 43 ms. The Python API comparison above
+still gives OpenCV a narrow 1.07× 4K reuse lead; see the
+[acceleration receipt](notes/2026-07-15_exact_edt_acceleration.md).
 
 #### Vision accuracy
 

@@ -218,6 +218,13 @@ def test_exact_euclidean_distance_transform():
     assert anisotropic[0, 1] == pytest.approx(2.0)
     assert anisotropic[1, 0] == pytest.approx(3.0)
 
+    out = np.empty_like(actual)
+    workspace = sr.DistanceTransformWorkspace()
+    reused = sr.distance_transform_edt(mask, out=out, workspace=workspace)
+    assert reused is out
+    np.testing.assert_array_equal(reused, actual)
+    assert workspace.capacity >= mask.size
+
 
 def test_point_map_to_point_cloud_filters_invalid_and_low_confidence():
     points = np.array(

@@ -285,8 +285,20 @@ def connected_components_image(
     mask: _U8Array,
     connectivity: int = ...,
 ) -> tuple[_U32Array, list[tuple[int, int, tuple[float, float, float, float]]]]: ...
+
+@final
+class DistanceTransformWorkspace:
+    """Reusable host scratch storage for exact unit-spacing distance transforms."""
+
+    def __init__(self) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+
 def distance_transform_edt(
-    mask: _U8Array, spacing: tuple[float, float] = ...
+    mask: _U8Array,
+    spacing: tuple[float, float] = ...,
+    out: Optional[_F32Array] = ...,
+    workspace: Optional[DistanceTransformWorkspace] = ...,
 ) -> _F32Array: ...
 def find_mask_contours(
     mask: _U8Array, epsilon: float = ...

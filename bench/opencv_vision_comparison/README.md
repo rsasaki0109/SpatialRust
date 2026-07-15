@@ -24,7 +24,8 @@ runtime dependency. The shared report contract and workload registry are in
 [`../opencv_comparison`](../opencv_comparison/README.md).
 
 The performance suite measures allocate/reuse bilinear resize, RGB-to-gray,
-AI CHW preprocessing, Gaussian blur, Sobel X, morphology open, and Canny at
+AI CHW preprocessing, Gaussian blur, Sobel X, morphology open, Canny, and exact
+Euclidean distance transform (allocate and caller-owned-output/workspace reuse) at
 VGA, 1080p, and 4K. OpenCV and SpatialRust calls are seeded and interleaved;
 short calls are batched to reduce timer noise. Reports preserve raw samples,
 mean/median/p95, standard deviation, coefficient of variation, median absolute
