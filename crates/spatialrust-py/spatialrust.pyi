@@ -27,7 +27,7 @@ __all__: list[str] = [
     "ransac_sphere", "ransac_cylinder", "chamfer_distance", "hausdorff_distance",
     "apply_transform", "recenter", "scale", "normalize_unit_sphere", "merge",
     "centroid", "bounding_box", "oriented_bounding_box", "voxelize", "range_image",
-    "rgbd_to_point_cloud", "filter2d_image", "gaussian_blur_image",
+    "rgbd_to_point_cloud", "depth_to_xyz", "filter2d_image", "gaussian_blur_image",
     "median_blur_image", "bilateral_filter_image", "sobel_image", "scharr_image",
     "laplacian_image", "pyr_down_image", "pyr_up_image", "morphology_image",
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
@@ -97,6 +97,24 @@ class PointCloud:
 
     def __len__(self) -> int: ...
     def __repr__(self) -> str: ...
+
+def depth_to_xyz(
+    depth: _F32Array,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    depth_scale: float = ...,
+    min_depth: float = ...,
+    max_depth: float = ...,
+    distortion: Optional[tuple[float, float, float, float, float]] = ...,
+    out: Optional[_F32Array] = ...,
+) -> _F32Array:
+    """Convert depth to a dense ``(H, W, 3)`` XYZ image (invalid → NaN).
+
+    If ``out`` is a contiguous ``(H, W, 3)`` float32 array it is filled in place.
+    """
+    ...
 
 def rgbd_to_point_cloud(
     depth: _F32Array,

@@ -251,7 +251,8 @@ pub use spatialrust_image_io::{
 
 #[cfg(feature = "camera-rgbd")]
 pub use spatialrust_camera::{
-    depth_to_point_cloud, rgbd_to_point_cloud, BrownConrady, CameraError, CameraIntrinsics,
+    depth_to_point_cloud, depth_to_xyz_dense, depth_to_xyz_dense_into, rgbd_to_point_cloud,
+    BrownConrady, CameraError, CameraIntrinsics,
     DepthConversionOptions, PinholeCamera, RgbdError,
 };
 

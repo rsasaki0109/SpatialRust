@@ -1,5 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use spatialrust_camera::{rgbd_to_point_cloud, CameraIntrinsics, PinholeCamera};
+use spatialrust_camera::{
+    depth_to_xyz_dense, rgbd_to_point_cloud, CameraIntrinsics, PinholeCamera,
+};
 use spatialrust_image::Image;
 
 fn benchmark_rgbd(c: &mut Criterion) {
@@ -10,6 +12,13 @@ fn benchmark_rgbd(c: &mut Criterion) {
     let camera = PinholeCamera::new(
         CameraIntrinsics::try_new(525.0, 525.0, 319.5, 239.5, width, height).unwrap(),
     );
+
+    c.bench_function("depth_to_xyz_dense_640x480", |b| {
+        b.iter(|| {
+            depth_to_xyz_dense(black_box(depth.view()), black_box(&camera), Default::default())
+                .unwrap()
+        });
+    });
 
     c.bench_function("rgbd_to_point_cloud_640x480", |b| {
         b.iter(|| {
