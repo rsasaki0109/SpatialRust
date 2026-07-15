@@ -22,6 +22,7 @@ members = [
     "crates/spatialrust-vision",
     "crates/spatialrust-records",
     "crates/spatialrust-arrow",
+    "crates/spatialrust-sync",
 ]
 # spatialrust-py is a PyO3 cdylib built with maturin; keep it out of the Rust
 # workspace so `cargo test --workspace` does not require a Python toolchain.
@@ -59,6 +60,7 @@ spatialrust-camera = { path = "crates/spatialrust-camera", version = "1.0.0" }
 spatialrust-vision = { path = "crates/spatialrust-vision", version = "1.0.0", default-features = false }
 spatialrust-records = { path = "crates/spatialrust-records", version = "1.0.0" }
 spatialrust-arrow = { path = "crates/spatialrust-arrow", version = "1.0.0", default-features = false }
+spatialrust-sync = { path = "crates/spatialrust-sync", version = "1.0.0", default-features = false }
 
 bytemuck = { version = "1", features = ["derive"] }
 las = "0.9"

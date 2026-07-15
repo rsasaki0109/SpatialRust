@@ -1,0 +1,22 @@
+[package]
+name = "spatialrust-sync"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Sensor time, frame graphs, and deterministic multimodal replay for SpatialRust"
+
+[features]
+default = []
+# File-backed MCAP stays optional; default builds use in-memory episodes only.
+mcap = []
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-math.workspace = true
+spatialrust-records.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]

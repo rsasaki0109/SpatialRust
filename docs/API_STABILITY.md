@@ -66,6 +66,7 @@ until their individual 1.0 milestones.
 | Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
 | Records (`records`) | Versioned `SpatialRecord`, schema compatibility/migration, and chunked record streams are provisional |
 | Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |
+| Sync (`sync`, `sync-mcap`) | Clock domains, frame graphs, stamped records, and deterministic episode replay are provisional |
 | GPU image (`gpu-image`) | `GpuImage` upload/readback, receipts, and image compute kernels are provisional |
 
 ## Algorithm crates
@@ -85,6 +86,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-ai` | Provisional | Runtime-independent session contract; ONNX Runtime CPU and hardware providers are independently gated |
 | `spatialrust-records` | Provisional | Versioned records, schema evolution, chunked host streams; Arrow-free |
 | `spatialrust-arrow` | Provisional | Arrow C Data/Stream/Device adapters; optional features only |
+| `spatialrust-sync` | Provisional | Sensor clocks, frame graphs, stamped records, deterministic replay; MCAP file codecs gated |
 | `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |
 | `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms, checked Feature2D descriptors/matches, shared border/kernel contracts, and explicit point-cloud bridges |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |

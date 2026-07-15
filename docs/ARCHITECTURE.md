@@ -100,8 +100,9 @@ depending on `spatialrust-ai`.
 
 The canonical post-foundation horizon is Epics 91–100 in `docs/ROADMAP.md`.
 Epic 91 adds `spatialrust-records` and `spatialrust-arrow` while keeping Arrow
-out of `spatialrust-core`. Epics 92–100 extend into synchronized sensor replay,
-mapping, semantic spatial data, embodied-AI evaluation, robotics execution,
+out of `spatialrust-core`. Epic 92 adds `spatialrust-sync` for clocked stamps,
+frame graphs, and deterministic multimodal episode replay. Epics 93–100 extend
+into mapping, semantic spatial data, embodied-AI evaluation, robotics execution,
 scene interchange, and explicit edge/distributed execution.
 
 See the full master architecture document in project planning materials for trait-level design, ADRs, and Codex execution tasks (Epics 0–13).
