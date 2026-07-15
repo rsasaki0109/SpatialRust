@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Camera calibration contracts (Epic 105)**: robust pinhole intrinsics,
+  Kannala–Brandt4 fisheye fitting, supplied-rotation stereo and hand-eye
+  translation solves, and fixed-camera sparse point bundle adjustment. All
+  solvers return common RMS/max/iteration receipts, validate rotations and
+  indices, and use deterministic small dense math without a native optimizer.
+
 - **Texture-backed GPU image chains (Epic 104)**: `GpuImage` now uses pooled
   `rgba8uint` textures instead of component-expanded storage buffers. Explicit
   upload/readback receipts compose through copy, RGB-to-gray, box blur, nearest

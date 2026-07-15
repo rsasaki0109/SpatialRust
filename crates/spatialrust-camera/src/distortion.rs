@@ -15,6 +15,72 @@ pub struct BrownConrady {
     pub k3: f64,
 }
 
+/// Kannala–Brandt four-coefficient fisheye model.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct KannalaBrandt4 {
+    /// Cubic angle coefficient.
+    pub k1: f64,
+    /// Fifth-order angle coefficient.
+    pub k2: f64,
+    /// Seventh-order angle coefficient.
+    pub k3: f64,
+    /// Ninth-order angle coefficient.
+    pub k4: f64,
+}
+
+impl KannalaBrandt4 {
+    /// Distorts normalized pinhole coordinates using the equidistant angle polynomial.
+    #[must_use]
+    pub fn distort(self, point: Vec2<f64>) -> Vec2<f64> {
+        let radius = point.x.hypot(point.y);
+        if radius <= f64::EPSILON {
+            return point;
+        }
+        let theta = radius.atan();
+        let theta2 = theta * theta;
+        let distorted_theta = theta
+            * (1.0
+                + theta2 * (self.k1 + theta2 * (self.k2 + theta2 * (self.k3 + theta2 * self.k4))));
+        let scale = distorted_theta / radius;
+        Vec2 { x: point.x * scale, y: point.y * scale }
+    }
+
+    /// Iteratively removes fisheye distortion from normalized coordinates.
+    #[must_use]
+    pub fn undistort(self, point: Vec2<f64>) -> Vec2<f64> {
+        let distorted_radius = point.x.hypot(point.y);
+        if distorted_radius <= f64::EPSILON {
+            return point;
+        }
+        let mut theta = distorted_radius.min(std::f64::consts::FRAC_PI_2 - 1e-6);
+        for _ in 0..16 {
+            let theta2 = theta * theta;
+            let theta4 = theta2 * theta2;
+            let theta6 = theta4 * theta2;
+            let theta8 = theta4 * theta4;
+            let value = theta
+                * (1.0 + self.k1 * theta2 + self.k2 * theta4 + self.k3 * theta6 + self.k4 * theta8)
+                - distorted_radius;
+            let derivative = 1.0
+                + 3.0 * self.k1 * theta2
+                + 5.0 * self.k2 * theta4
+                + 7.0 * self.k3 * theta6
+                + 9.0 * self.k4 * theta8;
+            if derivative.abs() < 1e-12 {
+                break;
+            }
+            let step = value / derivative;
+            theta -= step;
+            if step.abs() < 1e-13 {
+                break;
+            }
+        }
+        let radius = theta.tan();
+        let scale = radius / distorted_radius;
+        Vec2 { x: point.x * scale, y: point.y * scale }
+    }
+}
+
 impl BrownConrady {
     /// Returns whether all coefficients are zero.
     #[must_use]
@@ -73,7 +139,7 @@ impl BrownConrady {
 
 #[cfg(test)]
 mod tests {
-    use super::BrownConrady;
+    use super::{BrownConrady, KannalaBrandt4};
     use spatialrust_math::Vec2;
 
     #[test]
@@ -83,6 +149,16 @@ mod tests {
             let recovered = model.undistort(model.distort(point));
             assert!((recovered.x - point.x).abs() < 1e-9);
             assert!((recovered.y - point.y).abs() < 1e-9);
+        }
+    }
+
+    #[test]
+    fn fisheye_roundtrip() {
+        let model = KannalaBrandt4 { k1: 0.02, k2: -0.003, k3: 0.0004, k4: -0.00002 };
+        for point in [Vec2 { x: -0.8, y: 0.5 }, Vec2 { x: 0.2, y: -0.1 }] {
+            let recovered = model.undistort(model.distort(point));
+            assert!((recovered.x - point.x).abs() < 1e-10);
+            assert!((recovered.y - point.y).abs() < 1e-10);
         }
     }
 }

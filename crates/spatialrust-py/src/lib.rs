@@ -27,6 +27,10 @@ use spatialrust::ai::{
     RunOptions as AiRunOptions, SessionOptions as AiSessionOptions,
 };
 
+use spatialrust::camera::{
+    calibrate_fisheye as calibrate_fisheye_native, calibrate_pinhole as calibrate_pinhole_native,
+    CalibrationOptions, FisheyeObservation, PinholeObservation,
+};
 use spatialrust::core::{PointBuffer, PointBufferSet, SpatialMetadata};
 use spatialrust::features::{
     orient_normals_consistent, BoundaryConfig, BoundaryDetector, FeatureEstimator,
@@ -691,6 +695,69 @@ fn gray_u8_image_from_numpy(array: PyReadonlyArray2<'_, u8>) -> PyResult<Image<u
     let view = array.as_array();
     let shape = view.shape();
     Image::try_new(shape[1], shape[0], view.iter().copied().collect()).map_err(to_py_err)
+}
+
+/// Fits pinhole intrinsics from known camera-space points and image pixels.
+#[pyfunction]
+#[pyo3(signature = (camera_points, pixels, width, height, huber_delta=2.0, max_iterations=12))]
+fn calibrate_pinhole_camera(
+    camera_points: PyReadonlyArray2<'_, f64>,
+    pixels: PyReadonlyArray2<'_, f64>,
+    width: usize,
+    height: usize,
+    huber_delta: f64,
+    max_iterations: usize,
+) -> PyResult<(f64, f64, f64, f64, f64, f64)> {
+    let points = camera_points.as_array();
+    let pixels = pixels.as_array();
+    if points.shape().len() != 2 || points.shape()[1] != 3 {
+        return Err(PyValueError::new_err("camera_points must have shape (N, 3)"));
+    }
+    if pixels.shape() != [points.shape()[0], 2] {
+        return Err(PyValueError::new_err("pixels must have shape (N, 2)"));
+    }
+    let observations = (0..points.shape()[0])
+        .map(|index| PinholeObservation {
+            camera_point: Vec3::new(points[[index, 0]], points[[index, 1]], points[[index, 2]]),
+            pixel: spatialrust::Vec2 { x: pixels[[index, 0]], y: pixels[[index, 1]] },
+        })
+        .collect::<Vec<_>>();
+    let (camera, report) = calibrate_pinhole_native(
+        &observations,
+        width,
+        height,
+        CalibrationOptions { max_iterations, huber_delta, ..CalibrationOptions::default() },
+    )
+    .map_err(to_py_err)?;
+    Ok((
+        camera.intrinsics.fx,
+        camera.intrinsics.fy,
+        camera.intrinsics.cx,
+        camera.intrinsics.cy,
+        report.rms_residual,
+        report.max_residual,
+    ))
+}
+
+/// Fits Kannala–Brandt4 coefficients from incident angles and distorted radii.
+#[pyfunction]
+fn calibrate_fisheye_angles(
+    theta: PyReadonlyArray1<'_, f64>,
+    distorted_radius: PyReadonlyArray1<'_, f64>,
+) -> PyResult<(f64, f64, f64, f64, f64)> {
+    let theta = theta.as_array();
+    let radii = distorted_radius.as_array();
+    if theta.len() != radii.len() {
+        return Err(PyValueError::new_err("theta and distorted_radius lengths must match"));
+    }
+    let observations = theta
+        .iter()
+        .copied()
+        .zip(radii.iter().copied())
+        .map(|(theta, distorted_radius)| FisheyeObservation { theta, distorted_radius })
+        .collect::<Vec<_>>();
+    let (model, report) = calibrate_fisheye_native(&observations).map_err(to_py_err)?;
+    Ok((model.k1, model.k2, model.k3, model.k4, report.rms_residual))
 }
 
 fn cloud_from_xyz(arr: PyReadonlyArray2<'_, f32>) -> PyResult<PointCloud> {
@@ -3073,6 +3140,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(range_image, m)?)?;
     m.add_function(wrap_pyfunction!(depth_to_xyz, m)?)?;
     m.add_function(wrap_pyfunction!(rgbd_to_point_cloud, m)?)?;
+    m.add_function(wrap_pyfunction!(calibrate_pinhole_camera, m)?)?;
+    m.add_function(wrap_pyfunction!(calibrate_fisheye_angles, m)?)?;
     m.add_function(wrap_pyfunction!(filter2d_image, m)?)?;
     m.add_function(wrap_pyfunction!(gaussian_blur_image, m)?)?;
     m.add_function(wrap_pyfunction!(median_blur_image, m)?)?;

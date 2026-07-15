@@ -72,6 +72,9 @@ Runtime adapter identity and synchronization are explicit (`adapter_info`,
 `wait_idle`), and `recycle` returns textures to the runtime pool.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
+Calibration datasets, robust solver controls, and residual receipts live in
+`spatialrust-camera`; they depend only on `spatialrust-math` small dense solves.
+External nonlinear optimizers may be added only behind dedicated features.
 `spatialrust-vision` keeps preprocessing, Feature2D, geometry/multiview (H/F/E,
 PnP, sparse LK, stereo BM), warp, detection, dense-map, and spatial bridges in
 separate additive features. Geometry depends on `spatialrust-camera` only and does
