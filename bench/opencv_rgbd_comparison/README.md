@@ -1,9 +1,13 @@
 # OpenCV RGB-D comparison
 
-This harness compares SpatialRust `rgbd_to_point_cloud` against OpenCV's
-`cv.rgbd.depthTo3d` on the same deterministic depth image and intrinsics.
+Compares SpatialRust RGB-D conversion against OpenCV `cv.rgbd.depthTo3d` on a
+deterministic depth image and intrinsics.
 
-The OpenCV wheel must include the contrib `rgbd` module:
+Gates (median of repeated trials; OpenCL disabled):
+
+1. Dense `H×W×3` XYZ — alloc and fill-into vs OpenCV
+2. Colored point cloud — `rgbd_to_point_cloud` vs OpenCV depthTo3d + NumPy
+   mask/color gather
 
 ```bash
 pip install maturin numpy opencv-contrib-python
@@ -13,5 +17,5 @@ cd ../..
 python bench/opencv_rgbd_comparison/run.py
 ```
 
-The command exits non-zero when valid-point masks differ or maximum XYZ error
-exceeds `1e-5` meters. It also reports median runtime for both implementations.
+Exits non-zero when XYZ error exceeds `1e-5` m or any gated path is slower
+than OpenCV.

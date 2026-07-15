@@ -143,7 +143,7 @@ SpatialRust is **not** “OpenCV rewritten in Rust.” OpenCV remains a strong t
 
 Correctness, not speed theater: the OpenCV vision harness checks filters, morphology, analysis, Canny, keypoints, matching, and geometry against OpenCV with documented tolerances (exact pixels where we claim parity; residual/translation/disparity tolerances where OpenCV’s private contracts differ). RGB-D unprojection tracks `cv.rgbd.depthTo3d` to ~`1e-5` m.
 
-On dense `H×W×3` XYZ (320×240, OpenCL off, local Windows laptop), `spatialrust.depth_to_xyz` beats OpenCV `rgbd.depthTo3d` in the [RGB-D harness](bench/opencv_rgbd_comparison/) — about **1.4–1.5×** when both allocate, and about **2.1–2.2×** when both fill a reused buffer (`out=` / OpenCV `points3d`). Re-run the harness before quoting numbers elsewhere; x86_64 builds use an audited AVX2 fill when available.
+On dense `H×W×3` XYZ (320×240, OpenCL off, local Windows laptop), `spatialrust.depth_to_xyz` beats OpenCV `rgbd.depthTo3d` in the [RGB-D harness](bench/opencv_rgbd_comparison/) — about **1.4–1.5×** when both allocate, and about **2.1–2.2×** when both fill a reused buffer (`out=` / OpenCV `points3d`). Colored `rgbd_to_point_cloud` is about **20×** faster than OpenCV `depthTo3d` + NumPy mask/color gather. Re-run the harness before quoting numbers elsewhere; x86_64 builds use an audited AVX2 fill when available.
 
 ```powershell
 python bench\opencv_vision_comparison\run.py
