@@ -1,8 +1,9 @@
 //! CPU mathematical morphology with explicit structuring elements and borders.
 
+use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView};
 
-use crate::border::fetch;
+use crate::border::{fetch, map_index};
 use crate::{BorderMode, PixelComponent, VisionError, VisionResult};
 
 /// Built-in structuring-element geometry.
@@ -191,10 +192,349 @@ pub fn morphology_ex<T: PixelComponent, const CHANNELS: usize>(
     }
 }
 
+/// Erodes a grayscale `u8` image with a rectangular element in linear time.
+///
+/// This specialized path is independent of the rectangle area and preserves
+/// the generic implementation's anchor, border, iteration, and metadata
+/// semantics.
+pub fn erode_rect_u8(
+    input: ImageView<'_, u8, 1>,
+    element: &StructuringElement,
+    iterations: usize,
+    border: BorderMode<u8, 1>,
+) -> VisionResult<Image<u8, 1>> {
+    rect_sequence(input, element, border, &[(Extreme::Minimum, iterations)])
+}
+
+/// Dilates a grayscale `u8` image with a rectangular element in linear time.
+pub fn dilate_rect_u8(
+    input: ImageView<'_, u8, 1>,
+    element: &StructuringElement,
+    iterations: usize,
+    border: BorderMode<u8, 1>,
+) -> VisionResult<Image<u8, 1>> {
+    rect_sequence(input, element, border, &[(Extreme::Maximum, iterations)])
+}
+
+/// Applies composite grayscale `u8` morphology using the rectangular fast path.
+pub fn morphology_rect_u8(
+    input: ImageView<'_, u8, 1>,
+    operation: MorphologyOperation,
+    element: &StructuringElement,
+    iterations: usize,
+    border: BorderMode<u8, 1>,
+) -> VisionResult<Image<u8, 1>> {
+    validate_rect(element)?;
+    match operation {
+        MorphologyOperation::Open => rect_sequence(
+            input,
+            element,
+            border,
+            &[(Extreme::Minimum, iterations), (Extreme::Maximum, iterations)],
+        ),
+        MorphologyOperation::Close => rect_sequence(
+            input,
+            element,
+            border,
+            &[(Extreme::Maximum, iterations), (Extreme::Minimum, iterations)],
+        ),
+        MorphologyOperation::Gradient => {
+            let high = dilate_rect_u8(input, element, iterations, border)?;
+            let low = erode_rect_u8(input, element, iterations, border)?;
+            subtract_u8(high, low)
+        }
+        MorphologyOperation::TopHat => {
+            let original = pack(input)?;
+            let opened =
+                morphology_rect_u8(input, MorphologyOperation::Open, element, iterations, border)?;
+            subtract_u8(original, opened)
+        }
+        MorphologyOperation::BlackHat => {
+            let original = pack(input)?;
+            let closed =
+                morphology_rect_u8(input, MorphologyOperation::Close, element, iterations, border)?;
+            subtract_u8(closed, original)
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 enum Extreme {
     Minimum,
     Maximum,
+}
+
+fn validate_rect(element: &StructuringElement) -> VisionResult<()> {
+    if element.mask.iter().all(|&active| active) {
+        Ok(())
+    } else {
+        Err(VisionError::InvalidParameter(
+            "rectangular morphology fast path requires a full rectangular mask".into(),
+        ))
+    }
+}
+
+fn rect_sequence(
+    input: ImageView<'_, u8, 1>,
+    element: &StructuringElement,
+    border: BorderMode<u8, 1>,
+    stages: &[(Extreme, usize)],
+) -> VisionResult<Image<u8, 1>> {
+    validate_rect(element)?;
+    let metadata = input.metadata();
+    let (width, height) = (input.width(), input.height());
+    let mut current = pack(input)?.into_vec();
+    let mut workspace = RectWorkspace::default();
+    for &(extreme, iterations) in stages {
+        for _ in 0..iterations {
+            workspace.apply(
+                &current,
+                width,
+                height,
+                element.width,
+                element.height,
+                element.anchor_x,
+                element.anchor_y,
+                border,
+                extreme,
+            );
+            std::mem::swap(&mut current, &mut workspace.output);
+        }
+    }
+    Ok(Image::try_new_with_metadata(width, height, current, metadata)?)
+}
+
+#[derive(Default)]
+struct RectWorkspace {
+    horizontal: Vec<u8>,
+    transposed: Vec<u8>,
+    filtered: Vec<u8>,
+    output: Vec<u8>,
+    padded: Vec<u8>,
+    prefix: Vec<u8>,
+    suffix: Vec<u8>,
+}
+
+impl RectWorkspace {
+    #[allow(clippy::too_many_arguments)]
+    fn apply(
+        &mut self,
+        input: &[u8],
+        width: usize,
+        height: usize,
+        kernel_width: usize,
+        kernel_height: usize,
+        anchor_x: usize,
+        anchor_y: usize,
+        border: BorderMode<u8, 1>,
+        extreme: Extreme,
+    ) {
+        let len = width * height;
+        if len >= 1_000_000 {
+            self.apply_parallel(
+                input,
+                width,
+                height,
+                kernel_width,
+                kernel_height,
+                anchor_x,
+                anchor_y,
+                border,
+                extreme,
+            );
+            return;
+        }
+        self.horizontal.resize(len, 0);
+        for y in 0..height {
+            let start = y * width;
+            filter_line(
+                &input[start..start + width],
+                &mut self.horizontal[start..start + width],
+                kernel_width,
+                anchor_x,
+                border,
+                extreme,
+                &mut self.padded,
+                &mut self.prefix,
+                &mut self.suffix,
+            );
+        }
+
+        self.transposed.resize(len, 0);
+        transpose_blocked(&self.horizontal, &mut self.transposed, width, height);
+        self.filtered.resize(len, 0);
+        for x in 0..width {
+            let start = x * height;
+            filter_line(
+                &self.transposed[start..start + height],
+                &mut self.filtered[start..start + height],
+                kernel_height,
+                anchor_y,
+                border,
+                extreme,
+                &mut self.padded,
+                &mut self.prefix,
+                &mut self.suffix,
+            );
+        }
+        self.output.resize(len, 0);
+        transpose_blocked(&self.filtered, &mut self.output, height, width);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn apply_parallel(
+        &mut self,
+        input: &[u8],
+        width: usize,
+        height: usize,
+        kernel_width: usize,
+        kernel_height: usize,
+        anchor_x: usize,
+        anchor_y: usize,
+        border: BorderMode<u8, 1>,
+        extreme: Extreme,
+    ) {
+        let len = width * height;
+        self.horizontal.resize(len, 0);
+        self.horizontal.par_chunks_mut(width).enumerate().for_each_init(
+            LineBuffers::default,
+            |buffers, (y, output)| {
+                let start = y * width;
+                filter_line(
+                    &input[start..start + width],
+                    output,
+                    kernel_width,
+                    anchor_x,
+                    border,
+                    extreme,
+                    &mut buffers.padded,
+                    &mut buffers.prefix,
+                    &mut buffers.suffix,
+                );
+            },
+        );
+
+        self.transposed.resize(len, 0);
+        self.transposed.par_chunks_mut(height).enumerate().for_each(|(x, output)| {
+            for (y, value) in output.iter_mut().enumerate() {
+                *value = self.horizontal[y * width + x];
+            }
+        });
+        self.filtered.resize(len, 0);
+        self.filtered.par_chunks_mut(height).enumerate().for_each_init(
+            LineBuffers::default,
+            |buffers, (x, output)| {
+                let start = x * height;
+                filter_line(
+                    &self.transposed[start..start + height],
+                    output,
+                    kernel_height,
+                    anchor_y,
+                    border,
+                    extreme,
+                    &mut buffers.padded,
+                    &mut buffers.prefix,
+                    &mut buffers.suffix,
+                );
+            },
+        );
+        self.output.resize(len, 0);
+        self.output.par_chunks_mut(width).enumerate().for_each(|(y, output)| {
+            for (x, value) in output.iter_mut().enumerate() {
+                *value = self.filtered[x * height + y];
+            }
+        });
+    }
+}
+
+#[derive(Default)]
+struct LineBuffers {
+    padded: Vec<u8>,
+    prefix: Vec<u8>,
+    suffix: Vec<u8>,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn filter_line(
+    input: &[u8],
+    output: &mut [u8],
+    kernel: usize,
+    anchor: usize,
+    border: BorderMode<u8, 1>,
+    extreme: Extreme,
+    padded: &mut Vec<u8>,
+    prefix: &mut Vec<u8>,
+    suffix: &mut Vec<u8>,
+) {
+    if input.is_empty() {
+        return;
+    }
+    let padded_len = input.len() + kernel - 1;
+    padded.resize(padded_len, 0);
+    prefix.resize(padded_len, 0);
+    suffix.resize(padded_len, 0);
+    let constant = match border {
+        BorderMode::Constant([value]) => value,
+        _ => 0,
+    };
+    for (index, value) in padded.iter_mut().enumerate() {
+        let source = index as isize - anchor as isize;
+        *value = map_index(source, input.len(), border).map_or(constant, |mapped| input[mapped]);
+    }
+
+    for block_start in (0..padded_len).step_by(kernel) {
+        let block_end = (block_start + kernel).min(padded_len);
+        prefix[block_start] = padded[block_start];
+        for index in block_start + 1..block_end {
+            prefix[index] = extreme_u8(prefix[index - 1], padded[index], extreme);
+        }
+        suffix[block_end - 1] = padded[block_end - 1];
+        for index in (block_start..block_end - 1).rev() {
+            suffix[index] = extreme_u8(suffix[index + 1], padded[index], extreme);
+        }
+    }
+    for (index, value) in output.iter_mut().enumerate() {
+        *value = extreme_u8(suffix[index], prefix[index + kernel - 1], extreme);
+    }
+}
+
+#[inline(always)]
+fn extreme_u8(left: u8, right: u8, extreme: Extreme) -> u8 {
+    match extreme {
+        Extreme::Minimum => left.min(right),
+        Extreme::Maximum => left.max(right),
+    }
+}
+
+fn transpose_blocked(input: &[u8], output: &mut [u8], width: usize, height: usize) {
+    const BLOCK: usize = 32;
+    for y0 in (0..height).step_by(BLOCK) {
+        for x0 in (0..width).step_by(BLOCK) {
+            let y1 = (y0 + BLOCK).min(height);
+            let x1 = (x0 + BLOCK).min(width);
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    output[x * height + y] = input[y * width + x];
+                }
+            }
+        }
+    }
+}
+
+fn subtract_u8(left: Image<u8, 1>, right: Image<u8, 1>) -> VisionResult<Image<u8, 1>> {
+    if left.width() != right.width() || left.height() != right.height() {
+        return Err(VisionError::ShapeMismatch(
+            "morphology subtraction dimensions must match".into(),
+        ));
+    }
+    let (width, height, metadata) = (left.width(), left.height(), left.metadata());
+    let output = left
+        .into_vec()
+        .into_iter()
+        .zip(right.into_vec())
+        .map(|(a, b)| a.saturating_sub(b))
+        .collect();
+    Ok(Image::try_new_with_metadata(width, height, output, metadata)?)
 }
 
 fn repeat_extreme<T: PixelComponent, const CHANNELS: usize>(
@@ -333,7 +673,8 @@ fn fill_ellipse(mask: &mut [bool], width: usize, height: usize) {
 #[cfg(test)]
 mod tests {
     use super::{
-        dilate, erode, morphology_ex, MorphologyOperation, MorphologyShape, StructuringElement,
+        dilate, dilate_rect_u8, erode, erode_rect_u8, morphology_ex, morphology_rect_u8,
+        MorphologyOperation, MorphologyShape, StructuringElement,
     };
     use crate::BorderMode;
     use spatialrust_image::{Image, ImageRegion};
@@ -402,5 +743,92 @@ mod tests {
     fn invalid_masks_are_rejected() {
         assert!(StructuringElement::try_from_mask(2, 2, 0, 0, vec![false; 4]).is_err());
         assert!(StructuringElement::try_from_mask(2, 2, 0, 0, vec![true; 3]).is_err());
+    }
+
+    #[test]
+    fn rectangular_u8_fast_path_matches_generic_for_anchors_borders_and_iterations() {
+        let mut state = 0x9e37_79b9_u32;
+        let pixels = (0..63)
+            .map(|_| {
+                state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                (state >> 24) as u8
+            })
+            .collect();
+        let image = Image::<u8, 1>::try_new(9, 7, pixels).unwrap();
+        let elements = [
+            StructuringElement::try_new_with_anchor(MorphologyShape::Rect, 1, 1, 0, 0).unwrap(),
+            StructuringElement::try_new_with_anchor(MorphologyShape::Rect, 4, 2, 0, 1).unwrap(),
+            StructuringElement::try_new_with_anchor(MorphologyShape::Rect, 5, 3, 4, 0).unwrap(),
+            StructuringElement::try_new_with_anchor(MorphologyShape::Rect, 11, 9, 5, 4).unwrap(),
+        ];
+        let borders = [
+            BorderMode::Constant([37]),
+            BorderMode::Replicate,
+            BorderMode::Reflect,
+            BorderMode::Reflect101,
+            BorderMode::Wrap,
+        ];
+
+        for element in &elements {
+            for &border in &borders {
+                for iterations in 0..=2 {
+                    assert_eq!(
+                        erode_rect_u8(image.view(), element, iterations, border).unwrap(),
+                        erode(image.view(), element, iterations, border).unwrap()
+                    );
+                    assert_eq!(
+                        dilate_rect_u8(image.view(), element, iterations, border).unwrap(),
+                        dilate(image.view(), element, iterations, border).unwrap()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rectangular_u8_composites_match_generic() {
+        let image = Image::<u8, 1>::try_new(
+            7,
+            5,
+            (0..35).map(|index| ((index * 47 + index * index * 3) % 256) as u8).collect(),
+        )
+        .unwrap();
+        let element =
+            StructuringElement::try_new_with_anchor(MorphologyShape::Rect, 4, 3, 1, 2).unwrap();
+        for operation in [
+            MorphologyOperation::Open,
+            MorphologyOperation::Close,
+            MorphologyOperation::Gradient,
+            MorphologyOperation::TopHat,
+            MorphologyOperation::BlackHat,
+        ] {
+            for iterations in 0..=2 {
+                assert_eq!(
+                    morphology_rect_u8(
+                        image.view(),
+                        operation,
+                        &element,
+                        iterations,
+                        BorderMode::Replicate,
+                    )
+                    .unwrap(),
+                    morphology_ex(
+                        image.view(),
+                        operation,
+                        &element,
+                        iterations,
+                        BorderMode::Replicate,
+                    )
+                    .unwrap()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn rectangular_fast_path_rejects_sparse_masks() {
+        let image = Image::<u8, 1>::from_pixel(3, 3, [1]).unwrap();
+        let cross = StructuringElement::try_new(MorphologyShape::Cross, 3, 3).unwrap();
+        assert!(erode_rect_u8(image.view(), &cross, 1, BorderMode::Replicate).is_err());
     }
 }

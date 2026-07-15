@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SpatialRust morphology algorithms, semantics, dispatch, and measured OpenCV comparison.">
+  <title>Morphology · SpatialRust</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header><nav class="wrap"><a class="brand" href="index.html">SpatialRust</a><div class="nav-links"><a href="algorithms.html">Algorithms</a><a href="vision2.html">Vision 2</a><a href="spatialrust_vision/index.html">Rust API</a><a href="https://github.com/rsasaki0109/SpatialRust">GitHub</a></div></nav></header>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Vision algorithm guide</div>
+      <h1>Mathematical morphology</h1>
+      <p class="lead">Exact erosion, dilation, opening, closing, gradient, top-hat, and black-hat with explicit elements, anchors, iterations, and border behavior.</p>
+    </section>
+
+    <section>
+      <h2>Choose the operation</h2>
+      <div class="grid">
+        <article class="card"><h3>Erode / dilate</h3><p>Local minimum and maximum. Use them for shrinking or expanding bright foreground regions and for conservative mask cleanup.</p></article>
+        <article class="card"><h3>Open / close</h3><p>Opening removes small bright structures; closing fills small dark gaps. Iterations follow OpenCV's erode×N then dilate×N ordering.</p></article>
+        <article class="card"><h3>Derived contrasts</h3><p>Gradient extracts boundaries; top-hat and black-hat isolate bright or dark detail relative to the selected neighborhood scale.</p></article>
+      </div>
+    </section>
+
+    <section>
+      <h2>CPU dispatch</h2>
+      <p>Packed grayscale <code>u8</code> rectangles use two separable one-dimensional min/max passes. Each line is split into prefix/suffix blocks, so work is linear in image size plus border padding rather than image size times rectangle area. Large images use bounded Rayon row/column stages; transpose buffers keep the column pass cache-friendly.</p>
+      <p>Cross, ellipse, diamond, custom masks, other component types, channels, and strided views retain the safe generic implementation. Public CPU calls never upload to a GPU. Device morphology is a separate explicit <a href="spatialrust_gpu/index.html">wgpu API</a>.</p>
+    </section>
+
+    <section>
+      <h2>Accuracy and speed boundary</h2>
+      <p>The OpenCV 4.13 comparison uses random packed <code>uint8</code>, replicated borders, allocated Python outputs, OpenCL off, and paired interleaved calls. All published timings first require bit-exact output; 980 additional randomized operation cases also pass.</p>
+      <div class="grid">
+        <article class="card"><div class="metric">2.46×</div><p>SpatialRust lead for 1080p 511×511 opening on the recorded 12-thread Windows host.</p></article>
+        <article class="card"><div class="metric">2.06×</div><p>SpatialRust lead for 4K 511×511 opening on the same host.</p></article>
+        <article class="card"><div class="metric">small kernels</div><p>OpenCV still leads 5×5. The result is a large-window crossover, not a blanket morphology claim.</p></article>
+      </div>
+      <p>Reproduce with the <a href="https://github.com/rsasaki0109/SpatialRust/tree/main/bench/opencv_morphology_comparison">focused harness</a> and inspect the <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/notes/2026-07-15_rectangular_morphology_acceleration.md">dated receipt</a>.</p>
+    </section>
+
+    <section>
+      <h2>Further reading</h2>
+      <p>The implementation follows the van Herk/Gil–Werman family of constant-comparison sliding extrema. Semantics are checked against the <a href="https://docs.opencv.org/4.x/d4/d86/group__imgproc__filter.html">OpenCV morphology API</a>; the optimization direction is described by <a href="https://www.cs.technion.ac.il/wp-content/ron-kimmel/papers/EfficientMorphology_KimmelGil_PAMI_2002.pdf">Kimmel and Gil</a> and related streaming min/max work.</p>
+    </section>
+  </main>
+  <footer><div class="wrap">SpatialRust morphology · <a href="algorithms.html">Algorithm catalog</a> · <a href="spatialrust_vision/index.html">API reference</a></div></footer>
+</body>
+</html>

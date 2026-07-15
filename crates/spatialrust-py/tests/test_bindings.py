@@ -589,6 +589,16 @@ def test_morphology_operations_and_noncontiguous_input():
         assert output.dtype == np.uint8
 
 
+def test_rectangular_morphology_fast_path_accepts_noncontiguous_input():
+    image = np.arange(13 * 17, dtype=np.uint8).reshape(13, 17)
+    contiguous = image[:, ::-1].copy()
+    noncontiguous = image[:, ::-1]
+    for operation in ("erode", "dilate", "open", "close", "gradient", "tophat", "blackhat"):
+        expected = sr.morphology_image(contiguous, operation, 4, 6, "rect", 2)
+        actual = sr.morphology_image(noncontiguous, operation, 4, 6, "rect", 2)
+        np.testing.assert_array_equal(actual, expected)
+
+
 def test_threshold_histogram_clahe_and_integral_contracts():
     image = np.arange(9 * 11, dtype=np.uint8).reshape(9, 11)[:, ::-1]
     assert sr.threshold_image(image, 40).shape == image.shape
