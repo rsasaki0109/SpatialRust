@@ -192,6 +192,19 @@ These Windows-host medians include each Python API call and returned indices;
 see the [NMS harness](bench/opencv_nms_comparison/) and dated
 [receipt](notes/2026-07-15_nms_opencv_acceleration.md).
 
+Class-aware post-processing uses the same exact-index gate against OpenCV
+`dnn.NMSBoxesBatched`. SpatialRust stores kept indices by class, so candidates
+never scan already-kept boxes from unrelated classes:
+
+| Batched NMS profile | OpenCV | SpatialRust | Result |
+| --- | ---: | ---: | ---: |
+| 1,000 candidates / 20 classes | 3.538 ms | 0.134 ms | **SpatialRust 26.38×** |
+| 8,400 candidates / 80 classes | 211.762 ms | 2.178 ms | **SpatialRust 97.25×** |
+
+Both profiles returned exactly the same globally score-ordered indices. See
+the [batched NMS harness](bench/opencv_batched_nms_comparison/) and dated
+[receipt](notes/2026-07-15_batched_nms_opencv_acceleration.md).
+
 #### Vision accuracy
 
 The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:

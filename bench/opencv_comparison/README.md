@@ -32,7 +32,7 @@ VGA, 1080p, and 4K profiles and the initial competitive workload set:
 10. colored RGB-D to point cloud
 11. AI preprocessing
 12. RGB-D to voxel end-to-end
-13. detection NMS post-processing
+13. detection NMS and class-aware batched NMS post-processing
 
 Exact matches use a JSON `null` PSNR (mathematically infinite) so reports remain
 strict RFC-compatible JSON. Numerical comparisons retain max/mean/RMS and
@@ -51,6 +51,7 @@ then run both current suites:
 ```powershell
 python bench\opencv_comparison\run.py
 python bench\opencv_nms_comparison\performance.py
+python bench\opencv_batched_nms_comparison\performance.py
 ```
 
 Reports are written under `target/opencv-comparison/`. Run one suite with

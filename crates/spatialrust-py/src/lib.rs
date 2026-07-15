@@ -71,8 +71,8 @@ use spatialrust::transform::{
 };
 use spatialrust::vision::{
     adaptive_threshold as adaptive_threshold_op, approximate_polygon as approximate_contour,
-    bilateral_filter as bilateral_filter_op, canny as canny_op, clahe as clahe_op,
-    connected_components as label_components, decode_rle as decode_mask_runs,
+    batched_nms as batched_nms_op, bilateral_filter as bilateral_filter_op, canny as canny_op,
+    clahe as clahe_op, connected_components as label_components, decode_rle as decode_mask_runs,
     detect_and_describe_orb as detect_and_describe_orb_op, detect_fast as detect_fast_op,
     detect_harris as detect_harris_op, detect_shi_tomasi as detect_shi_tomasi_op,
     distance_transform_edt_u8_into as distance_transform_edt_u8_into_op,
@@ -93,7 +93,7 @@ use spatialrust::vision::{
     solve_pnp as solve_pnp_op, stereo_block_match as stereo_block_match_op,
     stitch_panorama_pair as stitch_panorama_pair_op, threshold as threshold_op, AbsolutePose,
     AdaptiveThresholdMethod, BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions,
-    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer,
+    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer, Detection,
     DistanceTransformWorkspace, FastOptions, HarrisOptions, Interpolation, Kernel2D, Keypoint2,
     MaskRle, MatchOptions, MorphologyOperation, MorphologyShape, ObjectImageCorrespondence,
     OrbOptions, OrbScoreType, PanoramaOptions, PerspectiveTransform, PointCorrespondence2,
@@ -3055,6 +3055,59 @@ fn nms<'py>(
     Ok(indices.into_pyarray_bound(py))
 }
 
+/// Class-aware greedy NMS over `(N, 4)` xyxy boxes.
+#[pyfunction]
+#[pyo3(signature = (boxes, scores, class_ids, score_threshold=0.0, iou_threshold=0.5))]
+fn batched_nms<'py>(
+    py: Python<'py>,
+    boxes: PyReadonlyArray2<'_, f32>,
+    scores: PyReadonlyArray1<'_, f32>,
+    class_ids: PyReadonlyArray1<'_, i64>,
+    score_threshold: f32,
+    iou_threshold: f32,
+) -> PyResult<Bound<'py, PyArray1<i64>>> {
+    let boxes_view = boxes.as_array();
+    if boxes_view.shape().len() != 2 || boxes_view.shape()[1] != 4 {
+        return Err(PyValueError::new_err("expected boxes with shape (N, 4)"));
+    }
+    let scores_view = scores.as_array();
+    let packed_scores;
+    let scores = match scores_view.as_slice() {
+        Some(scores) => scores,
+        None => {
+            packed_scores = scores_view.iter().copied().collect::<Vec<_>>();
+            packed_scores.as_slice()
+        }
+    };
+    let class_ids_view = class_ids.as_array();
+    let packed_class_ids;
+    let class_ids = match class_ids_view.as_slice() {
+        Some(class_ids) => class_ids,
+        None => {
+            packed_class_ids = class_ids_view.iter().copied().collect::<Vec<_>>();
+            packed_class_ids.as_slice()
+        }
+    };
+    let count = boxes_view.shape()[0];
+    if scores.len() != count || class_ids.len() != count {
+        return Err(PyValueError::new_err("boxes, scores, and class_ids must have equal lengths"));
+    }
+    let mut detections = Vec::with_capacity(count);
+    for (index, row) in boxes_view.rows().into_iter().enumerate() {
+        detections.push(Detection {
+            bbox: BoundingBox2::try_new(row[0], row[1], row[2], row[3]).map_err(to_py_err)?,
+            score: scores[index],
+            class_id: class_ids[index],
+        });
+    }
+    let indices = batched_nms_op(&detections, score_threshold, iou_threshold)
+        .map_err(to_py_err)?
+        .into_iter()
+        .map(|index| index as i64)
+        .collect::<Vec<_>>();
+    Ok(indices.into_pyarray_bound(py))
+}
+
 /// Soft-NMS returning `(indices, updated_scores)`.
 #[pyfunction]
 #[pyo3(signature = (boxes, scores, score_threshold=0.001, iou_threshold=0.5, method="linear", sigma=0.5))]
@@ -3424,6 +3477,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rgb_to_hsv_image, m)?)?;
     m.add_function(wrap_pyfunction!(remap_image, m)?)?;
     m.add_function(wrap_pyfunction!(nms, m)?)?;
+    m.add_function(wrap_pyfunction!(batched_nms, m)?)?;
     m.add_function(wrap_pyfunction!(soft_nms, m)?)?;
     m.add_function(wrap_pyfunction!(connected_components_image, m)?)?;
     m.add_function(wrap_pyfunction!(distance_transform_edt, m)?)?;
