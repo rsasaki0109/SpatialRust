@@ -90,6 +90,9 @@ explicit at that boundary.
 Computational photography composes image/warp/geometry primitives behind the
 additive `photography` feature. Panorama APIs expose canvas bounds and enforce a
 pre-allocation pixel budget; codec and device execution remain separate.
+The optional runtime execution graph owns operator scheduling only. Placement,
+watermarks, and named transfers reuse `spatialrust-distribute`; fusion is
+limited to linear fusable nodes on one device and cannot erase transfer edges.
 Its `imgproc-*` features share one border extrapolation contract; `filter2d`
 means correlation, while true convolution is an explicitly named operation.
 `spatialrust-tensor` is distinct from the point-cloud chunk iterator named
