@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Platform release-gate deepen (Epic 100)**: `spatialrust-platform` adds
+  performance budgets, a seeded north-star stability surface, baseline security
+  checklist helpers, conformance summaries, and an aggregated `ReleaseGate`
+  consumed by `north-star-e2e`.
+
 - **North-star E2E full portable path**: `north-star-e2e` now enables
   `sync-mcap` and `runtime-ros2`, and the integration test/demo exercise MCAP
   XYZ round-trip, ROS 2 CDR PointCloud2 loopback, USDA ASCII mesh export, and

@@ -288,7 +288,7 @@ TSDF marching tetrahedra.
 | 97 | Complete | `spatialrust-runtime` bounded pipeline/trace/diagnostics + ROS 2 CDR/loopback (`ros2`) |
 | 98 | Complete | `spatialrust-interchange` glTF JSON + USDA ASCII OpenUSD adapter |
 | 99 | Complete | `spatialrust-distribute` partitions, backpressure, named transfers |
-| 100 | Complete | `spatialrust-platform` stability/conformance/security/LTS |
+| 100 | Complete | `spatialrust-platform` stability/conformance/security/LTS + release gate/perf budgets |
 
 ## Epic 92 delivery slices
 
@@ -336,6 +336,16 @@ pulling ROS 2 or MCAP file codecs.
 | 99 | `distribute` | `spatialrust-distribute` |
 | 100 | `platform` | `spatialrust-platform` |
 
+## Epic 100 delivery slices
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 100A | Complete | `StabilityRegistry` + north-star surface seed | `platform` |
+| 100B | Complete | `ConformanceReport` statuses/counts/summary | `platform` |
+| 100C | Complete | `SecurityChecklist` baseline + mark helpers | `platform` |
+| 100D | Complete | `LtsPolicy` / `SupportWindow` for 1.x (18+6 months) | `platform` |
+| 100E | Complete | `PerformanceBudgetReport` + `ReleaseGate` aggregation | `platform` |
+
 Facade convenience flag `north-star` enables the Epic 91–100 substrate stack
 without ONNX/ROS2 native executors. Portable OpenUSD ASCII, CPU Gaussian
 rendering, and ROS 2 CDR codecs are available behind `interchange-openusd`,
@@ -346,4 +356,5 @@ The integration feature `north-star-e2e` (`north-star` + `ai-vision-pipeline` +
 `sync-mcap` + `runtime-ros2`) runs
 `crates/spatialrust/tests/north_star_pipeline.rs` and example `north_star_demo`:
 RGB → mock depth → episode → MCAP XYZ round-trip → ROS 2 CDR loopback →
-TSDF/mesh → glTF JSON + USDA ASCII → Gaussian CPU soft-splat.
+TSDF/mesh → glTF JSON + USDA ASCII → Gaussian CPU soft-splat →
+`ReleaseGate` (stability/conformance/security/LTS/perf budgets).
