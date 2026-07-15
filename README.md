@@ -158,8 +158,10 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | RGB to gray, reuse | OpenCV 6.01× | OpenCV 13.81× | OpenCV 2.09× |
 | Gaussian blur 5×5 | OpenCV 139.02× | OpenCV 107.91× | OpenCV 167.28× |
 | Sobel X 3×3 | OpenCV 14.38× | OpenCV 20.31× | OpenCV 23.30× |
-| Morphology open 5×5[^morphology-2026] | OpenCV 65.6× | OpenCV 13.1× | OpenCV 18.3× |
-| Morphology open 511×511[^morphology-2026] | OpenCV 2.40× | **SpatialRust 2.46×** | **SpatialRust 2.06×** |
+| Morphology open 5×5, allocate[^morphology-2026] | OpenCV 60.96× | OpenCV 13.34× | OpenCV 15.27× |
+| Morphology open 5×5, reuse[^morphology-2026] | OpenCV 60.32× | OpenCV 16.25× | OpenCV 17.78× |
+| Morphology open 511×511, allocate[^morphology-2026] | OpenCV 2.10× | **SpatialRust 2.61×** | **SpatialRust 2.40×** |
+| Morphology open 511×511, reuse[^morphology-2026] | OpenCV 2.46× | **SpatialRust 3.25×** | **SpatialRust 2.77×** |
 | Canny | OpenCV 10.66× | OpenCV 12.54× | OpenCV 12.65× |
 | Exact Euclidean distance transform, allocate | OpenCV 1.99× | OpenCV 1.85× | OpenCV 1.45× |
 | Exact Euclidean distance transform, reuse | OpenCV 1.02× | OpenCV 1.06× | **SpatialRust 1.07×** |
@@ -172,12 +174,14 @@ the dated [Epic 111 receipt](notes/2026-07-15_epic111_opencv_comparison_v2.md)
 records the exact environment and methodology.
 
 [^morphology-2026]: Rectangular morphology was remeasured separately with
-    OpenCV 4.13, OpenCL off, and the same allocated Python-API timing scope.
+    OpenCV 4.13, OpenCL off, with both allocated and caller-owned-output Python
+    API timing scopes. `MorphologyWorkspace` retains all full-image and
+    per-worker line scratch; `out=` retains object identity.
     The separable sliding min/max path is bit-exact across 980 randomized
     operation cases. It removes the old 500–900× gap for 5×5 kernels and wins
     on the named 511×511 large-background workload, but OpenCV remains much
     faster for small rectangles. See the [focused harness](bench/opencv_morphology_comparison/)
-    and [receipt](notes/2026-07-15_rectangular_morphology_acceleration.md).
+    and [workspace receipt](notes/2026-07-16_morphology_workspace_reuse.md).
 
 The EDT fast path is exact on the canonical masks and reduced the native 4K
 allocation benchmark from 451.63 ms to about 75 ms. With caller-owned output

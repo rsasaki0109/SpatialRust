@@ -578,7 +578,7 @@ backend, allocation mode, and accuracy contract.
 | 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
 | 115 | Planned | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
 | 116 | Planned | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
-| 117 | In progress | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
+| 117 | Complete | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
 | 118 | Planned | 113–117 | Fused Canny fast path that avoids public intermediates unless explicitly requested |
 | 119 | Planned | 104, 115–118 | Explicit upload-once GPU-resident vision chain with no intermediate readback |
 | 120 | Planned | 112–119 | Vision 2 cross-platform correctness, speed, memory, allocation, and transfer release gate |
@@ -647,7 +647,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | --- | --- | --- | --- |
 | 117A | Complete | Separable sliding min/max for rectangular elements | generic-reference property tests and OpenCV receipt |
 | 117B | Complete | Packed rectangular `u8` dispatch and generic Cross/Ellipse/Diamond/custom-mask fallback | shape, border, stride, iteration, and anchor parity |
-| 117C | Planned | Ping-pong workspace for iterations and composite operations | allocation and alias tests |
+| 117C | Complete | Caller-owned output and reusable ping-pong/worker scratch for iterations and composite operations | capacity, alias, stride, object-identity, and OpenCV reuse receipt |
 | 117D | Complete | Improve morphology by at least 20x on one canonical large profile | 43.8× 4K 5×5 baseline improvement; bit-exact 511×511 OpenCV wins |
 
 ### Epic 118 delivery slices

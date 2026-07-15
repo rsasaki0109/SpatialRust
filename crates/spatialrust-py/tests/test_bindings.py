@@ -599,6 +599,51 @@ def test_rectangular_morphology_fast_path_accepts_noncontiguous_input():
         np.testing.assert_array_equal(actual, expected)
 
 
+def test_rectangular_morphology_reuses_output_and_workspace():
+    image = np.arange(96 * 128, dtype=np.uint8).reshape(96, 128)
+    workspace = sr.MorphologyWorkspace()
+    output = np.empty_like(image)
+    assert workspace.capacity == 0
+
+    expected = sr.morphology_image(image, "open", 31, 17, "rect", 2)
+    returned = sr.morphology_image(
+        image, "open", 31, 17, "rect", 2, out=output, workspace=workspace
+    )
+    assert returned is output
+    np.testing.assert_array_equal(output, expected)
+    capacity = workspace.capacity
+    line_capacity = workspace.line_capacity
+    assert capacity >= image.size
+    assert line_capacity >= image.shape[1] + 30
+
+    expected_close = sr.morphology_image(image, "close", 7, 5, "rect", 1)
+    returned = sr.morphology_image(
+        image, "close", 7, 5, "rect", 1, out=output, workspace=workspace
+    )
+    assert returned is output
+    np.testing.assert_array_equal(output, expected_close)
+    assert workspace.capacity == capacity
+    assert workspace.line_capacity == line_capacity
+
+
+def test_morphology_output_and_workspace_contract_errors():
+    image = np.arange(8 * 10, dtype=np.uint8).reshape(8, 10)
+    workspace = sr.MorphologyWorkspace()
+    with pytest.raises(ValueError, match="out shape"):
+        sr.morphology_image(
+            image, "open", 3, 3, out=np.empty((8, 9), dtype=np.uint8), workspace=workspace
+        )
+    backing = np.empty((8, 20), dtype=np.uint8)
+    with pytest.raises(ValueError, match="contiguous"):
+        sr.morphology_image(
+            image, "open", 3, 3, out=backing[:, ::2], workspace=workspace
+        )
+    with pytest.raises(ValueError, match="only for rectangular"):
+        sr.morphology_image(image, "open", 3, 3, "ellipse", 1, workspace=workspace)
+    with pytest.raises(ValueError, match="must not overlap"):
+        sr.morphology_image(image, "open", 3, 3, out=image, workspace=workspace)
+
+
 def test_threshold_histogram_clahe_and_integral_contracts():
     image = np.arange(9 * 11, dtype=np.uint8).reshape(9, 11)[:, ::-1]
     assert sr.threshold_image(image, 40).shape == image.shape

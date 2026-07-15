@@ -31,7 +31,7 @@ __all__: list[str] = [
     "calibrate_fisheye_angles", "dense_flow_image", "gray_world_white_balance_image",
     "stitch_panorama_pair", "filter2d_image", "gaussian_blur_image",
     "median_blur_image", "bilateral_filter_image", "sobel_image", "scharr_image",
-    "laplacian_image", "pyr_down_image", "pyr_up_image", "morphology_image",
+    "laplacian_image", "pyr_down_image", "pyr_up_image", "MorphologyWorkspace", "morphology_image",
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
     "histogram_image", "equalize_histogram_image", "clahe_image",
     "integral_image_u8", "canny_image", "resize_image", "letterbox_image",
@@ -196,6 +196,19 @@ def laplacian_image(
 ) -> _F32Array: ...
 def pyr_down_image(image: _U8Array) -> _U8Array: ...
 def pyr_up_image(image: _U8Array) -> _U8Array: ...
+
+@final
+class MorphologyWorkspace:
+    """Reusable host scratch storage for rectangular uint8 morphology."""
+
+    def __init__(self) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+    @property
+    def worker_capacity(self) -> int: ...
+    @property
+    def line_capacity(self) -> int: ...
+
 def morphology_image(
     image: _U8Array,
     operation: str,
@@ -203,6 +216,8 @@ def morphology_image(
     kernel_height: int,
     shape: str = ...,
     iterations: int = ...,
+    out: Optional[_U8Array] = ...,
+    workspace: Optional[MorphologyWorkspace] = ...,
 ) -> _U8Array: ...
 def threshold_image(
     image: _U8Array,
