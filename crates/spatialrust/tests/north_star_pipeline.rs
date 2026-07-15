@@ -1,6 +1,7 @@
-//! North-star end-to-end smoke: image → AI → sync episode → scene → interchange.
+//! North-star end-to-end smoke: image → AI → episode → MCAP/ROS2 → scene → interchange.
 //!
-//! Covers the post-foundation success path without native MCAP/ROS2/OpenUSD.
+//! Exercises portable deepenings (MCAP XYZ, ROS 2 CDR PointCloud2, USDA ASCII,
+//! Gaussian CPU soft-splat) without install-time rclrs/libusd.
 
 #![cfg(feature = "north-star-e2e")]
 
@@ -10,19 +11,28 @@ use spatialrust::ai::{
 };
 use spatialrust::distribute::{ExecutionPartition, PartitionGraph};
 use spatialrust::episode::{Episode, ModelProvenance};
-use spatialrust::interchange::export_triangle_mesh_gltf_json;
+use spatialrust::interchange::{
+    export_stage_usda, export_triangle_mesh_gltf_json, import_mesh_from_usda,
+    MemoryUsdStageAdapter, UsdPrimPath, UsdStageAdapter,
+};
 use spatialrust::mapping::{PoseGraph, PoseGraphEdge, PoseNodeId, StampedPose, Trajectory};
 use spatialrust::platform::{
     ApiStabilityClass, ConformanceReport, ConformanceStatus, LtsPolicy, StabilityRegistry,
 };
 use spatialrust::records::{SchemaVersion, SpatialRecord};
-use spatialrust::runtime::{BoundedPipeline, PipelineConfig, PipelineStage};
-use spatialrust::scene::TsdfVolume;
+use spatialrust::runtime::{
+    decode_point_cloud2_xyz, encode_point_cloud2_xyz, BoundedPipeline, LoopbackRos2Node,
+    PipelineConfig, PipelineStage, PointCloud2Xyz, POINT_CLOUD2_TYPE,
+};
+use spatialrust::scene::{
+    render_gaussians_cpu, GaussianCamera, GaussianPrimitive, GaussianScene, TsdfVolume,
+};
 use spatialrust::semantic::{
     Embedding, EntityId, MultimodalFusion, OpenVocabLabel, SemanticEntity, SemanticSearchIndex,
 };
 use spatialrust::sync::{
-    ClockDomain, DeterministicReplayer, MemoryEpisode, StampedRecord, StampedTime, TopicId,
+    read_memory_episode_mcap, write_memory_episode_mcap, ClockDomain, DeterministicReplayer,
+    MemoryEpisode, StampedRecord, StampedTime, TopicId,
 };
 use spatialrust::{
     depth_map_to_point_cloud, depth_tensor_to_depth_map, rgb_u8_to_nchw_f32, CameraIntrinsics,
@@ -87,6 +97,7 @@ fn north_star_image_to_gltf_pipeline() {
     let cloud =
         depth_map_to_point_cloud(&depth, &camera, DepthConversionOptions::default()).unwrap();
     assert!(!cloud.is_empty());
+    let xyz = collect_xyz(&cloud);
 
     // 2) Versioned record → stamped multimodal episode
     let record = SpatialRecord::try_from_cloud("point", SchemaVersion::new(1, 0), cloud.clone())
@@ -102,6 +113,27 @@ fn north_star_image_to_gltf_pipeline() {
     });
     let mut replayer = DeterministicReplayer::new(&episode.memory);
     assert!(replayer.next_record().is_some());
+
+    // 2b) MCAP file round-trip for the same episode
+    let mcap_path = std::env::temp_dir().join(format!(
+        "spatialrust-north-star-{}-{}.mcap",
+        std::process::id(),
+        stamp.as_nanos()
+    ));
+    write_memory_episode_mcap(&mcap_path, &episode.memory).unwrap();
+    let from_mcap = read_memory_episode_mcap(&mcap_path).unwrap();
+    let _ = std::fs::remove_file(&mcap_path);
+    assert_eq!(from_mcap.records().len(), episode.memory.records().len());
+
+    // 2c) ROS 2 CDR PointCloud2 loopback (no rclrs)
+    let pc2 = PointCloud2Xyz::try_new("camera", 0, 1_000, xyz.clone()).unwrap();
+    let cdr = encode_point_cloud2_xyz(&pc2).unwrap();
+    let mut ros_node = LoopbackRos2Node::new();
+    ros_node.publish("/camera/points", cdr);
+    let taken = ros_node.take("/camera/points").unwrap();
+    let decoded = decode_point_cloud2_xyz(&taken).unwrap();
+    assert_eq!(decoded.xyz.len(), xyz.len());
+    assert_eq!(POINT_CLOUD2_TYPE, "sensor_msgs/msg/PointCloud2");
 
     // 3) Localization substrate: trajectory + pose graph
     let mut traj = Trajectory::new();
@@ -127,10 +159,9 @@ fn north_star_image_to_gltf_pipeline() {
         .unwrap();
     graph.localize_from_root(&PoseNodeId::new("n0")).unwrap();
 
-    // 4) TSDF → mesh → glTF
+    // 4) TSDF → mesh → glTF + USDA
     let mut volume =
         TsdfVolume::try_new(Vec3::new(-2.0, -2.0, 0.0), 0.2, [20, 20, 20], 0.5).unwrap();
-    let xyz = collect_xyz(&cloud);
     volume.integrate_xyz(&xyz, Vec3::new(0.0, 0.0, 0.0)).unwrap();
     let mesh = volume.extract_mesh(0.5);
     assert!(!mesh.is_empty());
@@ -138,22 +169,58 @@ fn north_star_image_to_gltf_pipeline() {
     assert!(gltf.contains("\"asset\""));
     assert!(gltf.contains("VEC3"));
 
+    let mut usd = MemoryUsdStageAdapter::new("north_star.usda");
+    usd.declare_mesh(UsdPrimPath::try_new("/World/TsdfMesh").unwrap(), &mesh)
+        .unwrap();
+    let usda = export_stage_usda(&usd).unwrap();
+    assert!(usda.starts_with("#usda 1.0"));
+    let (prim, imported) = import_mesh_from_usda(&usda).unwrap();
+    assert_eq!(prim.0, "/World/TsdfMesh");
+    assert_eq!(imported.triangle_count(), mesh.triangle_count());
+
+    // 4b) Gaussian CPU soft-splat from a few cloud samples
+    let mut gaussians = GaussianScene::new();
+    for chunk in xyz.chunks_exact(3).take(8) {
+        gaussians
+            .push(GaussianPrimitive {
+                mean: Vec3::new(chunk[0], chunk[1], chunk[2].max(0.5)),
+                scale: Vec3::new(0.08, 0.08, 0.08),
+                rotation: Quat::<f32>::identity(),
+                opacity: 0.9,
+                color: [0.2, 0.7, 1.0],
+            })
+            .unwrap();
+    }
+    let gauss_cam = GaussianCamera::look_along_z(48, 48, 60.0, 60.0);
+    let fb = render_gaussians_cpu(&gaussians, &gauss_cam).unwrap();
+    assert_eq!(fb.rgba.len(), 48 * 48 * 4);
+    assert!(fb.rgba.iter().any(|c| *c > 0));
+
     // 5) Semantic search on reconstructed entity
     let mut index = SemanticSearchIndex::new();
     index.insert(SemanticEntity {
         id: EntityId::new("surface"),
         centroid: Some(Vec3::new(0.0, 0.0, 1.0)),
-        labels: vec![OpenVocabLabel { text: "plane".into(), confidence: 0.8 }],
+        labels: vec![OpenVocabLabel {
+            text: "plane".into(),
+            confidence: 0.8,
+        }],
         embedding: Some(Embedding::try_new(vec![1.0, 0.0, 0.0]).unwrap()),
     });
     let hits = index
-        .search(&Embedding::try_new(vec![1.0, 0.0, 0.0]).unwrap(), MultimodalFusion::default(), 1)
+        .search(
+            &Embedding::try_new(vec![1.0, 0.0, 0.0]).unwrap(),
+            MultimodalFusion::default(),
+            1,
+        )
         .unwrap();
     assert_eq!(hits[0].0, EntityId::new("surface"));
 
     // 6) Bounded runtime + distribute graph
     let mut pipeline = BoundedPipeline::new(PipelineConfig { max_inflight: 4 });
-    pipeline.push(PipelineStage::new("reconstruct"), mesh.triangle_count()).unwrap();
+    pipeline
+        .push(PipelineStage::new("reconstruct"), mesh.triangle_count())
+        .unwrap();
     assert_eq!(pipeline.pop().unwrap().1, mesh.triangle_count());
 
     let mut partitions = PartitionGraph::new();
@@ -178,7 +245,15 @@ fn north_star_image_to_gltf_pipeline() {
     assert_eq!(LtsPolicy::spatialrust_v1().windows().len(), 1);
 
     let mut report = ConformanceReport::new();
-    report.record("north-star-e2e", ConformanceStatus::Pass, Some(TopicId::new("camera/depth_cloud").0));
+    report.record(
+        "north-star-e2e",
+        ConformanceStatus::Pass,
+        Some(TopicId::new("camera/depth_cloud").0),
+    );
+    report.record("north-star-e2e-mcap", ConformanceStatus::Pass, None);
+    report.record("north-star-e2e-ros2-cdr", ConformanceStatus::Pass, None);
+    report.record("north-star-e2e-usda", ConformanceStatus::Pass, None);
+    report.record("north-star-e2e-gaussian-cpu", ConformanceStatus::Pass, None);
     report.assert_no_failures().unwrap();
 }
 

@@ -342,6 +342,8 @@ rendering, and ROS 2 CDR codecs are available behind `interchange-openusd`,
 `scene-gaussian`, and `runtime-ros2`. Linking `rclrs` / libusd remains deferred
 to install-time toolchains.
 
-The integration feature `north-star-e2e` (`north-star` + `ai-vision-pipeline`)
-runs `crates/spatialrust/tests/north_star_pipeline.rs` and example
-`north_star_demo`: RGB → mock depth → episode → TSDF/mesh → glTF JSON.
+The integration feature `north-star-e2e` (`north-star` + `ai-vision-pipeline` +
+`sync-mcap` + `runtime-ros2`) runs
+`crates/spatialrust/tests/north_star_pipeline.rs` and example `north_star_demo`:
+RGB → mock depth → episode → MCAP XYZ round-trip → ROS 2 CDR loopback →
+TSDF/mesh → glTF JSON + USDA ASCII → Gaussian CPU soft-splat.
