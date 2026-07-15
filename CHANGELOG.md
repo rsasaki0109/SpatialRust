@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Bounded spatial execution graph (Epic 109)**: deterministic DAG compilation,
+  same-device linear fusion groups, bounded source admission, cross-device
+  transfer validation, and per-run named copy receipts behind `runtime-graph`.
+
 - **Computational photography and panorama (Epic 108)**: gray-world white
   balance, aligned well-exposedness fusion, bounded homography panorama canvas,
   feather blending, Python entry points, and OpenCV warp parity receipts behind

@@ -11,8 +11,18 @@ description = "Bounded robotics pipelines, tracing, and ROS 2 adaptation contrac
 [features]
 default = []
 ros2 = []
+execution-graph = ["dep:spatialrust-distribute"]
 
 [dependencies]
 spatialrust-core.workspace = true
 spatialrust-sync.workspace = true
+spatialrust-distribute = { workspace = true, optional = true }
 thiserror.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "execution_graph"
+harness = false
+required-features = ["execution-graph"]

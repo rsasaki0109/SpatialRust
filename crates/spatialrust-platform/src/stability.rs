@@ -121,6 +121,7 @@ impl StabilityRegistry {
             "spatialrust-vision::video",
             "spatialrust-vision::odometry",
             "spatialrust-vision::photography",
+            "spatialrust-runtime::execution-graph",
             "spatialrust-vision::ai-adapters",
             "spatialrust-gpu::GpuImage",
         ];

@@ -72,7 +72,7 @@ until their individual 1.0 milestones.
 | Scene (`scene`, `scene-gaussian`) | TSDF/surfel/mesh reconstruction and Gaussian scene containers are provisional |
 | Semantic (`semantic`) | Embeddings, open-vocab labels, fusion, and semantic search are provisional |
 | Episode (`episode`) | Embodied episode schemas, annotations, augmentation, eval, and provenance are provisional |
-| Runtime (`runtime`, `runtime-ros2`) | Bounded pipelines, tracing, diagnostics, and ROS 2 adapter contracts are provisional |
+| Runtime (`runtime`, `runtime-graph`, `runtime-ros2`) | Bounded pipelines/graphs, fusion schedules, transfer receipts, tracing, diagnostics, and ROS 2 adapters are provisional |
 | Interchange (`interchange-*`) | glTF JSON and OpenUSD stage adapter contracts are provisional |
 | Distribute (`distribute`) | Partition graphs, backpressure, and named transfers are provisional |
 | Platform (`platform`) | API stability registry, conformance reports, security checklists, and LTS policy are provisional |
@@ -100,7 +100,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-scene` | Provisional | TSDF, surfels, meshes; Gaussian containers + CPU soft-splat behind `gaussian` |
 | `spatialrust-semantic` | Provisional | Embeddings, entities, multimodal fusion/search |
 | `spatialrust-episode` | Provisional | Episode schema, annotation, augmentation, eval, provenance |
-| `spatialrust-runtime` | Provisional | Bounded pipelines/tracing/diagnostics; ROS 2 adapters gated |
+| `spatialrust-runtime` | Provisional | Bounded pipelines and execution graphs, explicit transfer receipts, tracing/diagnostics; ROS 2 adapters gated |
 | `spatialrust-interchange` | Provisional | glTF JSON mesh bridge; USDA ASCII OpenUSD stage adapter |
 | `spatialrust-distribute` | Provisional | Partition graphs, topo schedules, backpressure queues, named measurable transfers |
 | `spatialrust-platform` | Provisional | Stability registry, conformance summaries, security checklist, LTS policy, performance budgets, release gate |

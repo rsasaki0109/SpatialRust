@@ -385,7 +385,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | 106 | Complete | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
 | 107 | Complete | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
 | 108 | Complete | 101–107 | Feature-gated computational photography and panorama stitching |
-| 109 | Planned | 97, 99, 101–108 | Bounded spatial execution graph with fusion, backpressure, and named transfer receipts |
+| 109 | Complete | 97, 99, 101–108 | Bounded spatial execution graph with fusion, backpressure, and named transfer receipts |
 | 110 | Planned | 100, 101–109 | SpatialRust Vision 1.0 conformance, audits, performance budgets, examples, and migration policy |
 
 ### Epic 101 acceptance criteria
@@ -515,3 +515,18 @@ Photography remains a runtime-free `vision-photography` feature. Inputs must
 share dimensions/metadata where alignment requires it, panorama allocations are
 checked against a caller-visible pixel ceiling, and no codec or GPU transfer is
 performed implicitly.
+
+### Epic 109 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 109A | Complete | Typed stateful operators and deterministic DAG compilation | duplicate/missing endpoint and cycle rejection tests |
+| 109B | Complete | Same-device linear fusion schedule | `decode + gray` fused while GPU inference stays separate |
+| 109C | Complete | Soft/hard bounded source admission | watermark counters and hard-rejection test |
+| 109D | Complete | Mandatory named cross-device edges | missing-transfer compile rejection |
+| 109E | Complete | Per-run stage/fusion/transfer receipts and workload | 1024-byte upload ledger and eight-stage Criterion |
+
+`spatialrust-runtime/execution-graph` reuses placement, watermark, and transfer
+contracts from `spatialrust-distribute`. Fusion never crosses a placement
+boundary or an explicitly named transfer. Values remain owned, and the runtime
+does not infer or execute a host/device copy on behalf of an operator.
