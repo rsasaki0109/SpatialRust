@@ -377,7 +377,7 @@ uses the standard completion gates above and lands as one reviewable PR.
 | Epic | Status | Depends on | Outcome |
 | --- | --- | --- | --- |
 | 101 | Complete | 83–90 | Reproducible OpenCV correctness/performance contract, workload manifest, environment receipts, and aggregate runner |
-| 102 | Planned | 101 | Stabilize the image/camera/vision 1.0 contract and cross-platform conformance |
+| 102 | Complete | 101 | Stabilize the image/camera/vision 1.0 contract and cross-platform conformance |
 | 103 | Planned | 101–102 | SIMD/parallel CPU kernel dispatch, reusable outputs, and measured allocation control |
 | 104 | Planned | 89, 101–103 | Texture-backed GPU Image v2 and device-resident resize/filter/edge/morphology chains |
 | 105 | Planned | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
@@ -406,3 +406,19 @@ uses the standard completion gates above and lands as one reviewable PR.
 Epics 103–104 may add internal dispatch and fusion, but public CPU APIs never
 perform implicit device transfers. Epics 105–109 keep codecs, ONNX, ROS 2,
 CUDA, and external video runtimes in dedicated additive features.
+
+### Epic 102 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 102A | Complete | Machine-readable stable/provisional image, camera, and vision surface | `StabilityRegistry::vision_v1_surface()` |
+| 102B | Complete | Stable ownership, stride, camera, filter, detection entry-point contract | `vision_api_v1` integration test |
+| 102C | Complete | Feature-complete image/camera/vision tests on Linux, Windows, and macOS | `vision-platform-conformance` CI matrix |
+| 102D | Complete | API stability policy, ROADMAP, CHANGELOG, and reproducibility note | release documentation |
+
+Epic 102 freezes data ownership and the common algorithm entry surface, not
+every algorithm implementation. Geometry, stereo, optical flow, AI adapters,
+and `GpuImage` remain explicitly provisional. Stable entries may gain faster
+internal dispatch without changing ownership, error, stride, or transfer
+semantics. Completion requires the dedicated three-OS CI matrix and the full
+`spatialrust-vision/full` property suite to pass.

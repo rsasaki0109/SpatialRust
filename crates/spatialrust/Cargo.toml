@@ -242,6 +242,11 @@ spatialrust-platform = { workspace = true, optional = true }
 
 [dev-dependencies]
 
+[[test]]
+name = "vision_api_v1"
+path = "tests/vision_api_v1.rs"
+required-features = ["platform", "camera-rgbd", "vision-full"]
+
 [[example]]
 name = "north_star_demo"
 path = "examples/north_star_demo.rs"

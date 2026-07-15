@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Vision API conformance (Epic 102)**: a machine-readable stable/provisional
+  image-camera-vision registry, a compile-and-behavior API contract, and a
+  dedicated Linux/Windows/macOS CI matrix for the image, camera, and full vision
+  feature surface. Geometry, stereo, flow, AI adapters, and GPU images remain
+  explicitly provisional while ownership and common entry points are frozen.
+
 - **OpenCV comparison contract (Epic 101)**: versioned correctness/performance
   JSON reports with environment receipts, raw timing samples, median/p95,
   allocation/reuse modes, a canonical VGA/1080p/4K workload manifest, and an
