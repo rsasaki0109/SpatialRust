@@ -101,7 +101,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-episode` | Provisional | Episode schema, annotation, augmentation, eval, provenance |
 | `spatialrust-runtime` | Provisional | Bounded pipelines/tracing/diagnostics; ROS 2 adapters gated |
 | `spatialrust-interchange` | Provisional | glTF JSON mesh bridge; USDA ASCII OpenUSD stage adapter |
-| `spatialrust-distribute` | Provisional | Partition graph, backpressure, named transfers |
+| `spatialrust-distribute` | Provisional | Partition graphs, topo schedules, backpressure queues, named measurable transfers |
 | `spatialrust-platform` | Provisional | Stability registry, conformance summaries, security checklist, LTS policy, performance budgets, release gate |
 | `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |
 | `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms, checked Feature2D descriptors/matches, shared border/kernel contracts, and explicit point-cloud bridges |
