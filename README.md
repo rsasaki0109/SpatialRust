@@ -205,6 +205,23 @@ Both profiles returned exactly the same globally score-ordered indices. See
 the [batched NMS harness](bench/opencv_batched_nms_comparison/) and dated
 [receipt](notes/2026-07-15_batched_nms_opencv_acceleration.md).
 
+Soft-NMS retains overlapping detections while decaying their scores. The
+linear and Gaussian methods use an active-candidate max scan, cached box areas,
+and a non-overlap fast path:
+
+| Soft-NMS profile | Method | OpenCV | SpatialRust | Result |
+| --- | --- | ---: | ---: | ---: |
+| 100 candidates | Linear | 0.092 ms | 0.015 ms | **SpatialRust 6.33×** |
+| 100 candidates | Gaussian | 0.108 ms | 0.015 ms | **SpatialRust 7.40×** |
+| 1,000 candidates | Linear | 5.636 ms | 1.649 ms | **SpatialRust 3.42×** |
+| 1,000 candidates | Gaussian | 6.047 ms | 1.293 ms | **SpatialRust 4.68×** |
+| 8,400 candidates | Linear | 310.709 ms | 76.660 ms | **SpatialRust 4.05×** |
+| 8,400 candidates | Gaussian | 213.696 ms | 39.816 ms | **SpatialRust 5.37×** |
+
+All profiles exactly matched OpenCV's kept-index order; updated float32 scores
+stayed within `1.79e-7`. See the [Soft-NMS harness](bench/opencv_soft_nms_comparison/)
+and dated [receipt](notes/2026-07-15_soft_nms_opencv_acceleration.md).
+
 #### Vision accuracy
 
 The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:

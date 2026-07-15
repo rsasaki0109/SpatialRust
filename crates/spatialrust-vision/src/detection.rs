@@ -259,48 +259,87 @@ pub fn soft_nms(
         .map(|(index, score)| ScoredIndex { index, score })
         .collect();
     let areas: Vec<f32> = boxes.iter().copied().map(BoundingBox2::area).collect();
-    let mut output = Vec::new();
-    while !candidates.is_empty() {
-        candidates.sort_by(score_order);
-        let selected = candidates.remove(0);
-        if selected.score < score_threshold {
+    let mut output = Vec::with_capacity(candidates.len());
+    let mut best = best_scored_candidate(&candidates);
+    while let Some(best_index) = best {
+        if candidates[best_index].score < score_threshold {
             break;
         }
+        let selected = candidates.swap_remove(best_index);
         output.push(selected);
-        for candidate in &mut candidates {
+        let selected_box = boxes[selected.index];
+        let selected_area = areas[selected.index];
+        let mut active_count = 0;
+        let mut next_best = None;
+        for read_index in 0..candidates.len() {
+            let mut candidate = candidates[read_index];
             let overlap = iou_with_areas(
-                boxes[selected.index],
-                areas[selected.index],
+                selected_box,
+                selected_area,
                 boxes[candidate.index],
                 areas[candidate.index],
             );
-            let weight = match method {
-                SoftNmsMethod::Hard => {
-                    if overlap <= iou_threshold {
-                        1.0
-                    } else {
-                        0.0
+            if overlap != 0.0 {
+                match method {
+                    SoftNmsMethod::Hard => {
+                        if overlap > iou_threshold {
+                            candidate.score *= 0.0;
+                        }
+                    }
+                    SoftNmsMethod::Linear => {
+                        if overlap > iou_threshold {
+                            candidate.score *= 1.0 - overlap;
+                        }
+                    }
+                    SoftNmsMethod::Gaussian { sigma } => {
+                        candidate.score *= (-(overlap * overlap) / sigma).exp();
                     }
                 }
-                SoftNmsMethod::Linear => {
-                    if overlap > iou_threshold {
-                        1.0 - overlap
-                    } else {
-                        1.0
-                    }
+            }
+            if candidate.score >= score_threshold {
+                candidates[active_count] = candidate;
+                let is_next_best = match next_best {
+                    Some(index) => scored_candidate_precedes(candidate, candidates[index]),
+                    None => true,
+                };
+                if is_next_best {
+                    next_best = Some(active_count);
                 }
-                SoftNmsMethod::Gaussian { sigma } => (-(overlap * overlap) / sigma).exp(),
-            };
-            candidate.score *= weight;
+                active_count += 1;
+            }
         }
-        candidates.retain(|candidate| candidate.score >= score_threshold);
+        candidates.truncate(active_count);
+        best = next_best;
     }
     Ok(output)
 }
 
+fn best_scored_candidate(candidates: &[ScoredIndex]) -> Option<usize> {
+    if candidates.is_empty() {
+        return None;
+    }
+    let mut best = 0;
+    for index in 1..candidates.len() {
+        if scored_candidate_precedes(candidates[index], candidates[best]) {
+            best = index;
+        }
+    }
+    Some(best)
+}
+
+fn scored_candidate_precedes(left: ScoredIndex, right: ScoredIndex) -> bool {
+    left.score > right.score || left.score == right.score && left.index < right.index
+}
+
 fn iou_with_areas(left: BoundingBox2, left_area: f32, right: BoundingBox2, right_area: f32) -> f32 {
-    let intersection_width = (left.x_max.min(right.x_max) - left.x_min.max(right.x_min)).max(0.0);
-    let intersection_height = (left.y_max.min(right.y_max) - left.y_min.max(right.y_min)).max(0.0);
+    let intersection_width = left.x_max.min(right.x_max) - left.x_min.max(right.x_min);
+    if intersection_width <= 0.0 {
+        return 0.0;
+    }
+    let intersection_height = left.y_max.min(right.y_max) - left.y_min.max(right.y_min);
+    if intersection_height <= 0.0 {
+        return 0.0;
+    }
     let intersection = intersection_width * intersection_height;
     let union = left_area + right_area - intersection;
     if union > 0.0 {
@@ -344,14 +383,6 @@ fn sort_indices_by_score(indices: &mut [usize], scores: &[f32]) {
             .unwrap_or(Ordering::Equal)
             .then_with(|| left.cmp(&right))
     });
-}
-
-fn score_order(left: &ScoredIndex, right: &ScoredIndex) -> Ordering {
-    right
-        .score
-        .partial_cmp(&left.score)
-        .unwrap_or(Ordering::Equal)
-        .then_with(|| left.index.cmp(&right.index))
 }
 
 #[cfg(test)]
@@ -470,5 +501,90 @@ mod tests {
         let result = soft_nms(&boxes, &[0.9, 0.8], 0.01, 0.5, SoftNmsMethod::Linear).unwrap();
         assert_eq!(result[0].index, 0);
         assert!(result[1].score < 0.8);
+        assert!(soft_nms(&boxes, &[0.9, 0.8], 0.01, 0.5, SoftNmsMethod::Gaussian { sigma: 0.0 },)
+            .is_err());
+    }
+
+    #[test]
+    fn soft_nms_selection_scan_preserves_sorting_semantics() {
+        let mut state = 127_u64;
+        let boxes = (0..73)
+            .map(|_| {
+                let x = sample(&mut state) * 64.0;
+                let y = sample(&mut state) * 64.0;
+                let width = 1.0 + sample(&mut state) * 20.0;
+                let height = 1.0 + sample(&mut state) * 20.0;
+                bbox(x, y, x + width, y + height)
+            })
+            .collect::<Vec<_>>();
+        let mut scores = (0..boxes.len()).map(|_| sample(&mut state)).collect::<Vec<_>>();
+        scores[5] = scores[2];
+        for method in
+            [SoftNmsMethod::Hard, SoftNmsMethod::Linear, SoftNmsMethod::Gaussian { sigma: 0.5 }]
+        {
+            let actual = soft_nms(&boxes, &scores, 0.2, 0.45, method).unwrap();
+            let expected = sorting_soft_nms_reference(&boxes, &scores, 0.2, 0.45, method);
+            assert_eq!(actual, expected);
+        }
+
+        let overlapping = [bbox(0.0, 0.0, 2.0, 2.0), bbox(0.0, 0.0, 2.0, 2.0)];
+        let negative_scores = [1.0, -0.6];
+        assert_eq!(
+            soft_nms(&overlapping, &negative_scores, -0.5, 0.45, SoftNmsMethod::Hard).unwrap(),
+            sorting_soft_nms_reference(
+                &overlapping,
+                &negative_scores,
+                -0.5,
+                0.45,
+                SoftNmsMethod::Hard,
+            ),
+        );
+    }
+
+    fn sorting_soft_nms_reference(
+        boxes: &[BoundingBox2],
+        scores: &[f32],
+        score_threshold: f32,
+        iou_threshold: f32,
+        method: SoftNmsMethod,
+    ) -> Vec<super::ScoredIndex> {
+        let mut candidates = scores
+            .iter()
+            .copied()
+            .enumerate()
+            .map(|(index, score)| super::ScoredIndex { index, score })
+            .collect::<Vec<_>>();
+        let mut output = Vec::new();
+        while !candidates.is_empty() {
+            candidates.sort_by(|left, right| {
+                right
+                    .score
+                    .partial_cmp(&left.score)
+                    .unwrap()
+                    .then_with(|| left.index.cmp(&right.index))
+            });
+            let selected = candidates.remove(0);
+            if selected.score < score_threshold {
+                break;
+            }
+            output.push(selected);
+            for candidate in &mut candidates {
+                let overlap = boxes[selected.index].iou(boxes[candidate.index]);
+                let weight = match method {
+                    SoftNmsMethod::Hard => (overlap <= iou_threshold) as u8 as f32,
+                    SoftNmsMethod::Linear => {
+                        if overlap > iou_threshold {
+                            1.0 - overlap
+                        } else {
+                            1.0
+                        }
+                    }
+                    SoftNmsMethod::Gaussian { sigma } => (-(overlap * overlap) / sigma).exp(),
+                };
+                candidate.score *= weight;
+            }
+            candidates.retain(|candidate| candidate.score >= score_threshold);
+        }
+        output
     }
 }

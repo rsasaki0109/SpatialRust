@@ -3134,8 +3134,16 @@ fn soft_nms(
         "gaussian" => SoftNmsMethod::Gaussian { sigma },
         other => return Err(PyValueError::new_err(format!("unknown Soft-NMS method `{other}`"))),
     };
-    let scores: Vec<f32> = scores.as_array().iter().copied().collect();
-    let result = soft_nms_op(&native_boxes, &scores, score_threshold, iou_threshold, method)
+    let scores_view = scores.as_array();
+    let packed_scores;
+    let scores = match scores_view.as_slice() {
+        Some(scores) => scores,
+        None => {
+            packed_scores = scores_view.iter().copied().collect::<Vec<_>>();
+            packed_scores.as_slice()
+        }
+    };
+    let result = soft_nms_op(&native_boxes, scores, score_threshold, iou_threshold, method)
         .map_err(to_py_err)?;
     Ok((
         result.iter().map(|value| value.index).collect(),
