@@ -10,6 +10,7 @@ mod gate;
 mod lts;
 mod security;
 mod stability;
+mod vision;
 
 pub use budget::{BudgetKind, PerformanceBudget, PerformanceBudgetReport, PerformanceSample};
 pub use conformance::{ConformanceCase, ConformanceReport, ConformanceStatus};
@@ -18,3 +19,4 @@ pub use gate::{ReleaseGate, ReleaseGateDecision};
 pub use lts::{LtsPolicy, SupportWindow};
 pub use security::{SecurityAuditItem, SecurityChecklist};
 pub use stability::{ApiStabilityClass, ApiSurfaceItem, StabilityRegistry};
+pub use vision::{Vision1Measurements, Vision1ReleaseEvidence, Vision1ReleaseGate};

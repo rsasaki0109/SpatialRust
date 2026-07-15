@@ -261,6 +261,16 @@ name = "north_star_demo"
 path = "examples/north_star_demo.rs"
 required-features = ["north-star-e2e"]
 
+[[example]]
+name = "vision_1_cpu"
+path = "examples/vision_1_cpu.rs"
+required-features = ["vision-full"]
+
+[[example]]
+name = "vision_1_release_gate"
+path = "examples/vision_1_release_gate.rs"
+required-features = ["platform"]
+
 [[bin]]
 name = "spatialrust-mvp"
 path = "src/bin/spatialrust_mvp.rs"

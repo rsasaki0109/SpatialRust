@@ -5,6 +5,8 @@ use crate::{PlatformError, PlatformResult};
 /// Dimension of a performance budget.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum BudgetKind {
+    /// Wall-clock latency upper bound in microseconds.
+    LatencyMicros,
     /// Wall-clock latency upper bound.
     LatencyMillis,
     /// Explicit transfer / copy volume upper bound.
