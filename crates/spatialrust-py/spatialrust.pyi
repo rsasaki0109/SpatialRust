@@ -36,7 +36,7 @@ __all__: list[str] = [
     "histogram_image", "equalize_histogram_image", "clahe_image",
     "integral_image_u8", "canny_image", "resize_image", "letterbox_image",
     "normalize_image_chw", "rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
-    "nms", "soft_nms", "connected_components_image", "distance_transform_edt",
+    "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
     "find_mask_contours",
     "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
     "radius_graph", "register_icp", "register_point_to_plane", "register_gicp",
@@ -270,6 +270,13 @@ def remap_image(
 def nms(
     boxes: _F32Array,
     scores: _F32Array,
+    score_threshold: float = ...,
+    iou_threshold: float = ...,
+) -> NDArray[np.int64]: ...
+def batched_nms(
+    boxes: _F32Array,
+    scores: _F32Array,
+    class_ids: NDArray[np.int64],
     score_threshold: float = ...,
     iou_threshold: float = ...,
 ) -> NDArray[np.int64]: ...

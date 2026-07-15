@@ -66,7 +66,7 @@ def test_exports_present():
         "rgbd_to_point_cloud", "depth_to_xyz",
         "resize_image", "letterbox_image", "normalize_image_chw",
         "rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
-        "nms", "soft_nms", "connected_components_image", "distance_transform_edt",
+        "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
         "find_mask_contours", "encode_mask_rle", "decode_mask_rle",
         "point_map_to_point_cloud",
     ):
@@ -179,6 +179,16 @@ def test_detection_nms_and_soft_nms():
     score_storage = np.empty(scores.size * 2, dtype=np.float32)
     score_storage[::2] = scores
     np.testing.assert_array_equal(sr.nms(boxes, score_storage[::2]), [0, 2])
+    np.testing.assert_array_equal(
+        sr.batched_nms(boxes, scores, np.array([4, 4, 4], dtype=np.int64)), [0, 2]
+    )
+    class_storage = np.zeros(scores.size * 2, dtype=np.int64)
+    class_storage[::2] = [4, 9, 4]
+    np.testing.assert_array_equal(
+        sr.batched_nms(boxes, score_storage[::2], class_storage[::2]), [0, 1, 2]
+    )
+    with pytest.raises(ValueError, match="equal lengths"):
+        sr.batched_nms(boxes, scores[:-1], np.array([4, 9, 4], dtype=np.int64))
     indices, updated = sr.soft_nms(boxes, scores, method="linear")
     assert indices[0] == 0
     assert len(indices) == len(updated) == 3

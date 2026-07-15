@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use spatialrust_vision::{nms, BoundingBox2};
+use spatialrust_vision::{batched_nms, nms, BoundingBox2, Detection};
 
 fn benchmark_nms(c: &mut Criterion) {
     let mut group = c.benchmark_group("nms_xyxy_f32");
@@ -12,6 +12,27 @@ fn benchmark_nms(c: &mut Criterion) {
                 black_box(
                     nms(black_box(&boxes), black_box(&scores), black_box(0.25), black_box(0.5))
                         .unwrap(),
+                )
+            });
+        });
+    }
+    group.finish();
+
+    let mut group = c.benchmark_group("batched_nms_xyxy_f32_80_classes");
+    group.sample_size(10);
+    for &count in &[1_000_usize, 8_400] {
+        let (boxes, scores) = detections(count);
+        let detections = boxes
+            .into_iter()
+            .zip(scores)
+            .enumerate()
+            .map(|(index, (bbox, score))| Detection { bbox, score, class_id: (index % 80) as i64 })
+            .collect::<Vec<_>>();
+        group.throughput(Throughput::Elements(count as u64));
+        group.bench_function(BenchmarkId::from_parameter(count), |b| {
+            b.iter(|| {
+                black_box(
+                    batched_nms(black_box(&detections), black_box(0.25), black_box(0.5)).unwrap(),
                 )
             });
         });

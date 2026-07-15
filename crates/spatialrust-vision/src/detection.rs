@@ -1,6 +1,7 @@
 //! Detection post-processing primitives.
 
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 use crate::{VisionError, VisionResult};
 
@@ -216,20 +217,23 @@ pub fn batched_nms(
     sort_indices_by_score(&mut order, &scores);
     let areas: Vec<f32> = detections.iter().map(|detection| detection.bbox.area()).collect();
     let mut keep: Vec<usize> = Vec::with_capacity(order.len());
+    let mut keep_by_class: HashMap<i64, Vec<usize>> = HashMap::new();
     'candidate: for index in order {
-        for &selected in &keep {
-            if detections[index].class_id == detections[selected].class_id
-                && iou_with_areas(
-                    detections[index].bbox,
-                    areas[index],
-                    detections[selected].bbox,
-                    areas[selected],
-                ) > iou_threshold
+        let class_id = detections[index].class_id;
+        let selected_for_class = keep_by_class.entry(class_id).or_default();
+        for &selected in selected_for_class.iter() {
+            if iou_with_areas(
+                detections[index].bbox,
+                areas[index],
+                detections[selected].bbox,
+                areas[selected],
+            ) > iou_threshold
             {
                 continue 'candidate;
             }
         }
         keep.push(index);
+        selected_for_class.push(index);
     }
     Ok(keep)
 }
@@ -396,6 +400,68 @@ mod tests {
             Detection { bbox: bbox(0.0, 0.0, 2.0, 2.0), score: 0.8, class_id: 2 },
         ];
         assert_eq!(batched_nms(&detections, 0.0, 0.5).unwrap(), vec![0, 1]);
+    }
+
+    #[test]
+    fn batched_nms_suppresses_per_class_in_global_score_order() {
+        let detections = [
+            Detection { bbox: bbox(0.0, 0.0, 2.0, 2.0), score: 0.7, class_id: 4 },
+            Detection { bbox: bbox(0.1, 0.1, 2.1, 2.1), score: 0.9, class_id: 4 },
+            Detection { bbox: bbox(0.1, 0.1, 2.1, 2.1), score: 0.8, class_id: 9 },
+            Detection { bbox: bbox(5.0, 5.0, 6.0, 6.0), score: 0.6, class_id: 4 },
+        ];
+        assert_eq!(batched_nms(&detections, 0.0, 0.5).unwrap(), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn class_buckets_match_global_scan_reference() {
+        let mut state = 119_u64;
+        let detections = (0..257)
+            .map(|index| {
+                let x = sample(&mut state) * 64.0;
+                let y = sample(&mut state) * 64.0;
+                let width = 1.0 + sample(&mut state) * 20.0;
+                let height = 1.0 + sample(&mut state) * 20.0;
+                Detection {
+                    bbox: bbox(x, y, x + width, y + height),
+                    score: sample(&mut state),
+                    class_id: (index % 11) as i64 - 5,
+                }
+            })
+            .collect::<Vec<_>>();
+        let actual = batched_nms(&detections, 0.2, 0.45).unwrap();
+
+        let mut order = (0..detections.len())
+            .filter(|&index| detections[index].score >= 0.2)
+            .collect::<Vec<_>>();
+        order.sort_by(|&left, &right| {
+            detections[right]
+                .score
+                .partial_cmp(&detections[left].score)
+                .unwrap()
+                .then_with(|| left.cmp(&right))
+        });
+        let mut expected: Vec<usize> = Vec::new();
+        'candidate: for index in order {
+            for &selected in &expected {
+                if detections[index].class_id == detections[selected].class_id
+                    && detections[index].bbox.iou(detections[selected].bbox) > 0.45
+                {
+                    continue 'candidate;
+                }
+            }
+            expected.push(index);
+        }
+        assert_eq!(actual, expected);
+    }
+
+    fn sample(state: &mut u64) -> f32 {
+        *state = state.wrapping_add(0x9E37_79B9_7F4A_7C15);
+        let mut value = *state;
+        value = (value ^ (value >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        value = (value ^ (value >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        value ^= value >> 31;
+        (value >> 40) as f32 / (1_u32 << 24) as f32
     }
 
     #[test]

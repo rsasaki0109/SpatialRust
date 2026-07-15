@@ -107,7 +107,7 @@ reloaded = sr.read("labeled.las")
 | `rgbd_to_point_cloud(depth, color, fx, fy, cx, cy, ...)` | Aligned `(H,W)` depth + `(H,W,3)` RGB to an XYZRGB cloud |
 | `resize_image` / `letterbox_image` / `normalize_image_chw` | Model-ready RGB resize, padding, and float32 CHW packing |
 | `rgb_to_gray_image` / `rgb_to_hsv_image` / `remap_image` | CPU color conversion and coordinate-map resampling |
-| `nms` / `soft_nms` | Detection post-processing for `(N,4)` xyxy boxes |
+| `nms` / `batched_nms` / `soft_nms` | Detection post-processing for `(N,4)` xyxy boxes, including class-aware suppression |
 | `connected_components_image` / `find_mask_contours` | Binary-mask labeling and contour extraction |
 | `encode_mask_rle` / `decode_mask_rle` | Row-major or COCO column-major binary-mask RLE |
 | `point_map_to_point_cloud` | Filter a dense `(H,W,3)` point map into a native point cloud |
