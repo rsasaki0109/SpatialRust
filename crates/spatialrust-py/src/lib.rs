@@ -82,7 +82,8 @@ use spatialrust::vision::{
     erode_rect_u8_into as erode_rect_u8_into_op,
     estimate_homography_ransac as estimate_homography_ransac_op,
     estimate_rgbd_odometry as estimate_rgbd_odometry_op, filter2d as filter2d_op,
-    find_contours as trace_contours, gaussian_blur as gaussian_blur_op,
+    find_contours as trace_contours, gaussian_blur_u8 as gaussian_blur_u8_op,
+    gaussian_blur_u8_into as gaussian_blur_u8_into_op,
     gray_world_white_balance as gray_world_white_balance_op, histogram_u8 as histogram_u8_op,
     integral_image as integral_image_op, laplacian as laplacian_op, letterbox as letterbox_op,
     match_descriptors as match_descriptors_op, median_blur as median_blur_op,
@@ -99,8 +100,8 @@ use spatialrust::vision::{
     stereo_block_match as stereo_block_match_op, stitch_panorama_pair as stitch_panorama_pair_op,
     threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BinaryMask, BorderMode,
     BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity, CornerSelectionOptions,
-    DescriptorBuffer, Detection, DistanceTransformWorkspace, FastOptions, HarrisOptions,
-    Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions, MorphologyOperation,
+    DescriptorBuffer, Detection, DistanceTransformWorkspace, FastOptions, GaussianBlurU8Workspace,
+    HarrisOptions, Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions, MorphologyOperation,
     MorphologyShape, ObjectImageCorrespondence, OrbOptions, OrbScoreType, PanoramaOptions,
     PerspectiveTransform, PointCorrespondence2, PointMap, RectMorphologyWorkspace,
     RgbdOdometryOptions, RleOrder, RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod,
@@ -2067,7 +2068,7 @@ fn filter2d_image<'py>(
 
 /// Applies a normalized Gaussian blur to an RGB image using Reflect101 borders.
 #[pyfunction]
-#[pyo3(signature = (image, kernel_width, kernel_height, sigma_x, sigma_y=None))]
+#[pyo3(signature = (image, kernel_width, kernel_height, sigma_x, sigma_y=None, out=None))]
 fn gaussian_blur_image<'py>(
     py: Python<'py>,
     image: PyReadonlyArray3<'_, u8>,
@@ -2075,14 +2076,50 @@ fn gaussian_blur_image<'py>(
     kernel_height: usize,
     sigma_x: f64,
     sigma_y: Option<f64>,
+    out: Option<Bound<'py, PyArray3<u8>>>,
 ) -> PyResult<Bound<'py, PyArray3<u8>>> {
-    let image = rgb_image_from_numpy(image)?;
-    let output = gaussian_blur_op(
-        image.view(),
+    let mut packed = Vec::new();
+    let image = rgb_image_view_from_numpy(&image, &mut packed)?;
+    let sigma_y = sigma_y.unwrap_or(sigma_x);
+    if let Some(out) = out {
+        {
+            let mut out_rw = out
+                .try_readwrite()
+                .map_err(|_| PyValueError::new_err("out must not overlap the Gaussian input"))?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width(), 3] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}, 3), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W, 3)",
+                ));
+            };
+            gaussian_blur_u8_into_op(
+                image,
+                kernel_width,
+                kernel_height,
+                sigma_x,
+                sigma_y,
+                BorderMode::Reflect101,
+                out_slice,
+                &mut GaussianBlurU8Workspace::new(),
+            )
+            .map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let output = gaussian_blur_u8_op(
+        image,
         kernel_width,
         kernel_height,
         sigma_x,
-        sigma_y.unwrap_or(sigma_x),
+        sigma_y,
         BorderMode::Reflect101,
     )
     .map_err(to_py_err)?;

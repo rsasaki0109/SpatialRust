@@ -558,9 +558,25 @@ def test_filter2d_and_gaussian_preserve_rgb_shape():
     image = np.arange(7 * 9 * 3, dtype=np.uint8).reshape(7, 9, 3)
     identity = sr.filter2d_image(image[:, ::-1], np.array([[1.0]], dtype=np.float64))
     np.testing.assert_array_equal(identity, image[:, ::-1])
-    blurred = sr.gaussian_blur_image(image, 5, 3, 1.2, 0.8)
+    strided = image[:, ::-1]
+    blurred = sr.gaussian_blur_image(strided, 5, 3, 1.2, 0.8)
     assert blurred.shape == image.shape
     assert blurred.dtype == np.uint8
+    output = np.empty_like(image)
+    returned = sr.gaussian_blur_image(strided, 5, 3, 1.2, 0.8, out=output)
+    assert returned is output
+    np.testing.assert_array_equal(output, blurred)
+
+
+def test_gaussian_output_validation():
+    image = np.arange(7 * 9 * 3, dtype=np.uint8).reshape(7, 9, 3)
+    with pytest.raises(ValueError):
+        sr.gaussian_blur_image(image, 5, 5, 1.2, out=np.empty((7, 8, 3), dtype=np.uint8))
+    backing = np.empty((7, 18, 3), dtype=np.uint8)
+    with pytest.raises(ValueError):
+        sr.gaussian_blur_image(image, 5, 5, 1.2, out=backing[:, ::2])
+    with pytest.raises(ValueError):
+        sr.gaussian_blur_image(image, 5, 5, 1.2, out=image)
 
 
 def test_advanced_filters_and_pyramid_shapes():

@@ -156,7 +156,7 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | Bilinear resize, reuse | OpenCV 27.36× | OpenCV 145.81× | OpenCV 113.87× |
 | RGB to gray, allocate | OpenCV 11.97× | OpenCV 5.98× | OpenCV 12.98× |
 | RGB to gray, reuse | OpenCV 6.01× | OpenCV 13.81× | OpenCV 2.09× |
-| Gaussian blur 5×5 | OpenCV 139.02× | OpenCV 107.91× | OpenCV 167.28× |
+| Gaussian blur 5×5[^gaussian-2026] | OpenCV 139.02× | OpenCV 3.10× | OpenCV 2.93× |
 | Sobel X 3×3 | OpenCV 14.38× | OpenCV 20.31× | OpenCV 23.30× |
 | Morphology open 5×5, allocate[^morphology-2026] | OpenCV 60.96× | OpenCV 13.34× | OpenCV 15.27× |
 | Morphology open 5×5, reuse[^morphology-2026] | OpenCV 60.32× | OpenCV 16.25× | OpenCV 17.78× |
@@ -172,6 +172,14 @@ SpatialRust scalar paths. Full medians, p95, dispersion, throughput, and raw
 samples are produced by the [performance harness](bench/opencv_vision_comparison/performance.py);
 the dated [Epic 111 receipt](notes/2026-07-15_epic111_opencv_comparison_v2.md)
 records the exact environment and methodology.
+
+[^gaussian-2026]: The VGA cell retains the Epic 111 historical baseline. The
+  specialized 3×3/5×5 `u8` engine supersedes the 1080p/4K cells on the same
+  Windows host with OpenCV 4.13: 6.188 ms vs 1.995 ms at 1080p and 21.031 ms
+  vs 7.179 ms at 4K. At 8K it measured 87.220 ms vs 24.361 ms (OpenCV 3.58×).
+  Against SpatialRust's generic engine, native Criterion improved allocated
+  5×5 latency by 20.7× at 1080p and 26.7× at 4K; OpenCV still leads the
+  standalone operation.
 
 The additive paired-gradient path keeps standalone Sobel compatibility while
 also exposing exact fused 3×3 L1 magnitude (`abs(Gx) + abs(Gy)`). On a newer
@@ -274,7 +282,7 @@ The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
 | Bilinear resize | Exact pixels (max error 0) |
 | RGB to gray | Max error 1/255; MAE 0.1333 / 0.1333 / 0.1329 |
 | AI CHW preprocess | Max float error `5.96e-8` |
-| Gaussian blur 5×5 | Max error 1/255; 96.28% exact pixels |
+| Gaussian blur | Canonical 5×5 profiles exact; 300 randomized 3×3/5×5/7×7 cases max error 2/255 |
 | Sobel X 3×3 | Exact values (max error 0) |
 | Morphology open 5×5 | Exact pixels (max error 0) |
 | Canny | Precision, recall, F1, and IoU all 1.0 |

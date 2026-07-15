@@ -13,14 +13,15 @@
     <section class="hero">
       <div class="eyebrow">imgproc-filter · safe CPU</div>
       <h1>Filtering and paired Sobel gradients</h1>
-      <p class="lead">Generic correlation and separable filters remain available for arbitrary components and channels. Packed grayscale <code>u8</code> additionally gets an exact paired 3×3 Sobel traversal and a fused L1 magnitude operation.</p>
-      <div class="actions"><a class="button primary" href="spatialrust_vision/fn.spatial_gradient_u8.html">Paired-gradient API</a><a class="button" href="spatialrust_vision/fn.sobel_l1_magnitude_u8.html">Fused L1 API</a></div>
+      <p class="lead">Generic correlation and separable filters remain available for arbitrary components and channels. Interleaved <code>u8</code> additionally gets accelerated Gaussian kernels, explicit workspace reuse, exact paired 3×3 Sobel, and fused L1 magnitude.</p>
+      <div class="actions"><a class="button primary" href="spatialrust_vision/fn.gaussian_blur_u8.html">Gaussian API</a><a class="button" href="spatialrust_vision/fn.spatial_gradient_u8.html">Paired-gradient API</a><a class="button" href="spatialrust_vision/fn.sobel_l1_magnitude_u8.html">Fused L1 API</a></div>
     </section>
 
     <section>
       <h2>Contracts</h2>
       <p><code>spatial_gradient_u8</code> matches OpenCV <code>spatialGradient</code>: grayscale <code>u8</code> input, signed <code>i16</code> X/Y outputs, 3×3 Sobel coefficients, and Replicate or Reflect101 borders. Its <code>*_into</code> form writes caller-owned packed slices.</p>
       <p><code>sobel_l1_magnitude_u8</code> computes <code>abs(Gx) + abs(Gy)</code> directly as non-negative <code>i16</code> values in [0, 2040]. It does not materialize public X/Y intermediates. Python exposes the same operations as <code>spatial_gradient_image</code> and <code>sobel_l1_magnitude_image(..., out=)</code>.</p>
+      <p><code>gaussian_blur_u8</code> accepts 3×3, 5×5, or 7×7 kernels and all five CPU border modes. The accelerated 3×3/5×5 path uses symmetric Q8 coefficients, branch-free unrolled interiors, bounded row parallelism, and a caller-owned <code>GaussianBlurU8Workspace</code>. The 7×7 contract currently uses the high-precision generic fallback.</p>
       <p>Large packed images use bounded Rayon row stages and runtime-dispatched safe SIMD context. Strided inputs retain exact row semantics. CPU calls never upload to a device.</p>
     </section>
 
@@ -33,6 +34,13 @@
       </div>
       <p>OpenCV uses <code>spatialGradient</code>, two <code>absdiff</code> stages, and <code>add</code>. SpatialRust fuses that public workload into one traversal and one result allocation. Reuse is effectively tied at 1080p while OpenCV leads at 4K and 8K, and OpenCV remains faster for standalone paired gradients.</p>
       <p>Reproduce with the <a href="https://github.com/rsasaki0109/SpatialRust/tree/main/bench/opencv_sobel_l1_comparison">focused harness</a> and inspect the <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/notes/2026-07-16_paired_sobel_l1_acceleration.md">dated receipt</a>.</p>
+      <h3>Gaussian progress</h3>
+      <div class="grid">
+        <article class="card"><div class="metric">20.7×</div><p>1080p allocated 5×5 improvement over the previous generic SpatialRust engine.</p></article>
+        <article class="card"><div class="metric">26.7×</div><p>4K allocated improvement; workspace reuse improves the old path by about 65.9×.</p></article>
+        <article class="card"><div class="metric">0</div><p>Canonical 5×5 max error against OpenCV; 300 mixed-size randomized cases stay within 2/255.</p></article>
+      </div>
+      <p>Standalone OpenCV Gaussian remains faster: 3.10× at 1080p, 2.93× at 4K, and 3.58× at 8K for allocated Python calls. The next optimization boundary is high-precision 7×7 and useful fused consumers, not a false standalone-win claim. Reproduce with the <a href="https://github.com/rsasaki0109/SpatialRust/tree/main/bench/opencv_gaussian_comparison">Gaussian harness</a>.</p>
     </section>
   </main>
   <footer><div class="wrap">Filtering guide · <a href="algorithms.html">Algorithm catalog</a> · <a href="vision2.html">Vision 2 roadmap</a></div></footer>

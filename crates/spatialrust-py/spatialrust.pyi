@@ -167,6 +167,7 @@ def gaussian_blur_image(
     kernel_height: int,
     sigma_x: float,
     sigma_y: Optional[float] = ...,
+    out: Optional[_U8Array] = ...,
 ) -> _U8Array: ...
 def median_blur_image(image: _U8Array, kernel_size: int) -> _U8Array: ...
 def bilateral_filter_image(
