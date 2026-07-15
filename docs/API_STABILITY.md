@@ -76,7 +76,7 @@ until their individual 1.0 milestones.
 | Interchange (`interchange-*`) | glTF JSON and OpenUSD stage adapter contracts are provisional |
 | Distribute (`distribute`) | Partition graphs, backpressure, and named transfers are provisional |
 | Platform (`platform`) | API stability registry, conformance reports, security checklists, and LTS policy are provisional |
-| GPU image (`gpu-image`) | `GpuImage` upload/readback, receipts, and image compute kernels are provisional |
+| GPU image (`gpu-image`) | Texture-backed `GpuImage`, upload/readback, receipts, pooling, and image compute kernels are provisional through the Vision 1.0 gate |
 
 ## Algorithm crates
 

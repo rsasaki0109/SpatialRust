@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Texture-backed GPU image chains (Epic 104)**: `GpuImage` now uses pooled
+  `rgba8uint` textures instead of component-expanded storage buffers. Explicit
+  upload/readback receipts compose through copy, RGB-to-gray, box blur, nearest
+  resize, Sobel, erosion, and dilation with no hidden host transfer. Runtime
+  adapter/backend identity and explicit `wait_idle` profiling boundaries are
+  exposed; synchronized VGA/1080p/4K Criterion groups cover steady-state chains.
+
 - **Reusable CPU vision kernels (Epic 103)**: stable caller-owned
   `resize_into`, `rgb_to_gray_into`, `normalize_into`, and `pack_chw_into`
   paths, NumPy `out=` bindings, size-aware safe parallel CHW packing, and a

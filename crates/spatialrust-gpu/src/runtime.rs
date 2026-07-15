@@ -1,5 +1,10 @@
 use std::sync::{Arc, OnceLock};
 
+#[cfg(feature = "gpu-image")]
+use std::collections::HashMap;
+#[cfg(feature = "gpu-image")]
+use std::sync::Mutex;
+
 use spatialrust_core::{SpatialError, SpatialResult};
 
 use crate::pipeline_cache::ComputePipelineCache;
@@ -14,6 +19,30 @@ pub struct WgpuRuntime {
     pipelines: OnceLock<ComputePipelineCache>,
     max_gather_channels: u32,
     upload_pool: GpuBufferPool,
+    adapter_info: WgpuAdapterInfo,
+    #[cfg(feature = "gpu-image")]
+    image_texture_pool: Mutex<HashMap<(u32, u32), Vec<wgpu::Texture>>>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_gray_pipeline: OnceLock<crate::image::kernels::gray::GrayPipeline>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_blur_pipeline: OnceLock<crate::image::kernels::box_blur::BlurPipeline>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_spatial_pipelines: OnceLock<crate::image::kernels::spatial::SpatialPipelines>,
+}
+
+/// Stable, serializable-friendly identity for the selected wgpu adapter.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WgpuAdapterInfo {
+    /// Human-readable adapter name.
+    pub name: String,
+    /// Graphics API backend such as Vulkan, Metal, or DirectX 12.
+    pub backend: String,
+    /// Adapter class such as integrated, discrete, CPU, or virtual GPU.
+    pub device_type: String,
+    /// Driver name reported by wgpu.
+    pub driver: String,
+    /// Additional driver version/details reported by wgpu.
+    pub driver_info: String,
 }
 
 /// Minimum storage buffers required for the 4-channel gather kernel.
@@ -54,6 +83,62 @@ impl WgpuRuntime {
     #[must_use]
     pub fn queue(&self) -> &wgpu::Queue {
         &self.queue
+    }
+
+    /// Returns the selected adapter/backend receipt.
+    #[must_use]
+    pub const fn adapter_info(&self) -> &WgpuAdapterInfo {
+        &self.adapter_info
+    }
+
+    /// Blocks until all previously submitted work on this device is complete.
+    ///
+    /// Normal device-resident chains do not synchronize implicitly. This is an
+    /// explicit profiling/testing boundary or host-coordination primitive.
+    pub fn wait_idle(&self) {
+        self.device.poll(wgpu::Maintain::Wait);
+    }
+
+    #[cfg(feature = "gpu-image")]
+    pub(crate) fn acquire_image_texture(
+        &self,
+        width: u32,
+        height: u32,
+        label: &'static str,
+    ) -> wgpu::Texture {
+        if let Some(texture) = self
+            .image_texture_pool
+            .lock()
+            .expect("image texture pool poisoned")
+            .get_mut(&(width, height))
+            .and_then(Vec::pop)
+        {
+            return texture;
+        }
+        self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(label),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Uint,
+            usage: wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::STORAGE_BINDING,
+            view_formats: &[],
+        })
+    }
+
+    #[cfg(feature = "gpu-image")]
+    pub(crate) fn recycle_image_texture(&self, width: u32, height: u32, texture: wgpu::Texture) {
+        let mut pool = self.image_texture_pool.lock().expect("image texture pool poisoned");
+        let textures = pool.entry((width, height)).or_default();
+        if textures.len() < 8 {
+            textures.push(texture);
+        } else {
+            texture.destroy();
+        }
     }
 
     /// Returns cached compute pipelines for this runtime's device.
@@ -130,6 +215,14 @@ impl WgpuRuntime {
                 )
             })?;
 
+        let raw_adapter_info = adapter.get_info();
+        let adapter_info = WgpuAdapterInfo {
+            name: raw_adapter_info.name,
+            backend: format!("{:?}", raw_adapter_info.backend),
+            device_type: format!("{:?}", raw_adapter_info.device_type),
+            driver: raw_adapter_info.driver,
+            driver_info: raw_adapter_info.driver_info,
+        };
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
@@ -155,6 +248,15 @@ impl WgpuRuntime {
             pipelines: OnceLock::new(),
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
+            adapter_info,
+            #[cfg(feature = "gpu-image")]
+            image_texture_pool: Mutex::new(HashMap::new()),
+            #[cfg(feature = "gpu-image")]
+            image_gray_pipeline: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_blur_pipeline: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_spatial_pipelines: OnceLock::new(),
         })
     }
 }

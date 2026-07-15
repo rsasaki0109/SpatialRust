@@ -65,6 +65,11 @@ math + image + core -> camera -> vision::spatial/rgbd/odometry
 `spatialrust-image` remains independent of `spatialrust-core`. GPU image storage
 must use a dedicated backend and explicit upload/readback APIs; Epic 89 provides
 `GpuImage` and image compute kernels in `spatialrust-gpu` behind `gpu-image`.
+The v2 representation is a pooled `rgba8uint` texture with a retained logical
+channel count. Kernels return device-resident images and append named receipt
+stages; only `upload_u8` and `readback_u8` cross the host/device boundary.
+Runtime adapter identity and synchronization are explicit (`adapter_info`,
+`wait_idle`), and `recycle` returns textures to the runtime pool.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 `spatialrust-vision` keeps preprocessing, Feature2D, geometry/multiview (H/F/E,
