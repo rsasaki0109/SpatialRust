@@ -15,8 +15,8 @@
     "spatialrust_version"
   ],
   "workloads": [
-    { "id": "resize_bilinear", "domain": "imgproc", "modes": ["allocate"] },
-    { "id": "rgb_to_gray", "domain": "imgproc", "modes": ["allocate"] },
+    { "id": "resize_bilinear", "domain": "imgproc", "modes": ["allocate", "reuse"] },
+    { "id": "rgb_to_gray", "domain": "imgproc", "modes": ["allocate", "reuse"] },
     { "id": "gaussian_blur", "domain": "imgproc", "modes": ["allocate"] },
     { "id": "sobel", "domain": "imgproc", "modes": ["allocate"] },
     { "id": "canny", "domain": "imgproc", "modes": ["allocate"] },
@@ -25,7 +25,7 @@
     { "id": "stereo_bm", "domain": "calib3d", "modes": ["allocate"] },
     { "id": "depth_to_xyz", "domain": "rgbd", "modes": ["allocate", "reuse"] },
     { "id": "rgbd_to_point_cloud", "domain": "spatial-e2e", "modes": ["allocate"] },
-    { "id": "ai_preprocess", "domain": "dnn-adapter", "modes": ["allocate"] },
+    { "id": "ai_preprocess", "domain": "dnn-adapter", "modes": ["allocate", "reuse"] },
     { "id": "rgbd_to_voxel", "domain": "spatial-e2e", "modes": ["allocate"] }
   ]
 }

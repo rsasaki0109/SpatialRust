@@ -134,6 +134,9 @@ def test_image_resize_letterbox_and_normalize():
     resized = sr.resize_image(image, 4, 4, interpolation="nearest")
     assert resized.shape == (4, 4, 3)
     np.testing.assert_array_equal(resized[0, 0], image[0, 0])
+    resized_out = np.empty((4, 4, 3), dtype=np.uint8)
+    assert sr.resize_image(image, 4, 4, interpolation="nearest", out=resized_out) is resized_out
+    np.testing.assert_array_equal(resized_out, resized)
 
     letterboxed, transform = sr.letterbox_image(image, 4, 6, fill=(7, 8, 9))
     assert letterboxed.shape == (6, 4, 3)
@@ -144,6 +147,9 @@ def test_image_resize_letterbox_and_normalize():
     assert chw.shape == (3, 2, 2)
     assert chw.dtype == np.float32
     np.testing.assert_allclose(chw[:, 0, 0], [1.0, 0.0, 0.0], atol=1e-6)
+    chw_out = np.empty((3, 2, 2), dtype=np.float32)
+    assert sr.normalize_image_chw(image, out=chw_out) is chw_out
+    np.testing.assert_allclose(chw_out, chw, atol=1e-6)
 
 
 def test_image_color_and_remap():
@@ -151,6 +157,9 @@ def test_image_color_and_remap():
     gray = sr.rgb_to_gray_image(image)
     assert gray.shape == (1, 2)
     np.testing.assert_allclose(gray, [[76, 150]], atol=1)
+    gray_out = np.empty((1, 2), dtype=np.uint8)
+    assert sr.rgb_to_gray_image(image, out=gray_out) is gray_out
+    np.testing.assert_array_equal(gray_out, gray)
     hsv = sr.rgb_to_hsv_image(image)
     np.testing.assert_array_equal(hsv[0, 0], [0, 255, 255])
     np.testing.assert_array_equal(hsv[0, 1], [60, 255, 255])

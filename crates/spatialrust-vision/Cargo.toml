@@ -44,6 +44,11 @@ harness = false
 required-features = ["preprocess"]
 
 [[bench]]
+name = "resize"
+harness = false
+required-features = ["resize"]
+
+[[bench]]
 name = "filter"
 harness = false
 required-features = ["imgproc-filter"]

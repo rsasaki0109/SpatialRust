@@ -1,4 +1,4 @@
-use spatialrust_image::{Image, ImageView};
+use spatialrust_image::{Image, ImageView, ImageViewMut};
 
 use crate::{PixelComponent, VisionError, VisionResult};
 
@@ -43,21 +43,82 @@ pub fn resize<T: PixelComponent, const CHANNELS: usize>(
         && (output_width < input.width() || output_height < input.height());
     for y in 0..output_height {
         for x in 0..output_width {
-            let pixel = if area_downsample {
-                sample_area(input, x, y, output_width, output_height)
-            } else {
-                let sx = half_pixel_coordinate(x, input.width(), output_width);
-                let sy = half_pixel_coordinate(y, input.height(), output_height);
-                match interpolation {
-                    Interpolation::Nearest => sample_nearest(input, sx, sy),
-                    Interpolation::Bilinear | Interpolation::Area => sample_bilinear(input, sx, sy),
-                    Interpolation::Bicubic => sample_bicubic(input, sx, sy),
-                }
-            };
+            let pixel = resized_pixel(
+                input,
+                x,
+                y,
+                output_width,
+                output_height,
+                interpolation,
+                area_downsample,
+            );
             output.extend_from_slice(&pixel);
         }
     }
     Ok(Image::try_new_with_metadata(output_width, output_height, output, input.metadata())?)
+}
+
+/// Resizes into caller-owned storage without allocating.
+///
+/// The output dimensions select the requested size. Packed and strided output
+/// views are accepted, and semantic metadata is replaced with the input
+/// metadata after channel validation.
+pub fn resize_into<T: PixelComponent, const CHANNELS: usize>(
+    input: ImageView<'_, T, CHANNELS>,
+    mut output: ImageViewMut<'_, T, CHANNELS>,
+    interpolation: Interpolation,
+) -> VisionResult<()> {
+    let output_width = output.width();
+    let output_height = output.height();
+    output.set_metadata(input.metadata())?;
+    if output_width == 0 || output_height == 0 {
+        return Ok(());
+    }
+    if input.width() == 0 || input.height() == 0 {
+        return Err(VisionError::InvalidDimensions(
+            "cannot resize an empty input to a non-empty output".to_owned(),
+        ));
+    }
+    let area_downsample = interpolation == Interpolation::Area
+        && (output_width < input.width() || output_height < input.height());
+    for y in 0..output_height {
+        let row = output.row_mut(y).expect("output row in bounds");
+        for x in 0..output_width {
+            let pixel = resized_pixel(
+                input,
+                x,
+                y,
+                output_width,
+                output_height,
+                interpolation,
+                area_downsample,
+            );
+            row[x * CHANNELS..(x + 1) * CHANNELS].copy_from_slice(&pixel);
+        }
+    }
+    Ok(())
+}
+
+fn resized_pixel<T: PixelComponent, const CHANNELS: usize>(
+    input: ImageView<'_, T, CHANNELS>,
+    x: usize,
+    y: usize,
+    output_width: usize,
+    output_height: usize,
+    interpolation: Interpolation,
+    area_downsample: bool,
+) -> [T; CHANNELS] {
+    if area_downsample {
+        sample_area(input, x, y, output_width, output_height)
+    } else {
+        let sx = half_pixel_coordinate(x, input.width(), output_width);
+        let sy = half_pixel_coordinate(y, input.height(), output_height);
+        match interpolation {
+            Interpolation::Nearest => sample_nearest(input, sx, sy),
+            Interpolation::Bilinear | Interpolation::Area => sample_bilinear(input, sx, sy),
+            Interpolation::Bicubic => sample_bicubic(input, sx, sy),
+        }
+    }
 }
 
 fn half_pixel_coordinate(output: usize, input_len: usize, output_len: usize) -> f64 {
@@ -173,8 +234,8 @@ fn sample_area<T: PixelComponent, const CHANNELS: usize>(
 
 #[cfg(test)]
 mod tests {
-    use super::{resize, Interpolation};
-    use spatialrust_image::Image;
+    use super::{resize, resize_into, Interpolation};
+    use spatialrust_image::{Image, ImageViewMut};
 
     #[test]
     fn nearest_repeats_pixels() {
@@ -207,6 +268,21 @@ mod tests {
             Interpolation::Area,
         ] {
             assert_eq!(resize(input.view(), 2, 2, filter).unwrap(), input);
+        }
+    }
+
+    #[test]
+    fn resize_into_reuses_strided_output_and_preserves_padding() {
+        let input = Image::<u8, 1>::try_new(2, 2, vec![0, 10, 20, 30]).unwrap();
+        let mut storage = vec![99_u8; 15];
+        let output = ImageViewMut::<u8, 1>::new(3, 3, 6, &mut storage).unwrap();
+        resize_into(input.view(), output, Interpolation::Bilinear).unwrap();
+        let expected = resize(input.view(), 3, 3, Interpolation::Bilinear).unwrap();
+        for y in 0..3 {
+            assert_eq!(&storage[y * 6..y * 6 + 3], expected.view().row(y).unwrap());
+            if y < 2 {
+                assert_eq!(&storage[y * 6 + 3..(y + 1) * 6], &[99; 3]);
+            }
         }
     }
 }

@@ -220,6 +220,7 @@ def resize_image(
     width: int,
     height: int,
     interpolation: str = ...,
+    out: Optional[_U8Array] = ...,
 ) -> _U8Array: ...
 def letterbox_image(
     image: _U8Array,
@@ -233,8 +234,9 @@ def normalize_image_chw(
     scale: float = ...,
     mean: Optional[tuple[float, float, float]] = ...,
     std: Optional[tuple[float, float, float]] = ...,
+    out: Optional[_F32Array] = ...,
 ) -> _F32Array: ...
-def rgb_to_gray_image(image: _U8Array) -> _U8Array: ...
+def rgb_to_gray_image(image: _U8Array, out: Optional[_U8Array] = ...) -> _U8Array: ...
 def rgb_to_hsv_image(image: _U8Array) -> _U8Array: ...
 def remap_image(
     image: _U8Array,
