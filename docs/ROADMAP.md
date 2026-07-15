@@ -366,3 +366,43 @@ The integration feature `north-star-e2e` (`north-star` + `ai-vision-pipeline` +
 RGB → mock depth → episode → MCAP XYZ round-trip → ROS 2 CDR loopback →
 TSDF/mesh → glTF JSON + USDA ASCII → Gaussian CPU soft-splat →
 `ReleaseGate` (stability/conformance/security/LTS/perf budgets).
+
+## OpenCV-outcome program (Epics 101–110)
+
+This program does not attempt API-count parity with OpenCV. It targets the
+Rust-native spatial workloads where typed ownership, explicit transfers, and a
+single image-to-world dataflow can provide a measurable advantage. Each Epic
+uses the standard completion gates above and lands as one reviewable PR.
+
+| Epic | Status | Depends on | Outcome |
+| --- | --- | --- | --- |
+| 101 | Complete | 83–90 | Reproducible OpenCV correctness/performance contract, workload manifest, environment receipts, and aggregate runner |
+| 102 | Planned | 101 | Stabilize the image/camera/vision 1.0 contract and cross-platform conformance |
+| 103 | Planned | 101–102 | SIMD/parallel CPU kernel dispatch, reusable outputs, and measured allocation control |
+| 104 | Planned | 89, 101–103 | Texture-backed GPU Image v2 and device-resident resize/filter/edge/morphology chains |
+| 105 | Planned | 88, 101–102 | Mono/stereo/fisheye/hand-eye calibration and bundle-adjustment contracts |
+| 106 | Planned | 92, 101–105 | Dense flow, tracking, background modeling, and feature-gated video stream adapters |
+| 107 | Planned | 93, 101–106 | Stronger local features, robust tracking, and visual/RGB-D odometry integration |
+| 108 | Planned | 101–107 | Feature-gated computational photography and panorama stitching |
+| 109 | Planned | 97, 99, 101–108 | Bounded spatial execution graph with fusion, backpressure, and named transfer receipts |
+| 110 | Planned | 100, 101–109 | SpatialRust Vision 1.0 conformance, audits, performance budgets, examples, and migration policy |
+
+### Epic 101 acceptance criteria
+
+- One versioned JSON envelope distinguishes correctness, performance, and
+  aggregate reports.
+- Performance results retain raw samples, median, p95, min/max, warmup/repeat
+  policy, input dimensions, implementation, and allocation/reuse mode.
+- Every report identifies OS/platform, architecture, CPU count, Python,
+  OpenCV, and SpatialRust versions; published GPU results additionally record
+  adapter/backend data in the suite-specific result.
+- The canonical manifest reserves VGA, 1080p, and 4K profiles and at least ten
+  image, geometry, RGB-D, AI-adapter, and spatial end-to-end workloads.
+- Existing vision correctness and RGB-D performance gates emit the contract;
+  an aggregate command runs either or both suites and validates their reports.
+- Contract tests require only the Python standard library and run in CI. OpenCV
+  remains comparison tooling and never enters a production feature.
+
+Epics 103–104 may add internal dispatch and fusion, but public CPU APIs never
+perform implicit device transfers. Epics 105–109 keep codecs, ONNX, ROS 2,
+CUDA, and external video runtimes in dedicated additive features.

@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **OpenCV comparison contract (Epic 101)**: versioned correctness/performance
+  JSON reports with environment receipts, raw timing samples, median/p95,
+  allocation/reuse modes, a canonical VGA/1080p/4K workload manifest, and an
+  aggregate runner. The schema tests are standard-library only; OpenCV remains
+  comparison tooling rather than a production dependency.
+
 - **RGB-D dense XYZ vs OpenCV**: `depth_to_xyz_dense` / `_into` with an x86_64 AVX2
   fill path; Python `depth_to_xyz(..., out=)` for streaming reuse. Fast identity
   packing for `rgbd_to_point_cloud`. The `bench/opencv_rgbd_comparison` harness
