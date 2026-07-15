@@ -50,7 +50,7 @@ foundation contracts they depend on are stable.
 | --- | --- | --- | --- |
 | 91 | Complete | 85, 90 | Spatial records and streams: schema evolution, chunked/out-of-core execution, Arrow C Data/Stream/Device interoperability |
 | 92 | Complete | 88, 91 | Sensor-time and frame graph: calibrated multimodal synchronization, deterministic replay, MCAP integration |
-| 93 | Planned | 87–88, 92 | Localization and mapping: visual/RGB-D/lidar odometry, pose graphs, loop closure, relocalization |
+| 93 | Complete | 87–88, 92 | Localization and mapping: visual/RGB-D/lidar odometry, pose graphs, loop closure, relocalization |
 | 94 | Planned | 89, 93 | Scene reconstruction: TSDF, surfels, meshes, and a feature-gated Gaussian scene representation and renderer |
 | 95 | Planned | 90–94 | Semantic spatial intelligence: open-vocabulary detections, embeddings on spatial entities, multimodal fusion and search |
 | 96 | Planned | 91–95 | Embodied-AI data workflows: episodes, annotation, augmentation, evaluation, model provenance and reproducible replay |
@@ -299,3 +299,20 @@ adding a heavy archive dependency to the workspace default.
 Epic 92 completes when stamped multimodal records can be indexed deterministically,
 bundled within a sync window, and transformed across a calibrated frame graph
 without enabling file MCAP codecs.
+
+## Epic 93 delivery slices
+
+Localization contracts live in `spatialrust-mapping`. Full visual/lidar odometry
+pipelines grow behind later algorithmic slices; Epic 93 lands the pose trajectory
+and pose-graph substrate first.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 93A | Complete | `Trajectory` / `StampedPose` with interpolation | `mapping` |
+| 93B | Complete | `RelativeMotionEstimator` + `SyntheticOdometry` | `mapping` |
+| 93C | Complete | `PoseGraph` relative edges and root localization | `mapping` |
+| 93D | Complete | Loop-closure candidate search by translation distance | `mapping` |
+
+Epic 93 completes when stamped poses can be buffered, differenced into relative
+motion, and localized on a pose graph with loop-closure candidates without
+pulling ROS 2 or MCAP file codecs.
