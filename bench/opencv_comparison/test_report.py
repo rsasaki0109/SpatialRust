@@ -120,6 +120,7 @@ class ReportContractTests(unittest.TestCase):
         self.assertIn("nms", workloads)
         self.assertIn("batched_nms", workloads)
         self.assertIn("soft_nms", workloads)
+        self.assertIn("connected_components", workloads)
         self.assertIn("coefficient_of_variation", statistics)
         self.assertIn("median_absolute_deviation", statistics)
         self.assertIn("batch_size", statistics)

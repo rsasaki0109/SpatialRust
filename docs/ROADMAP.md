@@ -621,6 +621,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | 114G | Complete | Cache NMS box geometry and avoid packed Python score copies | exact OpenCV index parity and 100/1,000/8,400-candidate wins |
 | 114H | Complete | Bucket class-aware NMS keeps and expose one-call Python batched NMS | exact OpenCV parity and 26.38×/97.25× wins |
 | 114I | Complete | One-pass active-set Soft-NMS selection, disjoint IoU exit, and borrowed Python scores | exact indices, bounded scores, and 3.42×–7.40× wins |
+| 114J | Complete | Run-length union-find connected components with borrowed/non-zero Python masks | exact SAUF labels/stats and 2.17×–3.61× structured-mask wins |
 
 ### Epic 115 delivery slices
 

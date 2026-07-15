@@ -1,6 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use spatialrust_vision::{
-    distance_transform_edt, distance_transform_edt_into, BinaryMask, DistanceTransformWorkspace,
+    connected_components, distance_transform_edt, distance_transform_edt_into, BinaryMask,
+    Connectivity, DistanceTransformWorkspace,
 };
 
 fn benchmark_exact_distance_transform(c: &mut Criterion) {
@@ -61,5 +62,33 @@ fn benchmark_exact_distance_transform(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, benchmark_exact_distance_transform);
+fn benchmark_connected_components(c: &mut Criterion) {
+    let mut group = c.benchmark_group("connected_components_8_structured");
+    group.sample_size(10);
+    for &(profile, width, height) in &[("vga", 640, 480), ("1080p", 1920, 1080), ("4k", 3840, 2160)]
+    {
+        for pattern in ["segmentation-blobs", "document-lines"] {
+            let data = (0..width * height)
+                .map(|index| {
+                    let (x, y) = (index % width, index / width);
+                    match pattern {
+                        "segmentation-blobs" => u8::from(x % 97 < 23 && y % 83 < 19),
+                        "document-lines" => u8::from(y % 32 < 3 && x % 211 > 8 && x % 211 < 190),
+                        _ => unreachable!(),
+                    }
+                })
+                .collect();
+            let mask = BinaryMask::try_new(width, height, data).unwrap();
+            group.throughput(Throughput::Elements((width * height) as u64));
+            group.bench_function(BenchmarkId::new(pattern, profile), |b| {
+                b.iter(|| {
+                    black_box(connected_components(black_box(&mask), Connectivity::Eight).unwrap())
+                });
+            });
+        }
+    }
+    group.finish();
+}
+
+criterion_group!(benches, benchmark_exact_distance_transform, benchmark_connected_components);
 criterion_main!(benches);

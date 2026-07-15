@@ -206,6 +206,12 @@ def test_mask_components_contours_and_rle():
     assert labels.shape == mask.shape
     assert labels.dtype == np.uint32
     assert sorted(stat[1] for stat in stats) == [4, 4]
+    mask_255 = mask * np.uint8(255)
+    storage = np.zeros((5, 14), dtype=np.uint8)
+    storage[:, ::2] = mask_255
+    view_labels, view_stats = sr.connected_components_image(storage[:, ::2], connectivity=4)
+    np.testing.assert_array_equal(view_labels, labels)
+    assert view_stats == stats
     contours = sr.find_mask_contours(mask)
     assert len(contours) == 2
 

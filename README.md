@@ -222,6 +222,26 @@ All profiles exactly matched OpenCV's kept-index order; updated float32 scores
 stayed within `1.79e-7`. See the [Soft-NMS harness](bench/opencv_soft_nms_comparison/)
 and dated [receipt](notes/2026-07-15_soft_nms_opencv_acceleration.md).
 
+Connected-component labeling uses horizontal runs plus union-find instead of
+per-pixel flood fill. Packed NumPy masks are borrowed without an input copy,
+and all non-zero `uint8` values are foreground, matching OpenCV. Against
+OpenCV 4.13's explicit row-major SAUF algorithm on structured masks:
+
+| Profile | Pattern | OpenCV SAUF | SpatialRust | Result |
+| --- | --- | ---: | ---: | ---: |
+| VGA | Segmentation blobs | 1.284 ms | 0.413 ms | **SpatialRust 3.11×** |
+| VGA | Document lines | 1.271 ms | 0.352 ms | **SpatialRust 3.61×** |
+| 1080p | Segmentation blobs | 6.763 ms | 2.815 ms | **SpatialRust 2.40×** |
+| 1080p | Document lines | 6.649 ms | 2.407 ms | **SpatialRust 2.76×** |
+| 4K | Segmentation blobs | 21.356 ms | 9.838 ms | **SpatialRust 2.17×** |
+| 4K | Document lines | 21.075 ms | 8.606 ms | **SpatialRust 2.45×** |
+
+Labels, areas, and bounding boxes matched exactly on every canonical profile
+and 320 additional seeded randomized 4/8-connectivity cases. The speed claim is
+limited to the named structured masks; dense random noise still favors OpenCV.
+See the [connected-components harness](bench/opencv_connected_components_comparison/)
+and dated [receipt](notes/2026-07-15_connected_components_opencv_acceleration.md).
+
 #### Vision accuracy
 
 The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
@@ -236,6 +256,7 @@ The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
 | Morphology open 5×5 | Exact pixels (max error 0) |
 | Canny | Precision, recall, F1, and IoU all 1.0 |
 | Exact Euclidean distance transform | Exact values on canonical profiles; separate irregular-mask max float error `9.54e-7` |
+| Connected components (SAUF ordering) | Exact labels, areas, and bounding boxes on structured profiles and 320 randomized cases |
 
 The broader correctness harness also checks filters, analysis, keypoints,
 matching, and geometry with documented tolerances (exact pixels where we claim

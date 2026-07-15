@@ -33,6 +33,7 @@ VGA, 1080p, and 4K profiles and the initial competitive workload set:
 11. AI preprocessing
 12. RGB-D to voxel end-to-end
 13. detection NMS, class-aware batched NMS, and Soft-NMS post-processing
+14. connected components on structured segmentation and document masks
 
 Exact matches use a JSON `null` PSNR (mathematically infinite) so reports remain
 strict RFC-compatible JSON. Numerical comparisons retain max/mean/RMS and
@@ -53,6 +54,7 @@ python bench\opencv_comparison\run.py
 python bench\opencv_nms_comparison\performance.py
 python bench\opencv_batched_nms_comparison\performance.py
 python bench\opencv_soft_nms_comparison\performance.py
+python bench\opencv_connected_components_comparison\performance.py
 ```
 
 Reports are written under `target/opencv-comparison/`. Run one suite with
