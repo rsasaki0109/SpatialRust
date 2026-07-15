@@ -183,18 +183,6 @@ fn nearest_match<'a>(
         .min_by_key(|record| record.stamp.as_nanos().abs_diff(center_ns))
 }
 
-#[cfg(feature = "mcap")]
-mod mcap_placeholder {
-    //! Feature gate reserved for file-backed MCAP codecs.
-    //!
-    //! The default episode contract is [`super::MemoryEpisode`]. Enabling
-    //! `mcap` currently documents intent without pulling a file codec until a
-    //! checked binding lands in a follow-up slice.
-
-    /// Marker ensuring the `mcap` feature compiles.
-    pub const MCAP_FEATURE_ENABLED: bool = true;
-}
-
 #[cfg(test)]
 mod tests {
     use super::{DeterministicReplayer, MemoryEpisode, SyncWindow, TopicId};

@@ -2,6 +2,7 @@
 
 use spatialrust_math::Vec3;
 
+use crate::marching_cubes::{polygonise_tet, tetrahedra};
 use crate::{SceneError, SceneResult, TriangleMesh};
 
 /// Axis-aligned truncated signed distance volume.
@@ -50,19 +51,33 @@ impl TsdfVolume {
     }
 
     /// Integrates one metric depth sample at a world-space point.
+    ///
+    /// Updates every voxel whose center lies within the truncation band, using
+    /// a view-ray signed distance so the field has zero crossings for meshing.
     pub fn integrate_point(&mut self, point: Vec3<f32>, sensor_origin: Vec3<f32>) {
-        let Some(index) = self.world_to_index(point) else {
-            return;
-        };
-        let voxel_center = self.index_to_world(index);
         let depth = (point - sensor_origin).length();
-        let voxel_depth = (voxel_center - sensor_origin).length();
-        let sdf = (depth - voxel_depth).clamp(-self.truncation, self.truncation);
-        let flat = self.flat(index);
-        let w_old = self.weight[flat];
-        let w_new = w_old + 1.0;
-        self.distance[flat] = (self.distance[flat] * w_old + sdf) / w_new;
-        self.weight[flat] = w_new;
+        if !(depth.is_finite() && depth > 1e-5) {
+            return;
+        }
+        let ray = (point - sensor_origin).normalize();
+        let radius = self.truncation;
+        let min = point - Vec3::new(radius, radius, radius);
+        let max = point + Vec3::new(radius, radius, radius);
+        let i0 = self.world_to_index_clamped(min);
+        let i1 = self.world_to_index_clamped(max);
+        for z in i0[2]..=i1[2] {
+            for y in i0[1]..=i1[1] {
+                for x in i0[0]..=i1[0] {
+                    let center = self.index_to_world([x, y, z]);
+                    let sdf = (point - center).dot(ray).clamp(-self.truncation, self.truncation);
+                    let flat = self.flat([x, y, z]);
+                    let w_old = self.weight[flat];
+                    let w_new = w_old + 1.0;
+                    self.distance[flat] = (self.distance[flat] * w_old + sdf) / w_new;
+                    self.weight[flat] = w_new;
+                }
+            }
+        }
     }
 
     /// Integrates every XYZ triple from interleaved storage.
@@ -76,56 +91,69 @@ impl TsdfVolume {
         Ok(())
     }
 
-    /// Extracts an occupied-voxel surface proxy as a triangle mesh.
+    /// Extracts the zero isolevel surface with marching tetrahedra.
     ///
-    /// Each voxel with weight >= `min_weight` and near-zero distance contributes
-    /// a small axis-aligned triangle fan at its center (deterministic proxy until
-    /// a marching-cubes backend lands).
+    /// Voxels with weight `< min_weight` are treated as free space (`+truncation`).
     pub fn extract_mesh(&self, min_weight: f32) -> TriangleMesh {
         let mut positions = Vec::new();
         let mut indices = Vec::new();
-        for z in 0..self.dims[2] {
-            for y in 0..self.dims[1] {
-                for x in 0..self.dims[0] {
-                    let flat = self.flat([x, y, z]);
-                    if self.weight[flat] < min_weight {
-                        continue;
+        if self.dims[0] < 2 || self.dims[1] < 2 || self.dims[2] < 2 {
+            return TriangleMesh { positions, indices };
+        }
+
+        for z in 0..self.dims[2] - 1 {
+            for y in 0..self.dims[1] - 1 {
+                for x in 0..self.dims[0] - 1 {
+                    let mut corner_pos = [Vec3::new(0.0, 0.0, 0.0); 8];
+                    let mut corner_val = [0.0f32; 8];
+                    for (corner, offset) in (0..8).zip(CORNER_OFFSETS.iter()) {
+                        let idx = [x + offset[0], y + offset[1], z + offset[2]];
+                        corner_pos[corner] = self.index_to_world(idx);
+                        corner_val[corner] = self.sample(idx, min_weight);
                     }
-                    let p = self.index_to_world([x, y, z]);
-                    let base = (positions.len() / 3) as u32;
-                    let s = self.voxel_size * 0.25;
-                    positions.extend_from_slice(&[
-                        p.x - s,
-                        p.y - s,
-                        p.z,
-                        p.x + s,
-                        p.y - s,
-                        p.z,
-                        p.x,
-                        p.y + s,
-                        p.z,
-                    ]);
-                    indices.extend_from_slice(&[base, base + 1, base + 2]);
+                    for tet in tetrahedra() {
+                        polygonise_tet(
+                            &mut positions,
+                            &mut indices,
+                            [
+                                corner_pos[tet[0]],
+                                corner_pos[tet[1]],
+                                corner_pos[tet[2]],
+                                corner_pos[tet[3]],
+                            ],
+                            [
+                                corner_val[tet[0]],
+                                corner_val[tet[1]],
+                                corner_val[tet[2]],
+                                corner_val[tet[3]],
+                            ],
+                            0.0,
+                        );
+                    }
                 }
             }
         }
         TriangleMesh { positions, indices }
     }
 
-    fn world_to_index(&self, point: Vec3<f32>) -> Option<[usize; 3]> {
+    fn sample(&self, index: [usize; 3], min_weight: f32) -> f32 {
+        let flat = self.flat(index);
+        if self.weight[flat] < min_weight {
+            self.truncation
+        } else {
+            self.distance[flat]
+        }
+    }
+
+    fn world_to_index_clamped(&self, point: Vec3<f32>) -> [usize; 3] {
         let ix = ((point.x - self.origin.x) / self.voxel_size).floor() as isize;
         let iy = ((point.y - self.origin.y) / self.voxel_size).floor() as isize;
         let iz = ((point.z - self.origin.z) / self.voxel_size).floor() as isize;
-        if ix < 0 || iy < 0 || iz < 0 {
-            return None;
-        }
-        let x = ix as usize;
-        let y = iy as usize;
-        let z = iz as usize;
-        if x >= self.dims[0] || y >= self.dims[1] || z >= self.dims[2] {
-            return None;
-        }
-        Some([x, y, z])
+        [
+            ix.clamp(0, self.dims[0] as isize - 1) as usize,
+            iy.clamp(0, self.dims[1] as isize - 1) as usize,
+            iz.clamp(0, self.dims[2] as isize - 1) as usize,
+        ]
     }
 
     fn index_to_world(&self, index: [usize; 3]) -> Vec3<f32> {
@@ -140,6 +168,17 @@ impl TsdfVolume {
         index[0] + self.dims[0] * (index[1] + self.dims[1] * index[2])
     }
 }
+
+const CORNER_OFFSETS: [[usize; 3]; 8] = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [1, 1, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [0, 1, 1],
+];
 
 #[cfg(test)]
 mod tests {
@@ -156,5 +195,15 @@ mod tests {
         let mesh = volume.extract_mesh(0.5);
         assert!(!mesh.positions.is_empty());
         assert_eq!(mesh.indices.len() % 3, 0);
+        assert!(mesh.triangle_count() >= 1);
+    }
+
+    #[test]
+    fn empty_weight_yields_empty_mesh() {
+        let volume =
+            TsdfVolume::try_new(Vec3::new(-1.0, -1.0, -1.0), 0.25, [8, 8, 8], 0.5).unwrap();
+        let mesh = volume.extract_mesh(1.0);
+        assert!(mesh.positions.is_empty());
+        assert!(mesh.indices.is_empty());
     }
 }

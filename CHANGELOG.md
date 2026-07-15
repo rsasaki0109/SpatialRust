@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **MCAP episode IO + TSDF meshing deepen**: `spatialrust-sync` `mcap` /
+  facade `sync-mcap` writes and reads XYZ stamped records to MCAP files;
+  `TsdfVolume::extract_mesh` uses truncation-band integration and marching
+  tetrahedra instead of the occupied-voxel triangle proxy.
+
 - **Canonical 2D → AI → 3D roadmap and image IO (Epic 83)**: `docs/ROADMAP.md`
   reserves Epics 83–90; new `spatialrust-image-io` provides bounded path,
   reader/writer, and memory PNG/JPEG/PNM codecs, independently gated TIFF and

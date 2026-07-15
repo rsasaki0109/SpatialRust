@@ -27,4 +27,10 @@ pub enum SyncError {
     /// Wrapped spatial error.
     #[error(transparent)]
     Spatial(#[from] spatialrust_core::SpatialError),
+    /// Filesystem / IO failure.
+    #[error("IO error: {0}")]
+    Io(String),
+    /// MCAP codec failure.
+    #[error("MCAP error: {0}")]
+    Mcap(String),
 }
