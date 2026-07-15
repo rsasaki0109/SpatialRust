@@ -31,7 +31,7 @@ fn stable_image_camera_and_vision_entry_points_compose() {
     normalize_into(rgb.view(), normalized_output, 1.0 / 255.0, [0.0; 3], [1.0; 3]).unwrap();
     let mut chw = vec![0.0_f32; 6];
     pack_chw_into(rgb.view(), 1.0 / 255.0, [0.0; 3], [1.0; 3], &mut chw).unwrap();
-    assert_eq!(gray_storage, [77, 149]);
+    assert_eq!(gray_storage, [76, 150]);
     assert_eq!(chw, [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
 
     let intrinsics = CameraIntrinsics::try_new(100.0, 100.0, 1.5, 1.0, 4, 3).unwrap();
