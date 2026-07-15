@@ -58,19 +58,68 @@ impl StabilityRegistry {
     /// Counts provisional APIs.
     #[must_use]
     pub fn provisional_count(&self) -> usize {
-        self.items
-            .iter()
-            .filter(|item| item.class == ApiStabilityClass::Provisional)
-            .count()
+        self.items.iter().filter(|item| item.class == ApiStabilityClass::Provisional).count()
     }
 
     /// Counts experimental APIs.
     #[must_use]
     pub fn experimental_count(&self) -> usize {
-        self.items
-            .iter()
-            .filter(|item| item.class == ApiStabilityClass::Experimental)
-            .count()
+        self.items.iter().filter(|item| item.class == ApiStabilityClass::Experimental).count()
+    }
+
+    /// Seeds the SpatialRust Vision 1.x ownership and algorithm-entry surface.
+    ///
+    /// Backend implementations and calibration/video algorithms added by later
+    /// OpenCV-outcome Epics remain provisional until their own freeze gates.
+    #[must_use]
+    pub fn vision_v1_surface() -> Self {
+        let mut registry = Self::new();
+        let stable = [
+            "spatialrust-image::Image",
+            "spatialrust-image::ImageView",
+            "spatialrust-image::ImageViewMut",
+            "spatialrust-image::PlanarImage",
+            "spatialrust-image::PlanarImageView",
+            "spatialrust-image::ImageMetadata",
+            "spatialrust-image::ImageRegion",
+            "spatialrust-camera::CameraIntrinsics",
+            "spatialrust-camera::PinholeCamera",
+            "spatialrust-camera::BrownConrady",
+            "spatialrust-camera::DepthConversionOptions",
+            "spatialrust-camera::depth_to_xyz_dense",
+            "spatialrust-camera::depth_to_xyz_dense_into",
+            "spatialrust-camera::rgbd_to_point_cloud",
+            "spatialrust-vision::VisionError",
+            "spatialrust-vision::BorderMode",
+            "spatialrust-vision::Interpolation",
+            "spatialrust-vision::resize",
+            "spatialrust-vision::Kernel1D",
+            "spatialrust-vision::Kernel2D",
+            "spatialrust-vision::filter2d",
+            "spatialrust-vision::BoundingBox2",
+            "spatialrust-vision::Detection",
+            "spatialrust-vision::nms",
+            "spatialrust-vision::DepthMap",
+            "spatialrust-vision::BinaryMask",
+            "spatialrust-vision::Keypoint2",
+            "spatialrust-vision::DescriptorBuffer",
+            "spatialrust-vision::FeatureSet2",
+            "spatialrust-vision::FeatureMatch",
+        ];
+        for path in stable {
+            registry.register(path, ApiStabilityClass::Stable);
+        }
+        let provisional = [
+            "spatialrust-vision::geometry",
+            "spatialrust-vision::stereo",
+            "spatialrust-vision::optical-flow",
+            "spatialrust-vision::ai-adapters",
+            "spatialrust-gpu::GpuImage",
+        ];
+        for path in provisional {
+            registry.register(path, ApiStabilityClass::Provisional);
+        }
+        registry
     }
 
     /// Seeds the north-star crate surface used by Epic 100 gates.
@@ -107,11 +156,23 @@ mod tests {
     #[test]
     fn north_star_surface_has_core_stable() {
         let registry = StabilityRegistry::north_star_surface();
+        assert_eq!(registry.lookup("spatialrust-core").unwrap().class, ApiStabilityClass::Stable);
+        assert!(registry.provisional_count() >= 10);
+        assert_eq!(registry.experimental_count(), 0);
+    }
+
+    #[test]
+    fn vision_v1_surface_freezes_ownership_and_entry_points() {
+        let registry = StabilityRegistry::vision_v1_surface();
         assert_eq!(
-            registry.lookup("spatialrust-core").unwrap().class,
+            registry.lookup("spatialrust-image::Image").unwrap().class,
             ApiStabilityClass::Stable
         );
-        assert!(registry.provisional_count() >= 10);
+        assert_eq!(
+            registry.lookup("spatialrust-gpu::GpuImage").unwrap().class,
+            ApiStabilityClass::Provisional
+        );
+        assert!(registry.items().len() >= 35);
         assert_eq!(registry.experimental_count(), 0);
     }
 }

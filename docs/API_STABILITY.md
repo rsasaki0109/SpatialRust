@@ -59,10 +59,11 @@ until their individual 1.0 milestones.
 | --- | --- |
 | MVP CLI flags | `--bounds`, `--resolution`, `--repeat` may gain aliases |
 | HTTP COPC (`mvp-http`) | URL IO is stable; timeout/retry policy may change |
-| Image/camera (`image`, `camera-rgbd`) | Typed image, calibration, distortion, and RGB-D APIs are provisional |
+| Image (`image`) | Packed/planar ownership, metadata, regions, and strided view contracts are stable |
+| Camera (`camera`, `camera-rgbd`) | Pinhole/Brown-Conrady models and explicit RGB-D conversion entry points are stable |
 | Image IO (`image-io-*`) | Bounded codecs, typed decoded pixels, and source metadata are provisional |
 | AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, mock backend, and ONNX Runtime adapter APIs are provisional |
-| Vision (`vision-*`) | CPU preprocessing, Feature2D contracts/detectors/matchers, warp, detection, masks, dense spatial bridges, geometry/multiview, and AI image↔tensor adapters are provisional |
+| Vision (`vision-*`) | Base errors/borders, resize/filter entry points, detection/dense data contracts, and Feature2D data contracts are stable; geometry, stereo, optical flow, and AI adapters remain provisional |
 | Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
 | Records (`records`) | Versioned `SpatialRecord`, schema compatibility/migration, and chunked record streams are provisional |
 | Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |
@@ -88,7 +89,7 @@ spatialrust-<area> / feature-<name>
 | Crate | 1.0 status | Notes |
 | --- | --- | --- |
 | `spatialrust-math` | Stable primitives | `Vec3`, `Mat4`, `Isometry3` |
-| `spatialrust-image` | Provisional | Packed ownership and strided CPU views; no hidden device transfers |
+| `spatialrust-image` | Stable | Packed/planar ownership, metadata, regions, and strided CPU views; no hidden device transfers |
 | `spatialrust-image-io` | Provisional | Standard codecs by default; TIFF/OpenEXR independently gated |
 | `spatialrust-tensor` | Provisional | Generic tensor descriptors, explicit CPU ownership, image/spatial bridges, and feature-gated DLPack major-version 1 ABI |
 | `spatialrust-ai` | Provisional | Runtime-independent session contract; ONNX Runtime CPU and hardware providers are independently gated |
@@ -103,8 +104,8 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-interchange` | Provisional | glTF JSON mesh bridge; USDA ASCII OpenUSD stage adapter |
 | `spatialrust-distribute` | Provisional | Partition graphs, topo schedules, backpressure queues, named measurable transfers |
 | `spatialrust-platform` | Provisional | Stability registry, conformance summaries, security checklist, LTS policy, performance budgets, release gate |
-| `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |
-| `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms, checked Feature2D descriptors/matches, shared border/kernel contracts, and explicit point-cloud bridges |
+| `spatialrust-camera` | Stable foundation | Pinhole/Brown–Conrady and named RGB-D conversion entry points; future calibration solvers are additive and provisional |
+| `spatialrust-vision` | Stable foundation | Errors, borders, resize/filter entry points, detection/dense and Feature2D data contracts are stable; geometry/stereo/flow/AI adapters remain provisional |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |
 | `spatialrust-filtering` | Provisional | GPU thresholds may move |
 | `spatialrust-features` | Provisional | Normal GPU path still tuning |
@@ -120,6 +121,12 @@ spatialrust-<area> / feature-<name>
 - `SpatialTensor` chunked views (provisional API in `spatialrust-core`)
 
 ## Deprecation policy (from 1.0 onward)
+
+The machine-readable freeze list for the stable vision foundation is
+`StabilityRegistry::vision_v1_surface()`. The
+`vision_api_v1` compile-and-behavior test must remain green on Linux, Windows,
+and macOS. A symbol marked stable there follows the deprecation policy below;
+group-level provisional entries may evolve behind their existing feature flag.
 
 1. Deprecate in minor release (`#[deprecated]` + CHANGELOG)
 2. Remove no sooner than next major release

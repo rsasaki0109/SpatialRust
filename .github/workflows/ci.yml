@@ -263,6 +263,24 @@ jobs:
           # Fail the build if the .pyi type stubs drift from the runtime API.
           python -m mypy.stubtest spatialrust --ignore-missing-stub
 
+  vision-platform-conformance:
+    name: Vision conformance (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test stable image, camera, and vision surface
+        run: |
+          cargo test -p spatialrust-image
+          cargo test -p spatialrust-camera
+          cargo test -p spatialrust-vision --no-default-features --features full
+          cargo test -p spatialrust --no-default-features --features platform,camera-rgbd,vision-full --test vision_api_v1
+
   bench:
     name: Benchmark compile
     runs-on: ubuntu-latest
