@@ -52,8 +52,9 @@
         <article class="card"><h3>Exact EDT at 4K</h3><p>With caller-owned output and workspace reuse, SpatialRust measured 40.66 ms versus OpenCV 43.33 ms: a 1.07× lead on the recorded Windows host.</p></article>
         <article class="card"><h3>Accuracy preserved</h3><p>The VGA, 1080p, and 4K canonical masks retain maximum absolute error 0.0 against OpenCV's precise L2 distance transform.</p></article>
         <article class="card"><h3>NMS post-processing</h3><p>SpatialRust measured 3.22×–8.95× faster for NMS, 26.38×–97.25× for batched NMS, and 3.42×–7.40× for linear/Gaussian Soft-NMS. Indices exactly match OpenCV; Soft-NMS scores stay within 1.79e-7.</p></article>
+        <article class="card"><h3>Structured-mask labeling</h3><p>Run-length union-find connected components measured 2.17×–3.61× faster than OpenCV SAUF at VGA, 1080p, and 4K. Labels, areas, and boxes are exact across canonical and 320 randomized cases.</p></article>
       </div>
-      <p class="notice">This is a workload- and host-specific result. VGA and 1080p reuse remain narrow OpenCV wins; the repository receipt contains the reproducible methodology.</p>
+      <p class="notice">These are workload- and host-specific results. The connected-components speed claim covers structured segmentation/document masks; dense random noise is not claimed. The repository receipts contain the reproducible methodology.</p>
     </section>
   </main>
   <footer><div class="wrap">The <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ROADMAP.md">repository ROADMAP</a> is authoritative for status and acceptance criteria.</div></footer>

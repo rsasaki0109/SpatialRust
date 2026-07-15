@@ -72,9 +72,10 @@ use spatialrust::transform::{
 use spatialrust::vision::{
     adaptive_threshold as adaptive_threshold_op, approximate_polygon as approximate_contour,
     batched_nms as batched_nms_op, bilateral_filter as bilateral_filter_op, canny as canny_op,
-    clahe as clahe_op, connected_components as label_components, decode_rle as decode_mask_runs,
-    detect_and_describe_orb as detect_and_describe_orb_op, detect_fast as detect_fast_op,
-    detect_harris as detect_harris_op, detect_shi_tomasi as detect_shi_tomasi_op,
+    clahe as clahe_op, connected_components_u8 as label_components_u8,
+    decode_rle as decode_mask_runs, detect_and_describe_orb as detect_and_describe_orb_op,
+    detect_fast as detect_fast_op, detect_harris as detect_harris_op,
+    detect_shi_tomasi as detect_shi_tomasi_op,
     distance_transform_edt_u8_into as distance_transform_edt_u8_into_op,
     distance_transform_edt_with_spacing as distance_transform_edt_op,
     encode_rle as encode_mask_runs, equalize_histogram as equalize_histogram_op,
@@ -3159,15 +3160,23 @@ fn connected_components_image<'py>(
     mask: PyReadonlyArray2<'_, u8>,
     connectivity: u8,
 ) -> PyResult<(Bound<'py, PyArray2<u32>>, ComponentStats)> {
-    let image = gray_u8_image_from_numpy(mask)?;
-    let mask =
-        BinaryMask::try_new(image.width(), image.height(), image.into_vec()).map_err(to_py_err)?;
+    let view = mask.as_array();
+    let shape = view.shape();
+    let (height, width) = (shape[0], shape[1]);
+    let packed;
+    let pixels = match mask.as_slice() {
+        Ok(slice) => slice,
+        Err(_) => {
+            packed = view.iter().copied().collect::<Vec<_>>();
+            packed.as_slice()
+        }
+    };
     let connectivity = match connectivity {
         4 => Connectivity::Four,
         8 => Connectivity::Eight,
         _ => return Err(PyValueError::new_err("connectivity must be 4 or 8")),
     };
-    let result = label_components(&mask, connectivity).map_err(to_py_err)?;
+    let result = label_components_u8(width, height, pixels, connectivity).map_err(to_py_err)?;
     let stats = result
         .components
         .iter()
@@ -3184,11 +3193,8 @@ fn connected_components_image<'py>(
             )
         })
         .collect();
-    let labels = Array2::from_shape_vec(
-        (result.labels.height(), result.labels.width()),
-        result.labels.as_slice().to_vec(),
-    )
-    .map_err(to_py_err)?;
+    let labels = Array2::from_shape_vec((height, width), result.labels.into_image().into_vec())
+        .map_err(to_py_err)?;
     Ok((labels.into_pyarray_bound(py), stats))
 }
 

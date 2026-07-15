@@ -1,6 +1,6 @@
 //! Dense mask, depth, flow, confidence, and point-map primitives.
 
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::BTreeMap;
 
 use rayon::prelude::*;
 use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageView};
@@ -801,6 +801,12 @@ impl LabelImage {
     pub fn image(&self) -> &Image<u32, 1> {
         &self.image
     }
+
+    /// Consumes the wrapper and returns its image.
+    #[must_use]
+    pub fn into_image(self) -> Image<u32, 1> {
+        self.image
+    }
 }
 
 /// Per-component statistics.
@@ -830,82 +836,191 @@ pub fn connected_components(
     mask: &BinaryMask,
     connectivity: Connectivity,
 ) -> VisionResult<ConnectedComponents> {
-    let width = mask.width();
-    let height = mask.height();
+    connected_components_u8(mask.width(), mask.height(), mask.image.as_slice(), connectivity)
+}
+
+/// Labels connected non-zero pixels from packed `u8` mask storage.
+///
+/// This borrowed-input variant avoids constructing an owned [`BinaryMask`]
+/// when the caller already has packed mask storage. Like OpenCV, every
+/// non-zero byte is foreground. Positive labels follow the first foreground
+/// run of each component in row-major order.
+pub fn connected_components_u8(
+    width: usize,
+    height: usize,
+    pixels: &[u8],
+    connectivity: Connectivity,
+) -> VisionResult<ConnectedComponents> {
+    let expected = width
+        .checked_mul(height)
+        .ok_or_else(|| VisionError::InvalidDimensions("mask dimensions overflow".to_owned()))?;
+    if pixels.len() != expected {
+        return Err(VisionError::InvalidDimensions(format!(
+            "mask storage has {} pixels, expected {expected}",
+            pixels.len()
+        )));
+    }
     let mut labels = vec![0_u32; width * height];
-    let mut components = Vec::new();
-    let mut queue = VecDeque::new();
+    let mut runs = Vec::new();
+    let mut previous_runs = 0..0;
+
+    for y in 0..height {
+        let current_start = runs.len();
+        let row = &pixels[y * width..(y + 1) * width];
+        let mut x = 0;
+        let mut previous_cursor = previous_runs.start;
+        while x < width {
+            while x < width && row[x] == 0 {
+                x += 1;
+            }
+            if x == width {
+                break;
+            }
+            let start = x;
+            while x < width && row[x] != 0 {
+                x += 1;
+            }
+            let end = x;
+            let run_index = runs.len();
+            runs.push(ComponentRun { y, start, end, parent: run_index });
+
+            while previous_cursor < previous_runs.end
+                && run_precedes(runs[previous_cursor], start, connectivity)
+            {
+                previous_cursor += 1;
+            }
+            let mut overlap = previous_cursor;
+            while overlap < previous_runs.end && !run_follows(runs[overlap], end, connectivity) {
+                union_component_runs(&mut runs, run_index, overlap);
+                overlap += 1;
+            }
+        }
+        previous_runs = current_start..runs.len();
+    }
+
+    let mut root_labels = vec![0_u32; runs.len()];
+    let mut accumulators = Vec::<ComponentAccumulator>::new();
     let mut next_label = 1_u32;
-    for seed_y in 0..height {
-        for seed_x in 0..width {
-            let seed = seed_y * width + seed_x;
-            if !mask.contains(seed_x, seed_y) || labels[seed] != 0 {
-                continue;
-            }
-            labels[seed] = next_label;
-            queue.push_back((seed_x, seed_y));
-            let mut area = 0_usize;
-            let mut min_x = seed_x;
-            let mut min_y = seed_y;
-            let mut max_x = seed_x;
-            let mut max_y = seed_y;
-            let mut sum_x = 0.0_f64;
-            let mut sum_y = 0.0_f64;
-            while let Some((x, y)) = queue.pop_front() {
-                area += 1;
-                min_x = min_x.min(x);
-                min_y = min_y.min(y);
-                max_x = max_x.max(x);
-                max_y = max_y.max(y);
-                sum_x += x as f64 + 0.5;
-                sum_y += y as f64 + 0.5;
-                for (nx, ny) in neighbors(x, y, width, height, connectivity) {
-                    let index = ny * width + nx;
-                    if mask.contains(nx, ny) && labels[index] == 0 {
-                        labels[index] = next_label;
-                        queue.push_back((nx, ny));
-                    }
-                }
-            }
-            components.push(ComponentStats {
-                label: next_label,
-                area,
-                bbox: BoundingBox2 {
-                    x_min: min_x as f32,
-                    y_min: min_y as f32,
-                    x_max: (max_x + 1) as f32,
-                    y_max: (max_y + 1) as f32,
-                },
-                centroid: [sum_x / area as f64, sum_y / area as f64],
-            });
+    for run_index in 0..runs.len() {
+        let run = runs[run_index];
+        let root = component_run_root(&mut runs, run_index);
+        let label = if root_labels[root] == 0 {
+            let label = next_label;
+            root_labels[root] = label;
+            accumulators.push(ComponentAccumulator::new(run));
             next_label = next_label
                 .checked_add(1)
                 .ok_or_else(|| VisionError::InvalidDimensions("too many components".to_owned()))?;
-        }
+            label
+        } else {
+            root_labels[root]
+        };
+        labels[run.y * width + run.start..run.y * width + run.end].fill(label);
+        accumulators[label as usize - 1].include(run);
     }
+
+    let components = accumulators
+        .into_iter()
+        .enumerate()
+        .map(|(index, accumulator)| accumulator.finish(index as u32 + 1))
+        .collect();
     let metadata = ImageMetadata { color_space: ColorSpace::Label, ..Default::default() };
     let image = Image::try_new_with_metadata(width, height, labels, metadata)?;
     Ok(ConnectedComponents { labels: LabelImage { image }, components })
 }
 
-fn neighbors(
-    x: usize,
+#[derive(Clone, Copy)]
+struct ComponentRun {
     y: usize,
-    width: usize,
-    height: usize,
-    connectivity: Connectivity,
-) -> impl Iterator<Item = (usize, usize)> {
-    let offsets: &[(isize, isize)] = match connectivity {
-        Connectivity::Four => &[(0, -1), (-1, 0), (1, 0), (0, 1)],
-        Connectivity::Eight => {
-            &[(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
+    start: usize,
+    end: usize,
+    parent: usize,
+}
+
+fn run_precedes(run: ComponentRun, start: usize, connectivity: Connectivity) -> bool {
+    match connectivity {
+        Connectivity::Four => run.end <= start,
+        Connectivity::Eight => run.end < start,
+    }
+}
+
+fn run_follows(run: ComponentRun, end: usize, connectivity: Connectivity) -> bool {
+    match connectivity {
+        Connectivity::Four => run.start >= end,
+        Connectivity::Eight => run.start > end,
+    }
+}
+
+fn component_run_root(runs: &mut [ComponentRun], mut index: usize) -> usize {
+    let mut root = index;
+    while runs[root].parent != root {
+        root = runs[root].parent;
+    }
+    while runs[index].parent != index {
+        let parent = runs[index].parent;
+        runs[index].parent = root;
+        index = parent;
+    }
+    root
+}
+
+fn union_component_runs(runs: &mut [ComponentRun], left: usize, right: usize) {
+    let left_root = component_run_root(runs, left);
+    let right_root = component_run_root(runs, right);
+    if left_root != right_root {
+        let (root, child) =
+            if left_root < right_root { (left_root, right_root) } else { (right_root, left_root) };
+        runs[child].parent = root;
+    }
+}
+
+struct ComponentAccumulator {
+    area: usize,
+    min_x: usize,
+    min_y: usize,
+    max_x: usize,
+    max_y: usize,
+    sum_x: f64,
+    sum_y: f64,
+}
+
+impl ComponentAccumulator {
+    fn new(run: ComponentRun) -> Self {
+        Self {
+            area: 0,
+            min_x: run.start,
+            min_y: run.y,
+            max_x: run.end,
+            max_y: run.y + 1,
+            sum_x: 0.0,
+            sum_y: 0.0,
         }
-    };
-    offsets.iter().filter_map(move |&(dx, dy)| {
-        let nx = x.checked_add_signed(dx)?;
-        let ny = y.checked_add_signed(dy)?;
-        (nx < width && ny < height).then_some((nx, ny))
-    })
+    }
+
+    fn include(&mut self, run: ComponentRun) {
+        let length = run.end - run.start;
+        self.area += length;
+        self.min_x = self.min_x.min(run.start);
+        self.min_y = self.min_y.min(run.y);
+        self.max_x = self.max_x.max(run.end);
+        self.max_y = self.max_y.max(run.y + 1);
+        self.sum_x += length as f64 * (run.start as f64 + run.end as f64) * 0.5;
+        self.sum_y += length as f64 * (run.y as f64 + 0.5);
+    }
+
+    fn finish(self, label: u32) -> ComponentStats {
+        ComponentStats {
+            label,
+            area: self.area,
+            bbox: BoundingBox2 {
+                x_min: self.min_x as f32,
+                y_min: self.min_y as f32,
+                x_max: self.max_x as f32,
+                y_max: self.max_y as f32,
+            },
+            centroid: [self.sum_x / self.area as f64, self.sum_y / self.area as f64],
+        }
+    }
 }
 
 /// One closed polygonal contour on pixel-grid corner coordinates.
@@ -1304,12 +1419,13 @@ impl PointMap {
 #[cfg(test)]
 mod tests {
     use super::{
-        approximate_polygon, connected_components, decode_rle, distance_transform_edt,
-        distance_transform_edt_u8_into, distance_transform_edt_with_spacing, encode_rle,
-        find_contours, BinaryMask, Connectivity, DepthMap, DistanceTransformWorkspace, FlowField,
-        PointMap, RleOrder,
+        approximate_polygon, connected_components, connected_components_u8, decode_rle,
+        distance_transform_edt, distance_transform_edt_u8_into,
+        distance_transform_edt_with_spacing, encode_rle, find_contours, BinaryMask, Connectivity,
+        DepthMap, DistanceTransformWorkspace, FlowField, PointMap, RleOrder,
     };
     use spatialrust_image::Image;
+    use std::collections::VecDeque;
 
     #[test]
     fn threshold_and_components_find_two_regions() {
@@ -1325,6 +1441,116 @@ mod tests {
         assert_eq!(result.components[0].area, 4);
         assert_eq!(result.components[1].area, 2);
         assert_eq!(result.components[0].centroid, [1.0, 1.0]);
+    }
+
+    #[test]
+    fn run_length_components_match_pixel_flood_fill() {
+        let mut state = 0x9e37_79b9_u32;
+        for connectivity in [Connectivity::Four, Connectivity::Eight] {
+            for case in 0..96 {
+                let width = 1 + case % 37;
+                let height = 1 + (case * 11) % 29;
+                let cutoff = match case % 4 {
+                    0 => 40,
+                    1 => 250,
+                    2 => 600,
+                    _ => 850,
+                };
+                let data = (0..width * height)
+                    .map(|_| {
+                        state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                        u8::from(state % 1_000 < cutoff)
+                    })
+                    .collect::<Vec<_>>();
+                let mask = BinaryMask::try_new(width, height, data.clone()).unwrap();
+                let actual = connected_components(&mask, connectivity).unwrap();
+                let expected = flood_fill_labels(&data, width, height, connectivity);
+                assert_eq!(actual.labels.as_slice(), expected, "case {case:?} {connectivity:?}");
+
+                let max_label = expected.iter().copied().max().unwrap_or(0) as usize;
+                assert_eq!(actual.components.len(), max_label);
+                for component in &actual.components {
+                    let mut area = 0;
+                    let mut min_x = width;
+                    let mut min_y = height;
+                    let mut max_x = 0;
+                    let mut max_y = 0;
+                    let mut sum_x = 0.0;
+                    let mut sum_y = 0.0;
+                    for (index, &label) in expected.iter().enumerate() {
+                        if label == component.label {
+                            let (x, y) = (index % width, index / width);
+                            area += 1;
+                            min_x = min_x.min(x);
+                            min_y = min_y.min(y);
+                            max_x = max_x.max(x + 1);
+                            max_y = max_y.max(y + 1);
+                            sum_x += x as f64 + 0.5;
+                            sum_y += y as f64 + 0.5;
+                        }
+                    }
+                    assert_eq!(component.area, area);
+                    assert_eq!(component.bbox.x_min, min_x as f32);
+                    assert_eq!(component.bbox.y_min, min_y as f32);
+                    assert_eq!(component.bbox.x_max, max_x as f32);
+                    assert_eq!(component.bbox.y_max, max_y as f32);
+                    assert_eq!(component.centroid, [sum_x / area as f64, sum_y / area as f64]);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn borrowed_u8_components_accept_all_nonzero_values() {
+        let pixels = [0, 2, 0, 255, 0, 7];
+        let result = connected_components_u8(3, 2, &pixels, Connectivity::Eight).unwrap();
+        assert_eq!(result.labels.as_slice(), [0, 1, 0, 1, 0, 1]);
+        assert_eq!(result.components[0].area, 3);
+        assert!(connected_components_u8(3, 2, &pixels[..5], Connectivity::Eight).is_err());
+    }
+
+    fn flood_fill_labels(
+        data: &[u8],
+        width: usize,
+        height: usize,
+        connectivity: Connectivity,
+    ) -> Vec<u32> {
+        let offsets: &[(isize, isize)] = match connectivity {
+            Connectivity::Four => &[(0, -1), (-1, 0), (1, 0), (0, 1)],
+            Connectivity::Eight => {
+                &[(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
+            }
+        };
+        let mut labels = vec![0_u32; data.len()];
+        let mut queue = VecDeque::new();
+        let mut next_label = 1_u32;
+        for seed in 0..data.len() {
+            if data[seed] == 0 || labels[seed] != 0 {
+                continue;
+            }
+            labels[seed] = next_label;
+            queue.push_back((seed % width, seed / width));
+            while let Some((x, y)) = queue.pop_front() {
+                for &(dx, dy) in offsets {
+                    let Some(nx) = x.checked_add_signed(dx) else {
+                        continue;
+                    };
+                    let Some(ny) = y.checked_add_signed(dy) else {
+                        continue;
+                    };
+                    if nx >= width || ny >= height {
+                        continue;
+                    }
+                    let index = ny * width + nx;
+                    if data[index] != 0 && labels[index] == 0 {
+                        labels[index] = next_label;
+                        queue.push_back((nx, ny));
+                    }
+                }
+            }
+            next_label += 1;
+        }
+        labels
     }
 
     #[test]

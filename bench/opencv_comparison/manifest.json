@@ -33,6 +33,7 @@
     { "id": "canny", "domain": "imgproc", "modes": ["allocate"] },
     { "id": "morphology_open", "domain": "imgproc", "modes": ["allocate"] },
     { "id": "distance_transform_edt", "domain": "imgproc", "modes": ["allocate"] },
+    { "id": "connected_components", "domain": "imgproc", "modes": ["structured-mask"] },
     { "id": "orb", "domain": "feature2d", "modes": ["allocate"] },
     { "id": "stereo_bm", "domain": "calib3d", "modes": ["allocate"] },
     { "id": "pinhole_calibration", "domain": "calib3d", "modes": ["allocate"] },
