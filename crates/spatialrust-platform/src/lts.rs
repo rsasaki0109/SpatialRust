@@ -1,4 +1,4 @@
-//! LTS support-window policy.
+//! Long-term support policy and calendar helpers.
 
 /// Support window for one major line.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -9,6 +9,14 @@ pub struct SupportWindow {
     pub active_months: u32,
     /// Months of security-only support after active ends.
     pub security_months: u32,
+}
+
+impl SupportWindow {
+    /// Total supported months (active + security-only).
+    #[must_use]
+    pub fn total_months(&self) -> u32 {
+        self.active_months.saturating_add(self.security_months)
+    }
 }
 
 /// Long-term support policy.
@@ -35,6 +43,14 @@ impl LtsPolicy {
         &self.windows
     }
 
+    /// Looks up a major line window.
+    #[must_use]
+    pub fn window_for(&self, major_line: &str) -> Option<&SupportWindow> {
+        self.windows
+            .iter()
+            .find(|window| window.major_line == major_line)
+    }
+
     /// Default SpatialRust 1.x policy used by Epic 100.
     #[must_use]
     pub fn spatialrust_v1() -> Self {
@@ -54,6 +70,8 @@ mod tests {
 
     #[test]
     fn v1_policy_declares_window() {
-        assert_eq!(LtsPolicy::spatialrust_v1().windows().len(), 1);
+        let policy = LtsPolicy::spatialrust_v1();
+        assert_eq!(policy.windows().len(), 1);
+        assert_eq!(policy.window_for("1.x").unwrap().total_months(), 24);
     }
 }

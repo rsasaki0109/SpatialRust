@@ -17,7 +17,8 @@ use spatialrust::interchange::{
 };
 use spatialrust::mapping::{PoseGraph, PoseGraphEdge, PoseNodeId, StampedPose, Trajectory};
 use spatialrust::platform::{
-    ApiStabilityClass, ConformanceReport, ConformanceStatus, LtsPolicy, StabilityRegistry,
+    ApiStabilityClass, ConformanceReport, ConformanceStatus, LtsPolicy, ReleaseGate,
+    SecurityChecklist, StabilityRegistry,
 };
 use spatialrust::records::{SchemaVersion, SpatialRecord};
 use spatialrust::runtime::{
@@ -42,6 +43,7 @@ use spatialrust::{
 
 #[test]
 fn north_star_image_to_gltf_pipeline() {
+    let started = std::time::Instant::now();
     // 1) Image → mock depth → XYZ cloud
     let width = 24usize;
     let height = 24usize;
@@ -238,11 +240,14 @@ fn north_star_image_to_gltf_pipeline() {
         .unwrap();
     partitions.connect("edge", "host").unwrap();
 
-    // 7) Platform conformance + LTS markers
-    let mut registry = StabilityRegistry::new();
-    registry.register("spatialrust-scene::TsdfVolume", ApiStabilityClass::Provisional);
-    registry.register("spatialrust-platform::LtsPolicy", ApiStabilityClass::Stable);
-    assert_eq!(LtsPolicy::spatialrust_v1().windows().len(), 1);
+    // 7) Platform release gate: stability + conformance + security + LTS + budgets
+    let mut gate = ReleaseGate::north_star_defaults();
+    gate.stability = Some({
+        let mut registry = StabilityRegistry::north_star_surface();
+        registry.register("spatialrust-scene::TsdfVolume", ApiStabilityClass::Provisional);
+        registry
+    });
+    assert_eq!(LtsPolicy::spatialrust_v1().window_for("1.x").unwrap().total_months(), 24);
 
     let mut report = ConformanceReport::new();
     report.record(
@@ -255,6 +260,18 @@ fn north_star_image_to_gltf_pipeline() {
     report.record("north-star-e2e-usda", ConformanceStatus::Pass, None);
     report.record("north-star-e2e-gaussian-cpu", ConformanceStatus::Pass, None);
     report.assert_no_failures().unwrap();
+    assert!(report.pass_count() >= 5);
+    gate.conformance = Some(report);
+    gate.security = Some(SecurityChecklist::north_star_baseline_satisfied());
+    if let Some(budgets) = gate.budgets.as_mut() {
+        let elapsed_ms = started.elapsed().as_millis() as u64;
+        budgets.sample("north-star-e2e-latency-ms", elapsed_ms);
+        budgets.sample(
+            "north-star-e2e-bytes-copied",
+            (xyz.len() * 4 + mesh.positions.len() * 4 + fb.rgba.len()) as u64,
+        );
+    }
+    gate.assert_allowed().unwrap();
 }
 
 fn collect_xyz(cloud: &PointCloud) -> Vec<f32> {
