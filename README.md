@@ -173,6 +173,16 @@ samples are produced by the [performance harness](bench/opencv_vision_comparison
 the dated [Epic 111 receipt](notes/2026-07-15_epic111_opencv_comparison_v2.md)
 records the exact environment and methodology.
 
+The additive paired-gradient path keeps standalone Sobel compatibility while
+also exposing exact fused 3×3 L1 magnitude (`abs(Gx) + abs(Gy)`). On a newer
+OpenCV 4.13 receipt, the fused allocated Python call is **1.86× faster at
+1080p, 2.19× at 4K, and 2.42× at 8K** because SpatialRust writes one result
+instead of materializing paired gradients, two absolute-value images, and an
+addition result. Caller-owned reuse ties at 1080p and favors OpenCV at 4K/8K;
+OpenCV also remains faster for standalone `spatialGradient`. See the
+[focused harness](bench/opencv_sobel_l1_comparison/) and
+[dated receipt](notes/2026-07-16_paired_sobel_l1_acceleration.md).
+
 [^morphology-2026]: Rectangular morphology was remeasured separately with
     OpenCV 4.13, OpenCL off, with both allocated and caller-owned-output Python
     API timing scopes. `MorphologyWorkspace` retains all full-image and

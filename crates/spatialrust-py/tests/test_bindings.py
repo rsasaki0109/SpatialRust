@@ -580,6 +580,57 @@ def test_advanced_filters_and_pyramid_shapes():
     assert sr.pyr_up_image(down).shape == (10, 12, 3)
 
 
+def test_spatial_gradient_matches_sobel_and_reuses_outputs():
+    gray = np.arange(13 * 17, dtype=np.uint8).reshape(13, 17)[:, ::-1]
+    expected_x = sr.sobel_image(gray, 1, 0).astype(np.int16)
+    expected_y = sr.sobel_image(gray, 0, 1).astype(np.int16)
+    gradient_x, gradient_y = sr.spatial_gradient_image(gray)
+    assert gradient_x.dtype == np.int16
+    assert gradient_y.dtype == np.int16
+    np.testing.assert_array_equal(gradient_x, expected_x)
+    np.testing.assert_array_equal(gradient_y, expected_y)
+
+    out_dx = np.empty(gray.shape, dtype=np.int16)
+    out_dy = np.empty(gray.shape, dtype=np.int16)
+    returned_dx, returned_dy = sr.spatial_gradient_image(gray, out_dx, out_dy)
+    assert returned_dx is out_dx
+    assert returned_dy is out_dy
+    np.testing.assert_array_equal(out_dx, expected_x)
+    np.testing.assert_array_equal(out_dy, expected_y)
+
+
+def test_spatial_gradient_rejects_partial_and_invalid_outputs():
+    gray = np.arange(7 * 9, dtype=np.uint8).reshape(7, 9)
+    output = np.empty(gray.shape, dtype=np.int16)
+    with pytest.raises(ValueError, match="provided together"):
+        sr.spatial_gradient_image(gray, output)
+    with pytest.raises(ValueError, match="out_dx shape"):
+        sr.spatial_gradient_image(gray, np.empty((7, 8), dtype=np.int16), output)
+    with pytest.raises(ValueError, match="out_dy must be a contiguous"):
+        sr.spatial_gradient_image(gray, output, np.empty((7, 18), dtype=np.int16)[:, ::2])
+
+
+def test_fused_sobel_l1_matches_paired_gradient_and_reuses_output():
+    gray = np.arange(19 * 23, dtype=np.uint8).reshape(19, 23)[:, ::-1]
+    gradient_x, gradient_y = sr.spatial_gradient_image(gray)
+    expected = np.abs(gradient_x) + np.abs(gradient_y)
+    magnitude = sr.sobel_l1_magnitude_image(gray)
+    assert magnitude.dtype == np.int16
+    np.testing.assert_array_equal(magnitude, expected)
+
+    output = np.empty(gray.shape, dtype=np.int16)
+    assert sr.sobel_l1_magnitude_image(gray, output) is output
+    np.testing.assert_array_equal(output, expected)
+
+
+def test_fused_sobel_l1_rejects_invalid_output():
+    gray = np.arange(7 * 9, dtype=np.uint8).reshape(7, 9)
+    with pytest.raises(ValueError, match="out shape"):
+        sr.sobel_l1_magnitude_image(gray, np.empty((7, 8), dtype=np.int16))
+    with pytest.raises(ValueError, match="contiguous"):
+        sr.sobel_l1_magnitude_image(gray, np.empty((7, 18), dtype=np.int16)[:, ::2])
+
+
 def test_morphology_operations_and_noncontiguous_input():
     mask = np.zeros((9, 11), dtype=np.uint8)
     mask[2:7, 3:8] = 255

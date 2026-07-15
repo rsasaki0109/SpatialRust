@@ -13,7 +13,7 @@ default = []
 resize = []
 preprocess = ["resize"]
 warp = ["resize"]
-imgproc-filter = []
+imgproc-filter = ["dep:pulp", "dep:rayon"]
 imgproc-morphology = ["dep:rayon"]
 imgproc-analysis = []
 imgproc-canny = ["imgproc-filter"]
@@ -38,6 +38,7 @@ spatialrust-tensor = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
 thiserror.workspace = true
 rayon = { workspace = true, optional = true }
+pulp = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion.workspace = true

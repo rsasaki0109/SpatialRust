@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SpatialRust filtering, paired Sobel gradients, and fused L1 magnitude guide.">
+  <title>Filtering and Sobel · SpatialRust</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header><nav class="wrap"><a class="brand" href="index.html">SpatialRust</a><div class="nav-links"><a href="algorithms.html">Algorithms</a><a href="vision2.html">Vision 2</a><a href="spatialrust/index.html">Rust API</a><a href="https://github.com/rsasaki0109/SpatialRust">GitHub</a></div></nav></header>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">imgproc-filter · safe CPU</div>
+      <h1>Filtering and paired Sobel gradients</h1>
+      <p class="lead">Generic correlation and separable filters remain available for arbitrary components and channels. Packed grayscale <code>u8</code> additionally gets an exact paired 3×3 Sobel traversal and a fused L1 magnitude operation.</p>
+      <div class="actions"><a class="button primary" href="spatialrust_vision/fn.spatial_gradient_u8.html">Paired-gradient API</a><a class="button" href="spatialrust_vision/fn.sobel_l1_magnitude_u8.html">Fused L1 API</a></div>
+    </section>
+
+    <section>
+      <h2>Contracts</h2>
+      <p><code>spatial_gradient_u8</code> matches OpenCV <code>spatialGradient</code>: grayscale <code>u8</code> input, signed <code>i16</code> X/Y outputs, 3×3 Sobel coefficients, and Replicate or Reflect101 borders. Its <code>*_into</code> form writes caller-owned packed slices.</p>
+      <p><code>sobel_l1_magnitude_u8</code> computes <code>abs(Gx) + abs(Gy)</code> directly as non-negative <code>i16</code> values in [0, 2040]. It does not materialize public X/Y intermediates. Python exposes the same operations as <code>spatial_gradient_image</code> and <code>sobel_l1_magnitude_image(..., out=)</code>.</p>
+      <p>Large packed images use bounded Rayon row stages and runtime-dispatched safe SIMD context. Strided inputs retain exact row semantics. CPU calls never upload to a device.</p>
+    </section>
+
+    <section>
+      <h2>Measured boundary</h2>
+      <div class="grid">
+        <article class="card"><div class="metric">1.86×</div><p>1080p allocated fused L1 lead over OpenCV 4.13 on the recorded Windows host.</p></article>
+        <article class="card"><div class="metric">2.19×</div><p>4K allocated fused L1 lead with exact <code>int16</code> output.</p></article>
+        <article class="card"><div class="metric">2.42×</div><p>8K allocated fused L1 lead; 300 randomized cases are bit-exact.</p></article>
+      </div>
+      <p>OpenCV uses <code>spatialGradient</code>, two <code>absdiff</code> stages, and <code>add</code>. SpatialRust fuses that public workload into one traversal and one result allocation. Reuse is effectively tied at 1080p while OpenCV leads at 4K and 8K, and OpenCV remains faster for standalone paired gradients.</p>
+      <p>Reproduce with the <a href="https://github.com/rsasaki0109/SpatialRust/tree/main/bench/opencv_sobel_l1_comparison">focused harness</a> and inspect the <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/notes/2026-07-16_paired_sobel_l1_acceleration.md">dated receipt</a>.</p>
+    </section>
+  </main>
+  <footer><div class="wrap">Filtering guide · <a href="algorithms.html">Algorithm catalog</a> · <a href="vision2.html">Vision 2 roadmap</a></div></footer>
+</body>
+</html>

@@ -1,5 +1,7 @@
 //! Non-linear filters, image derivatives, and Gaussian pyramids.
 
+use pulp::Arch;
+use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView};
 
 use crate::border::fetch;
@@ -113,6 +115,332 @@ pub fn sobel<T: PixelComponent, const CHANNELS: usize>(
     kernel_x =
         Kernel1D::try_new(kernel_x.coefficients().iter().map(|value| value * scale).collect())?;
     separable_filter_f32(input, &kernel_x, &kernel_y, delta, border)
+}
+
+/// Computes exact 3×3 Sobel X/Y gradients together for grayscale `u8` input.
+///
+/// This matches OpenCV `spatialGradient`: outputs are signed `i16`, the two
+/// first derivatives share one source traversal, and only replicated or
+/// Reflect101 borders are accepted. CPU storage remains caller-owned and no
+/// device transfer is performed.
+pub fn spatial_gradient_u8(
+    input: ImageView<'_, u8, 1>,
+    border: BorderMode<u8, 1>,
+) -> VisionResult<(Image<i16, 1>, Image<i16, 1>)> {
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("spatial gradient size overflows".into()))?;
+    let mut gradient_x = vec![0; len];
+    let mut gradient_y = vec![0; len];
+    spatial_gradient_u8_into(input, border, &mut gradient_x, &mut gradient_y)?;
+    Ok((
+        Image::try_new_with_metadata(input.width(), input.height(), gradient_x, input.metadata())?,
+        Image::try_new_with_metadata(input.width(), input.height(), gradient_y, input.metadata())?,
+    ))
+}
+
+/// Computes exact paired 3×3 Sobel gradients into caller-owned packed output.
+///
+/// Both output slices must contain exactly `input.width() * input.height()`
+/// elements and must not overlap each other. Safe Rust borrowing prevents the
+/// `u8` input from aliasing either `i16` output.
+pub fn spatial_gradient_u8_into(
+    input: ImageView<'_, u8, 1>,
+    border: BorderMode<u8, 1>,
+    gradient_x: &mut [i16],
+    gradient_y: &mut [i16],
+) -> VisionResult<()> {
+    if !matches!(border, BorderMode::Replicate | BorderMode::Reflect101) {
+        return Err(VisionError::InvalidParameter(
+            "spatial gradient supports only Replicate and Reflect101 borders".into(),
+        ));
+    }
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("spatial gradient size overflows".into()))?;
+    validate_gradient_output(gradient_x, len, "gradient_x")?;
+    validate_gradient_output(gradient_y, len, "gradient_y")?;
+    if len == 0 {
+        return Ok(());
+    }
+
+    let width = input.width();
+    let height = input.height();
+    let arch = Arch::new();
+    if len >= 1_000_000 && height > 1 {
+        let workers = rayon::current_num_threads().min(height);
+        let rows_per_worker = height.div_ceil(workers);
+        gradient_x
+            .par_chunks_mut(rows_per_worker * width)
+            .zip(gradient_y.par_chunks_mut(rows_per_worker * width))
+            .enumerate()
+            .for_each(|(chunk, (gradient_x, gradient_y))| {
+                arch.dispatch(|| {
+                    spatial_gradient_rows(
+                        input,
+                        border,
+                        chunk * rows_per_worker,
+                        gradient_x,
+                        gradient_y,
+                    );
+                });
+            });
+    } else {
+        arch.dispatch(|| spatial_gradient_rows(input, border, 0, gradient_x, gradient_y));
+    }
+    Ok(())
+}
+
+/// Computes exact 3×3 Sobel L1 magnitude (`|Gx| + |Gy|`) for grayscale `u8`.
+///
+/// The non-negative signed `i16` output ranges from 0 through 2040. Fusing the
+/// paired derivatives and magnitude avoids materializing two gradient images.
+pub fn sobel_l1_magnitude_u8(
+    input: ImageView<'_, u8, 1>,
+    border: BorderMode<u8, 1>,
+) -> VisionResult<Image<i16, 1>> {
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("Sobel magnitude size overflows".into()))?;
+    let mut magnitude = vec![0; len];
+    sobel_l1_magnitude_u8_into(input, border, &mut magnitude)?;
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), magnitude, input.metadata())?)
+}
+
+/// Computes exact fused 3×3 Sobel L1 magnitude into caller-owned packed output.
+pub fn sobel_l1_magnitude_u8_into(
+    input: ImageView<'_, u8, 1>,
+    border: BorderMode<u8, 1>,
+    magnitude: &mut [i16],
+) -> VisionResult<()> {
+    if !matches!(border, BorderMode::Replicate | BorderMode::Reflect101) {
+        return Err(VisionError::InvalidParameter(
+            "Sobel L1 magnitude supports only Replicate and Reflect101 borders".into(),
+        ));
+    }
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("Sobel magnitude size overflows".into()))?;
+    validate_gradient_output(magnitude, len, "magnitude")?;
+    if len == 0 {
+        return Ok(());
+    }
+    let width = input.width();
+    let height = input.height();
+    let arch = Arch::new();
+    if len >= 1_000_000 && height > 1 {
+        let workers = rayon::current_num_threads().min(height);
+        let rows_per_worker = height.div_ceil(workers);
+        magnitude.par_chunks_mut(rows_per_worker * width).enumerate().for_each(
+            |(chunk, magnitude)| {
+                arch.dispatch(|| {
+                    sobel_l1_rows(input, border, chunk * rows_per_worker, magnitude);
+                });
+            },
+        );
+    } else {
+        arch.dispatch(|| sobel_l1_rows(input, border, 0, magnitude));
+    }
+    Ok(())
+}
+
+fn validate_gradient_output(output: &[i16], len: usize, name: &str) -> VisionResult<()> {
+    if output.len() != len {
+        return Err(VisionError::ShapeMismatch(format!(
+            "{name} needs {len} elements, found {}",
+            output.len()
+        )));
+    }
+    Ok(())
+}
+
+fn spatial_gradient_rows(
+    input: ImageView<'_, u8, 1>,
+    border: BorderMode<u8, 1>,
+    start_y: usize,
+    gradient_x: &mut [i16],
+    gradient_y: &mut [i16],
+) {
+    let width = input.width();
+    let height = input.height();
+    for (local_y, (gradient_x, gradient_y)) in
+        gradient_x.chunks_mut(width).zip(gradient_y.chunks_mut(width)).enumerate()
+    {
+        let y = start_y + local_y;
+        let (top_y, bottom_y) = gradient_neighbors(y, height, border);
+        let top = input.row(top_y).expect("gradient row in bounds");
+        let middle = input.row(y).expect("gradient row in bounds");
+        let bottom = input.row(bottom_y).expect("gradient row in bounds");
+        if width == 1 {
+            write_spatial_gradient_pixel(top, middle, bottom, 0, 0, 0, gradient_x, gradient_y);
+            continue;
+        }
+        let (left, _) = gradient_neighbors(0, width, border);
+        write_spatial_gradient_pixel(top, middle, bottom, left, 0, 1, gradient_x, gradient_y);
+        for ((((top, middle), bottom), gradient_x), gradient_y) in top
+            .windows(3)
+            .zip(middle.windows(3))
+            .zip(bottom.windows(3))
+            .zip(gradient_x[1..width - 1].iter_mut())
+            .zip(gradient_y[1..width - 1].iter_mut())
+        {
+            let top_left = i16::from(top[0]);
+            let top_middle = i16::from(top[1]);
+            let top_right = i16::from(top[2]);
+            let middle_left = i16::from(middle[0]);
+            let middle_right = i16::from(middle[2]);
+            let bottom_left = i16::from(bottom[0]);
+            let bottom_middle = i16::from(bottom[1]);
+            let bottom_right = i16::from(bottom[2]);
+            *gradient_x = top_right + 2 * middle_right + bottom_right
+                - top_left
+                - 2 * middle_left
+                - bottom_left;
+            *gradient_y = bottom_left + 2 * bottom_middle + bottom_right
+                - top_left
+                - 2 * top_middle
+                - top_right;
+        }
+        let x = width - 1;
+        let (_, right) = gradient_neighbors(x, width, border);
+        write_spatial_gradient_pixel(top, middle, bottom, x - 1, x, right, gradient_x, gradient_y);
+    }
+}
+
+fn sobel_l1_rows(
+    input: ImageView<'_, u8, 1>,
+    border: BorderMode<u8, 1>,
+    start_y: usize,
+    magnitude: &mut [i16],
+) {
+    let width = input.width();
+    let height = input.height();
+    for (local_y, magnitude) in magnitude.chunks_mut(width).enumerate() {
+        let y = start_y + local_y;
+        let (top_y, bottom_y) = gradient_neighbors(y, height, border);
+        let top = input.row(top_y).expect("Sobel magnitude row in bounds");
+        let middle = input.row(y).expect("Sobel magnitude row in bounds");
+        let bottom = input.row(bottom_y).expect("Sobel magnitude row in bounds");
+        if width == 1 {
+            magnitude[0] = sobel_l1_pixel(top, middle, bottom, 0, 0, 0);
+            continue;
+        }
+        let (left, _) = gradient_neighbors(0, width, border);
+        magnitude[0] = sobel_l1_pixel(top, middle, bottom, left, 0, 1);
+        for (((top, middle), bottom), magnitude) in top
+            .windows(3)
+            .zip(middle.windows(3))
+            .zip(bottom.windows(3))
+            .zip(magnitude[1..width - 1].iter_mut())
+        {
+            *magnitude = sobel_l1_window(top, middle, bottom);
+        }
+        let x = width - 1;
+        let (_, right) = gradient_neighbors(x, width, border);
+        magnitude[x] = sobel_l1_pixel(top, middle, bottom, x - 1, x, right);
+    }
+}
+
+#[inline(always)]
+fn sobel_l1_window(top: &[u8], middle: &[u8], bottom: &[u8]) -> i16 {
+    sobel_l1_values(top[0], top[1], top[2], middle[0], middle[2], bottom[0], bottom[1], bottom[2])
+}
+
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+fn sobel_l1_pixel(
+    top: &[u8],
+    middle: &[u8],
+    bottom: &[u8],
+    left: usize,
+    center: usize,
+    right: usize,
+) -> i16 {
+    sobel_l1_values(
+        top[left],
+        top[center],
+        top[right],
+        middle[left],
+        middle[right],
+        bottom[left],
+        bottom[center],
+        bottom[right],
+    )
+}
+
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+fn sobel_l1_values(
+    top_left: u8,
+    top_middle: u8,
+    top_right: u8,
+    middle_left: u8,
+    middle_right: u8,
+    bottom_left: u8,
+    bottom_middle: u8,
+    bottom_right: u8,
+) -> i16 {
+    let gradient_x = i16::from(top_right) + 2 * i16::from(middle_right) + i16::from(bottom_right)
+        - i16::from(top_left)
+        - 2 * i16::from(middle_left)
+        - i16::from(bottom_left);
+    let gradient_y =
+        i16::from(bottom_left) + 2 * i16::from(bottom_middle) + i16::from(bottom_right)
+            - i16::from(top_left)
+            - 2 * i16::from(top_middle)
+            - i16::from(top_right);
+    gradient_x.abs() + gradient_y.abs()
+}
+
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+fn write_spatial_gradient_pixel(
+    top: &[u8],
+    middle: &[u8],
+    bottom: &[u8],
+    left: usize,
+    center: usize,
+    right: usize,
+    gradient_x: &mut [i16],
+    gradient_y: &mut [i16],
+) {
+    let top_left = i16::from(top[left]);
+    let top_middle = i16::from(top[center]);
+    let top_right = i16::from(top[right]);
+    let middle_left = i16::from(middle[left]);
+    let middle_right = i16::from(middle[right]);
+    let bottom_left = i16::from(bottom[left]);
+    let bottom_middle = i16::from(bottom[center]);
+    let bottom_right = i16::from(bottom[right]);
+    gradient_x[center] =
+        top_right + 2 * middle_right + bottom_right - top_left - 2 * middle_left - bottom_left;
+    gradient_y[center] =
+        bottom_left + 2 * bottom_middle + bottom_right - top_left - 2 * top_middle - top_right;
+}
+
+fn gradient_neighbors(index: usize, length: usize, border: BorderMode<u8, 1>) -> (usize, usize) {
+    if length <= 1 {
+        return (0, 0);
+    }
+    let left = if index > 0 {
+        index - 1
+    } else if matches!(border, BorderMode::Reflect101) {
+        1
+    } else {
+        0
+    };
+    let right = if index + 1 < length {
+        index + 1
+    } else if matches!(border, BorderMode::Reflect101) {
+        length - 2
+    } else {
+        length - 1
+    };
+    (left, right)
 }
 
 /// Computes a 3×3 Scharr first derivative as signed `f32` values.
@@ -305,6 +633,8 @@ fn convolve_coefficients(left: &[f64], right: &[f64]) -> Vec<f64> {
 mod tests {
     use super::{
         bilateral_filter, build_gaussian_pyramid, laplacian, median_blur, pyr_down, scharr, sobel,
+        sobel_l1_magnitude_u8, sobel_l1_magnitude_u8_into, spatial_gradient_u8,
+        spatial_gradient_u8_into,
     };
     use crate::BorderMode;
     use spatialrust_image::{Image, ImageRegion};
@@ -337,6 +667,92 @@ mod tests {
         assert_eq!(sx[(2, 1)][0], 80.0);
         assert_eq!(sy[(2, 1)][0], 0.0);
         assert_eq!(scharr_x[(2, 1)][0], 320.0);
+    }
+
+    #[test]
+    fn paired_spatial_gradient_matches_independent_sobel_for_strided_input() {
+        let parent = Image::<u8, 1>::try_new(
+            9,
+            6,
+            (0..54).map(|index| ((index * 37 + 11) % 256) as u8).collect(),
+        )
+        .unwrap();
+        let input = parent.view().subview(ImageRegion::new(1, 1, 7, 4)).unwrap();
+        for border in [BorderMode::Replicate, BorderMode::Reflect101] {
+            let (gradient_x, gradient_y) = spatial_gradient_u8(input, border).unwrap();
+            let expected_x = sobel(input, 1, 0, 3, 1.0, 0.0, border).unwrap();
+            let expected_y = sobel(input, 0, 1, 3, 1.0, 0.0, border).unwrap();
+            assert_eq!(
+                gradient_x.as_slice(),
+                expected_x.as_slice().iter().map(|value| *value as i16).collect::<Vec<_>>()
+            );
+            assert_eq!(
+                gradient_y.as_slice(),
+                expected_y.as_slice().iter().map(|value| *value as i16).collect::<Vec<_>>()
+            );
+            assert_eq!(gradient_x.metadata(), input.metadata());
+            assert_eq!(gradient_y.metadata(), input.metadata());
+        }
+    }
+
+    #[test]
+    fn paired_spatial_gradient_into_validates_outputs_and_borders() {
+        let image = Image::<u8, 1>::try_new(3, 2, vec![0, 1, 2, 3, 4, 5]).unwrap();
+        let mut gradient_x = vec![0; 6];
+        let mut gradient_y = vec![0; 6];
+        spatial_gradient_u8_into(
+            image.view(),
+            BorderMode::Reflect101,
+            &mut gradient_x,
+            &mut gradient_y,
+        )
+        .unwrap();
+        assert!(spatial_gradient_u8_into(
+            image.view(),
+            BorderMode::Reflect101,
+            &mut gradient_x[..5],
+            &mut gradient_y,
+        )
+        .is_err());
+        assert!(spatial_gradient_u8_into(
+            image.view(),
+            BorderMode::Wrap,
+            &mut gradient_x,
+            &mut gradient_y,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn fused_sobel_l1_matches_paired_gradients_for_strided_input() {
+        let parent = Image::<u8, 1>::try_new(
+            10,
+            7,
+            (0..70).map(|index| ((index * 53 + 7) % 256) as u8).collect(),
+        )
+        .unwrap();
+        let input = parent.view().subview(ImageRegion::new(1, 1, 8, 5)).unwrap();
+        for border in [BorderMode::Replicate, BorderMode::Reflect101] {
+            let (gradient_x, gradient_y) = spatial_gradient_u8(input, border).unwrap();
+            let magnitude = sobel_l1_magnitude_u8(input, border).unwrap();
+            let expected = gradient_x
+                .as_slice()
+                .iter()
+                .zip(gradient_y.as_slice())
+                .map(|(&x, &y)| x.abs() + y.abs())
+                .collect::<Vec<_>>();
+            assert_eq!(magnitude.as_slice(), expected);
+            assert_eq!(magnitude.metadata(), input.metadata());
+        }
+    }
+
+    #[test]
+    fn fused_sobel_l1_into_validates_output() {
+        let image = Image::<u8, 1>::try_new(3, 2, vec![0, 1, 2, 3, 4, 5]).unwrap();
+        let mut output = vec![0; 6];
+        sobel_l1_magnitude_u8_into(image.view(), BorderMode::Replicate, &mut output).unwrap();
+        assert!(sobel_l1_magnitude_u8_into(image.view(), BorderMode::Replicate, &mut output[..5])
+            .is_err());
     }
 
     #[test]

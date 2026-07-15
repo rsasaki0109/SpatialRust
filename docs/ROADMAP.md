@@ -577,7 +577,7 @@ backend, allocation mode, and accuracy contract.
 | 113 | Planned | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
 | 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
 | 115 | Planned | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
-| 116 | Planned | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
+| 116 | In progress | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
 | 117 | Complete | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
 | 118 | Planned | 113–117 | Fused Canny fast path that avoids public intermediates unless explicitly requested |
 | 119 | Planned | 104, 115–118 | Explicit upload-once GPU-resident vision chain with no intermediate readback |
@@ -638,7 +638,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | --- | --- | --- | --- |
 | 116A | Planned | Reuse separable-filter intermediates and cache validated Gaussian kernels | allocation and cache tests |
 | 116B | Planned | Split border handling from contiguous interior loops | all border-mode property tests |
-| 116C | Planned | Specialized 3x3/5x5/7x7 Gaussian and paired Sobel X/Y passes | OpenCV error receipt |
+| 116C | In progress | Specialized 3x3/5x5/7x7 Gaussian and paired Sobel X/Y passes | exact 3×3 paired gradients and fused L1 complete; Gaussian and 5×5/7×7 remain |
 | 116D | Planned | Improve Gaussian by at least 10x and Sobel by at least 5x on one canonical large profile | native timing receipt |
 
 ### Epic 117 delivery slices

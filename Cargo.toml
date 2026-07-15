@@ -92,6 +92,7 @@ wgpu = "24"
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1"
 rayon = "1.12"
+pulp = "0.18.22"
 image = { version = "0.24.9", default-features = false }
 kamadak-exif = "0.6.1"
 exr = { version = "=1.72.0", default-features = false }
