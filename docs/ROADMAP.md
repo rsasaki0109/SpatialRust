@@ -271,20 +271,22 @@ pulling Arrow into `spatialrust-core`.
 
 ## Epic 92–100 delivery slices (activated)
 
-Epics 92–100 have concrete crates and facade flags. Heavy native runtimes
-(rclrs, OpenUSD/Hydra, Gaussian renderers) remain optional follow-ons behind
-existing feature gates. File MCAP XYZ codecs and TSDF marching tetrahedra
-extraction are available behind `sync-mcap` / default `scene`.
+Epics 92–100 have concrete crates and facade flags. Heavy native toolchains
+(`rclrs` / libusd / Hydra GPU path) remain install-time optional. Portable
+deepenings ship without those SDKs: ROS 2 CDR PointCloud2 + loopback
+(`runtime-ros2`), USDA ASCII mesh interchange (`interchange-openusd`), CPU
+Gaussian soft-splat rendering (`scene-gaussian`), plus file MCAP XYZ codecs and
+TSDF marching tetrahedra.
 
 | Epic | Status | Delivered substrate |
 | --- | --- | --- |
 | 92 | Complete | `spatialrust-sync` clocks, frame graph, MemoryEpisode replay |
 | 93 | Complete | `spatialrust-mapping` trajectories, pose graph, synthetic odometry |
-| 94 | Complete | `spatialrust-scene` TSDF/surfel/mesh + `gaussian` feature |
+| 94 | Complete | `spatialrust-scene` TSDF/surfel/mesh + Gaussian CPU soft-splat (`gaussian`) |
 | 95 | Complete | `spatialrust-semantic` embeddings, fusion, search |
 | 96 | Complete | `spatialrust-episode` episode/annotation/augment/eval/provenance |
-| 97 | Complete | `spatialrust-runtime` bounded pipeline/trace/diagnostics + `ros2` gate |
-| 98 | Complete | `spatialrust-interchange` glTF JSON + in-memory USD adapter |
+| 97 | Complete | `spatialrust-runtime` bounded pipeline/trace/diagnostics + ROS 2 CDR/loopback (`ros2`) |
+| 98 | Complete | `spatialrust-interchange` glTF JSON + USDA ASCII OpenUSD adapter |
 | 99 | Complete | `spatialrust-distribute` partitions, backpressure, named transfers |
 | 100 | Complete | `spatialrust-platform` stability/conformance/security/LTS |
 
@@ -335,8 +337,10 @@ pulling ROS 2 or MCAP file codecs.
 | 100 | `platform` | `spatialrust-platform` |
 
 Facade convenience flag `north-star` enables the Epic 91–100 substrate stack
-without ONNX/ROS2/MCAP native codecs. Native OpenUSD, Gaussian renderers, and
-rclrs remain deferred behind future optional bindings.
+without ONNX/ROS2 native executors. Portable OpenUSD ASCII, CPU Gaussian
+rendering, and ROS 2 CDR codecs are available behind `interchange-openusd`,
+`scene-gaussian`, and `runtime-ros2`. Linking `rclrs` / libusd remains deferred
+to install-time toolchains.
 
 The integration feature `north-star-e2e` (`north-star` + `ai-vision-pipeline`)
 runs `crates/spatialrust/tests/north_star_pipeline.rs` and example
