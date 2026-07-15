@@ -206,7 +206,7 @@ north-star = [
     "distribute",
     "platform",
 ]
-north-star-e2e = ["north-star", "ai-vision-pipeline"]
+north-star-e2e = ["north-star", "ai-vision-pipeline", "sync-mcap", "runtime-ros2"]
 
 [dependencies]
 spatialrust-core = { workspace = true }

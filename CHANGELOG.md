@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **North-star E2E full portable path**: `north-star-e2e` now enables
+  `sync-mcap` and `runtime-ros2`, and the integration test/demo exercise MCAP
+  XYZ round-trip, ROS 2 CDR PointCloud2 loopback, USDA ASCII mesh export, and
+  Gaussian CPU soft-splat alongside the existing RGB→TSDF→glTF flow.
+
 - **ROS 2 / OpenUSD / Gaussian deepen**: `runtime-ros2` adds CDR LE
   `PointCloud2` XYZ codecs and an in-process loopback node (no `rclrs` link);
   `interchange-openusd` exports/imports USDA ASCII mesh stages; `scene-gaussian`
