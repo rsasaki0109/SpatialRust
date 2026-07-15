@@ -68,6 +68,13 @@ until their individual 1.0 milestones.
 | Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |
 | Sync (`sync`, `sync-mcap`) | Clock domains, frame graphs, stamped records, and deterministic episode replay are provisional |
 | Mapping (`mapping`) | Trajectories, relative motion estimators, pose graphs, and loop-closure candidates are provisional |
+| Scene (`scene`, `scene-gaussian`) | TSDF/surfel/mesh reconstruction and Gaussian scene containers are provisional |
+| Semantic (`semantic`) | Embeddings, open-vocab labels, fusion, and semantic search are provisional |
+| Episode (`episode`) | Embodied episode schemas, annotations, augmentation, eval, and provenance are provisional |
+| Runtime (`runtime`, `runtime-ros2`) | Bounded pipelines, tracing, diagnostics, and ROS 2 adapter contracts are provisional |
+| Interchange (`interchange-*`) | glTF JSON and OpenUSD stage adapter contracts are provisional |
+| Distribute (`distribute`) | Partition graphs, backpressure, and named transfers are provisional |
+| Platform (`platform`) | API stability registry, conformance reports, security checklists, and LTS policy are provisional |
 | GPU image (`gpu-image`) | `GpuImage` upload/readback, receipts, and image compute kernels are provisional |
 
 ## Algorithm crates
@@ -89,6 +96,13 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-arrow` | Provisional | Arrow C Data/Stream/Device adapters; optional features only |
 | `spatialrust-sync` | Provisional | Sensor clocks, frame graphs, stamped records, deterministic replay; MCAP file codecs gated |
 | `spatialrust-mapping` | Provisional | Trajectories, synthetic odometry traits, pose graphs, loop-closure candidates |
+| `spatialrust-scene` | Provisional | TSDF, surfels, meshes; Gaussian containers behind `gaussian` |
+| `spatialrust-semantic` | Provisional | Embeddings, entities, multimodal fusion/search |
+| `spatialrust-episode` | Provisional | Episode schema, annotation, augmentation, eval, provenance |
+| `spatialrust-runtime` | Provisional | Bounded pipelines/tracing/diagnostics; ROS 2 adapters gated |
+| `spatialrust-interchange` | Provisional | glTF JSON mesh bridge; in-memory OpenUSD stage adapter |
+| `spatialrust-distribute` | Provisional | Partition graph, backpressure, named transfers |
+| `spatialrust-platform` | Provisional | Stability registry, conformance, security checklist, LTS policy |
 | `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |
 | `spatialrust-vision` | Provisional | Feature-gated CPU image algorithms, checked Feature2D descriptors/matches, shared border/kernel contracts, and explicit point-cloud bridges |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |

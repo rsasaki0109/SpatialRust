@@ -103,8 +103,11 @@ Epic 91 adds `spatialrust-records` and `spatialrust-arrow` while keeping Arrow
 out of `spatialrust-core`. Epic 92 adds `spatialrust-sync` for clocked stamps,
 frame graphs, and deterministic multimodal episode replay. Epic 93 adds
 `spatialrust-mapping` for trajectories, relative motion traits, and pose graphs.
-Epics 94–100 extend into scene reconstruction, semantic spatial data,
-embodied-AI evaluation, robotics execution, scene interchange, and explicit
-edge/distributed execution.
+Epics 94–100 extend into scene reconstruction (`spatialrust-scene`), semantic
+spatial data (`spatialrust-semantic`), embodied-AI episodes
+(`spatialrust-episode`), robotics runtime contracts (`spatialrust-runtime`),
+glTF/OpenUSD interchange (`spatialrust-interchange`), explicit distributed
+execution (`spatialrust-distribute`), and platform stability
+(`spatialrust-platform`). Heavy native bindings stay optional.
 
 See the full master architecture document in project planning materials for trait-level design, ADRs, and Codex execution tasks (Epics 0–13).

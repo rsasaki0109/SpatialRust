@@ -24,6 +24,13 @@ members = [
     "crates/spatialrust-arrow",
     "crates/spatialrust-sync",
     "crates/spatialrust-mapping",
+    "crates/spatialrust-scene",
+    "crates/spatialrust-semantic",
+    "crates/spatialrust-episode",
+    "crates/spatialrust-runtime",
+    "crates/spatialrust-interchange",
+    "crates/spatialrust-distribute",
+    "crates/spatialrust-platform",
 ]
 # spatialrust-py is a PyO3 cdylib built with maturin; keep it out of the Rust
 # workspace so `cargo test --workspace` does not require a Python toolchain.
@@ -63,6 +70,13 @@ spatialrust-records = { path = "crates/spatialrust-records", version = "1.0.0" }
 spatialrust-arrow = { path = "crates/spatialrust-arrow", version = "1.0.0", default-features = false }
 spatialrust-sync = { path = "crates/spatialrust-sync", version = "1.0.0", default-features = false }
 spatialrust-mapping = { path = "crates/spatialrust-mapping", version = "1.0.0", default-features = false }
+spatialrust-scene = { path = "crates/spatialrust-scene", version = "1.0.0", default-features = false }
+spatialrust-semantic = { path = "crates/spatialrust-semantic", version = "1.0.0" }
+spatialrust-episode = { path = "crates/spatialrust-episode", version = "1.0.0" }
+spatialrust-runtime = { path = "crates/spatialrust-runtime", version = "1.0.0", default-features = false }
+spatialrust-interchange = { path = "crates/spatialrust-interchange", version = "1.0.0", default-features = false }
+spatialrust-distribute = { path = "crates/spatialrust-distribute", version = "1.0.0" }
+spatialrust-platform = { path = "crates/spatialrust-platform", version = "1.0.0" }
 
 bytemuck = { version = "1", features = ["derive"] }
 las = "0.9"

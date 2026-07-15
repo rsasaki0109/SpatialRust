@@ -51,13 +51,13 @@ foundation contracts they depend on are stable.
 | 91 | Complete | 85, 90 | Spatial records and streams: schema evolution, chunked/out-of-core execution, Arrow C Data/Stream/Device interoperability |
 | 92 | Complete | 88, 91 | Sensor-time and frame graph: calibrated multimodal synchronization, deterministic replay, MCAP integration |
 | 93 | Complete | 87–88, 92 | Localization and mapping: visual/RGB-D/lidar odometry, pose graphs, loop closure, relocalization |
-| 94 | Planned | 89, 93 | Scene reconstruction: TSDF, surfels, meshes, and a feature-gated Gaussian scene representation and renderer |
-| 95 | Planned | 90–94 | Semantic spatial intelligence: open-vocabulary detections, embeddings on spatial entities, multimodal fusion and search |
-| 96 | Planned | 91–95 | Embodied-AI data workflows: episodes, annotation, augmentation, evaluation, model provenance and reproducible replay |
-| 97 | Planned | 92–96 | Production robotics runtime: ROS 2 type adaptation/negotiation, bounded pipelines, tracing and failure diagnostics |
-| 98 | Planned | 94–97 | Scene and digital-twin interchange through dedicated glTF and OpenUSD adapters |
-| 99 | Planned | 89, 91, 97 | Explicit edge/distributed execution: graph partitioning, backpressure and named device/network transfers |
-| 100 | Planned | 91–99 | Platform stability milestone: API compatibility, conformance suites, security audits, performance budgets and LTS policy |
+| 94 | Complete | 89, 93 | Scene reconstruction: TSDF, surfels, meshes, and a feature-gated Gaussian scene representation and renderer |
+| 95 | Complete | 90–94 | Semantic spatial intelligence: open-vocabulary detections, embeddings on spatial entities, multimodal fusion and search |
+| 96 | Complete | 91–95 | Embodied-AI data workflows: episodes, annotation, augmentation, evaluation, model provenance and reproducible replay |
+| 97 | Complete | 92–96 | Production robotics runtime: ROS 2 type adaptation/negotiation, bounded pipelines, tracing and failure diagnostics |
+| 98 | Complete | 94–97 | Scene and digital-twin interchange through dedicated glTF and OpenUSD adapters |
+| 99 | Complete | 89, 91, 97 | Explicit edge/distributed execution: graph partitioning, backpressure and named device/network transfers |
+| 100 | Complete | 91–99 | Platform stability milestone: API compatibility, conformance suites, security audits, performance budgets and LTS policy |
 
 Success is measured by end-to-end capabilities rather than crate count:
 
@@ -271,17 +271,21 @@ pulling Arrow into `spatialrust-core`.
 
 ## Epic 92–100 delivery slices (activated)
 
-| Epic | Status | Planned first slices |
+Epics 92–100 have concrete crates and facade flags. Heavy native runtimes
+(full MCAP codecs, rclrs, OpenUSD/Hydra, Gaussian renderers) remain optional
+follow-ons behind existing feature gates.
+
+| Epic | Status | Delivered substrate |
 | --- | --- | --- |
-| 92 | Planned | 92A clock domains + sync quality on records; 92B frame graph edges; 92C MCAP reader feature; 92D deterministic replay harness |
-| 93 | Planned | 93A pose types + trajectory buffer; 93B visual/RGB-D odometry CPU; 93C pose graph + loop; 93D lidar odometry path |
-| 94 | Planned | 94A TSDF volume; 94B surfel/mesh export; 94C Gaussian scene feature gate; 94D wgpu preview |
-| 95 | Planned | 95A entity embeddings on records; 95B open-vocab detection bridge; 95C multimodal fusion; 95D spatial search |
-| 96 | Planned | 96A episode schema; 96B annotation layers; 96C augmentation ops; 96D eval/provenance |
-| 97 | Planned | 97A ROS 2 type adapters feature; 97B bounded pipeline runtime; 97C tracing; 97D failure diagnostics |
-| 98 | Planned | 98A glTF adapter crate; 98B OpenUSD adapter crate; 98C scene compose; 98D round-trip tests |
-| 99 | Planned | 99A partition graph; 99B backpressure contracts; 99C named network transfer; 99D edge smoke |
-| 100 | Planned | 100A API freeze checklist; 100B conformance suite; 100C security audit notes; 100D LTS policy |
+| 92 | Complete | `spatialrust-sync` clocks, frame graph, MemoryEpisode replay |
+| 93 | Complete | `spatialrust-mapping` trajectories, pose graph, synthetic odometry |
+| 94 | Complete | `spatialrust-scene` TSDF/surfel/mesh + `gaussian` feature |
+| 95 | Complete | `spatialrust-semantic` embeddings, fusion, search |
+| 96 | Complete | `spatialrust-episode` episode/annotation/augment/eval/provenance |
+| 97 | Complete | `spatialrust-runtime` bounded pipeline/trace/diagnostics + `ros2` gate |
+| 98 | Complete | `spatialrust-interchange` glTF JSON + in-memory USD adapter |
+| 99 | Complete | `spatialrust-distribute` partitions, backpressure, named transfers |
+| 100 | Complete | `spatialrust-platform` stability/conformance/security/LTS |
 
 ## Epic 92 delivery slices
 
@@ -316,3 +320,19 @@ and pose-graph substrate first.
 Epic 93 completes when stamped poses can be buffered, differenced into relative
 motion, and localized on a pose graph with loop-closure candidates without
 pulling ROS 2 or MCAP file codecs.
+
+## Epic 94–100 delivery slices
+
+| Epic | Feature flags | Substrate crates |
+| --- | --- | --- |
+| 94 | `scene`, `scene-gaussian` | `spatialrust-scene` |
+| 95 | `semantic` | `spatialrust-semantic` |
+| 96 | `episode` | `spatialrust-episode` |
+| 97 | `runtime`, `runtime-ros2` | `spatialrust-runtime` |
+| 98 | `interchange-gltf`, `interchange-openusd` | `spatialrust-interchange` |
+| 99 | `distribute` | `spatialrust-distribute` |
+| 100 | `platform` | `spatialrust-platform` |
+
+Facade convenience flag `north-star` enables the Epic 91–100 substrate stack
+without ONNX/ROS2/MCAP native codecs. Native OpenUSD, Gaussian renderers, and
+rclrs remain deferred behind future optional bindings.

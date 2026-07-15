@@ -44,6 +44,20 @@ pub use spatialrust_arrow as arrow;
 pub use spatialrust_sync as sync;
 #[cfg(feature = "mapping")]
 pub use spatialrust_mapping as mapping;
+#[cfg(feature = "scene")]
+pub use spatialrust_scene as scene;
+#[cfg(feature = "semantic")]
+pub use spatialrust_semantic as semantic;
+#[cfg(feature = "episode")]
+pub use spatialrust_episode as episode;
+#[cfg(feature = "runtime")]
+pub use spatialrust_runtime as runtime;
+#[cfg(any(feature = "interchange-gltf", feature = "interchange-openusd"))]
+pub use spatialrust_interchange as interchange;
+#[cfg(feature = "distribute")]
+pub use spatialrust_distribute as distribute;
+#[cfg(feature = "platform")]
+pub use spatialrust_platform as platform;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,

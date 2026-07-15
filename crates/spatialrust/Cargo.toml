@@ -181,6 +181,31 @@ arrow-full = ["arrow-c-stream", "arrow-c-device"]
 sync = ["records", "dep:spatialrust-sync"]
 sync-mcap = ["sync", "spatialrust-sync/mcap"]
 mapping = ["sync", "dep:spatialrust-mapping"]
+scene = ["dep:spatialrust-scene"]
+scene-gaussian = ["scene", "spatialrust-scene/gaussian"]
+semantic = ["records", "dep:spatialrust-semantic"]
+episode = ["sync", "dep:spatialrust-episode"]
+runtime = ["sync", "dep:spatialrust-runtime"]
+runtime-ros2 = ["runtime", "spatialrust-runtime/ros2"]
+interchange-gltf = ["scene", "dep:spatialrust-interchange", "spatialrust-interchange/gltf"]
+interchange-openusd = ["scene", "dep:spatialrust-interchange", "spatialrust-interchange/openusd"]
+interchange-full = ["interchange-gltf", "interchange-openusd"]
+distribute = ["dep:spatialrust-distribute"]
+platform = ["dep:spatialrust-platform"]
+north-star = [
+    "records",
+    "arrow-full",
+    "sync",
+    "mapping",
+    "scene",
+    "scene-gaussian",
+    "semantic",
+    "episode",
+    "runtime",
+    "interchange-full",
+    "distribute",
+    "platform",
+]
 
 [dependencies]
 spatialrust-core = { workspace = true }
@@ -206,6 +231,13 @@ spatialrust-records = { workspace = true, optional = true }
 spatialrust-arrow = { workspace = true, optional = true }
 spatialrust-sync = { workspace = true, optional = true }
 spatialrust-mapping = { workspace = true, optional = true }
+spatialrust-scene = { workspace = true, optional = true }
+spatialrust-semantic = { workspace = true, optional = true }
+spatialrust-episode = { workspace = true, optional = true }
+spatialrust-runtime = { workspace = true, optional = true }
+spatialrust-interchange = { workspace = true, optional = true }
+spatialrust-distribute = { workspace = true, optional = true }
+spatialrust-platform = { workspace = true, optional = true }
 
 [dev-dependencies]
 
