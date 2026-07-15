@@ -10,7 +10,7 @@ description = "AI-ready image processing and vision algorithms for SpatialRust"
 
 [features]
 default = []
-resize = []
+resize = ["dep:rayon"]
 preprocess = ["resize"]
 warp = ["resize"]
 imgproc-filter = ["dep:pulp", "dep:rayon"]

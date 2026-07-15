@@ -576,7 +576,7 @@ backend, allocation mode, and accuracy contract.
 | 112 | Planned | 111 | Attribute native kernel, allocation, Python conversion, and transfer costs with reproducible throughput and memory receipts |
 | 113 | Planned | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
 | 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
-| 115 | Planned | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
+| 115 | In progress | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
 | 116 | In progress | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
 | 117 | Complete | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
 | 118 | Planned | 113–117 | Fused Canny fast path that avoids public intermediates unless explicitly requested |
@@ -627,10 +627,10 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
-| 115A | Planned | Precompute resize source coordinates and interpolation coefficients | plan reuse tests |
-| 115B | Planned | Packed bilinear/nearest/area and RGB-to-gray fast paths | OpenCV max-error contract |
+| 115A | Complete | Precompute resize source coordinates and interpolation coefficients | reusable Q11 bilinear plan, shape/stride/padding tests |
+| 115B | In progress | Packed bilinear/nearest/area and RGB-to-gray fast paths | packed RGB8 bilinear and exact half-scale path complete; nearest/area/gray remain |
 | 115C | Planned | Evaluate resize+gray and resize+CHW fusion without changing standalone APIs | fused/unfused parity and timing |
-| 115D | Planned | Improve current SpatialRust throughput by at least 5x on one canonical large profile | native and Python receipts |
+| 115D | Complete | Improve current SpatialRust throughput by at least 5x on one canonical large profile | native reuse improved 47.8× at 1080p and 37.3× at 4K; VGA Python reuse is 1.10× faster than OpenCV |
 
 ### Epic 116 delivery slices
 

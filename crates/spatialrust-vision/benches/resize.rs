@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use spatialrust_image::Image;
-use spatialrust_vision::{resize, resize_into, Interpolation};
+use spatialrust_vision::{resize, resize_into, BilinearResizeU8Plan, Interpolation};
 
 fn benchmark_resize(c: &mut Criterion) {
     let mut group = c.benchmark_group("resize_bilinear_rgb8");
@@ -15,6 +15,7 @@ fn benchmark_resize(c: &mut Criterion) {
             vec![0; output_width * output_height * 3],
         )
         .unwrap();
+        let plan = BilinearResizeU8Plan::new(width, height, output_width, output_height).unwrap();
         group.throughput(Throughput::Elements((output_width * output_height) as u64));
         group.bench_function(BenchmarkId::new("allocate", name), |b| {
             b.iter(|| {
@@ -32,6 +33,12 @@ fn benchmark_resize(c: &mut Criterion) {
                 resize_into(black_box(input.view()), output.view_mut(), Interpolation::Bilinear)
                     .unwrap()
             });
+        });
+        group.bench_function(BenchmarkId::new("planned_allocate", name), |b| {
+            b.iter(|| plan.resize(black_box(input.view())).unwrap());
+        });
+        group.bench_function(BenchmarkId::new("planned_reuse", name), |b| {
+            b.iter(|| plan.resize_into(black_box(input.view()), output.view_mut()).unwrap());
         });
     }
     group.finish();
