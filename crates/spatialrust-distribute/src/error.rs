@@ -12,4 +12,19 @@ pub enum DistributeError {
     /// Missing node or transfer.
     #[error("missing `{0}`")]
     Missing(String),
+    /// Partition graph contains a cycle.
+    #[error("partition graph contains a cycle")]
+    CycleDetected,
+    /// Transfer queue reached its hard backpressure limit.
+    #[error(
+        "transfer queue `{queue}` at capacity: depth {depth} >= hard_limit {hard_limit}"
+    )]
+    CapacityExceeded {
+        /// Queue / transfer name used for diagnostics.
+        queue: String,
+        /// Observed depth.
+        depth: usize,
+        /// Configured hard limit.
+        hard_limit: usize,
+    },
 }

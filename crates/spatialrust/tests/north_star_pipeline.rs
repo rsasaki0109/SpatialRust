@@ -9,7 +9,10 @@ use spatialrust::ai::{
     CopyPolicy, InferenceBackend, MockInferenceBackend, MockProfile, ModelSource, NamedTensors,
     RunOptions, SessionOptions,
 };
-use spatialrust::distribute::{ExecutionPartition, PartitionGraph};
+use spatialrust::distribute::{
+    BackpressurePolicy, BoundedTransferQueue, ExecutionPartition, NamedTransfer, PartitionGraph,
+    TransferDirection, TransferKind, TransferLedger, TransferPlan,
+};
 use spatialrust::episode::{Episode, ModelProvenance};
 use spatialrust::interchange::{
     export_stage_usda, export_triangle_mesh_gltf_json, import_mesh_from_usda,
@@ -227,18 +230,34 @@ fn north_star_image_to_gltf_pipeline() {
 
     let mut partitions = PartitionGraph::new();
     partitions
-        .insert_partition(ExecutionPartition {
-            id: "edge".into(),
-            nodes: vec!["camera".into()],
-        })
+        .insert_partition(ExecutionPartition::try_new("edge", vec!["camera".into()]).unwrap())
         .unwrap();
     partitions
-        .insert_partition(ExecutionPartition {
-            id: "host".into(),
-            nodes: vec!["scene".into()],
-        })
+        .insert_partition(ExecutionPartition::try_new("host", vec!["scene".into()]).unwrap())
         .unwrap();
     partitions.connect("edge", "host").unwrap();
+    assert_eq!(partitions.topological_order().unwrap(), vec!["edge", "host"]);
+
+    let link = NamedTransfer::try_new(
+        "camera-points-to-scene",
+        TransferDirection::HostToNetwork,
+        TransferKind::ExplicitCopy,
+        "camera",
+        "scene",
+        (xyz.len() * 4) as u64,
+    )
+    .unwrap();
+    let mut plan = TransferPlan::new();
+    plan.push(link.clone());
+    plan.validate_against(&partitions).unwrap();
+
+    let policy = BackpressurePolicy::try_new(1, 4).unwrap();
+    let mut queue = BoundedTransferQueue::new(policy);
+    queue.try_push(link.clone()).unwrap();
+    let mut ledger = TransferLedger::new();
+    ledger.record(queue.pop().unwrap());
+    assert_eq!(ledger.counted_copy_bytes(), plan.counted_copy_bytes());
+    assert_eq!(ledger.completed().len(), 1);
 
     // 7) Platform release gate: stability + conformance + security + LTS + budgets
     let mut gate = ReleaseGate::north_star_defaults();
@@ -259,6 +278,7 @@ fn north_star_image_to_gltf_pipeline() {
     report.record("north-star-e2e-ros2-cdr", ConformanceStatus::Pass, None);
     report.record("north-star-e2e-usda", ConformanceStatus::Pass, None);
     report.record("north-star-e2e-gaussian-cpu", ConformanceStatus::Pass, None);
+    report.record("north-star-e2e-distribute", ConformanceStatus::Pass, None);
     report.assert_no_failures().unwrap();
     assert!(report.pass_count() >= 5);
     gate.conformance = Some(report);

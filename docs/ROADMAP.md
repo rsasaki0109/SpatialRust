@@ -287,7 +287,7 @@ TSDF marching tetrahedra.
 | 96 | Complete | `spatialrust-episode` episode/annotation/augment/eval/provenance |
 | 97 | Complete | `spatialrust-runtime` bounded pipeline/trace/diagnostics + ROS 2 CDR/loopback (`ros2`) |
 | 98 | Complete | `spatialrust-interchange` glTF JSON + USDA ASCII OpenUSD adapter |
-| 99 | Complete | `spatialrust-distribute` partitions, backpressure, named transfers |
+| 99 | Complete | `spatialrust-distribute` partitions, topo order, backpressure queues, named transfers |
 | 100 | Complete | `spatialrust-platform` stability/conformance/security/LTS + release gate/perf budgets |
 
 ## Epic 92 delivery slices
@@ -335,6 +335,14 @@ pulling ROS 2 or MCAP file codecs.
 | 98 | `interchange-gltf`, `interchange-openusd` | `spatialrust-interchange` |
 | 99 | `distribute` | `spatialrust-distribute` |
 | 100 | `platform` | `spatialrust-platform` |
+
+## Epic 99 delivery slices
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 99A | Complete | `PartitionGraph` / `ExecutionPartition` with deterministic topo order | `distribute` |
+| 99B | Complete | `BackpressurePolicy` + `BoundedTransferQueue` admissions | `distribute` |
+| 99C | Complete | `NamedTransfer` / `TransferPlan` / `TransferLedger` (measurable copies) | `distribute` |
 
 ## Epic 100 delivery slices
 

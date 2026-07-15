@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Distributed execution deepen (Epic 99)**: `spatialrust-distribute` adds
+  cycle-aware partition topological order, validated `TransferPlan` /
+  `TransferLedger` with measurable copy bytes, and `BoundedTransferQueue`
+  watermark admissions; wired into `north-star-e2e`.
+
 - **Platform release-gate deepen (Epic 100)**: `spatialrust-platform` adds
   performance budgets, a seeded north-star stability surface, baseline security
   checklist helpers, conformance summaries, and an aggregated `ReleaseGate`
