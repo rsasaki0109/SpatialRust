@@ -78,11 +78,15 @@ means correlation, while true convolution is an explicitly named operation.
 `spatialrust-core::SpatialTensor`; it owns generic dtype/shape/stride/device
 contracts and never performs implicit host/device transfers.
 `spatialrust-ai` depends on `spatialrust-tensor`, never the reverse. Its default
-build defines only backend/session and explicit-copy contracts. ONNX Runtime and
+build defines only backend/session and explicit-copy contracts, plus a
+deterministic `MockInferenceBackend` for demos and tests. ONNX Runtime and
 each hardware execution provider are additive features. Runtime-owned CPU
 outputs cross back through the runtime-independent `HostTensorStorage` trait,
 so their allocator lifetime can be retained without copying or adding an ONNX
 dependency to the tensor crate.
+`spatialrust-vision` `ai-adapters` bridge CPU images to contiguous host tensors
+and decode depth/mask/detection tensors back into dense vision types without
+depending on `spatialrust-ai`.
 
 ## Roadmap epics
 

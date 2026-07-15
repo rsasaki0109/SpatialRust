@@ -11,6 +11,9 @@ use std::{path::PathBuf, sync::Arc};
 
 use spatialrust_tensor::{DataType, Device, TensorBuffer, TensorDescriptor};
 
+mod mock;
+pub use mock::{MockInferenceBackend, MockProfile};
+
 #[cfg(feature = "onnxruntime")]
 mod onnxruntime;
 #[cfg(feature = "onnxruntime")]
@@ -249,13 +252,15 @@ impl NamedTensors {
     }
 }
 
-/// Model bytes or a filesystem path supplied explicitly at session creation.
+/// Model bytes, filesystem path, or built-in mock profile for session creation.
 #[derive(Clone, Debug)]
 pub enum ModelSource {
     /// Read model bytes from this path during session creation.
     Path(PathBuf),
     /// Immutable in-memory model bytes.
     Bytes(Arc<[u8]>),
+    /// Deterministic in-process mock profile (no ONNX / no weights).
+    Mock(MockProfile),
 }
 
 /// Graph optimization level requested from a backend.

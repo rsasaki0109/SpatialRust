@@ -22,7 +22,7 @@ after the GPU-resident frame work recorded through Epic 82.
 | 87 | Complete | 84 | Feature2D data model, corners, FAST/ORB, descriptors and matching |
 | 88 | Complete | 84, 87 | Camera geometry, robust multiview estimation, motion and stereo |
 | 89 | Complete | 84–85 | Explicit `GpuImage` upload/readback and chainable wgpu vision kernels |
-| 90 | Planned | 86, 88–89 | Model adapters and image → AI → point-cloud end-to-end pipelines |
+| 90 | Complete | 86, 88–89 | Model adapters and image → AI → point-cloud end-to-end pipelines |
 
 Dependency flow:
 
@@ -232,3 +232,22 @@ component for WGSL clarity (texture path is deferred).
 Epic 89 completes when `upload → gray → box_blur → readback` records a single H2D
 and a single D2H, feature-alone builds succeed without `gpu-aoso-staging`, and
 CPU reference residuals stay within documented tolerances.
+
+## Epic 90 delivery slices
+
+Model adapters stay runtime-light: `spatialrust-ai` owns mock/ONNX backends,
+`spatialrust-vision` owns image↔tensor and tensor→dense-map helpers, and the
+facade wires a documented image → infer → unproject smoke path. Default builds
+do not pull ONNX; `MockInferenceBackend` is always available with `ai`.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 90A | Complete | `MockProfile` / `MockInferenceBackend` and `ModelSource::Mock` for deterministic depth without weights | `ai` (default-safe) |
+| 90B | Complete | Letterbox + NCHW prep (`rgb_u8_to_nchw_f32`, `planar_f32_to_nchw`) | `vision-ai-adapters` |
+| 90C | Complete | Tensor → `DepthMap` / `BinaryMask` / `Detection` decode helpers | `vision-ai-adapters` |
+| 90D | Complete | Facade `ai-vision-pipeline` E2E (mock depth → XYZ → MVP), ROADMAP/CHANGELOG/notes | `ai-vision-pipeline` |
+
+Epic 90 completes when an RGB image can be letterboxed into contiguous NCHW,
+run through mock inference with explicit output-copy permission, decoded to a
+`DepthMap`, and unprojected to a point cloud that feeds MVP without enabling
+`onnxruntime`.

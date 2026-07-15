@@ -104,6 +104,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   headless chain tests that keep mid-pipeline `device_to_host_bytes == 0`; and
   640p/1080p/4K Criterion coverage. Texture-backed storage remains deferred.
 
+- **Model adapters and image → AI → point-cloud pipelines (Epic 90)**:
+  `MockInferenceBackend` / `ModelSource::Mock` for deterministic host inference
+  without ONNX; vision `ai-adapters` for letterbox NCHW prep and
+  tensor→`DepthMap`/`BinaryMask`/`Detection` decode; facade
+  `ai-vision-pipeline` E2E covering RGB → mock depth → unproject → MVP.
+
 - **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
   planar/interleaved layouts and color metadata in `spatialrust-image`; new
   feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,

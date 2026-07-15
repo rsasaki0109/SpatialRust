@@ -157,6 +157,7 @@ vision-geometry = ["vision", "camera", "spatialrust-vision/geometry"]
 vision-detection = ["vision", "spatialrust-vision/detection"]
 vision-dense = ["vision-detection", "spatialrust-vision/dense"]
 vision-spatial = ["vision-dense", "camera-rgbd", "spatialrust-vision/spatial"]
+vision-ai-adapters = ["vision-preprocess", "vision-dense", "tensor-image", "spatialrust-vision/ai-adapters"]
 vision-full = [
     "vision-preprocess",
     "vision-warp",
@@ -169,7 +170,9 @@ vision-full = [
     "vision-detection",
     "vision-dense",
     "vision-spatial",
+    "vision-ai-adapters",
 ]
+ai-vision-pipeline = ["ai", "vision-ai-adapters", "vision-spatial"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
