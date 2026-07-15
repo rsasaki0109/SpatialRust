@@ -156,6 +156,8 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | Bilinear resize, reuse[^resize-2026] | **SpatialRust 1.10×** | OpenCV 2.40× | OpenCV 2.01× |
 | RGB to gray, allocate[^gray-2026] | OpenCV 1.73× | **SpatialRust 1.03×** | **SpatialRust 1.05×** |
 | RGB to gray, reuse[^gray-2026] | OpenCV 1.22× | OpenCV 1.08× | OpenCV 1.03× |
+| Fused 2× resize → gray, allocate[^fused-gray-2026] | — | **SpatialRust 1.12×** | OpenCV 1.01× |
+| Fused 2× resize → gray, reuse[^fused-gray-2026] | — | OpenCV 1.90× | OpenCV 1.58× |
 | Gaussian blur 5×5[^gaussian-2026] | OpenCV 139.02× | OpenCV 3.10× | OpenCV 2.93× |
 | Sobel X 3×3 | OpenCV 14.38× | OpenCV 20.31× | OpenCV 23.30× |
 | Morphology open 5×5, allocate[^morphology-2026] | OpenCV 60.96× | OpenCV 13.34× | OpenCV 15.27× |
@@ -196,6 +198,16 @@ records the exact environment and methodology.
   5.885 ms (SpatialRust 1.02×). VGA and 1080p/4K reuse remain narrow OpenCV
   wins. Three hundred randomized cases retain maximum absolute error 1. See
   the [focused harness](bench/opencv_rgb_gray_comparison/).
+
+[^fused-gray-2026]: `resize_rgb_to_gray` combines the reusable Q11 bilinear
+  plan and Q14 BT.601 conversion without materializing an intermediate RGB
+  image. For the canonical 1920×1080→960×540 allocated pipeline, SpatialRust
+  measured 0.677 ms versus OpenCV's two-call 0.755 ms (1.12×). The allocated
+  4K→1080p result was effectively tied (2.687 ms versus 2.665 ms), while
+  OpenCV leads 8K allocation and every caller-owned-output profile. The fused
+  result is bit-exact with SpatialRust's unfused path; 300 randomized cases
+  and canonical profiles differ from OpenCV by at most 1/255. See the
+  [focused harness](bench/opencv_fused_resize_gray_comparison/).
 
 The additive paired-gradient path keeps standalone Sobel compatibility while
 also exposing exact fused 3×3 L1 magnitude (`abs(Gx) + abs(Gy)`). On a newer
@@ -297,6 +309,7 @@ The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
 | --- | --- |
 | Bilinear resize | Canonical half-scale exact; 300 arbitrary-size cases max error 1/255 |
 | RGB to gray | Max error 1/255; 99.72%–99.74% exact pixels across VGA–8K |
+| Fused bilinear resize → gray | Exact versus SpatialRust unfused; OpenCV max error 1/255 across 300 randomized cases and 1080p–8K half reductions |
 | AI CHW preprocess | Max float error `5.96e-8` |
 | Gaussian blur | Canonical 5×5 profiles exact; 300 randomized 3×3/5×5/7×7 cases max error 2/255 |
 | Sobel X 3×3 | Exact values (max error 0) |

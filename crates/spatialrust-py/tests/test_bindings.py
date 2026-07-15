@@ -65,7 +65,7 @@ def test_exports_present():
         "voxelize", "knn_graph", "chamfer_distance", "oriented_bounding_box",
         "rgbd_to_point_cloud", "depth_to_xyz",
         "resize_image", "letterbox_image", "normalize_image_chw",
-        "rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
+        "rgb_to_gray_image", "resize_rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
         "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
         "find_mask_contours", "encode_mask_rle", "decode_mask_rle",
         "point_map_to_point_cloud",
@@ -171,6 +171,14 @@ def test_image_color_and_remap():
     gray_out = np.empty((1, 2), dtype=np.uint8)
     assert sr.rgb_to_gray_image(image, out=gray_out) is gray_out
     np.testing.assert_array_equal(gray_out, gray)
+    source = np.tile(image, (2, 2, 1))
+    resized_rgb = sr.resize_image(source, 2, 1)
+    expected_resized_gray = sr.rgb_to_gray_image(resized_rgb)
+    resized_gray = sr.resize_rgb_to_gray_image(source, 2, 1)
+    np.testing.assert_array_equal(resized_gray, expected_resized_gray)
+    resized_gray_out = np.empty((1, 2), dtype=np.uint8)
+    assert sr.resize_rgb_to_gray_image(source, 2, 1, out=resized_gray_out) is resized_gray_out
+    np.testing.assert_array_equal(resized_gray_out, expected_resized_gray)
     hsv = sr.rgb_to_hsv_image(image)
     np.testing.assert_array_equal(hsv[0, 0], [0, 255, 255])
     np.testing.assert_array_equal(hsv[0, 1], [60, 255, 255])
