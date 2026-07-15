@@ -95,6 +95,7 @@ use spatialrust::vision::{
     OrbScoreType, PointCorrespondence2, PointMap, RleOrder, RobustEstimationOptions,
     ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType,
 };
+use spatialrust::vision::{dense_flow_block_match as dense_flow_native, DenseFlowOptions};
 use spatialrust::voxelize::{
     range_image as range_image_proj, voxelize as voxelize_grid, RangeImageConfig, VoxelFill,
     VoxelGridConfig,
@@ -758,6 +759,32 @@ fn calibrate_fisheye_angles(
         .collect::<Vec<_>>();
     let (model, report) = calibrate_fisheye_native(&observations).map_err(to_py_err)?;
     Ok((model.k1, model.k2, model.k3, model.k4, report.rms_residual))
+}
+
+/// Computes dense integer grayscale flow as an `(H, W, 2)` float32 array.
+#[pyfunction]
+#[pyo3(signature = (previous, next, block_radius=2, search_radius=4))]
+fn dense_flow_image<'py>(
+    py: Python<'py>,
+    previous: PyReadonlyArray2<'_, u8>,
+    next: PyReadonlyArray2<'_, u8>,
+    block_radius: usize,
+    search_radius: usize,
+) -> PyResult<Bound<'py, PyArray3<f32>>> {
+    let previous = gray_u8_image_from_numpy(previous)?;
+    let next = gray_u8_image_from_numpy(next)?;
+    let flow = dense_flow_native(
+        previous.view(),
+        next.view(),
+        DenseFlowOptions { block_radius, search_radius, minimum_improvement: 1 },
+    )
+    .map_err(to_py_err)?;
+    let array = Array3::from_shape_vec(
+        (previous.height(), previous.width(), 2),
+        flow.image().as_slice().to_vec(),
+    )
+    .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
 }
 
 fn cloud_from_xyz(arr: PyReadonlyArray2<'_, f32>) -> PyResult<PointCloud> {
@@ -3142,6 +3169,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rgbd_to_point_cloud, m)?)?;
     m.add_function(wrap_pyfunction!(calibrate_pinhole_camera, m)?)?;
     m.add_function(wrap_pyfunction!(calibrate_fisheye_angles, m)?)?;
+    m.add_function(wrap_pyfunction!(dense_flow_image, m)?)?;
     m.add_function(wrap_pyfunction!(filter2d_image, m)?)?;
     m.add_function(wrap_pyfunction!(gaussian_blur_image, m)?)?;
     m.add_function(wrap_pyfunction!(median_blur_image, m)?)?;

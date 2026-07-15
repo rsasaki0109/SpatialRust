@@ -23,7 +23,9 @@ detection = []
 dense = ["detection"]
 spatial = ["dense", "dep:spatialrust-core", "dep:spatialrust-camera"]
 ai-adapters = ["preprocess", "dense", "detection", "dep:spatialrust-tensor", "dep:bytemuck", "spatialrust-tensor/image"]
-full = ["preprocess", "warp", "imgproc-filter", "imgproc-morphology", "imgproc-analysis", "imgproc-canny", "feature2d", "geometry", "detection", "dense", "spatial", "ai-adapters"]
+video = ["dense", "detection"]
+video-adapters = ["video"]
+full = ["preprocess", "warp", "imgproc-filter", "imgproc-morphology", "imgproc-analysis", "imgproc-canny", "feature2d", "geometry", "detection", "dense", "spatial", "ai-adapters", "video-adapters"]
 
 [dependencies]
 spatialrust-image.workspace = true
@@ -77,3 +79,8 @@ required-features = ["feature2d"]
 name = "geometry"
 harness = false
 required-features = ["geometry"]
+
+[[bench]]
+name = "video"
+harness = false
+required-features = ["video"]

@@ -158,6 +158,8 @@ vision-detection = ["vision", "spatialrust-vision/detection"]
 vision-dense = ["vision-detection", "spatialrust-vision/dense"]
 vision-spatial = ["vision-dense", "camera-rgbd", "spatialrust-vision/spatial"]
 vision-ai-adapters = ["vision-preprocess", "vision-dense", "tensor-image", "spatialrust-vision/ai-adapters"]
+vision-video = ["vision-dense", "spatialrust-vision/video"]
+vision-video-adapters = ["vision-video", "spatialrust-vision/video-adapters"]
 vision-full = [
     "vision-preprocess",
     "vision-warp",
@@ -171,6 +173,7 @@ vision-full = [
     "vision-dense",
     "vision-spatial",
     "vision-ai-adapters",
+    "vision-video-adapters",
 ]
 ai-vision-pipeline = ["ai", "vision-ai-adapters", "vision-spatial"]
 records = ["dep:spatialrust-records"]

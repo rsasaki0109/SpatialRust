@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Video recognition substrate (Epic 106)**: dense integer block flow,
+  adaptive Gaussian foreground segmentation, deterministic same-class IoU
+  tracking, and timestamped pull-based video source contracts. Codec/camera
+  adapters remain feature-gated; Python dense flow, OpenCV Farneback comparison,
+  and QQVGA/QVGA Criterion workloads cover the portable core.
+
 - **Camera calibration contracts (Epic 105)**: robust pinhole intrinsics,
   Kannala–Brandt4 fisheye fitting, supplied-rotation stereo and hand-eye
   translation solves, and fixed-camera sparse point bundle adjustment. All

@@ -53,6 +53,8 @@ mod spatial;
 mod stereo;
 #[cfg(feature = "warp")]
 mod warp;
+#[cfg(feature = "video")]
+mod video;
 
 pub use border::BorderMode;
 pub use error::{VisionError, VisionResult};
@@ -101,3 +103,5 @@ pub use spatial::*;
 pub use stereo::*;
 #[cfg(feature = "warp")]
 pub use warp::*;
+#[cfg(feature = "video")]
+pub use video::*;

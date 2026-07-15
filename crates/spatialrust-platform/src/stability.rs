@@ -118,6 +118,7 @@ impl StabilityRegistry {
             "spatialrust-vision::geometry",
             "spatialrust-vision::stereo",
             "spatialrust-vision::optical-flow",
+            "spatialrust-vision::video",
             "spatialrust-vision::ai-adapters",
             "spatialrust-gpu::GpuImage",
         ];

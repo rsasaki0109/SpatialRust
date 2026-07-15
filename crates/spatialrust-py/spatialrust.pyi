@@ -28,7 +28,7 @@ __all__: list[str] = [
     "apply_transform", "recenter", "scale", "normalize_unit_sphere", "merge",
     "centroid", "bounding_box", "oriented_bounding_box", "voxelize", "range_image",
     "rgbd_to_point_cloud", "depth_to_xyz", "calibrate_pinhole_camera",
-    "calibrate_fisheye_angles", "filter2d_image", "gaussian_blur_image",
+    "calibrate_fisheye_angles", "dense_flow_image", "filter2d_image", "gaussian_blur_image",
     "median_blur_image", "bilateral_filter_image", "sobel_image", "scharr_image",
     "laplacian_image", "pyr_down_image", "pyr_up_image", "morphology_image",
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
@@ -129,6 +129,12 @@ def calibrate_pinhole_camera(
 def calibrate_fisheye_angles(
     theta: _F64Array, distorted_radius: _F64Array
 ) -> tuple[float, float, float, float, float]: ...
+def dense_flow_image(
+    previous: _U8Array,
+    next: _U8Array,
+    block_radius: int = ...,
+    search_radius: int = ...,
+) -> _F32Array: ...
 
 def rgbd_to_point_cloud(
     depth: _F32Array,
