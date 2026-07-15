@@ -152,6 +152,8 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | --- | ---: | ---: | ---: |
 | AI CHW preprocess, allocate | **SpatialRust 4.48×** | **SpatialRust 9.27×** | **SpatialRust 9.14×** |
 | AI CHW preprocess, reuse vs OpenCV allocate | **SpatialRust 8.16×** | **SpatialRust 14.56×** | **SpatialRust 15.78×** |
+| Fused resize → normalized CHW, allocate[^fused-chw-2026] | — | **SpatialRust 2.21×** | **SpatialRust 2.02×** |
+| Fused resize → normalized CHW, reuse vs OpenCV allocate[^fused-chw-2026] | — | **SpatialRust 3.56×** | **SpatialRust 3.02×** |
 | Bilinear resize, allocate[^resize-2026] | OpenCV 1.19× | OpenCV 1.49× | OpenCV 1.60× |
 | Bilinear resize, reuse[^resize-2026] | **SpatialRust 1.10×** | OpenCV 2.40× | OpenCV 2.01× |
 | RGB to gray, allocate[^gray-2026] | OpenCV 1.73× | **SpatialRust 1.03×** | **SpatialRust 1.05×** |
@@ -208,6 +210,16 @@ records the exact environment and methodology.
   result is bit-exact with SpatialRust's unfused path; 300 randomized cases
   and canonical profiles differ from OpenCV by at most 1/255. See the
   [focused harness](bench/opencv_fused_resize_gray_comparison/).
+
+[^fused-chw-2026]: `resize_pack_chw` combines Q11 bilinear resize, `f32`
+  scaling/normalization, and planar CHW packing without an intermediate HWC
+  image. Against OpenCV 4.13 `dnn.blobFromImage`, allocated calls measured
+  1.617 ms versus 3.570 ms for 1080p→640×640 and 2.117 ms versus 4.272 ms for
+  4K→640×640. The 4K→1280×720 profile measured 3.592 ms versus 8.359 ms
+  (SpatialRust 2.33×). Caller-owned SpatialRust output is 3.02×–3.56× faster
+  than OpenCV allocation. Three hundred randomized cases are bit-exact with
+  the SpatialRust unfused path and differ from OpenCV by at most 1/255. See
+  the [focused harness](bench/opencv_fused_resize_chw_comparison/).
 
 The additive paired-gradient path keeps standalone Sobel compatibility while
 also exposing exact fused 3×3 L1 magnitude (`abs(Gx) + abs(Gy)`). On a newer
@@ -311,6 +323,7 @@ The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
 | RGB to gray | Max error 1/255; 99.72%–99.74% exact pixels across VGA–8K |
 | Fused bilinear resize → gray | Exact versus SpatialRust unfused; OpenCV max error 1/255 across 300 randomized cases and 1080p–8K half reductions |
 | AI CHW preprocess | Max float error `5.96e-8` |
+| Fused resize → normalized CHW | Exact versus SpatialRust unfused; OpenCV max float error `0.003921628` across 300 randomized cases |
 | Gaussian blur | Canonical 5×5 profiles exact; 300 randomized 3×3/5×5/7×7 cases max error 2/255 |
 | Sobel X 3×3 | Exact values (max error 0) |
 | Morphology open 5×5 | Exact pixels (max error 0) |

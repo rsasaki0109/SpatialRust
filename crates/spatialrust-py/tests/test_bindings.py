@@ -64,7 +64,7 @@ def test_exports_present():
         "PointCloud", "voxel_downsample", "dbscan", "register_icp",
         "voxelize", "knn_graph", "chamfer_distance", "oriented_bounding_box",
         "rgbd_to_point_cloud", "depth_to_xyz",
-        "resize_image", "letterbox_image", "normalize_image_chw",
+        "resize_image", "letterbox_image", "normalize_image_chw", "resize_normalize_image_chw",
         "rgb_to_gray_image", "resize_rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
         "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
         "find_mask_contours", "encode_mask_rle", "decode_mask_rle",
@@ -161,6 +161,12 @@ def test_image_resize_letterbox_and_normalize():
     chw_out = np.empty((3, 2, 2), dtype=np.float32)
     assert sr.normalize_image_chw(image, out=chw_out) is chw_out
     np.testing.assert_allclose(chw_out, chw, atol=1e-6)
+    fused_chw = sr.resize_normalize_image_chw(image, 4, 3)
+    expected_fused_chw = sr.normalize_image_chw(sr.resize_image(image, 4, 3))
+    np.testing.assert_array_equal(fused_chw, expected_fused_chw)
+    fused_chw_out = np.empty((3, 3, 4), dtype=np.float32)
+    assert sr.resize_normalize_image_chw(image, 4, 3, out=fused_chw_out) is fused_chw_out
+    np.testing.assert_array_equal(fused_chw_out, expected_fused_chw)
 
 
 def test_image_color_and_remap():

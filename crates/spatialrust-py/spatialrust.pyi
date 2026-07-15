@@ -36,7 +36,7 @@ __all__: list[str] = [
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
     "histogram_image", "equalize_histogram_image", "clahe_image",
     "integral_image_u8", "canny_image", "resize_image", "letterbox_image",
-    "normalize_image_chw", "rgb_to_gray_image", "resize_rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
+    "normalize_image_chw", "resize_normalize_image_chw", "rgb_to_gray_image", "resize_rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
     "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
     "find_mask_contours",
     "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
@@ -280,6 +280,15 @@ def letterbox_image(
 ) -> tuple[_U8Array, tuple[float, int, int, int, int]]: ...
 def normalize_image_chw(
     image: _U8Array,
+    scale: float = ...,
+    mean: Optional[tuple[float, float, float]] = ...,
+    std: Optional[tuple[float, float, float]] = ...,
+    out: Optional[_F32Array] = ...,
+) -> _F32Array: ...
+def resize_normalize_image_chw(
+    image: _U8Array,
+    width: int,
+    height: int,
     scale: float = ...,
     mean: Optional[tuple[float, float, float]] = ...,
     std: Optional[tuple[float, float, float]] = ...,

@@ -91,7 +91,8 @@ use spatialrust::vision::{
     nms as nms_op, otsu_threshold_u8 as otsu_threshold_u8_op, pack_chw as pack_chw_op,
     pack_chw_into as pack_chw_into_op, point_map_to_point_cloud as point_map_to_cloud,
     pyr_down as pyr_down_op, pyr_up as pyr_up_op, remap as remap_op, resize as resize_op,
-    resize_into as resize_into_op, resize_rgb_to_gray as resize_rgb_to_gray_op,
+    resize_into as resize_into_op, resize_pack_chw as resize_pack_chw_op,
+    resize_pack_chw_into as resize_pack_chw_into_op, resize_rgb_to_gray as resize_rgb_to_gray_op,
     resize_rgb_to_gray_into as resize_rgb_to_gray_into_op, rgb_to_gray as rgb_to_gray_op,
     rgb_to_gray_into as rgb_to_gray_into_op, rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op,
     sobel as sobel_op, sobel_l1_magnitude_u8 as sobel_l1_magnitude_u8_op,
@@ -3328,6 +3329,49 @@ fn normalize_image_chw<'py>(
     Ok(array.into_pyarray_bound(py))
 }
 
+/// Fuses bilinear RGB resize, normalization, and CHW packing.
+#[pyfunction]
+#[pyo3(signature = (image, width, height, scale=1.0/255.0, mean=None, std=None, out=None))]
+#[allow(clippy::too_many_arguments)]
+fn resize_normalize_image_chw<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray3<'_, u8>,
+    width: usize,
+    height: usize,
+    scale: f32,
+    mean: Option<(f32, f32, f32)>,
+    std: Option<(f32, f32, f32)>,
+    out: Option<Bound<'py, PyArray3<f32>>>,
+) -> PyResult<Bound<'py, PyArray3<f32>>> {
+    let mut packed = Vec::new();
+    let image = rgb_image_view_from_numpy(&image, &mut packed)?;
+    let mean = mean.map_or([0.0; 3], |(r, g, b)| [r, g, b]);
+    let std = std.map_or([1.0; 3], |(r, g, b)| [r, g, b]);
+    if let Some(out) = out {
+        {
+            let mut out_rw = out.readwrite();
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [3, height, width] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be (3, {height}, {width}), found {:?}",
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous float32 array of shape (3, H, W)",
+                ));
+            };
+            resize_pack_chw_into_op(image, width, height, scale, mean, std, out_slice)
+                .map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let output = resize_pack_chw_op(image, width, height, scale, mean, std).map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((3, height, width), output.into_vec()).map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
 /// Converts an RGB image to an `(H, W)` grayscale image.
 #[pyfunction]
 #[pyo3(signature = (image, out=None))]
@@ -3924,6 +3968,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(resize_image, m)?)?;
     m.add_function(wrap_pyfunction!(letterbox_image, m)?)?;
     m.add_function(wrap_pyfunction!(normalize_image_chw, m)?)?;
+    m.add_function(wrap_pyfunction!(resize_normalize_image_chw, m)?)?;
     m.add_function(wrap_pyfunction!(rgb_to_gray_image, m)?)?;
     m.add_function(wrap_pyfunction!(resize_rgb_to_gray_image, m)?)?;
     m.add_function(wrap_pyfunction!(rgb_to_hsv_image, m)?)?;

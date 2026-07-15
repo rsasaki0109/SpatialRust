@@ -244,6 +244,34 @@ pub fn pack_chw_into<T: PixelComponent, const CHANNELS: usize>(
     Ok(())
 }
 
+/// Fuses bilinear RGB resize, normalization, and CHW packing without an intermediate image.
+pub fn resize_pack_chw(
+    input: ImageView<'_, u8, 3>,
+    output_width: usize,
+    output_height: usize,
+    scale: f32,
+    mean: [f32; 3],
+    std: [f32; 3],
+) -> VisionResult<PlanarImage<f32, 3>> {
+    BilinearResizeU8Plan::new(input.width(), input.height(), output_width, output_height)?
+        .resize_rgb_to_chw(input, scale, mean, std)
+}
+
+/// Fuses bilinear RGB resize, normalization, and CHW packing into caller-owned storage.
+#[allow(clippy::too_many_arguments)]
+pub fn resize_pack_chw_into(
+    input: ImageView<'_, u8, 3>,
+    output_width: usize,
+    output_height: usize,
+    scale: f32,
+    mean: [f32; 3],
+    std: [f32; 3],
+    output: &mut [f32],
+) -> VisionResult<()> {
+    BilinearResizeU8Plan::new(input.width(), input.height(), output_width, output_height)?
+        .resize_rgb_to_chw_into(input, scale, mean, std, output)
+}
+
 fn fill_chw_plane<T: PixelComponent, const CHANNELS: usize>(
     input: ImageView<'_, T, CHANNELS>,
     channel: usize,
@@ -451,8 +479,8 @@ pub fn rgb_to_hsv(input: ImageView<'_, u8, 3>) -> VisionResult<Image<u8, 3>> {
 mod tests {
     use super::{
         crop, gray_to_rgb, letterbox, normalize, normalize_into, pack_chw, pack_chw_into, pad,
-        resize_rgb_to_gray, resize_rgb_to_gray_into, rgb_to_gray, rgb_to_gray_into, rgb_to_hsv,
-        Padding,
+        resize_pack_chw, resize_pack_chw_into, resize_rgb_to_gray, resize_rgb_to_gray_into,
+        rgb_to_gray, rgb_to_gray_into, rgb_to_hsv, Padding,
     };
     use crate::Interpolation;
     use spatialrust_image::{
@@ -520,6 +548,51 @@ mod tests {
         assert!(chw[..plane].iter().all(|&value| value == 1.0));
         assert!(chw[plane..2 * plane].iter().all(|&value| value == 0.5));
         assert!(chw[2 * plane..].iter().all(|&value| value == 0.0));
+    }
+
+    #[test]
+    fn fused_resize_chw_matches_unfused_general_and_preserves_metadata() {
+        let metadata = ImageMetadata {
+            color_space: ColorSpace::Rgb,
+            color_range: spatialrust_image::ColorRange::Full,
+            ..ImageMetadata::default()
+        };
+        let input = Image::<u8, 3>::try_new_with_metadata(
+            7,
+            5,
+            (0..105).map(|value| (value * 37 % 256) as u8).collect(),
+            metadata,
+        )
+        .unwrap();
+        let plan = crate::BilinearResizeU8Plan::new(7, 5, 11, 8).unwrap();
+        let resized = plan.resize(input.view()).unwrap();
+        let expected =
+            pack_chw(resized.view(), 1.0 / 255.0, [0.1, 0.2, 0.3], [0.5, 1.0, 2.0]).unwrap();
+        let actual =
+            resize_pack_chw(input.view(), 11, 8, 1.0 / 255.0, [0.1, 0.2, 0.3], [0.5, 1.0, 2.0])
+                .unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(actual.metadata(), metadata);
+    }
+
+    #[test]
+    fn fused_resize_chw_matches_unfused_half_scale_for_strided_input_and_reuse() {
+        let mut storage = vec![231_u8; 169];
+        for y in 0..6 {
+            for x in 0..24 {
+                storage[y * 29 + x] = (y * 41 + x * 13) as u8;
+            }
+        }
+        let input = ImageView::<u8, 3>::new(8, 6, 29, &storage).unwrap();
+        let plan = crate::BilinearResizeU8Plan::new(8, 6, 4, 3).unwrap();
+        let resized = plan.resize(input).unwrap();
+        let expected = pack_chw(resized.view(), 0.25, [1.0, 2.0, 3.0], [1.0; 3]).unwrap();
+        let mut output = vec![-1.0_f32; 36];
+        resize_pack_chw_into(input, 4, 3, 0.25, [1.0, 2.0, 3.0], [1.0; 3], &mut output).unwrap();
+        assert_eq!(output, expected.as_slice());
+        assert!(
+            resize_pack_chw_into(input, 4, 3, 0.25, [0.0; 3], [1.0; 3], &mut output[..35]).is_err()
+        );
     }
 
     #[test]
