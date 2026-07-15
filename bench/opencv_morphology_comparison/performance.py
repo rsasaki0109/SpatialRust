@@ -89,6 +89,9 @@ def main() -> None:
         profile_results: dict[str, object] = {}
         for kernel_size in kernels:
             kernel = np.ones((kernel_size, kernel_size), dtype=np.uint8)
+            opencv_out = np.empty_like(image)
+            spatialrust_out = np.empty_like(image)
+            spatialrust_workspace = sr.MorphologyWorkspace()
 
             def opencv_open() -> np.ndarray:
                 return cv2.morphologyEx(
@@ -103,10 +106,39 @@ def main() -> None:
                     image, "open", kernel_size, kernel_size, "rect", 1
                 )
 
+            def opencv_open_reuse() -> np.ndarray:
+                return cv2.morphologyEx(
+                    image,
+                    cv2.MORPH_OPEN,
+                    kernel,
+                    dst=opencv_out,
+                    borderType=cv2.BORDER_REPLICATE,
+                )
+
+            def spatialrust_open_reuse() -> np.ndarray:
+                return sr.morphology_image(
+                    image,
+                    "open",
+                    kernel_size,
+                    kernel_size,
+                    "rect",
+                    1,
+                    out=spatialrust_out,
+                    workspace=spatialrust_workspace,
+                )
+
             expected = opencv_open()
             actual = spatialrust_open()
             if not np.array_equal(actual, expected):
                 raise AssertionError(f"{profile}/{kernel_size} is not bit-exact")
+            if opencv_open_reuse() is not opencv_out:
+                raise AssertionError("OpenCV did not return its caller-owned output")
+            if spatialrust_open_reuse() is not spatialrust_out:
+                raise AssertionError("SpatialRust did not return its caller-owned output")
+            if not np.array_equal(opencv_out, expected) or not np.array_equal(
+                spatialrust_out, expected
+            ):
+                raise AssertionError(f"{profile}/{kernel_size} reuse is not bit-exact")
             _, _, opencv_timing, spatialrust_timing = timed_pair(
                 opencv_open,
                 spatialrust_open,
@@ -115,8 +147,18 @@ def main() -> None:
                 seed=117 + kernel_size,
                 min_sample_time_ms=20.0,
             )
+            _, _, opencv_reuse_timing, spatialrust_reuse_timing = timed_pair(
+                opencv_open_reuse,
+                spatialrust_open_reuse,
+                warmup=args.warmup,
+                repeats=repeats,
+                seed=2117 + kernel_size,
+                min_sample_time_ms=20.0,
+            )
             opencv_ms = float(opencv_timing["median"])
             spatialrust_ms = float(spatialrust_timing["median"])
+            opencv_reuse_ms = float(opencv_reuse_timing["median"])
+            spatialrust_reuse_ms = float(spatialrust_reuse_timing["median"])
             profile_results[str(kernel_size)] = {
                 "width": width,
                 "height": height,
@@ -132,6 +174,18 @@ def main() -> None:
                 "faster_implementation": (
                     "spatialrust" if spatialrust_ms < opencv_ms else "opencv"
                 ),
+                "opencv_reuse": opencv_reuse_timing,
+                "spatialrust_reuse": spatialrust_reuse_timing,
+                "spatialrust_reuse_speedup": opencv_reuse_ms
+                / spatialrust_reuse_ms,
+                "faster_reuse_implementation": (
+                    "spatialrust"
+                    if spatialrust_reuse_ms < opencv_reuse_ms
+                    else "opencv"
+                ),
+                "spatialrust_workspace_capacity": spatialrust_workspace.capacity,
+                "spatialrust_workspace_workers": spatialrust_workspace.worker_capacity,
+                "spatialrust_workspace_line_capacity": spatialrust_workspace.line_capacity,
             }
         results[profile] = profile_results
 
@@ -149,7 +203,7 @@ def main() -> None:
         environment_receipt=receipt,
         results={
             "methodology": {
-                "timing_scope": "Python API call returning an allocated uint8 image",
+                "timing_scope": "allocated and caller-owned-output Python API calls",
                 "paired_interleaved": True,
                 "minimum_sample_time_ms": 20.0,
                 "input": "seeded packed random uint8 grayscale",

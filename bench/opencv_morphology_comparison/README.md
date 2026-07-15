@@ -1,7 +1,8 @@
 # OpenCV rectangular morphology comparison
 
 This focused harness compares bit-exact grayscale rectangular opening through
-the public Python APIs. It covers the common 5×5 case and a 511×511
+the public Python APIs in both allocated and caller-owned-output/workspace
+modes. It covers the common 5×5 case and a 511×511
 background-estimation/document workload where the window-area-independent
 SpatialRust engine can overtake OpenCV on large images.
 

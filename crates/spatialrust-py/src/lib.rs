@@ -75,18 +75,19 @@ use spatialrust::vision::{
     clahe as clahe_op, connected_components_u8 as label_components_u8,
     decode_rle as decode_mask_runs, detect_and_describe_orb as detect_and_describe_orb_op,
     detect_fast as detect_fast_op, detect_harris as detect_harris_op,
-    detect_shi_tomasi as detect_shi_tomasi_op, dilate_rect_u8 as dilate_rect_u8_op,
+    detect_shi_tomasi as detect_shi_tomasi_op, dilate_rect_u8_into as dilate_rect_u8_into_op,
     distance_transform_edt_u8_into as distance_transform_edt_u8_into_op,
     distance_transform_edt_with_spacing as distance_transform_edt_op,
     encode_rle as encode_mask_runs, equalize_histogram as equalize_histogram_op,
-    erode_rect_u8 as erode_rect_u8_op, estimate_homography_ransac as estimate_homography_ransac_op,
+    erode_rect_u8_into as erode_rect_u8_into_op,
+    estimate_homography_ransac as estimate_homography_ransac_op,
     estimate_rgbd_odometry as estimate_rgbd_odometry_op, filter2d as filter2d_op,
     find_contours as trace_contours, gaussian_blur as gaussian_blur_op,
     gray_world_white_balance as gray_world_white_balance_op, histogram_u8 as histogram_u8_op,
     integral_image as integral_image_op, laplacian as laplacian_op, letterbox as letterbox_op,
     match_descriptors as match_descriptors_op, median_blur as median_blur_op,
-    morphology_ex as morphology_ex_op, morphology_rect_u8 as morphology_rect_u8_op, nms as nms_op,
-    otsu_threshold_u8 as otsu_threshold_u8_op, pack_chw as pack_chw_op,
+    morphology_ex as morphology_ex_op, morphology_rect_u8_into as morphology_rect_u8_into_op,
+    nms as nms_op, otsu_threshold_u8 as otsu_threshold_u8_op, pack_chw as pack_chw_op,
     pack_chw_into as pack_chw_into_op, point_map_to_point_cloud as point_map_to_cloud,
     pyr_down as pyr_down_op, pyr_up as pyr_up_op, remap as remap_op, resize as resize_op,
     resize_into as resize_into_op, rgb_to_gray as rgb_to_gray_op,
@@ -98,9 +99,9 @@ use spatialrust::vision::{
     DescriptorBuffer, Detection, DistanceTransformWorkspace, FastOptions, HarrisOptions,
     Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions, MorphologyOperation,
     MorphologyShape, ObjectImageCorrespondence, OrbOptions, OrbScoreType, PanoramaOptions,
-    PerspectiveTransform, PointCorrespondence2, PointMap, RgbdOdometryOptions, RleOrder,
-    RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement,
-    ThresholdType,
+    PerspectiveTransform, PointCorrespondence2, PointMap, RectMorphologyWorkspace,
+    RgbdOdometryOptions, RleOrder, RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod,
+    StereoBmOptions, StructuringElement, ThresholdType,
 };
 use spatialrust::vision::{dense_flow_block_match as dense_flow_native, DenseFlowOptions};
 use spatialrust::voxelize::{
@@ -2209,8 +2210,157 @@ fn pyr_up_image<'py>(
 }
 
 /// Applies grayscale erosion, dilation, or a composite morphology operation.
+#[pyclass(name = "MorphologyWorkspace")]
+struct PyMorphologyWorkspace {
+    inner: RectMorphologyWorkspace,
+    element: Option<(usize, usize, StructuringElement)>,
+}
+
+#[pymethods]
+impl PyMorphologyWorkspace {
+    #[new]
+    fn new() -> Self {
+        Self { inner: RectMorphologyWorkspace::new(), element: None }
+    }
+
+    #[getter]
+    fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+
+    #[getter]
+    fn worker_capacity(&self) -> usize {
+        self.inner.worker_capacity()
+    }
+
+    #[getter]
+    fn line_capacity(&self) -> usize {
+        self.inner.line_capacity()
+    }
+}
+
+fn morphology_rect_dispatch_into(
+    image: ImageView<'_, u8, 1>,
+    operation: &str,
+    element: &StructuringElement,
+    iterations: usize,
+    output: &mut [u8],
+    workspace: &mut RectMorphologyWorkspace,
+) -> spatialrust::vision::VisionResult<()> {
+    match operation {
+        "erode" => erode_rect_u8_into_op(
+            image,
+            element,
+            iterations,
+            BorderMode::Replicate,
+            output,
+            workspace,
+        ),
+        "dilate" => dilate_rect_u8_into_op(
+            image,
+            element,
+            iterations,
+            BorderMode::Replicate,
+            output,
+            workspace,
+        ),
+        "open" => morphology_rect_u8_into_op(
+            image,
+            MorphologyOperation::Open,
+            element,
+            iterations,
+            BorderMode::Replicate,
+            output,
+            workspace,
+        ),
+        "close" => morphology_rect_u8_into_op(
+            image,
+            MorphologyOperation::Close,
+            element,
+            iterations,
+            BorderMode::Replicate,
+            output,
+            workspace,
+        ),
+        "gradient" => morphology_rect_u8_into_op(
+            image,
+            MorphologyOperation::Gradient,
+            element,
+            iterations,
+            BorderMode::Replicate,
+            output,
+            workspace,
+        ),
+        "tophat" | "top-hat" => morphology_rect_u8_into_op(
+            image,
+            MorphologyOperation::TopHat,
+            element,
+            iterations,
+            BorderMode::Replicate,
+            output,
+            workspace,
+        ),
+        "blackhat" | "black-hat" => morphology_rect_u8_into_op(
+            image,
+            MorphologyOperation::BlackHat,
+            element,
+            iterations,
+            BorderMode::Replicate,
+            output,
+            workspace,
+        ),
+        other => Err(spatialrust::vision::VisionError::InvalidParameter(format!(
+            "unknown morphology operation `{other}`"
+        ))),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn morphology_rect_python<'py>(
+    py: Python<'py>,
+    image: ImageView<'_, u8, 1>,
+    operation: &str,
+    element: &StructuringElement,
+    iterations: usize,
+    out: Option<Bound<'py, PyArray2<u8>>>,
+    workspace: &mut RectMorphologyWorkspace,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    if let Some(out) = out {
+        {
+            let mut out_rw = out
+                .try_readwrite()
+                .map_err(|_| PyValueError::new_err("out must not overlap the morphology input"))?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W)",
+                ));
+            };
+            morphology_rect_dispatch_into(
+                image, operation, element, iterations, out_slice, workspace,
+            )
+            .map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let mut output = vec![0; image.width() * image.height()];
+    morphology_rect_dispatch_into(image, operation, element, iterations, &mut output, workspace)
+        .map_err(to_py_err)?;
+    let array =
+        Array2::from_shape_vec((image.height(), image.width()), output).map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
 #[pyfunction]
-#[pyo3(signature = (image, operation, kernel_width, kernel_height, shape="rect", iterations=1))]
+#[pyo3(signature = (image, operation, kernel_width, kernel_height, shape="rect", iterations=1, out=None, workspace=None))]
 fn morphology_image<'py>(
     py: Python<'py>,
     image: PyReadonlyArray2<'_, u8>,
@@ -2219,6 +2369,8 @@ fn morphology_image<'py>(
     kernel_height: usize,
     shape: &str,
     iterations: usize,
+    out: Option<Bound<'py, PyArray2<u8>>>,
+    mut workspace: Option<PyRefMut<'_, PyMorphologyWorkspace>>,
 ) -> PyResult<Bound<'py, PyArray2<u8>>> {
     let mut packed = Vec::new();
     let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
@@ -2233,50 +2385,49 @@ fn morphology_image<'py>(
             )))
         }
     };
-    let element =
-        StructuringElement::try_new(shape, kernel_width, kernel_height).map_err(to_py_err)?;
     let operation = operation.to_ascii_lowercase();
     let rect = shape == MorphologyShape::Rect;
+    if workspace.is_some() && !rect {
+        return Err(PyValueError::new_err(
+            "workspace reuse is available only for rectangular morphology",
+        ));
+    }
+    if rect {
+        if let Some(workspace) = workspace.as_deref_mut() {
+            let stale = match workspace.element.as_ref() {
+                Some((width, height, _)) => *width != kernel_width || *height != kernel_height,
+                None => true,
+            };
+            if stale {
+                workspace.element = Some((
+                    kernel_width,
+                    kernel_height,
+                    StructuringElement::try_new(MorphologyShape::Rect, kernel_width, kernel_height)
+                        .map_err(to_py_err)?,
+                ));
+            }
+            let PyMorphologyWorkspace { inner, element } = workspace;
+            let element = &element.as_ref().expect("cached rectangular element").2;
+            return morphology_rect_python(py, image, &operation, element, iterations, out, inner);
+        }
+        let element =
+            StructuringElement::try_new(shape, kernel_width, kernel_height).map_err(to_py_err)?;
+        let mut local_workspace = RectMorphologyWorkspace::new();
+        return morphology_rect_python(
+            py,
+            image,
+            &operation,
+            &element,
+            iterations,
+            out,
+            &mut local_workspace,
+        );
+    }
+    let element =
+        StructuringElement::try_new(shape, kernel_width, kernel_height).map_err(to_py_err)?;
     let output = match operation.as_str() {
-        "erode" if rect => erode_rect_u8_op(image, &element, iterations, BorderMode::Replicate),
-        "dilate" if rect => dilate_rect_u8_op(image, &element, iterations, BorderMode::Replicate),
         "erode" => spatialrust::vision::erode(image, &element, iterations, BorderMode::Replicate),
         "dilate" => spatialrust::vision::dilate(image, &element, iterations, BorderMode::Replicate),
-        "open" if rect => morphology_rect_u8_op(
-            image,
-            MorphologyOperation::Open,
-            &element,
-            iterations,
-            BorderMode::Replicate,
-        ),
-        "close" if rect => morphology_rect_u8_op(
-            image,
-            MorphologyOperation::Close,
-            &element,
-            iterations,
-            BorderMode::Replicate,
-        ),
-        "gradient" if rect => morphology_rect_u8_op(
-            image,
-            MorphologyOperation::Gradient,
-            &element,
-            iterations,
-            BorderMode::Replicate,
-        ),
-        "tophat" | "top-hat" if rect => morphology_rect_u8_op(
-            image,
-            MorphologyOperation::TopHat,
-            &element,
-            iterations,
-            BorderMode::Replicate,
-        ),
-        "blackhat" | "black-hat" if rect => morphology_rect_u8_op(
-            image,
-            MorphologyOperation::BlackHat,
-            &element,
-            iterations,
-            BorderMode::Replicate,
-        ),
         "open" => morphology_ex_op(
             image,
             MorphologyOperation::Open,
@@ -2317,6 +2468,29 @@ fn morphology_image<'py>(
         }
     }
     .map_err(to_py_err)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out
+                .try_readwrite()
+                .map_err(|_| PyValueError::new_err("out must not overlap the morphology input"))?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W)",
+                ));
+            };
+            out_slice.copy_from_slice(output.as_slice());
+        }
+        return Ok(out);
+    }
     let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
         .map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
@@ -3457,6 +3631,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyTensor>()?;
     m.add_class::<PyKeypoint2>()?;
     m.add_class::<PyDistanceTransformWorkspace>()?;
+    m.add_class::<PyMorphologyWorkspace>()?;
     m.add_class::<PyOnnxRuntimeSession>()?;
     m.add_class::<PyDlpackTensorView>()?;
     m.add_class::<PyPointCloud>()?;

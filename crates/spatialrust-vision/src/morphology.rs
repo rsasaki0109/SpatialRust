@@ -203,7 +203,10 @@ pub fn erode_rect_u8(
     iterations: usize,
     border: BorderMode<u8, 1>,
 ) -> VisionResult<Image<u8, 1>> {
-    rect_sequence(input, element, border, &[(Extreme::Minimum, iterations)])
+    let mut output = vec![0; input.width() * input.height()];
+    let mut workspace = RectMorphologyWorkspace::new();
+    erode_rect_u8_into(input, element, iterations, border, &mut output, &mut workspace)?;
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
 }
 
 /// Dilates a grayscale `u8` image with a rectangular element in linear time.
@@ -213,7 +216,10 @@ pub fn dilate_rect_u8(
     iterations: usize,
     border: BorderMode<u8, 1>,
 ) -> VisionResult<Image<u8, 1>> {
-    rect_sequence(input, element, border, &[(Extreme::Maximum, iterations)])
+    let mut output = vec![0; input.width() * input.height()];
+    let mut workspace = RectMorphologyWorkspace::new();
+    dilate_rect_u8_into(input, element, iterations, border, &mut output, &mut workspace)?;
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
 }
 
 /// Applies composite grayscale `u8` morphology using the rectangular fast path.
@@ -224,38 +230,202 @@ pub fn morphology_rect_u8(
     iterations: usize,
     border: BorderMode<u8, 1>,
 ) -> VisionResult<Image<u8, 1>> {
-    validate_rect(element)?;
+    let mut output = vec![0; input.width() * input.height()];
+    let mut workspace = RectMorphologyWorkspace::new();
+    morphology_rect_u8_into(
+        input,
+        operation,
+        element,
+        iterations,
+        border,
+        &mut output,
+        &mut workspace,
+    )?;
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+}
+
+/// Reusable scratch storage for packed grayscale rectangular morphology.
+///
+/// The workspace owns every full-image intermediate and one set of line
+/// buffers per Rayon worker. Grow it once for the largest expected image and
+/// element, then reuse it on the same worker thread. It never performs a
+/// hidden device transfer and does not share mutable state between calls.
+#[derive(Debug, Default)]
+pub struct RectMorphologyWorkspace {
+    current: Vec<u8>,
+    horizontal: Vec<u8>,
+    transposed: Vec<u8>,
+    filtered: Vec<u8>,
+    output: Vec<u8>,
+    padded: Vec<u8>,
+    prefix: Vec<u8>,
+    suffix: Vec<u8>,
+    line_buffers: Vec<LineBuffers>,
+}
+
+impl RectMorphologyWorkspace {
+    /// Creates an empty workspace that grows on first use.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            current: Vec::new(),
+            horizontal: Vec::new(),
+            transposed: Vec::new(),
+            filtered: Vec::new(),
+            output: Vec::new(),
+            padded: Vec::new(),
+            prefix: Vec::new(),
+            suffix: Vec::new(),
+            line_buffers: Vec::new(),
+        }
+    }
+
+    /// Returns the largest pixel count reserved by every full-image plane.
+    #[must_use]
+    pub fn capacity(&self) -> usize {
+        self.current
+            .capacity()
+            .min(self.horizontal.capacity())
+            .min(self.transposed.capacity())
+            .min(self.filtered.capacity())
+            .min(self.output.capacity())
+    }
+
+    /// Returns the number of reusable parallel line-buffer sets.
+    #[must_use]
+    pub fn worker_capacity(&self) -> usize {
+        self.line_buffers.len()
+    }
+
+    /// Returns the reusable element count reserved by every active line buffer.
+    #[must_use]
+    pub fn line_capacity(&self) -> usize {
+        if self.line_buffers.is_empty() {
+            return self.padded.capacity().min(self.prefix.capacity()).min(self.suffix.capacity());
+        }
+        self.line_buffers
+            .iter()
+            .map(|buffers| {
+                buffers
+                    .padded
+                    .capacity()
+                    .min(buffers.prefix.capacity())
+                    .min(buffers.suffix.capacity())
+            })
+            .min()
+            .unwrap_or(0)
+    }
+}
+
+/// Erodes into caller-owned packed output using reusable scratch storage.
+pub fn erode_rect_u8_into(
+    input: ImageView<'_, u8, 1>,
+    element: &StructuringElement,
+    iterations: usize,
+    border: BorderMode<u8, 1>,
+    output: &mut [u8],
+    workspace: &mut RectMorphologyWorkspace,
+) -> VisionResult<()> {
+    validate_output_len(output, input.width(), input.height())?;
+    run_rect_sequence(input, element, border, &[(Extreme::Minimum, iterations)], workspace)?;
+    output.copy_from_slice(&workspace.current);
+    Ok(())
+}
+
+/// Dilates into caller-owned packed output using reusable scratch storage.
+pub fn dilate_rect_u8_into(
+    input: ImageView<'_, u8, 1>,
+    element: &StructuringElement,
+    iterations: usize,
+    border: BorderMode<u8, 1>,
+    output: &mut [u8],
+    workspace: &mut RectMorphologyWorkspace,
+) -> VisionResult<()> {
+    validate_output_len(output, input.width(), input.height())?;
+    run_rect_sequence(input, element, border, &[(Extreme::Maximum, iterations)], workspace)?;
+    output.copy_from_slice(&workspace.current);
+    Ok(())
+}
+
+/// Applies composite rectangular morphology into caller-owned packed output.
+///
+/// `output` must contain exactly `input.width() * input.height()` elements.
+/// Safe Rust borrowing requires input and output storage not to overlap.
+#[allow(clippy::too_many_arguments)]
+pub fn morphology_rect_u8_into(
+    input: ImageView<'_, u8, 1>,
+    operation: MorphologyOperation,
+    element: &StructuringElement,
+    iterations: usize,
+    border: BorderMode<u8, 1>,
+    output: &mut [u8],
+    workspace: &mut RectMorphologyWorkspace,
+) -> VisionResult<()> {
+    validate_output_len(output, input.width(), input.height())?;
     match operation {
-        MorphologyOperation::Open => rect_sequence(
+        MorphologyOperation::Open => run_rect_sequence(
             input,
             element,
             border,
             &[(Extreme::Minimum, iterations), (Extreme::Maximum, iterations)],
-        ),
-        MorphologyOperation::Close => rect_sequence(
+            workspace,
+        )?,
+        MorphologyOperation::Close => run_rect_sequence(
             input,
             element,
             border,
             &[(Extreme::Maximum, iterations), (Extreme::Minimum, iterations)],
-        ),
+            workspace,
+        )?,
         MorphologyOperation::Gradient => {
-            let high = dilate_rect_u8(input, element, iterations, border)?;
-            let low = erode_rect_u8(input, element, iterations, border)?;
-            subtract_u8(high, low)
+            run_rect_sequence(
+                input,
+                element,
+                border,
+                &[(Extreme::Maximum, iterations)],
+                workspace,
+            )?;
+            output.copy_from_slice(&workspace.current);
+            run_rect_sequence(
+                input,
+                element,
+                border,
+                &[(Extreme::Minimum, iterations)],
+                workspace,
+            )?;
+            for (high, &low) in output.iter_mut().zip(&workspace.current) {
+                *high = high.saturating_sub(low);
+            }
+            return Ok(());
         }
         MorphologyOperation::TopHat => {
-            let original = pack(input)?;
-            let opened =
-                morphology_rect_u8(input, MorphologyOperation::Open, element, iterations, border)?;
-            subtract_u8(original, opened)
+            pack_u8_into(input, output);
+            run_rect_sequence(
+                input,
+                element,
+                border,
+                &[(Extreme::Minimum, iterations), (Extreme::Maximum, iterations)],
+                workspace,
+            )?;
+            for (original, &opened) in output.iter_mut().zip(&workspace.current) {
+                *original = original.saturating_sub(opened);
+            }
+            return Ok(());
         }
         MorphologyOperation::BlackHat => {
-            let original = pack(input)?;
-            let closed =
-                morphology_rect_u8(input, MorphologyOperation::Close, element, iterations, border)?;
-            subtract_u8(closed, original)
+            run_rect_sequence(
+                input,
+                element,
+                border,
+                &[(Extreme::Maximum, iterations), (Extreme::Minimum, iterations)],
+                workspace,
+            )?;
+            copy_subtract_input(input, &workspace.current, output);
+            return Ok(());
         }
     }
+    output.copy_from_slice(&workspace.current);
+    Ok(())
 }
 
 #[derive(Clone, Copy)]
@@ -274,19 +444,20 @@ fn validate_rect(element: &StructuringElement) -> VisionResult<()> {
     }
 }
 
-fn rect_sequence(
+fn run_rect_sequence(
     input: ImageView<'_, u8, 1>,
     element: &StructuringElement,
     border: BorderMode<u8, 1>,
     stages: &[(Extreme, usize)],
-) -> VisionResult<Image<u8, 1>> {
+    workspace: &mut RectMorphologyWorkspace,
+) -> VisionResult<()> {
     validate_rect(element)?;
-    let metadata = input.metadata();
     let (width, height) = (input.width(), input.height());
-    let mut current = pack(input)?.into_vec();
-    let mut workspace = RectWorkspace::default();
+    workspace.current.resize(width * height, 0);
+    pack_u8_into(input, &mut workspace.current);
     for &(extreme, iterations) in stages {
         for _ in 0..iterations {
+            let current = std::mem::take(&mut workspace.current);
             workspace.apply(
                 &current,
                 width,
@@ -298,24 +469,48 @@ fn rect_sequence(
                 border,
                 extreme,
             );
-            std::mem::swap(&mut current, &mut workspace.output);
+            workspace.current = current;
+            std::mem::swap(&mut workspace.current, &mut workspace.output);
         }
     }
-    Ok(Image::try_new_with_metadata(width, height, current, metadata)?)
+    Ok(())
 }
 
-#[derive(Default)]
-struct RectWorkspace {
-    horizontal: Vec<u8>,
-    transposed: Vec<u8>,
-    filtered: Vec<u8>,
-    output: Vec<u8>,
-    padded: Vec<u8>,
-    prefix: Vec<u8>,
-    suffix: Vec<u8>,
+fn validate_output_len(output: &[u8], width: usize, height: usize) -> VisionResult<()> {
+    let len = width
+        .checked_mul(height)
+        .ok_or_else(|| VisionError::InvalidDimensions("morphology output size overflows".into()))?;
+    if output.len() != len {
+        return Err(VisionError::ShapeMismatch(format!(
+            "morphology output needs {len} elements, found {}",
+            output.len()
+        )));
+    }
+    Ok(())
 }
 
-impl RectWorkspace {
+fn pack_u8_into(input: ImageView<'_, u8, 1>, output: &mut [u8]) {
+    for y in 0..input.height() {
+        let start = y * input.width();
+        output[start..start + input.width()]
+            .copy_from_slice(input.row(y).expect("input row in bounds"));
+    }
+}
+
+fn copy_subtract_input(input: ImageView<'_, u8, 1>, high: &[u8], output: &mut [u8]) {
+    for y in 0..input.height() {
+        let start = y * input.width();
+        for ((value, &closed), &original) in output[start..start + input.width()]
+            .iter_mut()
+            .zip(&high[start..start + input.width()])
+            .zip(input.row(y).expect("input row in bounds"))
+        {
+            *value = closed.saturating_sub(original);
+        }
+    }
+}
+
+impl RectMorphologyWorkspace {
     #[allow(clippy::too_many_arguments)]
     fn apply(
         &mut self,
@@ -395,24 +590,31 @@ impl RectWorkspace {
         extreme: Extreme,
     ) {
         let len = width * height;
+        let workers = rayon::current_num_threads().min(width.max(height)).max(1);
+        self.line_buffers.resize_with(workers, LineBuffers::default);
         self.horizontal.resize(len, 0);
-        self.horizontal.par_chunks_mut(width).enumerate().for_each_init(
-            LineBuffers::default,
-            |buffers, (y, output)| {
-                let start = y * width;
-                filter_line(
-                    &input[start..start + width],
-                    output,
-                    kernel_width,
-                    anchor_x,
-                    border,
-                    extreme,
-                    &mut buffers.padded,
-                    &mut buffers.prefix,
-                    &mut buffers.suffix,
-                );
-            },
-        );
+        let horizontal_rows = height.div_ceil(workers);
+        self.horizontal
+            .par_chunks_mut(horizontal_rows * width)
+            .zip(self.line_buffers.par_iter_mut())
+            .enumerate()
+            .for_each(|(chunk, (outputs, buffers))| {
+                let first_y = chunk * horizontal_rows;
+                for (local_y, output) in outputs.chunks_mut(width).enumerate() {
+                    let start = (first_y + local_y) * width;
+                    filter_line(
+                        &input[start..start + width],
+                        output,
+                        kernel_width,
+                        anchor_x,
+                        border,
+                        extreme,
+                        &mut buffers.padded,
+                        &mut buffers.prefix,
+                        &mut buffers.suffix,
+                    );
+                }
+            });
 
         self.transposed.resize(len, 0);
         self.transposed.par_chunks_mut(height).enumerate().for_each(|(x, output)| {
@@ -421,23 +623,28 @@ impl RectWorkspace {
             }
         });
         self.filtered.resize(len, 0);
-        self.filtered.par_chunks_mut(height).enumerate().for_each_init(
-            LineBuffers::default,
-            |buffers, (x, output)| {
-                let start = x * height;
-                filter_line(
-                    &self.transposed[start..start + height],
-                    output,
-                    kernel_height,
-                    anchor_y,
-                    border,
-                    extreme,
-                    &mut buffers.padded,
-                    &mut buffers.prefix,
-                    &mut buffers.suffix,
-                );
-            },
-        );
+        let vertical_rows = width.div_ceil(workers);
+        self.filtered
+            .par_chunks_mut(vertical_rows * height)
+            .zip(self.line_buffers.par_iter_mut())
+            .enumerate()
+            .for_each(|(chunk, (outputs, buffers))| {
+                let first_x = chunk * vertical_rows;
+                for (local_x, output) in outputs.chunks_mut(height).enumerate() {
+                    let start = (first_x + local_x) * height;
+                    filter_line(
+                        &self.transposed[start..start + height],
+                        output,
+                        kernel_height,
+                        anchor_y,
+                        border,
+                        extreme,
+                        &mut buffers.padded,
+                        &mut buffers.prefix,
+                        &mut buffers.suffix,
+                    );
+                }
+            });
         self.output.resize(len, 0);
         self.output.par_chunks_mut(width).enumerate().for_each(|(y, output)| {
             for (x, value) in output.iter_mut().enumerate() {
@@ -447,7 +654,7 @@ impl RectWorkspace {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct LineBuffers {
     padded: Vec<u8>,
     prefix: Vec<u8>,
@@ -519,22 +726,6 @@ fn transpose_blocked(input: &[u8], output: &mut [u8], width: usize, height: usiz
             }
         }
     }
-}
-
-fn subtract_u8(left: Image<u8, 1>, right: Image<u8, 1>) -> VisionResult<Image<u8, 1>> {
-    if left.width() != right.width() || left.height() != right.height() {
-        return Err(VisionError::ShapeMismatch(
-            "morphology subtraction dimensions must match".into(),
-        ));
-    }
-    let (width, height, metadata) = (left.width(), left.height(), left.metadata());
-    let output = left
-        .into_vec()
-        .into_iter()
-        .zip(right.into_vec())
-        .map(|(a, b)| a.saturating_sub(b))
-        .collect();
-    Ok(Image::try_new_with_metadata(width, height, output, metadata)?)
 }
 
 fn repeat_extreme<T: PixelComponent, const CHANNELS: usize>(
@@ -674,7 +865,8 @@ fn fill_ellipse(mask: &mut [bool], width: usize, height: usize) {
 mod tests {
     use super::{
         dilate, dilate_rect_u8, erode, erode_rect_u8, morphology_ex, morphology_rect_u8,
-        MorphologyOperation, MorphologyShape, StructuringElement,
+        morphology_rect_u8_into, MorphologyOperation, MorphologyShape, RectMorphologyWorkspace,
+        StructuringElement,
     };
     use crate::BorderMode;
     use spatialrust_image::{Image, ImageRegion};
@@ -830,5 +1022,105 @@ mod tests {
         let image = Image::<u8, 1>::from_pixel(3, 3, [1]).unwrap();
         let cross = StructuringElement::try_new(MorphologyShape::Cross, 3, 3).unwrap();
         assert!(erode_rect_u8(image.view(), &cross, 1, BorderMode::Replicate).is_err());
+    }
+
+    #[test]
+    fn rectangular_into_matches_allocating_path_for_strided_input() {
+        let parent = Image::<u8, 1>::try_new(
+            13,
+            9,
+            (0..117).map(|index| ((index * 61 + 17) & 255) as u8).collect(),
+        )
+        .unwrap();
+        let input = parent.view().subview(ImageRegion::new(2, 1, 9, 7)).unwrap();
+        let element =
+            StructuringElement::try_new_with_anchor(MorphologyShape::Rect, 4, 6, 1, 4).unwrap();
+        let mut workspace = RectMorphologyWorkspace::new();
+        let mut output = vec![0; input.width() * input.height()];
+
+        for operation in [
+            MorphologyOperation::Open,
+            MorphologyOperation::Close,
+            MorphologyOperation::Gradient,
+            MorphologyOperation::TopHat,
+            MorphologyOperation::BlackHat,
+        ] {
+            morphology_rect_u8_into(
+                input,
+                operation,
+                &element,
+                2,
+                BorderMode::Reflect101,
+                &mut output,
+                &mut workspace,
+            )
+            .unwrap();
+            assert_eq!(
+                output,
+                morphology_rect_u8(input, operation, &element, 2, BorderMode::Reflect101,)
+                    .unwrap()
+                    .into_vec()
+            );
+        }
+    }
+
+    #[test]
+    fn rectangular_workspace_reuses_full_image_and_worker_capacity() {
+        let image = Image::<u8, 1>::try_new(
+            1000,
+            1000,
+            (0..1_000_000).map(|index| ((index * 29 + index / 1000) & 255) as u8).collect(),
+        )
+        .unwrap();
+        let element = StructuringElement::try_new(MorphologyShape::Rect, 5, 5).unwrap();
+        let mut workspace = RectMorphologyWorkspace::new();
+        let mut output = vec![0; 1_000_000];
+        morphology_rect_u8_into(
+            image.view(),
+            MorphologyOperation::Open,
+            &element,
+            1,
+            BorderMode::Replicate,
+            &mut output,
+            &mut workspace,
+        )
+        .unwrap();
+        let capacity = workspace.capacity();
+        let workers = workspace.worker_capacity();
+        let line_capacity = workspace.line_capacity();
+        assert!(capacity >= output.len());
+        assert!(workers >= 1);
+        assert!(line_capacity >= 1004);
+
+        morphology_rect_u8_into(
+            image.view(),
+            MorphologyOperation::Close,
+            &element,
+            1,
+            BorderMode::Replicate,
+            &mut output,
+            &mut workspace,
+        )
+        .unwrap();
+        assert_eq!(workspace.capacity(), capacity);
+        assert_eq!(workspace.worker_capacity(), workers);
+        assert_eq!(workspace.line_capacity(), line_capacity);
+    }
+
+    #[test]
+    fn rectangular_into_validates_output_length() {
+        let image = Image::<u8, 1>::from_pixel(4, 3, [9]).unwrap();
+        let element = StructuringElement::try_new(MorphologyShape::Rect, 3, 3).unwrap();
+        let mut workspace = RectMorphologyWorkspace::new();
+        assert!(morphology_rect_u8_into(
+            image.view(),
+            MorphologyOperation::Open,
+            &element,
+            1,
+            BorderMode::Replicate,
+            &mut [0; 11],
+            &mut workspace,
+        )
+        .is_err());
     }
 }

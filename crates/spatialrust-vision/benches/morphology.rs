@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use spatialrust_image::Image;
 use spatialrust_vision::{
-    morphology_ex, morphology_rect_u8, BorderMode, MorphologyOperation, MorphologyShape,
-    StructuringElement,
+    morphology_ex, morphology_rect_u8, morphology_rect_u8_into, BorderMode, MorphologyOperation,
+    MorphologyShape, RectMorphologyWorkspace, StructuringElement,
 };
 
 fn benchmark_morphology(c: &mut Criterion) {
@@ -41,7 +41,7 @@ fn benchmark_morphology(c: &mut Criterion) {
                 .collect();
             let image = Image::<u8, 1>::try_new(width, height, pixels).unwrap();
             group.throughput(Throughput::Elements((width * height) as u64));
-            group.bench_with_input(BenchmarkId::from_parameter(name), &image, |b, image| {
+            group.bench_with_input(BenchmarkId::new("allocate", name), &image, |b, image| {
                 b.iter(|| {
                     morphology_rect_u8(
                         black_box(image.view()),
@@ -51,6 +51,33 @@ fn benchmark_morphology(c: &mut Criterion) {
                         BorderMode::Replicate,
                     )
                     .unwrap()
+                });
+            });
+            let mut output = vec![0; width * height];
+            let mut workspace = RectMorphologyWorkspace::new();
+            morphology_rect_u8_into(
+                image.view(),
+                MorphologyOperation::Open,
+                &element,
+                1,
+                BorderMode::Replicate,
+                &mut output,
+                &mut workspace,
+            )
+            .unwrap();
+            group.bench_with_input(BenchmarkId::new("reuse", name), &image, |b, image| {
+                b.iter(|| {
+                    morphology_rect_u8_into(
+                        black_box(image.view()),
+                        MorphologyOperation::Open,
+                        &element,
+                        1,
+                        BorderMode::Replicate,
+                        &mut output,
+                        &mut workspace,
+                    )
+                    .unwrap();
+                    black_box(&output);
                 });
             });
         }

@@ -28,18 +28,19 @@
     <section>
       <h2>CPU dispatch</h2>
       <p>Packed grayscale <code>u8</code> rectangles use two separable one-dimensional min/max passes. Each line is split into prefix/suffix blocks, so work is linear in image size plus border padding rather than image size times rectangle area. Large images use bounded Rayon row/column stages; transpose buffers keep the column pass cache-friendly.</p>
+      <p><a href="spatialrust_vision/struct.RectMorphologyWorkspace.html"><code>RectMorphologyWorkspace</code></a> retains every full-image plane and one line-buffer set per worker. The <code>*_into</code> APIs write to caller-owned output. Python exposes the same contract as <code>MorphologyWorkspace</code> plus <code>out=</code>; overlapping input/output is rejected instead of silently copying.</p>
       <p>Cross, ellipse, diamond, custom masks, other component types, channels, and strided views retain the safe generic implementation. Public CPU calls never upload to a GPU. Device morphology is a separate explicit <a href="spatialrust_gpu/index.html">wgpu API</a>.</p>
     </section>
 
     <section>
       <h2>Accuracy and speed boundary</h2>
-      <p>The OpenCV 4.13 comparison uses random packed <code>uint8</code>, replicated borders, allocated Python outputs, OpenCL off, and paired interleaved calls. All published timings first require bit-exact output; 980 additional randomized operation cases also pass.</p>
+      <p>The OpenCV 4.13 comparison uses random packed <code>uint8</code>, replicated borders, allocated and caller-owned Python outputs, OpenCL off, and paired interleaved calls. All published timings first require bit-exact output; 980 additional randomized operation cases also pass.</p>
       <div class="grid">
-        <article class="card"><div class="metric">2.46×</div><p>SpatialRust lead for 1080p 511×511 opening on the recorded 12-thread Windows host.</p></article>
-        <article class="card"><div class="metric">2.06×</div><p>SpatialRust lead for 4K 511×511 opening on the same host.</p></article>
+        <article class="card"><div class="metric">3.25×</div><p>SpatialRust lead for 1080p 511×511 opening with caller-owned outputs on the recorded 12-thread Windows host.</p></article>
+        <article class="card"><div class="metric">2.77×</div><p>SpatialRust lead for 4K 511×511 opening with caller-owned outputs on the same host.</p></article>
         <article class="card"><div class="metric">small kernels</div><p>OpenCV still leads 5×5. The result is a large-window crossover, not a blanket morphology claim.</p></article>
       </div>
-      <p>Reproduce with the <a href="https://github.com/rsasaki0109/SpatialRust/tree/main/bench/opencv_morphology_comparison">focused harness</a> and inspect the <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/notes/2026-07-15_rectangular_morphology_acceleration.md">dated receipt</a>.</p>
+      <p>Reproduce with the <a href="https://github.com/rsasaki0109/SpatialRust/tree/main/bench/opencv_morphology_comparison">focused harness</a> and inspect the <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/notes/2026-07-16_morphology_workspace_reuse.md">workspace receipt</a>.</p>
     </section>
 
     <section>
