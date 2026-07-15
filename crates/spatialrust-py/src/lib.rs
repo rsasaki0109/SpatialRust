@@ -75,31 +75,32 @@ use spatialrust::vision::{
     clahe as clahe_op, connected_components_u8 as label_components_u8,
     decode_rle as decode_mask_runs, detect_and_describe_orb as detect_and_describe_orb_op,
     detect_fast as detect_fast_op, detect_harris as detect_harris_op,
-    detect_shi_tomasi as detect_shi_tomasi_op,
+    detect_shi_tomasi as detect_shi_tomasi_op, dilate_rect_u8 as dilate_rect_u8_op,
     distance_transform_edt_u8_into as distance_transform_edt_u8_into_op,
     distance_transform_edt_with_spacing as distance_transform_edt_op,
     encode_rle as encode_mask_runs, equalize_histogram as equalize_histogram_op,
-    estimate_homography_ransac as estimate_homography_ransac_op,
+    erode_rect_u8 as erode_rect_u8_op, estimate_homography_ransac as estimate_homography_ransac_op,
     estimate_rgbd_odometry as estimate_rgbd_odometry_op, filter2d as filter2d_op,
     find_contours as trace_contours, gaussian_blur as gaussian_blur_op,
     gray_world_white_balance as gray_world_white_balance_op, histogram_u8 as histogram_u8_op,
     integral_image as integral_image_op, laplacian as laplacian_op, letterbox as letterbox_op,
     match_descriptors as match_descriptors_op, median_blur as median_blur_op,
-    morphology_ex as morphology_ex_op, nms as nms_op, otsu_threshold_u8 as otsu_threshold_u8_op,
-    pack_chw as pack_chw_op, pack_chw_into as pack_chw_into_op,
-    point_map_to_point_cloud as point_map_to_cloud, pyr_down as pyr_down_op, pyr_up as pyr_up_op,
-    remap as remap_op, resize as resize_op, resize_into as resize_into_op,
-    rgb_to_gray as rgb_to_gray_op, rgb_to_gray_into as rgb_to_gray_into_op,
-    rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op, sobel as sobel_op, soft_nms as soft_nms_op,
-    solve_pnp as solve_pnp_op, stereo_block_match as stereo_block_match_op,
-    stitch_panorama_pair as stitch_panorama_pair_op, threshold as threshold_op, AbsolutePose,
-    AdaptiveThresholdMethod, BinaryMask, BorderMode, BoundingBox2, CameraMatrix3, CannyOptions,
-    ConfidenceMap, Connectivity, CornerSelectionOptions, DescriptorBuffer, Detection,
-    DistanceTransformWorkspace, FastOptions, HarrisOptions, Interpolation, Kernel2D, Keypoint2,
-    MaskRle, MatchOptions, MorphologyOperation, MorphologyShape, ObjectImageCorrespondence,
-    OrbOptions, OrbScoreType, PanoramaOptions, PerspectiveTransform, PointCorrespondence2,
-    PointMap, RgbdOdometryOptions, RleOrder, RobustEstimationOptions, ShiTomasiOptions,
-    SoftNmsMethod, StereoBmOptions, StructuringElement, ThresholdType,
+    morphology_ex as morphology_ex_op, morphology_rect_u8 as morphology_rect_u8_op, nms as nms_op,
+    otsu_threshold_u8 as otsu_threshold_u8_op, pack_chw as pack_chw_op,
+    pack_chw_into as pack_chw_into_op, point_map_to_point_cloud as point_map_to_cloud,
+    pyr_down as pyr_down_op, pyr_up as pyr_up_op, remap as remap_op, resize as resize_op,
+    resize_into as resize_into_op, rgb_to_gray as rgb_to_gray_op,
+    rgb_to_gray_into as rgb_to_gray_into_op, rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op,
+    sobel as sobel_op, soft_nms as soft_nms_op, solve_pnp as solve_pnp_op,
+    stereo_block_match as stereo_block_match_op, stitch_panorama_pair as stitch_panorama_pair_op,
+    threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BinaryMask, BorderMode,
+    BoundingBox2, CameraMatrix3, CannyOptions, ConfidenceMap, Connectivity, CornerSelectionOptions,
+    DescriptorBuffer, Detection, DistanceTransformWorkspace, FastOptions, HarrisOptions,
+    Interpolation, Kernel2D, Keypoint2, MaskRle, MatchOptions, MorphologyOperation,
+    MorphologyShape, ObjectImageCorrespondence, OrbOptions, OrbScoreType, PanoramaOptions,
+    PerspectiveTransform, PointCorrespondence2, PointMap, RgbdOdometryOptions, RleOrder,
+    RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement,
+    ThresholdType,
 };
 use spatialrust::vision::{dense_flow_block_match as dense_flow_native, DenseFlowOptions};
 use spatialrust::voxelize::{
@@ -702,6 +703,24 @@ fn gray_u8_image_from_numpy(array: PyReadonlyArray2<'_, u8>) -> PyResult<Image<u
     let view = array.as_array();
     let shape = view.shape();
     Image::try_new(shape[1], shape[0], view.iter().copied().collect()).map_err(to_py_err)
+}
+
+fn gray_u8_image_view_from_numpy<'a, 'py>(
+    array: &'a PyReadonlyArray2<'py, u8>,
+    packed: &'a mut Vec<u8>,
+) -> PyResult<ImageView<'a, u8, 1>> {
+    let shape = array.shape();
+    if shape.len() != 2 {
+        return Err(PyValueError::new_err("expected an (H, W) uint8 grayscale array"));
+    }
+    let (height, width) = (shape[0], shape[1]);
+    let data = if let Ok(slice) = array.as_slice() {
+        slice
+    } else {
+        packed.extend(array.as_array().iter().copied());
+        packed.as_slice()
+    };
+    ImageView::new(width, height, width, data).map_err(to_py_err)
 }
 
 /// Fits pinhole intrinsics from known camera-space points and image pixels.
@@ -2201,7 +2220,8 @@ fn morphology_image<'py>(
     shape: &str,
     iterations: usize,
 ) -> PyResult<Bound<'py, PyArray2<u8>>> {
-    let image = gray_u8_image_from_numpy(image)?;
+    let mut packed = Vec::new();
+    let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
     let shape = match shape.to_ascii_lowercase().as_str() {
         "rect" | "rectangle" => MorphologyShape::Rect,
         "cross" => MorphologyShape::Cross,
@@ -2216,43 +2236,77 @@ fn morphology_image<'py>(
     let element =
         StructuringElement::try_new(shape, kernel_width, kernel_height).map_err(to_py_err)?;
     let operation = operation.to_ascii_lowercase();
+    let rect = shape == MorphologyShape::Rect;
     let output = match operation.as_str() {
-        "erode" => {
-            spatialrust::vision::erode(image.view(), &element, iterations, BorderMode::Replicate)
-        }
-        "dilate" => {
-            spatialrust::vision::dilate(image.view(), &element, iterations, BorderMode::Replicate)
-        }
+        "erode" if rect => erode_rect_u8_op(image, &element, iterations, BorderMode::Replicate),
+        "dilate" if rect => dilate_rect_u8_op(image, &element, iterations, BorderMode::Replicate),
+        "erode" => spatialrust::vision::erode(image, &element, iterations, BorderMode::Replicate),
+        "dilate" => spatialrust::vision::dilate(image, &element, iterations, BorderMode::Replicate),
+        "open" if rect => morphology_rect_u8_op(
+            image,
+            MorphologyOperation::Open,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        "close" if rect => morphology_rect_u8_op(
+            image,
+            MorphologyOperation::Close,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        "gradient" if rect => morphology_rect_u8_op(
+            image,
+            MorphologyOperation::Gradient,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        "tophat" | "top-hat" if rect => morphology_rect_u8_op(
+            image,
+            MorphologyOperation::TopHat,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
+        "blackhat" | "black-hat" if rect => morphology_rect_u8_op(
+            image,
+            MorphologyOperation::BlackHat,
+            &element,
+            iterations,
+            BorderMode::Replicate,
+        ),
         "open" => morphology_ex_op(
-            image.view(),
+            image,
             MorphologyOperation::Open,
             &element,
             iterations,
             BorderMode::Replicate,
         ),
         "close" => morphology_ex_op(
-            image.view(),
+            image,
             MorphologyOperation::Close,
             &element,
             iterations,
             BorderMode::Replicate,
         ),
         "gradient" => morphology_ex_op(
-            image.view(),
+            image,
             MorphologyOperation::Gradient,
             &element,
             iterations,
             BorderMode::Replicate,
         ),
         "tophat" | "top-hat" => morphology_ex_op(
-            image.view(),
+            image,
             MorphologyOperation::TopHat,
             &element,
             iterations,
             BorderMode::Replicate,
         ),
         "blackhat" | "black-hat" => morphology_ex_op(
-            image.view(),
+            image,
             MorphologyOperation::BlackHat,
             &element,
             iterations,
