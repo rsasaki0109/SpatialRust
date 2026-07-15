@@ -21,7 +21,7 @@ after the GPU-resident frame work recorded through Epic 82.
 | 86 | Complete | 85 | `spatialrust-ai`, backend traits, ONNX Runtime CPU and explicit I/O binding |
 | 87 | Complete | 84 | Feature2D data model, corners, FAST/ORB, descriptors and matching |
 | 88 | Complete | 84, 87 | Camera geometry, robust multiview estimation, motion and stereo |
-| 89 | Planned | 84–85 | Explicit `GpuImage` upload/readback and chainable wgpu vision kernels |
+| 89 | Complete | 84–85 | Explicit `GpuImage` upload/readback and chainable wgpu vision kernels |
 | 90 | Planned | 86, 88–89 | Model adapters and image → AI → point-cloud end-to-end pipelines |
 
 Dependency flow:
@@ -213,3 +213,22 @@ caller-owned maps for explicit `warp::remap`; disparity reprojects to packed
 Essential/pose and StereoBM comparisons document residual and disparity tolerances
 rather than claiming bit-identical OpenCV matrices. Scalar CPU is the correctness
 baseline; Epic 89 may accelerate kernels without changing host/device semantics.
+
+## Epic 89 delivery slices
+
+GPU images live in `spatialrust-gpu` behind `gpu-image`. CPU `spatialrust-vision`
+remains the numerical baseline. Kernel APIs take and return `GpuImage` and never
+imply host transfers; only named upload/readback move bytes across the host/device
+boundary. Storage is packed interleaved `u8` expanded to one `u32` value per
+component for WGSL clarity (texture path is deferred).
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 89A | Complete | `GpuImage` ownership, packed/`ImageView` upload with named stride packing, explicit readback, receipt bytes, recycle, cross-runtime rejection | `gpu-image` |
+| 89B | Complete | Device-resident `copy_gpu_image` chain with mid-chain `device_to_host_bytes == 0` | `gpu-image` |
+| 89C | Complete | `rgb_to_gray_gpu` (BT.601 fixed-point) and gray `box_blur_gpu` with clamp/replicate borders | `gpu-image` |
+| 89D | Complete | Facade `gpu-image` flag, headless CPU comparison tests, Criterion upload/chain bench, CHANGELOG and notes | `gpu-image` |
+
+Epic 89 completes when `upload → gray → box_blur → readback` records a single H2D
+and a single D2H, feature-alone builds succeed without `gpu-aoso-staging`, and
+CPU reference residuals stay within documented tolerances.

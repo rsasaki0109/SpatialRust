@@ -61,9 +61,10 @@ until their individual 1.0 milestones.
 | HTTP COPC (`mvp-http`) | URL IO is stable; timeout/retry policy may change |
 | Image/camera (`image`, `camera-rgbd`) | Typed image, calibration, distortion, and RGB-D APIs are provisional |
 | Image IO (`image-io-*`) | Bounded codecs, typed decoded pixels, and source metadata are provisional |
-| Vision (`vision-*`) | CPU preprocessing, Feature2D contracts/detectors/matchers, warp, detection, masks, and dense spatial bridges are provisional |
+| Vision (`vision-*`) | CPU preprocessing, Feature2D contracts/detectors/matchers, warp, detection, masks, dense spatial bridges, and geometry/multiview are provisional |
 | Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
 | AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, and ONNX Runtime adapter APIs are provisional |
+| GPU image (`gpu-image`) | `GpuImage` upload/readback, receipts, and image compute kernels are provisional |
 
 ## Algorithm crates
 
@@ -87,7 +88,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-features` | Provisional | Normal GPU path still tuning |
 | `spatialrust-segmentation` | Provisional | RANSAC configs may extend; **GPU plane scoring** behind `segment-ransac-plane-gpu` |
 | `spatialrust-registration` | Provisional | New backends (TEASER++, etc.) expected |
-| `spatialrust-gpu` | Provisional | `WgpuRuntime`, `GpuBufferPool` upload/recycle API stable; kernel APIs still tuning |
+| `spatialrust-gpu` | Provisional | `WgpuRuntime`, `GpuBufferPool`; `GpuImage` / image kernels behind `gpu-image`; voxel/AoSoA kernel APIs still tuning |
 | `spatialrust-py` | Stable user surface | Stubs enforced by `mypy.stubtest`; new vision functions remain provisional with the Rust APIs |
 
 ## Explicitly out of 1.0 scope

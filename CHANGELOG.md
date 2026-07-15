@@ -96,6 +96,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   matching, and disparity-to-depth/XYZ reproject; Python bindings; OpenCV
   comparison with documented tolerances; property tests; and Criterion coverage.
 
+- **Explicit GpuImage and chainable wgpu vision (Epic 89)**: `spatialrust-gpu`
+  `gpu-image` feature adds `GpuImage` ownership with packed/`ImageView` upload,
+  named stride packing, explicit readback, transfer receipts, and buffer
+  recycle; device-resident `copy_gpu_image`; BT.601 `rgb_to_gray_gpu`; gray
+  `box_blur_gpu` with replicate/constant-zero borders; facade `gpu-image` flag;
+  headless chain tests that keep mid-pipeline `device_to_host_bytes == 0`; and
+  640p/1080p/4K Criterion coverage. Texture-backed storage remains deferred.
+
 - **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
   planar/interleaved layouts and color metadata in `spatialrust-image`; new
   feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,

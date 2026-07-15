@@ -29,6 +29,9 @@ mod aoso_staging;
 #[cfg(feature = "gpu-aoso-staging")]
 mod gpu_frame;
 
+#[cfg(feature = "gpu-image")]
+mod image;
+
 pub use buffer::DeviceBuffer;
 pub use device::{GpuDevice, WgpuDevice};
 
@@ -71,4 +74,9 @@ pub use aoso_staging::{
 #[cfg(feature = "gpu-aoso-staging")]
 pub use gpu_frame::{
     run_aoso_voxel_normal_frame, GpuExecutionReceipt, GpuFrameCapability, GpuSpatialFrame,
+};
+
+#[cfg(feature = "gpu-image")]
+pub use image::{
+    box_blur_gpu, copy_gpu_image, rgb_to_gray_gpu, GpuImage, GpuImageBorder, GpuImageReceipt,
 };
