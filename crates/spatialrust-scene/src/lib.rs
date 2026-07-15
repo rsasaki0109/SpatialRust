@@ -4,6 +4,7 @@
 #![warn(missing_docs)]
 
 mod error;
+mod marching_cubes;
 mod mesh;
 mod surfel;
 mod tsdf;

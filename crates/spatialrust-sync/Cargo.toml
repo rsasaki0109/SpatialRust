@@ -10,13 +10,15 @@ description = "Sensor time, frame graphs, and deterministic multimodal replay fo
 
 [features]
 default = []
-# File-backed MCAP stays optional; default builds use in-memory episodes only.
-mcap = []
+# File-backed MCAP uses the Foxglove `mcap` crate (no zstd/lz4 by default).
+mcap = ["dep:mcap"]
 
 [dependencies]
 spatialrust-core.workspace = true
 spatialrust-math.workspace = true
 spatialrust-records.workspace = true
 thiserror.workspace = true
+mcap = { version = "0.25", optional = true, default-features = false }
 
 [dev-dependencies]
+tempfile.workspace = true

@@ -272,8 +272,9 @@ pulling Arrow into `spatialrust-core`.
 ## Epic 92–100 delivery slices (activated)
 
 Epics 92–100 have concrete crates and facade flags. Heavy native runtimes
-(full MCAP codecs, rclrs, OpenUSD/Hydra, Gaussian renderers) remain optional
-follow-ons behind existing feature gates.
+(rclrs, OpenUSD/Hydra, Gaussian renderers) remain optional follow-ons behind
+existing feature gates. File MCAP XYZ codecs and TSDF marching tetrahedra
+extraction are available behind `sync-mcap` / default `scene`.
 
 | Epic | Status | Delivered substrate |
 | --- | --- | --- |
@@ -290,19 +291,19 @@ follow-ons behind existing feature gates.
 ## Epic 92 delivery slices
 
 Sensor time and frame graphs live in `spatialrust-sync`. Default builds use
-in-memory episodes; the `mcap` feature is reserved for file codecs without
-adding a heavy archive dependency to the workspace default.
+in-memory episodes; enable `mcap` / facade `sync-mcap` for XYZ stamped-record
+file codecs via the Foxglove `mcap` crate (no compression codecs by default).
 
 | Slice | Status | Scope | Feature |
 | --- | --- | --- | --- |
 | 92A | Complete | `ClockId`/`ClockDomain`, `SyncQuality`, `StampedTime` | `sync` |
 | 92B | Complete | `FrameGraph` / `FrameEdge` with inverse-aware lookup | `sync` |
-| 92C | Complete | Topic channels + `MemoryEpisode` index; `mcap` feature gate reserved | `sync`, `sync-mcap` |
+| 92C | Complete | Topic channels + `MemoryEpisode` index; file MCAP XYZ round-trip | `sync`, `sync-mcap` |
 | 92D | Complete | `DeterministicReplayer` with nearest-topic bundling | `sync` |
 
 Epic 92 completes when stamped multimodal records can be indexed deterministically,
-bundled within a sync window, and transformed across a calibrated frame graph
-without enabling file MCAP codecs.
+bundled within a sync window, and transformed across a calibrated frame graph.
+Optional `sync-mcap` write/read path covers XYZ-only stamped clouds today.
 
 ## Epic 93 delivery slices
 
