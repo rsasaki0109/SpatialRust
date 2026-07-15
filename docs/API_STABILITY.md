@@ -96,11 +96,11 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-arrow` | Provisional | Arrow C Data/Stream/Device adapters; optional features only |
 | `spatialrust-sync` | Provisional | Sensor clocks, frame graphs, stamped records, deterministic replay; MCAP file codecs gated |
 | `spatialrust-mapping` | Provisional | Trajectories, synthetic odometry traits, pose graphs, loop-closure candidates |
-| `spatialrust-scene` | Provisional | TSDF, surfels, meshes; Gaussian containers behind `gaussian` |
+| `spatialrust-scene` | Provisional | TSDF, surfels, meshes; Gaussian containers + CPU soft-splat behind `gaussian` |
 | `spatialrust-semantic` | Provisional | Embeddings, entities, multimodal fusion/search |
 | `spatialrust-episode` | Provisional | Episode schema, annotation, augmentation, eval, provenance |
 | `spatialrust-runtime` | Provisional | Bounded pipelines/tracing/diagnostics; ROS 2 adapters gated |
-| `spatialrust-interchange` | Provisional | glTF JSON mesh bridge; in-memory OpenUSD stage adapter |
+| `spatialrust-interchange` | Provisional | glTF JSON mesh bridge; USDA ASCII OpenUSD stage adapter |
 | `spatialrust-distribute` | Provisional | Partition graph, backpressure, named transfers |
 | `spatialrust-platform` | Provisional | Stability registry, conformance, security checklist, LTS policy |
 | `spatialrust-camera` | Provisional | Pinhole/Brown–Conrady and RGB-D conversion |

@@ -1,4 +1,6 @@
 //! TSDF volumes, surfaces, triangle meshes, and optional Gaussian scenes.
+//!
+//! Enable `gaussian` for anisotropic primitives and a CPU soft-splat renderer.
 
 #![deny(unsafe_code)]
 #![warn(missing_docs)]
@@ -18,4 +20,6 @@ pub use surfel::{Surfel, SurfelCloud};
 pub use tsdf::TsdfVolume;
 
 #[cfg(feature = "gaussian")]
-pub use gaussian::{GaussianPrimitive, GaussianScene};
+pub use gaussian::{
+    render_gaussians_cpu, GaussianCamera, GaussianFramebuffer, GaussianPrimitive, GaussianScene,
+};

@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **ROS 2 / OpenUSD / Gaussian deepen**: `runtime-ros2` adds CDR LE
+  `PointCloud2` XYZ codecs and an in-process loopback node (no `rclrs` link);
+  `interchange-openusd` exports/imports USDA ASCII mesh stages; `scene-gaussian`
+  adds a CPU soft-splat renderer over `GaussianScene`.
+
 - **MCAP episode IO + TSDF meshing deepen**: `spatialrust-sync` `mcap` /
   facade `sync-mcap` writes and reads XYZ stamped records to MCAP files;
   `TsdfVolume::extract_mesh` uses truncation-band integration and marching
