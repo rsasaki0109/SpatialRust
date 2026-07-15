@@ -636,10 +636,10 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
-| 116A | Planned | Reuse separable-filter intermediates and cache validated Gaussian kernels | allocation and cache tests |
-| 116B | Planned | Split border handling from contiguous interior loops | all border-mode property tests |
-| 116C | In progress | Specialized 3x3/5x5/7x7 Gaussian and paired Sobel X/Y passes | exact 3×3 paired gradients and fused L1 complete; Gaussian and 5×5/7×7 remain |
-| 116D | Planned | Improve Gaussian by at least 10x and Sobel by at least 5x on one canonical large profile | native timing receipt |
+| 116A | Complete | Reuse separable-filter intermediates and cache validated Gaussian kernels | workspace capacity and output-reuse tests |
+| 116B | Complete | Split border handling from contiguous interior loops | five Gaussian border modes plus strided-view tests |
+| 116C | In progress | Specialized 3x3/5x5/7x7 Gaussian and paired Sobel X/Y passes | exact paired Sobel and accelerated Q8 3×3/5×5 Gaussian complete; high-precision 7×7 fallback remains |
+| 116D | Complete | Improve Gaussian by at least 10x and Sobel by at least 5x on one canonical large profile | 5×5 Gaussian 20.7× at 1080p and 26.7× at 4K; dated native timing receipt |
 
 ### Epic 117 delivery slices
 

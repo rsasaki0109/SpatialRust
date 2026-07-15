@@ -1,8 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use spatialrust_image::Image;
 use spatialrust_vision::{
-    bilateral_filter, gaussian_blur, median_blur, pyr_down, sobel, sobel_l1_magnitude_u8,
-    sobel_l1_magnitude_u8_into, spatial_gradient_u8, BorderMode,
+    bilateral_filter, gaussian_blur, gaussian_blur_u8, gaussian_blur_u8_into, median_blur,
+    pyr_down, sobel, sobel_l1_magnitude_u8, sobel_l1_magnitude_u8_into, spatial_gradient_u8,
+    BorderMode, GaussianBlurU8Workspace,
 };
 
 fn benchmark_gaussian(c: &mut Criterion) {
@@ -10,11 +11,45 @@ fn benchmark_gaussian(c: &mut Criterion) {
     group.sample_size(10);
     for &(name, width, height) in &[("640p", 640, 480), ("1080p", 1920, 1080), ("4k", 3840, 2160)] {
         let image = Image::<u8, 3>::try_new(width, height, vec![127; width * height * 3]).unwrap();
+        let mut output = vec![0_u8; width * height * 3];
+        let mut workspace = GaussianBlurU8Workspace::new();
         group.throughput(Throughput::Elements((width * height) as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(name), &image, |b, image| {
+        group.bench_with_input(BenchmarkId::new("legacy_allocate", name), &image, |b, image| {
             b.iter(|| {
                 gaussian_blur(black_box(image.view()), 5, 5, 1.2, 1.2, BorderMode::Reflect101)
                     .unwrap()
+            });
+        });
+        group.bench_with_input(
+            BenchmarkId::new("specialized_allocate", name),
+            &image,
+            |b, image| {
+                b.iter(|| {
+                    gaussian_blur_u8(
+                        black_box(image.view()),
+                        5,
+                        5,
+                        1.2,
+                        1.2,
+                        BorderMode::Reflect101,
+                    )
+                    .unwrap()
+                });
+            },
+        );
+        group.bench_with_input(BenchmarkId::new("specialized_reuse", name), &image, |b, image| {
+            b.iter(|| {
+                gaussian_blur_u8_into(
+                    black_box(image.view()),
+                    5,
+                    5,
+                    1.2,
+                    1.2,
+                    BorderMode::Reflect101,
+                    black_box(&mut output),
+                    black_box(&mut workspace),
+                )
+                .unwrap()
             });
         });
     }
