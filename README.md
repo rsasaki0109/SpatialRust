@@ -129,7 +129,7 @@ Record CPU, Open3D version, Python version, and thread settings before publishin
 
 ### vs OpenCV
 
-SpatialRust is **not** “OpenCV rewritten in Rust.” OpenCV remains a strong tuned image kernel library; we use it as a **correctness oracle** ([vision harness](bench/opencv_vision_comparison/), [RGB-D harness](bench/opencv_rgbd_comparison/)), not as a production dependency. Where SpatialRust is ahead for spatial pipelines:
+SpatialRust is **not** “OpenCV rewritten in Rust.” OpenCV remains a strong tuned image kernel library; we use it as a **correctness oracle** ([vision harness](bench/opencv_vision_comparison/), [RGB-D harness](bench/opencv_rgbd_comparison/)), not as a production dependency. SpatialRust instead focuses on an explicit, Rust-native spatial pipeline:
 
 | | OpenCV-centered stack | SpatialRust |
 | --- | --- | --- |
@@ -141,12 +141,57 @@ SpatialRust is **not** “OpenCV rewritten in Rust.” OpenCV remains a strong t
 | Reproducible ORB | Private learned BRIEF table | **Documented fixed-seed BRIEF** with interoperable Hamming distances |
 | 3D / robotics surface | Not the primary product | **COPC bounds+LOD, MVP cloud pipeline, TSDF/USDA/Gaussian, ReleaseGate** |
 
-Correctness, not speed theater: the OpenCV vision harness checks filters, morphology, analysis, Canny, keypoints, matching, and geometry against OpenCV with documented tolerances (exact pixels where we claim parity; residual/translation/disparity tolerances where OpenCV’s private contracts differ). RGB-D unprojection tracks `cv.rgbd.depthTo3d` to ~`1e-5` m.
+#### CPU vision speed
+
+Seeded, interleaved Python API timings on one Windows 11 host (OpenCV 4.10,
+12 threads, OpenCL off; CPython 3.12; three warmups; VGA/1080p/4K use
+20/8/3 samples). Each cell names the faster implementation and median-latency
+ratio; these are machine-specific measurements, not universal guarantees.
+
+| Workload | VGA | 1080p | 4K |
+| --- | ---: | ---: | ---: |
+| AI CHW preprocess, allocate | **SpatialRust 4.52×** | **SpatialRust 7.19×** | **SpatialRust 10.51×** |
+| AI CHW preprocess, reuse vs OpenCV allocate | **SpatialRust 8.54×** | **SpatialRust 11.46×** | **SpatialRust 17.13×** |
+| Bilinear resize, allocate | OpenCV 28.3× | OpenCV 61.0× | OpenCV 62.8× |
+| Bilinear resize, reuse | OpenCV 28.6× | OpenCV 110.8× | OpenCV 124.0× |
+| RGB to gray, allocate | OpenCV 11.9× | OpenCV 8.8× | OpenCV 12.8× |
+| RGB to gray, reuse | OpenCV 6.4× | OpenCV 12.5× | OpenCV 8.6× |
+| Gaussian blur 5×5 | OpenCV 125.1× | OpenCV 121.6× | OpenCV 177.8× |
+| Sobel X 3×3 | OpenCV 36.6× | OpenCV 35.6× | OpenCV 38.6× |
+| Morphology open 5×5 | OpenCV 909.0× | OpenCV 1,027.2× | OpenCV 1,082.8× |
+| Canny | OpenCV 13.0× | OpenCV 14.5× | OpenCV 15.3× |
+
+The current CPU result is deliberately mixed: SpatialRust's fused typed CHW
+path wins, while OpenCV's tuned general-purpose image kernels lead the present
+SpatialRust scalar paths. Full medians, p95, dispersion, throughput, and raw
+samples are produced by the [performance harness](bench/opencv_vision_comparison/performance.py);
+the dated [Epic 111 receipt](notes/2026-07-15_epic111_opencv_comparison_v2.md)
+records the exact environment and methodology.
+
+#### Vision accuracy
+
+The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
+
+| Workload | OpenCV comparison result at VGA / 1080p / 4K |
+| --- | --- |
+| Bilinear resize | Exact pixels (max error 0) |
+| RGB to gray | Max error 1/255; MAE 0.1333 / 0.1333 / 0.1329 |
+| AI CHW preprocess | Max float error `5.96e-8` |
+| Gaussian blur 5×5 | Max error 1/255; 96.28% exact pixels |
+| Sobel X 3×3 | Exact values (max error 0) |
+| Morphology open 5×5 | Exact pixels (max error 0) |
+| Canny | Precision, recall, F1, and IoU all 1.0 |
+
+The broader correctness harness also checks filters, analysis, keypoints,
+matching, and geometry with documented tolerances (exact pixels where we claim
+parity; residual/translation/disparity tolerances where OpenCV's private
+contracts differ). RGB-D unprojection tracks `cv.rgbd.depthTo3d` to ~`1e-5` m.
 
 On dense `H×W×3` XYZ (320×240, OpenCL off, local Windows laptop), `spatialrust.depth_to_xyz` beats OpenCV `rgbd.depthTo3d` in the [RGB-D harness](bench/opencv_rgbd_comparison/) — about **1.4–1.5×** when both allocate, and about **2.1–2.2×** when both fill a reused buffer (`out=` / OpenCV `points3d`). Colored `rgbd_to_point_cloud` is about **20×** faster than OpenCV `depthTo3d` + NumPy mask/color gather. Re-run the harness before quoting numbers elsewhere; x86_64 builds use an audited AVX2 fill when available.
 
 ```powershell
 python bench\opencv_vision_comparison\run.py
+python bench\opencv_vision_comparison\performance.py
 python bench\opencv_rgbd_comparison\run.py
 ```
 
