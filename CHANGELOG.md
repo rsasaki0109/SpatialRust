@@ -135,6 +135,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   (`spatialrust-distribute`), and platform stability (`spatialrust-platform`);
   facade `north-star` enables the stack without native heavy codecs.
 
+- **North-star E2E demo**: facade feature `north-star-e2e` adds an integration
+  test and example covering RGB → mock depth → stamped episode → pose graph →
+  TSDF mesh → glTF JSON, plus semantic search, bounded runtime, partition graph,
+  and platform conformance markers.
+
 - **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
   planar/interleaved layouts and color metadata in `spatialrust-image`; new
   feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,

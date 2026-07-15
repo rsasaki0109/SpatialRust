@@ -336,3 +336,7 @@ pulling ROS 2 or MCAP file codecs.
 Facade convenience flag `north-star` enables the Epic 91–100 substrate stack
 without ONNX/ROS2/MCAP native codecs. Native OpenUSD, Gaussian renderers, and
 rclrs remain deferred behind future optional bindings.
+
+The integration feature `north-star-e2e` (`north-star` + `ai-vision-pipeline`)
+runs `crates/spatialrust/tests/north_star_pipeline.rs` and example
+`north_star_demo`: RGB → mock depth → episode → TSDF/mesh → glTF JSON.
