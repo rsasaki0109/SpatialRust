@@ -687,6 +687,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | Video E2E | Complete | Deterministic frame generation/loading → dense optical flow → object detection → native multi-object tracking in Rust and Python | 12 byte-identical PGM frames, 11 exact bidirectional flow checks, stable IDs 1/2, committed GIF |
+| Real-data E2E | Complete | Public PCL scan → PCD/COPC bounds+LOD/MVP and Python clean/cluster/register/refine; remote Autzen COPC bounds query | 460,400 local points, 889,058-point non-empty HTTP ROI, exact dataset hash and dated receipt |
 
 The improvement thresholds above compare against the checked Epic 112
 SpatialRust baseline on the same host; they are not claims against every OpenCV
