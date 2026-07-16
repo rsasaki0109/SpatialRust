@@ -1,5 +1,6 @@
 //! CPU mathematical morphology with explicit structuring elements and borders.
 
+use pulp::Arch;
 use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView};
 
@@ -261,6 +262,7 @@ pub struct RectMorphologyWorkspace {
     prefix: Vec<u8>,
     suffix: Vec<u8>,
     line_buffers: Vec<LineBuffers>,
+    centered_5x5_active: bool,
 }
 
 impl RectMorphologyWorkspace {
@@ -277,18 +279,20 @@ impl RectMorphologyWorkspace {
             prefix: Vec::new(),
             suffix: Vec::new(),
             line_buffers: Vec::new(),
+            centered_5x5_active: false,
         }
     }
 
-    /// Returns the largest pixel count reserved by every full-image plane.
+    /// Returns the largest pixel count reserved by every active full-image plane.
     #[must_use]
     pub fn capacity(&self) -> usize {
-        self.current
-            .capacity()
-            .min(self.horizontal.capacity())
-            .min(self.transposed.capacity())
-            .min(self.filtered.capacity())
-            .min(self.output.capacity())
+        let active =
+            self.current.capacity().min(self.horizontal.capacity()).min(self.output.capacity());
+        if self.centered_5x5_active {
+            active
+        } else {
+            active.min(self.transposed.capacity()).min(self.filtered.capacity())
+        }
     }
 
     /// Returns the number of reusable parallel line-buffer sets.
@@ -525,6 +529,16 @@ impl RectMorphologyWorkspace {
         extreme: Extreme,
     ) {
         let len = width * height;
+        self.centered_5x5_active = false;
+        if kernel_width == 5
+            && kernel_height == 5
+            && anchor_x == 2
+            && anchor_y == 2
+            && matches!(border, BorderMode::Replicate)
+        {
+            self.apply_centered_5x5(input, width, height, extreme);
+            return;
+        }
         if len >= 1_000_000 {
             self.apply_parallel(
                 input,
@@ -574,6 +588,80 @@ impl RectMorphologyWorkspace {
         }
         self.output.resize(len, 0);
         transpose_blocked(&self.filtered, &mut self.output, height, width);
+    }
+
+    fn apply_centered_5x5(&mut self, input: &[u8], width: usize, height: usize, extreme: Extreme) {
+        let len = width * height;
+        self.centered_5x5_active = true;
+        self.horizontal.resize(len, 0);
+        if len >= 1_000_000 {
+            let workers = rayon::current_num_threads().min(width.max(height)).max(1);
+            self.line_buffers.resize_with(workers, LineBuffers::default);
+            let line_len = width.max(height) + 4;
+            for buffers in &mut self.line_buffers {
+                buffers.padded.reserve(line_len.saturating_sub(buffers.padded.len()));
+                buffers.prefix.reserve(line_len.saturating_sub(buffers.prefix.len()));
+                buffers.suffix.reserve(line_len.saturating_sub(buffers.suffix.len()));
+            }
+        }
+        let arch = Arch::new();
+        if len >= 1_000_000 {
+            const ROWS_PER_TASK: usize = 8;
+            self.horizontal.par_chunks_mut(width * ROWS_PER_TASK).enumerate().for_each(
+                |(block, outputs)| {
+                    arch.dispatch(|| {
+                        for (row, output) in outputs.chunks_mut(width).enumerate() {
+                            let y = block * ROWS_PER_TASK + row;
+                            filter_centered_5_replicate(
+                                &input[y * width..(y + 1) * width],
+                                output,
+                                extreme,
+                            );
+                        }
+                    });
+                },
+            );
+        } else {
+            arch.dispatch(|| {
+                for (source, output) in input.chunks(width).zip(self.horizontal.chunks_mut(width)) {
+                    filter_centered_5_replicate(source, output, extreme);
+                }
+            });
+        }
+
+        self.output.resize(len, 0);
+        if len >= 1_000_000 {
+            const ROWS_PER_TASK: usize = 8;
+            self.output.par_chunks_mut(width * ROWS_PER_TASK).enumerate().for_each(
+                |(block, outputs)| {
+                    arch.dispatch(|| {
+                        for (row, output) in outputs.chunks_mut(width).enumerate() {
+                            filter_vertical_centered_5_replicate(
+                                &self.horizontal,
+                                width,
+                                height,
+                                block * ROWS_PER_TASK + row,
+                                output,
+                                extreme,
+                            );
+                        }
+                    });
+                },
+            );
+        } else {
+            arch.dispatch(|| {
+                for (y, output) in self.output.chunks_mut(width).enumerate() {
+                    filter_vertical_centered_5_replicate(
+                        &self.horizontal,
+                        width,
+                        height,
+                        y,
+                        output,
+                        extreme,
+                    );
+                }
+            });
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -651,6 +739,63 @@ impl RectMorphologyWorkspace {
                 *value = self.filtered[x * height + y];
             }
         });
+    }
+}
+
+fn filter_centered_5_replicate(input: &[u8], output: &mut [u8], extreme: Extreme) {
+    if input.len() < 5 {
+        for (x, value) in output.iter_mut().enumerate() {
+            let mut result = input[x.saturating_sub(2)];
+            for offset in 1..5 {
+                let source = (x + offset).saturating_sub(2).min(input.len() - 1);
+                result = extreme_u8(result, input[source], extreme);
+            }
+            *value = result;
+        }
+        return;
+    }
+    output[0] = extreme_u8(extreme_u8(input[0], input[1], extreme), input[2], extreme);
+    output[1] = extreme_u8(
+        extreme_u8(extreme_u8(input[0], input[1], extreme), input[2], extreme),
+        input[3],
+        extreme,
+    );
+    for x in 2..input.len() - 2 {
+        let left = extreme_u8(input[x - 2], input[x - 1], extreme);
+        let middle = extreme_u8(input[x], input[x + 1], extreme);
+        output[x] = extreme_u8(extreme_u8(left, middle, extreme), input[x + 2], extreme);
+    }
+    let last = input.len() - 1;
+    output[last - 1] = extreme_u8(
+        extreme_u8(extreme_u8(input[last - 3], input[last - 2], extreme), input[last - 1], extreme),
+        input[last],
+        extreme,
+    );
+    output[last] =
+        extreme_u8(extreme_u8(input[last - 2], input[last - 1], extreme), input[last], extreme);
+}
+
+fn filter_vertical_centered_5_replicate(
+    input: &[u8],
+    width: usize,
+    height: usize,
+    y: usize,
+    output: &mut [u8],
+    extreme: Extreme,
+) {
+    let y0 = y.saturating_sub(2);
+    let y1 = y.saturating_sub(1);
+    let y3 = (y + 1).min(height - 1);
+    let y4 = (y + 2).min(height - 1);
+    let row0 = &input[y0 * width..(y0 + 1) * width];
+    let row1 = &input[y1 * width..(y1 + 1) * width];
+    let row2 = &input[y * width..(y + 1) * width];
+    let row3 = &input[y3 * width..(y3 + 1) * width];
+    let row4 = &input[y4 * width..(y4 + 1) * width];
+    for x in 0..width {
+        let upper = extreme_u8(row0[x], row1[x], extreme);
+        let lower = extreme_u8(row3[x], row4[x], extreme);
+        output[x] = extreme_u8(extreme_u8(upper, row2[x], extreme), lower, extreme);
     }
 }
 

@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Centered 5×5 morphology (Epic 117E)**: exact grayscale rectangular
+  morphology now bypasses the large-window prefix/suffix and transpose engine
+  for the canonical centered Replicate case. Fixed extrema, direct row-major
+  vertical passes, safe SIMD dispatch, and bounded row blocks reduce the old
+  OpenCV gaps by 6.6×–31.8× and measure 1.22× faster for 1080p caller-output
+  opening; all 980 randomized operation comparisons remain bit-exact.
+
 - **Direct and fused 3×3 Sobel (Epic 116E)**: grayscale `u8` first derivatives
   now use bounded parallel three-row `i16` rings instead of the generic
   full-image `f64` intermediate. Added Rust/Python caller-output APIs for exact
