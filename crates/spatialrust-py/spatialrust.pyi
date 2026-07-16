@@ -13,6 +13,7 @@ from numpy.typing import NDArray
 __version__: str
 __all__: list[str] = [
     "__version__", "ImageMetadata", "Tensor", "Keypoint2", "OnnxRuntimeSession",
+    "GaussianBlurWorkspace",
     "DLPackTensorView", "PointCloud", "PipelineResult", "RegionResult",
     "DbscanResult", "GroundResult", "MultiPlaneResult", "SphereResult",
     "CylinderResult", "RegistrationResult", "MultiObjectTracker", "read_image",
@@ -182,6 +183,17 @@ def rgbd_to_point_cloud(
 def filter2d_image(
     image: _U8Array, kernel: NDArray[np.float64], delta: float = ...
 ) -> _U8Array: ...
+
+@final
+class GaussianBlurWorkspace:
+    """Reusable host scratch storage for RGB uint8 Gaussian blur."""
+
+    def __init__(self) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+    @property
+    def allocated_bytes(self) -> int: ...
+
 def gaussian_blur_image(
     image: _U8Array,
     kernel_width: int,
@@ -189,6 +201,7 @@ def gaussian_blur_image(
     sigma_x: float,
     sigma_y: Optional[float] = ...,
     out: Optional[_U8Array] = ...,
+    workspace: Optional[GaussianBlurWorkspace] = ...,
 ) -> _U8Array: ...
 def median_blur_image(image: _U8Array, kernel_size: int) -> _U8Array: ...
 def bilateral_filter_image(

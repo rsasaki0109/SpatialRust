@@ -604,6 +604,50 @@ def test_gaussian_output_validation():
         sr.gaussian_blur_image(image, 5, 5, 1.2, out=image)
 
 
+def test_gaussian_reuses_explicit_workspace_and_output():
+    image = np.arange(96 * 128 * 3, dtype=np.uint8).reshape(96, 128, 3)
+    workspace = sr.GaussianBlurWorkspace()
+    output = np.empty_like(image)
+    assert workspace.capacity == 0
+    assert workspace.allocated_bytes == 0
+
+    expected = sr.gaussian_blur_image(image[:, ::-1], 7, 5, 1.4, 0.9)
+    returned = sr.gaussian_blur_image(
+        image[:, ::-1],
+        7,
+        5,
+        1.4,
+        0.9,
+        out=output,
+        workspace=workspace,
+    )
+    assert returned is output
+    np.testing.assert_array_equal(output, expected)
+    capacity = workspace.capacity
+    allocated_bytes = workspace.allocated_bytes
+    assert capacity >= image.size
+    assert allocated_bytes > 0
+
+    assert (
+        sr.gaussian_blur_image(
+            image, 3, 3, 0.8, out=output, workspace=workspace
+        )
+        is output
+    )
+    assert workspace.capacity == capacity
+    assert workspace.allocated_bytes >= allocated_bytes
+    warmed_allocated_bytes = workspace.allocated_bytes
+
+    assert (
+        sr.gaussian_blur_image(
+            image, 7, 5, 1.4, 0.9, out=output, workspace=workspace
+        )
+        is output
+    )
+    assert workspace.capacity == capacity
+    assert workspace.allocated_bytes == warmed_allocated_bytes
+
+
 def test_advanced_filters_and_pyramid_shapes():
     image = np.arange(9 * 11 * 3, dtype=np.uint8).reshape(9, 11, 3)
     assert sr.median_blur_image(image[:, ::-1], 3).shape == image.shape

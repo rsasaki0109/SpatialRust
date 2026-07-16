@@ -2153,16 +2153,47 @@ fn filter2d_image<'py>(
 }
 
 thread_local! {
-    /// Reused across every `gaussian_blur_image` call, since the Python entry point has
-    /// no way to pass a persisted workspace; without pooling, the horizontal intermediate
-    /// buffer would be re-allocated from scratch on every call, allocate or reuse alike.
+    /// Reused by convenience calls that omit an explicit Gaussian workspace.
     static POOLED_GAUSSIAN_BLUR_WORKSPACE: std::cell::RefCell<GaussianBlurU8Workspace> =
         std::cell::RefCell::new(GaussianBlurU8Workspace::new());
 }
 
+/// Explicit reusable host scratch storage for RGB uint8 Gaussian blur.
+#[pyclass(name = "GaussianBlurWorkspace")]
+struct PyGaussianBlurWorkspace {
+    inner: GaussianBlurU8Workspace,
+}
+
+#[pymethods]
+impl PyGaussianBlurWorkspace {
+    #[new]
+    #[pyo3(signature = ())]
+    fn new() -> Self {
+        Self { inner: GaussianBlurU8Workspace::new() }
+    }
+
+    #[getter]
+    fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+
+    #[getter]
+    fn allocated_bytes(&self) -> usize {
+        self.inner.allocated_bytes()
+    }
+}
+
 /// Applies a normalized Gaussian blur to an RGB image using Reflect101 borders.
 #[pyfunction]
-#[pyo3(signature = (image, kernel_width, kernel_height, sigma_x, sigma_y=None, out=None))]
+#[pyo3(signature = (
+    image,
+    kernel_width,
+    kernel_height,
+    sigma_x,
+    sigma_y=None,
+    out=None,
+    workspace=None
+))]
 fn gaussian_blur_image<'py>(
     py: Python<'py>,
     image: PyReadonlyArray3<'_, u8>,
@@ -2171,61 +2202,96 @@ fn gaussian_blur_image<'py>(
     sigma_x: f64,
     sigma_y: Option<f64>,
     out: Option<Bound<'py, PyArray3<u8>>>,
+    mut workspace: Option<PyRefMut<'_, PyGaussianBlurWorkspace>>,
 ) -> PyResult<Bound<'py, PyArray3<u8>>> {
     let mut packed = Vec::new();
     let image = rgb_image_view_from_numpy(&image, &mut packed)?;
     let sigma_y = sigma_y.unwrap_or(sigma_x);
-    POOLED_GAUSSIAN_BLUR_WORKSPACE.with(|cell| {
-        let mut workspace = cell.borrow_mut();
-        if let Some(out) = out {
-            {
-                let mut out_rw = out.try_readwrite().map_err(|_| {
-                    PyValueError::new_err("out must not overlap the Gaussian input")
-                })?;
-                let mut out_array = out_rw.as_array_mut();
-                if out_array.shape() != [image.height(), image.width(), 3] {
-                    return Err(PyValueError::new_err(format!(
-                        "out shape must be ({}, {}, 3), found {:?}",
-                        image.height(),
-                        image.width(),
-                        out_array.shape()
-                    )));
-                }
-                let Some(out_slice) = out_array.as_slice_mut() else {
-                    return Err(PyValueError::new_err(
-                        "out must be a contiguous uint8 array of shape (H, W, 3)",
-                    ));
-                };
-                gaussian_blur_u8_into_op(
-                    image,
-                    kernel_width,
-                    kernel_height,
-                    sigma_x,
-                    sigma_y,
-                    BorderMode::Reflect101,
-                    out_slice,
-                    &mut workspace,
-                )
-                .map_err(to_py_err)?;
-            }
-            return Ok(out);
-        }
-        let mut output = vec![0_u8; image.width() * image.height() * 3];
-        gaussian_blur_u8_into_op(
+    if let Some(workspace) = workspace.as_mut() {
+        return gaussian_blur_image_with_workspace(
+            py,
             image,
             kernel_width,
             kernel_height,
             sigma_x,
             sigma_y,
-            BorderMode::Reflect101,
-            &mut output,
-            &mut workspace,
+            out,
+            &mut workspace.inner,
+        );
+    }
+    POOLED_GAUSSIAN_BLUR_WORKSPACE.with(|cell| {
+        gaussian_blur_image_with_workspace(
+            py,
+            image,
+            kernel_width,
+            kernel_height,
+            sigma_x,
+            sigma_y,
+            out,
+            &mut cell.borrow_mut(),
         )
-        .map_err(to_py_err)?;
-        let array = Array3::from_shape_vec((image.height(), image.width(), 3), output)
-            .map_err(to_py_err)?;
-        Ok(array.into_pyarray_bound(py))
     })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn gaussian_blur_image_with_workspace<'py>(
+    py: Python<'py>,
+    image: ImageView<'_, u8, 3>,
+    kernel_width: usize,
+    kernel_height: usize,
+    sigma_x: f64,
+    sigma_y: f64,
+    out: Option<Bound<'py, PyArray3<u8>>>,
+    workspace: &mut GaussianBlurU8Workspace,
+) -> PyResult<Bound<'py, PyArray3<u8>>> {
+    if let Some(out) = out {
+        {
+            let mut out_rw = out
+                .try_readwrite()
+                .map_err(|_| PyValueError::new_err("out must not overlap the Gaussian input"))?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width(), 3] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}, 3), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W, 3)",
+                ));
+            };
+            gaussian_blur_u8_into_op(
+                image,
+                kernel_width,
+                kernel_height,
+                sigma_x,
+                sigma_y,
+                BorderMode::Reflect101,
+                out_slice,
+                workspace,
+            )
+            .map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let mut output = vec![0_u8; image.width() * image.height() * 3];
+    gaussian_blur_u8_into_op(
+        image,
+        kernel_width,
+        kernel_height,
+        sigma_x,
+        sigma_y,
+        BorderMode::Reflect101,
+        &mut output,
+        workspace,
+    )
+    .map_err(to_py_err)?;
+    let array = Array3::from_shape_vec((image.height(), image.width(), 3), output)
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
 }
 
 /// Applies an odd-aperture median filter to an RGB image.
@@ -4242,6 +4308,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyTensor>()?;
     m.add_class::<PyKeypoint2>()?;
     m.add_class::<PyDistanceTransformWorkspace>()?;
+    m.add_class::<PyGaussianBlurWorkspace>()?;
     m.add_class::<PyMorphologyWorkspace>()?;
     m.add_class::<PyCannyWorkspace>()?;
     m.add_class::<PyMultiObjectTracker>()?;
