@@ -14,18 +14,34 @@ use crate::error::{copc_format, IoError};
 const DEFAULT_MAX_PARALLEL_RANGES: usize = 8;
 
 /// Random-access COPC byte source backed by HTTP range requests.
-#[derive(Clone, Debug, PartialEq, Eq)]
+///
+/// Clones share one HTTP connection pool so repeated hierarchy and point-chunk
+/// ranges can reuse established TCP/TLS connections across request batches.
+#[derive(Clone, Debug)]
 pub struct HttpByteSource {
     url: String,
     max_parallel_ranges: usize,
+    agent: ureq::Agent,
 }
+
+impl PartialEq for HttpByteSource {
+    fn eq(&self, other: &Self) -> bool {
+        self.url == other.url && self.max_parallel_ranges == other.max_parallel_ranges
+    }
+}
+
+impl Eq for HttpByteSource {}
 
 impl HttpByteSource {
     /// Creates an HTTP byte source for a remote COPC URL.
     pub fn new(url: impl Into<String>) -> Result<Self, IoError> {
         let url = url.into();
         validate_http_url(&url)?;
-        Ok(Self { url, max_parallel_ranges: DEFAULT_MAX_PARALLEL_RANGES })
+        Ok(Self {
+            url,
+            max_parallel_ranges: DEFAULT_MAX_PARALLEL_RANGES,
+            agent: ureq::Agent::new(),
+        })
     }
 
     /// Limits how many HTTP range requests are in flight at once.
@@ -54,18 +70,18 @@ impl ByteSource for HttpByteSource {
         offset: u64,
         length: u64,
     ) -> Result<Vec<u8>, copc_streaming::CopcError> {
-        fetch_http_range(&self.url, offset, length)
+        fetch_http_range(&self.agent, &self.url, offset, length)
     }
 
     async fn read_ranges(
         &self,
         ranges: &[(u64, u64)],
     ) -> Result<Vec<Vec<u8>>, copc_streaming::CopcError> {
-        fetch_http_ranges_parallel(&self.url, ranges, self.max_parallel_ranges)
+        fetch_http_ranges_parallel(&self.agent, &self.url, ranges, self.max_parallel_ranges)
     }
 
     async fn size(&self) -> Result<Option<u64>, copc_streaming::CopcError> {
-        fetch_http_size(&self.url)
+        fetch_http_size(&self.agent, &self.url)
     }
 }
 
@@ -95,6 +111,7 @@ pub fn read_copc_url_info(url: &str) -> Result<CopcFileInfo, IoError> {
 }
 
 fn fetch_http_range(
+    agent: &ureq::Agent,
     url: &str,
     offset: u64,
     length: u64,
@@ -104,7 +121,8 @@ fn fetch_http_range(
     }
 
     let end = offset.saturating_add(length.saturating_sub(1));
-    let response = ureq::get(url)
+    let response = agent
+        .get(url)
         .set("Range", &format!("bytes={offset}-{end}"))
         .call()
         .map_err(|error| copc_streaming::CopcError::ByteSource(Box::new(error)))?;
@@ -127,6 +145,7 @@ fn fetch_http_range(
 }
 
 fn fetch_http_ranges_parallel(
+    agent: &ureq::Agent,
     url: &str,
     ranges: &[(u64, u64)],
     max_parallel_ranges: usize,
@@ -139,7 +158,7 @@ fn fetch_http_ranges_parallel(
     let url = Arc::new(url.to_owned());
 
     for batch in ranges.chunks(max_parallel_ranges.max(1)) {
-        let batch_results = read_range_batch(Arc::clone(&url), batch)?;
+        let batch_results = read_range_batch(agent.clone(), Arc::clone(&url), batch)?;
         results.extend(batch_results);
     }
 
@@ -147,20 +166,22 @@ fn fetch_http_ranges_parallel(
 }
 
 fn read_range_batch(
+    agent: ureq::Agent,
     url: Arc<String>,
     ranges: &[(u64, u64)],
 ) -> Result<Vec<Vec<u8>>, copc_streaming::CopcError> {
     if ranges.len() == 1 {
         let (offset, length) = ranges[0];
-        return Ok(vec![fetch_http_range(url.as_str(), offset, length)?]);
+        return Ok(vec![fetch_http_range(&agent, url.as_str(), offset, length)?]);
     }
 
     std::thread::scope(|scope| {
         let mut handles = Vec::with_capacity(ranges.len());
         for (index, &(offset, length)) in ranges.iter().enumerate() {
+            let agent = agent.clone();
             let url = Arc::clone(&url);
             handles.push(scope.spawn(move || {
-                let bytes = fetch_http_range(url.as_str(), offset, length)?;
+                let bytes = fetch_http_range(&agent, url.as_str(), offset, length)?;
                 Ok::<_, copc_streaming::CopcError>((index, bytes))
             }));
         }
@@ -178,14 +199,18 @@ fn read_range_batch(
     })
 }
 
-fn fetch_http_size(url: &str) -> Result<Option<u64>, copc_streaming::CopcError> {
-    if let Ok(response) = ureq::head(url).call() {
+fn fetch_http_size(
+    agent: &ureq::Agent,
+    url: &str,
+) -> Result<Option<u64>, copc_streaming::CopcError> {
+    if let Ok(response) = agent.head(url).call() {
         if let Some(total) = response.header("Content-Length").and_then(parse_u64_header) {
             return Ok(Some(total));
         }
     }
 
-    let response = ureq::get(url)
+    let response = agent
+        .get(url)
         .set("Range", "bytes=0-0")
         .call()
         .map_err(|error| copc_streaming::CopcError::ByteSource(Box::new(error)))?;
@@ -249,6 +274,8 @@ mod tests {
         let source = HttpByteSource::new("https://example.com/cloud.copc.laz").unwrap();
         assert_eq!(source.url(), "https://example.com/cloud.copc.laz");
         assert_eq!(source.max_parallel_ranges(), 8);
+        assert_eq!(source.clone(), source);
+        assert_ne!(source.clone().with_max_parallel_ranges(4), source);
     }
 
     #[test]
@@ -292,7 +319,7 @@ mod tests {
     fn fetch_ranges_batches_by_parallelism_limit() {
         let url = "https://example.com/cloud.copc.laz";
         let ranges = vec![(0, 1); 5];
-        let err = fetch_http_ranges_parallel(url, &ranges, 2).unwrap_err();
+        let err = fetch_http_ranges_parallel(&ureq::Agent::new(), url, &ranges, 2).unwrap_err();
         assert!(matches!(
             err,
             copc_streaming::CopcError::ByteSource(_) | copc_streaming::CopcError::Io(_)
@@ -302,6 +329,7 @@ mod tests {
     #[test]
     fn single_range_batch_delegates_to_fetch() {
         let result = read_range_batch(
+            ureq::Agent::new(),
             Arc::new("https://invalid.test/not-found.copc.laz".to_owned()),
             &[(0, 1)],
         );
