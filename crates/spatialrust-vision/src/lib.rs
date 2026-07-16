@@ -7,6 +7,14 @@
 #![warn(missing_docs)]
 
 mod border;
+#[cfg(any(
+    feature = "resize",
+    feature = "preprocess",
+    feature = "imgproc-filter",
+    feature = "imgproc-morphology",
+    feature = "imgproc-canny"
+))]
+mod dispatch;
 mod error;
 mod pixel;
 

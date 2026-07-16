@@ -5,6 +5,9 @@ use std::collections::VecDeque;
 use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView, ImageViewMut};
 
+use crate::dispatch::{
+    bounded_workers, items_per_worker, should_parallelize, LARGE_PARALLEL_COMPONENTS,
+};
 use crate::{
     sobel, spatial_gradient_u8, spatial_gradient_u8_into, BorderMode, VisionError, VisionResult,
 };
@@ -180,8 +183,9 @@ fn canny_3x3_into(
     let width = input.width();
     let height = input.height();
     let len = checked_len(width, height)?;
-    let parallel = len >= 1_000_000;
-    let workers = if parallel { rayon::current_num_threads().min(height.max(1)) } else { 1 };
+    let workers =
+        bounded_workers(len, height, LARGE_PARALLEL_COMPONENTS, rayon::current_num_threads());
+    let parallel = workers > 1;
     let magnitude_elements = workers
         .checked_mul(3)
         .and_then(|rows| rows.checked_mul(width))
@@ -197,7 +201,7 @@ fn canny_3x3_into(
     let (low, high) = canny_thresholds(options);
     workspace.states.fill(1);
     if parallel {
-        let rows_per_worker = height.div_ceil(workers);
+        let rows_per_worker = items_per_worker(height, workers);
         let gradient_x = &workspace.gradient_x;
         let gradient_y = &workspace.gradient_y;
         let (mut candidates, has_weak) = workspace
@@ -283,7 +287,7 @@ fn canny_3x3_into(
         }
     }
 
-    if len >= 1_000_000 && output.row_stride() == width {
+    if should_parallelize(len, height, LARGE_PARALLEL_COMPONENTS) && output.row_stride() == width {
         output
             .as_mut_slice()
             .par_iter_mut()

@@ -1,6 +1,10 @@
 use rayon::prelude::*;
 use spatialrust_image::{ColorSpace, Image, ImageMetadata, ImageView, ImageViewMut, PlanarImage};
 
+use crate::dispatch::{
+    is_packed_u8_fast_path, should_parallelize, LIGHT_PARALLEL_COMPONENTS, ROWS_PER_TILE,
+    TALL_IMAGE_ROWS,
+};
 use crate::{PixelComponent, VisionError, VisionResult};
 
 /// Sampling filter used by image resampling and geometric warps.
@@ -19,7 +23,6 @@ pub enum Interpolation {
 
 const BILINEAR_WEIGHT_BITS: u32 = 11;
 const BILINEAR_WEIGHT_SCALE: u32 = 1 << BILINEAR_WEIGHT_BITS;
-const PARALLEL_RESIZE_COMPONENTS: usize = 100_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct BilinearAxisSample {
@@ -115,9 +118,12 @@ impl NearestResizeU8Plan {
             output.set_metadata(input.metadata())?;
             return Ok(());
         }
-        let packed_input = input.row_stride() == self.input_width * CHANNELS;
-        let packed_output = output.row_stride() == self.output_width * CHANNELS;
-        if !matches!(CHANNELS, 1 | 3) || !packed_input || !packed_output {
+        if !is_packed_u8_fast_path::<CHANNELS>(
+            self.input_width,
+            input.row_stride(),
+            self.output_width,
+            output.row_stride(),
+        ) {
             return resize_into(input, output, Interpolation::Nearest);
         }
 
@@ -133,7 +139,11 @@ impl NearestResizeU8Plan {
                     .copy_from_slice(&source[source_offset..source_offset + CHANNELS]);
             }
         };
-        if self.output_width * self.output_height * CHANNELS >= PARALLEL_RESIZE_COMPONENTS {
+        if should_parallelize(
+            self.output_width * self.output_height * CHANNELS,
+            self.output_height,
+            LIGHT_PARALLEL_COMPONENTS,
+        ) {
             output.as_mut_slice()[..output_span]
                 .par_chunks_mut(row_stride)
                 .enumerate()
@@ -245,9 +255,14 @@ impl AreaResizeU8Plan {
         }
         let downsample =
             self.output_width < self.input_width || self.output_height < self.input_height;
-        let packed_input = input.row_stride() == self.input_width * CHANNELS;
-        let packed_output = output.row_stride() == self.output_width * CHANNELS;
-        if !downsample || !matches!(CHANNELS, 1 | 3) || !packed_input || !packed_output {
+        if !downsample
+            || !is_packed_u8_fast_path::<CHANNELS>(
+                self.input_width,
+                input.row_stride(),
+                self.output_width,
+                output.row_stride(),
+            )
+        {
             return resize_into(input, output, Interpolation::Area);
         }
 
@@ -261,7 +276,11 @@ impl AreaResizeU8Plan {
                 self.resize_weighted_area_row(input, row, y);
             }
         };
-        if self.output_width * self.output_height * CHANNELS >= PARALLEL_RESIZE_COMPONENTS {
+        if should_parallelize(
+            self.output_width * self.output_height * CHANNELS,
+            self.output_height,
+            LIGHT_PARALLEL_COMPONENTS,
+        ) {
             output.as_mut_slice()[..output_span]
                 .par_chunks_mut(row_stride)
                 .enumerate()
@@ -407,7 +426,8 @@ impl BilinearResizeU8Plan {
         if self.input_width == self.output_width.saturating_mul(2)
             && self.input_height == self.output_height.saturating_mul(2)
         {
-            if output_components >= PARALLEL_RESIZE_COMPONENTS {
+            if should_parallelize(output_components, self.output_height, LIGHT_PARALLEL_COMPONENTS)
+            {
                 rows.for_each(|(y, row)| resize_half_row(input, row, y, self.output_width));
             } else {
                 output
@@ -416,7 +436,11 @@ impl BilinearResizeU8Plan {
                     .enumerate()
                     .for_each(|(y, row)| resize_half_row(input, row, y, self.output_width));
             }
-        } else if output_components >= PARALLEL_RESIZE_COMPONENTS {
+        } else if should_parallelize(
+            output_components,
+            self.output_height,
+            LIGHT_PARALLEL_COMPONENTS,
+        ) {
             rows.for_each(|(y, row)| self.resize_bilinear_row(input, row, y));
         } else {
             output
@@ -487,16 +511,19 @@ impl BilinearResizeU8Plan {
                 self.resize_bilinear_rgb_to_gray_row(input, row, y);
             }
         };
-        if self.output_width * self.output_height >= PARALLEL_RESIZE_COMPONENTS {
-            if self.output_height >= 2_000 {
-                const ROWS_PER_TASK: usize = 8;
-                let block_stride = row_stride.checked_mul(ROWS_PER_TASK).ok_or_else(|| {
+        if should_parallelize(
+            self.output_width * self.output_height,
+            self.output_height,
+            LIGHT_PARALLEL_COMPONENTS,
+        ) {
+            if self.output_height >= TALL_IMAGE_ROWS {
+                let block_stride = row_stride.checked_mul(ROWS_PER_TILE).ok_or_else(|| {
                     VisionError::InvalidDimensions("fused resize row block is too large".to_owned())
                 })?;
                 output.as_mut_slice().par_chunks_mut(block_stride).enumerate().for_each(
                     |(block, rows)| {
                         for (row, target) in rows.chunks_mut(row_stride).enumerate() {
-                            run_row(block * ROWS_PER_TASK + row, target);
+                            run_row(block * ROWS_PER_TILE + row, target);
                         }
                     },
                 );
@@ -607,7 +634,7 @@ impl BilinearResizeU8Plan {
                 );
             }
         };
-        if required >= PARALLEL_RESIZE_COMPONENTS {
+        if should_parallelize(required, self.output_height * 3, LIGHT_PARALLEL_COMPONENTS) {
             output
                 .par_chunks_mut(self.output_width)
                 .enumerate()
