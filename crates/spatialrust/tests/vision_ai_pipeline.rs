@@ -5,8 +5,8 @@
 #![cfg(all(feature = "ai-vision-pipeline", feature = "mvp"))]
 
 use spatialrust::ai::{
-    CopyPolicy, InferenceBackend, MockInferenceBackend, MockProfile, ModelSession as _,
-    ModelSource, NamedTensors, RunOptions, SessionOptions,
+    CopyPolicy, InferenceBackend, MockInferenceBackend, MockProfile, ModelSource, NamedTensors,
+    RunOptions, SessionOptions,
 };
 use spatialrust::{
     depth_map_to_point_cloud, depth_tensor_to_depth_map, point_map_to_point_cloud,
@@ -42,20 +42,14 @@ fn image_mock_depth_runs_through_spatial_pipeline() {
 
     let backend = MockInferenceBackend;
     let mut session = backend
-        .create_session(
-            &ModelSource::Mock(MockProfile::SyntheticDepth),
-            &SessionOptions::default(),
-        )
+        .create_session(&ModelSource::Mock(MockProfile::SyntheticDepth), &SessionOptions::default())
         .unwrap();
     let mut inputs = NamedTensors::new();
     inputs.insert("images", input).unwrap();
     let outputs = session
         .run_with_options(
             inputs,
-            RunOptions {
-                input_copy: CopyPolicy::Forbid,
-                output_copy: CopyPolicy::Allow,
-            },
+            RunOptions { input_copy: CopyPolicy::Forbid, output_copy: CopyPolicy::Allow },
         )
         .unwrap();
     let depth = depth_tensor_to_depth_map(outputs.get("depth").unwrap()).unwrap();

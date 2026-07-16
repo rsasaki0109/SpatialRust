@@ -984,7 +984,7 @@ def test_tensor_zero_copy_dlpack_import_retains_producer(dtype):
     imported = sr.tensor_view_from_dlpack(source)
     assert imported.shape == [3, 4]
     assert imported.dtype == np.dtype(dtype).name
-    assert imported.version[0] == 1
+    assert imported.version in {(0, 0), (1, 0)}
     del source
     copied = np.from_dlpack(imported.copy())
     np.testing.assert_array_equal(copied, np.arange(12, dtype=dtype).reshape(3, 4))

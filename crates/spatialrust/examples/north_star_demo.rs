@@ -46,20 +46,14 @@ fn main() {
     .expect("nchw");
 
     let mut session = MockInferenceBackend
-        .create_session(
-            &ModelSource::Mock(MockProfile::SyntheticDepth),
-            &SessionOptions::default(),
-        )
+        .create_session(&ModelSource::Mock(MockProfile::SyntheticDepth), &SessionOptions::default())
         .expect("session");
     let mut inputs = NamedTensors::new();
     inputs.insert("images", tensor).expect("inputs");
     let outputs = session
         .run_with_options(
             inputs,
-            RunOptions {
-                input_copy: CopyPolicy::Forbid,
-                output_copy: CopyPolicy::Allow,
-            },
+            RunOptions { input_copy: CopyPolicy::Forbid, output_copy: CopyPolicy::Allow },
         )
         .expect("infer");
     let depth = depth_tensor_to_depth_map(outputs.get("depth").expect("depth")).expect("decode");
@@ -78,8 +72,8 @@ fn main() {
         depth_map_to_point_cloud(&depth, &camera, DepthConversionOptions::default()).expect("xyz");
     let xyz = collect_xyz(&cloud);
 
-    let record =
-        SpatialRecord::try_from_cloud("point", SchemaVersion::new(1, 0), cloud.clone()).expect("record");
+    let record = SpatialRecord::try_from_cloud("point", SchemaVersion::new(1, 0), cloud.clone())
+        .expect("record");
     let stamped = StampedRecord::new(
         "camera/depth_cloud",
         StampedTime::exact("host", ClockDomain::HostSteady, Timestamp::from_nanos(1)),
@@ -94,11 +88,8 @@ fn main() {
         dataset: None,
     });
 
-    let mcap_path = std::env::temp_dir().join(format!(
-        "spatialrust-demo-{}-{}.mcap",
-        std::process::id(),
-        1
-    ));
+    let mcap_path =
+        std::env::temp_dir().join(format!("spatialrust-demo-{}-{}.mcap", std::process::id(), 1));
     write_memory_episode_mcap(&mcap_path, &episode.memory).expect("mcap write");
     let mcap_episode = read_memory_episode_mcap(&mcap_path).expect("mcap read");
     let _ = std::fs::remove_file(&mcap_path);
@@ -107,7 +98,8 @@ fn main() {
     let cdr = encode_point_cloud2_xyz(&pc2).expect("cdr");
     let mut node = LoopbackRos2Node::new();
     node.publish("/camera/points", cdr);
-    let decoded = decode_point_cloud2_xyz(&node.take("/camera/points").expect("take")).expect("decode");
+    let decoded =
+        decode_point_cloud2_xyz(&node.take("/camera/points").expect("take")).expect("decode");
 
     let mut volume =
         TsdfVolume::try_new(Vec3::new(-2.0, -2.0, 0.0), 0.25, [16, 16, 16], 0.5).expect("tsdf");
@@ -116,8 +108,7 @@ fn main() {
     let gltf = export_triangle_mesh_gltf_json(&mesh).expect("gltf");
 
     let mut usd = MemoryUsdStageAdapter::new("demo.usda");
-    usd.declare_mesh(UsdPrimPath::try_new("/World/Mesh").unwrap(), &mesh)
-        .expect("usd mesh");
+    usd.declare_mesh(UsdPrimPath::try_new("/World/Mesh").unwrap(), &mesh).expect("usd mesh");
     let usda = export_stage_usda(&usd).expect("usda");
 
     let mut gaussians = GaussianScene::new();

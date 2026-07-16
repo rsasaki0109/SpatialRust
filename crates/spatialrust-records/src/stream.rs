@@ -1,8 +1,6 @@
 //! Chunked spatial-record sources and sinks.
 
-use spatialrust_core::{
-    PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, SpatialTensor,
-};
+use spatialrust_core::{PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, SpatialTensor};
 
 use crate::{RecordsError, RecordsResult, SchemaDescriptor, SpatialRecord};
 
@@ -51,13 +49,7 @@ impl MemoryChunkSource {
             ));
         }
         cloud.validate()?;
-        Ok(Self {
-            metadata: cloud.metadata().clone(),
-            schema,
-            cloud,
-            chunk_size,
-            offset: 0,
-        })
+        Ok(Self { metadata: cloud.metadata().clone(), schema, cloud, chunk_size, offset: 0 })
     }
 
     /// Creates a source using [`SpatialTensor`]’s default chunk size as a hint.
@@ -160,11 +152,15 @@ fn slice_cloud(
         let source = cloud.field(&field.name)?;
         buffers.insert(field.name.clone(), slice_buffer(source, &range)?);
     }
-    let chunk = PointCloud::try_from_parts(schema.point_schema().clone(), buffers, metadata.clone())?;
+    let chunk =
+        PointCloud::try_from_parts(schema.point_schema().clone(), buffers, metadata.clone())?;
     SpatialRecord::try_new(schema.clone(), chunk)
 }
 
-fn slice_buffer(buffer: &PointBuffer, range: &std::ops::Range<usize>) -> RecordsResult<PointBuffer> {
+fn slice_buffer(
+    buffer: &PointBuffer,
+    range: &std::ops::Range<usize>,
+) -> RecordsResult<PointBuffer> {
     Ok(match buffer {
         PointBuffer::F32(values) => PointBuffer::F32(values[range.clone()].to_vec()),
         PointBuffer::F64(values) => PointBuffer::F64(values[range.clone()].to_vec()),

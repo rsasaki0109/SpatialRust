@@ -118,10 +118,8 @@ pub fn track_points_lucas_kanade<T: PixelComponent>(
                 continue;
             }
             let mut guess = previous_guess[index];
-            let target = Vec2 {
-                x: previous_point.x * level_scale,
-                y: previous_point.y * level_scale,
-            };
+            let target =
+                Vec2 { x: previous_point.x * level_scale, y: previous_point.y * level_scale };
             match track_one_level(
                 previous_pyramid[level].view(),
                 next_pyramid[level].view(),
@@ -171,10 +169,8 @@ fn track_one_level(
                 if !(in_bounds(previous, px, py, radius) && in_bounds(next, qx, qy, radius)) {
                     continue;
                 }
-                let ix = 0.5
-                    * (sample(previous, px + 1.0, py)? - sample(previous, px - 1.0, py)?);
-                let iy = 0.5
-                    * (sample(previous, px, py + 1.0)? - sample(previous, px, py - 1.0)?);
+                let ix = 0.5 * (sample(previous, px + 1.0, py)? - sample(previous, px - 1.0, py)?);
+                let iy = 0.5 * (sample(previous, px, py + 1.0)? - sample(previous, px, py - 1.0)?);
                 let it = sample(next, qx, qy)? - sample(previous, px, py)?;
                 gxx += ix * ix;
                 gxy += ix * iy;
@@ -185,9 +181,7 @@ fn track_one_level(
             }
         }
         if samples < 4 {
-            return Err(VisionError::InvalidParameter(
-                "Lucas–Kanade patch left the image".into(),
-            ));
+            return Err(VisionError::InvalidParameter("Lucas–Kanade patch left the image".into()));
         }
         let det = gxx * gyy - gxy * gxy;
         if det.abs() < options.min_eigenvalue {
@@ -268,14 +262,8 @@ fn sample(image: ImageView<'_, f32, 1>, x: f64, y: f64) -> VisionResult<f64> {
     let y0 = y.floor() as isize;
     let x1 = x0 + 1;
     let y1 = y0 + 1;
-    if x0 < 0
-        || y0 < 0
-        || x1 >= image.width() as isize
-        || y1 >= image.height() as isize
-    {
-        return Err(VisionError::InvalidParameter(
-            "Lucas–Kanade sample is out of bounds".into(),
-        ));
+    if x0 < 0 || y0 < 0 || x1 >= image.width() as isize || y1 >= image.height() as isize {
+        return Err(VisionError::InvalidParameter("Lucas–Kanade sample is out of bounds".into()));
     }
     let ax = x - x0 as f64;
     let ay = y - y0 as f64;
@@ -339,11 +327,7 @@ mod tests {
             },
         )
         .unwrap();
-        assert!(
-            tracked.status().iter().all(|&ok| ok),
-            "status={:?}",
-            tracked.status()
-        );
+        assert!(tracked.status().iter().all(|&ok| ok), "status={:?}", tracked.status());
         let actual = tracked.next_points()[0];
         assert!(
             (actual.x - (points[0].x + shift as f64)).abs() < 1.5,

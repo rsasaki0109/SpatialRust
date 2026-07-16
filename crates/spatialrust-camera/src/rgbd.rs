@@ -56,11 +56,7 @@ pub struct DepthConversionOptions {
 
 impl Default for DepthConversionOptions {
     fn default() -> Self {
-        Self {
-            depth_scale: 1.0,
-            min_depth: f32::EPSILON,
-            max_depth: f32::INFINITY,
-        }
+        Self { depth_scale: 1.0, min_depth: f32::EPSILON, max_depth: f32::INFINITY }
     }
 }
 
@@ -125,10 +121,7 @@ pub fn depth_to_xyz_dense(
     camera: &PinholeCamera,
     options: DepthConversionOptions,
 ) -> Result<Vec<f32>, RgbdError> {
-    let len = depth
-        .width()
-        .saturating_mul(depth.height())
-        .saturating_mul(3);
+    let len = depth.width().saturating_mul(depth.height()).saturating_mul(3);
     let mut out = vec![0.0f32; len];
     depth_to_xyz_dense_into(depth, camera, options, &mut out)?;
     Ok(out)
@@ -143,10 +136,7 @@ pub fn depth_to_xyz_dense_into(
 ) -> Result<(), RgbdError> {
     validate_depth(depth, camera)?;
     options.validate()?;
-    let expected = depth
-        .width()
-        .saturating_mul(depth.height())
-        .saturating_mul(3);
+    let expected = depth.width().saturating_mul(depth.height()).saturating_mul(3);
     if out.len() != expected {
         return Err(RgbdError::InvalidOptions(format!(
             "dense XYZ buffer length must be {expected}, found {}",
@@ -176,13 +166,9 @@ fn fill_xyz_dense_identity(
     let scale_is_one = scale == 1.0;
     let max_is_inf = !max_d.is_finite();
     // Per-column `(x - cx) / fx` factors so the inner loop is multiply-add only.
-    let x_mul: Vec<f32> = (0..width)
-        .map(|x| (x as f32 - pin.cx) * pin.inv_fx)
-        .collect();
+    let x_mul: Vec<f32> = (0..width).map(|x| (x as f32 - pin.cx) * pin.inv_fx).collect();
     let pixels = width.saturating_mul(height);
-    let threads = std::thread::available_parallelism()
-        .map(|n| n.get().clamp(1, 8))
-        .unwrap_or(1);
+    let threads = std::thread::available_parallelism().map(|n| n.get().clamp(1, 8)).unwrap_or(1);
     // Thread spawn overhead dominates below ~2M pixels on typical hosts.
     if threads == 1 || pixels < 2_000_000 {
         fill_xyz_dense_identity_rows(
@@ -203,7 +189,7 @@ fn fill_xyz_dense_identity(
     }
 
     let row_stride = width * 3;
-    let chunk = (height + threads - 1) / threads;
+    let chunk = height.div_ceil(threads);
     std::thread::scope(|scope| {
         let mut rest = out;
         let mut y0 = 0usize;
@@ -254,9 +240,7 @@ fn fill_xyz_dense_identity_rows(
         if scale_is_one && max_is_inf && is_x86_feature_detected!("avx2") {
             // SAFETY: feature detection above; slices are row-validated.
             unsafe {
-                fill_xyz_dense_identity_rows_avx2(
-                    depth, pin, x_mul, y0, y1, width, min_d, out,
-                );
+                fill_xyz_dense_identity_rows_avx2(depth, pin, x_mul, y0, y1, width, min_d, out);
             }
             return;
         }
@@ -302,10 +286,10 @@ unsafe fn fill_xyz_dense_identity_rows_avx2(
     min_d: f32,
     out: &mut [f32],
 ) {
-    #[cfg(target_arch = "x86_64")]
-    use std::arch::x86_64::*;
     #[cfg(target_arch = "x86")]
     use std::arch::x86::*;
+    #[cfg(target_arch = "x86_64")]
+    use std::arch::x86_64::*;
 
     let min_v = _mm256_set1_ps(min_d);
     let nan_v = _mm256_set1_ps(f32::NAN);
@@ -340,11 +324,7 @@ unsafe fn fill_xyz_dense_identity_rows_avx2(
         let y_mul_s = (y as f32 - pin.cy) * pin.inv_fy;
         while x < width {
             let meters = *row.get_unchecked(x);
-            let z = if meters >= min_d {
-                meters
-            } else {
-                f32::NAN
-            };
+            let z = if meters >= min_d { meters } else { f32::NAN };
             *out.get_unchecked_mut(o) = *x_mul.get_unchecked(x) * z;
             *out.get_unchecked_mut(o + 1) = y_mul_s * z;
             *out.get_unchecked_mut(o + 2) = z;
@@ -434,9 +414,7 @@ fn pack_xyz_identity(
 ) {
     let pin = FastPinholeF32::from_camera(camera);
     let width = depth.width();
-    let x_mul: Vec<f32> = (0..width)
-        .map(|x| (x as f32 - pin.cx) * pin.inv_fx)
-        .collect();
+    let x_mul: Vec<f32> = (0..width).map(|x| (x as f32 - pin.cx) * pin.inv_fx).collect();
     let scale = options.depth_scale;
     let min_d = options.min_depth;
     let max_d = options.max_depth;
@@ -459,11 +437,8 @@ fn pack_xyz_identity(
                 } else {
                     *row.get_unchecked(x) * scale
                 };
-                let valid = if max_is_inf {
-                    meters >= min_d
-                } else {
-                    meters >= min_d && meters <= max_d
-                };
+                let valid =
+                    if max_is_inf { meters >= min_d } else { meters >= min_d && meters <= max_d };
                 if !valid {
                     continue;
                 }
@@ -559,9 +534,7 @@ fn pack_xyzrgb_identity(
 ) {
     let pin = FastPinholeF32::from_camera(camera);
     let width = depth.width();
-    let x_mul: Vec<f32> = (0..width)
-        .map(|x| (x as f32 - pin.cx) * pin.inv_fx)
-        .collect();
+    let x_mul: Vec<f32> = (0..width).map(|x| (x as f32 - pin.cx) * pin.inv_fx).collect();
     let scale = options.depth_scale;
     let min_d = options.min_depth;
     let max_d = options.max_depth;
@@ -637,11 +610,8 @@ fn pack_xyzrgb_identity_raw(
                 } else {
                     *depth_row.get_unchecked(x) * scale
                 };
-                let valid = if max_is_inf {
-                    meters >= min_d
-                } else {
-                    meters >= min_d && meters <= max_d
-                };
+                let valid =
+                    if max_is_inf { meters >= min_d } else { meters >= min_d && meters <= max_d };
                 if !valid {
                     continue;
                 }
@@ -706,10 +676,7 @@ mod tests {
         let color =
             Image::<u8, 3>::try_new(2, 2, vec![10, 11, 12, 20, 21, 22, 30, 31, 32, 40, 41, 42])
                 .unwrap();
-        let options = DepthConversionOptions {
-            max_depth: 2.0,
-            ..Default::default()
-        };
+        let options = DepthConversionOptions { max_depth: 2.0, ..Default::default() };
         let cloud = rgbd_to_point_cloud(depth.view(), color.view(), &camera(), options).unwrap();
         assert_eq!(cloud.len(), 2);
         assert_eq!(cloud.field("r").unwrap(), &PointBuffer::U8(vec![10, 40]));

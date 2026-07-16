@@ -16,9 +16,7 @@ pub enum DistributeError {
     #[error("partition graph contains a cycle")]
     CycleDetected,
     /// Transfer queue reached its hard backpressure limit.
-    #[error(
-        "transfer queue `{queue}` at capacity: depth {depth} >= hard_limit {hard_limit}"
-    )]
+    #[error("transfer queue `{queue}` at capacity: depth {depth} >= hard_limit {hard_limit}")]
     CapacityExceeded {
         /// Queue / transfer name used for diagnostics.
         queue: String,

@@ -8,23 +8,23 @@
 
 mod diagnostics;
 mod error;
-mod pipeline;
-mod trace;
 #[cfg(feature = "execution-graph")]
 mod graph;
+mod pipeline;
+mod trace;
 
 #[cfg(feature = "ros2")]
 mod ros2;
 
 pub use diagnostics::{DiagnosticCode, FailureDiagnostic};
 pub use error::{RuntimeError, RuntimeResult};
-pub use pipeline::{BoundedPipeline, PipelineConfig, PipelineStage};
-pub use trace::{TraceEvent, TraceLevel, TraceLog};
 #[cfg(feature = "execution-graph")]
 pub use graph::{
     CompiledSpatialGraph, ExecutionReceipt, FnOperator, GraphNodeSpec, GraphOperator,
     SpatialExecutionGraph,
 };
+pub use pipeline::{BoundedPipeline, PipelineConfig, PipelineStage};
+pub use trace::{TraceEvent, TraceLevel, TraceLog};
 
 #[cfg(feature = "ros2")]
 pub use ros2::{

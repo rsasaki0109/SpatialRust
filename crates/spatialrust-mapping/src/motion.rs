@@ -19,11 +19,8 @@ pub struct DeltaMotion {
 /// Estimates relative motion for odometry / keyframe tracking.
 pub trait RelativeMotionEstimator {
     /// Estimates motion aligning `previous` toward `current` coordinates.
-    fn estimate(
-        &self,
-        previous: &StampedPose,
-        current: &StampedPose,
-    ) -> MappingResult<DeltaMotion>;
+    fn estimate(&self, previous: &StampedPose, current: &StampedPose)
+        -> MappingResult<DeltaMotion>;
 }
 
 /// Synthetic odometry that trusts successive pose stamps and emits their delta.

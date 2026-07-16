@@ -47,9 +47,9 @@ pub fn solve_pnp_ransac(
     while iteration < iteration_limit {
         let indices = sample_unique(&mut rng, correspondences.len(), SAMPLE);
         let sample = indices.iter().map(|&index| correspondences[index]).collect::<Vec<_>>();
-        if let Ok(model) = estimate_pnp_dlt(&sample, camera).and_then(|pose| {
-            refine_pnp(&sample, camera, pose)
-        }) {
+        if let Ok(model) =
+            estimate_pnp_dlt(&sample, camera).and_then(|pose| refine_pnp(&sample, camera, pose))
+        {
             let residuals = correspondences
                 .iter()
                 .copied()
@@ -84,13 +84,10 @@ pub fn solve_pnp_ransac(
         }
         iteration += 1;
     }
-    let (_, best_inliers, _, count, _) = best.ok_or_else(|| {
-        VisionError::InvalidParameter("robust PnP found no valid model".into())
-    })?;
+    let (_, best_inliers, _, count, _) = best
+        .ok_or_else(|| VisionError::InvalidParameter("robust PnP found no valid model".into()))?;
     if count < 4 {
-        return Err(VisionError::InvalidParameter(
-            "robust PnP found too few inliers".into(),
-        ));
+        return Err(VisionError::InvalidParameter("robust PnP found too few inliers".into()));
     }
     let inlier_pairs = correspondences
         .iter()
@@ -119,7 +116,8 @@ pub fn project_object_point(
             "projected point lies behind or on the camera plane".into(),
         ));
     }
-    let normalized = Vec3::new(camera_point.x / camera_point.z, camera_point.y / camera_point.z, 1.0);
+    let normalized =
+        Vec3::new(camera_point.x / camera_point.z, camera_point.y / camera_point.z, 1.0);
     let pixel = camera.matrix().mul_vec3(normalized);
     Ok(Vec2 { x: pixel.x / pixel.z, y: pixel.y / pixel.z })
 }
@@ -187,17 +185,12 @@ fn estimate_pnp_dlt(
     let calibrated = camera.inverse().mul_mat3(projection);
     let calibrated_t = camera.inverse().mul_vec3(translation_part);
     let (rotation, scale) = orthonormalize_rotation(calibrated)?;
-    let translation = Vec3::new(
-        calibrated_t.x / scale,
-        calibrated_t.y / scale,
-        calibrated_t.z / scale,
-    );
+    let translation =
+        Vec3::new(calibrated_t.x / scale, calibrated_t.y / scale, calibrated_t.z / scale);
     // Flip if most points have negative depth.
     let pose = AbsolutePose::try_new(rotation, translation)?;
-    let positive = correspondences
-        .iter()
-        .filter(|pair| pose.transform_point(pair.object()).z > 0.0)
-        .count();
+    let positive =
+        correspondences.iter().filter(|pair| pose.transform_point(pair.object()).z > 0.0).count();
     if positive * 2 < correspondences.len() {
         AbsolutePose::try_new(
             Mat3::from_rows(
@@ -296,11 +289,7 @@ fn projection_jacobian(
     Ok(jacobian)
 }
 
-fn pnp_residual(
-    pose: AbsolutePose,
-    pair: ObjectImageCorrespondence,
-    camera: CameraMatrix3,
-) -> f64 {
+fn pnp_residual(pose: AbsolutePose, pair: ObjectImageCorrespondence, camera: CameraMatrix3) -> f64 {
     match project_object_point(pose, camera, pair.object()) {
         Ok(pixel) => (pixel.x - pair.image().x).hypot(pixel.y - pair.image().y),
         Err(_) => f64::MAX,
@@ -366,11 +355,8 @@ fn exp_so3(omega: Vec3<f64>) -> Mat3<f64> {
         );
     }
     let axis = omega.normalize();
-    let skew = Mat3::from_rows(
-        [0.0, -axis.z, axis.y],
-        [axis.z, 0.0, -axis.x],
-        [-axis.y, axis.x, 0.0],
-    );
+    let skew =
+        Mat3::from_rows([0.0, -axis.z, axis.y], [axis.z, 0.0, -axis.x], [-axis.y, axis.x, 0.0]);
     let skew2 = skew.mul_mat3(skew);
     let mut result = Mat3::<f64>::identity();
     let s = theta.sin();
@@ -537,12 +523,8 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let estimated = solve_pnp(&pairs, camera).unwrap();
-        for (expected, actual) in pose
-            .rotation()
-            .m
-            .iter()
-            .flatten()
-            .zip(estimated.rotation().m.iter().flatten())
+        for (expected, actual) in
+            pose.rotation().m.iter().flatten().zip(estimated.rotation().m.iter().flatten())
         {
             assert!((expected - actual).abs() < 2e-3);
         }

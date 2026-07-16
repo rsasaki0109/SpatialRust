@@ -3,9 +3,7 @@
 use spatialrust_image::{Image, ImageView};
 use spatialrust_math::{Mat3, Vec3};
 
-use crate::{
-    CameraMatrix3, PixelComponent, RelativePose, VisionError, VisionResult,
-};
+use crate::{CameraMatrix3, PixelComponent, RelativePose, VisionError, VisionResult};
 
 /// Invalid disparity sentinel written by [`stereo_block_match`].
 pub const INVALID_DISPARITY: f32 = -1.0;
@@ -115,12 +113,7 @@ pub struct StereoBmOptions {
 
 impl Default for StereoBmOptions {
     fn default() -> Self {
-        Self {
-            window_size: 15,
-            min_disparity: 0,
-            num_disparities: 64,
-            uniqueness_ratio: 15.0,
-        }
+        Self { window_size: 15, min_disparity: 0, num_disparities: 64, uniqueness_ratio: 15.0 }
     }
 }
 
@@ -163,23 +156,13 @@ pub fn stereo_rectify(
     let translation = rig.pose().translation();
     let baseline = translation.length();
     if baseline <= f64::EPSILON {
-        return Err(VisionError::InvalidParameter(
-            "stereo baseline must be non-zero".into(),
-        ));
+        return Err(VisionError::InvalidParameter("stereo baseline must be non-zero".into()));
     }
     let e1 = translation.normalize();
-    let helper = if e1.x.abs() < 0.9 {
-        Vec3::new(1.0, 0.0, 0.0)
-    } else {
-        Vec3::new(0.0, 1.0, 0.0)
-    };
+    let helper = if e1.x.abs() < 0.9 { Vec3::new(1.0, 0.0, 0.0) } else { Vec3::new(0.0, 1.0, 0.0) };
     let e2 = e1.cross(helper).normalize();
     let e3 = e1.cross(e2).normalize();
-    let r_rect = Mat3::from_rows(
-        [e1.x, e1.y, e1.z],
-        [e2.x, e2.y, e2.z],
-        [e3.x, e3.y, e3.z],
-    );
+    let r_rect = Mat3::from_rows([e1.x, e1.y, e1.z], [e2.x, e2.y, e2.z], [e3.x, e3.y, e3.z]);
     let left_rotation = r_rect;
     let right_rotation = r_rect.mul_mat3(rig.pose().rotation());
     let fx = 0.5 * (rig.left().matrix().m[0][0] + rig.right().matrix().m[0][0]);
@@ -287,11 +270,8 @@ pub fn disparity_to_depth(
     for y in 0..disparity.height() {
         for x in 0..disparity.width() {
             let d = f64::from(disparity.get(x, y).expect("in-bounds")[0]);
-            data[y * disparity.width() + x] = if d > 0.0 && d.is_finite() {
-                (focal_length * baseline / d) as f32
-            } else {
-                0.0
-            };
+            data[y * disparity.width() + x] =
+                if d > 0.0 && d.is_finite() { (focal_length * baseline / d) as f32 } else { 0.0 };
         }
     }
     Ok(Image::try_new(disparity.width(), disparity.height(), data)?)
@@ -367,11 +347,7 @@ fn invert_intrinsic(matrix: Mat3<f64>) -> VisionResult<Mat3<f64>> {
             "rectified intrinsics must have non-zero focal lengths".into(),
         ));
     }
-    Ok(Mat3::from_rows(
-        [1.0 / fx, 0.0, -cx / fx],
-        [0.0, 1.0 / fy, -cy / fy],
-        [0.0, 0.0, 1.0],
-    ))
+    Ok(Mat3::from_rows([1.0 / fx, 0.0, -cx / fx], [0.0, 1.0 / fy, -cy / fy], [0.0, 0.0, 1.0]))
 }
 
 #[cfg(test)]
@@ -394,11 +370,8 @@ mod tests {
     fn fronto_parallel_stereo_recovers_plane_depth() {
         let camera = camera();
         let baseline = 0.1;
-        let pose = RelativePose::try_new(
-            Mat3::<f64>::identity(),
-            Vec3::new(baseline, 0.0, 0.0),
-        )
-        .unwrap();
+        let pose =
+            RelativePose::try_new(Mat3::<f64>::identity(), Vec3::new(baseline, 0.0, 0.0)).unwrap();
         let rig = StereoRig::try_new(camera, camera, pose).unwrap();
         let maps = stereo_rectify(rig, 160, 120).unwrap();
         assert!((maps.baseline() - baseline).abs() < 1e-12);

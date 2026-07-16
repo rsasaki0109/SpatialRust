@@ -42,10 +42,7 @@ fn benchmark_geometry(c: &mut Criterion) {
     for &count in &[64usize, 256, 1024] {
         let pairs = (0..count)
             .map(|index| {
-                let source = Vec2 {
-                    x: (index % 32) as f64 * 10.0,
-                    y: (index / 32) as f64 * 8.0,
-                };
+                let source = Vec2 { x: (index % 32) as f64 * 10.0, y: (index / 32) as f64 * 8.0 };
                 PointCorrespondence2::try_new(
                     source,
                     Vec2 { x: source.x * 1.05 + 2.0, y: source.y * 0.98 - 1.0 },
@@ -117,8 +114,13 @@ fn benchmark_geometry(c: &mut Criterion) {
         lk.bench_function(BenchmarkId::from_parameter(name), |b| {
             b.iter(|| {
                 black_box(
-                    track_points_lucas_kanade(left.view(), next.view(), &points, Default::default())
-                        .unwrap(),
+                    track_points_lucas_kanade(
+                        left.view(),
+                        next.view(),
+                        &points,
+                        Default::default(),
+                    )
+                    .unwrap(),
                 )
             });
         });

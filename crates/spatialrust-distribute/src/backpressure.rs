@@ -30,10 +30,7 @@ impl BackpressurePolicy {
                 "require 0 < soft_limit <= hard_limit".into(),
             ));
         }
-        Ok(Self {
-            soft_limit,
-            hard_limit,
-        })
+        Ok(Self { soft_limit, hard_limit })
     }
 
     /// Evaluates queue depth against watermarks.
@@ -62,12 +59,7 @@ impl BoundedTransferQueue {
     /// Creates an empty queue.
     #[must_use]
     pub fn new(policy: BackpressurePolicy) -> Self {
-        Self {
-            policy,
-            items: Vec::new(),
-            soft_trips: 0,
-            hard_rejects: 0,
-        }
+        Self { policy, items: Vec::new(), soft_trips: 0, hard_rejects: 0 }
     }
 
     /// Current depth.
@@ -149,14 +141,8 @@ mod tests {
     fn soft_and_hard_limits() {
         let policy = BackpressurePolicy::try_new(1, 2).unwrap();
         let mut queue = BoundedTransferQueue::new(policy);
-        assert_eq!(
-            queue.try_push(sample("t0")).unwrap(),
-            BackpressureSignal::SoftLimit
-        );
-        assert_eq!(
-            queue.try_push(sample("t1")).unwrap(),
-            BackpressureSignal::SoftLimit
-        );
+        assert_eq!(queue.try_push(sample("t0")).unwrap(), BackpressureSignal::SoftLimit);
+        assert_eq!(queue.try_push(sample("t1")).unwrap(), BackpressureSignal::SoftLimit);
         assert!(queue.try_push(sample("t2")).is_err());
         assert_eq!(queue.hard_rejects(), 1);
         assert_eq!(queue.pop().unwrap().name, "t0");

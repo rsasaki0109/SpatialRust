@@ -81,11 +81,7 @@ pub struct StampedTime {
 impl StampedTime {
     /// Creates a stamped time with exact sync quality.
     #[must_use]
-    pub fn exact(
-        clock: impl Into<ClockId>,
-        domain: ClockDomain,
-        timestamp: Timestamp,
-    ) -> Self {
+    pub fn exact(clock: impl Into<ClockId>, domain: ClockDomain, timestamp: Timestamp) -> Self {
         Self { clock: clock.into(), domain, timestamp, quality: SyncQuality::exact() }
     }
 

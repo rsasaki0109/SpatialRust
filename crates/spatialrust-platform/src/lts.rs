@@ -46,9 +46,7 @@ impl LtsPolicy {
     /// Looks up a major line window.
     #[must_use]
     pub fn window_for(&self, major_line: &str) -> Option<&SupportWindow> {
-        self.windows
-            .iter()
-            .find(|window| window.major_line == major_line)
+        self.windows.iter().find(|window| window.major_line == major_line)
     }
 
     /// Default SpatialRust 1.x policy used by Epic 100.

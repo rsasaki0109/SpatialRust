@@ -30,7 +30,7 @@ impl TsdfVolume {
         if !(truncation.is_finite() && truncation > 0.0) {
             return Err(SceneError::InvalidConfiguration("truncation must be > 0".into()));
         }
-        if dims.iter().any(|d| *d == 0) {
+        if dims.contains(&0) {
             return Err(SceneError::InvalidConfiguration("dims must be non-zero".into()));
         }
         let len = dims[0].saturating_mul(dims[1]).saturating_mul(dims[2]);
@@ -83,7 +83,9 @@ impl TsdfVolume {
     /// Integrates every XYZ triple from interleaved storage.
     pub fn integrate_xyz(&mut self, xyz: &[f32], sensor_origin: Vec3<f32>) -> SceneResult<()> {
         if xyz.len() % 3 != 0 {
-            return Err(SceneError::InvalidConfiguration("xyz length must be a multiple of 3".into()));
+            return Err(SceneError::InvalidConfiguration(
+                "xyz length must be a multiple of 3".into(),
+            ));
         }
         for chunk in xyz.chunks_exact(3) {
             self.integrate_point(Vec3::new(chunk[0], chunk[1], chunk[2]), sensor_origin);
@@ -169,16 +171,8 @@ impl TsdfVolume {
     }
 }
 
-const CORNER_OFFSETS: [[usize; 3]; 8] = [
-    [0, 0, 0],
-    [1, 0, 0],
-    [1, 1, 0],
-    [0, 1, 0],
-    [0, 0, 1],
-    [1, 0, 1],
-    [1, 1, 1],
-    [0, 1, 1],
-];
+const CORNER_OFFSETS: [[usize; 3]; 8] =
+    [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]];
 
 #[cfg(test)]
 mod tests {
@@ -189,9 +183,7 @@ mod tests {
     fn integrates_and_extracts_non_empty_mesh() {
         let mut volume =
             TsdfVolume::try_new(Vec3::new(-1.0, -1.0, -1.0), 0.25, [8, 8, 8], 0.5).unwrap();
-        volume
-            .integrate_xyz(&[0.0, 0.0, 0.0, 0.2, 0.0, 0.0], Vec3::new(0.0, 0.0, -1.0))
-            .unwrap();
+        volume.integrate_xyz(&[0.0, 0.0, 0.0, 0.2, 0.0, 0.0], Vec3::new(0.0, 0.0, -1.0)).unwrap();
         let mesh = volume.extract_mesh(0.5);
         assert!(!mesh.positions.is_empty());
         assert_eq!(mesh.indices.len() % 3, 0);

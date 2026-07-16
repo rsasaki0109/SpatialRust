@@ -237,8 +237,7 @@ mod tests {
                 rebuilt = rebuilt.with_field(field);
             }
         }
-        let actual =
-            SchemaDescriptor::try_new("point", SchemaVersion::new(1, 0), rebuilt).unwrap();
+        let actual = SchemaDescriptor::try_new("point", SchemaVersion::new(1, 0), rebuilt).unwrap();
         assert_eq!(compare_schemas(&expected, &actual).verdict, CompatVerdict::Incompatible);
     }
 }

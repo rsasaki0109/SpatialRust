@@ -68,9 +68,9 @@ pub fn migrate_record(
         if let Ok(source) = record.cloud().field(&field.name) {
             buffers.insert(field.name.clone(), clone_buffer(source)?);
         } else {
-            let fill = policy.fill_missing.ok_or_else(|| {
-                RecordsError::MissingField(field.name.clone())
-            })?;
+            let fill = policy
+                .fill_missing
+                .ok_or_else(|| RecordsError::MissingField(field.name.clone()))?;
             buffers.insert(field.name.clone(), filled_buffer(field, len, fill)?);
         }
     }

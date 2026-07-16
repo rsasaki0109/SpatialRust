@@ -22,42 +22,38 @@ pub use spatialrust_voxelize as voxelize;
 
 #[cfg(feature = "ai")]
 pub use spatialrust_ai as ai;
+#[cfg(any(feature = "arrow-c-data", feature = "arrow-c-stream", feature = "arrow-c-device"))]
+pub use spatialrust_arrow as arrow;
 #[cfg(feature = "camera")]
 pub use spatialrust_camera as camera;
+#[cfg(feature = "distribute")]
+pub use spatialrust_distribute as distribute;
+#[cfg(feature = "episode")]
+pub use spatialrust_episode as episode;
 #[cfg(feature = "image")]
 pub use spatialrust_image as image;
 #[cfg(feature = "image-io")]
 pub use spatialrust_image_io as image_io;
-#[cfg(feature = "tensor")]
-pub use spatialrust_tensor as tensor;
-#[cfg(feature = "vision")]
-pub use spatialrust_vision as vision;
-#[cfg(feature = "records")]
-pub use spatialrust_records as records;
-#[cfg(any(
-    feature = "arrow-c-data",
-    feature = "arrow-c-stream",
-    feature = "arrow-c-device"
-))]
-pub use spatialrust_arrow as arrow;
-#[cfg(feature = "sync")]
-pub use spatialrust_sync as sync;
+#[cfg(any(feature = "interchange-gltf", feature = "interchange-openusd"))]
+pub use spatialrust_interchange as interchange;
 #[cfg(feature = "mapping")]
 pub use spatialrust_mapping as mapping;
+#[cfg(feature = "platform")]
+pub use spatialrust_platform as platform;
+#[cfg(feature = "records")]
+pub use spatialrust_records as records;
+#[cfg(feature = "runtime")]
+pub use spatialrust_runtime as runtime;
 #[cfg(feature = "scene")]
 pub use spatialrust_scene as scene;
 #[cfg(feature = "semantic")]
 pub use spatialrust_semantic as semantic;
-#[cfg(feature = "episode")]
-pub use spatialrust_episode as episode;
-#[cfg(feature = "runtime")]
-pub use spatialrust_runtime as runtime;
-#[cfg(any(feature = "interchange-gltf", feature = "interchange-openusd"))]
-pub use spatialrust_interchange as interchange;
-#[cfg(feature = "distribute")]
-pub use spatialrust_distribute as distribute;
-#[cfg(feature = "platform")]
-pub use spatialrust_platform as platform;
+#[cfg(feature = "sync")]
+pub use spatialrust_sync as sync;
+#[cfg(feature = "tensor")]
+pub use spatialrust_tensor as tensor;
+#[cfg(feature = "vision")]
+pub use spatialrust_vision as vision;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
@@ -252,8 +248,7 @@ pub use spatialrust_image_io::{
 #[cfg(feature = "camera-rgbd")]
 pub use spatialrust_camera::{
     depth_to_point_cloud, depth_to_xyz_dense, depth_to_xyz_dense_into, rgbd_to_point_cloud,
-    BrownConrady, CameraError, CameraIntrinsics,
-    DepthConversionOptions, PinholeCamera, RgbdError,
+    BrownConrady, CameraError, CameraIntrinsics, DepthConversionOptions, PinholeCamera, RgbdError,
 };
 
 #[cfg(feature = "vision")]

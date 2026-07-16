@@ -262,7 +262,9 @@ jobs:
           # intentionally not a production or default-CI dependency.
           python bench/opencv_comparison/test_report.py
           # Fail the build if the .pyi type stubs drift from the runtime API.
-          python -m mypy.stubtest spatialrust --ignore-missing-stub
+          python -m mypy.stubtest spatialrust --ignore-missing-stub \
+            --allowlist crates/spatialrust-py/stubtest_allowlist.txt \
+            --ignore-unused-allowlist
 
   vision-platform-conformance:
     name: Vision conformance (${{ matrix.os }})

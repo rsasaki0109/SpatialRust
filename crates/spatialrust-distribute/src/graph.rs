@@ -37,9 +37,7 @@ impl ExecutionPartition {
             ));
         }
         if nodes.iter().any(|n| n.is_empty()) {
-            return Err(DistributeError::InvalidConfiguration(
-                "node ids must be non-empty".into(),
-            ));
+            return Err(DistributeError::InvalidConfiguration("node ids must be non-empty".into()));
         }
         Ok(Self { id, nodes })
     }
@@ -82,16 +80,18 @@ impl PartitionGraph {
     }
 
     /// Connects two partitions with a directed edge.
-    pub fn connect(&mut self, from: impl Into<String>, to: impl Into<String>) -> DistributeResult<()> {
+    pub fn connect(
+        &mut self,
+        from: impl Into<String>,
+        to: impl Into<String>,
+    ) -> DistributeResult<()> {
         let from = from.into();
         let to = to.into();
         if !self.partitions.contains_key(&from) || !self.partitions.contains_key(&to) {
             return Err(DistributeError::Missing("partition endpoint".into()));
         }
         if from == to {
-            return Err(DistributeError::InvalidConfiguration(
-                "self-edges are not allowed".into(),
-            ));
+            return Err(DistributeError::InvalidConfiguration("self-edges are not allowed".into()));
         }
         if self.edges.iter().any(|(a, b)| a == &from && b == &to) {
             return Ok(());
@@ -121,18 +121,13 @@ impl PartitionGraph {
     /// Finds which partition owns a node id.
     #[must_use]
     pub fn partition_of_node(&self, node_id: &str) -> Option<&ExecutionPartition> {
-        self.partitions
-            .values()
-            .find(|partition| partition.contains(node_id))
+        self.partitions.values().find(|partition| partition.contains(node_id))
     }
 
     /// Returns outgoing neighbors of a partition.
     #[must_use]
     pub fn successors(&self, id: &str) -> Vec<&str> {
-        self.edges
-            .iter()
-            .filter_map(|(from, to)| (from == id).then_some(to.as_str()))
-            .collect()
+        self.edges.iter().filter_map(|(from, to)| (from == id).then_some(to.as_str())).collect()
     }
 
     /// Returns a topological order of partitions, or errors on cycles / missing nodes.
@@ -148,7 +143,8 @@ impl PartitionGraph {
 
         let mut queue: VecDeque<String> = indegree
             .iter()
-            .filter_map(|(id, deg)| (*deg == 0).then(|| (*id).to_string()))
+            .filter(|(_, deg)| **deg == 0)
+            .map(|(id, _)| (*id).to_string())
             .collect();
         // Stable order for deterministic schedules.
         let mut queued: HashSet<String> = queue.iter().cloned().collect();
@@ -211,9 +207,6 @@ mod tests {
             .unwrap();
         graph.connect("a", "b").unwrap();
         graph.connect("b", "a").unwrap();
-        assert!(matches!(
-            graph.topological_order(),
-            Err(crate::DistributeError::CycleDetected)
-        ));
+        assert!(matches!(graph.topological_order(), Err(crate::DistributeError::CycleDetected)));
     }
 }

@@ -18,6 +18,4 @@ pub use record::SpatialRecord;
 pub use schema::{
     compare_schemas, CompatVerdict, SchemaCompatReport, SchemaDescriptor, SchemaId, SchemaVersion,
 };
-pub use stream::{
-    MemoryChunkSink, MemoryChunkSource, SpatialRecordSink, SpatialRecordSource,
-};
+pub use stream::{MemoryChunkSink, MemoryChunkSource, SpatialRecordSink, SpatialRecordSource};

@@ -501,11 +501,9 @@ fn clip_histogram(histogram: &mut [usize; 256], clip_limit: usize) {
         histogram.iter_mut().for_each(|count| *count += batch);
     }
     let residual = clipped - batch * 256;
-    if residual > 0 {
-        let step = (256 / residual).max(1);
-        for index in (0..256).step_by(step).take(residual) {
-            histogram[index] += 1;
-        }
+    let step = 256_usize.checked_div(residual).unwrap_or(1).max(1);
+    for index in (0..256).step_by(step).take(residual) {
+        histogram[index] += 1;
     }
 }
 
