@@ -42,6 +42,269 @@ pub struct BilinearResizeU8Plan {
     y_samples: Vec<BilinearAxisSample>,
 }
 
+/// Reusable source-coordinate plan for packed `u8` nearest-neighbor resize.
+///
+/// Execution uses the cached source indices for packed one- and three-channel
+/// images. Other channel counts and explicitly strided views use the generic
+/// resize path so the public fallback contract remains unchanged.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NearestResizeU8Plan {
+    input_width: usize,
+    input_height: usize,
+    output_width: usize,
+    output_height: usize,
+    x_indices: Vec<usize>,
+    y_indices: Vec<usize>,
+}
+
+impl NearestResizeU8Plan {
+    /// Builds a plan for the named input and output dimensions.
+    pub fn new(
+        input_width: usize,
+        input_height: usize,
+        output_width: usize,
+        output_height: usize,
+    ) -> VisionResult<Self> {
+        validate_resize_dimensions(input_width, input_height, output_width, output_height)?;
+        Ok(Self {
+            input_width,
+            input_height,
+            output_width,
+            output_height,
+            x_indices: nearest_axis_indices(input_width, output_width),
+            y_indices: nearest_axis_indices(input_height, output_height),
+        })
+    }
+
+    /// Returns the planned input dimensions as `(width, height)`.
+    #[must_use]
+    pub const fn input_dimensions(&self) -> (usize, usize) {
+        (self.input_width, self.input_height)
+    }
+
+    /// Returns the planned output dimensions as `(width, height)`.
+    #[must_use]
+    pub const fn output_dimensions(&self) -> (usize, usize) {
+        (self.output_width, self.output_height)
+    }
+
+    /// Resizes into a newly allocated packed image.
+    pub fn resize<const CHANNELS: usize>(
+        &self,
+        input: ImageView<'_, u8, CHANNELS>,
+    ) -> VisionResult<Image<u8, CHANNELS>> {
+        let len = resize_output_len::<CHANNELS>(self.output_width, self.output_height)?;
+        let mut output = Image::try_new_with_metadata(
+            self.output_width,
+            self.output_height,
+            vec![0; len],
+            input.metadata(),
+        )?;
+        self.resize_into(input, output.view_mut())?;
+        Ok(output)
+    }
+
+    /// Resizes into caller-owned storage without allocating.
+    pub fn resize_into<const CHANNELS: usize>(
+        &self,
+        input: ImageView<'_, u8, CHANNELS>,
+        mut output: ImageViewMut<'_, u8, CHANNELS>,
+    ) -> VisionResult<()> {
+        validate_plan_views(self.input_dimensions(), self.output_dimensions(), input, &output)?;
+        if self.output_width == 0 || self.output_height == 0 {
+            output.set_metadata(input.metadata())?;
+            return Ok(());
+        }
+        let packed_input = input.row_stride() == self.input_width * CHANNELS;
+        let packed_output = output.row_stride() == self.output_width * CHANNELS;
+        if !matches!(CHANNELS, 1 | 3) || !packed_input || !packed_output {
+            return resize_into(input, output, Interpolation::Nearest);
+        }
+
+        output.set_metadata(input.metadata())?;
+        let row_stride = output.row_stride();
+        let output_span = row_stride * self.output_height;
+        let run_row = |y: usize, row: &mut [u8]| {
+            let source = input.row(self.y_indices[y]).expect("planned source row");
+            for (x, &source_x) in self.x_indices.iter().enumerate() {
+                let source_offset = source_x * CHANNELS;
+                let destination = x * CHANNELS;
+                row[destination..destination + CHANNELS]
+                    .copy_from_slice(&source[source_offset..source_offset + CHANNELS]);
+            }
+        };
+        if self.output_width * self.output_height * CHANNELS >= PARALLEL_RESIZE_COMPONENTS {
+            output.as_mut_slice()[..output_span]
+                .par_chunks_mut(row_stride)
+                .enumerate()
+                .for_each(|(y, row)| run_row(y, row));
+        } else {
+            output.as_mut_slice()[..output_span]
+                .chunks_mut(row_stride)
+                .enumerate()
+                .for_each(|(y, row)| run_row(y, row));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct AreaAxisSpan {
+    start: usize,
+    weights: Vec<f64>,
+}
+
+/// Reusable weighted-span plan for packed `u8` area resize.
+///
+/// Exact 2x and 4x downscales use integer block averages. Other shrinking
+/// shapes cache the contributing source spans and overlap weights. Enlargement,
+/// non-packed views, and channel counts other than one or three use the generic
+/// area implementation.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AreaResizeU8Plan {
+    input_width: usize,
+    input_height: usize,
+    output_width: usize,
+    output_height: usize,
+    integer_factor: Option<usize>,
+    x_spans: Vec<AreaAxisSpan>,
+    y_spans: Vec<AreaAxisSpan>,
+}
+
+impl AreaResizeU8Plan {
+    /// Builds a plan for the named input and output dimensions.
+    pub fn new(
+        input_width: usize,
+        input_height: usize,
+        output_width: usize,
+        output_height: usize,
+    ) -> VisionResult<Self> {
+        validate_resize_dimensions(input_width, input_height, output_width, output_height)?;
+        let downsample = output_width < input_width || output_height < input_height;
+        let integer_factor = [2, 4].into_iter().find(|&factor| {
+            input_width == output_width.saturating_mul(factor)
+                && input_height == output_height.saturating_mul(factor)
+        });
+        Ok(Self {
+            input_width,
+            input_height,
+            output_width,
+            output_height,
+            integer_factor,
+            x_spans: if downsample && integer_factor.is_none() {
+                area_axis_spans(input_width, output_width)
+            } else {
+                Vec::new()
+            },
+            y_spans: if downsample && integer_factor.is_none() {
+                area_axis_spans(input_height, output_height)
+            } else {
+                Vec::new()
+            },
+        })
+    }
+
+    /// Returns the planned input dimensions as `(width, height)`.
+    #[must_use]
+    pub const fn input_dimensions(&self) -> (usize, usize) {
+        (self.input_width, self.input_height)
+    }
+
+    /// Returns the planned output dimensions as `(width, height)`.
+    #[must_use]
+    pub const fn output_dimensions(&self) -> (usize, usize) {
+        (self.output_width, self.output_height)
+    }
+
+    /// Resizes into a newly allocated packed image.
+    pub fn resize<const CHANNELS: usize>(
+        &self,
+        input: ImageView<'_, u8, CHANNELS>,
+    ) -> VisionResult<Image<u8, CHANNELS>> {
+        let len = resize_output_len::<CHANNELS>(self.output_width, self.output_height)?;
+        let mut output = Image::try_new_with_metadata(
+            self.output_width,
+            self.output_height,
+            vec![0; len],
+            input.metadata(),
+        )?;
+        self.resize_into(input, output.view_mut())?;
+        Ok(output)
+    }
+
+    /// Resizes into caller-owned storage without allocating.
+    pub fn resize_into<const CHANNELS: usize>(
+        &self,
+        input: ImageView<'_, u8, CHANNELS>,
+        mut output: ImageViewMut<'_, u8, CHANNELS>,
+    ) -> VisionResult<()> {
+        validate_plan_views(self.input_dimensions(), self.output_dimensions(), input, &output)?;
+        if self.output_width == 0 || self.output_height == 0 {
+            output.set_metadata(input.metadata())?;
+            return Ok(());
+        }
+        let downsample =
+            self.output_width < self.input_width || self.output_height < self.input_height;
+        let packed_input = input.row_stride() == self.input_width * CHANNELS;
+        let packed_output = output.row_stride() == self.output_width * CHANNELS;
+        if !downsample || !matches!(CHANNELS, 1 | 3) || !packed_input || !packed_output {
+            return resize_into(input, output, Interpolation::Area);
+        }
+
+        output.set_metadata(input.metadata())?;
+        let row_stride = output.row_stride();
+        let output_span = row_stride * self.output_height;
+        let run_row = |y: usize, row: &mut [u8]| {
+            if let Some(factor) = self.integer_factor {
+                resize_integer_area_row(input, row, y, self.output_width, factor);
+            } else {
+                self.resize_weighted_area_row(input, row, y);
+            }
+        };
+        if self.output_width * self.output_height * CHANNELS >= PARALLEL_RESIZE_COMPONENTS {
+            output.as_mut_slice()[..output_span]
+                .par_chunks_mut(row_stride)
+                .enumerate()
+                .for_each(|(y, row)| run_row(y, row));
+        } else {
+            output.as_mut_slice()[..output_span]
+                .chunks_mut(row_stride)
+                .enumerate()
+                .for_each(|(y, row)| run_row(y, row));
+        }
+        Ok(())
+    }
+
+    fn resize_weighted_area_row<const CHANNELS: usize>(
+        &self,
+        input: ImageView<'_, u8, CHANNELS>,
+        output: &mut [u8],
+        y: usize,
+    ) {
+        let y_span = &self.y_spans[y];
+        for (x, x_span) in self.x_spans.iter().enumerate() {
+            let mut sums = [0.0_f64; CHANNELS];
+            let mut total_weight = 0.0;
+            for (y_offset, &weight_y) in y_span.weights.iter().enumerate() {
+                let row = input.row(y_span.start + y_offset).expect("planned source row");
+                for (x_offset, &weight_x) in x_span.weights.iter().enumerate() {
+                    let weight = weight_x * weight_y;
+                    let source = (x_span.start + x_offset) * CHANNELS;
+                    for channel in 0..CHANNELS {
+                        sums[channel] += f64::from(row[source + channel]) * weight;
+                    }
+                    total_weight += weight;
+                }
+            }
+            let destination = x * CHANNELS;
+            for channel in 0..CHANNELS {
+                output[destination + channel] =
+                    PixelComponent::from_f64(sums[channel] / total_weight);
+            }
+        }
+    }
+}
+
 impl BilinearResizeU8Plan {
     /// Builds a plan for the named input and output dimensions.
     pub fn new(
@@ -456,6 +719,113 @@ impl BilinearResizeU8Plan {
     }
 }
 
+fn validate_resize_dimensions(
+    input_width: usize,
+    input_height: usize,
+    output_width: usize,
+    output_height: usize,
+) -> VisionResult<()> {
+    if output_width != 0 && output_height != 0 && (input_width == 0 || input_height == 0) {
+        return Err(VisionError::InvalidDimensions(
+            "cannot resize an empty input to a non-empty output".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn resize_output_len<const CHANNELS: usize>(width: usize, height: usize) -> VisionResult<usize> {
+    width
+        .checked_mul(height)
+        .and_then(|pixels| pixels.checked_mul(CHANNELS))
+        .ok_or_else(|| VisionError::InvalidDimensions("resize output is too large".to_owned()))
+}
+
+fn validate_plan_views<const CHANNELS: usize>(
+    input_dimensions: (usize, usize),
+    output_dimensions: (usize, usize),
+    input: ImageView<'_, u8, CHANNELS>,
+    output: &ImageViewMut<'_, u8, CHANNELS>,
+) -> VisionResult<()> {
+    if (input.width(), input.height()) != input_dimensions {
+        return Err(VisionError::InvalidDimensions(format!(
+            "resize plan expects input {}x{}, found {}x{}",
+            input_dimensions.0,
+            input_dimensions.1,
+            input.width(),
+            input.height()
+        )));
+    }
+    if (output.width(), output.height()) != output_dimensions {
+        return Err(VisionError::InvalidDimensions(format!(
+            "resize plan expects output {}x{}, found {}x{}",
+            output_dimensions.0,
+            output_dimensions.1,
+            output.width(),
+            output.height()
+        )));
+    }
+    Ok(())
+}
+
+fn nearest_axis_indices(input_len: usize, output_len: usize) -> Vec<usize> {
+    if input_len == 0 || output_len == 0 {
+        return Vec::new();
+    }
+    (0..output_len)
+        .map(|output| {
+            clamped_index(
+                half_pixel_coordinate(output, input_len, output_len).round() as isize,
+                input_len,
+            )
+        })
+        .collect()
+}
+
+fn area_axis_spans(input_len: usize, output_len: usize) -> Vec<AreaAxisSpan> {
+    if input_len == 0 || output_len == 0 {
+        return Vec::new();
+    }
+    let scale = input_len as f64 / output_len as f64;
+    (0..output_len)
+        .map(|output| {
+            let start_coordinate = output as f64 * scale;
+            let end_coordinate = (output + 1) as f64 * scale;
+            let start = start_coordinate.floor() as usize;
+            let end = end_coordinate.ceil().min(input_len as f64) as usize;
+            let weights = (start..end)
+                .map(|source| {
+                    (end_coordinate.min(source as f64 + 1.0) - start_coordinate.max(source as f64))
+                        .max(0.0)
+                })
+                .collect();
+            AreaAxisSpan { start, weights }
+        })
+        .collect()
+}
+
+fn resize_integer_area_row<const CHANNELS: usize>(
+    input: ImageView<'_, u8, CHANNELS>,
+    output: &mut [u8],
+    y: usize,
+    output_width: usize,
+    factor: usize,
+) {
+    let divisor = (factor * factor) as u32;
+    for x in 0..output_width {
+        let destination = x * CHANNELS;
+        for channel in 0..CHANNELS {
+            let mut sum = 0_u32;
+            for source_y in y * factor..(y + 1) * factor {
+                let row = input.row(source_y).expect("integer area source row");
+                for source_x in x * factor..(x + 1) * factor {
+                    sum += u32::from(row[source_x * CHANNELS + channel]);
+                }
+            }
+            output[destination + channel] = ((sum + divisor / 2) / divisor) as u8;
+        }
+    }
+}
+
 fn validate_rgb_chw_normalization(scale: f32, std: [f32; 3]) -> VisionResult<()> {
     if !scale.is_finite() || std.iter().any(|value| !value.is_finite() || *value == 0.0) {
         return Err(VisionError::InvalidParameter(
@@ -794,7 +1164,11 @@ fn sample_area<T: PixelComponent, const CHANNELS: usize>(
 
 #[cfg(test)]
 mod tests {
-    use super::{resize, resize_into, BilinearResizeU8Plan, Interpolation};
+    use super::{
+        resize, resize_into, AreaResizeU8Plan, BilinearResizeU8Plan, Interpolation,
+        NearestResizeU8Plan,
+    };
+    use proptest::prelude::*;
     use spatialrust_image::{Image, ImageView, ImageViewMut};
 
     #[test]
@@ -899,5 +1273,107 @@ mod tests {
         let actual = plan.resize(input).unwrap();
         let expected = resize(input, 2, 2, Interpolation::Bilinear).unwrap();
         assert_eq!(actual, expected);
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(300))]
+
+        #[test]
+        fn packed_nearest_and_area_plans_are_bit_exact(
+            input_width in 1_usize..25,
+            input_height in 1_usize..25,
+            output_width in 1_usize..25,
+            output_height in 1_usize..25,
+            seed in any::<u64>(),
+        ) {
+            let mut state = seed;
+            let mut next_u8 = || {
+                state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                (state >> 32) as u8
+            };
+            let rgb_data = (0..input_width * input_height * 3)
+                .map(|_| next_u8())
+                .collect::<Vec<_>>();
+            let gray_data = (0..input_width * input_height)
+                .map(|_| next_u8())
+                .collect::<Vec<_>>();
+            let rgb = Image::<u8, 3>::try_new(input_width, input_height, rgb_data).unwrap();
+            let gray = Image::<u8, 1>::try_new(input_width, input_height, gray_data).unwrap();
+
+            let nearest = NearestResizeU8Plan::new(
+                input_width,
+                input_height,
+                output_width,
+                output_height,
+            )
+            .unwrap();
+            prop_assert_eq!(
+                nearest.resize(rgb.view()).unwrap(),
+                resize(rgb.view(), output_width, output_height, Interpolation::Nearest).unwrap(),
+            );
+            prop_assert_eq!(
+                nearest.resize(gray.view()).unwrap(),
+                resize(gray.view(), output_width, output_height, Interpolation::Nearest).unwrap(),
+            );
+
+            let area = AreaResizeU8Plan::new(
+                input_width,
+                input_height,
+                output_width,
+                output_height,
+            )
+            .unwrap();
+            prop_assert_eq!(
+                area.resize(rgb.view()).unwrap(),
+                resize(rgb.view(), output_width, output_height, Interpolation::Area).unwrap(),
+            );
+            prop_assert_eq!(
+                area.resize(gray.view()).unwrap(),
+                resize(gray.view(), output_width, output_height, Interpolation::Area).unwrap(),
+            );
+        }
+    }
+
+    #[test]
+    fn nearest_and_area_plans_fall_back_for_strides_and_preserve_padding() {
+        let mut input_storage = vec![211_u8; 47];
+        for y in 0..4 {
+            for x in 0..9 {
+                input_storage[y * 11 + x] = (y * 67 + x * 19) as u8;
+            }
+        }
+        let input = ImageView::<u8, 3>::new(3, 4, 11, &input_storage).unwrap();
+        for (interpolation, nearest) in
+            [(Interpolation::Nearest, true), (Interpolation::Area, false)]
+        {
+            let mut storage = vec![199_u8; 29];
+            let output = ImageViewMut::<u8, 3>::new(2, 3, 10, &mut storage).unwrap();
+            if nearest {
+                NearestResizeU8Plan::new(3, 4, 2, 3).unwrap().resize_into(input, output).unwrap();
+            } else {
+                AreaResizeU8Plan::new(3, 4, 2, 3).unwrap().resize_into(input, output).unwrap();
+            }
+            let expected = resize(input, 2, 3, interpolation).unwrap();
+            for y in 0..3 {
+                assert_eq!(&storage[y * 10..y * 10 + 6], expected.view().row(y).unwrap());
+                if y < 2 {
+                    assert_eq!(&storage[y * 10 + 6..(y + 1) * 10], &[199; 4]);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn nearest_and_area_plans_reject_wrong_dimensions() {
+        let input = Image::<u8, 1>::try_new(4, 4, (0..16).collect()).unwrap();
+        let mut output = Image::<u8, 1>::try_new(2, 2, vec![0; 4]).unwrap();
+        assert!(NearestResizeU8Plan::new(5, 4, 2, 2)
+            .unwrap()
+            .resize_into(input.view(), output.view_mut())
+            .is_err());
+        assert!(AreaResizeU8Plan::new(4, 4, 3, 2)
+            .unwrap()
+            .resize_into(input.view(), output.view_mut())
+            .is_err());
     }
 }
