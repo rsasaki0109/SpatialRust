@@ -365,65 +365,103 @@ pub fn gaussian_blur_u8_into<const CHANNELS: usize>(
     );
     workspace.horizontal.resize(len, 0);
     let row_len = input.width() * CHANNELS;
-    let height = input.height();
     let horizontal = &mut workspace.horizontal;
     let kernel_x = workspace.kernel_x.as_slice();
     let arch = Arch::new();
     if len >= 1_000_000 {
-        let workers = rayon::current_num_threads().min(height.max(1));
-        let rows_per_worker = height.div_ceil(workers);
-        horizontal.par_chunks_mut(rows_per_worker * row_len).enumerate().for_each(
-            |(chunk, rows)| {
-                let start_y = chunk * rows_per_worker;
-                for (offset, row) in rows.chunks_mut(row_len).enumerate() {
-                    arch.dispatch(|| {
-                        gaussian_horizontal_row(input, start_y + offset, kernel_x, border, row);
-                    });
-                }
-            },
+        gaussian_blur_u8_parallel_bands(
+            arch,
+            input,
+            kernel_x,
+            workspace.kernel_y.as_slice(),
+            border,
+            output,
+            horizontal,
         );
-    } else {
-        for (y, row) in horizontal.chunks_mut(row_len).enumerate() {
-            arch.dispatch(|| gaussian_horizontal_row(input, y, kernel_x, border, row));
-        }
+        return Ok(());
     }
+    arch.dispatch(|| {
+        for (y, row) in horizontal.chunks_mut(row_len).enumerate() {
+            gaussian_horizontal_row(input, y, kernel_x, border, row);
+        }
+    });
 
     let kernel_y = workspace.kernel_y.as_slice();
-    if len >= 1_000_000 {
-        let workers = rayon::current_num_threads().min(height.max(1));
-        let rows_per_worker = height.div_ceil(workers);
-        output.par_chunks_mut(rows_per_worker * row_len).enumerate().for_each(|(chunk, rows)| {
-            let start_y = chunk * rows_per_worker;
-            for (offset, row) in rows.chunks_mut(row_len).enumerate() {
-                arch.dispatch(|| {
+    arch.dispatch(|| {
+        for (y, row) in output.chunks_mut(row_len).enumerate() {
+            gaussian_vertical_row(
+                horizontal,
+                input.width(),
+                input.height(),
+                y,
+                kernel_y,
+                border,
+                row,
+            );
+        }
+    });
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn gaussian_blur_u8_parallel_bands<const CHANNELS: usize>(
+    arch: Arch,
+    input: ImageView<'_, u8, CHANNELS>,
+    kernel_x: &[u16],
+    kernel_y: &[u16],
+    border: BorderMode<u8, CHANNELS>,
+    output: &mut [u8],
+    horizontal: &mut Vec<u16>,
+) {
+    let width = input.width();
+    let height = input.height();
+    let row_len = width * CHANNELS;
+    let workers = rayon::current_num_threads().min(height.max(1));
+    let rows_per_worker = height.div_ceil(workers);
+    let radius_y = kernel_y.len() / 2;
+    let scratch_rows = rows_per_worker + radius_y * 2;
+    let scratch_len = scratch_rows * row_len;
+    horizontal.resize(workers * scratch_len, 0);
+    horizontal
+        .par_chunks_mut(scratch_len)
+        .zip(output.par_chunks_mut(rows_per_worker * row_len))
+        .enumerate()
+        .for_each(|(band, (scratch, output_rows))| {
+            let start_y = band * rows_per_worker;
+            let output_row_count = output_rows.len() / row_len;
+            let used_scratch_rows = output_row_count + radius_y * 2;
+            arch.dispatch(|| {
+                for (local_y, row) in
+                    scratch[..used_scratch_rows * row_len].chunks_mut(row_len).enumerate()
+                {
+                    let source_y = start_y as isize + local_y as isize - radius_y as isize;
+                    if let Some(mapped_y) = map_index(source_y, height, border) {
+                        gaussian_horizontal_row(input, mapped_y, kernel_x, border, row);
+                    } else {
+                        let constant = match border {
+                            BorderMode::Constant(pixel) => pixel,
+                            _ => unreachable!("only constant borders can map outside the image"),
+                        };
+                        for pixel in row.chunks_exact_mut(CHANNELS) {
+                            for channel in 0..CHANNELS {
+                                pixel[channel] = u16::from(constant[channel]) * 256;
+                            }
+                        }
+                    }
+                }
+                for (local_y, row) in output_rows.chunks_mut(row_len).enumerate() {
                     gaussian_vertical_row(
-                        horizontal,
-                        input.width(),
-                        height,
-                        start_y + offset,
+                        scratch,
+                        width,
+                        used_scratch_rows,
+                        local_y + radius_y,
                         kernel_y,
-                        border,
+                        BorderMode::<u8, CHANNELS>::Replicate,
                         row,
                     );
-                });
-            }
-        });
-    } else {
-        for (y, row) in output.chunks_mut(row_len).enumerate() {
-            arch.dispatch(|| {
-                gaussian_vertical_row(
-                    horizontal,
-                    input.width(),
-                    input.height(),
-                    y,
-                    kernel_y,
-                    border,
-                    row,
-                );
+                }
             });
-        }
-    }
-    Ok(())
+        });
 }
 
 fn gaussian_output_len<const CHANNELS: usize>(width: usize, height: usize) -> VisionResult<usize> {
@@ -668,6 +706,7 @@ fn prepare_fixed_gaussian_kernel(
     *cached_key = Some(key);
 }
 
+#[inline(always)]
 fn gaussian_horizontal_row<const CHANNELS: usize>(
     input: ImageView<'_, u8, CHANNELS>,
     y: usize,
@@ -793,6 +832,7 @@ fn gaussian_vertical_border_row<const CHANNELS: usize>(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[inline(always)]
 fn gaussian_vertical_row<const CHANNELS: usize>(
     horizontal: &[u16],
     width: usize,
@@ -1126,6 +1166,37 @@ mod tests {
         )
         .is_err());
         assert!(gaussian_blur_u8(image.view(), 9, 5, 1.2, 1.2, BorderMode::Reflect101,).is_err());
+    }
+
+    #[test]
+    fn specialized_gaussian_parallel_bands_match_generic_across_seams() {
+        let width = 600;
+        let height = 600;
+        let stride = width * 3 + 7;
+        let mut storage = vec![199_u8; stride * height];
+        for y in 0..height {
+            for x in 0..width {
+                for channel in 0..3 {
+                    storage[y * stride + x * 3 + channel] =
+                        ((x * 31 + y * 17 + channel * 73) & 255) as u8;
+                }
+            }
+        }
+        let view = ImageView::<u8, 3>::new(width, height, stride, &storage).unwrap();
+        let expected = gaussian_blur(view, 5, 5, 1.2, 1.2, BorderMode::Reflect101).unwrap();
+        let actual =
+            gaussian_blur_u8(view, 5, 5, 1.2, 1.2, BorderMode::Reflect101).unwrap();
+        assert!(expected
+            .as_slice()
+            .iter()
+            .zip(actual.as_slice())
+            .all(|(&left, &right)| left.abs_diff(right) <= 1));
+
+        let constant = Image::<u8, 3>::from_pixel(width, height, [11, 23, 47]).unwrap();
+        let constant_blur =
+            gaussian_blur_u8(constant.view(), 5, 5, 1.2, 1.2, BorderMode::Constant([11, 23, 47]))
+                .unwrap();
+        assert_eq!(constant_blur, constant);
     }
 
     proptest! {
