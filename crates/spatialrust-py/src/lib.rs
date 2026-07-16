@@ -3900,6 +3900,13 @@ impl PyDistanceTransformWorkspace {
     }
 }
 
+thread_local! {
+    /// Reused across `distance_transform_edt` calls that omit an explicit workspace, so the
+    /// convenience Python entry point does not re-allocate every scratch buffer on each call.
+    static POOLED_EDT_WORKSPACE: std::cell::RefCell<DistanceTransformWorkspace> =
+        std::cell::RefCell::new(DistanceTransformWorkspace::new());
+}
+
 /// Computes the exact Euclidean distance to the nearest zero-valued mask pixel.
 #[pyfunction]
 #[pyo3(signature = (mask, spacing=(1.0, 1.0), out=None, workspace=None))]
@@ -3955,6 +3962,45 @@ fn distance_transform_edt<'py>(
             .map_err(to_py_err)?;
         let array = Array2::from_shape_vec((height, width), output).map_err(to_py_err)?;
         return Ok(array.into_pyarray_bound(py));
+    }
+
+    if spacing == (1.0, 1.0) && width <= u16::MAX as usize && height <= u16::MAX as usize {
+        let packed;
+        let input = match mask_view.as_slice() {
+            Some(slice) => slice,
+            None => {
+                packed = mask_view.iter().copied().collect::<Vec<_>>();
+                packed.as_slice()
+            }
+        };
+        return POOLED_EDT_WORKSPACE.with(|cell| {
+            let mut pooled = cell.borrow_mut();
+            if let Some(out) = out {
+                {
+                    let mut out_rw = out.readwrite();
+                    let mut out_view = out_rw.as_array_mut();
+                    if out_view.shape() != [height, width] {
+                        return Err(PyValueError::new_err(format!(
+                            "out shape must be ({height}, {width}), found {:?}",
+                            out_view.shape()
+                        )));
+                    }
+                    let Some(out_slice) = out_view.as_slice_mut() else {
+                        return Err(PyValueError::new_err(
+                            "out must be a contiguous float32 array of shape (H, W)",
+                        ));
+                    };
+                    distance_transform_edt_u8_into_op(input, width, height, out_slice, &mut pooled)
+                        .map_err(to_py_err)?;
+                }
+                return Ok(out);
+            }
+            let mut output = vec![0.0_f32; width * height];
+            distance_transform_edt_u8_into_op(input, width, height, &mut output, &mut pooled)
+                .map_err(to_py_err)?;
+            let array = Array2::from_shape_vec((height, width), output).map_err(to_py_err)?;
+            Ok(array.into_pyarray_bound(py))
+        });
     }
 
     let image = gray_u8_image_from_numpy(mask)?;
