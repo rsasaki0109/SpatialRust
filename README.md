@@ -395,6 +395,9 @@ MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling 
 Browse the published [algorithm catalog](https://rsasaki0109.github.io/SpatialRust/algorithms.html),
 [Rust API reference](https://rsasaki0109.github.io/SpatialRust/spatialrust/index.html),
 and [Vision 2 performance program](https://rsasaki0109.github.io/SpatialRust/vision2.html).
+The fail-closed [Vision 2 release receipt](docs/VISION_2_RELEASE_RECEIPT.md)
+and [migration guide](docs/VISION_2_MIGRATION.md) record the canonical
+performance/resource budgets and explicit CPU/GPU ownership guidance.
 
 ## Workspace crates
 

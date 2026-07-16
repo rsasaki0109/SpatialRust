@@ -280,9 +280,11 @@ jobs:
           cargo test -p spatialrust-camera
           cargo test -p spatialrust-vision --no-default-features --features full
           cargo test -p spatialrust-platform vision1
+          cargo test -p spatialrust-platform vision2
           cargo test -p spatialrust --no-default-features --features platform,camera-rgbd,vision-full --test vision_api_v1
           cargo run -p spatialrust --no-default-features --features vision-full --example vision_1_cpu
           cargo run -p spatialrust --no-default-features --features platform --example vision_1_release_gate
+          cargo run -p spatialrust --no-default-features --features platform --example vision_2_release_gate
 
   bench:
     name: Benchmark compile

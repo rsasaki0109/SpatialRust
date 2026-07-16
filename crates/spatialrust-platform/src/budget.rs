@@ -13,6 +13,10 @@ pub enum BudgetKind {
     BytesCopied,
     /// Host memory residency upper bound.
     MemoryBytes,
+    /// Number of dynamic allocations in one measured operation.
+    AllocationCount,
+    /// Number of worker threads permitted by the measured policy.
+    ThreadCount,
 }
 
 /// One declared budget ceiling.

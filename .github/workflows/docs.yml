@@ -33,6 +33,8 @@ jobs:
           cp docs/site/algorithms.html target/doc/algorithms.html
           cp docs/site/vision2.html target/doc/vision2.html
           cp docs/site/styles.css target/doc/styles.css
+          cargo run -q -p spatialrust --no-default-features --features platform --example vision_2_release_gate > target/doc/vision2-release.md
+          cp docs/VISION_2_MIGRATION.md target/doc/vision2-migration.md
       - uses: actions/upload-pages-artifact@v3
         with:
           path: target/doc
