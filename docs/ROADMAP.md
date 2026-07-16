@@ -661,6 +661,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | 118B | Complete | Ring-buffer suppression and reusable hysteresis queue | parallel three-row magnitude rings, reusable state/stack, and allocated-byte receipt |
 | 118C | Complete | Keep inspectable intermediates opt-in while making `canny()` allocation-light | `canny_into`, strided output padding, Python output identity, and workspace capacity tests |
 | 118D | Complete | Improve Canny by at least 5x on one canonical large profile | 11.92× native 4K document-line improvement; bit-exact OpenCV parity; 1.42× OpenCV win |
+| 118E | Complete | Counter dense sensor-noise hysteresis cost without regressing sparse documents | weak-candidate frontier; bit-exact parity; 2.59×/2.75× OpenCV reuse wins at 1080p/4K |
 
 ### Epic 119 delivery slices
 
