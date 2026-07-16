@@ -26,7 +26,7 @@ The hero GIF above is **real MVP pipeline output** (not a mockup): it uses the p
 
 | ⚡ GPU-accelerated | 🗂️ COPC-native | 🦀 Pure Rust | 🧩 Composable |
 | --- | --- | --- | --- |
-| wgpu voxel filter, **~3.9× at 2M points**, automatic CPU fallback | **bounds + LOD** partial reads straight off disk — no full-tile load | no C++ / FFI binding layer to fight | one MVP crate: **IO → filter → segment → register** |
+| explicit wgpu voxel and normal kernels, automatic CPU fallback | **bounds + LOD** partial reads straight off disk — no full-tile load | no C++ / FFI binding layer to fight | one MVP crate: **IO → filter → segment → register** |
 
 <p align="center">
   <img src="docs/assets/clusters_rotating.gif" alt="A multi-object point cloud rotating, each object colored by its DBSCAN cluster label" width="380">
@@ -63,45 +63,37 @@ cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
 
 ## Performance
 
-The voxel downsampler runs on CPU or GPU (wgpu). `ExecutionPolicy::Auto` keeps small clouds on the CPU — where it's fastest — and switches to the GPU as point counts grow, so you get the best of both without tuning.
-
-Current CPU-only centroid baseline (2026-07-16, Windows release build,
-`point_xyzi`, leaf=4.0, Criterion median):
-
-| Points | CPU |
-| ---: | ---: |
-| 10k | ~0.252 ms |
-| 65,536 | ~1.72 ms |
-| 100k | ~2.64 ms |
-| 200k | ~5.09 ms |
-| 500k | ~11.6 ms |
-| 750k | ~18.3 ms |
-| 1M | ~23.9 ms |
-| 2M | ~47.3 ms |
-
-Reproduce the CPU slice:
-`cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample -- cpu_centroid --noplot`.
-See the dated [CPU benchmark receipt](notes/2026-07-16_cpu_voxel_rebaseline.md)
-for the host, command, and claim boundaries.
-
-The chart and matched CPU/GPU table below are the earlier 2026-06-12 run; they
-remain the basis for the current Auto policy until both paths are rerun together.
+The voxel downsampler runs on CPU or GPU (wgpu). The current end-to-end
+`point_xyzi` centroid rebaseline finds no GPU crossover through 2M points, so
+`ExecutionPolicy::Auto` stays on CPU for this mode. Explicit GPU execution is
+available for profiling and GPU-resident workflows; callers opt into it with
+`without_gpu_min_points()`.
 
 <p align="center">
-  <img src="docs/assets/benchmark_voxel.svg" alt="Historical 2026-06-12 voxel downsample latency: CPU is slightly ahead at 200k, while GPU wins at 500k and reaches about 3.9x speedup at 2M" width="960">
+  <img src="docs/assets/benchmark_voxel.svg" alt="2026-07-16 end-to-end centroid voxel latency: CPU remains faster through 2M points, while GPU submit batching reduces the GPU path latency" width="960">
 </p>
 
-Historical matched end-to-end centroid filter latency (leaf=4.0):
+End-to-end centroid filter latency (`point_xyzi`, leaf=4.0, release build):
 
 | Points | CPU | GPU | Winner |
 | ---: | ---: | ---: | :--- |
-| 100k | **~7 ms** | ~17 ms | CPU |
-| 200k | **~24 ms** | ~26 ms | ~even |
-| 500k | ~94 ms | **~51 ms** | GPU |
-| 1M | ~155 ms | **~56 ms** | GPU (~2.8x) |
-| 2M | ~389 ms | **~101 ms** | GPU (~3.9x) |
+| 10k | **~0.252 ms** | ~8.18 ms | CPU |
+| 65,536 | **~1.72 ms** | ~16.0 ms | CPU |
+| 100k | **~2.64 ms** | ~21.0 ms | CPU |
+| 200k | **~5.09 ms** | ~24.5 ms | CPU |
+| 500k | **~11.6 ms** | ~35.8 ms | CPU |
+| 750k | **~18.3 ms** | ~55.0 ms | CPU |
+| 1M | **~23.9 ms** | ~65.9 ms | CPU |
+| 2M | **~47.3 ms** | ~105 ms | CPU |
 
-Reproduce both paths before publishing a fresh crossover claim:
+The CPU values use the 100-sample Criterion rebaseline. GPU optimization probes
+use isolated 10-sample processes to bound driver allocation growth. GPU model
+identity is intentionally omitted; the run used a high-performance discrete
+adapter with the Vulkan backend. See the dated
+[CPU receipt](notes/2026-07-16_cpu_voxel_rebaseline.md) and
+[GPU receipt](notes/2026-07-16_gpu_voxel_acceleration.md).
+
+Reproduce:
 `cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.
 
 Normal estimation has an optional wgpu path (`GpuNormalEstimator`, `feature-normal-gpu`). In **radius mode** the neighbor search runs entirely on the GPU via a uniform grid (covariance + Jacobi eigensolver included), which is **up to ~50× faster** than the CPU KD-tree estimator:
@@ -654,7 +646,12 @@ PCD/PLY/LAS/COPC -> voxel downsample -> normals -> plane RANSAC -> clustering ->
   <img src="docs/assets/readme_mvp_pipeline.gif" alt="Terminal-style receipt of a real SpatialRust MVP run on the public PCL table_scene_lms400 cloud: left panel shows the evolving top-down result, right panel types measured load, voxel, plane, and cluster counts" width="640">
 </p>
 
-GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode). GPU plane, normal, and Euclidean clustering use the same policy flags (`--plane-policy`, `--normal-policy`, `--cluster-policy`).
+GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto`
+currently keeps centroid voxel filtering on CPU because the latest end-to-end
+receipt found no GPU crossover through 2M points. Explicit GPU execution remains
+available with the threshold disabled. GPU plane, normal, and Euclidean
+clustering use the same policy flags (`--plane-policy`, `--normal-policy`,
+`--cluster-policy`).
 
 ```bash
 cargo test -p spatialrust-gpu --features gpu-wgpu

@@ -47,6 +47,16 @@ pub struct WgpuAdapterInfo {
     pub driver_info: String,
 }
 
+/// Adapter power preference used when creating a headless wgpu runtime.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum WgpuPowerPreference {
+    /// Prefer a discrete or otherwise high-performance adapter.
+    #[default]
+    HighPerformance,
+    /// Prefer an integrated or otherwise power-efficient adapter.
+    LowPower,
+}
+
 /// Minimum storage buffers required for the 4-channel gather kernel.
 #[cfg(feature = "gpu-wgpu")]
 pub const MULTI_GATHER4_STORAGE_BUFFERS: u32 = 10;
@@ -60,11 +70,16 @@ static SHARED_RUNTIME: OnceLock<Result<Arc<WgpuRuntime>, String>> = OnceLock::ne
 
 #[cfg(feature = "gpu-wgpu")]
 impl WgpuRuntime {
-    /// Creates a headless wgpu runtime using the default adapter.
+    /// Creates a headless wgpu runtime preferring a high-performance adapter.
     ///
     /// Prefer [`Self::shared`] when running multiple GPU filters in one process.
     pub fn new_headless() -> SpatialResult<Self> {
-        pollster::block_on(Self::new_headless_async())
+        Self::new_headless_with_preference(WgpuPowerPreference::HighPerformance)
+    }
+
+    /// Creates a headless wgpu runtime with an explicit adapter power preference.
+    pub fn new_headless_with_preference(preference: WgpuPowerPreference) -> SpatialResult<Self> {
+        pollster::block_on(Self::new_headless_async(preference))
     }
 
     /// Returns a process-wide shared headless runtime, initializing it on first use.
@@ -215,7 +230,7 @@ impl WgpuRuntime {
         self.upload_pool.clear();
     }
 
-    async fn new_headless_async() -> SpatialResult<Self> {
+    async fn new_headless_async(preference: WgpuPowerPreference) -> SpatialResult<Self> {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -223,7 +238,10 @@ impl WgpuRuntime {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::LowPower,
+                power_preference: match preference {
+                    WgpuPowerPreference::HighPerformance => wgpu::PowerPreference::HighPerformance,
+                    WgpuPowerPreference::LowPower => wgpu::PowerPreference::LowPower,
+                },
                 compatible_surface: None,
                 force_fallback_adapter: false,
             })
