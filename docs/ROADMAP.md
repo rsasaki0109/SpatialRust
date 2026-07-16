@@ -667,10 +667,10 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
-| 119A | Planned | Chain resize, gray, blur, edge, morphology, and AI packing on explicit GPU images | named stage receipt |
-| 119B | Planned | One caller-requested upload, no intermediate readback, optional final readback | transfer-ledger denial tests |
-| 119C | Planned | Reuse textures and pipelines in steady state | pool/cache receipt |
-| 119D | Planned | Compare CPU, GPU round-trip, and GPU-resident modes separately | synchronized VGA/1080p/4K receipt |
+| 119A | Complete | Chain resize, gray, blur, edge, morphology, and AI packing on explicit GPU images | seven named stages through resident CHW storage |
+| 119B | Complete | One caller-requested upload, no intermediate readback, optional final readback | exact upload ledger and post-readback denial tests |
+| 119C | Complete | Reuse textures and pipelines in steady state | four initialized pipelines and stable warmed texture/buffer pools |
+| 119D | Complete | Compare CPU, GPU round-trip, and GPU-resident modes separately | synchronized VGA/1080p/4K Criterion receipt |
 
 ### Epic 120 delivery slices
 

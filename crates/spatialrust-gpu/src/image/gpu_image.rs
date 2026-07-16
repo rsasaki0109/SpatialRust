@@ -41,6 +41,25 @@ impl GpuImageReceipt {
         &self.stages
     }
 
+    /// Verifies the transfer contract for a caller-uploaded resident chain.
+    ///
+    /// The expected byte count is the physical RGBA8 texture upload size.
+    pub fn validate_resident_chain(&self, expected_upload_bytes: u64) -> SpatialResult<()> {
+        if self.host_to_device_bytes != expected_upload_bytes {
+            return Err(SpatialError::InvalidArgument(format!(
+                "resident chain expected {expected_upload_bytes} host-to-device bytes, recorded {}",
+                self.host_to_device_bytes
+            )));
+        }
+        if self.device_to_host_bytes != 0 {
+            return Err(SpatialError::InvalidArgument(format!(
+                "resident chain forbids device-to-host transfers, recorded {} bytes",
+                self.device_to_host_bytes
+            )));
+        }
+        Ok(())
+    }
+
     pub(crate) fn record_host_to_device(&mut self, bytes: u64, stage: &'static str) {
         self.host_to_device_bytes = self.host_to_device_bytes.saturating_add(bytes);
         self.stages.push(stage);
@@ -307,7 +326,7 @@ pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> usize {
     runtime.device() as *const wgpu::Device as usize
 }
 
-fn read_staging_bytes(
+pub(crate) fn read_staging_bytes(
     device: &wgpu::Device,
     staging_buffer: &wgpu::Buffer,
     len: usize,
