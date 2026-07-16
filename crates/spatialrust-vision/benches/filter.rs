@@ -2,8 +2,9 @@ use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criteri
 use spatialrust_image::Image;
 use spatialrust_vision::{
     bilateral_filter, gaussian_blur, gaussian_blur_u8, gaussian_blur_u8_into, median_blur,
-    pyr_down, sobel, sobel_l1_magnitude_u8, sobel_l1_magnitude_u8_into, spatial_gradient_u8,
-    BorderMode, GaussianBlurU8Workspace,
+    pyr_down, sobel, sobel_3x3_u8, sobel_abs_3x3_u8, sobel_l1_magnitude_u8,
+    sobel_l1_magnitude_u8_into, sobel_threshold_3x3_u8, spatial_gradient_u8, BorderMode,
+    GaussianBlurU8Workspace,
 };
 
 fn benchmark_gaussian(c: &mut Criterion) {
@@ -114,6 +115,23 @@ fn benchmark_paired_sobel(c: &mut Criterion) {
         group.throughput(Throughput::Elements((width * height) as u64));
         group.bench_function(BenchmarkId::new("xy_allocate", name), |b| {
             b.iter(|| spatial_gradient_u8(black_box(image.view()), BorderMode::Reflect101).unwrap())
+        });
+        group.bench_function(BenchmarkId::new("x_f32_direct", name), |b| {
+            b.iter(|| {
+                sobel_3x3_u8(black_box(image.view()), 1, 0, 1.0, 0.0, BorderMode::Reflect101)
+                    .unwrap()
+            })
+        });
+        group.bench_function(BenchmarkId::new("x_abs_u8", name), |b| {
+            b.iter(|| {
+                sobel_abs_3x3_u8(black_box(image.view()), 1, 0, BorderMode::Reflect101).unwrap()
+            })
+        });
+        group.bench_function(BenchmarkId::new("x_threshold_u8", name), |b| {
+            b.iter(|| {
+                sobel_threshold_3x3_u8(black_box(image.view()), 1, 0, 96, BorderMode::Reflect101)
+                    .unwrap()
+            })
         });
         group.bench_function(BenchmarkId::new("l1_allocate", name), |b| {
             b.iter(|| {

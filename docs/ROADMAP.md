@@ -640,6 +640,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | 116B | Complete | Split border handling from contiguous interior loops | five Gaussian border modes plus strided-view tests |
 | 116C | In progress | Specialized 3x3/5x5/7x7 Gaussian and paired Sobel X/Y passes | exact paired Sobel and accelerated Q8 3×3/5×5 Gaussian complete; high-precision 7×7 fallback remains |
 | 116D | Complete | Improve Gaussian by at least 10x and Sobel by at least 5x on one canonical large profile | 5×5 Gaussian 20.7× at 1080p and 26.7× at 4K; dated native timing receipt |
+| 116E | Complete | Remove standalone 3×3 Sobel's generic `f64` intermediate and fuse common absolute-threshold consumers | exact direct/absolute/mask APIs; direct Sobel beats OpenCV 1.88×/2.03× at 1080p/4K; fused masks win 2.95×–8.68× |
 
 ### Epic 117 delivery slices
 

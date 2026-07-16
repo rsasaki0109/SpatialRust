@@ -30,7 +30,7 @@ __all__: list[str] = [
     "rgbd_to_point_cloud", "depth_to_xyz", "calibrate_pinhole_camera",
     "calibrate_fisheye_angles", "dense_flow_image", "gray_world_white_balance_image",
     "stitch_panorama_pair", "filter2d_image", "gaussian_blur_image",
-    "median_blur_image", "bilateral_filter_image", "sobel_image", "spatial_gradient_image",
+    "median_blur_image", "bilateral_filter_image", "sobel_image", "sobel_abs_image", "sobel_threshold_image", "spatial_gradient_image",
     "sobel_l1_magnitude_image", "scharr_image",
     "laplacian_image", "pyr_down_image", "pyr_up_image", "MorphologyWorkspace", "morphology_image",
     "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
@@ -183,7 +183,21 @@ def sobel_image(
     kernel_size: int = ...,
     scale: float = ...,
     delta: float = ...,
+    out: Optional[_F32Array] = ...,
 ) -> _F32Array: ...
+def sobel_abs_image(
+    image: _U8Array,
+    dx: int,
+    dy: int,
+    out: Optional[_U8Array] = ...,
+) -> _U8Array: ...
+def sobel_threshold_image(
+    image: _U8Array,
+    dx: int,
+    dy: int,
+    threshold: int,
+    out: Optional[_U8Array] = ...,
+) -> _U8Array: ...
 def spatial_gradient_image(
     image: _U8Array,
     out_dx: Optional[_I16Array] = ...,

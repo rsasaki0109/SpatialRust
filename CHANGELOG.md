@@ -21,6 +21,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Direct and fused 3×3 Sobel (Epic 116E)**: grayscale `u8` first derivatives
+  now use bounded parallel three-row `i16` rings instead of the generic
+  full-image `f64` intermediate. Added Rust/Python caller-output APIs for exact
+  `f32` derivatives, saturated absolute `u8` responses, and fused binary edge
+  masks. Packed NumPy inputs are borrowed without copying. Standalone Sobel
+  beats OpenCV 1.88× at 1080p and 2.03× at 4K; fused masks win 3.81×–6.64×
+  allocated and 2.95×–8.68× with caller-owned output across 300 bit-exact
+  randomized cases.
+
 - **Allocation-light Canny (Epic 118A/118C)**: `canny()` no longer materializes
   public gradient, magnitude, and suppression images only to discard them.
   Added safe strided `canny_into`, reusable `CannyWorkspace`, large-image
