@@ -2955,6 +2955,13 @@ impl PyCannyWorkspace {
     }
 }
 
+thread_local! {
+    /// Reused across `canny_image` calls that omit an explicit workspace, so the
+    /// convenience Python entry point does not re-allocate every scratch buffer on each call.
+    static POOLED_CANNY_WORKSPACE: std::cell::RefCell<CannyWorkspace> =
+        std::cell::RefCell::new(CannyWorkspace::new());
+}
+
 /// Detects edges in a grayscale uint8 image with Canny hysteresis.
 #[pyfunction]
 #[pyo3(signature = (image, low_threshold, high_threshold, aperture_size=3, l2_gradient=false, out=None, workspace=None))]
@@ -2971,41 +2978,48 @@ fn canny_image<'py>(
     let mut packed = Vec::new();
     let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
     let options = CannyOptions { low_threshold, high_threshold, aperture_size, l2_gradient };
-    let mut local_workspace = CannyWorkspace::new();
-    let workspace =
-        workspace.as_deref_mut().map_or(&mut local_workspace, |workspace| &mut workspace.inner);
-    if let Some(out) = out {
-        {
-            let mut out_rw = out
-                .try_readwrite()
-                .map_err(|_| PyValueError::new_err("out must not overlap the Canny input"))?;
-            let mut out_array = out_rw.as_array_mut();
-            if out_array.shape() != [image.height(), image.width()] {
-                return Err(PyValueError::new_err(format!(
-                    "out shape must be ({}, {}), found {:?}",
-                    image.height(),
-                    image.width(),
-                    out_array.shape()
-                )));
+
+    let run = move |workspace: &mut CannyWorkspace| -> PyResult<Bound<'py, PyArray2<u8>>> {
+        if let Some(out) = out {
+            {
+                let mut out_rw = out
+                    .try_readwrite()
+                    .map_err(|_| PyValueError::new_err("out must not overlap the Canny input"))?;
+                let mut out_array = out_rw.as_array_mut();
+                if out_array.shape() != [image.height(), image.width()] {
+                    return Err(PyValueError::new_err(format!(
+                        "out shape must be ({}, {}), found {:?}",
+                        image.height(),
+                        image.width(),
+                        out_array.shape()
+                    )));
+                }
+                let Some(out_slice) = out_array.as_slice_mut() else {
+                    return Err(PyValueError::new_err(
+                        "out must be a contiguous uint8 array of shape (H, W)",
+                    ));
+                };
+                let output =
+                    ImageViewMut::new(image.width(), image.height(), image.width(), out_slice)
+                        .map_err(to_py_err)?;
+                canny_into_op(image, options, output, workspace).map_err(to_py_err)?;
             }
-            let Some(out_slice) = out_array.as_slice_mut() else {
-                return Err(PyValueError::new_err(
-                    "out must be a contiguous uint8 array of shape (H, W)",
-                ));
-            };
-            let output = ImageViewMut::new(image.width(), image.height(), image.width(), out_slice)
-                .map_err(to_py_err)?;
-            canny_into_op(image, options, output, workspace).map_err(to_py_err)?;
+            return Ok(out);
         }
-        return Ok(out);
+        let mut output = vec![0_u8; image.width() * image.height()];
+        let output_view =
+            ImageViewMut::new(image.width(), image.height(), image.width(), &mut output)
+                .map_err(to_py_err)?;
+        canny_into_op(image, options, output_view, workspace).map_err(to_py_err)?;
+        let array =
+            Array2::from_shape_vec((image.height(), image.width()), output).map_err(to_py_err)?;
+        Ok(array.into_pyarray_bound(py))
+    };
+
+    if let Some(workspace) = workspace.as_deref_mut() {
+        return run(&mut workspace.inner);
     }
-    let mut output = vec![0_u8; image.width() * image.height()];
-    let output_view = ImageViewMut::new(image.width(), image.height(), image.width(), &mut output)
-        .map_err(to_py_err)?;
-    canny_into_op(image, options, output_view, workspace).map_err(to_py_err)?;
-    let array =
-        Array2::from_shape_vec((image.height(), image.width()), output).map_err(to_py_err)?;
-    Ok(array.into_pyarray_bound(py))
+    POOLED_CANNY_WORKSPACE.with(|cell| run(&mut cell.borrow_mut()))
 }
 
 fn corner_selection_options(
