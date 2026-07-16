@@ -84,8 +84,11 @@ pub enum AttributeAggregation {
 
 /// Default minimum point count before GPU voxel downsampling is selected (centroid).
 ///
-/// Local end-to-end filter benches show GPU centroid wins above ~500k points.
-pub const DEFAULT_GPU_MIN_POINTS: usize = 500_000;
+/// The 2026-07-16 end-to-end rebaseline found no GPU crossover through 2M
+/// `point_xyzi` points after the CPU fast paths landed. Auto therefore stays on
+/// CPU until a new crossover is demonstrated. Explicit GPU execution remains
+/// available with [`VoxelGridDownsampleConfig::without_gpu_min_points`].
+pub const DEFAULT_GPU_MIN_POINTS: usize = usize::MAX;
 
 /// Default minimum point count before GPU approximate-first downsampling is selected.
 ///
@@ -117,7 +120,8 @@ pub struct VoxelGridDownsampleConfig {
     /// Minimum input point count before GPU execution is considered worthwhile.
     ///
     /// `None` always uses GPU when requested. Defaults follow local bench results:
-    /// centroid ~500k, approximate-first ~2M (1M end-to-end still CPU-favored).
+    /// centroid remains on CPU pending a new crossover; approximate-first uses
+    /// its separately measured thresholds.
     ///
     /// Approximate-first Auto also consults the input schema: clouds with
     /// `APPROXIMATE_HEAVY_F32_ATTRIBUTE_CHANNELS` or more non-position F32 fields
@@ -1484,14 +1488,15 @@ mod tests {
 
     #[cfg(feature = "filter-voxel-gpu")]
     #[test]
-    fn approximate_default_gpu_threshold_is_higher_than_centroid() {
+    fn default_gpu_thresholds_match_their_independent_receipts() {
         use super::{
             VoxelGridDownsampleConfig, DEFAULT_GPU_MIN_POINTS, DEFAULT_GPU_MIN_POINTS_APPROXIMATE,
         };
 
         #[allow(clippy::assertions_on_constants)]
         {
-            assert!(DEFAULT_GPU_MIN_POINTS_APPROXIMATE > DEFAULT_GPU_MIN_POINTS);
+            assert_eq!(DEFAULT_GPU_MIN_POINTS, usize::MAX);
+            assert_eq!(DEFAULT_GPU_MIN_POINTS_APPROXIMATE, 2_000_000);
         }
 
         let centroid = VoxelGridDownsampleConfig::centroid(0.5);

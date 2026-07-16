@@ -208,7 +208,9 @@ fn dispatch_voxel_keys(
     let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-key-output"),
         size: output_len as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        usage: wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_SRC
+            | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
 
@@ -248,7 +250,7 @@ fn dispatch_voxel_keys(
 
 #[cfg(test)]
 mod tests {
-    use super::compute_voxel_keys;
+    use super::{compute_voxel_keys, compute_voxel_keys_gpu_buffers};
     use crate::runtime::WgpuRuntime;
 
     #[test]
@@ -277,5 +279,27 @@ mod tests {
             .collect();
 
         assert_eq!(gpu_keys, cpu_keys);
+    }
+
+    #[test]
+    fn recycled_key_output_can_back_a_larger_position_upload() {
+        let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
+        runtime.clear_buffer_pool();
+
+        let first = [0.0_f32; 4];
+        let first_buffers =
+            compute_voxel_keys_gpu_buffers(&runtime, &first, &first, &first, [0.0; 3], 1.0)
+                .expect("first key dispatch");
+        first_buffers.recycle(&runtime);
+
+        // Four key records occupy the same 64 bytes as sixteen f32 positions.
+        // The second x upload therefore reuses the former key output buffer.
+        let second = [0.0_f32; 16];
+        let second_buffers =
+            compute_voxel_keys_gpu_buffers(&runtime, &second, &second, &second, [0.0; 3], 1.0)
+                .expect("reused key buffer supports host upload");
+        runtime.wait_idle();
+        second_buffers.recycle(&runtime);
+        runtime.clear_buffer_pool();
     }
 }

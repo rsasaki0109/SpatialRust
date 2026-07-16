@@ -1,5 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
+use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_segments::VoxelSegments;
@@ -107,39 +108,12 @@ pub fn compact_voxel_segments_gpu_buffers(
         mapped_at_creation: false,
     });
 
-    queue.write_buffer(
-        &counts_buffer,
-        0,
-        &vec![0u8; (buffer_len * std::mem::size_of::<u32>() as u64) as usize],
-    );
-    queue.write_buffer(
-        &flags_buffer,
-        0,
-        &vec![0u8; (buffer_len * std::mem::size_of::<u32>() as u64) as usize],
-    );
-    queue.write_buffer(
-        &inclusive_buffer,
-        0,
-        &vec![0u8; (buffer_len * std::mem::size_of::<u32>() as u64) as usize],
-    );
-    queue.write_buffer(
-        &scan_scratch_buffer,
-        0,
-        &vec![0u8; (buffer_len * std::mem::size_of::<u32>() as u64) as usize],
-    );
-
-    let params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-compact-params"),
-        size: std::mem::size_of::<CompactParams>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-
     let pipelines = runtime.pipelines();
     let layout = &pipelines.voxel_compact.bind_group_layout;
 
+    let mark_params = create_params_buffer(device, point_count, 0);
     let mark_resources = CompactBindResources {
-        params: &params_buffer,
+        params: &mark_params,
         entries: entries_buffer,
         flags: &flags_buffer,
         prefix: &inclusive_buffer,
@@ -153,10 +127,13 @@ pub fn compact_voxel_segments_gpu_buffers(
 
     let dispatch = point_count.div_ceil(WORKGROUP_SIZE);
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("voxel-compact-encoder"),
+        label: Some("voxel-compact-batched-encoder"),
     });
+    encoder.clear_buffer(&counts_buffer, 0, None);
+    encoder.clear_buffer(&flags_buffer, 0, None);
+    encoder.clear_buffer(&inclusive_buffer, 0, None);
+    encoder.clear_buffer(&scan_scratch_buffer, 0, None);
 
-    write_params(queue, &params_buffer, point_count, 0);
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-compact-mark-pass"),
@@ -167,26 +144,36 @@ pub fn compact_voxel_segments_gpu_buffers(
         pass.dispatch_workgroups(dispatch, 1, 1);
     }
 
-    write_params(queue, &params_buffer, point_count, 0);
+    let init_params = create_params_buffer(device, point_count, 0);
+    let init_resources = CompactBindResources {
+        params: &init_params,
+        entries: entries_buffer,
+        flags: &flags_buffer,
+        prefix: &inclusive_buffer,
+        keys: &keys_buffer,
+        starts: &starts_buffer,
+        counts: &counts_buffer,
+        indices: &indices_buffer,
+        scan_out: &scan_scratch_buffer,
+    };
+    let init_bind_group = create_compact_bind_group(device, layout, &init_resources);
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-compact-init-pass"),
             timestamp_writes: None,
         });
         pass.set_pipeline(&pipelines.voxel_compact.init);
-        pass.set_bind_group(0, &mark_bind_group, &[]);
+        pass.set_bind_group(0, &init_bind_group, &[]);
         pass.dispatch_workgroups(dispatch, 1, 1);
     }
-
-    queue.submit(Some(encoder.finish()));
 
     let mut prefix_read = &inclusive_buffer;
     let mut prefix_write = &scan_scratch_buffer;
     let mut stride = 1u32;
     while stride < point_count {
-        write_params(queue, &params_buffer, point_count, stride);
+        let scan_params = create_params_buffer(device, point_count, stride);
         let scan_resources = CompactBindResources {
-            params: &params_buffer,
+            params: &scan_params,
             entries: entries_buffer,
             flags: &flags_buffer,
             prefix: prefix_read,
@@ -197,9 +184,6 @@ pub fn compact_voxel_segments_gpu_buffers(
             scan_out: prefix_write,
         };
         let scan_bind_group = create_compact_bind_group(device, layout, &scan_resources);
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("voxel-compact-scan-encoder"),
-        });
         {
             let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("voxel-compact-scan-pass"),
@@ -209,19 +193,14 @@ pub fn compact_voxel_segments_gpu_buffers(
             pass.set_bind_group(0, &scan_bind_group, &[]);
             pass.dispatch_workgroups(dispatch, 1, 1);
         }
-        queue.submit(Some(encoder.finish()));
         std::mem::swap(&mut prefix_read, &mut prefix_write);
         stride *= 2;
     }
+    queue.submit(Some(encoder.finish()));
 
-    queue.write_buffer(
-        &counts_buffer,
-        0,
-        &vec![0u8; (buffer_len * std::mem::size_of::<u32>() as u64) as usize],
-    );
-    write_params(queue, &params_buffer, point_count, 0);
+    let write_params = create_params_buffer(device, point_count, 0);
     let write_resources = CompactBindResources {
-        params: &params_buffer,
+        params: &write_params,
         entries: entries_buffer,
         flags: &flags_buffer,
         prefix: prefix_read,
@@ -235,6 +214,7 @@ pub fn compact_voxel_segments_gpu_buffers(
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-compact-write-encoder"),
     });
+    encoder.clear_buffer(&counts_buffer, 0, None);
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-compact-write-pass"),
@@ -354,14 +334,13 @@ fn empty_storage_buffer(runtime: &WgpuRuntime) -> SpatialResult<wgpu::Buffer> {
     }))
 }
 
-fn write_params(
-    queue: &wgpu::Queue,
-    params_buffer: &wgpu::Buffer,
-    point_count: u32,
-    scan_stride: u32,
-) {
+fn create_params_buffer(device: &wgpu::Device, point_count: u32, scan_stride: u32) -> wgpu::Buffer {
     let params = CompactParams { point_count, scan_stride, _pad0: 0, _pad1: 0 };
-    queue.write_buffer(params_buffer, 0, bytemuck::bytes_of(&params));
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("voxel-compact-params"),
+        contents: bytemuck::bytes_of(&params),
+        usage: wgpu::BufferUsages::UNIFORM,
+    })
 }
 
 fn read_last_inclusive_count(

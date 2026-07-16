@@ -57,7 +57,8 @@ pub use kernels::{
 
 #[cfg(feature = "gpu-wgpu")]
 pub use runtime::{
-    WgpuAdapterInfo, WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS, MULTI_GATHER4_STORAGE_BUFFERS,
+    WgpuAdapterInfo, WgpuPowerPreference, WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS,
+    MULTI_GATHER4_STORAGE_BUFFERS,
 };
 
 #[cfg(feature = "gpu-wgpu")]

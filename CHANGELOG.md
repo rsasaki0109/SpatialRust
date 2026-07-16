@@ -19,6 +19,17 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+### Changed
+
+- **GPU voxel dispatch and truthful Auto policy**: headless wgpu compute now
+  prefers a high-performance adapter while retaining an explicit low-power
+  option. Batched bitonic-sort/prefix-scan command recording and device-side
+  buffer clearing reduce measured centroid GPU latency by 16%–31% at
+  500k–2M points. A recycled-buffer usage mismatch that could panic at 2M is
+  fixed. Because the current CPU fast path remains faster through 2M points,
+  centroid `ExecutionPolicy::Auto` now stays on CPU until a new crossover is
+  measured; explicit GPU and GPU-resident paths remain available.
+
 ## [1.1.0] — 2026-07-16
 
 ### Added
