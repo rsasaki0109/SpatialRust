@@ -5,6 +5,9 @@ use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView};
 
 use crate::border::{fetch, map_index};
+use crate::dispatch::{
+    bounded_workers, items_per_worker, should_parallelize, LARGE_PARALLEL_COMPONENTS,
+};
 use crate::{BorderMode, PixelComponent, VisionError, VisionResult};
 
 /// Validated two-dimensional correlation kernel.
@@ -376,7 +379,7 @@ pub fn gaussian_blur_u8_into<const CHANNELS: usize>(
     let horizontal = &mut workspace.horizontal;
     let kernel_x = workspace.kernel_x.as_slice();
     let arch = Arch::new();
-    if len >= 1_000_000 {
+    if should_parallelize(len, input.height(), LARGE_PARALLEL_COMPONENTS) {
         gaussian_blur_u8_parallel_bands(
             arch,
             input,
@@ -424,8 +427,13 @@ fn gaussian_blur_u8_parallel_bands<const CHANNELS: usize>(
     let width = input.width();
     let height = input.height();
     let row_len = width * CHANNELS;
-    let workers = rayon::current_num_threads().min(height.max(1));
-    let rows_per_worker = height.div_ceil(workers);
+    let workers = bounded_workers(
+        horizontal.len(),
+        height,
+        LARGE_PARALLEL_COMPONENTS,
+        rayon::current_num_threads(),
+    );
+    let rows_per_worker = items_per_worker(height, workers);
     let radius_y = kernel_y.len() / 2;
     let scratch_rows = rows_per_worker + radius_y * 2;
     let scratch_len = scratch_rows * row_len;
@@ -529,9 +537,14 @@ fn gaussian_blur_u8_high_precision_into<const CHANNELS: usize>(
     workspace.high_precision_horizontal.resize(output.len(), 0);
     let horizontal = &mut workspace.high_precision_horizontal;
     let kernel_x = workspace.kernel_x.as_slice();
-    if output.len() >= 1_000_000 {
-        let workers = rayon::current_num_threads().min(height.max(1));
-        let rows_per_worker = height.div_ceil(workers);
+    let workers = bounded_workers(
+        output.len(),
+        height,
+        LARGE_PARALLEL_COMPONENTS,
+        rayon::current_num_threads(),
+    );
+    if workers > 1 {
+        let rows_per_worker = items_per_worker(height, workers);
         horizontal.par_chunks_mut(rows_per_worker * row_len).enumerate().for_each(
             |(chunk, rows)| {
                 let start_y = chunk * rows_per_worker;
@@ -553,9 +566,8 @@ fn gaussian_blur_u8_high_precision_into<const CHANNELS: usize>(
     }
 
     let kernel_y = workspace.kernel_y.as_slice();
-    if output.len() >= 1_000_000 {
-        let workers = rayon::current_num_threads().min(height.max(1));
-        let rows_per_worker = height.div_ceil(workers);
+    if workers > 1 {
+        let rows_per_worker = items_per_worker(height, workers);
         output.par_chunks_mut(rows_per_worker * row_len).enumerate().for_each(|(chunk, rows)| {
             let start_y = chunk * rows_per_worker;
             for (offset, row) in rows.chunks_mut(row_len).enumerate() {

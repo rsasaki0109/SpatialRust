@@ -5,6 +5,9 @@ use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView};
 
 use crate::border::fetch;
+use crate::dispatch::{
+    bounded_workers, items_per_worker, LARGE_PARALLEL_COMPONENTS, ROW_PARALLEL_COMPONENTS,
+};
 use crate::{
     filter2d_f32, separable_filter, separable_filter_f32, BorderMode, Kernel1D, Kernel2D,
     PixelComponent, VisionError, VisionResult,
@@ -183,9 +186,10 @@ pub fn sobel_3x3_u8_into(
     let width = input.width();
     let height = input.height();
     let arch = Arch::new();
-    if len >= 262_144 && height > 1 {
-        let workers = rayon::current_num_threads().min(height);
-        let rows_per_worker = height.div_ceil(workers);
+    let workers =
+        bounded_workers(len, height, ROW_PARALLEL_COMPONENTS, rayon::current_num_threads());
+    if workers > 1 {
+        let rows_per_worker = items_per_worker(height, workers);
         output.par_chunks_mut(rows_per_worker * width).enumerate().for_each(|(chunk, output)| {
             arch.dispatch(|| {
                 sobel_3x3_rows_dispatch(
@@ -330,8 +334,8 @@ fn sobel_abs_or_threshold_3x3_into(
     let height = input.height();
     let len = output.len();
     let workers =
-        if len >= 262_144 && height > 1 { rayon::current_num_threads().min(height) } else { 1 };
-    let rows_per_worker = height.div_ceil(workers);
+        bounded_workers(len, height, ROW_PARALLEL_COMPONENTS, rayon::current_num_threads());
+    let rows_per_worker = items_per_worker(height, workers);
     let mut scratch = vec![0_i16; workers * 3 * width];
     scratch
         .par_chunks_mut(3 * width)
@@ -419,8 +423,8 @@ fn sobel_3x3_identity_into(
     let height = input.height();
     let len = width * height;
     let workers =
-        if len >= 262_144 && height > 1 { rayon::current_num_threads().min(height) } else { 1 };
-    let rows_per_worker = height.div_ceil(workers);
+        bounded_workers(len, height, ROW_PARALLEL_COMPONENTS, rayon::current_num_threads());
+    let rows_per_worker = items_per_worker(height, workers);
     let mut scratch = vec![0_i16; workers * 3 * width];
     scratch
         .par_chunks_mut(3 * width)
@@ -757,9 +761,10 @@ pub fn spatial_gradient_u8_into(
     let width = input.width();
     let height = input.height();
     let arch = Arch::new();
-    if len >= 1_000_000 && height > 1 {
-        let workers = rayon::current_num_threads().min(height);
-        let rows_per_worker = height.div_ceil(workers);
+    let workers =
+        bounded_workers(len, height, LARGE_PARALLEL_COMPONENTS, rayon::current_num_threads());
+    if workers > 1 {
+        let rows_per_worker = items_per_worker(height, workers);
         gradient_x
             .par_chunks_mut(rows_per_worker * width)
             .zip(gradient_y.par_chunks_mut(rows_per_worker * width))
@@ -820,9 +825,10 @@ pub fn sobel_l1_magnitude_u8_into(
     let width = input.width();
     let height = input.height();
     let arch = Arch::new();
-    if len >= 1_000_000 && height > 1 {
-        let workers = rayon::current_num_threads().min(height);
-        let rows_per_worker = height.div_ceil(workers);
+    let workers =
+        bounded_workers(len, height, LARGE_PARALLEL_COMPONENTS, rayon::current_num_threads());
+    if workers > 1 {
+        let rows_per_worker = items_per_worker(height, workers);
         magnitude.par_chunks_mut(rows_per_worker * width).enumerate().for_each(
             |(chunk, magnitude)| {
                 arch.dispatch(|| {

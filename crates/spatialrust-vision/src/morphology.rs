@@ -5,6 +5,9 @@ use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView};
 
 use crate::border::{fetch, map_index};
+use crate::dispatch::{
+    bounded_workers, items_per_worker, should_parallelize, LARGE_PARALLEL_COMPONENTS, ROWS_PER_TILE,
+};
 use crate::{BorderMode, PixelComponent, VisionError, VisionResult};
 
 /// Built-in structuring-element geometry.
@@ -539,7 +542,7 @@ impl RectMorphologyWorkspace {
             self.apply_centered_5x5(input, width, height, extreme);
             return;
         }
-        if len >= 1_000_000 {
+        if should_parallelize(len, width.max(height), LARGE_PARALLEL_COMPONENTS) {
             self.apply_parallel(
                 input,
                 width,
@@ -594,8 +597,13 @@ impl RectMorphologyWorkspace {
         let len = width * height;
         self.centered_5x5_active = true;
         self.horizontal.resize(len, 0);
-        if len >= 1_000_000 {
-            let workers = rayon::current_num_threads().min(width.max(height)).max(1);
+        if should_parallelize(len, width.max(height), LARGE_PARALLEL_COMPONENTS) {
+            let workers = bounded_workers(
+                len,
+                width.max(height),
+                LARGE_PARALLEL_COMPONENTS,
+                rayon::current_num_threads(),
+            );
             self.line_buffers.resize_with(workers, LineBuffers::default);
             let line_len = width.max(height) + 4;
             for buffers in &mut self.line_buffers {
@@ -605,13 +613,12 @@ impl RectMorphologyWorkspace {
             }
         }
         let arch = Arch::new();
-        if len >= 1_000_000 {
-            const ROWS_PER_TASK: usize = 8;
-            self.horizontal.par_chunks_mut(width * ROWS_PER_TASK).enumerate().for_each(
+        if should_parallelize(len, height, LARGE_PARALLEL_COMPONENTS) {
+            self.horizontal.par_chunks_mut(width * ROWS_PER_TILE).enumerate().for_each(
                 |(block, outputs)| {
                     arch.dispatch(|| {
                         for (row, output) in outputs.chunks_mut(width).enumerate() {
-                            let y = block * ROWS_PER_TASK + row;
+                            let y = block * ROWS_PER_TILE + row;
                             filter_centered_5_replicate(
                                 &input[y * width..(y + 1) * width],
                                 output,
@@ -630,9 +637,8 @@ impl RectMorphologyWorkspace {
         }
 
         self.output.resize(len, 0);
-        if len >= 1_000_000 {
-            const ROWS_PER_TASK: usize = 8;
-            self.output.par_chunks_mut(width * ROWS_PER_TASK).enumerate().for_each(
+        if should_parallelize(len, height, LARGE_PARALLEL_COMPONENTS) {
+            self.output.par_chunks_mut(width * ROWS_PER_TILE).enumerate().for_each(
                 |(block, outputs)| {
                     arch.dispatch(|| {
                         for (row, output) in outputs.chunks_mut(width).enumerate() {
@@ -640,7 +646,7 @@ impl RectMorphologyWorkspace {
                                 &self.horizontal,
                                 width,
                                 height,
-                                block * ROWS_PER_TASK + row,
+                                block * ROWS_PER_TILE + row,
                                 output,
                                 extreme,
                             );
@@ -678,10 +684,15 @@ impl RectMorphologyWorkspace {
         extreme: Extreme,
     ) {
         let len = width * height;
-        let workers = rayon::current_num_threads().min(width.max(height)).max(1);
+        let workers = bounded_workers(
+            len,
+            width.max(height),
+            LARGE_PARALLEL_COMPONENTS,
+            rayon::current_num_threads(),
+        );
         self.line_buffers.resize_with(workers, LineBuffers::default);
         self.horizontal.resize(len, 0);
-        let horizontal_rows = height.div_ceil(workers);
+        let horizontal_rows = items_per_worker(height, workers);
         self.horizontal
             .par_chunks_mut(horizontal_rows * width)
             .zip(self.line_buffers.par_iter_mut())
@@ -711,7 +722,7 @@ impl RectMorphologyWorkspace {
             }
         });
         self.filtered.resize(len, 0);
-        let vertical_rows = width.div_ceil(workers);
+        let vertical_rows = items_per_worker(width, workers);
         self.filtered
             .par_chunks_mut(vertical_rows * height)
             .zip(self.line_buffers.par_iter_mut())

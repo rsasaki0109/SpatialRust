@@ -575,7 +575,7 @@ backend, allocation mode, and accuracy contract.
 | --- | --- | --- | --- |
 | 112 | Complete | 111 | Attribute native kernel, allocation, Python conversion, and transfer costs with reproducible throughput and memory receipts |
 | 113 | Complete | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
-| 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
+| 114 | Complete | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
 | 115 | Complete | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
 | 116 | Complete | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
 | 117 | Complete | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
@@ -612,10 +612,10 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
-| 114A | Planned | Shared small-image scalar and large-image row/tile dispatch policy | deterministic threshold tests |
-| 114B | Planned | Packed `u8` one/three-channel and `f32` internal fast-path selection | dispatch receipt and fallback parity |
-| 114C | Planned | Preserve generic components, channels, strides, and borders as safe fallbacks | full property suite |
-| 114D | Planned | Bound worker creation and temporary memory | thread-count and peak-memory receipt |
+| 114A | Complete | Shared small-image scalar and large-image row/tile dispatch policy | exact 100,000/262,144/1,000,000 threshold tests |
+| 114B | Complete | Packed `u8` one/three-channel and `f32` internal fast-path selection | shared packed selector, dispatch receipt, and fallback parity |
+| 114C | Complete | Preserve generic components, channels, strides, and borders as safe fallbacks | full 139-test unit and 13-test property suites |
+| 114D | Complete | Bound worker creation and temporary memory | deterministic worker bounds and scratch ownership receipt |
 | 114E | Complete | Exact EDT binary-row fast path, tiled transpose, and bounded pool dispatch | VGA/1080p/4K Criterion and OpenCV receipt |
 | 114F | Complete | Cache EDT parabola heights and balance column tasks for dense masks | exact OpenCV parity and 4K Python reuse win |
 | 114G | Complete | Cache NMS box geometry and avoid packed Python score copies | exact OpenCV index parity and 100/1,000/8,400-candidate wins |

@@ -4,6 +4,10 @@ use spatialrust_image::{
     ColorSpace, Image, ImageMetadata, ImageRegion, ImageView, ImageViewMut, PlanarImage,
 };
 
+use crate::dispatch::{
+    should_parallelize, LIGHT_PARALLEL_COMPONENTS, ROWS_PER_TILE, ROW_PARALLEL_COMPONENTS,
+    TALL_IMAGE_ROWS,
+};
 use crate::{
     resize, BilinearResizeU8Plan, Interpolation, PixelComponent, VisionError, VisionResult,
 };
@@ -227,8 +231,7 @@ pub fn pack_chw_into<T: PixelComponent, const CHANNELS: usize>(
     if plane_len == 0 {
         return Ok(());
     }
-    const PARALLEL_PLANE_THRESHOLD: usize = 256 * 1024;
-    if CHANNELS > 1 && plane_len >= PARALLEL_PLANE_THRESHOLD {
+    if CHANNELS > 1 && should_parallelize(plane_len, CHANNELS, ROW_PARALLEL_COMPONENTS) {
         std::thread::scope(|scope| {
             for (channel, plane) in output.chunks_exact_mut(plane_len).enumerate() {
                 scope.spawn(move || {
@@ -359,17 +362,16 @@ pub fn rgb_to_gray_into(
         .checked_mul(input.height())
         .ok_or_else(|| VisionError::InvalidDimensions("gray output is too large".to_owned()))?;
     let arch = Arch::new();
-    if pixels >= 100_000 {
-        if input.height() >= 2_000 {
-            const ROWS_PER_TASK: usize = 8;
-            let block_stride = output_stride.checked_mul(ROWS_PER_TASK).ok_or_else(|| {
+    if should_parallelize(pixels, input.height(), LIGHT_PARALLEL_COMPONENTS) {
+        if input.height() >= TALL_IMAGE_ROWS {
+            let block_stride = output_stride.checked_mul(ROWS_PER_TILE).ok_or_else(|| {
                 VisionError::InvalidDimensions("gray row block is too large".to_owned())
             })?;
             output.as_mut_slice().par_chunks_mut(block_stride).enumerate().for_each(
                 |(block, rows)| {
                     arch.dispatch(|| {
                         for (row, target) in rows.chunks_mut(output_stride).enumerate() {
-                            rgb_to_gray_row(input, block * ROWS_PER_TASK + row, target);
+                            rgb_to_gray_row(input, block * ROWS_PER_TILE + row, target);
                         }
                     });
                 },
