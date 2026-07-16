@@ -576,7 +576,7 @@ backend, allocation mode, and accuracy contract.
 | 112 | Planned | 111 | Attribute native kernel, allocation, Python conversion, and transfer costs with reproducible throughput and memory receipts |
 | 113 | Planned | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
 | 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
-| 115 | In progress | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
+| 115 | Complete | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
 | 116 | In progress | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
 | 117 | Complete | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
 | 118 | Planned | 113–117 | Fused Canny fast path that avoids public intermediates unless explicitly requested |
@@ -628,7 +628,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | 115A | Complete | Precompute resize source coordinates and interpolation coefficients | reusable Q11 bilinear plan, shape/stride/padding tests |
-| 115B | In progress | Packed bilinear/nearest/area and RGB-to-gray fast paths | packed RGB8 bilinear, exact half-scale, and Q14 RGB-to-gray complete; nearest/area remain |
+| 115B | Complete | Packed bilinear/nearest/area and RGB-to-gray fast paths | bit-exact planned nearest/area parity over 300 cases; VGA/1080p/4K RGB8 Criterion receipt |
 | 115C | Complete | Evaluate resize+gray and resize+CHW fusion without changing standalone APIs | bit-exact unfused parity; resize+gray wins 1.12× at 1080p→540p and resize+CHW wins 2.02×–2.33× against OpenCV allocation |
 | 115D | Complete | Improve current SpatialRust throughput by at least 5x on one canonical large profile | native reuse improved 47.8× at 1080p and 37.3× at 4K; VGA Python reuse is 1.10× faster than OpenCV |
 
