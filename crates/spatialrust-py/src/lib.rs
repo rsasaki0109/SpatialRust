@@ -95,8 +95,12 @@ use spatialrust::vision::{
     resize_pack_chw_into as resize_pack_chw_into_op, resize_rgb_to_gray as resize_rgb_to_gray_op,
     resize_rgb_to_gray_into as resize_rgb_to_gray_into_op, rgb_to_gray as rgb_to_gray_op,
     rgb_to_gray_into as rgb_to_gray_into_op, rgb_to_hsv as rgb_to_hsv_op, scharr as scharr_op,
-    sobel as sobel_op, sobel_l1_magnitude_u8 as sobel_l1_magnitude_u8_op,
-    sobel_l1_magnitude_u8_into as sobel_l1_magnitude_u8_into_op, soft_nms as soft_nms_op,
+    sobel as sobel_op, sobel_3x3_u8 as sobel_3x3_u8_op, sobel_3x3_u8_into as sobel_3x3_u8_into_op,
+    sobel_abs_3x3_u8 as sobel_abs_3x3_u8_op, sobel_abs_3x3_u8_into as sobel_abs_3x3_u8_into_op,
+    sobel_l1_magnitude_u8 as sobel_l1_magnitude_u8_op,
+    sobel_l1_magnitude_u8_into as sobel_l1_magnitude_u8_into_op,
+    sobel_threshold_3x3_u8 as sobel_threshold_3x3_u8_op,
+    sobel_threshold_3x3_u8_into as sobel_threshold_3x3_u8_into_op, soft_nms as soft_nms_op,
     solve_pnp as solve_pnp_op, spatial_gradient_u8 as spatial_gradient_u8_op,
     spatial_gradient_u8_into as spatial_gradient_u8_into_op,
     stereo_block_match as stereo_block_match_op, stitch_panorama_pair as stitch_panorama_pair_op,
@@ -2171,7 +2175,7 @@ fn bilateral_filter_image<'py>(
 
 /// Computes a signed float32 Sobel derivative from a grayscale uint8 image.
 #[pyfunction]
-#[pyo3(signature = (image, dx, dy, kernel_size=3, scale=1.0, delta=0.0))]
+#[pyo3(signature = (image, dx, dy, kernel_size=3, scale=1.0, delta=0.0, out=None))]
 fn sobel_image<'py>(
     py: Python<'py>,
     image: PyReadonlyArray2<'_, u8>,
@@ -2180,9 +2184,150 @@ fn sobel_image<'py>(
     kernel_size: usize,
     scale: f64,
     delta: f64,
+    out: Option<Bound<'py, PyArray2<f32>>>,
 ) -> PyResult<Bound<'py, PyArray2<f32>>> {
-    let image = gray_u8_image_from_numpy(image)?;
-    let output = sobel_op(image.view(), dx, dy, kernel_size, scale, delta, BorderMode::Reflect101)
+    let mut packed = Vec::new();
+    let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out
+                .try_readwrite()
+                .map_err(|_| PyValueError::new_err("out must not overlap the Sobel input"))?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous float32 array of shape (H, W)",
+                ));
+            };
+            if kernel_size == 3 && dx + dy == 1 {
+                sobel_3x3_u8_into_op(
+                    image,
+                    dx,
+                    dy,
+                    scale,
+                    delta,
+                    BorderMode::Reflect101,
+                    out_slice,
+                )
+                .map_err(to_py_err)?;
+            } else {
+                let output =
+                    sobel_op(image, dx, dy, kernel_size, scale, delta, BorderMode::Reflect101)
+                        .map_err(to_py_err)?;
+                out_slice.copy_from_slice(output.as_slice());
+            }
+        }
+        return Ok(out);
+    }
+    if kernel_size == 3 && dx + dy == 1 {
+        let output = sobel_3x3_u8_op(image, dx, dy, scale, delta, BorderMode::Reflect101)
+            .map_err(to_py_err)?;
+        let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+            .map_err(to_py_err)?;
+        return Ok(array.into_pyarray_bound(py));
+    }
+    let output = sobel_op(image, dx, dy, kernel_size, scale, delta, BorderMode::Reflect101)
+        .map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Computes fused absolute 3x3 Sobel response as saturated uint8.
+#[pyfunction]
+#[pyo3(signature = (image, dx, dy, out=None))]
+fn sobel_abs_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    dx: usize,
+    dy: usize,
+    out: Option<Bound<'py, PyArray2<u8>>>,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let mut packed = Vec::new();
+    let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out
+                .try_readwrite()
+                .map_err(|_| PyValueError::new_err("out must not overlap the Sobel input"))?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W)",
+                ));
+            };
+            sobel_abs_3x3_u8_into_op(image, dx, dy, BorderMode::Reflect101, out_slice)
+                .map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let output = sobel_abs_3x3_u8_op(image, dx, dy, BorderMode::Reflect101).map_err(to_py_err)?;
+    let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
+        .map_err(to_py_err)?;
+    Ok(array.into_pyarray_bound(py))
+}
+
+/// Computes a fused binary mask from absolute 3x3 Sobel response.
+#[pyfunction]
+#[pyo3(signature = (image, dx, dy, threshold, out=None))]
+fn sobel_threshold_image<'py>(
+    py: Python<'py>,
+    image: PyReadonlyArray2<'_, u8>,
+    dx: usize,
+    dy: usize,
+    threshold: u8,
+    out: Option<Bound<'py, PyArray2<u8>>>,
+) -> PyResult<Bound<'py, PyArray2<u8>>> {
+    let mut packed = Vec::new();
+    let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
+    if let Some(out) = out {
+        {
+            let mut out_rw = out
+                .try_readwrite()
+                .map_err(|_| PyValueError::new_err("out must not overlap the Sobel input"))?;
+            let mut out_array = out_rw.as_array_mut();
+            if out_array.shape() != [image.height(), image.width()] {
+                return Err(PyValueError::new_err(format!(
+                    "out shape must be ({}, {}), found {:?}",
+                    image.height(),
+                    image.width(),
+                    out_array.shape()
+                )));
+            }
+            let Some(out_slice) = out_array.as_slice_mut() else {
+                return Err(PyValueError::new_err(
+                    "out must be a contiguous uint8 array of shape (H, W)",
+                ));
+            };
+            sobel_threshold_3x3_u8_into_op(
+                image,
+                dx,
+                dy,
+                threshold,
+                BorderMode::Reflect101,
+                out_slice,
+            )
+            .map_err(to_py_err)?;
+        }
+        return Ok(out);
+    }
+    let output = sobel_threshold_3x3_u8_op(image, dx, dy, threshold, BorderMode::Reflect101)
         .map_err(to_py_err)?;
     let array = Array2::from_shape_vec((image.height(), image.width()), output.into_vec())
         .map_err(to_py_err)?;
@@ -2198,11 +2343,12 @@ fn spatial_gradient_image<'py>(
     out_dx: Option<Bound<'py, PyArray2<i16>>>,
     out_dy: Option<Bound<'py, PyArray2<i16>>>,
 ) -> PyResult<(Bound<'py, PyArray2<i16>>, Bound<'py, PyArray2<i16>>)> {
-    let image = gray_u8_image_from_numpy(image)?;
+    let mut packed = Vec::new();
+    let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
     match (out_dx, out_dy) {
         (None, None) => {
             let (gradient_x, gradient_y) =
-                spatial_gradient_u8_op(image.view(), BorderMode::Reflect101).map_err(to_py_err)?;
+                spatial_gradient_u8_op(image, BorderMode::Reflect101).map_err(to_py_err)?;
             let gradient_x =
                 Array2::from_shape_vec((image.height(), image.width()), gradient_x.into_vec())
                     .map_err(to_py_err)?
@@ -2250,13 +2396,8 @@ fn spatial_gradient_image<'py>(
                         "out_dy must be a contiguous int16 array of shape (H, W)",
                     ));
                 };
-                spatial_gradient_u8_into_op(
-                    image.view(),
-                    BorderMode::Reflect101,
-                    dx_slice,
-                    dy_slice,
-                )
-                .map_err(to_py_err)?;
+                spatial_gradient_u8_into_op(image, BorderMode::Reflect101, dx_slice, dy_slice)
+                    .map_err(to_py_err)?;
             }
             Ok((out_dx, out_dy))
         }
@@ -2272,7 +2413,8 @@ fn sobel_l1_magnitude_image<'py>(
     image: PyReadonlyArray2<'_, u8>,
     out: Option<Bound<'py, PyArray2<i16>>>,
 ) -> PyResult<Bound<'py, PyArray2<i16>>> {
-    let image = gray_u8_image_from_numpy(image)?;
+    let mut packed = Vec::new();
+    let image = gray_u8_image_view_from_numpy(&image, &mut packed)?;
     if let Some(out) = out {
         {
             let mut out_rw = out.try_readwrite().map_err(|_| {
@@ -2292,13 +2434,12 @@ fn sobel_l1_magnitude_image<'py>(
                     "out must be a contiguous int16 array of shape (H, W)",
                 ));
             };
-            sobel_l1_magnitude_u8_into_op(image.view(), BorderMode::Reflect101, out_slice)
+            sobel_l1_magnitude_u8_into_op(image, BorderMode::Reflect101, out_slice)
                 .map_err(to_py_err)?;
         }
         return Ok(out);
     }
-    let magnitude =
-        sobel_l1_magnitude_u8_op(image.view(), BorderMode::Reflect101).map_err(to_py_err)?;
+    let magnitude = sobel_l1_magnitude_u8_op(image, BorderMode::Reflect101).map_err(to_py_err)?;
     let array = Array2::from_shape_vec((image.height(), image.width()), magnitude.into_vec())
         .map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
@@ -4007,6 +4148,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(median_blur_image, m)?)?;
     m.add_function(wrap_pyfunction!(bilateral_filter_image, m)?)?;
     m.add_function(wrap_pyfunction!(sobel_image, m)?)?;
+    m.add_function(wrap_pyfunction!(sobel_abs_image, m)?)?;
+    m.add_function(wrap_pyfunction!(sobel_threshold_image, m)?)?;
     m.add_function(wrap_pyfunction!(spatial_gradient_image, m)?)?;
     m.add_function(wrap_pyfunction!(sobel_l1_magnitude_image, m)?)?;
     m.add_function(wrap_pyfunction!(scharr_image, m)?)?;

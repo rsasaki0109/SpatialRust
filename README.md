@@ -161,7 +161,9 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | Fused 2× resize → gray, allocate[^fused-gray-2026] | — | **SpatialRust 1.12×** | OpenCV 1.01× |
 | Fused 2× resize → gray, reuse[^fused-gray-2026] | — | OpenCV 1.90× | OpenCV 1.58× |
 | Gaussian blur 5×5[^gaussian-2026] | OpenCV 139.02× | OpenCV 3.10× | OpenCV 2.93× |
-| Sobel X 3×3 | OpenCV 14.38× | OpenCV 20.31× | OpenCV 23.30× |
+| Sobel X 3×3, allocate[^sobel-direct-2026] | OpenCV 1.07× | **SpatialRust 1.88×** | **SpatialRust 2.03×** |
+| Fused abs(Sobel X) → binary mask, allocate[^sobel-direct-2026] | **SpatialRust 3.81×** | **SpatialRust 4.87×** | **SpatialRust 6.64×** |
+| Fused abs(Sobel X) → binary mask, reuse[^sobel-direct-2026] | **SpatialRust 2.95×** | **SpatialRust 6.63×** | **SpatialRust 8.68×** |
 | Morphology open 5×5, allocate[^morphology-2026] | OpenCV 60.96× | OpenCV 13.34× | OpenCV 15.27× |
 | Morphology open 5×5, reuse[^morphology-2026] | OpenCV 60.32× | OpenCV 16.25× | OpenCV 17.78× |
 | Morphology open 511×511, allocate[^morphology-2026] | OpenCV 2.10× | **SpatialRust 2.61×** | **SpatialRust 2.40×** |
@@ -240,6 +242,18 @@ addition result. Caller-owned reuse ties at 1080p and favors OpenCV at 4K/8K;
 OpenCV also remains faster for standalone `spatialGradient`. See the
 [focused harness](bench/opencv_sobel_l1_comparison/) and
 [dated receipt](notes/2026-07-16_paired_sobel_l1_acceleration.md).
+
+[^sobel-direct-2026]: The grayscale `u8` 3×3 first-derivative path replaces
+  the generic full-image `f64` intermediate with parallel three-row `i16`
+  rings, writes `f32` directly, and borrows packed NumPy input without copying.
+  Against OpenCV 4.13, standalone allocation measured 1.134 ms versus 2.137 ms
+  at 1080p and 3.737 ms versus 7.582 ms at 4K, reversing the former
+  20.31×–23.30× deficits while retaining max error zero. VGA remains a narrow
+  OpenCV win. `sobel_threshold_3x3_u8` additionally fuses signed Sobel,
+  absolute saturation, and binary threshold; it wins 3.81×–6.64× allocated and
+  2.95×–8.68× with caller-owned output. Three hundred randomized X/Y cases are
+  bit-exact. See the
+  [focused harness](bench/opencv_sobel_threshold_comparison/).
 
 [^morphology-2026]: Rectangular morphology was remeasured separately with
     OpenCV 4.13, OpenCL off, with both allocated and caller-owned-output Python

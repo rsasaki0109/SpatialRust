@@ -13,7 +13,7 @@
     <section class="hero">
       <div class="eyebrow">imgproc-filter · safe CPU</div>
       <h1>Filtering and paired Sobel gradients</h1>
-      <p class="lead">Generic correlation and separable filters remain available for arbitrary components and channels. Interleaved <code>u8</code> additionally gets accelerated Gaussian kernels, explicit workspace reuse, exact paired 3×3 Sobel, and fused L1 magnitude.</p>
+      <p class="lead">Generic correlation and separable filters remain available for arbitrary components and channels. Interleaved <code>u8</code> additionally gets accelerated Gaussian kernels, direct 3×3 Sobel, exact paired gradients, fused absolute/binary responses, and fused L1 magnitude.</p>
       <div class="actions"><a class="button primary" href="spatialrust_vision/fn.gaussian_blur_u8.html">Gaussian API</a><a class="button" href="spatialrust_vision/fn.spatial_gradient_u8.html">Paired-gradient API</a><a class="button" href="spatialrust_vision/fn.sobel_l1_magnitude_u8.html">Fused L1 API</a></div>
     </section>
 
@@ -21,6 +21,7 @@
       <h2>Contracts</h2>
       <p><code>spatial_gradient_u8</code> matches OpenCV <code>spatialGradient</code>: grayscale <code>u8</code> input, signed <code>i16</code> X/Y outputs, 3×3 Sobel coefficients, and Replicate or Reflect101 borders. Its <code>*_into</code> form writes caller-owned packed slices.</p>
       <p><code>sobel_l1_magnitude_u8</code> computes <code>abs(Gx) + abs(Gy)</code> directly as non-negative <code>i16</code> values in [0, 2040]. It does not materialize public X/Y intermediates. Python exposes the same operations as <code>spatial_gradient_image</code> and <code>sobel_l1_magnitude_image(..., out=)</code>.</p>
+      <p><code>sobel_3x3_u8</code> writes a first-order X or Y response directly to <code>f32</code> from parallel three-row <code>i16</code> rings. <code>sobel_abs_3x3_u8</code> saturates the absolute response to <code>u8</code>, while <code>sobel_threshold_3x3_u8</code> also produces a binary mask in the same pass. Python exposes caller-owned <code>out=</code> forms.</p>
       <p><code>gaussian_blur_u8</code> accepts 3×3, 5×5, or 7×7 kernels and all five CPU border modes. The accelerated 3×3/5×5 path uses symmetric Q8 coefficients, branch-free unrolled interiors, bounded row parallelism, and a caller-owned <code>GaussianBlurU8Workspace</code>. The 7×7 contract currently uses the high-precision generic fallback.</p>
       <p>Large packed images use bounded Rayon row stages and runtime-dispatched safe SIMD context. Strided inputs retain exact row semantics. CPU calls never upload to a device.</p>
     </section>
@@ -33,6 +34,7 @@
         <article class="card"><div class="metric">2.42×</div><p>8K allocated fused L1 lead; 300 randomized cases are bit-exact.</p></article>
       </div>
       <p>OpenCV uses <code>spatialGradient</code>, two <code>absdiff</code> stages, and <code>add</code>. SpatialRust fuses that public workload into one traversal and one result allocation. Reuse is effectively tied at 1080p while OpenCV leads at 4K and 8K, and OpenCV remains faster for standalone paired gradients.</p>
+      <p>The direct <code>CV_32F</code>-compatible Sobel path combines three-row rings with zero-copy packed NumPy input. It is 1.88× faster than OpenCV at 1080p and 2.03× at 4K with exact values; VGA remains a narrow OpenCV win. The fused <code>abs(Sobel X) &gt; 96</code> mask wins 3.81×–6.64× allocated and 2.95×–8.68× with caller-owned output. Reproduce with the <a href="https://github.com/rsasaki0109/SpatialRust/tree/main/bench/opencv_sobel_threshold_comparison">threshold harness</a>.</p>
       <p>Reproduce with the <a href="https://github.com/rsasaki0109/SpatialRust/tree/main/bench/opencv_sobel_l1_comparison">focused harness</a> and inspect the <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/notes/2026-07-16_paired_sobel_l1_acceleration.md">dated receipt</a>.</p>
       <h3>Gaussian progress</h3>
       <div class="grid">

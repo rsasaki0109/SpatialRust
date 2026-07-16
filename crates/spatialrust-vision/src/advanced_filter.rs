@@ -117,6 +117,594 @@ pub fn sobel<T: PixelComponent, const CHANNELS: usize>(
     separable_filter_f32(input, &kernel_x, &kernel_y, delta, border)
 }
 
+/// Computes a first-order 3x3 Sobel derivative directly into signed `f32` output.
+///
+/// This specialization accepts grayscale `u8` input, derivative order `(1, 0)`
+/// or `(0, 1)`, and Replicate or Reflect101 borders. It avoids the generic
+/// separable filter's full-image `f64` intermediate while preserving the same
+/// coefficients, scale, delta, metadata, and strided-input behavior.
+pub fn sobel_3x3_u8(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    dy: usize,
+    scale: f64,
+    delta: f64,
+    border: BorderMode<u8, 1>,
+) -> VisionResult<Image<f32, 1>> {
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("Sobel output size overflows".into()))?;
+    let mut output = vec![0.0; len];
+    sobel_3x3_u8_into(input, dx, dy, scale, delta, border, &mut output)?;
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+}
+
+/// Computes a first-order 3x3 Sobel derivative into caller-owned packed output.
+pub fn sobel_3x3_u8_into(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    dy: usize,
+    scale: f64,
+    delta: f64,
+    border: BorderMode<u8, 1>,
+    output: &mut [f32],
+) -> VisionResult<()> {
+    validate_derivative(dx, dy, 3, scale, delta)?;
+    if dx + dy != 1 {
+        return Err(VisionError::InvalidParameter(
+            "specialized 3x3 Sobel requires derivative order (1, 0) or (0, 1)".into(),
+        ));
+    }
+    if !matches!(border, BorderMode::Replicate | BorderMode::Reflect101) {
+        return Err(VisionError::InvalidParameter(
+            "specialized 3x3 Sobel supports only Replicate and Reflect101 borders".into(),
+        ));
+    }
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("Sobel output size overflows".into()))?;
+    if output.len() != len {
+        return Err(VisionError::ShapeMismatch(format!(
+            "Sobel output needs {len} elements, found {}",
+            output.len()
+        )));
+    }
+    if len == 0 {
+        return Ok(());
+    }
+
+    if scale == 1.0 && delta == 0.0 {
+        sobel_3x3_identity_into(input, dx, border, output);
+        return Ok(());
+    }
+
+    let width = input.width();
+    let height = input.height();
+    let arch = Arch::new();
+    if len >= 262_144 && height > 1 {
+        let workers = rayon::current_num_threads().min(height);
+        let rows_per_worker = height.div_ceil(workers);
+        output.par_chunks_mut(rows_per_worker * width).enumerate().for_each(|(chunk, output)| {
+            arch.dispatch(|| {
+                sobel_3x3_rows_dispatch(
+                    input,
+                    dx,
+                    scale,
+                    delta,
+                    border,
+                    chunk * rows_per_worker,
+                    output,
+                );
+            });
+        });
+    } else {
+        arch.dispatch(|| {
+            sobel_3x3_rows_dispatch(input, dx, scale, delta, border, 0, output);
+        });
+    }
+    Ok(())
+}
+
+/// Computes an exact absolute first-order 3x3 Sobel response as saturated `u8`.
+///
+/// This fuses signed derivative calculation, absolute value, and saturation,
+/// avoiding the signed intermediate image required by a two-stage pipeline.
+pub fn sobel_abs_3x3_u8(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    dy: usize,
+    border: BorderMode<u8, 1>,
+) -> VisionResult<Image<u8, 1>> {
+    let len = input.width().checked_mul(input.height()).ok_or_else(|| {
+        VisionError::InvalidDimensions("absolute Sobel output size overflows".into())
+    })?;
+    let mut output = vec![0; len];
+    sobel_abs_3x3_u8_into(input, dx, dy, border, &mut output)?;
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+}
+
+/// Computes an exact absolute first-order 3x3 Sobel response into packed output.
+pub fn sobel_abs_3x3_u8_into(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    dy: usize,
+    border: BorderMode<u8, 1>,
+    output: &mut [u8],
+) -> VisionResult<()> {
+    validate_derivative(dx, dy, 3, 1.0, 0.0)?;
+    if dx + dy != 1 {
+        return Err(VisionError::InvalidParameter(
+            "absolute 3x3 Sobel requires derivative order (1, 0) or (0, 1)".into(),
+        ));
+    }
+    if !matches!(border, BorderMode::Replicate | BorderMode::Reflect101) {
+        return Err(VisionError::InvalidParameter(
+            "absolute 3x3 Sobel supports only Replicate and Reflect101 borders".into(),
+        ));
+    }
+    let len = input.width().checked_mul(input.height()).ok_or_else(|| {
+        VisionError::InvalidDimensions("absolute Sobel output size overflows".into())
+    })?;
+    if output.len() != len {
+        return Err(VisionError::ShapeMismatch(format!(
+            "absolute Sobel output needs {len} elements, found {}",
+            output.len()
+        )));
+    }
+    if len == 0 {
+        return Ok(());
+    }
+
+    sobel_abs_or_threshold_3x3_into(input, dx, border, None, output);
+    Ok(())
+}
+
+/// Computes a binary edge mask from absolute 3x3 Sobel response.
+///
+/// Pixels whose saturated absolute response is strictly greater than
+/// `threshold` become 255; all others become zero. This matches OpenCV's
+/// `Sobel(CV_16S)` → `convertScaleAbs` → `THRESH_BINARY` pipeline.
+pub fn sobel_threshold_3x3_u8(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    dy: usize,
+    threshold: u8,
+    border: BorderMode<u8, 1>,
+) -> VisionResult<Image<u8, 1>> {
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("Sobel mask size overflows".into()))?;
+    let mut output = vec![0; len];
+    sobel_threshold_3x3_u8_into(input, dx, dy, threshold, border, &mut output)?;
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+}
+
+/// Computes a binary absolute-Sobel edge mask into caller-owned packed output.
+pub fn sobel_threshold_3x3_u8_into(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    dy: usize,
+    threshold: u8,
+    border: BorderMode<u8, 1>,
+    output: &mut [u8],
+) -> VisionResult<()> {
+    validate_derivative(dx, dy, 3, 1.0, 0.0)?;
+    if dx + dy != 1 {
+        return Err(VisionError::InvalidParameter(
+            "Sobel threshold requires derivative order (1, 0) or (0, 1)".into(),
+        ));
+    }
+    if !matches!(border, BorderMode::Replicate | BorderMode::Reflect101) {
+        return Err(VisionError::InvalidParameter(
+            "Sobel threshold supports only Replicate and Reflect101 borders".into(),
+        ));
+    }
+    let len = input
+        .width()
+        .checked_mul(input.height())
+        .ok_or_else(|| VisionError::InvalidDimensions("Sobel mask size overflows".into()))?;
+    if output.len() != len {
+        return Err(VisionError::ShapeMismatch(format!(
+            "Sobel mask needs {len} elements, found {}",
+            output.len()
+        )));
+    }
+    if len == 0 {
+        return Ok(());
+    }
+    sobel_abs_or_threshold_3x3_into(input, dx, border, Some(threshold), output);
+    Ok(())
+}
+
+fn sobel_abs_or_threshold_3x3_into(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    border: BorderMode<u8, 1>,
+    threshold: Option<u8>,
+    output: &mut [u8],
+) {
+    let width = input.width();
+    let height = input.height();
+    let len = output.len();
+    let workers =
+        if len >= 262_144 && height > 1 { rayon::current_num_threads().min(height) } else { 1 };
+    let rows_per_worker = height.div_ceil(workers);
+    let mut scratch = vec![0_i16; workers * 3 * width];
+    scratch
+        .par_chunks_mut(3 * width)
+        .zip(output.par_chunks_mut(rows_per_worker * width))
+        .enumerate()
+        .for_each(|(chunk, (scratch, output))| {
+            sobel_abs_3x3_stripe(
+                input,
+                dx,
+                border,
+                threshold,
+                chunk * rows_per_worker,
+                scratch,
+                output,
+            );
+        });
+}
+
+fn sobel_abs_3x3_stripe(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    border: BorderMode<u8, 1>,
+    threshold: Option<u8>,
+    start_y: usize,
+    scratch: &mut [i16],
+    output: &mut [u8],
+) {
+    let width = input.width();
+    let height = input.height();
+    let mut slots = [0, 1, 2];
+    let (top_y, bottom_y) = gradient_neighbors(start_y, height, border);
+    sobel_horizontal_row(input, top_y, dx, border, ring_row_mut(scratch, width, slots[0]));
+    sobel_horizontal_row(input, start_y, dx, border, ring_row_mut(scratch, width, slots[1]));
+    sobel_horizontal_row(input, bottom_y, dx, border, ring_row_mut(scratch, width, slots[2]));
+
+    let stripe_rows = output.len() / width;
+    for (local_y, output) in output.chunks_mut(width).enumerate() {
+        let y = start_y + local_y;
+        let top = ring_row(scratch, width, slots[0]);
+        let middle = ring_row(scratch, width, slots[1]);
+        let bottom = ring_row(scratch, width, slots[2]);
+        if dx == 1 {
+            for (((output, &top), &middle), &bottom) in
+                output.iter_mut().zip(top).zip(middle).zip(bottom)
+            {
+                *output = threshold_sobel(top + 2 * middle + bottom, threshold);
+            }
+        } else {
+            for ((output, &top), &bottom) in output.iter_mut().zip(top).zip(bottom) {
+                *output = threshold_sobel(bottom - top, threshold);
+            }
+        }
+        if local_y + 1 < stripe_rows {
+            slots.rotate_left(1);
+            let (_, next_bottom_y) = gradient_neighbors(y + 1, height, border);
+            sobel_horizontal_row(
+                input,
+                next_bottom_y,
+                dx,
+                border,
+                ring_row_mut(scratch, width, slots[2]),
+            );
+        }
+    }
+}
+
+#[inline(always)]
+fn saturating_abs_u8(value: i16) -> u8 {
+    value.unsigned_abs().min(u16::from(u8::MAX)) as u8
+}
+
+#[inline(always)]
+fn threshold_sobel(value: i16, threshold: Option<u8>) -> u8 {
+    let value = saturating_abs_u8(value);
+    threshold.map_or(value, |threshold| u8::from(value > threshold) * u8::MAX)
+}
+
+fn sobel_3x3_identity_into(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    border: BorderMode<u8, 1>,
+    output: &mut [f32],
+) {
+    let width = input.width();
+    let height = input.height();
+    let len = width * height;
+    let workers =
+        if len >= 262_144 && height > 1 { rayon::current_num_threads().min(height) } else { 1 };
+    let rows_per_worker = height.div_ceil(workers);
+    let mut scratch = vec![0_i16; workers * 3 * width];
+    scratch
+        .par_chunks_mut(3 * width)
+        .zip(output.par_chunks_mut(rows_per_worker * width))
+        .enumerate()
+        .for_each(|(chunk, (scratch, output))| {
+            let start_y = chunk * rows_per_worker;
+            sobel_3x3_identity_stripe(input, dx, border, start_y, scratch, output);
+        });
+}
+
+fn sobel_3x3_identity_stripe(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    border: BorderMode<u8, 1>,
+    start_y: usize,
+    scratch: &mut [i16],
+    output: &mut [f32],
+) {
+    let width = input.width();
+    let height = input.height();
+    let mut slots = [0, 1, 2];
+    let (top_y, bottom_y) = gradient_neighbors(start_y, height, border);
+    sobel_horizontal_row(input, top_y, dx, border, ring_row_mut(scratch, width, slots[0]));
+    sobel_horizontal_row(input, start_y, dx, border, ring_row_mut(scratch, width, slots[1]));
+    sobel_horizontal_row(input, bottom_y, dx, border, ring_row_mut(scratch, width, slots[2]));
+
+    let stripe_rows = output.len() / width;
+    for (local_y, output) in output.chunks_mut(width).enumerate() {
+        let y = start_y + local_y;
+        let top = ring_row(scratch, width, slots[0]);
+        let middle = ring_row(scratch, width, slots[1]);
+        let bottom = ring_row(scratch, width, slots[2]);
+        if dx == 1 {
+            for (((output, &top), &middle), &bottom) in
+                output.iter_mut().zip(top).zip(middle).zip(bottom)
+            {
+                *output = (top + 2 * middle + bottom) as f32;
+            }
+        } else {
+            for ((output, &top), &bottom) in output.iter_mut().zip(top).zip(bottom) {
+                *output = (bottom - top) as f32;
+            }
+        }
+
+        if local_y + 1 < stripe_rows {
+            slots.rotate_left(1);
+            let next_y = y + 1;
+            let (_, next_bottom_y) = gradient_neighbors(next_y, height, border);
+            sobel_horizontal_row(
+                input,
+                next_bottom_y,
+                dx,
+                border,
+                ring_row_mut(scratch, width, slots[2]),
+            );
+        }
+    }
+}
+
+fn sobel_horizontal_row(
+    input: ImageView<'_, u8, 1>,
+    y: usize,
+    dx: usize,
+    border: BorderMode<u8, 1>,
+    output: &mut [i16],
+) {
+    let width = input.width();
+    let row = input.row(y).expect("Sobel horizontal row in bounds");
+    if width == 1 {
+        output[0] = if dx == 1 { 0 } else { 4 * i16::from(row[0]) };
+        return;
+    }
+    let (left, _) = gradient_neighbors(0, width, border);
+    output[0] = if dx == 1 {
+        i16::from(row[1]) - i16::from(row[left])
+    } else {
+        i16::from(row[left]) + 2 * i16::from(row[0]) + i16::from(row[1])
+    };
+    if dx == 1 {
+        for (output, (&left, &right)) in
+            output[1..width - 1].iter_mut().zip(row[..width - 2].iter().zip(&row[2..]))
+        {
+            *output = i16::from(right) - i16::from(left);
+        }
+    } else {
+        for (output, ((&left, &center), &right)) in output[1..width - 1]
+            .iter_mut()
+            .zip(row[..width - 2].iter().zip(&row[1..width - 1]).zip(&row[2..]))
+        {
+            *output = i16::from(left) + 2 * i16::from(center) + i16::from(right);
+        }
+    }
+    let x = width - 1;
+    let (_, right) = gradient_neighbors(x, width, border);
+    output[x] = if dx == 1 {
+        i16::from(row[right]) - i16::from(row[x - 1])
+    } else {
+        i16::from(row[x - 1]) + 2 * i16::from(row[x]) + i16::from(row[right])
+    };
+}
+
+fn ring_row(scratch: &[i16], width: usize, slot: usize) -> &[i16] {
+    &scratch[slot * width..(slot + 1) * width]
+}
+
+fn ring_row_mut(scratch: &mut [i16], width: usize, slot: usize) -> &mut [i16] {
+    &mut scratch[slot * width..(slot + 1) * width]
+}
+
+#[inline]
+fn sobel_3x3_rows_dispatch(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    scale: f64,
+    delta: f64,
+    border: BorderMode<u8, 1>,
+    start_y: usize,
+    output: &mut [f32],
+) {
+    if scale == 1.0 && delta == 0.0 {
+        if dx == 1 {
+            sobel_x_3x3_rows(input, border, start_y, output);
+        } else {
+            sobel_y_3x3_rows(input, border, start_y, output);
+        }
+    } else {
+        sobel_3x3_rows(input, dx, scale, delta, border, start_y, output);
+    }
+}
+
+fn sobel_x_3x3_rows(
+    input: ImageView<'_, u8, 1>,
+    border: BorderMode<u8, 1>,
+    start_y: usize,
+    output: &mut [f32],
+) {
+    let width = input.width();
+    let height = input.height();
+    for (local_y, output) in output.chunks_mut(width).enumerate() {
+        let y = start_y + local_y;
+        let (top_y, bottom_y) = gradient_neighbors(y, height, border);
+        let top = input.row(top_y).expect("Sobel X row in bounds");
+        let middle = input.row(y).expect("Sobel X row in bounds");
+        let bottom = input.row(bottom_y).expect("Sobel X row in bounds");
+        if width == 1 {
+            output[0] = 0.0;
+            continue;
+        }
+        let (left, _) = gradient_neighbors(0, width, border);
+        output[0] = sobel_x_value(top, middle, bottom, left, 1) as f32;
+        for (
+            ((output, (top_left, top_right)), (middle_left, middle_right)),
+            (bottom_left, bottom_right),
+        ) in output[1..width - 1]
+            .iter_mut()
+            .zip(top[..width - 2].iter().zip(&top[2..]))
+            .zip(middle[..width - 2].iter().zip(&middle[2..]))
+            .zip(bottom[..width - 2].iter().zip(&bottom[2..]))
+        {
+            *output = (i16::from(*top_right) - i16::from(*top_left)
+                + 2 * (i16::from(*middle_right) - i16::from(*middle_left))
+                + i16::from(*bottom_right)
+                - i16::from(*bottom_left)) as f32;
+        }
+        let x = width - 1;
+        let (_, right) = gradient_neighbors(x, width, border);
+        output[x] = sobel_x_value(top, middle, bottom, x - 1, right) as f32;
+    }
+}
+
+fn sobel_y_3x3_rows(
+    input: ImageView<'_, u8, 1>,
+    border: BorderMode<u8, 1>,
+    start_y: usize,
+    output: &mut [f32],
+) {
+    let width = input.width();
+    let height = input.height();
+    for (local_y, output) in output.chunks_mut(width).enumerate() {
+        let y = start_y + local_y;
+        let (top_y, bottom_y) = gradient_neighbors(y, height, border);
+        let top = input.row(top_y).expect("Sobel Y row in bounds");
+        let bottom = input.row(bottom_y).expect("Sobel Y row in bounds");
+        if width == 1 {
+            output[0] = (4 * (i16::from(bottom[0]) - i16::from(top[0]))) as f32;
+            continue;
+        }
+        let (left, _) = gradient_neighbors(0, width, border);
+        output[0] = sobel_y_value(top, bottom, left, 0, 1) as f32;
+        for (
+            (output, ((top_left, top_center), top_right)),
+            ((bottom_left, bottom_center), bottom_right),
+        ) in output[1..width - 1]
+            .iter_mut()
+            .zip(top[..width - 2].iter().zip(&top[1..width - 1]).zip(&top[2..]))
+            .zip(bottom[..width - 2].iter().zip(&bottom[1..width - 1]).zip(&bottom[2..]))
+        {
+            *output = (i16::from(*bottom_left) - i16::from(*top_left)
+                + 2 * (i16::from(*bottom_center) - i16::from(*top_center))
+                + i16::from(*bottom_right)
+                - i16::from(*top_right)) as f32;
+        }
+        let x = width - 1;
+        let (_, right) = gradient_neighbors(x, width, border);
+        output[x] = sobel_y_value(top, bottom, x - 1, x, right) as f32;
+    }
+}
+
+#[inline(always)]
+fn sobel_x_value(top: &[u8], middle: &[u8], bottom: &[u8], left: usize, right: usize) -> i16 {
+    i16::from(top[right]) - i16::from(top[left])
+        + 2 * (i16::from(middle[right]) - i16::from(middle[left]))
+        + i16::from(bottom[right])
+        - i16::from(bottom[left])
+}
+
+#[inline(always)]
+fn sobel_y_value(top: &[u8], bottom: &[u8], left: usize, center: usize, right: usize) -> i16 {
+    i16::from(bottom[left]) - i16::from(top[left])
+        + 2 * (i16::from(bottom[center]) - i16::from(top[center]))
+        + i16::from(bottom[right])
+        - i16::from(top[right])
+}
+
+fn sobel_3x3_rows(
+    input: ImageView<'_, u8, 1>,
+    dx: usize,
+    scale: f64,
+    delta: f64,
+    border: BorderMode<u8, 1>,
+    start_y: usize,
+    output: &mut [f32],
+) {
+    let width = input.width();
+    let height = input.height();
+    for (local_y, output) in output.chunks_mut(width).enumerate() {
+        let y = start_y + local_y;
+        let (top_y, bottom_y) = gradient_neighbors(y, height, border);
+        let top = input.row(top_y).expect("Sobel row in bounds");
+        let middle = input.row(y).expect("Sobel row in bounds");
+        let bottom = input.row(bottom_y).expect("Sobel row in bounds");
+        if width == 1 {
+            output[0] = scaled_sobel_3x3_pixel(top, middle, bottom, 0, 0, 0, dx, scale, delta);
+            continue;
+        }
+        let (left, _) = gradient_neighbors(0, width, border);
+        output[0] = scaled_sobel_3x3_pixel(top, middle, bottom, left, 0, 1, dx, scale, delta);
+        for (x, value) in output.iter_mut().enumerate().take(width - 1).skip(1) {
+            *value = scaled_sobel_3x3_pixel(top, middle, bottom, x - 1, x, x + 1, dx, scale, delta);
+        }
+        let x = width - 1;
+        let (_, right) = gradient_neighbors(x, width, border);
+        output[x] = scaled_sobel_3x3_pixel(top, middle, bottom, x - 1, x, right, dx, scale, delta);
+    }
+}
+
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+fn scaled_sobel_3x3_pixel(
+    top: &[u8],
+    middle: &[u8],
+    bottom: &[u8],
+    left: usize,
+    center: usize,
+    right: usize,
+    dx: usize,
+    scale: f64,
+    delta: f64,
+) -> f32 {
+    let value = if dx == 1 {
+        i16::from(top[right]) + 2 * i16::from(middle[right]) + i16::from(bottom[right])
+            - i16::from(top[left])
+            - 2 * i16::from(middle[left])
+            - i16::from(bottom[left])
+    } else {
+        i16::from(bottom[left]) + 2 * i16::from(bottom[center]) + i16::from(bottom[right])
+            - i16::from(top[left])
+            - 2 * i16::from(top[center])
+            - i16::from(top[right])
+    };
+    f64::from(value).mul_add(scale, delta) as f32
+}
+
 /// Computes exact 3×3 Sobel X/Y gradients together for grayscale `u8` input.
 ///
 /// This matches OpenCV `spatialGradient`: outputs are signed `i16`, the two
@@ -633,8 +1221,9 @@ fn convolve_coefficients(left: &[f64], right: &[f64]) -> Vec<f64> {
 mod tests {
     use super::{
         bilateral_filter, build_gaussian_pyramid, laplacian, median_blur, pyr_down, scharr, sobel,
-        sobel_l1_magnitude_u8, sobel_l1_magnitude_u8_into, spatial_gradient_u8,
-        spatial_gradient_u8_into,
+        sobel_3x3_u8, sobel_3x3_u8_into, sobel_abs_3x3_u8, sobel_abs_3x3_u8_into,
+        sobel_l1_magnitude_u8, sobel_l1_magnitude_u8_into, sobel_threshold_3x3_u8,
+        sobel_threshold_3x3_u8_into, spatial_gradient_u8, spatial_gradient_u8_into,
     };
     use crate::BorderMode;
     use spatialrust_image::{Image, ImageRegion};
@@ -692,6 +1281,113 @@ mod tests {
             );
             assert_eq!(gradient_x.metadata(), input.metadata());
             assert_eq!(gradient_y.metadata(), input.metadata());
+        }
+    }
+
+    #[test]
+    fn specialized_sobel_matches_generic_for_strided_input() {
+        let parent = Image::<u8, 1>::try_new(
+            11,
+            8,
+            (0..88).map(|index| ((index * 41 + 19) % 256) as u8).collect(),
+        )
+        .unwrap();
+        let input = parent.view().subview(ImageRegion::new(1, 1, 9, 6)).unwrap();
+        for border in [BorderMode::Replicate, BorderMode::Reflect101] {
+            for (dx, dy) in [(1, 0), (0, 1)] {
+                let expected = sobel(input, dx, dy, 3, 0.75, -2.5, border).unwrap();
+                let actual = sobel_3x3_u8(input, dx, dy, 0.75, -2.5, border).unwrap();
+                assert_eq!(actual, expected);
+                assert_eq!(actual.metadata(), input.metadata());
+            }
+        }
+    }
+
+    #[test]
+    fn specialized_sobel_into_validates_contract() {
+        let image = Image::<u8, 1>::try_new(3, 2, vec![0, 1, 2, 3, 4, 5]).unwrap();
+        let mut output = vec![0.0; 6];
+        sobel_3x3_u8_into(image.view(), 1, 0, 1.0, 0.0, BorderMode::Reflect101, &mut output)
+            .unwrap();
+        assert!(sobel_3x3_u8_into(
+            image.view(),
+            1,
+            0,
+            1.0,
+            0.0,
+            BorderMode::Reflect101,
+            &mut output[..5],
+        )
+        .is_err());
+        assert!(sobel_3x3_u8_into(
+            image.view(),
+            1,
+            1,
+            1.0,
+            0.0,
+            BorderMode::Reflect101,
+            &mut output,
+        )
+        .is_err());
+        assert!(sobel_3x3_u8_into(image.view(), 1, 0, 1.0, 0.0, BorderMode::Wrap, &mut output,)
+            .is_err());
+    }
+
+    #[test]
+    fn absolute_sobel_matches_saturated_specialized_derivative() {
+        let parent = Image::<u8, 1>::try_new(
+            12,
+            9,
+            (0..108).map(|index| ((index * 67 + 13) % 256) as u8).collect(),
+        )
+        .unwrap();
+        let input = parent.view().subview(ImageRegion::new(1, 1, 10, 7)).unwrap();
+        for border in [BorderMode::Replicate, BorderMode::Reflect101] {
+            for (dx, dy) in [(1, 0), (0, 1)] {
+                let derivative = sobel_3x3_u8(input, dx, dy, 1.0, 0.0, border).unwrap();
+                let expected = derivative
+                    .as_slice()
+                    .iter()
+                    .map(|value| value.abs().min(255.0) as u8)
+                    .collect::<Vec<_>>();
+                let actual = sobel_abs_3x3_u8(input, dx, dy, border).unwrap();
+                assert_eq!(actual.as_slice(), expected);
+                let mut reused = vec![0; input.width() * input.height()];
+                sobel_abs_3x3_u8_into(input, dx, dy, border, &mut reused).unwrap();
+                assert_eq!(reused, expected);
+            }
+        }
+    }
+
+    #[test]
+    fn thresholded_sobel_matches_absolute_response() {
+        let image = Image::<u8, 1>::try_new(
+            17,
+            13,
+            (0..221).map(|index| ((index * 29 + 7) % 256) as u8).collect(),
+        )
+        .unwrap();
+        for (dx, dy) in [(1, 0), (0, 1)] {
+            let absolute = sobel_abs_3x3_u8(image.view(), dx, dy, BorderMode::Reflect101).unwrap();
+            let expected = absolute
+                .as_slice()
+                .iter()
+                .map(|&value| u8::from(value > 96) * u8::MAX)
+                .collect::<Vec<_>>();
+            let actual =
+                sobel_threshold_3x3_u8(image.view(), dx, dy, 96, BorderMode::Reflect101).unwrap();
+            assert_eq!(actual.as_slice(), expected);
+            let mut reused = vec![0; expected.len()];
+            sobel_threshold_3x3_u8_into(
+                image.view(),
+                dx,
+                dy,
+                96,
+                BorderMode::Reflect101,
+                &mut reused,
+            )
+            .unwrap();
+            assert_eq!(reused, expected);
         }
     }
 

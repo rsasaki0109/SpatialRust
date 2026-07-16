@@ -640,6 +640,42 @@ def test_spatial_gradient_matches_sobel_and_reuses_outputs():
     np.testing.assert_array_equal(out_dy, expected_y)
 
 
+def test_sobel_reuses_output_and_validates_it():
+    gray = np.arange(13 * 17, dtype=np.uint8).reshape(13, 17)[:, ::-1]
+    expected = sr.sobel_image(gray, 1, 0)
+    output = np.empty(gray.shape, dtype=np.float32)
+    assert sr.sobel_image(gray, 1, 0, out=output) is output
+    np.testing.assert_array_equal(output, expected)
+    with pytest.raises(ValueError, match="out shape"):
+        sr.sobel_image(gray, 1, 0, out=np.empty((13, 16), dtype=np.float32))
+    with pytest.raises(ValueError, match="contiguous"):
+        sr.sobel_image(gray, 1, 0, out=np.empty((13, 34), dtype=np.float32)[:, ::2])
+
+
+def test_absolute_sobel_matches_signed_pipeline_and_reuses_output():
+    gray = np.arange(19 * 23, dtype=np.uint8).reshape(19, 23)[:, ::-1]
+    signed = sr.sobel_image(gray, 1, 0)
+    expected = np.minimum(np.abs(signed), 255).astype(np.uint8)
+    actual = sr.sobel_abs_image(gray, 1, 0)
+    np.testing.assert_array_equal(actual, expected)
+    output = np.empty(gray.shape, dtype=np.uint8)
+    assert sr.sobel_abs_image(gray, 1, 0, out=output) is output
+    np.testing.assert_array_equal(output, expected)
+
+
+def test_thresholded_sobel_matches_absolute_pipeline_and_reuses_output():
+    gray = np.arange(19 * 23, dtype=np.uint8).reshape(19, 23)[:, ::-1]
+    absolute = sr.sobel_abs_image(gray, 1, 0)
+    expected = np.where(absolute > 96, 255, 0).astype(np.uint8)
+    actual = sr.sobel_threshold_image(gray, 1, 0, 96)
+    np.testing.assert_array_equal(actual, expected)
+    output = np.empty(gray.shape, dtype=np.uint8)
+    assert sr.sobel_threshold_image(gray, 1, 0, 96, out=output) is output
+    np.testing.assert_array_equal(output, expected)
+    with pytest.raises(ValueError):
+        sr.sobel_threshold_image(gray, 1, 0, 96, out=gray)
+
+
 def test_spatial_gradient_rejects_partial_and_invalid_outputs():
     gray = np.arange(7 * 9, dtype=np.uint8).reshape(7, 9)
     output = np.empty(gray.shape, dtype=np.int16)
