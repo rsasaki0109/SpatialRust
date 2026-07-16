@@ -276,6 +276,11 @@ name = "vision_2_release_gate"
 path = "examples/vision_2_release_gate.rs"
 required-features = ["platform"]
 
+[[example]]
+name = "video_tracking_e2e"
+path = "examples/video_tracking_e2e.rs"
+required-features = ["image-io-standard", "vision-video"]
+
 [[bin]]
 name = "spatialrust-mvp"
 path = "src/bin/spatialrust_mvp.rs"

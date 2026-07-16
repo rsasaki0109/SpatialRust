@@ -257,6 +257,7 @@ jobs:
           pip install maturin pytest numpy mypy
           maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
           pytest crates/spatialrust-py/tests
+          python crates/spatialrust-py/examples/video_tracking_e2e.py --no-gif
           # The comparison report contract stays stdlib-only. OpenCV itself is
           # intentionally not a production or default-CI dependency.
           python bench/opencv_comparison/test_report.py
@@ -285,6 +286,7 @@ jobs:
           cargo run -p spatialrust --no-default-features --features vision-full --example vision_1_cpu
           cargo run -p spatialrust --no-default-features --features platform --example vision_1_release_gate
           cargo run -p spatialrust --no-default-features --features platform --example vision_2_release_gate
+          cargo run -p spatialrust --no-default-features --features image-io-standard,vision-video --example video_tracking_e2e
 
   bench:
     name: Benchmark compile

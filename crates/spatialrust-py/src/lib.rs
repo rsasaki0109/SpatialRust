@@ -112,9 +112,12 @@ use spatialrust::vision::{
     ObjectImageCorrespondence, OrbOptions, OrbScoreType, PanoramaOptions, PerspectiveTransform,
     PointCorrespondence2, PointMap, RectMorphologyWorkspace, RgbdOdometryOptions, RleOrder,
     RobustEstimationOptions, ShiTomasiOptions, SoftNmsMethod, StereoBmOptions, StructuringElement,
-    ThresholdType,
+    ThresholdType, TrackState,
 };
-use spatialrust::vision::{dense_flow_block_match as dense_flow_native, DenseFlowOptions};
+use spatialrust::vision::{
+    dense_flow_block_match as dense_flow_native, DenseFlowOptions,
+    MultiObjectTracker as NativeMultiObjectTracker, MultiObjectTrackerOptions,
+};
 use spatialrust::voxelize::{
     range_image as range_image_proj, voxelize as voxelize_grid, RangeImageConfig, VoxelFill,
     VoxelGridConfig,
@@ -134,6 +137,7 @@ use spatialrust::{
 
 type Vec3Tuple = (f32, f32, f32);
 type OrientedBoundingBoxTuple = (Vec3Tuple, Vec3Tuple, Vec<Vec3Tuple>);
+type ObjectTrackTuple = (u64, f32, f32, f32, f32, i64, f32, u32, u32, u32, bool);
 type ComponentStats = Vec<(u32, usize, (f32, f32, f32, f32))>;
 
 fn to_py_err<E: std::fmt::Display>(err: E) -> PyErr {
@@ -822,6 +826,81 @@ fn dense_flow_image<'py>(
     )
     .map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
+}
+
+/// Stateful deterministic same-class IoU tracker.
+#[pyclass(name = "MultiObjectTracker")]
+struct PyMultiObjectTracker {
+    inner: NativeMultiObjectTracker,
+}
+
+#[pymethods]
+impl PyMultiObjectTracker {
+    /// Creates an empty tracker.
+    #[new]
+    #[pyo3(signature = (iou_threshold=0.3, max_missed=3, min_confirmed_hits=2))]
+    fn new(iou_threshold: f32, max_missed: u32, min_confirmed_hits: u32) -> PyResult<Self> {
+        let inner = NativeMultiObjectTracker::try_new(MultiObjectTrackerOptions {
+            iou_threshold,
+            max_missed,
+            min_confirmed_hits,
+        })
+        .map_err(to_py_err)?;
+        Ok(Self { inner })
+    }
+
+    /// Associates detections and returns rows ending in a confirmed 0/1 field.
+    fn update(
+        &mut self,
+        boxes: PyReadonlyArray2<'_, f32>,
+        scores: PyReadonlyArray1<'_, f32>,
+        class_ids: PyReadonlyArray1<'_, i64>,
+    ) -> PyResult<Vec<ObjectTrackTuple>> {
+        let boxes = boxes.as_array();
+        let scores = scores.as_array();
+        let class_ids = class_ids.as_array();
+        if boxes.ndim() != 2
+            || boxes.shape()[1] != 4
+            || scores.len() != boxes.shape()[0]
+            || class_ids.len() != boxes.shape()[0]
+        {
+            return Err(PyValueError::new_err(
+                "boxes must be Nx4 with matching scores and class_ids",
+            ));
+        }
+        let detections = boxes
+            .outer_iter()
+            .zip(scores.iter())
+            .zip(class_ids.iter())
+            .map(|((row, &score), &class_id)| {
+                Ok(Detection {
+                    bbox: BoundingBox2::try_new(row[0], row[1], row[2], row[3])
+                        .map_err(to_py_err)?,
+                    score,
+                    class_id,
+                })
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        let tracks = self.inner.update(&detections).map_err(to_py_err)?;
+        Ok(tracks
+            .iter()
+            .map(|track| {
+                (
+                    track.id,
+                    track.bbox.x_min,
+                    track.bbox.y_min,
+                    track.bbox.x_max,
+                    track.bbox.y_max,
+                    track.class_id,
+                    track.score,
+                    track.age,
+                    track.hits,
+                    track.missed,
+                    track.state == TrackState::Confirmed,
+                )
+            })
+            .collect())
+    }
 }
 
 /// Applies gray-world white balance to an RGB image.
@@ -4162,6 +4241,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyDistanceTransformWorkspace>()?;
     m.add_class::<PyMorphologyWorkspace>()?;
     m.add_class::<PyCannyWorkspace>()?;
+    m.add_class::<PyMultiObjectTracker>()?;
     m.add_class::<PyOnnxRuntimeSession>()?;
     m.add_class::<PyDlpackTensorView>()?;
     m.add_class::<PyPointCloud>()?;

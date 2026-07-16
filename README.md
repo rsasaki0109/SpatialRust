@@ -479,6 +479,23 @@ The reproducible algorithm comparison is in
 `bench/opencv_vision_comparison/`; the complete synthetic demo is
 `crates/spatialrust-py/examples/vision_ai_pipeline.py`.
 
+The video E2E demo generates and reloads the same deterministic 12-frame PGM
+sequence in Rust and Python, estimates dense optical flow, detects the two
+moving objects, and preserves track IDs through the native IoU tracker:
+
+<p align="center">
+  <img src="docs/assets/video_tracking_e2e.gif" alt="Two textured objects moving in opposite directions with SpatialRust dense optical-flow vectors and stable track IDs 1 and 2" width="576">
+</p>
+
+```powershell
+cargo run -p spatialrust --no-default-features --features image-io-standard,vision-video --example video_tracking_e2e
+maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
+.venv/Scripts/python.exe crates/spatialrust-py/examples/video_tracking_e2e.py
+```
+
+Both paths assert object-center flow `(+2,+1)` / `(-2,-1)` for all 11 frame
+pairs and stable track IDs `1,2`. The Python run regenerates the GIF above.
+
 The same feature includes Harris, Shi–Tomasi, exact FAST-9/16, multi-scale ORB,
 and checked Hamming/L2 descriptor matching. Python exposes `orb_features` and
 NumPy matcher functions; OpenCV is used only by the numerical comparison suite.
