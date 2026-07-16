@@ -133,6 +133,26 @@ impl StabilityRegistry {
         registry
     }
 
+    /// Seeds the Vision 2 release surface while retaining every Vision 1 item.
+    #[must_use]
+    pub fn vision_v2_surface() -> Self {
+        let mut registry = Self::vision_v1_surface();
+        for path in [
+            "spatialrust-vision::BilinearResizeU8Plan",
+            "spatialrust-vision::NearestResizeU8Plan",
+            "spatialrust-vision::AreaResizeU8Plan",
+            "spatialrust-vision::GaussianBlurU8Workspace",
+            "spatialrust-vision::MorphologyU8Workspace",
+            "spatialrust-vision::CannyWorkspace",
+            "spatialrust-gpu::GpuAiTensor",
+            "spatialrust-gpu::GpuVisionChainOptions",
+            "spatialrust-gpu::run_gpu_vision_chain",
+        ] {
+            registry.register(path, ApiStabilityClass::Provisional);
+        }
+        registry
+    }
+
     /// Seeds the north-star crate surface used by Epic 100 gates.
     #[must_use]
     pub fn north_star_surface() -> Self {
@@ -184,6 +204,20 @@ mod tests {
             ApiStabilityClass::Provisional
         );
         assert!(registry.items().len() >= 39);
+        assert_eq!(registry.experimental_count(), 0);
+    }
+
+    #[test]
+    fn vision_v2_surface_extends_v1_without_experimental_items() {
+        let registry = StabilityRegistry::vision_v2_surface();
+        assert_eq!(
+            registry.lookup("spatialrust-image::Image").unwrap().class,
+            ApiStabilityClass::Stable
+        );
+        assert_eq!(
+            registry.lookup("spatialrust-gpu::run_gpu_vision_chain").unwrap().class,
+            ApiStabilityClass::Provisional
+        );
         assert_eq!(registry.experimental_count(), 0);
     }
 }

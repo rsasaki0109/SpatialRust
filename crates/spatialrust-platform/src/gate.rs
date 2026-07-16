@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn north_star_defaults_need_conformance_passes() {
         let mut gate = ReleaseGate::north_star_defaults();
-        assert!(gate.evaluate().allowed == false);
+        assert!(!gate.evaluate().allowed);
         if let Some(report) = gate.conformance.as_mut() {
             report.record("smoke", ConformanceStatus::Pass, None);
         }

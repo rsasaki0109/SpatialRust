@@ -14,7 +14,7 @@
       <div class="eyebrow">Epics 112–120</div>
       <h1>Vision 2 performance program</h1>
       <p class="lead">Turn measured OpenCV gaps into faster native kernels, reusable memory, explicit GPU-resident chains, and fail-closed performance evidence—without weakening accuracy or ownership contracts.</p>
-      <div class="actions"><a class="button primary" href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ROADMAP.md#vision-2-performance-program-epics-112120">Canonical roadmap</a><a class="button" href="algorithms.html">Algorithm catalog</a></div>
+      <div class="actions"><a class="button primary" href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ROADMAP.md#vision-2-performance-program-epics-112120">Canonical roadmap</a><a class="button" href="vision2-release.md">Generated release receipt</a><a class="button" href="algorithms.html">Algorithm catalog</a></div>
     </section>
 
     <section>
@@ -33,8 +33,8 @@ flowchart TD
   E116["116 · Gaussian and Sobel"]:::done
   E117["117 · Morphology"]:::done
   E118["118 · Fused Canny"]:::done
-  E119["119 · Explicit GPU chain"]:::todo
-  E120["120 · Vision 2 release gate"]:::todo
+  E119["119 · Explicit GPU chain"]:::done
+  E120["120 · Vision 2 release gate"]:::done
   E104["104 · GPU Image v2"]:::done
   E112 --> E113 --> E114
   E114 --> E115 --> E119
@@ -74,6 +74,8 @@ flowchart TD
     <section>
       <h2>Latest measured outcome</h2>
       <div class="grid">
+        <article class="card"><h3>Release gate allowed</h3><p>The typed gate covers Linux, Windows, and macOS conformance; native/Python allocate and reuse latency; peak memory; steady-state allocations; worker policy; and exact GPU transfer ceilings. <a href="vision2-release.md">Generated receipt</a> · <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/VISION_2_MIGRATION.md">Migration guide</a>.</p></article>
+        <article class="card"><h3>GPU-resident chain</h3><p>One explicit upload feeds resize, gray, blur, Sobel, morphology, and normalized CHW packing. On the recorded Intel UHD 630 Vulkan adapter, the synchronized resident loop measured 1.696 ms at VGA, 7.423 ms at 1080p, and 16.005 ms at 4K, with no readback before caller request.</p></article>
         <article class="card"><h3>Component-attributed baseline</h3><p>On the recorded 12-logical-CPU Windows host, caller-output bilinear resize measured 93.18 MPix/s at VGA, 93.05 MPix/s at 1080p, and 85.45 MPix/s at 4K in default-thread mode. The native kernel was the largest measured component; explicit Python packing cost roughly half as much, while output allocation stayed below 0.025 ms.</p></article>
         <article class="card"><h3>Exact EDT at 4K</h3><p>With caller-owned output and workspace reuse, SpatialRust measured 40.66 ms versus OpenCV 43.33 ms: a 1.07× lead on the recorded Windows host.</p></article>
         <article class="card"><h3>Accuracy preserved</h3><p>The VGA, 1080p, and 4K canonical masks retain maximum absolute error 0.0 against OpenCV's precise L2 distance transform.</p></article>

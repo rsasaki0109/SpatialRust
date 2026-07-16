@@ -132,6 +132,13 @@ which requires named cross-platform/test/audit evidence, fixed performance
 measurements, OpenCV receipts, runnable examples, and migration-policy
 acknowledgement.
 
+Vision 2 keeps the Vision 1 stable surface unchanged and adds provisional plan,
+workspace, fused preprocessing, and GPU-resident entries through
+`StabilityRegistry::vision_v2_surface()`. A Vision 2 candidate must pass
+`Vision2ReleaseGate`, including three-OS conformance, native/Python
+allocate/reuse budgets, explicit resource and transfer measurements, generated
+documentation, dated receipts, and the `vision-2` migration policy.
+
 1. Deprecate in minor release (`#[deprecated]` + CHANGELOG)
 2. Remove no sooner than next major release
 3. Migration notes in CHANGELOG and rustdoc

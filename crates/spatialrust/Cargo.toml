@@ -271,6 +271,11 @@ name = "vision_1_release_gate"
 path = "examples/vision_1_release_gate.rs"
 required-features = ["platform"]
 
+[[example]]
+name = "vision_2_release_gate"
+path = "examples/vision_2_release_gate.rs"
+required-features = ["platform"]
+
 [[bin]]
 name = "spatialrust-mvp"
 path = "src/bin/spatialrust_mvp.rs"
