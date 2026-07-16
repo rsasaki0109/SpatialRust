@@ -164,8 +164,8 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | Sobel X 3×3, allocate[^sobel-direct-2026] | OpenCV 1.07× | **SpatialRust 1.88×** | **SpatialRust 2.03×** |
 | Fused abs(Sobel X) → binary mask, allocate[^sobel-direct-2026] | **SpatialRust 3.81×** | **SpatialRust 4.87×** | **SpatialRust 6.64×** |
 | Fused abs(Sobel X) → binary mask, reuse[^sobel-direct-2026] | **SpatialRust 2.95×** | **SpatialRust 6.63×** | **SpatialRust 8.68×** |
-| Morphology open 5×5, allocate[^morphology-2026] | OpenCV 60.96× | OpenCV 13.34× | OpenCV 15.27× |
-| Morphology open 5×5, reuse[^morphology-2026] | OpenCV 60.32× | OpenCV 16.25× | OpenCV 17.78× |
+| Morphology open 5×5, allocate[^morphology-2026] | OpenCV 4.51× | OpenCV 1.98× | OpenCV 2.30× |
+| Morphology open 5×5, reuse[^morphology-2026] | OpenCV 1.90× | **SpatialRust 1.22×** | OpenCV 1.50× |
 | Morphology open 511×511, allocate[^morphology-2026] | OpenCV 2.10× | **SpatialRust 2.61×** | **SpatialRust 2.40×** |
 | Morphology open 511×511, reuse[^morphology-2026] | OpenCV 2.46× | **SpatialRust 3.25×** | **SpatialRust 2.77×** |
 | Canny 3×3, reuse, document lines[^canny-2026] | OpenCV 1.40× | **SpatialRust 1.36×** | **SpatialRust 1.42×** |
@@ -260,10 +260,13 @@ OpenCV also remains faster for standalone `spatialGradient`. See the
     API timing scopes. `MorphologyWorkspace` retains all full-image and
     per-worker line scratch; `out=` retains object identity.
     The separable sliding min/max path is bit-exact across 980 randomized
-    operation cases. It removes the old 500–900× gap for 5×5 kernels and wins
-    on the named 511×511 large-background workload, but OpenCV remains much
-    faster for small rectangles. See the [focused harness](bench/opencv_morphology_comparison/)
-    and [workspace receipt](notes/2026-07-16_morphology_workspace_reuse.md).
+    operation cases. A centered 5×5 Replicate path uses fixed extrema and
+    direct row-major vertical passes instead of prefix/suffix buffers and two
+    transposes. It cuts the old 5×5 gaps by 6.6×–31.8× and wins 1080p reuse by
+    1.22× on the dated host; OpenCV still leads the other 5×5 profiles. See the
+    [focused harness](bench/opencv_morphology_comparison/),
+    [small-kernel receipt](notes/2026-07-16_morphology_small_kernel.md), and
+    [workspace receipt](notes/2026-07-16_morphology_workspace_reuse.md).
 
 The EDT fast path is exact on the canonical masks and reduced the native 4K
 allocation benchmark from 451.63 ms to about 75 ms. With caller-owned output

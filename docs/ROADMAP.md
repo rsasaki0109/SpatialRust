@@ -650,6 +650,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | 117B | Complete | Packed rectangular `u8` dispatch and generic Cross/Ellipse/Diamond/custom-mask fallback | shape, border, stride, iteration, and anchor parity |
 | 117C | Complete | Caller-owned output and reusable ping-pong/worker scratch for iterations and composite operations | capacity, alias, stride, object-identity, and OpenCV reuse receipt |
 | 117D | Complete | Improve morphology by at least 20x on one canonical large profile | 43.8× 4K 5×5 baseline improvement; bit-exact 511×511 OpenCV wins |
+| 117E | Complete | Specialize centered 5×5 Replicate morphology without large-window transpose overhead | 6.6×–31.8× gap reduction; 1.22× OpenCV win at 1080p reuse; 980 exact randomized operations |
 
 ### Epic 118 delivery slices
 
