@@ -577,7 +577,7 @@ backend, allocation mode, and accuracy contract.
 | 113 | Planned | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
 | 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
 | 115 | Complete | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
-| 116 | In progress | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
+| 116 | Complete | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
 | 117 | Complete | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
 | 118 | Planned | 113–117 | Fused Canny fast path that avoids public intermediates unless explicitly requested |
 | 119 | Planned | 104, 115–118 | Explicit upload-once GPU-resident vision chain with no intermediate readback |
@@ -638,7 +638,7 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | --- | --- | --- | --- |
 | 116A | Complete | Reuse separable-filter intermediates and cache validated Gaussian kernels | workspace capacity and output-reuse tests |
 | 116B | Complete | Split border handling from contiguous interior loops | five Gaussian border modes plus strided-view tests |
-| 116C | In progress | Specialized 3x3/5x5/7x7 Gaussian and paired Sobel X/Y passes | exact paired Sobel and accelerated Q8 3×3/5×5 Gaussian complete; high-precision 7×7 fallback remains |
+| 116C | Complete | Specialized 3x3/5x5/7x7 Gaussian and paired Sobel X/Y passes | Q15 7×7 workspace path; 300-case OpenCV max error 2/255; paired Sobel exact |
 | 116D | Complete | Improve Gaussian by at least 10x and Sobel by at least 5x on one canonical large profile | 5×5 Gaussian 20.7× at 1080p and 26.7× at 4K; dated native timing receipt |
 | 116E | Complete | Remove standalone 3×3 Sobel's generic `f64` intermediate and fuse common absolute-threshold consumers | exact direct/absolute/mask APIs; direct Sobel beats OpenCV 1.88×/2.03× at 1080p/4K; fused masks win 2.95×–8.68× |
 
