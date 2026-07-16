@@ -682,6 +682,12 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 | 120D | Complete | Generated algorithm/performance documentation and migration guidance | Pages-generated receipt plus README/migration links |
 | 120E | Complete | Vision 2 release gate and runnable receipt example | aggregate missing/skip/duplicate/budget denial tests |
 
+### Vision 2 video pipeline E2E demo
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| Video E2E | Complete | Deterministic frame generation/loading → dense optical flow → object detection → native multi-object tracking in Rust and Python | 12 byte-identical PGM frames, 11 exact bidirectional flow checks, stable IDs 1/2, committed GIF |
+
 The improvement thresholds above compare against the checked Epic 112
 SpatialRust baseline on the same host; they are not claims against every OpenCV
 build. Accuracy gates remain workload-specific: resize/gray/Gaussian retain

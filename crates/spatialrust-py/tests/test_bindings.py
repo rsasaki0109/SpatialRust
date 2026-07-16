@@ -1036,3 +1036,19 @@ def test_dense_flow_binding_recovers_translation_and_marks_border_invalid():
     assert flow.shape == (height, width, 2)
     np.testing.assert_array_equal(flow[16, 20], [2.0, 1.0])
     assert np.isnan(flow[0, 0]).all()
+
+
+def test_multi_object_tracker_preserves_ids_and_confirms():
+    tracker = sr.MultiObjectTracker(iou_threshold=0.2, max_missed=1, min_confirmed_hits=2)
+    scores = np.array([0.9], dtype=np.float32)
+    classes = np.array([3], dtype=np.int64)
+    first = tracker.update(
+        np.array([[10.0, 10.0, 24.0, 22.0]], dtype=np.float32), scores, classes
+    )
+    second = tracker.update(
+        np.array([[12.0, 11.0, 26.0, 23.0]], dtype=np.float32), scores, classes
+    )
+    assert len(first) == len(second) == 1
+    assert first[0][0] == second[0][0] == 1
+    assert first[0][10] is False
+    assert second[0][10] is True

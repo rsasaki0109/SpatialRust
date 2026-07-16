@@ -15,7 +15,7 @@ __all__: list[str] = [
     "__version__", "ImageMetadata", "Tensor", "Keypoint2", "OnnxRuntimeSession",
     "DLPackTensorView", "PointCloud", "PipelineResult", "RegionResult",
     "DbscanResult", "GroundResult", "MultiPlaneResult", "SphereResult",
-    "CylinderResult", "RegistrationResult", "read_image",
+    "CylinderResult", "RegistrationResult", "MultiObjectTracker", "read_image",
     "tensor_copy_from_numpy", "tensor_view_from_dlpack", "harris_keypoints",
     "shi_tomasi_keypoints", "fast_keypoints", "orb_features",
     "estimate_homography_ransac", "solve_pnp", "estimate_rgbd_odometry", "stereo_block_match",
@@ -139,6 +139,27 @@ def dense_flow_image(
     block_radius: int = ...,
     search_radius: int = ...,
 ) -> _F32Array: ...
+
+@final
+class MultiObjectTracker:
+    """Deterministic same-class IoU tracker with persistent track IDs."""
+
+    def __new__(
+        cls,
+        iou_threshold: float = ...,
+        max_missed: int = ...,
+        min_confirmed_hits: int = ...,
+    ) -> MultiObjectTracker: ...
+    def update(
+        self,
+        boxes: _F32Array,
+        scores: _F32Array,
+        class_ids: NDArray[np.int64],
+    ) -> list[
+        tuple[int, float, float, float, float, int, float, int, int, int, bool]
+    ]:
+        """Return ``id, box, class, score, age, hits, missed, confirmed`` tuples."""
+        ...
 
 def rgbd_to_point_cloud(
     depth: _F32Array,
