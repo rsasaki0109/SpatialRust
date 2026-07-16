@@ -79,6 +79,8 @@ code { background: rgba(116, 167, 255, .1); padding: .12rem .28rem; border-radiu
 tr:last-child td { border-bottom: 0; }
 .tag { white-space: nowrap; color: var(--accent); font-size: .8rem; font-weight: 700; }
 
+pre.mermaid { background: rgba(16, 29, 48, .72); border: 1px solid var(--line); border-radius: .85rem; padding: 1.25rem; overflow-x: auto; margin: 1.5rem 0; }
+
 .epics { counter-reset: epic 111; }
 .epic { display: grid; grid-template-columns: 5rem 1fr; gap: 1rem; padding: 1.2rem 0; border-bottom: 1px solid var(--line); }
 .epic::before { counter-increment: epic; content: "EPIC " counter(epic); color: var(--accent); font-size: .75rem; font-weight: 800; letter-spacing: .08em; }
