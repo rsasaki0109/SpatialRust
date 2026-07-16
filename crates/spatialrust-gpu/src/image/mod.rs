@@ -1,13 +1,17 @@
 //! GPU-resident packed images with explicit host/device transfers.
 
+pub(crate) mod ai_tensor;
 mod gpu_image;
 pub(crate) mod kernels;
+mod vision_chain;
 
+pub use ai_tensor::{pack_ai_chw_gpu, GpuAiTensor};
 pub use gpu_image::{GpuImage, GpuImageReceipt};
 pub use kernels::{
     box_blur_gpu, copy_gpu_image, morphology_gpu, resize_nearest_gpu, rgb_to_gray_gpu, sobel_gpu,
     GpuImageBorder, GpuMorphology,
 };
+pub use vision_chain::{run_gpu_vision_chain, GpuVisionChainOptions};
 
 #[cfg(test)]
 mod tests {
@@ -165,5 +169,62 @@ mod tests {
             let mut gray = rgb_to_gray_gpu(runtime, &uploaded).unwrap();
             assert_eq!(gray.readback_u8::<1>(runtime).unwrap().as_slice(), &[77]);
         }
+    }
+
+    #[test]
+    fn vision_chain_uploads_once_stays_resident_and_reuses_pools() {
+        let Some(runtime) = runtime() else {
+            return;
+        };
+        let image = Image::<u8, 3>::try_new(
+            32,
+            24,
+            (0..32 * 24 * 3).map(|index| ((index * 29) % 251) as u8).collect(),
+        )
+        .unwrap();
+        let uploaded = GpuImage::upload_u8(&runtime, image.view()).unwrap();
+        let options = GpuVisionChainOptions { width: 16, height: 12, ..Default::default() };
+        let mut tensor = run_gpu_vision_chain(&runtime, &uploaded, options).unwrap();
+        assert_eq!(tensor.shape(), [1, 12, 16]);
+        assert_eq!(tensor.receipt().host_to_device_bytes(), 32 * 24 * 4);
+        assert_eq!(tensor.receipt().device_to_host_bytes(), 0);
+        tensor.receipt().validate_resident_chain(32 * 24 * 4).unwrap();
+        assert!(tensor.receipt().validate_resident_chain(1).is_err());
+        assert_eq!(
+            tensor.receipt().stages(),
+            &[
+                "upload_u8_texture",
+                "resize_nearest_gpu",
+                "rgb_to_gray_gpu",
+                "box_blur_gpu",
+                "sobel_gpu",
+                "morphology_gpu",
+                "pack_ai_chw_gpu",
+            ]
+        );
+        assert_eq!(runtime.initialized_image_pipeline_count(), 4);
+        assert!(runtime.cached_image_texture_count() > 0);
+
+        let values = tensor.readback_f32(&runtime).unwrap();
+        assert_eq!(values.len(), 16 * 12);
+        assert!(values.iter().all(|value| value.is_finite()));
+        assert!(tensor.receipt().device_to_host_bytes() > 0);
+        assert!(tensor.receipt().validate_resident_chain(32 * 24 * 4).is_err());
+        tensor.recycle(&runtime);
+        assert!(runtime.buffer_pool().cached_buffer_count() > 0);
+
+        let tensor = run_gpu_vision_chain(&runtime, &uploaded, options).unwrap();
+        assert_eq!(runtime.initialized_image_pipeline_count(), 4);
+        assert_eq!(tensor.receipt().device_to_host_bytes(), 0);
+        tensor.receipt().validate_resident_chain(32 * 24 * 4).unwrap();
+        tensor.recycle(&runtime);
+
+        let cached_textures = runtime.cached_image_texture_count();
+        let cached_buffers = runtime.buffer_pool().cached_buffer_count();
+        let tensor = run_gpu_vision_chain(&runtime, &uploaded, options).unwrap();
+        tensor.recycle(&runtime);
+        assert_eq!(runtime.cached_image_texture_count(), cached_textures);
+        assert_eq!(runtime.buffer_pool().cached_buffer_count(), cached_buffers);
+        uploaded.recycle(&runtime);
     }
 }

@@ -19,6 +19,16 @@ pub struct GpuBufferPool {
 }
 
 impl GpuBufferPool {
+    /// Acquires an uninitialized reusable storage buffer of the requested size.
+    pub fn acquire_storage(
+        &self,
+        runtime: &WgpuRuntime,
+        label: &'static str,
+        byte_len: u64,
+    ) -> wgpu::Buffer {
+        self.take_storage(runtime, label, byte_len)
+    }
+
     /// Uploads a POD slice into a pooled storage buffer.
     pub fn upload_pod_storage<T: Pod>(
         &self,

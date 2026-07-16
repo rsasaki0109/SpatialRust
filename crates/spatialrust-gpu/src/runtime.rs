@@ -28,6 +28,8 @@ pub struct WgpuRuntime {
     pub(crate) image_blur_pipeline: OnceLock<crate::image::kernels::box_blur::BlurPipeline>,
     #[cfg(feature = "gpu-image")]
     pub(crate) image_spatial_pipelines: OnceLock<crate::image::kernels::spatial::SpatialPipelines>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_ai_pack_pipeline: OnceLock<crate::image::ai_tensor::AiPackPipeline>,
 }
 
 /// Stable, serializable-friendly identity for the selected wgpu adapter.
@@ -139,6 +141,23 @@ impl WgpuRuntime {
         } else {
             texture.destroy();
         }
+    }
+
+    /// Returns the number of image textures retained for steady-state reuse.
+    #[cfg(feature = "gpu-image")]
+    #[must_use]
+    pub fn cached_image_texture_count(&self) -> usize {
+        self.image_texture_pool.lock().map(|pool| pool.values().map(Vec::len).sum()).unwrap_or(0)
+    }
+
+    /// Returns the number of initialized GPU image pipeline families.
+    #[cfg(feature = "gpu-image")]
+    #[must_use]
+    pub fn initialized_image_pipeline_count(&self) -> usize {
+        usize::from(self.image_gray_pipeline.get().is_some())
+            + usize::from(self.image_blur_pipeline.get().is_some())
+            + usize::from(self.image_spatial_pipelines.get().is_some())
+            + usize::from(self.image_ai_pack_pipeline.get().is_some())
     }
 
     /// Returns cached compute pipelines for this runtime's device.
@@ -257,6 +276,8 @@ impl WgpuRuntime {
             image_blur_pipeline: OnceLock::new(),
             #[cfg(feature = "gpu-image")]
             image_spatial_pipelines: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_ai_pack_pipeline: OnceLock::new(),
         })
     }
 }
