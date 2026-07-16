@@ -277,6 +277,14 @@ impl GaussianBlurU8Workspace {
     pub fn capacity(&self) -> usize {
         self.horizontal.capacity().max(self.high_precision_horizontal.capacity())
     }
+
+    /// Returns bytes reserved by the intermediate buffers and cached kernels.
+    #[must_use]
+    pub fn allocated_bytes(&self) -> usize {
+        self.horizontal.capacity() * std::mem::size_of::<u16>()
+            + self.high_precision_horizontal.capacity() * std::mem::size_of::<u32>()
+            + (self.kernel_x.capacity() + self.kernel_y.capacity()) * std::mem::size_of::<u16>()
+    }
 }
 
 /// Applies a specialized 3×3, 5×5, or 7×7 Gaussian blur to interleaved `u8` input.
@@ -1142,6 +1150,8 @@ mod tests {
         )
         .unwrap();
         let capacity = workspace.capacity();
+        let allocated_bytes = workspace.allocated_bytes();
+        assert!(allocated_bytes > 0);
         gaussian_blur_u8_into(
             image.view(),
             5,
@@ -1154,6 +1164,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(workspace.capacity(), capacity);
+        assert_eq!(workspace.allocated_bytes(), allocated_bytes);
         assert!(gaussian_blur_u8_into(
             image.view(),
             5,

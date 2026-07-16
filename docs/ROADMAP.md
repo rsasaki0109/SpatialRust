@@ -574,7 +574,7 @@ backend, allocation mode, and accuracy contract.
 | Epic | Status | Depends on | Outcome |
 | --- | --- | --- | --- |
 | 112 | Complete | 111 | Attribute native kernel, allocation, Python conversion, and transfer costs with reproducible throughput and memory receipts |
-| 113 | Planned | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
+| 113 | Complete | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
 | 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
 | 115 | Complete | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
 | 116 | Complete | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
@@ -602,10 +602,10 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
-| 113A | Planned | `*_into` entry points for Gaussian, Sobel, morphology, and Canny | packed/strided identity and padding tests |
-| 113B | Planned | Explicit reusable scratch storage for multi-pass algorithms | steady-state allocation receipt |
-| 113C | Planned | Validate dimensions, metadata, overlap, and channel contracts | negative and property tests |
-| 113D | Planned | Reuse outputs through Python `out=` where supported | object-identity and numerical tests |
+| 113A | Complete | `*_into` entry points for Gaussian, Sobel, morphology, and Canny | packed/strided identity and padding tests |
+| 113B | Complete | Explicit reusable scratch storage for multi-pass algorithms | Gaussian/morphology/Canny steady-state capacity and allocation receipts |
+| 113C | Complete | Validate dimensions, metadata, overlap, and channel contracts | negative, strided, metadata, and property tests |
+| 113D | Complete | Reuse outputs through Python `out=` where supported | Gaussian/Sobel/morphology/Canny object-identity and numerical tests |
 | 113E | Complete | Exact EDT caller-owned output and explicit reusable scratch | Rust/Python identity, capacity, and brute-force tests |
 
 ### Epic 114 delivery slices
