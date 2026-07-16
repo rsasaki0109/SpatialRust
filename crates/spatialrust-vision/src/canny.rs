@@ -73,7 +73,7 @@ pub struct CannyWorkspace {
     gradient_y: Vec<i16>,
     magnitude_rows: Vec<i32>,
     states: Vec<u8>,
-    strong: Vec<usize>,
+    frontier: Vec<usize>,
 }
 
 impl CannyWorkspace {
@@ -85,7 +85,7 @@ impl CannyWorkspace {
             gradient_y: Vec::new(),
             magnitude_rows: Vec::new(),
             states: Vec::new(),
-            strong: Vec::new(),
+            frontier: Vec::new(),
         }
     }
 
@@ -102,7 +102,7 @@ impl CannyWorkspace {
             + self.gradient_y.capacity() * std::mem::size_of::<i16>()
             + self.magnitude_rows.capacity() * std::mem::size_of::<i32>()
             + self.states.capacity() * std::mem::size_of::<u8>()
-            + self.strong.capacity() * std::mem::size_of::<usize>()
+            + self.frontier.capacity() * std::mem::size_of::<usize>()
     }
 
     fn resize(&mut self, len: usize, magnitude_elements: usize) {
@@ -110,7 +110,7 @@ impl CannyWorkspace {
         self.gradient_y.resize(len, 0);
         self.magnitude_rows.resize(magnitude_elements, 0);
         self.states.resize(len, 1);
-        self.strong.clear();
+        self.frontier.clear();
     }
 }
 
@@ -200,13 +200,13 @@ fn canny_3x3_into(
         let rows_per_worker = height.div_ceil(workers);
         let gradient_x = &workspace.gradient_x;
         let gradient_y = &workspace.gradient_y;
-        let (mut strong, has_weak) = workspace
+        let (mut candidates, has_weak) = workspace
             .states
             .par_chunks_mut(rows_per_worker * width)
             .zip(workspace.magnitude_rows.par_chunks_mut(3 * width))
             .enumerate()
             .map(|(chunk, (states, magnitude_rows))| {
-                let mut local_strong = Vec::new();
+                let mut local_candidates = Vec::new();
                 let has_weak = classify_canny_rows(
                     chunk * rows_per_worker,
                     width,
@@ -218,9 +218,9 @@ fn canny_3x3_into(
                     high,
                     states,
                     magnitude_rows,
-                    &mut local_strong,
+                    &mut local_candidates,
                 );
-                (local_strong, has_weak)
+                (local_candidates, has_weak)
             })
             .reduce(
                 || (Vec::new(), false),
@@ -229,13 +229,13 @@ fn canny_3x3_into(
                     (left, left_weak || right_weak)
                 },
             );
-        workspace.strong.clear();
-        workspace.strong.append(&mut strong);
+        workspace.frontier.clear();
+        workspace.frontier.append(&mut candidates);
         if !has_weak {
-            workspace.strong.clear();
+            workspace.frontier.clear();
         }
     } else {
-        workspace.strong.clear();
+        workspace.frontier.clear();
         let has_weak = classify_canny_rows(
             0,
             width,
@@ -247,14 +247,25 @@ fn canny_3x3_into(
             high,
             &mut workspace.states,
             &mut workspace.magnitude_rows,
-            &mut workspace.strong,
+            &mut workspace.frontier,
         );
         if !has_weak {
-            workspace.strong.clear();
+            workspace.frontier.clear();
         }
     }
 
-    while let Some(index) = workspace.strong.pop() {
+    let mut seed_count = 0;
+    for candidate in 0..workspace.frontier.len() {
+        let index = workspace.frontier[candidate];
+        if has_strong_neighbor(&workspace.states, width, height, index) {
+            workspace.states[index] = 2;
+            workspace.frontier[seed_count] = index;
+            seed_count += 1;
+        }
+    }
+    workspace.frontier.truncate(seed_count);
+
+    while let Some(index) = workspace.frontier.pop() {
         let x = index % width;
         let y = index / width;
         let x0 = x.saturating_sub(1);
@@ -266,7 +277,7 @@ fn canny_3x3_into(
                 let neighbor = ny * width + nx;
                 if workspace.states[neighbor] == 0 {
                     workspace.states[neighbor] = 2;
-                    workspace.strong.push(neighbor);
+                    workspace.frontier.push(neighbor);
                 }
             }
         }
@@ -302,7 +313,7 @@ fn classify_canny_rows(
     high: i64,
     states: &mut [u8],
     magnitude_rows: &mut [i32],
-    strong: &mut Vec<usize>,
+    candidates: &mut Vec<usize>,
 ) -> bool {
     if width == 0 || height == 0 || states.is_empty() {
         return false;
@@ -380,14 +391,29 @@ fn classify_canny_rows(
             let state = &mut states[local_row + x];
             if i64::from(magnitude) > high {
                 *state = 2;
-                strong.push(index);
             } else {
                 *state = 0;
+                candidates.push(index);
                 has_weak = true;
             }
         }
     }
     has_weak
+}
+
+fn has_strong_neighbor(states: &[u8], width: usize, height: usize, index: usize) -> bool {
+    let x = index % width;
+    let y = index / width;
+    let x0 = x.saturating_sub(1);
+    let x1 = (x + 1).min(width.saturating_sub(1));
+    let y0 = y.saturating_sub(1);
+    let y1 = (y + 1).min(height.saturating_sub(1));
+    (y0..=y1).any(|ny| {
+        (x0..=x1).any(|nx| {
+            let neighbor = ny * width + nx;
+            neighbor != index && states[neighbor] == 2
+        })
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

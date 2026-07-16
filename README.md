@@ -168,8 +168,8 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | Morphology open 5×5, reuse[^morphology-2026] | OpenCV 1.90× | **SpatialRust 1.22×** | OpenCV 1.50× |
 | Morphology open 511×511, allocate[^morphology-2026] | OpenCV 2.10× | **SpatialRust 2.61×** | **SpatialRust 2.40×** |
 | Morphology open 511×511, reuse[^morphology-2026] | OpenCV 2.46× | **SpatialRust 3.25×** | **SpatialRust 2.77×** |
-| Canny 3×3, reuse, document lines[^canny-2026] | OpenCV 1.40× | **SpatialRust 1.36×** | **SpatialRust 1.42×** |
-| Canny 3×3, reuse, sensor noise[^canny-2026] | OpenCV 3.58× | OpenCV 1.68× | OpenCV 1.57× |
+| Canny 3×3, reuse, document lines[^canny-2026] | OpenCV 1.40× | **SpatialRust 1.38×** | **SpatialRust 1.47×** |
+| Canny 3×3, reuse, sensor noise[^canny-2026] | OpenCV 2.29× | **SpatialRust 2.59×** | **SpatialRust 2.75×** |
 | Exact Euclidean distance transform, allocate | OpenCV 1.99× | OpenCV 1.85× | OpenCV 1.45× |
 | Exact Euclidean distance transform, reuse | OpenCV 1.02× | OpenCV 1.06× | **SpatialRust 1.07×** |
 
@@ -192,11 +192,13 @@ records the exact environment and methodology.
 [^canny-2026]: The 3×3 fast path keeps inspectable intermediates opt-in, adds
   caller-owned output plus reusable `CannyWorkspace`, and replaces the full
   `i32` magnitude image with a parallel three-row-per-worker ring. When no weak
-  edges exist, it also skips unnecessary hysteresis traversal. The focused
-  OpenCV 4.13 receipt is bit-exact across 300 randomized images. Document-line
-  medians are OpenCV/SpatialRust 2.900/2.138 ms at 1080p and 11.480/8.103 ms at
-  4K. Dense sensor noise remains an OpenCV win. Native 4K document lines improve
-  from 96.914 ms inspectable to 8.134 ms ring reuse (11.92×).
+  edges exist, it also skips unnecessary hysteresis traversal. Weak-candidate
+  frontier seeding avoids pushing every initial strong edge on dense noise.
+  The focused OpenCV 4.13 receipt is bit-exact across 300 randomized images.
+  Document-line reuse medians are OpenCV/SpatialRust 3.075/2.221 ms at 1080p
+  and 11.832/8.034 ms at 4K. Sensor-noise reuse is a SpatialRust win at 1080p
+  and 4K, while VGA remains an OpenCV win. Native 4K document lines improved
+  from 96.914 ms inspectable to the allocation-light path.
 
 [^resize-2026]: The packed RGB8 half-scale path precomputes arbitrary-scale
   Q11 sampling coefficients and specializes exact 2× downsampling as a
