@@ -160,7 +160,7 @@ ratio; these are machine-specific measurements, not universal guarantees.
 | RGB to gray, reuse[^gray-2026] | OpenCV 1.22× | OpenCV 1.08× | OpenCV 1.03× |
 | Fused 2× resize → gray, allocate[^fused-gray-2026] | — | **SpatialRust 1.12×** | OpenCV 1.01× |
 | Fused 2× resize → gray, reuse[^fused-gray-2026] | — | OpenCV 1.90× | OpenCV 1.58× |
-| Gaussian blur 5×5[^gaussian-2026] | OpenCV 139.02× | OpenCV 3.10× | OpenCV 2.93× |
+| Gaussian blur 5×5[^gaussian-2026] | OpenCV 139.02× | OpenCV 1.74× | OpenCV 1.68× |
 | Sobel X 3×3, allocate[^sobel-direct-2026] | OpenCV 1.07× | **SpatialRust 1.88×** | **SpatialRust 2.03×** |
 | Fused abs(Sobel X) → binary mask, allocate[^sobel-direct-2026] | **SpatialRust 3.81×** | **SpatialRust 4.87×** | **SpatialRust 6.64×** |
 | Fused abs(Sobel X) → binary mask, reuse[^sobel-direct-2026] | **SpatialRust 2.95×** | **SpatialRust 6.63×** | **SpatialRust 8.68×** |
@@ -181,12 +181,13 @@ the dated [Epic 111 receipt](notes/2026-07-15_epic111_opencv_comparison_v2.md)
 records the exact environment and methodology.
 
 [^gaussian-2026]: The VGA cell retains the Epic 111 historical baseline. The
-  specialized 3×3/5×5 `u8` engine supersedes the 1080p/4K cells on the same
-  Windows host with OpenCV 4.13: 6.188 ms vs 1.995 ms at 1080p and 21.031 ms
-  vs 7.179 ms at 4K. At 8K it measured 87.220 ms vs 24.361 ms (OpenCV 3.58×).
-  Against SpatialRust's generic engine, native Criterion improved allocated
-  5×5 latency by 20.7× at 1080p and 26.7× at 4K; OpenCV still leads the
-  standalone operation.
+  band-local 3×3/5×5 `u8` engine supersedes the 1080p/4K cells on the same
+  Windows host with OpenCV 4.13: 3.443 ms vs 1.983 ms at 1080p and 12.402 ms
+  vs 7.397 ms at 4K. Caller-output medians were 3.054/1.473 ms at 1080p and
+  10.635/5.169 ms at 4K (SpatialRust/OpenCV). The band pipeline improves the
+  prior SpatialRust allocated medians by 1.80× and 1.70× respectively while
+  retaining the existing error boundary. OpenCV still leads this standalone
+  operation.
 
 [^canny-2026]: The 3×3 fast path keeps inspectable intermediates opt-in, adds
   caller-owned output plus reusable `CannyWorkspace`, and replaces the full
