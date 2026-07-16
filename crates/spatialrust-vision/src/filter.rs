@@ -251,10 +251,11 @@ pub fn gaussian_blur<T: PixelComponent, const CHANNELS: usize>(
 #[derive(Clone, Debug, Default)]
 pub struct GaussianBlurU8Workspace {
     horizontal: Vec<u16>,
+    high_precision_horizontal: Vec<u32>,
     kernel_x: Vec<u16>,
     kernel_y: Vec<u16>,
-    kernel_x_key: Option<(usize, u64)>,
-    kernel_y_key: Option<(usize, u64)>,
+    kernel_x_key: Option<(usize, u64, u8)>,
+    kernel_y_key: Option<(usize, u64, u8)>,
 }
 
 impl GaussianBlurU8Workspace {
@@ -263,6 +264,7 @@ impl GaussianBlurU8Workspace {
     pub const fn new() -> Self {
         Self {
             horizontal: Vec::new(),
+            high_precision_horizontal: Vec::new(),
             kernel_x: Vec::new(),
             kernel_y: Vec::new(),
             kernel_x_key: None,
@@ -273,15 +275,15 @@ impl GaussianBlurU8Workspace {
     /// Current intermediate-buffer capacity in scalar channel elements.
     #[must_use]
     pub fn capacity(&self) -> usize {
-        self.horizontal.capacity()
+        self.horizontal.capacity().max(self.high_precision_horizontal.capacity())
     }
 }
 
 /// Applies a specialized 3×3, 5×5, or 7×7 Gaussian blur to interleaved `u8` input.
 ///
-/// The 3×3 and 5×5 paths use normalized Q8 kernels, a `u16` horizontal intermediate, and one
-/// final rounded Q16 conversion. The 7×7 contract retains the high-precision separable path;
-/// OpenCV comparison is gated to a maximum difference of two `u8` levels across broad inputs.
+/// The 3×3 and 5×5 paths use normalized Q8 kernels and a `u16` horizontal intermediate. Calls
+/// with a 7×7 axis use Q15 kernels, a `u32` horizontal intermediate, and a rounded `u64` final
+/// accumulation. OpenCV comparison is gated to a maximum difference of two `u8` levels.
 pub fn gaussian_blur_u8<const CHANNELS: usize>(
     input: ImageView<'_, u8, CHANNELS>,
     kernel_width: usize,
@@ -294,9 +296,6 @@ pub fn gaussian_blur_u8<const CHANNELS: usize>(
     validate_specialized_gaussian_size(kernel_height)?;
     validate_gaussian_sigma(sigma_x)?;
     validate_gaussian_sigma(sigma_y)?;
-    if kernel_width == 7 || kernel_height == 7 {
-        return gaussian_blur(input, kernel_width, kernel_height, sigma_x, sigma_y, border);
-    }
     let len = gaussian_output_len::<CHANNELS>(input.width(), input.height())?;
     let mut output = vec![0; len];
     let mut workspace = GaussianBlurU8Workspace::new();
@@ -340,10 +339,16 @@ pub fn gaussian_blur_u8_into<const CHANNELS: usize>(
         return Ok(());
     }
     if kernel_width == 7 || kernel_height == 7 {
-        let high_precision =
-            gaussian_blur(input, kernel_width, kernel_height, sigma_x, sigma_y, border)?;
-        output.copy_from_slice(high_precision.as_slice());
-        return Ok(());
+        return gaussian_blur_u8_high_precision_into(
+            input,
+            kernel_width,
+            kernel_height,
+            sigma_x,
+            sigma_y,
+            border,
+            output,
+            workspace,
+        );
     }
 
     prepare_fixed_gaussian_kernel(
@@ -446,13 +451,202 @@ fn validate_gaussian_sigma(sigma: f64) -> VisionResult<()> {
     Ok(())
 }
 
+const HIGH_PRECISION_GAUSSIAN_BITS: u8 = 15;
+const HIGH_PRECISION_GAUSSIAN_SCALE: u32 = 1 << HIGH_PRECISION_GAUSSIAN_BITS;
+
+#[allow(clippy::too_many_arguments)]
+fn gaussian_blur_u8_high_precision_into<const CHANNELS: usize>(
+    input: ImageView<'_, u8, CHANNELS>,
+    kernel_width: usize,
+    kernel_height: usize,
+    sigma_x: f64,
+    sigma_y: f64,
+    border: BorderMode<u8, CHANNELS>,
+    output: &mut [u8],
+    workspace: &mut GaussianBlurU8Workspace,
+) -> VisionResult<()> {
+    prepare_high_precision_gaussian_kernel(
+        kernel_width,
+        sigma_x,
+        &mut workspace.kernel_x_key,
+        &mut workspace.kernel_x,
+    );
+    prepare_high_precision_gaussian_kernel(
+        kernel_height,
+        sigma_y,
+        &mut workspace.kernel_y_key,
+        &mut workspace.kernel_y,
+    );
+
+    let row_len = input.width() * CHANNELS;
+    let height = input.height();
+    workspace.high_precision_horizontal.resize(output.len(), 0);
+    let horizontal = &mut workspace.high_precision_horizontal;
+    let kernel_x = workspace.kernel_x.as_slice();
+    if output.len() >= 1_000_000 {
+        let workers = rayon::current_num_threads().min(height.max(1));
+        let rows_per_worker = height.div_ceil(workers);
+        horizontal.par_chunks_mut(rows_per_worker * row_len).enumerate().for_each(
+            |(chunk, rows)| {
+                let start_y = chunk * rows_per_worker;
+                for (offset, row) in rows.chunks_mut(row_len).enumerate() {
+                    gaussian_horizontal_high_precision_row(
+                        input,
+                        start_y + offset,
+                        kernel_x,
+                        border,
+                        row,
+                    );
+                }
+            },
+        );
+    } else {
+        for (y, row) in horizontal.chunks_mut(row_len).enumerate() {
+            gaussian_horizontal_high_precision_row(input, y, kernel_x, border, row);
+        }
+    }
+
+    let kernel_y = workspace.kernel_y.as_slice();
+    if output.len() >= 1_000_000 {
+        let workers = rayon::current_num_threads().min(height.max(1));
+        let rows_per_worker = height.div_ceil(workers);
+        output.par_chunks_mut(rows_per_worker * row_len).enumerate().for_each(|(chunk, rows)| {
+            let start_y = chunk * rows_per_worker;
+            for (offset, row) in rows.chunks_mut(row_len).enumerate() {
+                gaussian_vertical_high_precision_row(
+                    horizontal,
+                    input.width(),
+                    height,
+                    start_y + offset,
+                    kernel_y,
+                    border,
+                    row,
+                );
+            }
+        });
+    } else {
+        for (y, row) in output.chunks_mut(row_len).enumerate() {
+            gaussian_vertical_high_precision_row(
+                horizontal,
+                input.width(),
+                height,
+                y,
+                kernel_y,
+                border,
+                row,
+            );
+        }
+    }
+    Ok(())
+}
+
+fn prepare_high_precision_gaussian_kernel(
+    size: usize,
+    sigma: f64,
+    cached_key: &mut Option<(usize, u64, u8)>,
+    cached_kernel: &mut Vec<u16>,
+) {
+    let key = (size, sigma.to_bits(), HIGH_PRECISION_GAUSSIAN_BITS);
+    if *cached_key == Some(key) {
+        return;
+    }
+    let center = (size / 2) as f64;
+    let denominator = 2.0 * sigma * sigma;
+    let mut fixed = (0..size)
+        .map(|index| {
+            let offset = index as f64 - center;
+            (-(offset * offset) / denominator).exp()
+        })
+        .collect::<Vec<_>>();
+    let sum = fixed.iter().sum::<f64>();
+    let mut fixed = fixed
+        .drain(..)
+        .map(|weight| (weight * f64::from(HIGH_PRECISION_GAUSSIAN_SCALE) / sum).round() as i32)
+        .collect::<Vec<_>>();
+    let adjustment = HIGH_PRECISION_GAUSSIAN_SCALE as i32 - fixed.iter().sum::<i32>();
+    fixed[size / 2] += adjustment;
+    cached_kernel.clear();
+    cached_kernel.extend(fixed.into_iter().map(|weight| weight as u16));
+    *cached_key = Some(key);
+}
+
+fn gaussian_horizontal_high_precision_row<const CHANNELS: usize>(
+    input: ImageView<'_, u8, CHANNELS>,
+    y: usize,
+    kernel: &[u16],
+    border: BorderMode<u8, CHANNELS>,
+    output: &mut [u32],
+) {
+    let width = input.width();
+    let radius = kernel.len() / 2;
+    let source = input.row(y).expect("Gaussian source row in bounds");
+    let constant = match border {
+        BorderMode::Constant(pixel) => pixel,
+        _ => [0; CHANNELS],
+    };
+    for x in 0..width {
+        let interior = x >= radius && x + radius < width;
+        for channel in 0..CHANNELS {
+            let mut sum = 0_u32;
+            for (tap, &weight) in kernel.iter().enumerate() {
+                let value = if interior {
+                    source[(x + tap - radius) * CHANNELS + channel]
+                } else {
+                    let source_x = x as isize + tap as isize - radius as isize;
+                    map_index(source_x, width, border)
+                        .map_or(constant[channel], |mapped| source[mapped * CHANNELS + channel])
+                };
+                sum += u32::from(value) * u32::from(weight);
+            }
+            output[x * CHANNELS + channel] = sum;
+        }
+    }
+}
+
+fn gaussian_vertical_high_precision_row<const CHANNELS: usize>(
+    horizontal: &[u32],
+    width: usize,
+    height: usize,
+    y: usize,
+    kernel: &[u16],
+    border: BorderMode<u8, CHANNELS>,
+    output: &mut [u8],
+) {
+    let row_len = width * CHANNELS;
+    let radius = kernel.len() / 2;
+    let interior = y >= radius && y + radius < height;
+    let constant = match border {
+        BorderMode::Constant(pixel) => {
+            pixel.map(|value| u32::from(value) * HIGH_PRECISION_GAUSSIAN_SCALE)
+        }
+        _ => [0; CHANNELS],
+    };
+    let round = 1_u64 << (u32::from(HIGH_PRECISION_GAUSSIAN_BITS) * 2 - 1);
+    let shift = u32::from(HIGH_PRECISION_GAUSSIAN_BITS) * 2;
+    for scalar_x in 0..row_len {
+        let channel = scalar_x % CHANNELS;
+        let mut sum = 0_u64;
+        for (tap, &weight) in kernel.iter().enumerate() {
+            let value = if interior {
+                horizontal[(y + tap - radius) * row_len + scalar_x]
+            } else {
+                let source_y = y as isize + tap as isize - radius as isize;
+                map_index(source_y, height, border)
+                    .map_or(constant[channel], |mapped| horizontal[mapped * row_len + scalar_x])
+            };
+            sum += u64::from(value) * u64::from(weight);
+        }
+        output[scalar_x] = ((sum + round) >> shift).min(255) as u8;
+    }
+}
+
 fn prepare_fixed_gaussian_kernel(
     size: usize,
     sigma: f64,
-    cached_key: &mut Option<(usize, u64)>,
+    cached_key: &mut Option<(usize, u64, u8)>,
     cached_kernel: &mut Vec<u16>,
 ) {
-    let key = (size, sigma.to_bits());
+    let key = (size, sigma.to_bits(), 8);
     if *cached_key == Some(key) {
         return;
     }
@@ -803,7 +997,8 @@ mod tests {
         separable_filter, GaussianBlurU8Workspace, Kernel1D, Kernel2D,
     };
     use crate::BorderMode;
-    use spatialrust_image::{Image, ImageRegion};
+    use proptest::prelude::*;
+    use spatialrust_image::{Image, ImageRegion, ImageView};
 
     #[test]
     fn filter2d_is_correlation_and_convolution_reverses() {
@@ -931,6 +1126,71 @@ mod tests {
         )
         .is_err());
         assert!(gaussian_blur_u8(image.view(), 9, 5, 1.2, 1.2, BorderMode::Reflect101,).is_err());
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(300))]
+
+        #[test]
+        fn high_precision_7x7_matches_generic_with_strided_input(
+            width in 1_usize..33,
+            height in 1_usize..33,
+            padding in 0_usize..8,
+            sigma_x in 0.3_f64..4.0,
+            sigma_y in 0.3_f64..4.0,
+            seed in any::<u64>(),
+        ) {
+            let stride = width * 3 + padding;
+            let mut storage = vec![173_u8; stride * height];
+            let mut state = seed;
+            for y in 0..height {
+                for value in &mut storage[y * stride..y * stride + width * 3] {
+                    state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                    *value = (state >> 32) as u8;
+                }
+            }
+            let input = ImageView::<u8, 3>::new(width, height, stride, &storage).unwrap();
+            let expected = gaussian_blur(
+                input,
+                7,
+                7,
+                sigma_x,
+                sigma_y,
+                BorderMode::Reflect101,
+            )
+            .unwrap();
+            let mut output = vec![0_u8; width * height * 3];
+            let mut workspace = GaussianBlurU8Workspace::new();
+            gaussian_blur_u8_into(
+                input,
+                7,
+                7,
+                sigma_x,
+                sigma_y,
+                BorderMode::Reflect101,
+                &mut output,
+                &mut workspace,
+            )
+            .unwrap();
+            prop_assert!(expected
+                .as_slice()
+                .iter()
+                .zip(&output)
+                .all(|(&left, &right)| left.abs_diff(right) <= 1));
+            let capacity = workspace.capacity();
+            gaussian_blur_u8_into(
+                input,
+                7,
+                7,
+                sigma_x,
+                sigma_y,
+                BorderMode::Reflect101,
+                &mut output,
+                &mut workspace,
+            )
+            .unwrap();
+            prop_assert_eq!(workspace.capacity(), capacity);
+        }
     }
 
     #[test]
