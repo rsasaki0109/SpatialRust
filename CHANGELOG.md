@@ -19,6 +19,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-07-16
+
 ### Added
 
 - **Centered 5×5 morphology (Epic 117E)**: exact grayscale rectangular
@@ -547,6 +549,7 @@ stubtest CI.
 - COPC partial reads (bounds + LOD) in the library and `spatialrust-mvp` CLI.
 - wgpu voxel downsampling with automatic CPU/GPU policy selection.
 
-[Unreleased]: https://github.com/rsasaki0109/SpatialRust/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/rsasaki0109/SpatialRust/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/rsasaki0109/SpatialRust/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/rsasaki0109/SpatialRust/releases/tag/v1.0.0
 [0.1.0]: https://github.com/rsasaki0109/SpatialRust/releases/tag/v0.1.0

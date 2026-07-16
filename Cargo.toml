@@ -38,45 +38,45 @@ exclude = ["crates/spatialrust-py"]
 resolver = "2"
 
 [workspace.package]
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["SpatialRust Contributors"]
-repository = "https://github.com/spatialrust/spatialrust"
+repository = "https://github.com/rsasaki0109/SpatialRust"
 rust-version = "1.75"
 description = "Next-generation spatial computing framework for Rust"
 
 [workspace.dependencies]
-spatialrust-core = { path = "crates/spatialrust-core", version = "1.0.0" }
-spatialrust-math = { path = "crates/spatialrust-math", version = "1.0.0" }
-spatialrust-io = { path = "crates/spatialrust-io", version = "1.0.0" }
-spatialrust-gpu = { path = "crates/spatialrust-gpu", version = "1.0.0" }
-spatialrust-search = { path = "crates/spatialrust-search", version = "1.0.0" }
-spatialrust-filtering = { path = "crates/spatialrust-filtering", version = "1.0.0" }
-spatialrust-features = { path = "crates/spatialrust-features", version = "1.0.0" }
-spatialrust-segmentation = { path = "crates/spatialrust-segmentation", version = "1.0.0" }
-spatialrust-registration = { path = "crates/spatialrust-registration", version = "1.0.0" }
-spatialrust-pipeline = { path = "crates/spatialrust-pipeline", version = "1.0.0" }
-spatialrust-metrics = { path = "crates/spatialrust-metrics", version = "1.0.0", default-features = false }
-spatialrust-transform = { path = "crates/spatialrust-transform", version = "1.0.0", default-features = false }
-spatialrust-voxelize = { path = "crates/spatialrust-voxelize", version = "1.0.0", default-features = false }
-spatialrust-image = { path = "crates/spatialrust-image", version = "1.0.0" }
-spatialrust-image-io = { path = "crates/spatialrust-image-io", version = "1.0.0", default-features = false }
-spatialrust-tensor = { path = "crates/spatialrust-tensor", version = "1.0.0", default-features = false }
-spatialrust-ai = { path = "crates/spatialrust-ai", version = "1.0.0", default-features = false }
-spatialrust-camera = { path = "crates/spatialrust-camera", version = "1.0.0" }
-spatialrust-vision = { path = "crates/spatialrust-vision", version = "1.0.0", default-features = false }
-spatialrust-records = { path = "crates/spatialrust-records", version = "1.0.0" }
-spatialrust-arrow = { path = "crates/spatialrust-arrow", version = "1.0.0", default-features = false }
-spatialrust-sync = { path = "crates/spatialrust-sync", version = "1.0.0", default-features = false }
-spatialrust-mapping = { path = "crates/spatialrust-mapping", version = "1.0.0", default-features = false }
-spatialrust-scene = { path = "crates/spatialrust-scene", version = "1.0.0", default-features = false }
-spatialrust-semantic = { path = "crates/spatialrust-semantic", version = "1.0.0" }
-spatialrust-episode = { path = "crates/spatialrust-episode", version = "1.0.0" }
-spatialrust-runtime = { path = "crates/spatialrust-runtime", version = "1.0.0", default-features = false }
-spatialrust-interchange = { path = "crates/spatialrust-interchange", version = "1.0.0", default-features = false }
-spatialrust-distribute = { path = "crates/spatialrust-distribute", version = "1.0.0" }
-spatialrust-platform = { path = "crates/spatialrust-platform", version = "1.0.0" }
+spatialrust-core = { path = "crates/spatialrust-core", version = "1.1.0" }
+spatialrust-math = { path = "crates/spatialrust-math", version = "1.1.0" }
+spatialrust-io = { path = "crates/spatialrust-io", version = "1.1.0" }
+spatialrust-gpu = { path = "crates/spatialrust-gpu", version = "1.1.0" }
+spatialrust-search = { path = "crates/spatialrust-search", version = "1.1.0" }
+spatialrust-filtering = { path = "crates/spatialrust-filtering", version = "1.1.0" }
+spatialrust-features = { path = "crates/spatialrust-features", version = "1.1.0" }
+spatialrust-segmentation = { path = "crates/spatialrust-segmentation", version = "1.1.0" }
+spatialrust-registration = { path = "crates/spatialrust-registration", version = "1.1.0" }
+spatialrust-pipeline = { path = "crates/spatialrust-pipeline", version = "1.1.0" }
+spatialrust-metrics = { path = "crates/spatialrust-metrics", version = "1.1.0", default-features = false }
+spatialrust-transform = { path = "crates/spatialrust-transform", version = "1.1.0", default-features = false }
+spatialrust-voxelize = { path = "crates/spatialrust-voxelize", version = "1.1.0", default-features = false }
+spatialrust-image = { path = "crates/spatialrust-image", version = "1.1.0" }
+spatialrust-image-io = { path = "crates/spatialrust-image-io", version = "1.1.0", default-features = false }
+spatialrust-tensor = { path = "crates/spatialrust-tensor", version = "1.1.0", default-features = false }
+spatialrust-ai = { path = "crates/spatialrust-ai", version = "1.1.0", default-features = false }
+spatialrust-camera = { path = "crates/spatialrust-camera", version = "1.1.0" }
+spatialrust-vision = { path = "crates/spatialrust-vision", version = "1.1.0", default-features = false }
+spatialrust-records = { path = "crates/spatialrust-records", version = "1.1.0" }
+spatialrust-arrow = { path = "crates/spatialrust-arrow", version = "1.1.0", default-features = false }
+spatialrust-sync = { path = "crates/spatialrust-sync", version = "1.1.0", default-features = false }
+spatialrust-mapping = { path = "crates/spatialrust-mapping", version = "1.1.0", default-features = false }
+spatialrust-scene = { path = "crates/spatialrust-scene", version = "1.1.0", default-features = false }
+spatialrust-semantic = { path = "crates/spatialrust-semantic", version = "1.1.0" }
+spatialrust-episode = { path = "crates/spatialrust-episode", version = "1.1.0" }
+spatialrust-runtime = { path = "crates/spatialrust-runtime", version = "1.1.0", default-features = false }
+spatialrust-interchange = { path = "crates/spatialrust-interchange", version = "1.1.0", default-features = false }
+spatialrust-distribute = { path = "crates/spatialrust-distribute", version = "1.1.0" }
+spatialrust-platform = { path = "crates/spatialrust-platform", version = "1.1.0" }
 
 bytemuck = { version = "1", features = ["derive"] }
 las = "0.9"
