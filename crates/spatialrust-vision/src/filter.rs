@@ -360,13 +360,23 @@ pub fn gaussian_blur_u8_into<const CHANNELS: usize>(
     );
     workspace.horizontal.resize(len, 0);
     let row_len = input.width() * CHANNELS;
+    let height = input.height();
     let horizontal = &mut workspace.horizontal;
     let kernel_x = workspace.kernel_x.as_slice();
     let arch = Arch::new();
     if len >= 1_000_000 {
-        horizontal.par_chunks_mut(row_len).enumerate().for_each(|(y, row)| {
-            arch.dispatch(|| gaussian_horizontal_row(input, y, kernel_x, border, row));
-        });
+        let workers = rayon::current_num_threads().min(height.max(1));
+        let rows_per_worker = height.div_ceil(workers);
+        horizontal.par_chunks_mut(rows_per_worker * row_len).enumerate().for_each(
+            |(chunk, rows)| {
+                let start_y = chunk * rows_per_worker;
+                for (offset, row) in rows.chunks_mut(row_len).enumerate() {
+                    arch.dispatch(|| {
+                        gaussian_horizontal_row(input, start_y + offset, kernel_x, border, row);
+                    });
+                }
+            },
+        );
     } else {
         for (y, row) in horizontal.chunks_mut(row_len).enumerate() {
             arch.dispatch(|| gaussian_horizontal_row(input, y, kernel_x, border, row));
@@ -375,18 +385,23 @@ pub fn gaussian_blur_u8_into<const CHANNELS: usize>(
 
     let kernel_y = workspace.kernel_y.as_slice();
     if len >= 1_000_000 {
-        output.par_chunks_mut(row_len).enumerate().for_each(|(y, row)| {
-            arch.dispatch(|| {
-                gaussian_vertical_row(
-                    horizontal,
-                    input.width(),
-                    input.height(),
-                    y,
-                    kernel_y,
-                    border,
-                    row,
-                );
-            });
+        let workers = rayon::current_num_threads().min(height.max(1));
+        let rows_per_worker = height.div_ceil(workers);
+        output.par_chunks_mut(rows_per_worker * row_len).enumerate().for_each(|(chunk, rows)| {
+            let start_y = chunk * rows_per_worker;
+            for (offset, row) in rows.chunks_mut(row_len).enumerate() {
+                arch.dispatch(|| {
+                    gaussian_vertical_row(
+                        horizontal,
+                        input.width(),
+                        height,
+                        start_y + offset,
+                        kernel_y,
+                        border,
+                        row,
+                    );
+                });
+            }
         });
     } else {
         for (y, row) in output.chunks_mut(row_len).enumerate() {

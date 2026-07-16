@@ -2538,6 +2538,13 @@ impl PyMorphologyWorkspace {
     }
 }
 
+thread_local! {
+    /// Reused across `morphology_image` calls that omit an explicit workspace, so the
+    /// convenience Python entry point does not re-allocate every scratch buffer on each call.
+    static POOLED_RECT_MORPHOLOGY_WORKSPACE: std::cell::RefCell<RectMorphologyWorkspace> =
+        std::cell::RefCell::new(RectMorphologyWorkspace::new());
+}
+
 fn morphology_rect_dispatch_into(
     image: ImageView<'_, u8, 1>,
     operation: &str,
@@ -2711,16 +2718,17 @@ fn morphology_image<'py>(
         }
         let element =
             StructuringElement::try_new(shape, kernel_width, kernel_height).map_err(to_py_err)?;
-        let mut local_workspace = RectMorphologyWorkspace::new();
-        return morphology_rect_python(
-            py,
-            image,
-            &operation,
-            &element,
-            iterations,
-            out,
-            &mut local_workspace,
-        );
+        return POOLED_RECT_MORPHOLOGY_WORKSPACE.with(|cell| {
+            morphology_rect_python(
+                py,
+                image,
+                &operation,
+                &element,
+                iterations,
+                out,
+                &mut cell.borrow_mut(),
+            )
+        });
     }
     let element =
         StructuringElement::try_new(shape, kernel_width, kernel_height).map_err(to_py_err)?;

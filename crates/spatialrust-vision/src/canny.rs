@@ -200,13 +200,14 @@ fn canny_3x3_into(
         let rows_per_worker = height.div_ceil(workers);
         let gradient_x = &workspace.gradient_x;
         let gradient_y = &workspace.gradient_y;
-        let (strong, has_weak) = workspace
+        let (mut strong, has_weak) = workspace
             .states
             .par_chunks_mut(rows_per_worker * width)
             .zip(workspace.magnitude_rows.par_chunks_mut(3 * width))
             .enumerate()
             .map(|(chunk, (states, magnitude_rows))| {
-                classify_canny_rows(
+                let mut local_strong = Vec::new();
+                let has_weak = classify_canny_rows(
                     chunk * rows_per_worker,
                     width,
                     height,
@@ -217,7 +218,9 @@ fn canny_3x3_into(
                     high,
                     states,
                     magnitude_rows,
-                )
+                    &mut local_strong,
+                );
+                (local_strong, has_weak)
             })
             .reduce(
                 || (Vec::new(), false),
@@ -226,12 +229,14 @@ fn canny_3x3_into(
                     (left, left_weak || right_weak)
                 },
             );
-        workspace.strong = strong;
+        workspace.strong.clear();
+        workspace.strong.append(&mut strong);
         if !has_weak {
             workspace.strong.clear();
         }
     } else {
-        let (strong, has_weak) = classify_canny_rows(
+        workspace.strong.clear();
+        let has_weak = classify_canny_rows(
             0,
             width,
             height,
@@ -242,8 +247,8 @@ fn canny_3x3_into(
             high,
             &mut workspace.states,
             &mut workspace.magnitude_rows,
+            &mut workspace.strong,
         );
-        workspace.strong = strong;
         if !has_weak {
             workspace.strong.clear();
         }
@@ -297,9 +302,10 @@ fn classify_canny_rows(
     high: i64,
     states: &mut [u8],
     magnitude_rows: &mut [i32],
-) -> (Vec<usize>, bool) {
+    strong: &mut Vec<usize>,
+) -> bool {
     if width == 0 || height == 0 || states.is_empty() {
-        return (Vec::new(), false);
+        return false;
     }
     debug_assert_eq!(magnitude_rows.len(), 3 * width);
     let rows = states.len() / width;
@@ -331,7 +337,6 @@ fn classify_canny_rows(
         &mut magnitude_rows[2 * width..],
     );
 
-    let mut strong = Vec::new();
     let mut has_weak = false;
     for local_y in 0..rows {
         let y = start_y + local_y;
@@ -382,7 +387,7 @@ fn classify_canny_rows(
             }
         }
     }
-    (strong, has_weak)
+    has_weak
 }
 
 #[allow(clippy::too_many_arguments)]
