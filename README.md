@@ -65,11 +65,33 @@ cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
 
 The voxel downsampler runs on CPU or GPU (wgpu). `ExecutionPolicy::Auto` keeps small clouds on the CPU — where it's fastest — and switches to the GPU as point counts grow, so you get the best of both without tuning.
 
+Current CPU-only centroid baseline (2026-07-16, Windows release build,
+`point_xyzi`, leaf=4.0, Criterion median):
+
+| Points | CPU |
+| ---: | ---: |
+| 10k | ~0.252 ms |
+| 65,536 | ~1.72 ms |
+| 100k | ~2.64 ms |
+| 200k | ~5.09 ms |
+| 500k | ~11.6 ms |
+| 750k | ~18.3 ms |
+| 1M | ~23.9 ms |
+| 2M | ~47.3 ms |
+
+Reproduce the CPU slice:
+`cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample -- cpu_centroid --noplot`.
+See the dated [CPU benchmark receipt](notes/2026-07-16_cpu_voxel_rebaseline.md)
+for the host, command, and claim boundaries.
+
+The chart and matched CPU/GPU table below are the earlier 2026-06-12 run; they
+remain the basis for the current Auto policy until both paths are rerun together.
+
 <p align="center">
-  <img src="docs/assets/benchmark_voxel.svg" alt="Voxel downsample latency: CPU vs GPU across point counts, showing the GPU crossover above ~200k points and ~3.9x speedup at 2M" width="960">
+  <img src="docs/assets/benchmark_voxel.svg" alt="Historical 2026-06-12 voxel downsample latency: CPU is slightly ahead at 200k, while GPU wins at 500k and reaches about 3.9x speedup at 2M" width="960">
 </p>
 
-End-to-end centroid filter latency (leaf=4.0), measured via `cargo bench -p spatialrust-filtering`:
+Historical matched end-to-end centroid filter latency (leaf=4.0):
 
 | Points | CPU | GPU | Winner |
 | ---: | ---: | ---: | :--- |
@@ -79,7 +101,8 @@ End-to-end centroid filter latency (leaf=4.0), measured via `cargo bench -p spat
 | 1M | ~155 ms | **~56 ms** | GPU (~2.8x) |
 | 2M | ~389 ms | **~101 ms** | GPU (~3.9x) |
 
-Reproduce: `cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.
+Reproduce both paths before publishing a fresh crossover claim:
+`cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.
 
 Normal estimation has an optional wgpu path (`GpuNormalEstimator`, `feature-normal-gpu`). In **radius mode** the neighbor search runs entirely on the GPU via a uniform grid (covariance + Jacobi eigensolver included), which is **up to ~50× faster** than the CPU KD-tree estimator:
 
