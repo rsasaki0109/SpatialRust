@@ -26,11 +26,11 @@ flowchart TD
   classDef done fill:#12362c,stroke:#57d3b0,color:#e8eef8;
   classDef doing fill:#2b2510,stroke:#ffcf70,color:#e8eef8;
   classDef todo fill:#172842,stroke:#28405f,color:#9fb0c7;
-  E112["112 · Performance attribution"]:::todo
+  E112["112 · Performance attribution"]:::done
   E113["113 · Reusable outputs and workspaces"]:::doing
   E114["114 · Safe CPU dispatch"]:::doing
-  E115["115 · Resize and color"]:::doing
-  E116["116 · Gaussian and Sobel"]:::doing
+  E115["115 · Resize and color"]:::done
+  E116["116 · Gaussian and Sobel"]:::done
   E117["117 · Morphology"]:::done
   E118["118 · Fused Canny"]:::done
   E119["119 · Explicit GPU chain"]:::todo
@@ -53,8 +53,8 @@ flowchart TD
       <article class="epic"><div><h3>Performance attribution</h3><p>Separate native kernel, allocation, Python conversion, upload, execution, and readback costs. Publish MPix/s, ns/pixel, memory, and thread policy.</p></div></article>
       <article class="epic"><div><h3>Reusable outputs and workspaces</h3><p>Add caller-owned outputs and explicit scratch storage for Gaussian, Sobel, morphology, and Canny while preserving packed and strided behavior.</p></div></article>
       <article class="epic"><div><h3>Safe CPU dispatch</h3><p>Use scalar small-image paths, packed specializations, bounded row/tile parallelism, and fully compatible generic fallbacks.</p></div></article>
-      <article class="epic"><div><h3>Resize and color</h3><p>Reusable Q11 bilinear plans, exact packed RGB8 half-scale, target-dispatched Q14 RGB-to-gray, fused resize-to-gray, and fused resize-normalize-CHW are delivered; nearest/area remain next.</p></div></article>
-      <article class="epic"><div><h3>Gaussian and Sobel</h3><p>Reuse separable intermediates, cache kernels, isolate borders, and compute paired gradients with shared traversal.</p></div></article>
+      <article class="epic"><div><h3>Resize and color</h3><p>Reusable Q11 bilinear plans, exact packed RGB8 half-scale, packed nearest/area, target-dispatched Q14 RGB-to-gray, fused resize-to-gray, and fused resize-normalize-CHW are delivered.</p></div></article>
+      <article class="epic"><div><h3>Gaussian and Sobel</h3><p>Reusable separable intermediates, cached kernels, isolated borders, paired gradients, and a high-precision Q15 7×7 path are delivered.</p></div></article>
       <article class="epic"><div><h3>Morphology</h3><p>Introduce rectangular sliding min/max, small-kernel paths, ping-pong scratch, and exact generic-shape fallback.</p></div></article>
       <article class="epic"><div><h3>Fused Canny</h3><p>Avoid materializing public intermediates in the standard path while retaining an opt-in inspectable result.</p></div></article>
       <article class="epic"><div><h3>Explicit GPU chain</h3><p>Upload once, execute resize-to-AI stages on pooled textures, and read back only when the caller asks.</p></div></article>
@@ -74,6 +74,7 @@ flowchart TD
     <section>
       <h2>Latest measured outcome</h2>
       <div class="grid">
+        <article class="card"><h3>Component-attributed baseline</h3><p>On the recorded 12-logical-CPU Windows host, caller-output bilinear resize measured 93.18 MPix/s at VGA, 93.05 MPix/s at 1080p, and 85.45 MPix/s at 4K in default-thread mode. The native kernel was the largest measured component; explicit Python packing cost roughly half as much, while output allocation stayed below 0.025 ms.</p></article>
         <article class="card"><h3>Exact EDT at 4K</h3><p>With caller-owned output and workspace reuse, SpatialRust measured 40.66 ms versus OpenCV 43.33 ms: a 1.07× lead on the recorded Windows host.</p></article>
         <article class="card"><h3>Accuracy preserved</h3><p>The VGA, 1080p, and 4K canonical masks retain maximum absolute error 0.0 against OpenCV's precise L2 distance transform.</p></article>
         <article class="card"><h3>NMS post-processing</h3><p>SpatialRust measured 3.22×–8.95× faster for NMS, 26.38×–97.25× for batched NMS, and 3.42×–7.40× for linear/Gaussian Soft-NMS. Indices exactly match OpenCV; Soft-NMS scores stay within 1.79e-7.</p></article>
@@ -85,7 +86,7 @@ flowchart TD
         <article class="card"><h3>Fused resize to gray</h3><p>A single-pass Q11 bilinear + Q14 BT.601 path removes the intermediate RGB image. The allocated 1920×1080→960×540 pipeline measured 0.677 ms versus OpenCV's 0.755 ms (1.12× faster), with bit-exact SpatialRust unfused parity.</p></article>
         <article class="card"><h3>Fused model input</h3><p>Bilinear resize, float normalization, and planar CHW packing now write model input directly. Allocated calls measured 2.21× faster than OpenCV <code>blobFromImage</code> at 1080p→640×640, 2.02× at 4K→640×640, and 2.33× at 4K→1280×720.</p></article>
       </div>
-      <p class="notice">These are workload- and host-specific results. The resize win covers packed RGB8 640×480→320×240 caller-owned output; OpenCV remains 1.49×–1.67× faster for allocated 1080p–8K and 1.85×–2.40× faster for reuse. RGB-to-gray wins cover allocated 1080p/4K and caller-owned 8K; OpenCV remains faster at VGA and for 1080p/4K reuse. The fused resize-to-gray win covers allocated 1080p→540p only; 4K allocation is effectively tied, and OpenCV leads 8K allocation plus all reuse profiles. The fused CHW claim compares scale=1/255, zero mean, unit std against OpenCV <code>blobFromImage</code> at the named model shapes; arbitrary mean/std retain exact SpatialRust unfused parity. The Sobel claim covers fused L1 magnitude allocation, not standalone paired gradients; reuse ties at 1080p and favors OpenCV at 4K/8K. Gaussian improvement compares against SpatialRust's prior generic engine and is not an OpenCV win. The connected-components claim covers structured segmentation/document masks; dense random noise is not claimed. Repository receipts contain the reproducible methodology.</p>
+      <p class="notice">These are workload- and host-specific results. The component baseline uses an explicit strided-to-packed Python copy and reports input-pixel throughput; it is not an OpenCV comparison, and CPU-only upload/execution/readback stages are recorded as not applicable. The resize win covers packed RGB8 640×480→320×240 caller-owned output; OpenCV remains 1.49×–1.67× faster for allocated 1080p–8K and 1.85×–2.40× faster for reuse. RGB-to-gray wins cover allocated 1080p/4K and caller-owned 8K; OpenCV remains faster at VGA and for 1080p/4K reuse. The fused resize-to-gray win covers allocated 1080p→540p only; 4K allocation is effectively tied, and OpenCV leads 8K allocation plus all reuse profiles. The fused CHW claim compares scale=1/255, zero mean, unit std against OpenCV <code>blobFromImage</code> at the named model shapes; arbitrary mean/std retain exact SpatialRust unfused parity. The Sobel claim covers fused L1 magnitude allocation, not standalone paired gradients; reuse ties at 1080p and favors OpenCV at 4K/8K. Gaussian improvement compares against SpatialRust's prior generic engine and is not an OpenCV win. The connected-components claim covers structured segmentation/document masks; dense random noise is not claimed. Repository receipts contain the reproducible methodology.</p>
     </section>
   </main>
   <footer><div class="wrap">The <a href="https://github.com/rsasaki0109/SpatialRust/blob/main/docs/ROADMAP.md">repository ROADMAP</a> is authoritative for status and acceptance criteria.</div></footer>

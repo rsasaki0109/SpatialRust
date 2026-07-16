@@ -573,13 +573,13 @@ backend, allocation mode, and accuracy contract.
 
 | Epic | Status | Depends on | Outcome |
 | --- | --- | --- | --- |
-| 112 | Planned | 111 | Attribute native kernel, allocation, Python conversion, and transfer costs with reproducible throughput and memory receipts |
+| 112 | Complete | 111 | Attribute native kernel, allocation, Python conversion, and transfer costs with reproducible throughput and memory receipts |
 | 113 | Planned | 112 | Caller-owned outputs and reusable workspaces for multi-stage CPU vision without hidden copies |
 | 114 | Planned | 112–113 | Safe size-aware CPU dispatch for packed fast paths, strided fallbacks, and bounded row/tile parallelism |
 | 115 | Complete | 113–114 | Accelerated resize and color conversion with precomputed sampling plans and fused preprocessing experiments |
 | 116 | Complete | 113–115 | Accelerated separable Gaussian and Sobel engine with cached kernels and shared gradient passes |
 | 117 | Complete | 113–116 | Sliding-window morphology engine with exact OpenCV comparison and generic-mask fallback |
-| 118 | Planned | 113–117 | Fused Canny fast path that avoids public intermediates unless explicitly requested |
+| 118 | Complete | 113–117 | Fused Canny fast path that avoids public intermediates unless explicitly requested |
 | 119 | Planned | 104, 115–118 | Explicit upload-once GPU-resident vision chain with no intermediate readback |
 | 120 | Planned | 112–119 | Vision 2 cross-platform correctness, speed, memory, allocation, and transfer release gate |
 
@@ -592,11 +592,11 @@ to one implicitly, and GPU receipts must retain named upload/readback stages.
 
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
-| 112A | Planned | Separate Python conversion, allocation, native kernel, upload, execution, and readback time | versioned component timing receipt |
-| 112B | Planned | Report MPix/s, ns/pixel, bytes allocated, peak workspace, and batch policy | strict finite JSON contract tests |
-| 112C | Planned | Add native Criterion counterparts for every OpenCV vision workload | VGA/1080p/4K matched workload manifest |
-| 112D | Planned | Record single-thread and default-thread CPU modes | host and thread-policy receipt |
-| 112E | Planned | Publish bottleneck attribution without changing kernels | dated baseline note and Pages update |
+| 112A | Complete | Separate Python conversion, allocation, native kernel, upload, execution, and readback time | versioned component timing receipt; CPU-only transfer stages are explicit N/A |
+| 112B | Complete | Report MPix/s, ns/pixel, bytes allocated, peak workspace, and batch policy | strict finite JSON contract tests |
+| 112C | Complete | Add native Criterion counterparts for every OpenCV vision workload | eight-workload VGA/1080p/4K matched manifest |
+| 112D | Complete | Record single-thread and default-thread CPU modes | six host and thread-policy receipts |
+| 112E | Complete | Publish bottleneck attribution without changing kernels | `notes/2026-07-16_vision2_baseline.md` and Pages update |
 
 ### Epic 113 delivery slices
 
