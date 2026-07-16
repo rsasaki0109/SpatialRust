@@ -75,10 +75,7 @@ impl ReleaseGate {
             && self.budgets.is_none()
         {
             reasons.push("release gate has no configured surfaces".into());
-            return ReleaseGateDecision {
-                allowed: false,
-                reasons,
-            };
+            return ReleaseGateDecision { allowed: false, reasons };
         }
 
         if let Some(stability) = &self.stability {
@@ -129,10 +126,7 @@ impl ReleaseGate {
             }
         }
 
-        ReleaseGateDecision {
-            allowed: reasons.is_empty(),
-            reasons,
-        }
+        ReleaseGateDecision { allowed: reasons.is_empty(), reasons }
     }
 
     /// Convenience wrapper returning [`PlatformResult`].
@@ -141,9 +135,7 @@ impl ReleaseGate {
         if decision.allowed {
             Ok(())
         } else {
-            Err(PlatformError::ReleaseGateDenied {
-                reasons: decision.reasons,
-            })
+            Err(PlatformError::ReleaseGateDenied { reasons: decision.reasons })
         }
     }
 }

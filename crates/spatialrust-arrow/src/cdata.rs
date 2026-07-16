@@ -149,9 +149,7 @@ pub unsafe fn import_point_cloud_c_data(
         )));
     }
     if schema.n_children < 0 || array.n_children < 0 || schema.n_children != array.n_children {
-        return Err(ArrowBridgeError::SchemaMismatch(
-            "schema/array child counts disagree".into(),
-        ));
+        return Err(ArrowBridgeError::SchemaMismatch("schema/array child counts disagree".into()));
     }
     let n = schema.n_children as usize;
     let mut point_schema = PointSchema::new();
@@ -178,8 +176,7 @@ fn export_schema(point_schema: &PointSchema) -> ArrowBridgeResult<ExportedArrowS
         .iter()
         .map(export_field_schema)
         .collect::<ArrowBridgeResult<Vec<_>>>()?;
-    let mut child_ptrs =
-        children.into_iter().map(Box::into_raw).collect::<Vec<*mut ArrowSchema>>();
+    let mut child_ptrs = children.into_iter().map(Box::into_raw).collect::<Vec<*mut ArrowSchema>>();
     let child_table = child_ptrs.as_mut_ptr();
     let n_children = child_ptrs.len() as i64;
     // Leak the vec table into private data; release rebuilds and frees it.
@@ -213,18 +210,12 @@ fn export_field_schema(field: &PointField) -> ArrowBridgeResult<Box<ArrowSchema>
             "Arrow C Data export currently supports scalar fields only".into(),
         ));
     }
-    let format = CString::new(dtype_format(field.dtype)?).map_err(|_| {
-        ArrowBridgeError::InvalidConfiguration("field format contained NUL".into())
-    })?;
-    let name = CString::new(field.name.as_str()).map_err(|_| {
-        ArrowBridgeError::InvalidConfiguration("field name contained NUL".into())
-    })?;
-    let private = Box::new(SchemaPrivate {
-        format,
-        name,
-        children_table: ptr::null_mut(),
-        n_children: 0,
-    });
+    let format = CString::new(dtype_format(field.dtype)?)
+        .map_err(|_| ArrowBridgeError::InvalidConfiguration("field format contained NUL".into()))?;
+    let name = CString::new(field.name.as_str())
+        .map_err(|_| ArrowBridgeError::InvalidConfiguration("field name contained NUL".into()))?;
+    let private =
+        Box::new(SchemaPrivate { format, name, children_table: ptr::null_mut(), n_children: 0 });
     Ok(Box::new(ArrowSchema {
         format: private.format.as_ptr(),
         name: private.name.as_ptr(),
@@ -429,9 +420,9 @@ fn format_dtype(format: &str) -> ArrowBridgeResult<DType> {
         "S" => Ok(DType::U16),
         "I" => Ok(DType::U32),
         "i" => Ok(DType::I32),
-        other => Err(ArrowBridgeError::SchemaMismatch(format!(
-            "unsupported Arrow format `{other}`"
-        ))),
+        other => {
+            Err(ArrowBridgeError::SchemaMismatch(format!("unsupported Arrow format `{other}`")))
+        }
     }
 }
 
@@ -511,11 +502,8 @@ unsafe extern "C" fn release_array(array: *mut ArrowArray) {
     if !array.private_data.is_null() {
         let private = Box::from_raw(array.private_data as *mut ArrayPrivate);
         if !private.children_table.is_null() && private.n_children > 0 {
-            let children = Vec::from_raw_parts(
-                private.children_table,
-                private.n_children,
-                private.n_children,
-            );
+            let children =
+                Vec::from_raw_parts(private.children_table, private.n_children, private.n_children);
             for child in children {
                 if !child.is_null() {
                     if let Some(release) = (*child).release {
@@ -526,11 +514,8 @@ unsafe extern "C" fn release_array(array: *mut ArrowArray) {
             }
         }
         if !private.buffers_table.is_null() && private.n_buffers > 0 {
-            let _ = Vec::from_raw_parts(
-                private.buffers_table as *mut *const c_void,
-                private.n_buffers,
-                private.n_buffers,
-            );
+            let _ =
+                Vec::from_raw_parts(private.buffers_table, private.n_buffers, private.n_buffers);
         }
         drop(private);
     }
@@ -561,7 +546,11 @@ mod tests {
         .unwrap();
         let (mut schema, mut array) = export_point_cloud_c_data(&cloud).unwrap();
         let imported = unsafe {
-            import_point_cloud_c_data(schema.as_mut_ptr(), array.as_mut_ptr(), SpatialMetadata::default())
+            import_point_cloud_c_data(
+                schema.as_mut_ptr(),
+                array.as_mut_ptr(),
+                SpatialMetadata::default(),
+            )
         }
         .unwrap();
         assert_eq!(imported.len(), 2);

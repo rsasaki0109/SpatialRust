@@ -44,11 +44,7 @@ impl ConformanceReport {
         status: ConformanceStatus,
         detail: Option<String>,
     ) {
-        self.cases.push(ConformanceCase {
-            id: id.into(),
-            status,
-            detail,
-        });
+        self.cases.push(ConformanceCase { id: id.into(), status, detail });
     }
 
     /// Returns cases.
@@ -82,12 +78,7 @@ impl ConformanceReport {
     /// Compact summary string for logs/docs.
     #[must_use]
     pub fn summary(&self) -> String {
-        format!(
-            "pass={} fail={} skip={}",
-            self.pass_count(),
-            self.fail_count(),
-            self.skip_count()
-        )
+        format!("pass={} fail={} skip={}", self.pass_count(), self.fail_count(), self.skip_count())
     }
 
     /// Fails if any case failed.
@@ -109,11 +100,7 @@ mod tests {
     fn rejects_failures_and_summarizes() {
         let mut report = ConformanceReport::new();
         report.record("arrow-roundtrip", ConformanceStatus::Pass, None);
-        report.record(
-            "mcap-optional",
-            ConformanceStatus::Skip,
-            Some("feature off".into()),
-        );
+        report.record("mcap-optional", ConformanceStatus::Skip, Some("feature off".into()));
         assert!(report.assert_no_failures().is_ok());
         assert_eq!(report.summary(), "pass=1 fail=0 skip=1");
         report.record("bad", ConformanceStatus::Fail, None);

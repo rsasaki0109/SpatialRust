@@ -19,6 +19,8 @@ mod canny;
 #[cfg(feature = "feature2d")]
 mod corners;
 
+#[cfg(feature = "ai-adapters")]
+mod adapters;
 #[cfg(feature = "dense")]
 mod dense;
 #[cfg(feature = "detection")]
@@ -35,18 +37,16 @@ mod matcher;
 mod morphology;
 #[cfg(feature = "geometry")]
 mod multiview;
-#[cfg(feature = "geometry")]
-mod optical_flow;
 #[cfg(feature = "odometry")]
 mod odometry;
+#[cfg(feature = "geometry")]
+mod optical_flow;
+#[cfg(feature = "feature2d")]
+mod orb;
 #[cfg(feature = "photography")]
 mod photography;
 #[cfg(feature = "geometry")]
 mod pnp;
-#[cfg(feature = "ai-adapters")]
-mod adapters;
-#[cfg(feature = "feature2d")]
-mod orb;
 #[cfg(feature = "preprocess")]
 mod preprocess;
 #[cfg(feature = "resize")]
@@ -55,10 +55,10 @@ mod resize;
 mod spatial;
 #[cfg(feature = "geometry")]
 mod stereo;
-#[cfg(feature = "warp")]
-mod warp;
 #[cfg(feature = "video")]
 mod video;
+#[cfg(feature = "warp")]
+mod warp;
 
 pub use border::BorderMode;
 pub use error::{VisionError, VisionResult};
@@ -73,6 +73,8 @@ pub use canny::*;
 #[cfg(feature = "feature2d")]
 pub use corners::*;
 
+#[cfg(feature = "ai-adapters")]
+pub use adapters::*;
 #[cfg(feature = "dense")]
 pub use dense::*;
 #[cfg(feature = "detection")]
@@ -89,18 +91,16 @@ pub use matcher::*;
 pub use morphology::*;
 #[cfg(feature = "geometry")]
 pub use multiview::*;
-#[cfg(feature = "geometry")]
-pub use optical_flow::*;
 #[cfg(feature = "odometry")]
 pub use odometry::*;
+#[cfg(feature = "geometry")]
+pub use optical_flow::*;
+#[cfg(feature = "feature2d")]
+pub use orb::*;
 #[cfg(feature = "photography")]
 pub use photography::*;
 #[cfg(feature = "geometry")]
 pub use pnp::*;
-#[cfg(feature = "feature2d")]
-pub use orb::*;
-#[cfg(feature = "ai-adapters")]
-pub use adapters::*;
 #[cfg(feature = "preprocess")]
 pub use preprocess::*;
 #[cfg(feature = "resize")]
@@ -109,7 +109,7 @@ pub use resize::*;
 pub use spatial::*;
 #[cfg(feature = "geometry")]
 pub use stereo::*;
-#[cfg(feature = "warp")]
-pub use warp::*;
 #[cfg(feature = "video")]
 pub use video::*;
+#[cfg(feature = "warp")]
+pub use warp::*;

@@ -36,12 +36,13 @@ const ENCODING: &str = "application/x-spatialrust-xyz-v1";
 const SCHEMA_NAME: &str = "spatialrust/xyz/v1";
 
 /// Writes a [`MemoryEpisode`] of XYZ records into an MCAP file.
-pub fn write_memory_episode_mcap(path: impl AsRef<Path>, episode: &MemoryEpisode) -> SyncResult<()> {
+pub fn write_memory_episode_mcap(
+    path: impl AsRef<Path>,
+    episode: &MemoryEpisode,
+) -> SyncResult<()> {
     let file = File::create(path.as_ref()).map_err(io_err)?;
     let mut writer = Writer::new(BufWriter::new(file)).map_err(mcap_err)?;
-    let schema_id = writer
-        .add_schema(SCHEMA_NAME, ENCODING, &[])
-        .map_err(mcap_err)?;
+    let schema_id = writer.add_schema(SCHEMA_NAME, ENCODING, &[]).map_err(mcap_err)?;
 
     let mut channels = BTreeMap::<String, u16>::new();
     for (sequence, stamped) in episode.records().iter().enumerate() {
@@ -50,12 +51,7 @@ pub fn write_memory_episode_mcap(path: impl AsRef<Path>, episode: &MemoryEpisode
             *id
         } else {
             let id = writer
-                .add_channel(
-                    schema_id,
-                    &topic,
-                    ENCODING,
-                    &BTreeMap::new(),
-                )
+                .add_channel(schema_id, &topic, ENCODING, &BTreeMap::new())
                 .map_err(mcap_err)?;
             channels.insert(topic, id);
             id
@@ -159,22 +155,14 @@ fn decode_stamped_xyz(message: &Message<'_>) -> SyncResult<StampedRecord> {
         buffers,
         SpatialMetadata::default(),
     )?;
-    let record = SpatialRecord::try_from_cloud(
-        schema_id,
-        SchemaVersion::new(major, minor),
-        cloud,
-    )?;
+    let record = SpatialRecord::try_from_cloud(schema_id, SchemaVersion::new(major, minor), cloud)?;
     let stamp = StampedTime {
         clock: ClockId::new(message.channel.topic.clone()),
         domain,
         timestamp: Timestamp::from_nanos(stamp_ns),
         quality: crate::SyncQuality::exact(),
     };
-    Ok(StampedRecord::new(
-        TopicId::new(message.channel.topic.clone()),
-        stamp,
-        record,
-    ))
+    Ok(StampedRecord::new(TopicId::new(message.channel.topic.clone()), stamp, record))
 }
 
 fn domain_byte(domain: ClockDomain) -> u8 {
@@ -192,9 +180,7 @@ fn byte_domain(value: u8) -> SyncResult<ClockDomain> {
         1 => Ok(ClockDomain::HostWall),
         2 => Ok(ClockDomain::Sensor),
         3 => Ok(ClockDomain::External),
-        other => Err(SyncError::InvalidConfiguration(format!(
-            "unknown clock domain byte {other}"
-        ))),
+        other => Err(SyncError::InvalidConfiguration(format!("unknown clock domain byte {other}"))),
     }
 }
 

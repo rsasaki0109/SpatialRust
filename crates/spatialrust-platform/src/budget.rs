@@ -60,10 +60,7 @@ impl PerformanceBudgetReport {
 
     /// Records one measurement.
     pub fn sample(&mut self, budget_id: impl Into<String>, observed: u64) {
-        self.samples.push(PerformanceSample {
-            budget_id: budget_id.into(),
-            observed,
-        });
+        self.samples.push(PerformanceSample { budget_id: budget_id.into(), observed });
     }
 
     /// Returns budgets.

@@ -110,7 +110,8 @@ pub fn export_stage_usda(stage: &MemoryUsdStageAdapter) -> InterchangeResult<Str
             "stage has no mesh prims to export".into(),
         ));
     }
-    let mut out = String::from("#usda 1.0\n(\n    defaultPrim = \"World\"\n)\n\ndef Xform \"World\"\n{\n");
+    let mut out =
+        String::from("#usda 1.0\n(\n    defaultPrim = \"World\"\n)\n\ndef Xform \"World\"\n{\n");
     for (path, mesh) in &stage.meshes {
         out.push_str(&format!("    def Mesh \"{}\"\n    {{\n", path.leaf_name()));
         out.push_str("        point3f[] points = [");
@@ -138,10 +139,7 @@ pub fn export_stage_usda(stage: &MemoryUsdStageAdapter) -> InterchangeResult<Str
             out.push_str(&idx.to_string());
         }
         out.push_str("]\n");
-        out.push_str(&format!(
-            "        custom string spatialrust:primPath = \"{}\"\n",
-            path.0
-        ));
+        out.push_str(&format!("        custom string spatialrust:primPath = \"{}\"\n", path.0));
         out.push_str("    }\n");
     }
     out.push_str("}\n");
@@ -151,15 +149,12 @@ pub fn export_stage_usda(stage: &MemoryUsdStageAdapter) -> InterchangeResult<Str
 /// Imports the first SpatialRust-authored Mesh prim from USDA ASCII.
 pub fn import_mesh_from_usda(usda: &str) -> InterchangeResult<(UsdPrimPath, TriangleMesh)> {
     if !usda.contains("#usda") {
-        return Err(InterchangeError::InvalidConfiguration(
-            "missing USDA header".into(),
-        ));
+        return Err(InterchangeError::InvalidConfiguration("missing USDA header".into()));
     }
-    let path = extract_quoted_after(usda, "spatialrust:primPath = ")
-        .or_else(|_| {
-            let leaf = extract_mesh_leaf(usda)?;
-            UsdPrimPath::try_new(format!("/World/{leaf}"))
-        })?;
+    let path = extract_quoted_after(usda, "spatialrust:primPath = ").or_else(|_| {
+        let leaf = extract_mesh_leaf(usda)?;
+        UsdPrimPath::try_new(format!("/World/{leaf}"))
+    })?;
     let points_blob = extract_bracket_list(usda, "point3f[] points = ")?;
     let indices_blob = extract_bracket_list(usda, "int[] faceVertexIndices = ")?;
     let mut positions = Vec::new();
@@ -209,9 +204,7 @@ fn extract_quoted_after(usda: &str, marker: &str) -> InterchangeResult<UsdPrimPa
         + marker.len();
     let rest = usda[start..].trim_start();
     if !rest.starts_with('"') {
-        return Err(InterchangeError::InvalidConfiguration(
-            "expected quoted string".into(),
-        ));
+        return Err(InterchangeError::InvalidConfiguration("expected quoted string".into()));
     }
     let end = rest[1..]
         .find('"')
@@ -251,9 +244,7 @@ mod tests {
             positions: vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
             indices: vec![0, 1, 2],
         };
-        stage
-            .declare_mesh(UsdPrimPath::try_new("/World/Mesh").unwrap(), &mesh)
-            .unwrap();
+        stage.declare_mesh(UsdPrimPath::try_new("/World/Mesh").unwrap(), &mesh).unwrap();
         let usda = export_stage_usda(&stage).unwrap();
         assert!(usda.starts_with("#usda 1.0"));
         let (path, imported) = import_mesh_from_usda(&usda).unwrap();

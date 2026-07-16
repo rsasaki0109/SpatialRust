@@ -40,8 +40,8 @@ use spatialrust::sync::{
 };
 use spatialrust::{
     depth_map_to_point_cloud, depth_tensor_to_depth_map, rgb_u8_to_nchw_f32, CameraIntrinsics,
-    DepthConversionOptions, Image, Interpolation, Isometry3, PinholeCamera, PointCloud, Pose3, Quat,
-    Timestamp, Vec3,
+    DepthConversionOptions, Image, Interpolation, Isometry3, PinholeCamera, PointCloud, Pose3,
+    Quat, Timestamp, Vec3,
 };
 
 #[test]
@@ -71,20 +71,14 @@ fn north_star_image_to_gltf_pipeline() {
     .unwrap();
 
     let mut session = MockInferenceBackend
-        .create_session(
-            &ModelSource::Mock(MockProfile::SyntheticDepth),
-            &SessionOptions::default(),
-        )
+        .create_session(&ModelSource::Mock(MockProfile::SyntheticDepth), &SessionOptions::default())
         .unwrap();
     let mut inputs = NamedTensors::new();
     inputs.insert("images", tensor).unwrap();
     let outputs = session
         .run_with_options(
             inputs,
-            RunOptions {
-                input_copy: CopyPolicy::Forbid,
-                output_copy: CopyPolicy::Allow,
-            },
+            RunOptions { input_copy: CopyPolicy::Forbid, output_copy: CopyPolicy::Allow },
         )
         .unwrap();
     let depth = depth_tensor_to_depth_map(outputs.get("depth").unwrap()).unwrap();
@@ -105,8 +99,8 @@ fn north_star_image_to_gltf_pipeline() {
     let xyz = collect_xyz(&cloud);
 
     // 2) Versioned record → stamped multimodal episode
-    let record = SpatialRecord::try_from_cloud("point", SchemaVersion::new(1, 0), cloud.clone())
-        .unwrap();
+    let record =
+        SpatialRecord::try_from_cloud("point", SchemaVersion::new(1, 0), cloud.clone()).unwrap();
     let stamp = StampedTime::exact("host", ClockDomain::HostSteady, Timestamp::from_nanos(1_000));
     let stamped = StampedRecord::new("camera/depth_cloud", stamp.clone(), record);
     let memory = MemoryEpisode::from_records(vec![stamped]);
@@ -175,8 +169,7 @@ fn north_star_image_to_gltf_pipeline() {
     assert!(gltf.contains("VEC3"));
 
     let mut usd = MemoryUsdStageAdapter::new("north_star.usda");
-    usd.declare_mesh(UsdPrimPath::try_new("/World/TsdfMesh").unwrap(), &mesh)
-        .unwrap();
+    usd.declare_mesh(UsdPrimPath::try_new("/World/TsdfMesh").unwrap(), &mesh).unwrap();
     let usda = export_stage_usda(&usd).unwrap();
     assert!(usda.starts_with("#usda 1.0"));
     let (prim, imported) = import_mesh_from_usda(&usda).unwrap();
@@ -206,26 +199,17 @@ fn north_star_image_to_gltf_pipeline() {
     index.insert(SemanticEntity {
         id: EntityId::new("surface"),
         centroid: Some(Vec3::new(0.0, 0.0, 1.0)),
-        labels: vec![OpenVocabLabel {
-            text: "plane".into(),
-            confidence: 0.8,
-        }],
+        labels: vec![OpenVocabLabel { text: "plane".into(), confidence: 0.8 }],
         embedding: Some(Embedding::try_new(vec![1.0, 0.0, 0.0]).unwrap()),
     });
     let hits = index
-        .search(
-            &Embedding::try_new(vec![1.0, 0.0, 0.0]).unwrap(),
-            MultimodalFusion::default(),
-            1,
-        )
+        .search(&Embedding::try_new(vec![1.0, 0.0, 0.0]).unwrap(), MultimodalFusion::default(), 1)
         .unwrap();
     assert_eq!(hits[0].0, EntityId::new("surface"));
 
     // 6) Bounded runtime + distribute graph
     let mut pipeline = BoundedPipeline::new(PipelineConfig { max_inflight: 4 });
-    pipeline
-        .push(PipelineStage::new("reconstruct"), mesh.triangle_count())
-        .unwrap();
+    pipeline.push(PipelineStage::new("reconstruct"), mesh.triangle_count()).unwrap();
     assert_eq!(pipeline.pop().unwrap().1, mesh.triangle_count());
 
     let mut partitions = PartitionGraph::new();

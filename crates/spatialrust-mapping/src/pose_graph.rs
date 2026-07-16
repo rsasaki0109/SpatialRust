@@ -96,14 +96,14 @@ impl PoseGraph {
                 let Some(from_pose) = self.nodes.get(&edge.from.0).cloned() else {
                     continue;
                 };
-                let predicted = spatialrust_math::Pose3::new(
-                    edge.to_t_from.compose(from_pose.pose.isometry),
-                );
+                let predicted =
+                    spatialrust_math::Pose3::new(edge.to_t_from.compose(from_pose.pose.isometry));
                 let Some(existing) = self.nodes.get_mut(&edge.to.0) else {
                     continue;
                 };
-                let delta = (existing.pose.isometry.translation() - predicted.isometry.translation())
-                    .length();
+                let delta = (existing.pose.isometry.translation()
+                    - predicted.isometry.translation())
+                .length();
                 if delta > 1e-4 {
                     existing.pose = predicted;
                     // Keep target stamp; overwrite pose only.
@@ -125,7 +125,8 @@ impl PoseGraph {
             for j in (i + 1)..ids.len() {
                 let a = &self.nodes[&ids[i]];
                 let b = &self.nodes[&ids[j]];
-                let delta = (a.pose.isometry.translation() - b.pose.isometry.translation()).length();
+                let delta =
+                    (a.pose.isometry.translation() - b.pose.isometry.translation()).length();
                 if delta <= max_distance {
                     out.push((PoseNodeId(ids[i].clone()), PoseNodeId(ids[j].clone())));
                 }

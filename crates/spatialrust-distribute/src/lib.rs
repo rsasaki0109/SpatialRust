@@ -14,6 +14,4 @@ mod transfer;
 pub use backpressure::{BackpressurePolicy, BackpressureSignal, BoundedTransferQueue};
 pub use error::{DistributeError, DistributeResult};
 pub use graph::{ExecutionNode, ExecutionPartition, PartitionGraph};
-pub use transfer::{
-    NamedTransfer, TransferDirection, TransferKind, TransferLedger, TransferPlan,
-};
+pub use transfer::{NamedTransfer, TransferDirection, TransferKind, TransferLedger, TransferPlan};

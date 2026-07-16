@@ -7,17 +7,23 @@ use std::{
 
 use spatialrust_records::SpatialRecordSource;
 
-use crate::{cdata::{export_point_cloud_c_data, ArrowArray, ArrowSchema}, ArrowBridgeResult};
+use crate::{
+    cdata::{export_point_cloud_c_data, ArrowArray, ArrowSchema},
+    ArrowBridgeResult,
+};
 
 /// Arrow C Stream Interface object.
 #[repr(C)]
 pub struct ArrowArrayStream {
     /// Fills `out` with the stream schema.
-    pub get_schema: Option<unsafe extern "C" fn(stream: *mut ArrowArrayStream, out: *mut ArrowSchema) -> i32>,
+    pub get_schema:
+        Option<unsafe extern "C" fn(stream: *mut ArrowArrayStream, out: *mut ArrowSchema) -> i32>,
     /// Fills `out` with the next array (`release=null` when exhausted).
-    pub get_next: Option<unsafe extern "C" fn(stream: *mut ArrowArrayStream, out: *mut ArrowArray) -> i32>,
+    pub get_next:
+        Option<unsafe extern "C" fn(stream: *mut ArrowArrayStream, out: *mut ArrowArray) -> i32>,
     /// Optional last-error message.
-    pub get_last_error: Option<unsafe extern "C" fn(stream: *mut ArrowArrayStream) -> *const c_char>,
+    pub get_last_error:
+        Option<unsafe extern "C" fn(stream: *mut ArrowArrayStream) -> *const c_char>,
     /// Release callback.
     pub release: Option<unsafe extern "C" fn(stream: *mut ArrowArrayStream)>,
     /// Implementation private data.
@@ -141,11 +147,9 @@ unsafe extern "C" fn stream_get_last_error(stream: *mut ArrowArrayStream) -> *co
         return ptr::null();
     }
     match private_mut(stream) {
-        Ok(private) => private
-            .last_error
-            .as_ref()
-            .map(|value| value.as_ptr())
-            .unwrap_or(ptr::null()),
+        Ok(private) => {
+            private.last_error.as_ref().map(|value| value.as_ptr()).unwrap_or(ptr::null())
+        }
         Err(_) => ptr::null(),
     }
 }
@@ -176,7 +180,9 @@ unsafe fn private_mut(stream: *mut ArrowArrayStream) -> Result<&'static mut Stre
     Ok(&mut *(stream.private_data as *mut StreamPrivate))
 }
 
-fn empty_cloud(schema: &spatialrust_core::PointSchema) -> ArrowBridgeResult<spatialrust_core::PointCloud> {
+fn empty_cloud(
+    schema: &spatialrust_core::PointSchema,
+) -> ArrowBridgeResult<spatialrust_core::PointCloud> {
     use spatialrust_core::{PointBuffer, PointBufferSet, PointCloud, SpatialMetadata};
     let mut buffers = PointBufferSet::new();
     for field in schema.fields() {
@@ -214,9 +220,7 @@ mod tests {
     use spatialrust_core::{
         PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas,
     };
-    use spatialrust_records::{
-        MemoryChunkSource, SchemaDescriptor, SchemaVersion,
-    };
+    use spatialrust_records::{MemoryChunkSource, SchemaDescriptor, SchemaVersion};
 
     #[test]
     fn stream_yields_chunked_clouds() {

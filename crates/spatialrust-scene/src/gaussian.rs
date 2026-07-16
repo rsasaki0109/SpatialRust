@@ -1,4 +1,4 @@
-﻿//! Feature-gated Gaussian scene primitives and CPU soft-splat renderer.
+//! Feature-gated Gaussian scene primitives and CPU soft-splat renderer.
 
 use spatialrust_math::{Quat, Vec3};
 
@@ -60,14 +60,10 @@ impl GaussianScene {
 
 fn validate_primitive(primitive: &GaussianPrimitive) -> SceneResult<()> {
     if !(0.0..=1.0).contains(&primitive.opacity) {
-        return Err(SceneError::InvalidConfiguration(
-            "opacity must be in [0, 1]".into(),
-        ));
+        return Err(SceneError::InvalidConfiguration("opacity must be in [0, 1]".into()));
     }
     if primitive.color.iter().any(|c| !(0.0..=1.0).contains(c)) {
-        return Err(SceneError::InvalidConfiguration(
-            "color channels must be in [0, 1]".into(),
-        ));
+        return Err(SceneError::InvalidConfiguration("color channels must be in [0, 1]".into()));
     }
     if !(primitive.scale.x.is_finite()
         && primitive.scale.y.is_finite()
@@ -151,14 +147,10 @@ pub fn render_gaussians_cpu(
     camera: &GaussianCamera,
 ) -> SceneResult<GaussianFramebuffer> {
     if camera.width == 0 || camera.height == 0 {
-        return Err(SceneError::InvalidConfiguration(
-            "camera dimensions must be non-zero".into(),
-        ));
+        return Err(SceneError::InvalidConfiguration("camera dimensions must be non-zero".into()));
     }
     if !(camera.fx.is_finite() && camera.fy.is_finite() && camera.fx > 0.0 && camera.fy > 0.0) {
-        return Err(SceneError::InvalidConfiguration(
-            "fx/fy must be finite and > 0".into(),
-        ));
+        return Err(SceneError::InvalidConfiguration("fx/fy must be finite and > 0".into()));
     }
 
     let rot = camera.rotation_camera_from_world.normalize().to_mat3();
@@ -182,11 +174,7 @@ pub fn render_gaussians_cpu(
             color: prim.color,
         });
     }
-    projected.sort_by(|a, b| {
-        a.depth
-            .partial_cmp(&b.depth)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    projected.sort_by(|a, b| a.depth.partial_cmp(&b.depth).unwrap_or(std::cmp::Ordering::Equal));
 
     let pixels = (camera.width as usize) * (camera.height as usize);
     let mut color = vec![0.0f32; pixels * 3];
@@ -225,11 +213,7 @@ pub fn render_gaussians_cpu(
         rgba.push(to_u8(color[i * 3 + 2]));
         rgba.push(to_u8(alpha[i]));
     }
-    Ok(GaussianFramebuffer {
-        width: camera.width,
-        height: camera.height,
-        rgba,
-    })
+    Ok(GaussianFramebuffer { width: camera.width, height: camera.height, rgba })
 }
 
 struct ProjectedSplat {
@@ -247,9 +231,7 @@ fn to_u8(v: f32) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        render_gaussians_cpu, GaussianCamera, GaussianPrimitive, GaussianScene,
-    };
+    use super::{render_gaussians_cpu, GaussianCamera, GaussianPrimitive, GaussianScene};
     use spatialrust_math::{Quat, Vec3};
 
     #[test]
@@ -287,4 +269,3 @@ mod tests {
         assert!(err.to_string().contains("scale"));
     }
 }
-

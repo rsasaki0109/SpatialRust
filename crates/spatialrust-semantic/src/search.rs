@@ -1,6 +1,8 @@
 //! Multimodal fusion scoring and brute-force semantic search.
 
-use crate::{cosine_similarity, Embedding, EntityId, SemanticEntity, SemanticError, SemanticResult};
+use crate::{
+    cosine_similarity, Embedding, EntityId, SemanticEntity, SemanticError, SemanticResult,
+};
 
 /// Weighted fusion of embedding similarity and label confidence.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -74,7 +76,8 @@ impl SemanticSearchIndex {
             .iter()
             .map(|entity| fusion.score(entity, query).map(|score| (entity.id.clone(), score)))
             .collect::<SemanticResult<Vec<_>>>()?;
-        scored.sort_by(|a, b| b.1.score.partial_cmp(&a.1.score).unwrap_or(std::cmp::Ordering::Equal));
+        scored
+            .sort_by(|a, b| b.1.score.partial_cmp(&a.1.score).unwrap_or(std::cmp::Ordering::Equal));
         scored.truncate(k);
         Ok(scored)
     }

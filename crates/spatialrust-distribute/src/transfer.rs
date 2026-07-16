@@ -64,14 +64,7 @@ impl NamedTransfer {
                 "transfer endpoints must differ".into(),
             ));
         }
-        Ok(Self {
-            name,
-            direction,
-            kind,
-            from,
-            to,
-            bytes,
-        })
+        Ok(Self { name, direction, kind, from, to, bytes })
     }
 
     /// Bytes counted as measurable copies (zero-copy handoffs are 0).
@@ -173,9 +166,7 @@ impl TransferLedger {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        NamedTransfer, TransferDirection, TransferKind, TransferLedger, TransferPlan,
-    };
+    use super::{NamedTransfer, TransferDirection, TransferKind, TransferLedger, TransferPlan};
     use crate::{ExecutionPartition, PartitionGraph};
 
     #[test]

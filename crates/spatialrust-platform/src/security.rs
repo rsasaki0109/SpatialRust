@@ -52,11 +52,7 @@ impl SecurityChecklist {
     /// Returns unsatisfied item ids.
     #[must_use]
     pub fn unsatisfied_ids(&self) -> Vec<&str> {
-        self.items
-            .iter()
-            .filter(|item| !item.satisfied)
-            .map(|item| item.id.as_str())
-            .collect()
+        self.items.iter().filter(|item| !item.satisfied).map(|item| item.id.as_str()).collect()
     }
 
     /// Returns items.

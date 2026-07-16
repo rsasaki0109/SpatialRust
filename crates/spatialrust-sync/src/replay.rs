@@ -61,10 +61,8 @@ impl EpisodeIndex {
     pub fn build(records: &[StampedRecord]) -> Self {
         let mut entries = BTreeMap::new();
         for (ordinal, record) in records.iter().enumerate() {
-            entries.insert(
-                (record.stamp.as_nanos(), record.topic.0.clone(), ordinal as u64),
-                ordinal,
-            );
+            entries
+                .insert((record.stamp.as_nanos(), record.topic.0.clone(), ordinal as u64), ordinal);
         }
         Self { entries }
     }
@@ -203,7 +201,8 @@ mod tests {
             SpatialMetadata::default(),
         )
         .unwrap();
-        let record = SpatialRecord::try_from_cloud("point", SchemaVersion::new(1, 0), cloud).unwrap();
+        let record =
+            SpatialRecord::try_from_cloud("point", SchemaVersion::new(1, 0), cloud).unwrap();
         StampedRecord::new(
             topic,
             StampedTime::exact("host", ClockDomain::HostSteady, Timestamp::from_nanos(nanos)),

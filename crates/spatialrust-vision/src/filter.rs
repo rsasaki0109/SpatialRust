@@ -1184,8 +1184,7 @@ mod tests {
         }
         let view = ImageView::<u8, 3>::new(width, height, stride, &storage).unwrap();
         let expected = gaussian_blur(view, 5, 5, 1.2, 1.2, BorderMode::Reflect101).unwrap();
-        let actual =
-            gaussian_blur_u8(view, 5, 5, 1.2, 1.2, BorderMode::Reflect101).unwrap();
+        let actual = gaussian_blur_u8(view, 5, 5, 1.2, 1.2, BorderMode::Reflect101).unwrap();
         assert!(expected
             .as_slice()
             .iter()

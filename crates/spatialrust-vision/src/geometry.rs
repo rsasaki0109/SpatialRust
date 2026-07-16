@@ -59,12 +59,7 @@ impl CameraMatrix3 {
     }
 
     /// Builds a checked pinhole `K` with analytic inverse (zero skew).
-    pub(crate) fn try_from_pinhole(
-        fx: f64,
-        fy: f64,
-        cx: f64,
-        cy: f64,
-    ) -> VisionResult<Self> {
+    pub(crate) fn try_from_pinhole(fx: f64, fy: f64, cx: f64, cy: f64) -> VisionResult<Self> {
         if ![fx, fy, cx, cy].into_iter().all(f64::is_finite) || fx <= 0.0 || fy <= 0.0 {
             return Err(VisionError::InvalidParameter(
                 "pinhole camera matrix requires finite positive focal lengths".into(),

@@ -89,12 +89,7 @@ impl PointCloud2Xyz {
                 "xyz length must be a multiple of 3".into(),
             ));
         }
-        Ok(Self {
-            frame_id: frame_id.into(),
-            stamp_sec,
-            stamp_nanosec,
-            xyz,
-        })
+        Ok(Self { frame_id: frame_id.into(), stamp_sec, stamp_nanosec, xyz })
     }
 
     /// Returns point count.
@@ -152,12 +147,7 @@ pub fn decode_point_cloud2_xyz(bytes: &[u8]) -> RuntimeResult<PointCloud2Xyz> {
     let data = r.read_bytes(data_len)?;
     let _is_dense = r.read_bool()?;
     if height == 0 || width == 0 {
-        return Ok(PointCloud2Xyz {
-            frame_id,
-            stamp_sec,
-            stamp_nanosec,
-            xyz: Vec::new(),
-        });
+        return Ok(PointCloud2Xyz { frame_id, stamp_sec, stamp_nanosec, xyz: Vec::new() });
     }
     if point_step < 12 {
         return Err(RuntimeError::InvalidConfiguration(
@@ -379,16 +369,13 @@ mod tests {
     #[test]
     fn negotiates_point_cloud2() {
         let adapter = CatalogRos2Adapter::point_cloud2_xyz();
-        assert_eq!(
-            adapter.negotiate(POINT_CLOUD2_TYPE).unwrap().spatial_topic,
-            "point/xyz"
-        );
+        assert_eq!(adapter.negotiate(POINT_CLOUD2_TYPE).unwrap().spatial_topic, "point/xyz");
     }
 
     #[test]
     fn roundtrips_xyz_cdr_and_loopback() {
-        let msg = PointCloud2Xyz::try_new("lidar", 1, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-            .unwrap();
+        let msg =
+            PointCloud2Xyz::try_new("lidar", 1, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]).unwrap();
         let bytes = encode_point_cloud2_xyz(&msg).unwrap();
         let mut node = LoopbackRos2Node::new();
         node.publish("/points", bytes.clone());

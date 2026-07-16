@@ -25,7 +25,8 @@ pub use spatial::{spatial_f32_field_view, SpatialTensorBridgeError};
 mod dlpack;
 #[cfg(feature = "dlpack")]
 pub use dlpack::{
-    release_dlpack_raw, DlpackError, DlpackExport, DlpackImport, DLPACK_MAJOR, DLPACK_MINOR,
+    release_dlpack_legacy_raw, release_dlpack_raw, DlpackError, DlpackExport, DlpackImport,
+    DlpackLegacyExport, DLPACK_MAJOR, DLPACK_MINOR,
 };
 
 /// Tensor construction and layout errors.

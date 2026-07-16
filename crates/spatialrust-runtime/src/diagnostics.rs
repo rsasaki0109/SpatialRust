@@ -23,10 +23,6 @@ impl FailureDiagnostic {
         summary: impl Into<String>,
         remediation: Option<String>,
     ) -> Self {
-        Self {
-            code: DiagnosticCode(code.into()),
-            summary: summary.into(),
-            remediation,
-        }
+        Self { code: DiagnosticCode(code.into()), summary: summary.into(), remediation }
     }
 }

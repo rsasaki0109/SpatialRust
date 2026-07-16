@@ -3,14 +3,8 @@
 use spatialrust_math::Vec3;
 
 /// Consistent six-tetrahedra covering of the unit cube (corner indices).
-const TETS: [[usize; 4]; 6] = [
-    [0, 2, 3, 7],
-    [0, 6, 2, 7],
-    [0, 4, 6, 7],
-    [0, 6, 1, 2],
-    [0, 1, 6, 4],
-    [5, 6, 1, 4],
-];
+const TETS: [[usize; 4]; 6] =
+    [[0, 2, 3, 7], [0, 6, 2, 7], [0, 4, 6, 7], [0, 6, 1, 2], [0, 1, 6, 4], [5, 6, 1, 4]];
 
 /// Appends triangles for one tetrahedron to `positions` / `indices`.
 pub(crate) fn polygonise_tet(
@@ -92,11 +86,7 @@ fn interp(isolevel: f32, p1: Vec3<f32>, p2: Vec3<f32>, v1: f32, v2: f32) -> Vec3
         return p1;
     }
     let t = (isolevel - v1) / (v2 - v1);
-    Vec3::new(
-        p1.x + t * (p2.x - p1.x),
-        p1.y + t * (p2.y - p1.y),
-        p1.z + t * (p2.z - p1.z),
-    )
+    Vec3::new(p1.x + t * (p2.x - p1.x), p1.y + t * (p2.y - p1.y), p1.z + t * (p2.z - p1.z))
 }
 
 #[inline]

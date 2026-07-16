@@ -5,7 +5,9 @@ use std::ptr;
 use spatialrust_core::{PointCloud, SpatialMetadata};
 
 use crate::{
-    cdata::{export_point_cloud_c_data, import_point_cloud_c_data, ArrowArray, ExportedArrowSchema},
+    cdata::{
+        export_point_cloud_c_data, import_point_cloud_c_data, ArrowArray, ExportedArrowSchema,
+    },
     ArrowBridgeError, ArrowBridgeResult,
 };
 
@@ -112,7 +114,9 @@ pub unsafe fn import_point_cloud_device_array(
 
 #[cfg(test)]
 mod tests {
-    use super::{export_point_cloud_device_array, import_point_cloud_device_array, ArrowDeviceType};
+    use super::{
+        export_point_cloud_device_array, import_point_cloud_device_array, ArrowDeviceType,
+    };
     use spatialrust_core::{
         PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas,
     };

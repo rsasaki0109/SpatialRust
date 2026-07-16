@@ -62,7 +62,9 @@ impl SpatialRecord {
 mod tests {
     use super::SpatialRecord;
     use crate::SchemaVersion;
-    use spatialrust_core::{PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas};
+    use spatialrust_core::{
+        PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas,
+    };
 
     #[test]
     fn record_rejects_schema_mismatch() {

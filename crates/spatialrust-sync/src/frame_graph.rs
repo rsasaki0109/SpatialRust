@@ -55,10 +55,7 @@ impl FrameGraph {
             .entry(edge.child.0.clone())
             .or_default()
             .retain(|(parent, _)| parent != &edge.parent.0);
-        self.reverse
-            .entry(edge.child.0.clone())
-            .or_default()
-            .push((edge.parent.0, parent_t_child));
+        self.reverse.entry(edge.child.0.clone()).or_default().push((edge.parent.0, parent_t_child));
         Ok(())
     }
 
@@ -109,14 +106,20 @@ mod tests {
             .insert_edge(FrameEdge {
                 parent: FrameId::new("base"),
                 child: FrameId::new("sensor"),
-                child_t_parent: Isometry3::new(Quat::new(0.0, 0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0)),
+                child_t_parent: Isometry3::new(
+                    Quat::new(0.0, 0.0, 0.0, 1.0),
+                    Vec3::new(1.0, 0.0, 0.0),
+                ),
             })
             .unwrap();
         graph
             .insert_edge(FrameEdge {
                 parent: FrameId::new("sensor"),
                 child: FrameId::new("lidar"),
-                child_t_parent: Isometry3::new(Quat::new(0.0, 0.0, 0.0, 1.0), Vec3::new(0.0, 2.0, 0.0)),
+                child_t_parent: Isometry3::new(
+                    Quat::new(0.0, 0.0, 0.0, 1.0),
+                    Vec3::new(0.0, 2.0, 0.0),
+                ),
             })
             .unwrap();
         let t = graph.lookup(&FrameId::new("base"), &FrameId::new("lidar")).unwrap();

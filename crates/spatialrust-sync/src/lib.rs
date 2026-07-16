@@ -18,9 +18,7 @@ mod mcap_io;
 pub use clock::{ClockDomain, ClockId, StampedTime, SyncQuality};
 pub use error::{SyncError, SyncResult};
 pub use frame_graph::{FrameEdge, FrameGraph};
-pub use replay::{
-    DeterministicReplayer, EpisodeIndex, MemoryEpisode, SyncWindow, TopicId,
-};
+pub use replay::{DeterministicReplayer, EpisodeIndex, MemoryEpisode, SyncWindow, TopicId};
 pub use stamped::StampedRecord;
 
 #[cfg(feature = "mcap")]

@@ -1,0 +1,3 @@
+spatialrust\.CannyWorkspace\.__init__
+spatialrust\.DistanceTransformWorkspace\.__init__
+spatialrust\.MorphologyWorkspace\.__init__

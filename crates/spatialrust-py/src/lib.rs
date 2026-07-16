@@ -433,7 +433,7 @@ impl PyTensor {
                 "implicit DLPack copies are disabled; call Tensor.copy() explicitly",
             ));
         }
-        dlpack_capsule::export_tensor(py, &self.inner).map_err(to_py_err)
+        dlpack_capsule::export_tensor(py, &self.inner, max_version.is_some()).map_err(to_py_err)
     }
 
     /// Makes an explicit host-to-host allocation copy.
@@ -2611,6 +2611,7 @@ struct PyMorphologyWorkspace {
 #[pymethods]
 impl PyMorphologyWorkspace {
     #[new]
+    #[pyo3(signature = ())]
     fn new() -> Self {
         Self { inner: RectMorphologyWorkspace::new(), element: None }
     }
@@ -3033,6 +3034,7 @@ struct PyCannyWorkspace {
 #[pymethods]
 impl PyCannyWorkspace {
     #[new]
+    #[pyo3(signature = ())]
     fn new() -> Self {
         Self { inner: CannyWorkspace::new() }
     }
@@ -3997,6 +3999,7 @@ struct PyDistanceTransformWorkspace {
 #[pymethods]
 impl PyDistanceTransformWorkspace {
     #[new]
+    #[pyo3(signature = ())]
     fn new() -> Self {
         Self { inner: DistanceTransformWorkspace::new() }
     }

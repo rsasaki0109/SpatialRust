@@ -67,15 +67,10 @@ impl ModelSession for MockSession {
         self.info.validate_inputs(&inputs)?;
         // Output is always a newly allocated host `TensorBuffer`.
         if options.output_copy == CopyPolicy::Forbid {
-            return Err(AiError::CopyRequired {
-                direction: "output host",
-                name: "depth".into(),
-            });
+            return Err(AiError::CopyRequired { direction: "output host", name: "depth".into() });
         }
         match self.profile {
-            MockProfile::SyntheticDepth => {
-                run_synthetic_depth(inputs, options.input_copy)
-            }
+            MockProfile::SyntheticDepth => run_synthetic_depth(inputs, options.input_copy),
         }
     }
 }
@@ -110,10 +105,7 @@ impl MockProfile {
     }
 }
 
-fn run_synthetic_depth(
-    inputs: NamedTensors,
-    input_copy: CopyPolicy,
-) -> AiResult<NamedTensors> {
+fn run_synthetic_depth(inputs: NamedTensors, input_copy: CopyPolicy) -> AiResult<NamedTensors> {
     let input = inputs.get("images").ok_or_else(|| AiError::MissingInput("images".into()))?;
     let descriptor = input.descriptor();
     let shape = descriptor.shape();
@@ -131,10 +123,7 @@ fn run_synthetic_depth(
     }
     if !descriptor.is_c_contiguous() || descriptor.byte_offset() != 0 {
         if input_copy == CopyPolicy::Forbid {
-            return Err(AiError::CopyRequired {
-                direction: "input host",
-                name: "images".into(),
-            });
+            return Err(AiError::CopyRequired { direction: "input host", name: "images".into() });
         }
         return Err(AiError::Unsupported {
             backend: "mock".into(),
@@ -192,8 +181,8 @@ fn f32_values(tensor: &TensorBuffer) -> AiResult<Vec<f32>> {
 mod tests {
     use super::{MockInferenceBackend, MockProfile};
     use crate::{
-        AiError, CopyPolicy, InferenceBackend, ModelSession as _, ModelSource, NamedTensors,
-        RunOptions, SessionOptions,
+        AiError, CopyPolicy, InferenceBackend, ModelSource, NamedTensors, RunOptions,
+        SessionOptions,
     };
     use spatialrust_tensor::{DataType, Device, TensorBuffer, TensorDescriptor};
 
@@ -222,10 +211,7 @@ mod tests {
         let outputs = session
             .run_with_options(
                 inputs,
-                RunOptions {
-                    input_copy: CopyPolicy::Forbid,
-                    output_copy: CopyPolicy::Allow,
-                },
+                RunOptions { input_copy: CopyPolicy::Forbid, output_copy: CopyPolicy::Allow },
             )
             .unwrap();
         let depth = outputs.get("depth").unwrap();

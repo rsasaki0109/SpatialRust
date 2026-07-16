@@ -95,11 +95,7 @@ pub fn detection_tensor_to_detections(tensor: &TensorBuffer) -> VisionResult<Vec
     for row in values.chunks_exact(6) {
         let bbox = BoundingBox2::try_new(row[0], row[1], row[2], row[3])
             .map_err(|error| VisionError::InvalidParameter(error.to_string()))?;
-        detections.push(Detection {
-            bbox,
-            score: row[4],
-            class_id: row[5] as i64,
-        });
+        detections.push(Detection { bbox, score: row[4], class_id: row[5] as i64 });
     }
     Ok(detections)
 }
@@ -185,10 +181,7 @@ mod tests {
             PlanarImage::<f32, 3>::try_new(2, 2, (0..12).map(|v| v as f32).collect()).unwrap();
         let tensor = planar_f32_to_nchw(&planar).unwrap();
         assert_eq!(tensor.descriptor().shape(), &[1, 3, 2, 2]);
-        assert_eq!(
-            bytemuck::cast_slice::<u8, f32>(tensor.allocation_bytes()),
-            planar.as_slice()
-        );
+        assert_eq!(bytemuck::cast_slice::<u8, f32>(tensor.allocation_bytes()), planar.as_slice());
     }
 
     #[test]
