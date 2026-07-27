@@ -15,6 +15,28 @@ pub enum RecordsError {
     /// A required field is missing during migration.
     #[error("missing required field `{0}`")]
     MissingField(String),
+    /// A tracked allocation would exceed the configured streaming memory budget.
+    #[error(
+        "streaming memory budget exceeded: requested {requested} bytes with {current} bytes \
+         already reserved (limit {limit} bytes)"
+    )]
+    MemoryBudgetExceeded {
+        /// Additional bytes requested by the operation.
+        requested: u64,
+        /// Bytes already reserved when the request was made.
+        current: u64,
+        /// Configured hard limit.
+        limit: u64,
+    },
+    /// A streaming counter exceeded the representable receipt range.
+    #[error("streaming receipt counter overflow: {0}")]
+    ReceiptOverflow(String),
+    /// A versioned streaming receipt did not satisfy its schema contract.
+    #[error("invalid streaming receipt: {0}")]
+    InvalidReceipt(String),
+    /// Cooperative cancellation was observed at a streaming boundary.
+    #[error("streaming operation cancelled")]
+    Cancelled,
     /// Wrapped core spatial failure.
     #[error(transparent)]
     Spatial(#[from] spatialrust_core::SpatialError),

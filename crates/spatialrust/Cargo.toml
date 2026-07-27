@@ -182,6 +182,7 @@ vision-full = [
 ]
 ai-vision-pipeline = ["ai", "vision-ai-adapters", "vision-spatial"]
 records = ["dep:spatialrust-records"]
+records-receipt-json = ["records", "spatialrust-records/receipt-json"]
 arrow-c-data = ["records", "dep:spatialrust-arrow", "spatialrust-arrow/arrow-c-data"]
 arrow-c-stream = ["arrow-c-data", "spatialrust-arrow/arrow-c-stream"]
 arrow-c-device = ["arrow-c-data", "spatialrust-arrow/arrow-c-device"]

@@ -132,3 +132,22 @@ execution (`spatialrust-distribute`), and platform stability
 (`spatialrust-platform`). Heavy native bindings stay optional.
 
 See the full master architecture document in project planning materials for trait-level design, ADRs, and Codex execution tasks (Epics 0–13).
+
+## SpatialRust 1.2 bounded-streaming boundary
+
+The canonical 1.2 program is Epics 121–126 in `docs/ROADMAP.md`. It adds
+bounded point-cloud execution without expanding `spatialrust-core`:
+
+```text
+core PointCloud/SpatialTensor
+        -> records stream contracts
+        -> feature-gated io adapters
+        -> chunk-safe algorithms/pipeline
+        -> CLI/Python
+```
+
+`SpatialTensor` continues to describe borrowed chunks of one materialized
+`PointCloud`; it is not an out-of-core source. Streaming memory limits account
+for explicitly owned buffers and fail before exceeding their hard ceiling.
+Format-specific caches and unavoidable temporary spool storage are named in
+versioned receipts. GPU upload/readback remains caller-selected and measurable.

@@ -694,3 +694,39 @@ SpatialRust baseline on the same host; they are not claims against every OpenCV
 build. Accuracy gates remain workload-specific: resize/gray/Gaussian retain
 their documented bounded error, Sobel and morphology retain exact comparison,
 and Canny retains binary precision, recall, F1, and IoU requirements.
+
+## SpatialRust 1.2 bounded-streaming program (Epics 121–126)
+
+SpatialRust 1.2 targets one user outcome: process point clouds larger than host
+memory through a deterministic, bounded stream without changing the stable
+in-memory `spatialrust-core` surface or hiding host/device transfers.
+`SpatialTensor` remains a provisional borrowed view over one materialized
+`PointCloud`; versioned stream contracts live in `spatialrust-records`, format
+adapters stay feature-gated in `spatialrust-io`, and execution composition lives
+outside core.
+
+| Epic | Status | Depends on | Deliverable |
+| --- | --- | --- | --- |
+| 121 | Complete | 91, 100, 111 | Hard tracked-memory limits, cooperative cancellation, versioned execution receipts, and canonical scale/chunk workloads |
+| 122 | Planned | 121 | Backward-compatible bounded record sources/sinks with chunk identity, deterministic ordering, prefetch, and buffer reuse |
+| 123 | Planned | 122 | Local/HTTP COPC plus PCD/PLY/LAS/LAZ streaming adapters and bounded temporary spool contracts |
+| 124 | Planned | 122–123 | Chunk-safe crop/transform/reductions and deterministic global voxel aggregation with explicit spill |
+| 125 | Planned | 123–124 | Composable Rust pipeline, CLI, Python iterator, cancellation, and reproducible end-to-end receipt |
+| 126 | Planned | 121–125 | Linux/Windows/macOS conformance, memory/copy budgets, documentation, migration notes, and the 1.2 release gate |
+
+### Epic 121 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 121A | Complete | Positive chunk and hard memory-budget options plus deterministic ordering policy | invalid-configuration tests and stable defaults |
+| 121B | Complete | Concurrent fail-closed memory reservations and cooperative cancellation | contention, overflow-denial, drop-release, and clone-visibility tests |
+| 121C | Complete | Versioned strict JSON receipt for points, chunks, bytes, phases, spill, peak tracked memory, and named transfers | round-trip, unknown-field, version, and counter-overflow denial tests |
+| 121D | Complete | Canonical 1M/10M/100M × 16K/64K/256K workload manifest and runnable synthetic receipt | `streaming_receipt` example and dated implementation receipt |
+
+### SpatialRust 1.2 exclusions
+
+- Native ROS 2/rclrs integration, CUDA, SLAM, and reconstruction expansion.
+- A fully GPU-resident 3D pipeline or an implicit `ExecutionPolicy::Auto`
+  device crossover.
+- Cross-chunk normal estimation and global clustering.
+- Stabilization or redesign of the provisional `SpatialTensor` API.

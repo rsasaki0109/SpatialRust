@@ -19,6 +19,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+### Added
+
+- **SpatialRust 1.2 bounded-streaming contract (Epic 121)**:
+  `spatialrust-records` now provides positive stream options, concurrent
+  fail-closed memory reservations, cooperative cancellation, a strict
+  feature-gated JSON execution receipt, and a canonical
+  1M/10M/100M-by-chunk-size workload matrix. The runnable
+  `streaming_receipt` example records phases, bytes, peak tracked memory,
+  spill, and explicit transfers without changing `spatialrust-core`.
+
 ### Changed
 
 - **GPU voxel dispatch and truthful Auto policy**: headless wgpu compute now
