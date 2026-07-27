@@ -708,7 +708,7 @@ outside core.
 | Epic | Status | Depends on | Deliverable |
 | --- | --- | --- | --- |
 | 121 | Complete | 91, 100, 111 | Hard tracked-memory limits, cooperative cancellation, versioned execution receipts, and canonical scale/chunk workloads |
-| 122 | Planned | 121 | Backward-compatible bounded record sources/sinks with chunk identity, deterministic ordering, prefetch, and buffer reuse |
+| 122 | Complete | 121 | Backward-compatible bounded record sources/sinks with chunk identity, deterministic ordering, prefetch, and buffer reuse |
 | 123 | Planned | 122 | Local/HTTP COPC plus PCD/PLY/LAS/LAZ streaming adapters and bounded temporary spool contracts |
 | 124 | Planned | 122–123 | Chunk-safe crop/transform/reductions and deterministic global voxel aggregation with explicit spill |
 | 125 | Planned | 123–124 | Composable Rust pipeline, CLI, Python iterator, cancellation, and reproducible end-to-end receipt |
@@ -722,6 +722,15 @@ outside core.
 | 121B | Complete | Concurrent fail-closed memory reservations and cooperative cancellation | contention, overflow-denial, drop-release, and clone-visibility tests |
 | 121C | Complete | Versioned strict JSON receipt for points, chunks, bytes, phases, spill, peak tracked memory, and named transfers | round-trip, unknown-field, version, and counter-overflow denial tests |
 | 121D | Complete | Canonical 1M/10M/100M × 16K/64K/256K workload manifest and runnable synthetic receipt | `streaming_receipt` example and dated implementation receipt |
+
+### Epic 122 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 122A | Complete | Leased `SpatialRecordChunk` identity, global point offset, optional finite XYZ bounds, and tracked column-capacity reservation | chunk continuity, bounds, lifetime, and drop-release tests |
+| 122B | Complete | Additive bounded source/sink traits and adapters for the existing synchronous traits | legacy source/sink round trip with no signature changes |
+| 122C | Complete | Deterministic single-worker prefetch with count backpressure, cancellation, and fail-closed concurrent-memory admission | ordered delivery, cancellation, and insufficient-budget denial tests |
+| 122D | Complete | Source-owned buffer-set recycling with safe ownership extraction | one-allocation steady-state test and `bounded_record_stream` example |
 
 ### SpatialRust 1.2 exclusions
 

@@ -37,6 +37,12 @@ pub enum RecordsError {
     /// Cooperative cancellation was observed at a streaming boundary.
     #[error("streaming operation cancelled")]
     Cancelled,
+    /// A source emitted a chunk that violates its declared stream contract.
+    #[error("invalid streaming chunk: {0}")]
+    InvalidChunk(String),
+    /// A background stream ended without an explicit end marker.
+    #[error("streaming channel closed unexpectedly")]
+    StreamClosed,
     /// Wrapped core spatial failure.
     #[error(transparent)]
     Spatial(#[from] spatialrust_core::SpatialError),

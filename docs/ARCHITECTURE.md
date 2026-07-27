@@ -151,3 +151,8 @@ core PointCloud/SpatialTensor
 for explicitly owned buffers and fail before exceeding their hard ceiling.
 Format-specific caches and unavoidable temporary spool storage are named in
 versioned receipts. GPU upload/readback remains caller-selected and measurable.
+Leased record chunks keep their memory reservation alive for exactly the record
+borrow lifetime. The additive `PointCloud::into_parts` inverse and mutable
+column iteration are the only core ownership primitives required for
+allocation-free source-owned buffer recycling; stream traits, threads, queues,
+receipts, and policies remain outside core.

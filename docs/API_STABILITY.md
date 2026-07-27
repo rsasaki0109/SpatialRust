@@ -65,7 +65,7 @@ until their individual 1.0 milestones.
 | AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, mock backend, and ONNX Runtime adapter APIs are provisional |
 | Vision (`vision-*`) | Base errors/borders, resize/filter entry points, detection/dense data contracts, and Feature2D data contracts are stable; geometry, stereo, optical flow, odometry, photography, video, and AI adapters remain provisional |
 | Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
-| Records (`records`, `records-receipt-json`) | Versioned `SpatialRecord`, schema compatibility/migration, chunked record streams, bounded streaming options, memory accounting, and execution receipts are provisional |
+| Records (`records`, `records-receipt-json`) | Versioned `SpatialRecord`, schema compatibility/migration, leased bounded record streams, prefetch/recycling adapters, memory accounting, and execution receipts are provisional |
 | Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |
 | Sync (`sync`, `sync-mcap`) | Clock domains, frame graphs, stamped records, and deterministic episode replay are provisional |
 | Mapping (`mapping`) | Trajectories, relative motion estimators, pose graphs, loop closure, and feature-gated vision-odometry bridges are provisional |
@@ -93,7 +93,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-image-io` | Provisional | Standard codecs by default; TIFF/OpenEXR independently gated |
 | `spatialrust-tensor` | Provisional | Generic tensor descriptors, explicit CPU ownership, image/spatial bridges, and feature-gated DLPack major-version 1 ABI |
 | `spatialrust-ai` | Provisional | Runtime-independent session contract; ONNX Runtime CPU and hardware providers are independently gated |
-| `spatialrust-records` | Provisional | Versioned records, schema evolution, chunked host streams, hard memory accounting, and versioned receipts; Arrow-free |
+| `spatialrust-records` | Provisional | Versioned records, schema evolution, leased/prefetched host streams, buffer recycling, hard memory accounting, and versioned receipts; Arrow-free |
 | `spatialrust-arrow` | Provisional | Arrow C Data/Stream/Device adapters; optional features only |
 | `spatialrust-sync` | Provisional | Sensor clocks, frame graphs, stamped records, deterministic replay; MCAP file codecs gated |
 | `spatialrust-mapping` | Provisional | Trajectories, odometry traits, pose graphs, loop closure, and explicit vision motion bridges |
