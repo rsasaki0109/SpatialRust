@@ -65,7 +65,8 @@ until their individual 1.0 milestones.
 | AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, mock backend, and ONNX Runtime adapter APIs are provisional |
 | Vision (`vision-*`) | Base errors/borders, resize/filter entry points, detection/dense data contracts, and Feature2D data contracts are stable; geometry, stereo, optical flow, odometry, photography, video, and AI adapters remain provisional |
 | Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
-| Records (`records`, `records-receipt-json`) | Versioned `SpatialRecord`, schema compatibility/migration, leased bounded record streams, prefetch/recycling adapters, memory accounting, and execution receipts are provisional |
+| Records (`records`, `records-receipt-json`) | The 1.2 memory/options/cancellation/receipt and bounded source/sink/chunk contracts are stable; schema migration and concrete prefetch/recycling implementations remain provisional |
+| Streaming IO/pipeline/CLI | Format adapters, spool implementation, chunk operations, `StreamingPipeline`, CLI flags, and Python iterator are additive and provisional |
 | Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |
 | Sync (`sync`, `sync-mcap`) | Clock domains, frame graphs, stamped records, and deterministic episode replay are provisional |
 | Mapping (`mapping`) | Trajectories, relative motion estimators, pose graphs, loop closure, and feature-gated vision-odometry bridges are provisional |
@@ -93,7 +94,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-image-io` | Provisional | Standard codecs by default; TIFF/OpenEXR independently gated |
 | `spatialrust-tensor` | Provisional | Generic tensor descriptors, explicit CPU ownership, image/spatial bridges, and feature-gated DLPack major-version 1 ABI |
 | `spatialrust-ai` | Provisional | Runtime-independent session contract; ONNX Runtime CPU and hardware providers are independently gated |
-| `spatialrust-records` | Provisional | Versioned records, schema evolution, leased/prefetched host streams, buffer recycling, hard memory accounting, and versioned receipts; Arrow-free |
+| `spatialrust-records` | Stable bounded foundation | `MemoryBudget`, `MemoryTracker`, `CancellationToken`, `StreamOptions`, `StreamingReceipt`, `SpatialRecordChunk`, and bounded source/sink traits are stable for 1.2; schema evolution and concrete adapters remain provisional; Arrow-free |
 | `spatialrust-arrow` | Provisional | Arrow C Data/Stream/Device adapters; optional features only |
 | `spatialrust-sync` | Provisional | Sensor clocks, frame graphs, stamped records, deterministic replay; MCAP file codecs gated |
 | `spatialrust-mapping` | Provisional | Trajectories, odometry traits, pose graphs, loop closure, and explicit vision motion bridges |
@@ -138,6 +139,15 @@ workspace, fused preprocessing, and GPU-resident entries through
 `Vision2ReleaseGate`, including three-OS conformance, native/Python
 allocate/reuse budgets, explicit resource and transfer measurements, generated
 documentation, dated receipts, and the `vision-2` migration policy.
+
+SpatialRust 1.2 freezes the additive bounded record foundation through
+`StabilityRegistry::bounded_streaming_v1_2_surface()`. Concrete format
+adapters, spool implementation, chunk algorithms, pipeline builder, CLI flags,
+and Python iterator remain provisional behind named features. Every 1.2
+candidate must pass `Streaming12ReleaseGate`, including three-OS conformance,
+memory/spill/cleanup/copy/transfer/determinism/file-handle budgets, all five
+Epic receipts, the runnable example, and the `bounded-streaming-1.2` migration
+policy. `SpatialTensor` remains provisional and is not an out-of-core source.
 
 1. Deprecate in minor release (`#[deprecated]` + CHANGELOG)
 2. Remove no sooner than next major release

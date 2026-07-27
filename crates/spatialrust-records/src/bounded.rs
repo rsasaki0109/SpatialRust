@@ -406,8 +406,10 @@ impl PrefetchRecordSource {
             ));
         }
         let max_chunk_bytes = source.max_chunk_bytes();
+        // Besides the bounded queue, one lease may be held by the consumer and
+        // one by the producer while `send` waits for queue capacity.
         let concurrent_chunks =
-            u64::try_from(capacity).ok().and_then(|value| value.checked_add(1)).ok_or_else(
+            u64::try_from(capacity).ok().and_then(|value| value.checked_add(2)).ok_or_else(
                 || RecordsError::InvalidConfiguration("prefetch capacity overflow".into()),
             )?;
         let required = max_chunk_bytes.checked_mul(concurrent_chunks).ok_or_else(|| {
@@ -979,7 +981,7 @@ mod tests {
     fn prefetch_preserves_order_and_stays_within_budget() {
         let legacy = MemoryChunkSource::try_new(schema(), cloud(6), 2).unwrap();
         let options =
-            StreamOptions::new(2, MemoryBudget::new(72).unwrap()).unwrap().with_prefetch_chunks(2);
+            StreamOptions::new(2, MemoryBudget::new(96).unwrap()).unwrap().with_prefetch_chunks(2);
         let bounded =
             LegacyBoundedSource::try_new(legacy, options, CancellationToken::default()).unwrap();
         let mut source = PrefetchRecordSource::try_new(bounded).unwrap();
@@ -988,14 +990,14 @@ mod tests {
             assert_eq!(chunk.identity().sequence, expected);
         }
         assert!(source.next_chunk().is_none());
-        assert!(source.memory_tracker().snapshot().peak_bytes <= 72);
+        assert!(source.memory_tracker().snapshot().peak_bytes <= 96);
     }
 
     #[test]
     fn prefetch_rejects_capacity_that_cannot_fit_budget() {
         let legacy = MemoryChunkSource::try_new(schema(), cloud(6), 2).unwrap();
         let options =
-            StreamOptions::new(2, MemoryBudget::new(48).unwrap()).unwrap().with_prefetch_chunks(2);
+            StreamOptions::new(2, MemoryBudget::new(72).unwrap()).unwrap().with_prefetch_chunks(2);
         let bounded =
             LegacyBoundedSource::try_new(legacy, options, CancellationToken::default()).unwrap();
         assert!(PrefetchRecordSource::try_new(bounded).is_err());

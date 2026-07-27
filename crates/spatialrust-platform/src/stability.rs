@@ -153,6 +153,39 @@ impl StabilityRegistry {
         registry
     }
 
+    /// Seeds the SpatialRust 1.2 bounded-streaming release surface.
+    #[must_use]
+    pub fn bounded_streaming_v1_2_surface() -> Self {
+        let mut registry = Self::new();
+        for path in [
+            "spatialrust-records::MemoryBudget",
+            "spatialrust-records::MemoryTracker",
+            "spatialrust-records::CancellationToken",
+            "spatialrust-records::StreamOptions",
+            "spatialrust-records::StreamingReceipt",
+            "spatialrust-records::SpatialRecordChunk",
+            "spatialrust-records::BoundedSpatialRecordSource",
+            "spatialrust-records::BoundedSpatialRecordSink",
+        ] {
+            registry.register(path, ApiStabilityClass::Stable);
+        }
+        for path in [
+            "spatialrust-io::PcdChunkSource",
+            "spatialrust-io::PlyChunkSource",
+            "spatialrust-io::LasChunkSource",
+            "spatialrust-io::CopcChunkSource",
+            "spatialrust-io::BoundedSpool",
+            "spatialrust-pipeline::ChunkMapSource",
+            "spatialrust-pipeline::StreamingVoxelSource",
+            "spatialrust-pipeline::StreamingPipeline",
+            "spatialrust::spatialrust-stream",
+            "spatialrust-py::PointCloudStream",
+        ] {
+            registry.register(path, ApiStabilityClass::Provisional);
+        }
+        registry
+    }
+
     /// Seeds the north-star crate surface used by Epic 100 gates.
     #[must_use]
     pub fn north_star_surface() -> Self {
@@ -216,6 +249,20 @@ mod tests {
         );
         assert_eq!(
             registry.lookup("spatialrust-gpu::run_gpu_vision_chain").unwrap().class,
+            ApiStabilityClass::Provisional
+        );
+        assert_eq!(registry.experimental_count(), 0);
+    }
+
+    #[test]
+    fn streaming_surface_freezes_contracts_but_not_adapters() {
+        let registry = StabilityRegistry::bounded_streaming_v1_2_surface();
+        assert_eq!(
+            registry.lookup("spatialrust-records::StreamingReceipt").unwrap().class,
+            ApiStabilityClass::Stable
+        );
+        assert_eq!(
+            registry.lookup("spatialrust-pipeline::StreamingPipeline").unwrap().class,
             ApiStabilityClass::Provisional
         );
         assert_eq!(registry.experimental_count(), 0);
