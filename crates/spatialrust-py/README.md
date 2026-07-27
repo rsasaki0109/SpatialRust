@@ -65,8 +65,9 @@ keep the stubs in sync with the runtime API.
 
 ## Bounded point-cloud streaming
 
-`open_point_cloud_stream()` reads local PCD/PLY/LAS/LAZ/COPC files or an
-HTTP(S) COPC URL through the same bounded Rust workflow used by the CLI:
+`open_point_cloud_stream()` reads local PCD/PLY/LAS/LAZ/COPC files through the
+same bounded Rust workflow used by the CLI. HTTP(S) COPC remains isolated in
+the CLI feature so default Python wheels do not acquire a TLS stack:
 
 ```python
 stream = spatialrust.open_point_cloud_stream(

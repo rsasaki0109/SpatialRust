@@ -1076,7 +1076,7 @@ impl PyPointCloudStream {
     }
 }
 
-/// Opens a local point-cloud file or HTTP(S) COPC URL as a bounded iterator.
+/// Opens a local point-cloud file as a bounded iterator.
 #[pyfunction]
 #[pyo3(signature = (
     path,
@@ -1144,7 +1144,9 @@ fn open_python_stream_source(
     use spatialrust::io::{CopcChunkSource, LasChunkSource, PcdChunkSource, PlyChunkSource};
 
     if path.starts_with("http://") || path.starts_with("https://") {
-        return Ok(Box::new(CopcChunkSource::open_url(path, None, options, cancellation)?));
+        return Err(spatialrust::io::IoError::Streaming(
+            "Python wheels accept local streams; use spatialrust-stream for HTTP(S) COPC".into(),
+        ));
     }
     let lower = path.to_ascii_lowercase();
     if lower.ends_with(".copc.laz") {

@@ -13,7 +13,8 @@ Date: 2026-07-27
   LAS/LAZ output, bounded spool configuration, Ctrl-C cancellation, and JSON
   receipts.
 - Python `PointCloudStream` backed by the same Rust iterator, including
-  `cancel()` and `receipt_json()`.
+  `cancel()` and `receipt_json()`; HTTP/TLS remains isolated from default
+  Python wheels.
 
 ## Verification
 

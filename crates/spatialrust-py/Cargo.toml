@@ -50,7 +50,6 @@ spatialrust = { path = "../spatialrust", features = [
     "tensor-dlpack",
     "pipeline-streaming",
     "io-laz",
-    "io-copc-http",
     "records-receipt-json",
 ] }
 
