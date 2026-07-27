@@ -336,10 +336,77 @@ mod tests {
         assert!(result.is_err());
     }
 
+    #[cfg(feature = "streaming")]
+    #[test]
+    fn bounded_http_copc_source_reads_range_served_file() {
+        use std::sync::atomic::AtomicBool;
+        use std::time::Duration;
+
+        use spatialrust_core::PointCloudBuilder;
+        use spatialrust_records::{
+            BoundedSpatialRecordSource, CancellationToken, MemoryBudget, StreamOptions,
+        };
+
+        let mut builder = PointCloudBuilder::xyz();
+        for index in 0..100 {
+            builder.push_point([index as f32, 0.0, 0.0]).unwrap();
+        }
+        let cloud = builder.build().unwrap();
+        let path = std::env::temp_dir()
+            .join(format!("spatialrust_http_stream_{}.copc.laz", std::process::id()));
+        crate::copc::write_copc_file(&path, &cloud).unwrap();
+        let payload = Arc::new(std::fs::read(&path).unwrap());
+        std::fs::remove_file(path).unwrap();
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let stopped = Arc::new(AtomicBool::new(false));
+        let stopped_server = Arc::clone(&stopped);
+        let payload_server = Arc::clone(&payload);
+        let server = std::thread::spawn(move || {
+            let requests = AtomicUsize::new(0);
+            while !stopped_server.load(Ordering::Acquire) {
+                match listener.accept() {
+                    Ok((mut stream, _)) => {
+                        serve_test_range(&mut stream, &payload_server, &requests);
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        std::thread::sleep(Duration::from_millis(1));
+                    }
+                    Err(error) => panic!("HTTP test server failed: {error}"),
+                }
+            }
+            requests.load(Ordering::SeqCst)
+        });
+
+        let url = format!("http://{addr}/cloud.copc.laz");
+        let options = StreamOptions::new(17, MemoryBudget::new(4 * 1024 * 1024).unwrap()).unwrap();
+        let mut source =
+            crate::CopcChunkSource::open_url(&url, None, options, CancellationToken::default())
+                .unwrap();
+        let mut point_count = 0;
+        while let Some(chunk) = source.next_chunk() {
+            point_count += chunk.unwrap().record().cloud().len();
+        }
+        stopped.store(true, Ordering::Release);
+        assert_eq!(point_count, 100);
+        assert!(server.join().unwrap() >= 3);
+    }
+
     fn serve_test_range(stream: &mut TcpStream, payload: &[u8], requests: &AtomicUsize) {
         let mut buffer = [0_u8; 512];
         let read = stream.read(&mut buffer).unwrap();
         let request = std::str::from_utf8(&buffer[..read]).unwrap();
+        if request.starts_with("HEAD ") {
+            requests.fetch_add(1, Ordering::SeqCst);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nAccept-Ranges: bytes\r\n\r\n",
+                payload.len()
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+            return;
+        }
         let range = request
             .lines()
             .find_map(|line| line.strip_prefix("Range: bytes="))

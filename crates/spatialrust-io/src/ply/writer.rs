@@ -7,6 +7,13 @@ use crate::ply::header::{PlyFormat, PlyHeader, PlyProperty, PlyPropertyKind};
 use crate::ply::schema::{infer_property_semantic, ply_property_from_field};
 use crate::{PointWriter, WriteOptions};
 
+#[cfg(feature = "streaming")]
+use crate::streaming::records_io;
+#[cfg(feature = "streaming")]
+use spatialrust_records::{
+    BoundedSpatialRecordSink, RecordsError, RecordsResult, SchemaDescriptor, SpatialRecordChunk,
+};
+
 /// Output encoding for PLY writers.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum PlyWriteFormat {
@@ -82,6 +89,120 @@ pub fn write_ply_file(
 
 fn ply_properties_from_schema(schema: &PointSchema) -> Result<Vec<PlyProperty>, IoError> {
     schema.fields().iter().map(ply_property_from_field).collect()
+}
+
+/// Sequential PLY sink with an exact upfront vertex-count contract.
+#[cfg(feature = "streaming")]
+pub struct PlyChunkSink<W: Write> {
+    writer: W,
+    schema: SchemaDescriptor,
+    properties: Vec<PlyProperty>,
+    format: PlyWriteFormat,
+    expected_points: u64,
+    written_points: u64,
+    finished: bool,
+}
+
+#[cfg(feature = "streaming")]
+impl<W: Write> PlyChunkSink<W> {
+    /// Writes the PLY header and creates a chunk sink.
+    pub fn new(
+        mut writer: W,
+        schema: SchemaDescriptor,
+        expected_points: u64,
+        format: PlyWriteFormat,
+    ) -> Result<Self, IoError> {
+        let properties = ply_properties_from_schema(schema.point_schema())?;
+        let vertex_count = usize::try_from(expected_points)
+            .map_err(|_| ply_format("PLY vertex count does not fit usize"))?;
+        PlyHeader {
+            format: match format {
+                PlyWriteFormat::Ascii => PlyFormat::Ascii,
+                PlyWriteFormat::BinaryLittleEndian => PlyFormat::BinaryLittleEndian,
+            },
+            vertex_count,
+            properties: properties.clone(),
+        }
+        .write_header(&mut writer)?;
+        Ok(Self {
+            writer,
+            schema,
+            properties,
+            format,
+            expected_points,
+            written_points: 0,
+            finished: false,
+        })
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl PlyChunkSink<std::io::BufWriter<std::fs::File>> {
+    /// Creates a local PLY file sink.
+    pub fn create(
+        path: impl AsRef<std::path::Path>,
+        schema: SchemaDescriptor,
+        expected_points: u64,
+        format: PlyWriteFormat,
+    ) -> Result<Self, IoError> {
+        Self::new(
+            std::io::BufWriter::new(std::fs::File::create(path)?),
+            schema,
+            expected_points,
+            format,
+        )
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl<W: Write> BoundedSpatialRecordSink for PlyChunkSink<W> {
+    fn write_chunk(&mut self, chunk: &SpatialRecordChunk) -> RecordsResult<()> {
+        if self.finished {
+            return Err(RecordsError::InvalidConfiguration("PLY sink is already finished".into()));
+        }
+        let cloud = chunk.record().cloud();
+        if cloud.schema() != self.schema.point_schema() {
+            return Err(RecordsError::SchemaMismatch(
+                "PLY chunk schema differs from sink schema".into(),
+            ));
+        }
+        let next = self
+            .written_points
+            .checked_add(
+                u64::try_from(cloud.len())
+                    .map_err(|_| RecordsError::ReceiptOverflow("PLY chunk point count".into()))?,
+            )
+            .ok_or_else(|| RecordsError::ReceiptOverflow("PLY point count".into()))?;
+        if next > self.expected_points {
+            return Err(RecordsError::InvalidChunk(format!(
+                "PLY sink expected {} points but received at least {next}",
+                self.expected_points
+            )));
+        }
+        match self.format {
+            PlyWriteFormat::Ascii => {
+                write_ascii_vertices(&mut self.writer, cloud, &self.properties)
+            }
+            PlyWriteFormat::BinaryLittleEndian => {
+                write_binary_vertices(&mut self.writer, cloud, &self.properties)
+            }
+        }
+        .map_err(records_io)?;
+        self.written_points = next;
+        Ok(())
+    }
+
+    fn finish(&mut self) -> RecordsResult<()> {
+        if self.written_points != self.expected_points {
+            return Err(RecordsError::InvalidChunk(format!(
+                "PLY sink expected {} points but received {}",
+                self.expected_points, self.written_points
+            )));
+        }
+        self.writer.flush().map_err(IoError::from).map_err(records_io)?;
+        self.finished = true;
+        Ok(())
+    }
 }
 
 fn write_ascii_vertices<W: Write>(

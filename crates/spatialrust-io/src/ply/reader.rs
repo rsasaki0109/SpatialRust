@@ -9,6 +9,16 @@ use crate::ply::header::{PlyFormat, PlyHeader, PlyPropertyKind};
 use crate::ply::schema::schema_from_ply_properties;
 use crate::{PointReader, ReadOptions};
 
+#[cfg(feature = "streaming")]
+use crate::streaming::{
+    read_bounded_ascii_line, records_io, FormatStreamState, MAX_ASCII_RECORD_BYTES,
+};
+#[cfg(feature = "streaming")]
+use spatialrust_records::{
+    BoundedSpatialRecordSource, CancellationToken, MemoryTracker, RecordsResult, SchemaDescriptor,
+    SpatialRecordChunk, StreamOptions,
+};
+
 /// Reads point clouds from PLY files or streams.
 pub struct PlyReader<R: BufRead> {
     reader: R,
@@ -220,6 +230,186 @@ pub fn read_ply_file(path: impl AsRef<std::path::Path>) -> Result<PointCloud, Io
     let file = std::fs::File::open(path.as_ref())?;
     let mut reader = std::io::BufReader::new(file);
     read_ply(&mut reader)
+}
+
+/// Bounded sequential PLY source for ASCII and little-endian binary vertices.
+#[cfg(feature = "streaming")]
+pub struct PlyChunkSource<R: BufRead> {
+    reader: R,
+    header: PlyHeader,
+    metadata: SpatialMetadata,
+    state: FormatStreamState,
+    loaded: usize,
+}
+
+#[cfg(feature = "streaming")]
+impl<R: BufRead> PlyChunkSource<R> {
+    /// Parses the header and creates a bounded PLY source.
+    pub fn new(
+        mut reader: R,
+        options: StreamOptions,
+        cancellation: CancellationToken,
+    ) -> Result<Self, IoError> {
+        let header = PlyHeader::parse(&mut reader)?;
+        let schema = schema_from_ply_properties(&header.properties)?;
+        let metadata = metadata_from_header(&header);
+        let state = FormatStreamState::new("ply", schema, options, cancellation)?;
+        Ok(Self { reader, header, metadata, state, loaded: 0 })
+    }
+
+    /// Returns the parsed header, including the declared vertex count.
+    #[must_use]
+    pub fn header(&self) -> &PlyHeader {
+        &self.header
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl PlyChunkSource<std::io::BufReader<std::fs::File>> {
+    /// Opens a local PLY file for bounded chunk reads.
+    pub fn open(
+        path: impl AsRef<std::path::Path>,
+        options: StreamOptions,
+        cancellation: CancellationToken,
+    ) -> Result<Self, IoError> {
+        Self::new(std::io::BufReader::new(std::fs::File::open(path)?), options, cancellation)
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl<R: BufRead> BoundedSpatialRecordSource for PlyChunkSource<R> {
+    fn schema(&self) -> &SchemaDescriptor {
+        &self.state.schema
+    }
+
+    fn options(&self) -> &StreamOptions {
+        &self.state.options
+    }
+
+    fn memory_tracker(&self) -> &MemoryTracker {
+        &self.state.tracker
+    }
+
+    fn cancellation_token(&self) -> CancellationToken {
+        self.state.cancellation.clone()
+    }
+
+    fn max_chunk_bytes(&self) -> u64 {
+        self.state.max_chunk_bytes
+    }
+
+    fn next_chunk(&mut self) -> Option<RecordsResult<SpatialRecordChunk>> {
+        if self.loaded == self.header.vertex_count {
+            return None;
+        }
+        let count = (self.header.vertex_count - self.loaded).min(self.state.options.chunk_points());
+        let scratch = match self.header.format {
+            PlyFormat::Ascii => 0,
+            PlyFormat::BinaryLittleEndian => match self
+                .header
+                .vertex_stride()
+                .checked_mul(count)
+                .and_then(|bytes| u64::try_from(bytes).ok())
+            {
+                Some(bytes) => bytes,
+                None => {
+                    return Some(Err(spatialrust_records::RecordsError::InvalidChunk(
+                        "PLY binary chunk size overflow".into(),
+                    )));
+                }
+            },
+        };
+        let reservation = match self.state.reserve_points_with_scratch(count, scratch) {
+            Ok(reservation) => reservation,
+            Err(error) => return Some(Err(error)),
+        };
+        let schema = self.state.schema.point_schema().clone();
+        let mut buffers = PointBufferSet::new();
+        for field in schema.fields() {
+            buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, count));
+        }
+
+        let decoded = match self.header.format {
+            PlyFormat::Ascii => {
+                let mut result = Ok(());
+                let mut line_buffer = [0_u8; MAX_ASCII_RECORD_BYTES];
+                let mut decoded_count = 0;
+                while decoded_count < count {
+                    let line =
+                        match read_bounded_ascii_line(&mut self.reader, &mut line_buffer, "PLY") {
+                            Ok(Some(line)) => line,
+                            Ok(None) => {
+                                return Some(Err(records_io(ply_parse(format!(
+                                    "unexpected EOF after {} of {} ASCII vertices",
+                                    self.loaded + decoded_count,
+                                    self.header.vertex_count
+                                )))));
+                            }
+                            Err(error) => return Some(Err(records_io(error))),
+                        };
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() || trimmed.starts_with('#') {
+                        continue;
+                    }
+                    let mut tokens = trimmed.split_whitespace();
+                    for property in &self.header.properties {
+                        let value = tokens
+                            .next()
+                            .ok_or_else(|| {
+                                ply_parse(format!("missing property `{}`", property.name))
+                            })
+                            .and_then(|token| {
+                                token.parse::<f64>().map_err(|_| {
+                                    ply_parse(format!("invalid ASCII value `{token}`"))
+                                })
+                            })
+                            .and_then(|value| {
+                                push_to_field(&mut buffers, &schema, &property.name, value as f32)
+                            });
+                        if let Err(error) = value {
+                            result = Err(error);
+                            break;
+                        }
+                    }
+                    if result.is_err() {
+                        break;
+                    }
+                    decoded_count += 1;
+                }
+                result
+            }
+            PlyFormat::BinaryLittleEndian => {
+                let stride = self.header.vertex_stride();
+                let mut payload = vec![0_u8; stride * count];
+                std::io::Read::read_exact(&mut self.reader, &mut payload)
+                    .map_err(IoError::from)
+                    .and_then(|()| {
+                        payload.chunks_exact(stride).try_for_each(|vertex| {
+                            let mut offset = 0;
+                            for property in &self.header.properties {
+                                let size = property.kind.size_bytes();
+                                let value = read_binary_scalar(
+                                    property.kind,
+                                    &vertex[offset..offset + size],
+                                )?;
+                                push_to_field(&mut buffers, &schema, &property.name, value)?;
+                                offset += size;
+                            }
+                            Ok::<_, IoError>(())
+                        })
+                    })
+            }
+        };
+        if let Err(error) = decoded {
+            return Some(Err(records_io(error)));
+        }
+        let cloud = match PointCloud::try_from_parts(schema, buffers, self.metadata.clone()) {
+            Ok(cloud) => cloud,
+            Err(error) => return Some(Err(error.into())),
+        };
+        self.loaded += count;
+        Some(self.state.lease(cloud, reservation))
+    }
 }
 
 #[cfg(test)]

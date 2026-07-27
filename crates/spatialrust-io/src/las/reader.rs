@@ -10,6 +10,14 @@ use crate::error::{las_parse, IoError};
 use crate::las::schema::schema_for_las_header;
 use crate::{PointReader, ReadOptions};
 
+#[cfg(feature = "streaming")]
+use crate::streaming::{records_io, FormatStreamState};
+#[cfg(feature = "streaming")]
+use spatialrust_records::{
+    BoundedSpatialRecordSource, CancellationToken, MemoryTracker, RecordsResult, SchemaDescriptor,
+    SpatialRecordChunk, StreamOptions,
+};
+
 /// Reads point clouds from LAS/LAZ files.
 pub struct LasReader {
     reader: Reader,
@@ -78,6 +86,102 @@ pub fn read_las_file(path: impl AsRef<Path>) -> Result<PointCloud, IoError> {
     reader.read_cloud()
 }
 
+/// Bounded sequential LAS/LAZ source.
+#[cfg(feature = "streaming")]
+pub struct LasChunkSource {
+    reader: Reader,
+    metadata: SpatialMetadata,
+    state: FormatStreamState,
+    finished: bool,
+}
+
+#[cfg(feature = "streaming")]
+impl LasChunkSource {
+    /// Opens a LAS or feature-enabled LAZ file for bounded chunk reads.
+    pub fn open(
+        path: impl AsRef<Path>,
+        options: StreamOptions,
+        cancellation: CancellationToken,
+    ) -> Result<Self, IoError> {
+        let reader = Reader::from_path(path).map_err(|error| las_parse(error.to_string()))?;
+        let schema = schema_for_las_header(reader.header());
+        let metadata = metadata_from_header(reader.header());
+        let state = FormatStreamState::new("las", schema, options, cancellation)?;
+        Ok(Self { reader, metadata, state, finished: false })
+    }
+
+    /// Returns the parsed LAS/LAZ header.
+    #[must_use]
+    pub fn header(&self) -> &Header {
+        self.reader.header()
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl BoundedSpatialRecordSource for LasChunkSource {
+    fn schema(&self) -> &SchemaDescriptor {
+        &self.state.schema
+    }
+
+    fn options(&self) -> &StreamOptions {
+        &self.state.options
+    }
+
+    fn memory_tracker(&self) -> &MemoryTracker {
+        &self.state.tracker
+    }
+
+    fn cancellation_token(&self) -> CancellationToken {
+        self.state.cancellation.clone()
+    }
+
+    fn max_chunk_bytes(&self) -> u64 {
+        self.state.max_chunk_bytes
+    }
+
+    fn next_chunk(&mut self) -> Option<RecordsResult<SpatialRecordChunk>> {
+        if self.finished {
+            return None;
+        }
+        let reservation = match self.state.reserve_points(self.state.options.chunk_points()) {
+            Ok(reservation) => reservation,
+            Err(error) => return Some(Err(error)),
+        };
+        let schema = self.state.schema.point_schema().clone();
+        let mut buffers = PointBufferSet::new();
+        for field in schema.fields() {
+            buffers.insert(
+                field.name.clone(),
+                PointBuffer::with_capacity(field.dtype, self.state.options.chunk_points()),
+            );
+        }
+        let mut point_count = 0_usize;
+        while point_count < self.state.options.chunk_points() {
+            match self.reader.read_point() {
+                Ok(Some(point)) => {
+                    if let Err(error) = append_las_point(&schema, &mut buffers, &point) {
+                        return Some(Err(records_io(error)));
+                    }
+                    point_count += 1;
+                }
+                Err(error) => return Some(Err(records_io(las_parse(error.to_string())))),
+                Ok(None) => {
+                    self.finished = true;
+                    break;
+                }
+            }
+        }
+        if point_count == 0 {
+            return None;
+        }
+        let cloud = match PointCloud::try_from_parts(schema, buffers, self.metadata.clone()) {
+            Ok(cloud) => cloud,
+            Err(error) => return Some(Err(error.into())),
+        };
+        Some(self.state.lease(cloud, reservation))
+    }
+}
+
 fn read_points_from_reader(
     reader: &mut Reader,
     schema: PointSchema,
@@ -96,9 +200,11 @@ pub(crate) fn point_cloud_from_las_points(
     metadata: SpatialMetadata,
     points: impl IntoIterator<Item = Point>,
 ) -> Result<PointCloud, IoError> {
+    let points = points.into_iter();
+    let capacity = points.size_hint().0;
     let mut buffers = PointBufferSet::new();
     for field in schema.fields() {
-        buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, 0));
+        buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, capacity));
     }
 
     for point in points {

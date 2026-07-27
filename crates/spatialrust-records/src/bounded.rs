@@ -86,6 +86,27 @@ impl SpatialRecordChunk {
         self
     }
 
+    /// Creates a chunk from a reservation acquired before source allocation.
+    ///
+    /// The reservation is shrunk to the record's allocated column capacity.
+    /// Construction fails if the source allocated more than it reserved.
+    pub fn try_from_reserved(
+        identity: ChunkIdentity,
+        record: SpatialRecord,
+        mut reservation: MemoryReservation,
+    ) -> RecordsResult<Self> {
+        let tracked_bytes = record_storage_bytes(&record)?;
+        if tracked_bytes > reservation.bytes() {
+            return Err(RecordsError::InvalidChunk(format!(
+                "record column capacity {tracked_bytes} exceeds reservation {}",
+                reservation.bytes()
+            )));
+        }
+        reservation.shrink_to(tracked_bytes)?;
+        let bounds = record_bounds(&record);
+        Ok(Self::new(identity, bounds, tracked_bytes, record, reservation))
+    }
+
     /// Returns the deterministic source identity.
     #[must_use]
     pub const fn identity(&self) -> ChunkIdentity {

@@ -6,6 +6,13 @@ use crate::error::{pcd_format, IoError};
 use crate::pcd::schema::{infer_field_semantic, PcdFieldSpec, PcdType};
 use crate::{PointWriter, WriteOptions};
 
+#[cfg(feature = "streaming")]
+use crate::streaming::records_io;
+#[cfg(feature = "streaming")]
+use spatialrust_records::{
+    BoundedSpatialRecordSink, RecordsError, RecordsResult, SchemaDescriptor, SpatialRecordChunk,
+};
+
 /// Output encoding for PCD writers.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum PcdWriteFormat {
@@ -100,6 +107,143 @@ fn write_header<W: Write>(
     writeln!(writer, "POINTS {}", cloud.len())?;
     writeln!(writer, "DATA {data}")?;
     Ok(())
+}
+
+#[cfg(feature = "streaming")]
+fn write_stream_header<W: Write>(
+    writer: &mut W,
+    schema: &PointSchema,
+    point_count: u64,
+    specs: &[PcdFieldSpec],
+    format: PcdWriteFormat,
+) -> Result<(), IoError> {
+    let count = usize::try_from(point_count)
+        .map_err(|_| pcd_format("PCD point count does not fit usize"))?;
+    let data = match format {
+        PcdWriteFormat::Ascii => "ascii",
+        PcdWriteFormat::Binary => "binary",
+    };
+    schema.validate_positions()?;
+    writeln!(writer, "# .PCD v0.7 - Point Cloud Data file format")?;
+    writeln!(writer, "VERSION 0.7")?;
+    write_list_line(writer, "FIELDS", specs.iter().map(|spec| spec.name.as_str()))?;
+    write_list_line(writer, "SIZE", specs.iter().map(|spec| spec.size.to_string()))?;
+    write_list_line(
+        writer,
+        "TYPE",
+        specs.iter().map(|spec| match spec.kind {
+            PcdType::I => "I",
+            PcdType::U => "U",
+            PcdType::F => "F",
+        }),
+    )?;
+    write_list_line(writer, "COUNT", specs.iter().map(|spec| spec.count.to_string()))?;
+    writeln!(writer, "WIDTH {count}")?;
+    writeln!(writer, "HEIGHT 1")?;
+    writeln!(writer, "VIEWPOINT 0 0 0 1 0 0 0")?;
+    writeln!(writer, "POINTS {count}")?;
+    writeln!(writer, "DATA {data}")?;
+    Ok(())
+}
+
+/// Sequential PCD sink with an exact upfront point-count contract.
+#[cfg(feature = "streaming")]
+pub struct PcdChunkSink<W: Write> {
+    writer: W,
+    schema: SchemaDescriptor,
+    specs: Vec<PcdFieldSpec>,
+    format: PcdWriteFormat,
+    expected_points: u64,
+    written_points: u64,
+    finished: bool,
+}
+
+#[cfg(feature = "streaming")]
+impl<W: Write> PcdChunkSink<W> {
+    /// Writes the PCD header and creates a chunk sink.
+    pub fn new(
+        mut writer: W,
+        schema: SchemaDescriptor,
+        expected_points: u64,
+        format: PcdWriteFormat,
+    ) -> Result<Self, IoError> {
+        let specs = pcd_specs_from_schema(schema.point_schema())?;
+        write_stream_header(&mut writer, schema.point_schema(), expected_points, &specs, format)?;
+        Ok(Self {
+            writer,
+            schema,
+            specs,
+            format,
+            expected_points,
+            written_points: 0,
+            finished: false,
+        })
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl PcdChunkSink<std::io::BufWriter<std::fs::File>> {
+    /// Creates a local PCD file sink.
+    pub fn create(
+        path: impl AsRef<std::path::Path>,
+        schema: SchemaDescriptor,
+        expected_points: u64,
+        format: PcdWriteFormat,
+    ) -> Result<Self, IoError> {
+        Self::new(
+            std::io::BufWriter::new(std::fs::File::create(path)?),
+            schema,
+            expected_points,
+            format,
+        )
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl<W: Write> BoundedSpatialRecordSink for PcdChunkSink<W> {
+    fn write_chunk(&mut self, chunk: &SpatialRecordChunk) -> RecordsResult<()> {
+        if self.finished {
+            return Err(RecordsError::InvalidConfiguration("PCD sink is already finished".into()));
+        }
+        let cloud = chunk.record().cloud();
+        if cloud.schema() != self.schema.point_schema() {
+            return Err(RecordsError::SchemaMismatch(
+                "PCD chunk schema differs from sink schema".into(),
+            ));
+        }
+        let next = self
+            .written_points
+            .checked_add(
+                u64::try_from(cloud.len())
+                    .map_err(|_| RecordsError::ReceiptOverflow("PCD chunk point count".into()))?,
+            )
+            .ok_or_else(|| RecordsError::ReceiptOverflow("PCD point count".into()))?;
+        if next > self.expected_points {
+            return Err(RecordsError::InvalidChunk(format!(
+                "PCD sink expected {} points but received at least {next}",
+                self.expected_points
+            )));
+        }
+        match self.format {
+            PcdWriteFormat::Ascii => write_ascii_payload(&mut self.writer, cloud, &self.specs),
+            PcdWriteFormat::Binary => write_binary_payload(&mut self.writer, cloud, &self.specs),
+        }
+        .map_err(records_io)?;
+        self.written_points = next;
+        Ok(())
+    }
+
+    fn finish(&mut self) -> RecordsResult<()> {
+        if self.written_points != self.expected_points {
+            return Err(RecordsError::InvalidChunk(format!(
+                "PCD sink expected {} points but received {}",
+                self.expected_points, self.written_points
+            )));
+        }
+        self.writer.flush().map_err(IoError::from).map_err(records_io)?;
+        self.finished = true;
+        Ok(())
+    }
 }
 
 fn write_list_line<W: Write, I, S>(writer: &mut W, key: &str, values: I) -> Result<(), IoError>
