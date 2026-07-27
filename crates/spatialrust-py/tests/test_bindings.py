@@ -61,7 +61,8 @@ def test_module_has_version():
 
 def test_exports_present():
     for name in (
-        "PointCloud", "voxel_downsample", "dbscan", "register_icp",
+        "PointCloud", "PointCloudStream", "open_point_cloud_stream",
+        "voxel_downsample", "dbscan", "register_icp",
         "voxelize", "knn_graph", "chamfer_distance", "oriented_bounding_box",
         "rgbd_to_point_cloud", "depth_to_xyz",
         "resize_image", "letterbox_image", "normalize_image_chw", "resize_normalize_image_chw",
@@ -71,6 +72,27 @@ def test_exports_present():
         "point_map_to_point_cloud",
     ):
         assert hasattr(sr, name), f"missing export: {name}"
+
+
+def test_bounded_point_cloud_stream_and_receipt(tmp_path):
+    path = tmp_path / "tiny.pcd"
+    path.write_text(
+        "VERSION .7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\n"
+        "COUNT 1 1 1\nWIDTH 3\nHEIGHT 1\nPOINTS 3\nDATA ascii\n"
+        "0 0 0\n1 0 0\n2 0 0\n",
+        encoding="ascii",
+    )
+    stream = sr.open_point_cloud_stream(
+        str(path),
+        chunk_points=1,
+        memory_budget_bytes=4096,
+        crop=(0.5, -1.0, -1.0, 2.0, 1.0, 1.0),
+    )
+    chunks = list(stream)
+    assert [len(chunk) for chunk in chunks] == [1, 1]
+    receipt = __import__("json").loads(stream.receipt_json())
+    assert receipt["input_points"] == 3
+    assert receipt["output_points"] == 2
 
 
 # --------------------------------------------------------------------------- #

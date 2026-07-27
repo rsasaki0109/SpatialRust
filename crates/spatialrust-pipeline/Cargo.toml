@@ -20,6 +20,7 @@ pipeline-mvp-gpu = [
 pipeline-streaming = [
     "dep:spatialrust-records",
     "dep:spatialrust-io",
+    "spatialrust-records/receipt-json",
 ]
 
 [dependencies]

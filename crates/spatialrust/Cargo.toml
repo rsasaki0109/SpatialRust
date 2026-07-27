@@ -119,6 +119,16 @@ pipeline-streaming = [
     "io-streaming",
     "spatialrust-pipeline/pipeline-streaming",
 ]
+streaming-cli = [
+    "pipeline-streaming",
+    "io-pcd",
+    "io-ply",
+    "io-las",
+    "io-laz",
+    "io-copc-http",
+    "records-receipt-json",
+    "dep:ctrlc",
+]
 pipeline-mvp-gpu = [
     "spatialrust-pipeline/pipeline-mvp-gpu",
     "filter-voxel-gpu",
@@ -255,6 +265,7 @@ spatialrust-runtime = { workspace = true, optional = true }
 spatialrust-interchange = { workspace = true, optional = true }
 spatialrust-distribute = { workspace = true, optional = true }
 spatialrust-platform = { workspace = true, optional = true }
+ctrlc = { version = "3.4", optional = true }
 
 [dev-dependencies]
 
@@ -262,6 +273,11 @@ spatialrust-platform = { workspace = true, optional = true }
 name = "vision_api_v1"
 path = "tests/vision_api_v1.rs"
 required-features = ["platform", "camera-rgbd", "vision-full"]
+
+[[test]]
+name = "streaming_cli"
+path = "tests/streaming_cli.rs"
+required-features = ["streaming-cli"]
 
 [[example]]
 name = "north_star_demo"
@@ -292,6 +308,11 @@ required-features = ["image-io-standard", "vision-video"]
 name = "spatialrust-mvp"
 path = "src/bin/spatialrust_mvp.rs"
 required-features = ["mvp"]
+
+[[bin]]
+name = "spatialrust-stream"
+path = "src/bin/spatialrust_stream.rs"
+required-features = ["streaming-cli"]
 
 [[example]]
 name = "readme_mvp_preview"

@@ -49,7 +49,12 @@ use spatialrust::image_io::{
 };
 use spatialrust::math::{Mat3, Mat4, Vec2, Vec3};
 use spatialrust::metrics::{chamfer_distance as chamfer, hausdorff_distance as hausdorff};
-use spatialrust::pipeline::{MvpPipeline, MvpPipelineConfig};
+use spatialrust::pipeline::{
+    MvpPipeline, MvpPipelineConfig, StreamingPipeline, StreamingPipelineIter, StreamingVoxelConfig,
+};
+use spatialrust::records::{
+    BoundedSpatialRecordSource, CancellationToken, MemoryBudget, StreamOptions,
+};
 use spatialrust::registration::{
     FpfhRansacConfig, FpfhRansacRegistration, GicpConfig, GicpRegistration, IcpConfig,
     IcpRegistration, NdtConfig, NdtRegistration, PointCloudRegistration, PointToPlaneIcp,
@@ -82,8 +87,7 @@ use spatialrust::vision::{
     erode_rect_u8_into as erode_rect_u8_into_op,
     estimate_homography_ransac as estimate_homography_ransac_op,
     estimate_rgbd_odometry as estimate_rgbd_odometry_op, filter2d as filter2d_op,
-    find_contours as trace_contours,
-    gaussian_blur_u8_into as gaussian_blur_u8_into_op,
+    find_contours as trace_contours, gaussian_blur_u8_into as gaussian_blur_u8_into_op,
     gray_world_white_balance as gray_world_white_balance_op, histogram_u8 as histogram_u8_op,
     integral_image as integral_image_op, laplacian as laplacian_op, letterbox as letterbox_op,
     match_descriptors as match_descriptors_op, median_blur as median_blur_op,
@@ -1034,6 +1038,127 @@ impl PyPointCloud {
 
     fn __repr__(&self) -> String {
         format!("PointCloud(points={}, fields={:?})", self.inner.len(), self.field_names())
+    }
+}
+
+/// Pull-based bounded-memory point-cloud iterator.
+///
+/// Each yielded cloud owns its data; retaining yielded clouds is controlled by
+/// the Python caller and is separate from the native pipeline memory budget.
+#[pyclass(name = "PointCloudStream", unsendable)]
+pub struct PyPointCloudStream {
+    inner: StreamingPipelineIter,
+    cancellation: CancellationToken,
+}
+
+#[pymethods]
+impl PyPointCloudStream {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(&mut self) -> PyResult<Option<PyPointCloud>> {
+        match self.inner.next() {
+            Some(Ok(chunk)) => Ok(Some(PyPointCloud { inner: chunk.record().cloud().clone() })),
+            Some(Err(error)) => Err(to_py_err(error)),
+            None => Ok(None),
+        }
+    }
+
+    /// Requests cooperative cancellation at the next chunk boundary.
+    fn cancel(&self) {
+        self.cancellation.cancel();
+    }
+
+    /// Returns the versioned JSON receipt observed so far.
+    fn receipt_json(&self) -> PyResult<String> {
+        self.inner.receipt().and_then(|receipt| receipt.to_json()).map_err(to_py_err)
+    }
+}
+
+/// Opens a local point-cloud file or HTTP(S) COPC URL as a bounded iterator.
+#[pyfunction]
+#[pyo3(signature = (
+    path,
+    chunk_points=65536,
+    memory_budget_bytes=268435456,
+    crop=None,
+    translation=None,
+    voxel_leaf=None,
+    run_points=65536,
+    max_runs=1024,
+    spool_dir=None,
+    spool_limit_bytes=2147483648
+))]
+#[allow(clippy::too_many_arguments)]
+fn open_point_cloud_stream(
+    path: String,
+    chunk_points: usize,
+    memory_budget_bytes: u64,
+    crop: Option<(f32, f32, f32, f32, f32, f32)>,
+    translation: Option<(f32, f32, f32)>,
+    voxel_leaf: Option<f32>,
+    run_points: usize,
+    max_runs: usize,
+    spool_dir: Option<String>,
+    spool_limit_bytes: u64,
+) -> PyResult<PyPointCloudStream> {
+    let options = StreamOptions::new(
+        chunk_points,
+        MemoryBudget::new(memory_budget_bytes).map_err(to_py_err)?,
+    )
+    .map_err(to_py_err)?;
+    let cancellation = CancellationToken::default();
+    let source =
+        open_python_stream_source(&path, options, cancellation.clone()).map_err(to_py_err)?;
+    let mut pipeline = StreamingPipeline::new(source, path.clone()).map_err(to_py_err)?;
+    if let Some((min_x, min_y, min_z, max_x, max_y, max_z)) = crop {
+        pipeline = pipeline
+            .crop([min_x, min_y, min_z], [max_x, max_y, max_z], false)
+            .map_err(to_py_err)?;
+    }
+    if let Some((x, y, z)) = translation {
+        pipeline = pipeline
+            .transform(Mat4::<f32>::from_rotation_translation(
+                Mat3::<f32>::identity(),
+                Vec3::new(x, y, z),
+            ))
+            .map_err(to_py_err)?;
+    }
+    if let Some(leaf) = voxel_leaf {
+        let directory = spool_dir.map_or_else(std::env::temp_dir, std::path::PathBuf::from);
+        let spool =
+            spatialrust::io::SpoolOptions::new(directory, spool_limit_bytes).map_err(to_py_err)?;
+        let config =
+            StreamingVoxelConfig::new(leaf, run_points, max_runs, spool).map_err(to_py_err)?;
+        pipeline = pipeline.voxel(config).map_err(to_py_err)?;
+    }
+    Ok(PyPointCloudStream { inner: pipeline.into_iter(), cancellation })
+}
+
+fn open_python_stream_source(
+    path: &str,
+    options: StreamOptions,
+    cancellation: CancellationToken,
+) -> Result<Box<dyn BoundedSpatialRecordSource>, spatialrust::io::IoError> {
+    use spatialrust::io::{CopcChunkSource, LasChunkSource, PcdChunkSource, PlyChunkSource};
+
+    if path.starts_with("http://") || path.starts_with("https://") {
+        return Ok(Box::new(CopcChunkSource::open_url(path, None, options, cancellation)?));
+    }
+    let lower = path.to_ascii_lowercase();
+    if lower.ends_with(".copc.laz") {
+        Ok(Box::new(CopcChunkSource::open(path, None, options, cancellation)?))
+    } else if lower.ends_with(".pcd") {
+        Ok(Box::new(PcdChunkSource::open(path, options, cancellation)?))
+    } else if lower.ends_with(".ply") {
+        Ok(Box::new(PlyChunkSource::open(path, options, cancellation)?))
+    } else if lower.ends_with(".las") || lower.ends_with(".laz") {
+        Ok(Box::new(LasChunkSource::open(path, options, cancellation)?))
+    } else {
+        Err(spatialrust::io::IoError::Streaming(format!(
+            "unsupported bounded stream input '{path}'"
+        )))
     }
 }
 
@@ -2289,8 +2414,8 @@ fn gaussian_blur_image_with_workspace<'py>(
         workspace,
     )
     .map_err(to_py_err)?;
-    let array = Array3::from_shape_vec((image.height(), image.width(), 3), output)
-        .map_err(to_py_err)?;
+    let array =
+        Array3::from_shape_vec((image.height(), image.width(), 3), output).map_err(to_py_err)?;
     Ok(array.into_pyarray_bound(py))
 }
 
@@ -4315,6 +4440,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyOnnxRuntimeSession>()?;
     m.add_class::<PyDlpackTensorView>()?;
     m.add_class::<PyPointCloud>()?;
+    m.add_class::<PyPointCloudStream>()?;
     m.add_class::<PyPipelineResult>()?;
     m.add_class::<PyRegionResult>()?;
     m.add_class::<PyDbscanResult>()?;
@@ -4340,6 +4466,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(match_float_descriptors, m)?)?;
     m.add_function(wrap_pyfunction!(write_image, m)?)?;
     m.add_function(wrap_pyfunction!(read, m)?)?;
+    m.add_function(wrap_pyfunction!(open_point_cloud_stream, m)?)?;
     m.add_function(wrap_pyfunction!(write, m)?)?;
     m.add_function(wrap_pyfunction!(voxel_downsample, m)?)?;
     m.add_function(wrap_pyfunction!(crop_box, m)?)?;
