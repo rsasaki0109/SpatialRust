@@ -11,6 +11,7 @@ mod migrate;
 mod record;
 mod schema;
 mod stream;
+mod streaming;
 
 pub use error::{RecordsError, RecordsResult};
 pub use migrate::{migrate_record, FieldFill, MigrationPolicy};
@@ -19,3 +20,10 @@ pub use schema::{
     compare_schemas, CompatVerdict, SchemaCompatReport, SchemaDescriptor, SchemaId, SchemaVersion,
 };
 pub use stream::{MemoryChunkSink, MemoryChunkSource, SpatialRecordSink, SpatialRecordSource};
+pub use streaming::{
+    canonical_streaming_workloads, CancellationToken, MemoryBudget, MemoryReservation,
+    MemorySnapshot, MemoryTracker, StreamOptions, StreamOrdering, StreamingPhaseReceipt,
+    StreamingReceipt, StreamingTransferDirection, StreamingTransferReceipt, StreamingWorkload,
+    DEFAULT_STREAM_CHUNK_POINTS, DEFAULT_STREAM_MEMORY_BUDGET_BYTES, STREAMING_RECEIPT_SCHEMA,
+    STREAMING_RECEIPT_VERSION,
+};
