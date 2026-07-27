@@ -1,7 +1,7 @@
 //! Explicit, size-limited temporary disk spools for streaming formats.
 
 use std::fs::{File, OpenOptions};
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -145,6 +145,12 @@ impl Write for BoundedSpool {
 
     fn flush(&mut self) -> std::io::Result<()> {
         self.file_mut()?.flush()
+    }
+}
+
+impl Read for BoundedSpool {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        self.file_mut()?.read(buffer)
     }
 }
 

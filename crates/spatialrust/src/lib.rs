@@ -258,3 +258,9 @@ pub use spatialrust_vision::*;
 pub use spatialrust_pipeline::{
     MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult, MvpRegistrationMethod,
 };
+
+#[cfg(feature = "pipeline-streaming")]
+pub use spatialrust_pipeline::{
+    reduce_positions, ChunkMapOperation, ChunkMapSource, PositionReduction, StreamingVoxelConfig,
+    StreamingVoxelSource,
+};
