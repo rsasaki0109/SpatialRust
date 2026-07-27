@@ -117,7 +117,7 @@ pub struct LasChunkSink<W: Write + Seek + Send + Sync + 'static> {
     schema: SchemaDescriptor,
     export_schema: PointSchema,
     point_format: Format,
-    expected_points: u64,
+    expected_points: Option<u64>,
     written_points: u64,
     finished: bool,
 }
@@ -145,7 +145,35 @@ impl<W: Write + Seek + Send + Sync + 'static> LasChunkSink<W> {
             schema,
             export_schema,
             point_format,
-            expected_points,
+            expected_points: Some(expected_points),
+            written_points: 0,
+            finished: false,
+        })
+    }
+
+    /// Creates a LAS/LAZ sink whose final point count is not known up front.
+    ///
+    /// The seekable LAS writer patches the header when [`Self::finish`] closes it.
+    pub fn new_open_ended(
+        writer: W,
+        schema: SchemaDescriptor,
+        format: LasWriteFormat,
+    ) -> Result<Self, IoError> {
+        if format == LasWriteFormat::Laz {
+            #[cfg(not(feature = "io-laz"))]
+            return Err(crate::error::laz_format(
+                "LAZ output requires the io-laz feature".to_owned(),
+            ));
+        }
+        let (point_format, export_schema) = schema_from_point_cloud(schema.point_schema())?;
+        let header = header_from_cloud(point_format, format)?;
+        let writer = Writer::new(writer, header).map_err(|error| las_format(error.to_string()))?;
+        Ok(Self {
+            writer,
+            schema,
+            export_schema,
+            point_format,
+            expected_points: None,
             written_points: 0,
             finished: false,
         })
@@ -168,6 +196,15 @@ impl LasChunkSink<std::io::BufWriter<std::fs::File>> {
             format,
         )
     }
+
+    /// Creates a local LAS/LAZ sink whose final point count is not known up front.
+    pub fn create_open_ended(
+        path: impl AsRef<std::path::Path>,
+        schema: SchemaDescriptor,
+        format: LasWriteFormat,
+    ) -> Result<Self, IoError> {
+        Self::new_open_ended(std::io::BufWriter::new(std::fs::File::create(path)?), schema, format)
+    }
 }
 
 #[cfg(feature = "streaming")]
@@ -189,11 +226,12 @@ impl<W: Write + Seek + Send + Sync + 'static> BoundedSpatialRecordSink for LasCh
                     .map_err(|_| RecordsError::ReceiptOverflow("LAS chunk point count".into()))?,
             )
             .ok_or_else(|| RecordsError::ReceiptOverflow("LAS point count".into()))?;
-        if next > self.expected_points {
-            return Err(RecordsError::InvalidChunk(format!(
-                "LAS sink expected {} points but received at least {next}",
-                self.expected_points
-            )));
+        if let Some(expected_points) = self.expected_points {
+            if next > expected_points {
+                return Err(RecordsError::InvalidChunk(format!(
+                    "LAS sink expected {expected_points} points but received at least {next}"
+                )));
+            }
         }
         for index in 0..cloud.len() {
             let point = point_from_cloud(cloud, &self.export_schema, index, self.point_format)
@@ -207,11 +245,13 @@ impl<W: Write + Seek + Send + Sync + 'static> BoundedSpatialRecordSink for LasCh
     }
 
     fn finish(&mut self) -> RecordsResult<()> {
-        if self.written_points != self.expected_points {
-            return Err(RecordsError::InvalidChunk(format!(
-                "LAS sink expected {} points but received {}",
-                self.expected_points, self.written_points
-            )));
+        if let Some(expected_points) = self.expected_points {
+            if self.written_points != expected_points {
+                return Err(RecordsError::InvalidChunk(format!(
+                    "LAS sink expected {expected_points} points but received {}",
+                    self.written_points
+                )));
+            }
         }
         self.writer.close().map_err(|error| records_io(las_format(error.to_string())))?;
         self.finished = true;

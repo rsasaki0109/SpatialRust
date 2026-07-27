@@ -44,6 +44,39 @@ merge records, accumulators, and emitted columns share the upstream memory
 tracker. `spool_bytes()`, `run_count()`, and the tracker snapshot provide
 receipt inputs.
 
+## End-to-end workflows
+
+`StreamingPipeline` type-erases bounded sources while retaining their shared
+memory tracker and cancellation token. Its `crop`, `transform`, and `voxel`
+builders feed either a Rust iterator or `run_to_sink`; input/output chunks,
+tracked bytes, peak memory, voxel phase time, and spill extent are written to
+one versioned `StreamingReceipt`.
+
+The `spatialrust-stream` binary accepts local PCD/PLY/LAS/LAZ/COPC or an
+HTTP(S) COPC URL, writes LAS/LAZ without knowing the filtered point count in
+advance, and emits receipt JSON:
+
+```powershell
+cargo run -p spatialrust --features streaming-cli --bin spatialrust-stream -- `
+  input.copc.laz output.laz --chunk-points 65536 --memory-budget 268435456 `
+  --crop 0 0 -10 100 100 20 --voxel 0.1 --receipt receipt.json
+```
+
+The Python extension uses the same Rust iterator:
+
+```python
+stream = spatialrust.open_point_cloud_stream(
+    "input.pcd", chunk_points=65_536, memory_budget_bytes=268_435_456,
+)
+for chunk in stream:
+    consume(chunk)
+print(stream.receipt_json())
+```
+
+`stream.cancel()` requests cooperative cancellation. Each yielded Python
+`PointCloud` owns a copy, so retaining Python outputs is caller-managed and is
+not included in the native pipeline budget.
+
 ```powershell
 cargo run -p spatialrust-pipeline --example bounded_voxel `
   --no-default-features --features pipeline-streaming

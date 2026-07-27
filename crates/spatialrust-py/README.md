@@ -63,6 +63,28 @@ editors and type checkers (mypy, pyright) get full autocomplete and signature
 checking for the compiled extension. CI runs `mypy.stubtest` on every push to
 keep the stubs in sync with the runtime API.
 
+## Bounded point-cloud streaming
+
+`open_point_cloud_stream()` reads local PCD/PLY/LAS/LAZ/COPC files through the
+same bounded Rust workflow used by the CLI. HTTP(S) COPC remains isolated in
+the CLI feature so default Python wheels do not acquire a TLS stack:
+
+```python
+stream = spatialrust.open_point_cloud_stream(
+    "scan.copc.laz",
+    chunk_points=65_536,
+    memory_budget_bytes=256 * 1024 * 1024,
+    crop=(0.0, 0.0, -10.0, 100.0, 100.0, 20.0),
+    voxel_leaf=0.1,
+)
+for chunk in stream:
+    process(chunk)
+print(stream.receipt_json())
+```
+
+Call `stream.cancel()` to stop cooperatively at a chunk boundary. Retained
+Python chunks are caller-owned and are outside the native pipeline budget.
+
 ## Quickstart
 
 ```python

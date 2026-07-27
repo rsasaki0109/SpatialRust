@@ -711,7 +711,7 @@ outside core.
 | 122 | Complete | 121 | Backward-compatible bounded record sources/sinks with chunk identity, deterministic ordering, prefetch, and buffer reuse |
 | 123 | Complete | 122 | Local/HTTP COPC plus PCD/PLY/LAS/LAZ streaming adapters and bounded temporary spool contracts |
 | 124 | Complete | 122–123 | Chunk-safe crop/transform/reductions and deterministic global voxel aggregation with explicit spill |
-| 125 | Planned | 123–124 | Composable Rust pipeline, CLI, Python iterator, cancellation, and reproducible end-to-end receipt |
+| 125 | Complete | 123–124 | Composable Rust pipeline, CLI, Python iterator, cancellation, and reproducible end-to-end receipt |
 | 126 | Planned | 121–125 | Linux/Windows/macOS conformance, memory/copy budgets, documentation, migration notes, and the 1.2 release gate |
 
 ### Epic 121 delivery slices
@@ -749,6 +749,15 @@ outside core.
 | 124B | Complete | Single-pass finite bounds, count, and compensated centroid reduction | cross-chunk and non-finite reduction tests |
 | 124C | Complete | Fixed-width external voxel runs sorted by voxel key and global source offset | output equality across input chunk and run sizes plus attribute centroid tests |
 | 124D | Complete | Bounded disk extent, run/file-handle limit, merge memory, cancellation, and public feature surface | spill/run denial, cleanup, cancellation-release, root API, docs, and example gates |
+
+### Epic 125 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 125A | Complete | Type-erased Rust builder and metered pull iterator over the Epic 124 operations | crop composition, cancellation, and receipt-counter tests |
+| 125B | Complete | Local/HTTP input CLI with open-ended LAS/LAZ output and Ctrl-C cancellation | real PCD → crop → LAS subprocess E2E |
+| 125C | Complete | Python iterator backed by the same Rust workflow with cancellation and live receipt JSON | extension compile gate, stubs, and wheel smoke test |
+| 125D | Complete | Reproducible workflow documentation and dated implementation receipt | `STREAMING_PIPELINE.md` and Epic 125 receipt |
 
 ### SpatialRust 1.2 exclusions
 

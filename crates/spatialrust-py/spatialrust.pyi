@@ -14,13 +14,14 @@ __version__: str
 __all__: list[str] = [
     "__version__", "ImageMetadata", "Tensor", "Keypoint2", "OnnxRuntimeSession",
     "GaussianBlurWorkspace",
-    "DLPackTensorView", "PointCloud", "PipelineResult", "RegionResult",
+    "DLPackTensorView", "PointCloud", "PointCloudStream", "PipelineResult", "RegionResult",
     "DbscanResult", "GroundResult", "MultiPlaneResult", "SphereResult",
     "CylinderResult", "RegistrationResult", "MultiObjectTracker", "read_image",
     "tensor_copy_from_numpy", "tensor_view_from_dlpack", "harris_keypoints",
     "shi_tomasi_keypoints", "fast_keypoints", "orb_features",
     "estimate_homography_ransac", "solve_pnp", "estimate_rgbd_odometry", "stereo_block_match",
     "match_binary_descriptors", "match_float_descriptors", "write_image", "read",
+    "open_point_cloud_stream",
     "write", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
     "orient_normals", "detect_boundary", "mls_smooth", "farthest_point_sampling",
     "statistical_outlier_removal", "radius_outlier_removal", "run_pipeline",
@@ -103,6 +104,15 @@ class PointCloud:
 
     def __len__(self) -> int: ...
     def __repr__(self) -> str: ...
+
+@final
+class PointCloudStream:
+    """Pull-based bounded-memory point-cloud iterator."""
+
+    def __iter__(self) -> PointCloudStream: ...
+    def __next__(self) -> PointCloud: ...
+    def cancel(self) -> None: ...
+    def receipt_json(self) -> str: ...
 
 def depth_to_xyz(
     depth: _F32Array,
@@ -551,6 +561,18 @@ class RegistrationResult:
 # --------------------------------------------------------------------------- #
 def read(path: str) -> PointCloud: ...
 def write(path: str, cloud: PointCloud) -> None: ...
+def open_point_cloud_stream(
+    path: str,
+    chunk_points: int = ...,
+    memory_budget_bytes: int = ...,
+    crop: Optional[tuple[float, float, float, float, float, float]] = ...,
+    translation: Optional[_Vec3] = ...,
+    voxel_leaf: Optional[float] = ...,
+    run_points: int = ...,
+    max_runs: int = ...,
+    spool_dir: Optional[str] = ...,
+    spool_limit_bytes: int = ...,
+) -> PointCloudStream: ...
 
 # --------------------------------------------------------------------------- #
 # Filters

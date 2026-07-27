@@ -168,6 +168,32 @@ pub trait BoundedSpatialRecordSource {
     fn next_chunk(&mut self) -> Option<RecordsResult<SpatialRecordChunk>>;
 }
 
+impl<S: BoundedSpatialRecordSource + ?Sized> BoundedSpatialRecordSource for Box<S> {
+    fn schema(&self) -> &SchemaDescriptor {
+        (**self).schema()
+    }
+
+    fn options(&self) -> &StreamOptions {
+        (**self).options()
+    }
+
+    fn memory_tracker(&self) -> &MemoryTracker {
+        (**self).memory_tracker()
+    }
+
+    fn cancellation_token(&self) -> CancellationToken {
+        (**self).cancellation_token()
+    }
+
+    fn max_chunk_bytes(&self) -> u64 {
+        (**self).max_chunk_bytes()
+    }
+
+    fn next_chunk(&mut self) -> Option<RecordsResult<SpatialRecordChunk>> {
+        (**self).next_chunk()
+    }
+}
+
 /// Push-based bounded sink that cannot retain a record beyond the chunk lease.
 pub trait BoundedSpatialRecordSink {
     /// Writes one chunk synchronously.
@@ -176,6 +202,16 @@ pub trait BoundedSpatialRecordSink {
     /// Finalizes the sink.
     fn finish(&mut self) -> RecordsResult<()> {
         Ok(())
+    }
+}
+
+impl<S: BoundedSpatialRecordSink + ?Sized> BoundedSpatialRecordSink for Box<S> {
+    fn write_chunk(&mut self, chunk: &SpatialRecordChunk) -> RecordsResult<()> {
+        (**self).write_chunk(chunk)
+    }
+
+    fn finish(&mut self) -> RecordsResult<()> {
+        (**self).finish()
     }
 }
 

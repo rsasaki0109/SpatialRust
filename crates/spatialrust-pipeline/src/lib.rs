@@ -13,9 +13,13 @@ pub use mvp::{
 
 #[cfg(feature = "pipeline-streaming")]
 mod streaming;
+#[cfg(feature = "pipeline-streaming")]
+mod workflow;
 
 #[cfg(feature = "pipeline-streaming")]
 pub use streaming::{
     reduce_positions, ChunkMapOperation, ChunkMapSource, PositionReduction, StreamingVoxelConfig,
     StreamingVoxelSource,
 };
+#[cfg(feature = "pipeline-streaming")]
+pub use workflow::{StreamingPipeline, StreamingPipelineIter};

@@ -48,6 +48,9 @@ spatialrust = { path = "../spatialrust", features = [
     "vision-full",
     "image-io-standard",
     "tensor-dlpack",
+    "pipeline-streaming",
+    "io-laz",
+    "records-receipt-json",
 ] }
 
 # Keep this crate out of the main Rust workspace so `cargo test --workspace`
