@@ -710,7 +710,7 @@ outside core.
 | 121 | Complete | 91, 100, 111 | Hard tracked-memory limits, cooperative cancellation, versioned execution receipts, and canonical scale/chunk workloads |
 | 122 | Complete | 121 | Backward-compatible bounded record sources/sinks with chunk identity, deterministic ordering, prefetch, and buffer reuse |
 | 123 | Complete | 122 | Local/HTTP COPC plus PCD/PLY/LAS/LAZ streaming adapters and bounded temporary spool contracts |
-| 124 | Planned | 122–123 | Chunk-safe crop/transform/reductions and deterministic global voxel aggregation with explicit spill |
+| 124 | Complete | 122–123 | Chunk-safe crop/transform/reductions and deterministic global voxel aggregation with explicit spill |
 | 125 | Planned | 123–124 | Composable Rust pipeline, CLI, Python iterator, cancellation, and reproducible end-to-end receipt |
 | 126 | Planned | 121–125 | Linux/Windows/macOS conformance, memory/copy budgets, documentation, migration notes, and the 1.2 release gate |
 
@@ -740,6 +740,15 @@ outside core.
 | 123B | Complete | Deterministic local and HTTP-range COPC source plus source-driven COPC writer | local/HTTP E2E, stable node ordering, bounds/LOD reuse, and exact point-count tests |
 | 123C | Complete | Pre-allocation decode reservations, fixed-size ASCII records, and explicit bounded temporary spool contracts | insufficient-memory/spill preflight, extent denial, cleanup, and no-source-progress tests |
 | 123D | Complete | Feature isolation, migration documentation, and runnable bounded format conversion | feature-alone checks, `STREAMING_IO.md`, and `bounded_pcd_to_ply` example |
+
+### Epic 124 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 124A | Complete | Shared-budget chunk crop and affine position/normal transform with contiguous output identity | crop/transform boundary, identity, and peak-memory tests |
+| 124B | Complete | Single-pass finite bounds, count, and compensated centroid reduction | cross-chunk and non-finite reduction tests |
+| 124C | Complete | Fixed-width external voxel runs sorted by voxel key and global source offset | output equality across input chunk and run sizes plus attribute centroid tests |
+| 124D | Complete | Bounded disk extent, run/file-handle limit, merge memory, cancellation, and public feature surface | spill/run denial, cleanup, cancellation-release, root API, docs, and example gates |
 
 ### SpatialRust 1.2 exclusions
 

@@ -114,6 +114,11 @@ mvp = [
 ]
 mvp-http = ["mvp", "io-copc-http"]
 pipeline-mvp = ["spatialrust-pipeline/pipeline-mvp"]
+pipeline-streaming = [
+    "records",
+    "io-streaming",
+    "spatialrust-pipeline/pipeline-streaming",
+]
 pipeline-mvp-gpu = [
     "spatialrust-pipeline/pipeline-mvp-gpu",
     "filter-voxel-gpu",

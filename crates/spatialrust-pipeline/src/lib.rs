@@ -10,3 +10,12 @@ mod mvp;
 pub use mvp::{
     MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult, MvpRegistrationMethod,
 };
+
+#[cfg(feature = "pipeline-streaming")]
+mod streaming;
+
+#[cfg(feature = "pipeline-streaming")]
+pub use streaming::{
+    reduce_positions, ChunkMapOperation, ChunkMapSource, PositionReduction, StreamingVoxelConfig,
+    StreamingVoxelSource,
+};
