@@ -712,7 +712,7 @@ outside core.
 | 123 | Complete | 122 | Local/HTTP COPC plus PCD/PLY/LAS/LAZ streaming adapters and bounded temporary spool contracts |
 | 124 | Complete | 122–123 | Chunk-safe crop/transform/reductions and deterministic global voxel aggregation with explicit spill |
 | 125 | Complete | 123–124 | Composable Rust pipeline, CLI, Python iterator, cancellation, and reproducible end-to-end receipt |
-| 126 | Planned | 121–125 | Linux/Windows/macOS conformance, memory/copy budgets, documentation, migration notes, and the 1.2 release gate |
+| 126 | Complete | 121–125 | Linux/Windows/macOS conformance, memory/copy budgets, documentation, migration notes, and the 1.2 release gate |
 
 ### Epic 121 delivery slices
 
@@ -758,6 +758,16 @@ outside core.
 | 125B | Complete | Local/HTTP input CLI with open-ended LAS/LAZ output and Ctrl-C cancellation | real PCD → crop → LAS subprocess E2E |
 | 125C | Complete | Python iterator backed by the same Rust workflow with cancellation and live receipt JSON | extension compile gate, stubs, and wheel smoke test |
 | 125D | Complete | Reproducible workflow documentation and dated implementation receipt | `STREAMING_PIPELINE.md` and Epic 125 receipt |
+
+### Epic 126 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 126A | Complete | Linux/Windows/macOS records, all-format IO, pipeline, CLI, and gate conformance | dedicated three-OS CI matrix |
+| 126B | Complete | Fail-closed memory, spill, cleanup, copy, transfer, determinism, and file-handle budgets | typed overrun and relational-limit denial tests |
+| 126C | Complete | Stable bounded record contract and provisional adapter/workflow registry | `bounded_streaming_v1_2_surface()` |
+| 126D | Complete | Additive migration guidance, limitations, and explicit Python/device ownership | `STREAMING_MIGRATION.md` |
+| 126E | Complete | Runnable aggregate release decision and canonical receipt | `streaming_1_2_release_gate` and `STREAMING_RELEASE_RECEIPT.md` |
 
 ### SpatialRust 1.2 exclusions
 

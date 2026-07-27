@@ -156,3 +156,14 @@ borrow lifetime. The additive `PointCloud::into_parts` inverse and mutable
 column iteration are the only core ownership primitives required for
 allocation-free source-owned buffer recycling; stream traits, threads, queues,
 receipts, and policies remain outside core.
+
+The 1.2 release boundary is machine-checked by
+`Streaming12ReleaseGate`. Its dedicated Linux/Windows/macOS matrix exercises
+records, all bounded formats, deterministic operations, the real CLI path, and
+the canonical receipt example. The gate rejects missing or skipped evidence,
+tracked-memory or spool overruns, retained reservations after finish,
+unrecorded host copies, any CPU-workflow device transfer, deterministic
+mismatches, and excessive run/file-handle fan-out. Concrete IO/pipeline/Python
+adapters remain provisional; the bounded record traits, chunk lease, memory
+budget, cancellation, options, and versioned receipt are the stable 1.2
+foundation.

@@ -414,6 +414,12 @@ The fail-closed [Vision 2 release receipt](docs/VISION_2_RELEASE_RECEIPT.md)
 and [migration guide](docs/VISION_2_MIGRATION.md) record the canonical
 performance/resource budgets and explicit CPU/GPU ownership guidance.
 
+SpatialRust 1.2 adds deterministic bounded-memory point-cloud execution across
+local/HTTP IO, chunk-safe operations, Rust/CLI/Python workflows, and explicit
+spill. See the [streaming release receipt](docs/STREAMING_RELEASE_RECEIPT.md)
+and [migration guide](docs/STREAMING_MIGRATION.md) for limits, stability, and
+reproduction commands.
+
 ## Workspace crates
 
 One dataflow, focused crates — each pipeline stage maps to the crate that implements it, all sitting on a small math/core/search foundation:

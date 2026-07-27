@@ -60,6 +60,18 @@ jobs:
             args: --workspace
           - name: spatialrust-serde
             args: -p spatialrust --features serde
+          - name: spatialrust-records-receipt-json
+            args: -p spatialrust-records --features receipt-json
+          - name: spatialrust-records-receipt-json-meta
+            args: -p spatialrust --features records-receipt-json
+          - name: spatialrust-io-streaming-all
+            args: -p spatialrust-io --no-default-features --features io-pcd,io-ply,io-las,io-laz,io-copc-http,streaming
+          - name: spatialrust-pipeline-streaming
+            args: -p spatialrust-pipeline --no-default-features --features pipeline-streaming
+          - name: spatialrust-pipeline-streaming-meta
+            args: -p spatialrust --no-default-features --features pipeline-streaming
+          - name: spatialrust-streaming-cli
+            args: -p spatialrust --no-default-features --features streaming-cli
           - name: spatialrust-io-pcd
             args: -p spatialrust-io --features io-pcd
           - name: spatialrust-io-pcd-meta
@@ -289,6 +301,26 @@ jobs:
           cargo run -p spatialrust --no-default-features --features platform --example vision_1_release_gate
           cargo run -p spatialrust --no-default-features --features platform --example vision_2_release_gate
           cargo run -p spatialrust --no-default-features --features image-io-standard,vision-video --example video_tracking_e2e
+
+  streaming-platform-conformance:
+    name: Streaming 1.2 conformance (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test bounded-streaming contracts and release gate
+        run: |
+          cargo test -p spatialrust-records --features receipt-json
+          cargo test -p spatialrust-io --no-default-features --features io-pcd,io-ply,io-las,io-laz,io-copc-http,streaming
+          cargo test -p spatialrust-pipeline --no-default-features --features pipeline-streaming
+          cargo test -p spatialrust --no-default-features --features streaming-cli --test streaming_cli
+          cargo test -p spatialrust-platform streaming
+          cargo run -p spatialrust --no-default-features --features platform,pipeline-streaming --example streaming_1_2_release_gate
 
   bench:
     name: Benchmark compile

@@ -19,6 +19,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-07-27
+
 ### Added
 
 - **SpatialRust 1.2 bounded-streaming contract (Epic 121)**:
@@ -38,7 +40,36 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   ownership-preserving `PointCloud::into_parts` inverse and mutable column
   iteration needed to clear recycled storage without allocating field names.
 
+- **Bounded point-cloud IO and spool contracts (Epic 123)**: feature-gated
+  PCD, PLY, LAS/LAZ, and deterministic local/HTTP COPC sources emit leased
+  chunks without whole-cloud materialization. Exact-count and open-ended sinks,
+  source-driven COPC output, bounded ASCII records, and extent-limited
+  temporary storage fail before exceeding their declared limits.
+
+- **Chunk-safe streaming operations (Epic 124)**: shared-budget crop and affine
+  transform adapters, compensated global position reductions, and
+  deterministic external voxel centroids compose outside
+  `spatialrust-core`. Voxel output is invariant to source chunk and sort-run
+  size, with explicit spill/run/file-handle limits.
+
+- **Rust, CLI, and Python streaming workflows (Epic 125)**:
+  `StreamingPipeline` provides a type-erased metered iterator and sink drain;
+  `spatialrust-stream` converts local/HTTP inputs to open-ended LAS/LAZ with
+  Ctrl-C cancellation and JSON receipts; Python `PointCloudStream` wraps the
+  same Rust iterator with cancellation and live receipts.
+
+- **SpatialRust 1.2 release gate (Epic 126)**: a dedicated Linux/Windows/macOS
+  matrix and `Streaming12ReleaseGate` enforce memory, spool, cleanup, copy,
+  transfer, determinism, and file-handle budgets. The runnable release receipt,
+  migration guide, stability registry, and feature-isolation gates complete
+  the bounded-streaming program.
+
 ### Changed
+
+- **Prefetch admission under load**: the bounded prefetch preflight now
+  accounts for the producer lease held while a full queue blocks in addition
+  to queued and consumer leases. This removes a scheduler-dependent
+  end-of-stream error while preserving fail-closed memory behavior.
 
 - **GPU voxel dispatch and truthful Auto policy**: headless wgpu compute now
   prefers a high-performance adapter while retaining an explicit low-power
@@ -579,7 +610,8 @@ stubtest CI.
 - COPC partial reads (bounds + LOD) in the library and `spatialrust-mvp` CLI.
 - wgpu voxel downsampling with automatic CPU/GPU policy selection.
 
-[Unreleased]: https://github.com/rsasaki0109/SpatialRust/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/rsasaki0109/SpatialRust/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/rsasaki0109/SpatialRust/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/rsasaki0109/SpatialRust/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/rsasaki0109/SpatialRust/releases/tag/v1.0.0
 [0.1.0]: https://github.com/rsasaki0109/SpatialRust/releases/tag/v0.1.0

@@ -10,7 +10,10 @@ mod format;
 mod options;
 #[cfg(feature = "streaming")]
 mod spool;
-#[cfg(feature = "streaming")]
+#[cfg(all(
+    feature = "streaming",
+    any(feature = "io-pcd", feature = "io-ply", feature = "io-las", feature = "io-copc")
+))]
 mod streaming;
 mod traits;
 
