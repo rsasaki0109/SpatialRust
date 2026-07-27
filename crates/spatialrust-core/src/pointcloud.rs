@@ -141,6 +141,16 @@ impl PointCloud {
         cloud.validate()?;
         Ok(cloud)
     }
+
+    /// Consumes the cloud into its schema, column buffers, and metadata.
+    ///
+    /// This is the ownership-preserving inverse of [`PointCloud::try_from_parts`].
+    /// It enables callers to recycle allocations without exposing mutable
+    /// internals or changing device placement implicitly.
+    #[must_use]
+    pub fn into_parts(self) -> (PointSchema, PointBufferSet, SpatialMetadata) {
+        (self.schema, self.buffers, self.metadata)
+    }
 }
 
 impl PointCloudBuilder {
@@ -237,7 +247,7 @@ impl PointCloudBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::PointCloudBuilder;
+    use super::{PointCloud, PointCloudBuilder};
     use crate::{FieldSemantic, StandardSchemas};
 
     #[test]
@@ -256,5 +266,16 @@ mod tests {
     fn standard_xyzi_has_intensity() {
         let schema = StandardSchemas::point_xyzi();
         assert!(schema.find_semantic(FieldSemantic::Intensity).is_some());
+    }
+
+    #[test]
+    fn into_parts_roundtrips_without_copying_columns() {
+        let mut builder = PointCloudBuilder::xyz();
+        builder.push_point([1.0, 2.0, 3.0]).unwrap();
+        let cloud = builder.build().unwrap();
+        let (schema, buffers, metadata) = cloud.into_parts();
+        let rebuilt = PointCloud::try_from_parts(schema, buffers, metadata).unwrap();
+        assert_eq!(rebuilt.field("x").unwrap().as_f32().unwrap(), &[1.0]);
+        assert_eq!(rebuilt.len(), 1);
     }
 }

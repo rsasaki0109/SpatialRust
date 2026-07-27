@@ -6,6 +6,7 @@
 #![deny(unsafe_code)]
 #![warn(missing_docs)]
 
+mod bounded;
 mod error;
 mod migrate;
 mod record;
@@ -13,6 +14,11 @@ mod schema;
 mod stream;
 mod streaming;
 
+pub use bounded::{
+    record_storage_bytes, BoundedSpatialRecordSink, BoundedSpatialRecordSource, ChunkIdentity,
+    LegacyBoundedSink, LegacyBoundedSource, PrefetchRecordSource, RecordBounds3,
+    RecyclingMemoryChunkSource, SpatialRecordChunk,
+};
 pub use error::{RecordsError, RecordsResult};
 pub use migrate::{migrate_record, FieldFill, MigrationPolicy};
 pub use record::SpatialRecord;

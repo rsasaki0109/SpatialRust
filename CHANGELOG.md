@@ -29,6 +29,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   `streaming_receipt` example records phases, bytes, peak tracked memory,
   spill, and explicit transfers without changing `spatialrust-core`.
 
+- **Leased bounded record streams (Epic 122)**: additive bounded source/sink
+  traits preserve the existing record APIs while attaching deterministic chunk
+  identity, global point offsets, finite bounds, and drop-scoped memory
+  reservations. A single-worker prefetch adapter enforces queue and memory
+  admission before starting, and `RecyclingMemoryChunkSource` returns owned
+  column allocations to its pool in steady state. Core only gains the safe
+  ownership-preserving `PointCloud::into_parts` inverse and mutable column
+  iteration needed to clear recycled storage without allocating field names.
+
 ### Changed
 
 - **GPU voxel dispatch and truthful Auto policy**: headless wgpu compute now

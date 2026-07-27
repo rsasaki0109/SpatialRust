@@ -215,6 +215,23 @@ impl MemoryReservation {
     pub const fn bytes(&self) -> u64 {
         self.bytes
     }
+
+    /// Releases the unused tail of a conservative reservation.
+    pub fn shrink_to(&mut self, bytes: u64) -> RecordsResult<()> {
+        if bytes > self.bytes {
+            return Err(RecordsError::InvalidConfiguration(format!(
+                "cannot grow a memory reservation from {} to {bytes} bytes",
+                self.bytes
+            )));
+        }
+        let released = self.bytes - bytes;
+        if released > 0 {
+            let previous = self.tracker.inner.current_bytes.fetch_sub(released, Ordering::AcqRel);
+            debug_assert!(previous >= released, "memory reservation accounting underflow");
+            self.bytes = bytes;
+        }
+        Ok(())
+    }
 }
 
 impl Drop for MemoryReservation {
@@ -576,6 +593,17 @@ mod tests {
         drop(first);
         assert_eq!(tracker.snapshot().current_bytes, 0);
         assert_eq!(tracker.snapshot().peak_bytes, 60);
+    }
+
+    #[test]
+    fn reservation_can_shrink_but_never_grow() {
+        let tracker = MemoryTracker::new(MemoryBudget::new(100).unwrap());
+        let mut reservation = tracker.try_reserve(80).unwrap();
+        reservation.shrink_to(30).unwrap();
+        assert_eq!(reservation.bytes(), 30);
+        assert_eq!(tracker.snapshot().current_bytes, 30);
+        assert!(reservation.shrink_to(31).is_err());
+        assert_eq!(tracker.snapshot().current_bytes, 30);
     }
 
     #[test]

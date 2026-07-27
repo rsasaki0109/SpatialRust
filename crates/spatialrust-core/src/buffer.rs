@@ -191,6 +191,11 @@ impl PointBufferSet {
     pub fn iter(&self) -> impl Iterator<Item = (&str, &PointBuffer)> {
         self.buffers.iter().map(|(name, buffer)| (name.as_str(), buffer))
     }
+
+    /// Iterates mutable column buffers without changing their names or order.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&str, &mut PointBuffer)> {
+        self.buffers.iter_mut().map(|(name, buffer)| (name.as_str(), buffer))
+    }
 }
 
 #[cfg(test)]
