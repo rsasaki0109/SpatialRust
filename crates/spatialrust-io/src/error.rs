@@ -53,9 +53,20 @@ pub enum IoError {
     #[error("copc format error: {0}")]
     CopcFormat(String),
 
+    /// Bounded streaming contract failure.
+    #[error("streaming io error: {0}")]
+    Streaming(String),
+
     /// Core data model error propagated from `spatialrust-core`.
     #[error(transparent)]
     Core(#[from] SpatialError),
+}
+
+#[cfg(feature = "streaming")]
+impl From<spatialrust_records::RecordsError> for IoError {
+    fn from(error: spatialrust_records::RecordsError) -> Self {
+        Self::Streaming(error.to_string())
+    }
 }
 
 impl From<std::io::Error> for IoError {

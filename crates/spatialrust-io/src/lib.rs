@@ -8,6 +8,10 @@
 mod error;
 mod format;
 mod options;
+#[cfg(feature = "streaming")]
+mod spool;
+#[cfg(feature = "streaming")]
+mod streaming;
 mod traits;
 
 #[cfg(feature = "io-pcd")]
@@ -36,6 +40,8 @@ pub use format::{
     write_point_cloud_file, write_point_cloud_file_with_format, PointCloudFileFormat,
 };
 pub use options::{ReadOptions, WriteOptions};
+#[cfg(feature = "streaming")]
+pub use spool::{BoundedSpool, SpoolOptions};
 pub use traits::{PointReader, PointSink, PointStream, PointWriter};
 
 #[cfg(feature = "io-pcd")]
@@ -44,6 +50,8 @@ pub use pcd::{
     write_pcd_file, PcdDataKind, PcdFieldSpec, PcdHeader, PcdReader, PcdType, PcdWriteFormat,
     PcdWriter,
 };
+#[cfg(all(feature = "io-pcd", feature = "streaming"))]
+pub use pcd::{PcdChunkSink, PcdChunkSource};
 
 #[cfg(feature = "io-ply")]
 pub use ply::{
@@ -51,12 +59,16 @@ pub use ply::{
     schema_from_ply_properties, write_ply, write_ply_file, PlyFormat, PlyHeader, PlyProperty,
     PlyPropertyKind, PlyReader, PlyWriteFormat, PlyWriter,
 };
+#[cfg(all(feature = "io-ply", feature = "streaming"))]
+pub use ply::{PlyChunkSink, PlyChunkSource};
 
 #[cfg(feature = "io-las")]
 pub use las::{
     infer_las_field_semantic, read_las, read_las_file, schema_for_las_header,
     schema_from_point_cloud, write_las, write_las_file, LasReader, LasWriteFormat, LasWriter,
 };
+#[cfg(all(feature = "io-las", feature = "streaming"))]
+pub use las::{LasChunkSink, LasChunkSource};
 
 #[cfg(feature = "io-e57")]
 pub use e57::{
@@ -72,6 +84,8 @@ pub use copc::{
     write_copc_file_with_params, CopcBounds, CopcFileInfo, CopcQuery, CopcReader, CopcWriter,
     CopcWriterParams,
 };
+#[cfg(all(feature = "io-copc", feature = "streaming"))]
+pub use copc::{write_copc_stream, CopcChunkSource, CopcStreamingWriteReceipt};
 
 #[cfg(feature = "io-copc-http")]
 pub use copc::{read_copc_url, read_copc_url_info, read_copc_url_with_query, HttpByteSource};

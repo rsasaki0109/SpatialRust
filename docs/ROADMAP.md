@@ -709,7 +709,7 @@ outside core.
 | --- | --- | --- | --- |
 | 121 | Complete | 91, 100, 111 | Hard tracked-memory limits, cooperative cancellation, versioned execution receipts, and canonical scale/chunk workloads |
 | 122 | Complete | 121 | Backward-compatible bounded record sources/sinks with chunk identity, deterministic ordering, prefetch, and buffer reuse |
-| 123 | Planned | 122 | Local/HTTP COPC plus PCD/PLY/LAS/LAZ streaming adapters and bounded temporary spool contracts |
+| 123 | Complete | 122 | Local/HTTP COPC plus PCD/PLY/LAS/LAZ streaming adapters and bounded temporary spool contracts |
 | 124 | Planned | 122–123 | Chunk-safe crop/transform/reductions and deterministic global voxel aggregation with explicit spill |
 | 125 | Planned | 123–124 | Composable Rust pipeline, CLI, Python iterator, cancellation, and reproducible end-to-end receipt |
 | 126 | Planned | 121–125 | Linux/Windows/macOS conformance, memory/copy budgets, documentation, migration notes, and the 1.2 release gate |
@@ -731,6 +731,15 @@ outside core.
 | 122B | Complete | Additive bounded source/sink traits and adapters for the existing synchronous traits | legacy source/sink round trip with no signature changes |
 | 122C | Complete | Deterministic single-worker prefetch with count backpressure, cancellation, and fail-closed concurrent-memory admission | ordered delivery, cancellation, and insufficient-budget denial tests |
 | 122D | Complete | Source-owned buffer-set recycling with safe ownership extraction | one-allocation steady-state test and `bounded_record_stream` example |
+
+### Epic 123 delivery slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 123A | Complete | True sequential PCD/PLY/LAS/LAZ sources plus exact-count sinks, without whole-cloud materialization | binary and ASCII chunk identity, memory peak, round-trip, short-count, and cancellation tests |
+| 123B | Complete | Deterministic local and HTTP-range COPC source plus source-driven COPC writer | local/HTTP E2E, stable node ordering, bounds/LOD reuse, and exact point-count tests |
+| 123C | Complete | Pre-allocation decode reservations, fixed-size ASCII records, and explicit bounded temporary spool contracts | insufficient-memory/spill preflight, extent denial, cleanup, and no-source-progress tests |
+| 123D | Complete | Feature isolation, migration documentation, and runnable bounded format conversion | feature-alone checks, `STREAMING_IO.md`, and `bounded_pcd_to_ply` example |
 
 ### SpatialRust 1.2 exclusions
 
