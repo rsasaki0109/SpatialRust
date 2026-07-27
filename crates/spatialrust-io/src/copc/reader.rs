@@ -1,6 +1,8 @@
 use std::path::Path;
 
-use copc_streaming::{ByteSource, CopcStreamingReader, DecompressedChunk, FileSource, VoxelKey};
+use copc_streaming::{ByteSource, CopcStreamingReader, FileSource};
+#[cfg(feature = "streaming")]
+use copc_streaming::{DecompressedChunk, VoxelKey};
 use las::Header;
 use spatialrust_core::{PointCloud, PointSchema, SpatialMetadata};
 
