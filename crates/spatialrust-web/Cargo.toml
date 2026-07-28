@@ -1,0 +1,50 @@
+[package]
+name = "spatialrust-web"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Portable Web/WASM viewer state, WebGPU bridge, and bounded range access for SpatialRust"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+webgpu = [
+    "dep:spatialrust-gpu",
+    "dep:spatialrust-render-wgpu",
+    "spatialrust-gpu/gpu-wgpu",
+    "spatialrust-render-wgpu/wgpu",
+]
+wasm = [
+    "dep:js-sys",
+    "dep:wasm-bindgen",
+    "dep:wasm-bindgen-futures",
+    "dep:web-sys",
+]
+
+[dependencies]
+js-sys = { workspace = true, optional = true }
+serde.workspace = true
+serde_json.workspace = true
+spatialrust-gpu = { workspace = true, optional = true }
+spatialrust-math = { workspace = true, features = ["serde"] }
+spatialrust-render-wgpu = { workspace = true, optional = true }
+spatialrust-viewer = { workspace = true, features = ["serde"] }
+spatialrust-viz = { workspace = true, features = ["serde"] }
+thiserror.workspace = true
+wasm-bindgen = { workspace = true, optional = true }
+wasm-bindgen-futures = { workspace = true, optional = true }
+web-sys = { workspace = true, optional = true, features = [
+    "AbortController",
+    "AbortSignal",
+    "Headers",
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+    "Window",
+] }

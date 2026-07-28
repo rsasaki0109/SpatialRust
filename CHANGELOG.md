@@ -50,6 +50,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   limits, protected LRU GPU eviction, cleanup receipts, and an optional bounded
   COPC query adapter make every materialization and transfer caller-visible.
 
+- **WebAssembly/WebGPU viewer (Epic 138)**: `spatialrust-web` round-trips the
+  versioned portable viewer state, maps strict browser input JSON through the
+  shared controller, and renders uploaded geometry through the same
+  device-resident wgpu backend. Its WASM surface provides AbortController-backed
+  exact HTTP Range fetches plus deterministic request/cache budgets, response
+  length validation, explicit JS/WASM copies, and LRU eviction receipts.
+
 ## [1.2.0] — 2026-07-27
 
 ### Added

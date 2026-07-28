@@ -212,3 +212,11 @@ are unavailable. Optional records integration owns drop-scoped decoded-memory
 leases; GPU admission records caller-declared upload/allocation bytes and
 evicts only unprotected LRU nodes. The COPC adapter produces a bounded query but
 never performs range IO implicitly.
+
+`spatialrust-web` owns only the browser/WASM boundary. Its portable JSON
+envelope embeds the same `ViewerState`, and WebGPU rendering delegates to
+`spatialrust-render-wgpu` after caller-requested upload. Native process-global
+wgpu sharing is unavailable on wasm32; browser callers construct a main-thread
+runtime asynchronously. Remote byte access requires a bounded range plan before
+fetch, an abort signal, `206` plus exact response-length evidence, and explicit
+admission into the bounded WASM cache.
