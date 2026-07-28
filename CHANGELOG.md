@@ -29,6 +29,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   picking emit exact readback receipts, while camera bounds fitting, runtime
   identity, pipeline caching, and bounded buffer recycling remain explicit.
 
+- **Native viewer and debug overlays (Epic 135)**: the opt-in
+  `spatialrust-viewer` crate adds portable viewer state, orbit/pan/zoom and
+  bounds fitting, drag/drop admission, stable layer visibility/style state,
+  point-attribute inspection, and a winit native shell. Owned normal, voxel,
+  plane, cluster, correspondence, bounds, and search-radius overlays expose
+  deterministic borrowed visual layers without hidden GPU transfers.
+
 ## [1.2.0] — 2026-07-27
 
 ### Added
