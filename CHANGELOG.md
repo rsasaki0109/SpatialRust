@@ -57,6 +57,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   exact HTTP Range fetches plus deterministic request/cache budgets, response
   length validation, explicit JS/WASM copies, and LRU eviction receipts.
 
+- **Python and Jupyter viewer adapters (Epic 139)**: the abi3 Python wheel
+  exposes the canonical viewer state, shared input reducer, validated native
+  launch, retained zero-copy NumPy SoA columns, and byte-exact explicit-copy
+  receipts. `spatialrust-jupyter` adds a versioned AnyWidget transport with
+  strict origin/source checks, canonical frontend state validation, and an
+  executable notebook smoke fixture for the Web viewer embed.
+
 ## [1.2.0] — 2026-07-27
 
 ### Added

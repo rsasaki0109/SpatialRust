@@ -793,7 +793,7 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | 136 | Complete | 92–94, 135 | Mesh, surfel, Gaussian, trajectory, pose-graph, camera-frustum, RGB-D, and semantic scene inspection |
 | 137 | Complete | 127–132, 134 | Bounded COPC/index-driven frustum and LOD streaming with cancellation, progressive refinement, and strict memory/upload/point budgets |
 | 138 | Complete | 134–137 | WebAssembly/WebGPU viewer with portable scene state, browser input, and bounded remote data access |
-| 139 | Planned | 135–138 | Python and Jupyter adapters using the same viewer state and explicit ownership/transfer contracts |
+| 139 | Complete | 135–138 | Python and Jupyter adapters using the same viewer state and explicit ownership/transfer contracts |
 | 140 | Planned | 133–139 | Cross-platform headless image conformance, native/Web/Python smoke tests, performance receipts, documentation, migration guidance, and Visual release gate |
 
 ### Visual delivery slices
@@ -854,6 +854,13 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | --- | --- | --- |
 | 138A | Complete | Strict versioned viewer-state JSON, shared browser input reducer, async WebGPU runtime construction, same-backend 64×64 pixel parity, wasm32 `wasm,webgpu` cross-check, and executable browser smoke fixture |
 | 138B | Complete | AbortController-backed 206 Range fetch with exact Content-Length/body validation, deterministic request/byte admission, cancellation, exact-range cache hits, bounded LRU eviction, and JS/WASM copy receipts |
+
+### Epic 139 progress
+
+| Slice | Status | Evidence |
+| --- | --- | --- |
+| 139A | Complete | abi3 wheel import, strict shared viewer-state round-trip, shared reducer input, validated native launch receipt, retained contiguous NumPy SoA pointer identity/lifetime, explicit AoS copy isolation, and exact byte receipts |
+| 139B | Complete | AnyWidget transport with Rust state validation, exact source/origin/version checks, Web embed handshake, Python round-trip tests, and executable nbclient notebook smoke |
 
 ### Visual completion gates
 

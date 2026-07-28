@@ -44,6 +44,34 @@ cross-check, and maximum-distance filters.
 Geometry bindings expose `estimate_homography_ransac`, `solve_pnp`, and
 `stereo_block_match` for NumPy `float64` / grayscale workflows.
 
+## Viewer and NumPy ownership
+
+`ViewerState` uses the same strict, versioned JSON contract as the native,
+WebAssembly, and Jupyter viewers. Input messages are applied by the shared Rust
+reducer. `launch_native()` opens the opt-in native shell on the calling thread;
+it does not upload geometry.
+
+```python
+import numpy as np
+import spatialrust as sr
+
+state = sr.ViewerState(1280, 720)
+state.apply_input_json('{"kind":"zoom","delta":1.0}')
+
+x = np.arange(100, dtype=np.float32)
+points = sr.ViewerPointSource.borrow_numpy(x, x + 1, x + 2)
+assert points.source_pointers[0] == x.__array_interface__["data"][0]
+print(points.transfer_receipt_json())  # zero host-to-host bytes
+
+owned = sr.ViewerPointSource.copy_from_numpy(np.column_stack([x, x, x]))
+snapshot, copy_receipt = owned.copy_to_numpy()
+```
+
+Borrowed sources retain the three NumPy owners and require contiguous
+`float32` SoA columns. Copying is never inferred: `copy_from_numpy()` and
+`copy_to_numpy()` report exact host bytes, while all CPU/GPU transfer counters
+remain zero until a separate renderer upload is requested.
+
 ## Test
 
 The bindings have a pytest suite (`tests/`) that exercises the NumPy ⇄ Rust

@@ -9,6 +9,9 @@ and runs", not numerical accuracy (covered by the Rust unit tests).
 """
 
 import math
+import gc
+import json
+import weakref
 
 import numpy as np
 import pytest
@@ -57,6 +60,77 @@ def plane():
 def test_module_has_version():
     assert isinstance(sr.__version__, str)
     assert sr.__version__
+
+
+def test_viewer_state_roundtrip_input_and_native_launch_receipt():
+    state = sr.ViewerState(640, 480)
+    before = json.loads(state.to_json())
+    assert before["version"] == 1
+    assert before["revision"] == 0
+    assert before["viewer"]["viewport"] == {"width": 640, "height": 480}
+
+    state.apply_input_json(json.dumps({"kind": "zoom", "delta": 1.0}))
+    assert state.revision == 1
+    assert sr.ViewerState.from_json(state.to_json()).to_json() == state.to_json()
+
+    receipt = json.loads(state.native_launch_receipt("Python viewer smoke"))
+    assert receipt["state_revision"] == 1
+    assert receipt["width"] == 640
+    assert receipt["host_to_device_bytes"] == 0
+    assert receipt["device_to_host_bytes"] == 0
+
+    invalid = json.loads(state.to_json())
+    invalid["unknown"] = True
+    with pytest.raises(ValueError):
+        sr.ViewerState.from_json(json.dumps(invalid))
+
+
+def test_viewer_point_source_borrows_numpy_and_retains_lifetime():
+    x = np.arange(4, dtype=np.float32)
+    y = x + 10
+    z = x + 20
+    pointers = tuple(array.__array_interface__["data"][0] for array in (x, y, z))
+    references = tuple(weakref.ref(array) for array in (x, y, z))
+
+    source = sr.ViewerPointSource.borrow_numpy(x, y, z)
+    assert source.ownership == "borrowed_numpy"
+    assert source.source_pointers == pointers
+    receipt = json.loads(source.transfer_receipt_json())
+    assert receipt["point_count"] == 4
+    assert receipt["host_to_host_bytes"] == 0
+
+    del x, y, z
+    gc.collect()
+    assert all(reference() is not None for reference in references)
+    snapshot, copy_receipt_json = source.copy_to_numpy()
+    np.testing.assert_array_equal(
+        snapshot,
+        np.array(
+            [[0, 10, 20], [1, 11, 21], [2, 12, 22], [3, 13, 23]],
+            dtype=np.float32,
+        ),
+    )
+    assert json.loads(copy_receipt_json)["copied_bytes"] == 48
+
+    del source
+    gc.collect()
+    assert all(reference() is None for reference in references)
+
+
+def test_viewer_point_source_copy_is_independent_and_explicit():
+    positions = np.arange(15, dtype=np.float32).reshape(5, 3)
+    source = sr.ViewerPointSource.copy_from_numpy(positions)
+    positions[:] = -1
+    snapshot, copy_receipt_json = source.copy_to_numpy()
+    np.testing.assert_array_equal(snapshot, np.arange(15, dtype=np.float32).reshape(5, 3))
+    receipt = json.loads(source.transfer_receipt_json())
+    assert source.ownership == "owned_rust"
+    assert receipt["host_to_host_bytes"] == 60
+    assert json.loads(copy_receipt_json)["copied_bytes"] == 60
+
+    base = np.arange(8, dtype=np.float32)
+    with pytest.raises(ValueError):
+        sr.ViewerPointSource.borrow_numpy(base[::2], base[:4], base[4:])
 
 
 def test_exports_present():

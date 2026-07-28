@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SpatialRust Web viewer widget embed</title>
+<pre id="status">Waiting for SpatialRust viewer state</pre>
+<script type="module">
+  import init, { BrowserViewer } from "./pkg/spatialrust_web.js";
+
+  const status = document.querySelector("#status");
+  const allowedParentOrigin = new URLSearchParams(location.search).get("parent_origin");
+  if (!allowedParentOrigin || new URL(allowedParentOrigin).origin !== allowedParentOrigin) {
+    throw new Error("widget embed requires an exact parent_origin");
+  }
+  await init();
+  const budget = JSON.stringify({
+    max_requests_per_plan: 8,
+    max_requested_bytes_per_plan: 8 * 1024 * 1024,
+    max_single_range_bytes: 1024 * 1024,
+    max_cache_bytes: 32 * 1024 * 1024,
+  });
+  let viewer = null;
+
+  window.addEventListener("message", (event) => {
+    if (
+      event.source !== parent ||
+      event.origin !== allowedParentOrigin ||
+      event.data?.kind !== "spatialrust.viewer.state" ||
+      event.data?.transport_version !== 1
+    ) {
+      return;
+    }
+    viewer = new BrowserViewer(JSON.stringify(event.data.state), budget);
+    const canonical = JSON.parse(viewer.state_json());
+    status.textContent =
+      `SpatialRust Web viewer revision ${canonical.revision}\n` +
+      `${canonical.viewer.viewport.width}x${canonical.viewer.viewport.height}`;
+    parent.postMessage(
+      {
+        kind: "spatialrust.viewer.state",
+        transport_version: 1,
+        state: canonical,
+      },
+      allowedParentOrigin,
+    );
+  });
+</script>
