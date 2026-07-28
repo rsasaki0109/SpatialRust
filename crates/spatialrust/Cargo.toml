@@ -219,6 +219,12 @@ interchange-full = ["interchange-gltf", "interchange-openusd"]
 distribute = ["dep:spatialrust-distribute"]
 platform = ["dep:spatialrust-platform"]
 viz = ["dep:spatialrust-viz", "spatialrust-viz/core"]
+render-wgpu = [
+    "viz",
+    "gpu-wgpu",
+    "dep:spatialrust-render-wgpu",
+    "spatialrust-render-wgpu/wgpu",
+]
 north-star = [
     "records",
     "arrow-full",
@@ -267,6 +273,7 @@ spatialrust-interchange = { workspace = true, optional = true }
 spatialrust-distribute = { workspace = true, optional = true }
 spatialrust-platform = { workspace = true, optional = true }
 spatialrust-viz = { workspace = true, optional = true }
+spatialrust-render-wgpu = { workspace = true, optional = true }
 ctrlc = { version = "3.4", optional = true }
 
 [dev-dependencies]

@@ -42,6 +42,8 @@ pub use spatialrust_mapping as mapping;
 pub use spatialrust_platform as platform;
 #[cfg(feature = "records")]
 pub use spatialrust_records as records;
+#[cfg(feature = "render-wgpu")]
+pub use spatialrust_render_wgpu as render_wgpu;
 #[cfg(feature = "runtime")]
 pub use spatialrust_runtime as runtime;
 #[cfg(feature = "scene")]
