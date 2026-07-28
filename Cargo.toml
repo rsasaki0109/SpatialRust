@@ -34,6 +34,7 @@ members = [
     "crates/spatialrust-viz",
     "crates/spatialrust-render-wgpu",
     "crates/spatialrust-viewer",
+    "crates/spatialrust-lod",
 ]
 # spatialrust-py is a PyO3 cdylib built with maturin; keep it out of the Rust
 # workspace so `cargo test --workspace` does not require a Python toolchain.
@@ -83,6 +84,7 @@ spatialrust-platform = { path = "crates/spatialrust-platform", version = "1.2.0"
 spatialrust-viz = { path = "crates/spatialrust-viz", version = "1.2.0", default-features = false }
 spatialrust-render-wgpu = { path = "crates/spatialrust-render-wgpu", version = "1.2.0" }
 spatialrust-viewer = { path = "crates/spatialrust-viewer", version = "1.2.0", default-features = false }
+spatialrust-lod = { path = "crates/spatialrust-lod", version = "1.2.0", default-features = false }
 
 bytemuck = { version = "1", features = ["derive"] }
 las = "0.9"

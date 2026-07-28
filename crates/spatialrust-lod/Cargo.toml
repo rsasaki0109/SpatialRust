@@ -1,0 +1,21 @@
+[package]
+name = "spatialrust-lod"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Bounded camera-driven LOD planning and residency for SpatialRust visualization"
+
+[features]
+default = []
+records = ["dep:spatialrust-records"]
+copc = ["dep:spatialrust-io"]
+
+[dependencies]
+spatialrust-io = { workspace = true, optional = true, features = ["io-copc"] }
+spatialrust-math.workspace = true
+spatialrust-records = { workspace = true, optional = true }
+spatialrust-viz.workspace = true
+thiserror.workspace = true

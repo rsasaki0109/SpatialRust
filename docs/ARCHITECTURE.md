@@ -204,3 +204,11 @@ in-flight chunk budgets. Camera motion may cancel obsolete requests but must not
 leak leases or GPU allocations. Headless rendering and deterministic image
 comparison provide the portable correctness boundary; interactive frame-rate
 numbers remain dated, adapter-specific receipts.
+
+`spatialrust-lod` is the renderer-independent enforcement layer. It accepts a
+validated hierarchy rather than opening data itself, uses separate enter/exit
+screen-error thresholds, and selects resident ancestors while finer children
+are unavailable. Optional records integration owns drop-scoped decoded-memory
+leases; GPU admission records caller-declared upload/allocation bytes and
+evicts only unprotected LRU nodes. The COPC adapter produces a bounded query but
+never performs range IO implicitly.

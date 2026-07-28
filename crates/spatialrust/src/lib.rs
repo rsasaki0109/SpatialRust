@@ -36,6 +36,8 @@ pub use spatialrust_image as image;
 pub use spatialrust_image_io as image_io;
 #[cfg(any(feature = "interchange-gltf", feature = "interchange-openusd"))]
 pub use spatialrust_interchange as interchange;
+#[cfg(feature = "lod")]
+pub use spatialrust_lod as lod;
 #[cfg(feature = "mapping")]
 pub use spatialrust_mapping as mapping;
 #[cfg(feature = "platform")]

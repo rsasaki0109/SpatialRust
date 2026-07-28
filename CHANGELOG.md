@@ -43,6 +43,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   dimension, timestamp-skew, ordering, and payload/timestamp mismatches and
   provides deterministic nearest-frame and calibrated pixel inspection.
 
+- **Bounded streaming LOD (Epic 137)**: `spatialrust-lod` adds validated index
+  hierarchies, camera-frustum selection, screen-error hysteresis, deterministic
+  point/upload/in-flight admission, obsolete-request cancellation, and
+  progressive resident-ancestor display. Record-memory leases, per-frame upload
+  limits, protected LRU GPU eviction, cleanup receipts, and an optional bounded
+  COPC query adapter make every materialization and transfer caller-visible.
+
 ## [1.2.0] — 2026-07-27
 
 ### Added

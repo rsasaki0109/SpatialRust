@@ -791,7 +791,7 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | 134 | Complete | 89, 133 | Headless wgpu point/line/triangle renderer with explicit upload, color maps, depth, picking, screenshots, and reusable GPU resources |
 | 135 | Complete | 134 | Native viewer MVP with orbit/pan/zoom, layer inspector, point attributes, and algorithm-debug overlays for normals, voxels, planes, clusters, and registration |
 | 136 | Complete | 92–94, 135 | Mesh, surfel, Gaussian, trajectory, pose-graph, camera-frustum, RGB-D, and semantic scene inspection |
-| 137 | Planned | 127–132, 134 | Bounded COPC/index-driven frustum and LOD streaming with cancellation, progressive refinement, and strict memory/upload/point budgets |
+| 137 | Complete | 127–132, 134 | Bounded COPC/index-driven frustum and LOD streaming with cancellation, progressive refinement, and strict memory/upload/point budgets |
 | 138 | Planned | 134–137 | WebAssembly/WebGPU viewer with portable scene state, browser input, and bounded remote data access |
 | 139 | Planned | 135–138 | Python and Jupyter adapters using the same viewer state and explicit ownership/transfer contracts |
 | 140 | Planned | 133–139 | Cross-platform headless image conformance, native/Web/Python smoke tests, performance receipts, documentation, migration guidance, and Visual release gate |
@@ -840,6 +840,13 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | --- | --- | --- |
 | 136A | Complete | Mesh zero-copy pointer identity plus surfel, Gaussian RGB/opacity, trajectory, pose-graph, calibrated frustum, and semantic centroid adapters with exact source/output/generated-byte receipts |
 | 136B | Complete | Borrowed RGB/depth/cloud frames, bounded timestamp skew, ordered nearest-frame selection, exact dimension/payload validation, calibrated pixel unprojection, and invalid-depth handling |
+
+### Epic 137 progress
+
+| Slice | Status | Evidence |
+| --- | --- | --- |
+| 137A | Complete | Validated deterministic hierarchy, perspective/orthographic frustum selection, screen-error enter/exit hysteresis, traversal-order and camera-jitter stability, obsolete request cancellation, and resident-ancestor progressive display |
+| 137B | Complete | Hard point/host/GPU/upload/in-flight budgets, records-backed RAII chunk leases, cooperative cancellation, protected deterministic LRU eviction, exact upload/cleanup receipts, and selected-bounds COPC query adaptation |
 
 ### Visual completion gates
 
