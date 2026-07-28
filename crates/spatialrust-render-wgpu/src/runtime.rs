@@ -10,6 +10,7 @@ use spatialrust_viz::{
     TriangleMeshView, VisualPrimitive, VisualResidency,
 };
 
+use crate::render::RenderPipelines;
 use crate::{GpuGeometry, GpuGeometryKind, RenderError, RenderResult};
 
 const MAX_CACHED_BUFFERS: usize = 32;
@@ -84,10 +85,11 @@ impl RenderBufferPool {
 
 /// Renderer runtime sharing one explicit `spatialrust-gpu` wgpu device.
 pub struct WgpuRenderer {
-    id: u64,
-    runtime: Arc<WgpuRuntime>,
+    pub(crate) id: u64,
+    pub(crate) runtime: Arc<WgpuRuntime>,
     device_identity: DeviceIdentity,
     buffer_pool: Mutex<RenderBufferPool>,
+    pub(crate) render_pipelines: Mutex<RenderPipelines>,
 }
 
 impl WgpuRenderer {
@@ -100,7 +102,13 @@ impl WgpuRenderer {
         let device = format!("{}#renderer-{id}", adapter.name);
         let device_identity = DeviceIdentity::try_new(backend, device)
             .expect("wgpu adapter identity and renderer id are non-empty");
-        Self { id, runtime, device_identity, buffer_pool: Mutex::new(RenderBufferPool::default()) }
+        Self {
+            id,
+            runtime,
+            device_identity,
+            buffer_pool: Mutex::new(RenderBufferPool::default()),
+            render_pipelines: Mutex::new(RenderPipelines::default()),
+        }
     }
 
     /// Identity of this exact renderer runtime.

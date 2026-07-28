@@ -13,4 +13,7 @@ pub enum RenderError {
     /// A visualization transfer receipt could not be constructed.
     #[error("transfer receipt: {0}")]
     Transfer(String),
+    /// A caller-requested GPU readback failed.
+    #[error("readback failed: {0}")]
+    Readback(String),
 }
