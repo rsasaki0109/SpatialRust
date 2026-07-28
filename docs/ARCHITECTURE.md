@@ -167,3 +167,31 @@ mismatches, and excessive run/file-handle fan-out. Concrete IO/pipeline/Python
 adapters remain provisional; the bounded record traits, chunk lease, memory
 budget, cancellation, options, and versioned receipt are the stable 1.2
 foundation.
+
+## Visual architecture boundary
+
+The Visual program is Epics 133–140 in `docs/ROADMAP.md`. Visualization remains
+an additive consumer of spatial data and never expands `spatialrust-core`:
+
+```text
+math + optional core capabilities -> viz contracts
+viz contracts + gpu-wgpu          -> render-wgpu
+render-wgpu + io/scene/mapping    -> native viewer
+render-wgpu + bounded records     -> explicit streaming LOD
+render-wgpu                        -> Web/WASM and Python/Jupyter adapters
+```
+
+`spatialrust-viz` owns backend-independent borrowed geometry, camera, style,
+layer, residency, and transfer-receipt contracts. Borrowed host views do not
+interleave or copy structure-of-arrays point data. GPU allocation, upload,
+render passes, picking, and readback belong to `spatialrust-render-wgpu`; every
+host/device crossing is caller-requested and recorded. Windowing and UI
+dependencies stay in the dedicated `spatialrust-viewer` application crate.
+
+Native windowing, Web/WASM bindings, and Python/Jupyter adapters are independently
+feature-gated. Large-cloud display consumes the bounded records and persisted
+index contracts from Epics 127–132, with explicit point, memory, upload, and
+in-flight chunk budgets. Camera motion may cancel obsolete requests but must not
+leak leases or GPU allocations. Headless rendering and deterministic image
+comparison provide the portable correctness boundary; interactive frame-rate
+numbers remain dated, adapter-specific receipts.
