@@ -395,6 +395,10 @@ mod tests {
     }
 
     fn serve_test_range(stream: &mut TcpStream, payload: &[u8], requests: &AtomicUsize) {
+        // On macOS an accepted socket can inherit `O_NONBLOCK` from the
+        // listener. The fixture serves synchronously, so make that contract
+        // explicit before reading the request.
+        stream.set_nonblocking(false).unwrap();
         let mut buffer = [0_u8; 512];
         let read = stream.read(&mut buffer).unwrap();
         let request = std::str::from_utf8(&buffer[..read]).unwrap();
