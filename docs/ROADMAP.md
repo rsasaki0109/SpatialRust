@@ -776,3 +776,68 @@ outside core.
   device crossover.
 - Cross-chunk normal estimation and global clustering.
 - Stabilization or redesign of the provisional `SpatialTensor` API.
+
+## SpatialRust Visual program (Epics 133–140)
+
+The Visual program makes point clouds, algorithm results, reconstructed scenes,
+and synchronized sensor data inspectable without introducing UI or rendering
+dependencies into `spatialrust-core`. Host/device transfers remain explicit,
+named, and measurable. The base renderer starts with materialized data; bounded
+COPC/index-driven LOD follows the Epics 127–132 contracts.
+
+| Epic | Status | Depends on | Deliverable |
+| --- | --- | --- | --- |
+| 133 | Complete | 0, 100 | Backend-independent borrowed geometry, camera, style, layer, residency, and explicit transfer-receipt contracts in `spatialrust-viz` |
+| 134 | Planned | 89, 133 | Headless wgpu point/line/triangle renderer with explicit upload, color maps, depth, picking, screenshots, and reusable GPU resources |
+| 135 | Planned | 134 | Native viewer MVP with orbit/pan/zoom, layer inspector, point attributes, and algorithm-debug overlays for normals, voxels, planes, clusters, and registration |
+| 136 | Planned | 92–94, 135 | Mesh, surfel, Gaussian, trajectory, pose-graph, camera-frustum, RGB-D, and semantic scene inspection |
+| 137 | Planned | 127–132, 134 | Bounded COPC/index-driven frustum and LOD streaming with cancellation, progressive refinement, and strict memory/upload/point budgets |
+| 138 | Planned | 134–137 | WebAssembly/WebGPU viewer with portable scene state, browser input, and bounded remote data access |
+| 139 | Planned | 135–138 | Python and Jupyter adapters using the same viewer state and explicit ownership/transfer contracts |
+| 140 | Planned | 133–139 | Cross-platform headless image conformance, native/Web/Python smoke tests, performance receipts, documentation, migration guidance, and Visual release gate |
+
+### Visual delivery slices
+
+| Slice | Scope | Required evidence |
+| --- | --- | --- |
+| 133A | Borrowed SoA positions, RGB/scalar attributes, lines, and indexed triangles | zero-copy pointer identity, length, index, and mismatch-denial tests |
+| 133B | Validated projection, camera, color, point style, unique layer ordering, and core capability adapter | invalid finite/range/style tests and feature-alone build |
+| 133C | Explicit host/device residency and ordered transfer receipt | direction/residency denial and checked byte-overflow tests |
+| 134A | Explicit wgpu upload and device-resident geometry handles | exact upload ledger, runtime identity, recycling, and no-hidden-readback tests |
+| 134B | Point, line, and triangle render passes with depth and stable color maps | deterministic headless fixtures and shader validation |
+| 134C | Picking, camera fit, and caller-requested RGBA screenshot readback | exact synthetic IDs, bounds, transfer, and row-padding tests |
+| 135A | Native window, camera controls, drag/drop, layer visibility, style controls, and attribute inspector | scripted input/state tests plus native smoke test |
+| 135B | Normal, voxel, plane, cluster, correspondence, bounds, and search-radius overlays | canonical algorithm fixtures and stable overlay identity |
+| 136A | Mesh, surfel, Gaussian, trajectory, pose graph, frustum, and semantic adapters | source-identity and geometry-count parity tests |
+| 136B | Synchronized RGB/depth/cloud timeline and projection inspection | deterministic timestamp/frame alignment fixtures |
+| 137A | Camera-driven bounded LOD request planner with hysteresis and cancellation | deterministic selection across traversal order and camera jitter |
+| 137B | Leased chunk upload, GPU eviction, progressive refinement, and hard budgets | memory/upload/point/in-flight denial, cancellation, and cleanup receipts |
+| 138A | WASM/WebGPU renderer and serializable viewer state | browser smoke test and native/Web headless parity |
+| 138B | Bounded HTTP range source and browser interaction | remote fixture, cancellation, cache, and request-budget tests |
+| 139A | Python viewer state, explicit NumPy borrowing/copying, and native launch | wheel smoke tests and ownership-lifetime tests |
+| 139B | Jupyter widget transport and Web viewer embedding | notebook execution and state round-trip tests |
+| 140A | Linux/Windows/macOS renderer and viewer conformance | strict headless images, transfer ledgers, and native smoke matrix |
+| 140B | Web/Python/Jupyter conformance, docs, migration, and aggregate release decision | fail-closed Visual release gate and committed receipt |
+
+### Visual completion gates
+
+- `spatialrust-viz` builds without wgpu, windowing, image codecs, ROS 2, ONNX,
+  CUDA, Python, or browser dependencies.
+- No render or viewer API performs an implicit CPU/GPU crossover. Every upload,
+  readback, and device-to-device copy appears in a checked receipt.
+- Headless fixtures define portable correctness for geometry, depth, color,
+  picking, and overlays; tolerance and adapter identity are recorded.
+- Streaming display never materializes the full source and fails before
+  exceeding memory, point, upload-byte, or in-flight chunk limits.
+- Native, Web, Python, and Jupyter surfaces round-trip one versioned viewer-state
+  contract and preserve layer identity and camera state.
+- The Visual release gate fails closed on missing, skipped, duplicate, stale, or
+  over-budget evidence.
+
+### Visual exclusions
+
+- Rendering or UI types in `spatialrust-core`.
+- An automatic CPU/GPU placement policy or an unrecorded staging copy.
+- Mandatory native windowing, browser, Python, ROS 2, CUDA, or codec dependencies
+  in the default workspace feature set.
+- Claims of universal interactive frame-rate parity across adapters or hardware.

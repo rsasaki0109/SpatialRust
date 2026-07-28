@@ -218,6 +218,7 @@ interchange-openusd = ["scene", "dep:spatialrust-interchange", "spatialrust-inte
 interchange-full = ["interchange-gltf", "interchange-openusd"]
 distribute = ["dep:spatialrust-distribute"]
 platform = ["dep:spatialrust-platform"]
+viz = ["dep:spatialrust-viz", "spatialrust-viz/core"]
 north-star = [
     "records",
     "arrow-full",
@@ -265,6 +266,7 @@ spatialrust-runtime = { workspace = true, optional = true }
 spatialrust-interchange = { workspace = true, optional = true }
 spatialrust-distribute = { workspace = true, optional = true }
 spatialrust-platform = { workspace = true, optional = true }
+spatialrust-viz = { workspace = true, optional = true }
 ctrlc = { version = "3.4", optional = true }
 
 [dev-dependencies]

@@ -54,6 +54,8 @@ pub use spatialrust_sync as sync;
 pub use spatialrust_tensor as tensor;
 #[cfg(feature = "vision")]
 pub use spatialrust_vision as vision;
+#[cfg(feature = "viz")]
+pub use spatialrust_viz as viz;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
