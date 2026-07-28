@@ -1,0 +1,25 @@
+//! Viewer state, interaction controls, native window shell, and debug overlays.
+//!
+//! The default feature set is renderer- and window-system-independent. Native
+//! window creation is opt-in through `native`; geometry uploads remain explicit
+//! operations in `spatialrust-render-wgpu`.
+
+#![deny(unsafe_code)]
+#![warn(missing_docs)]
+
+mod controls;
+mod error;
+#[cfg(feature = "native")]
+mod native;
+mod overlay;
+mod state;
+
+pub use controls::{InputAction, ViewerController};
+pub use error::{ViewerError, ViewerResult};
+#[cfg(feature = "native")]
+pub use native::{NativeViewer, NativeViewerOptions};
+pub use overlay::{DebugOverlay, OverlayGeometry, OverlayKind};
+pub use state::{
+    AttributeSummary, InspectorSelection, LayerPresentation, ViewerState, ViewportSize,
+    VIEWER_STATE_VERSION,
+};

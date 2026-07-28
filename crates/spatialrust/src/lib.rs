@@ -54,6 +54,8 @@ pub use spatialrust_semantic as semantic;
 pub use spatialrust_sync as sync;
 #[cfg(feature = "tensor")]
 pub use spatialrust_tensor as tensor;
+#[cfg(feature = "viewer")]
+pub use spatialrust_viewer as viewer;
 #[cfg(feature = "vision")]
 pub use spatialrust_vision as vision;
 #[cfg(feature = "viz")]

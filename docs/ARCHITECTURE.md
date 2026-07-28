@@ -187,6 +187,10 @@ interleave or copy structure-of-arrays point data. GPU allocation, upload,
 render passes, picking, and readback belong to `spatialrust-render-wgpu`; every
 host/device crossing is caller-requested and recorded. Windowing and UI
 dependencies stay in the dedicated `spatialrust-viewer` application crate.
+That crate's default build contains only portable viewer state, input reduction,
+attribute inspection, and owned debug-overlay adapters. Its `native` feature
+adds winit window/event handling; it does not upload geometry. Applications
+retain control of explicit renderer upload and presentation integration.
 
 Native windowing, Web/WASM bindings, and Python/Jupyter adapters are independently
 feature-gated. Large-cloud display consumes the bounded records and persisted

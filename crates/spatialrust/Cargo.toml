@@ -10,7 +10,11 @@ description = "Next-generation spatial computing framework for Rust"
 
 [features]
 default = []
-serde = ["spatialrust-core/serde", "spatialrust-math/serde"]
+serde = [
+    "spatialrust-core/serde",
+    "spatialrust-math/serde",
+    "spatialrust-viewer?/serde",
+]
 tensor-aoso = ["spatialrust-core/tensor-aoso"]
 io-pcd = ["spatialrust-io/io-pcd"]
 io-ply = ["spatialrust-io/io-ply"]
@@ -225,6 +229,8 @@ render-wgpu = [
     "dep:spatialrust-render-wgpu",
     "spatialrust-render-wgpu/wgpu",
 ]
+viewer = ["viz", "dep:spatialrust-viewer"]
+viewer-native = ["viewer", "render-wgpu", "spatialrust-viewer/native"]
 north-star = [
     "records",
     "arrow-full",
@@ -274,6 +280,7 @@ spatialrust-distribute = { workspace = true, optional = true }
 spatialrust-platform = { workspace = true, optional = true }
 spatialrust-viz = { workspace = true, optional = true }
 spatialrust-render-wgpu = { workspace = true, optional = true }
+spatialrust-viewer = { workspace = true, optional = true }
 ctrlc = { version = "3.4", optional = true }
 
 [dev-dependencies]
@@ -362,3 +369,8 @@ required-features = [
     "filter-voxel",
     "feature-normal",
 ]
+
+[[example]]
+name = "native_viewer"
+path = "examples/native_viewer.rs"
+required-features = ["viewer-native"]

@@ -789,7 +789,7 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | --- | --- | --- | --- |
 | 133 | Complete | 0, 100 | Backend-independent borrowed geometry, camera, style, layer, residency, and explicit transfer-receipt contracts in `spatialrust-viz` |
 | 134 | Complete | 89, 133 | Headless wgpu point/line/triangle renderer with explicit upload, color maps, depth, picking, screenshots, and reusable GPU resources |
-| 135 | Planned | 134 | Native viewer MVP with orbit/pan/zoom, layer inspector, point attributes, and algorithm-debug overlays for normals, voxels, planes, clusters, and registration |
+| 135 | Complete | 134 | Native viewer MVP with orbit/pan/zoom, layer inspector, point attributes, and algorithm-debug overlays for normals, voxels, planes, clusters, and registration |
 | 136 | Planned | 92–94, 135 | Mesh, surfel, Gaussian, trajectory, pose-graph, camera-frustum, RGB-D, and semantic scene inspection |
 | 137 | Planned | 127–132, 134 | Bounded COPC/index-driven frustum and LOD streaming with cancellation, progressive refinement, and strict memory/upload/point budgets |
 | 138 | Planned | 134–137 | WebAssembly/WebGPU viewer with portable scene state, browser input, and bounded remote data access |
@@ -826,6 +826,13 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | 134A | Complete | Exact position/RGB/scalar/index upload ledger, renderer runtime identity, bounded buffer recycling, and wrong-runtime denial tests |
 | 134B | Complete | Deterministic point/line/triangle headless rendering, depth, point-size quads, RGB/scalar color modes, and six cached pipeline variants |
 | 134C | Complete | Exact point IDs, perspective bounds fit, tightly packed RGBA readback, row-padding removal, runtime/bounds denial, and transfer receipts |
+
+### Epic 135 progress
+
+| Slice | Status | Evidence |
+| --- | --- | --- |
+| 135A | Complete | Feature-gated winit shell, deterministic orbit/pan/zoom/focus reducer, resize and validated drag/drop, stable layer visibility/style state, and point-attribute inspector |
+| 135B | Complete | Owned normal, voxel, plane, cluster, correspondence, bounds, and search-radius fixtures with stable IDs, exact geometry counts, borrowed layer conversion, and malformed-input denial |
 
 ### Visual completion gates
 
