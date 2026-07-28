@@ -38,6 +38,8 @@ pub use spatialrust_image_io as image_io;
 pub use spatialrust_interchange as interchange;
 #[cfg(feature = "mapping")]
 pub use spatialrust_mapping as mapping;
+#[cfg(feature = "lod")]
+pub use spatialrust_lod as lod;
 #[cfg(feature = "platform")]
 pub use spatialrust_platform as platform;
 #[cfg(feature = "records")]
