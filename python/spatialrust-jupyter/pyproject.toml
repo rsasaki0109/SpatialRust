@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spatialrust-jupyter"
+version = "1.2.0"
+description = "Jupyter widget transport for the SpatialRust Web viewer"
+requires-python = ">=3.8"
+license = { text = "MIT OR Apache-2.0" }
+authors = [{ name = "SpatialRust Contributors" }]
+dependencies = [
+    "anywidget>=0.9,<0.10",
+    "spatialrust>=1.2.0",
+    "traitlets>=5",
+]
+
+[project.optional-dependencies]
+test = [
+    "nbclient>=0.10",
+    "nbformat>=5.10",
+    "pytest>=7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spatialrust_jupyter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -10,6 +10,9 @@
 
 #[allow(unsafe_code)]
 mod dlpack_capsule;
+mod viewer;
+
+use viewer::{PyViewerPointSource, PyViewerState};
 
 use numpy::ndarray::{Array2, Array3};
 use numpy::{
@@ -4451,6 +4454,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySphereResult>()?;
     m.add_class::<PyCylinderResult>()?;
     m.add_class::<PyRegistrationResult>()?;
+    m.add_class::<PyViewerState>()?;
+    m.add_class::<PyViewerPointSource>()?;
     m.add_function(wrap_pyfunction!(read_image, m)?)?;
     m.add_function(wrap_pyfunction!(tensor_copy_from_numpy, m)?)?;
     m.add_function(wrap_pyfunction!(tensor_view_from_dlpack, m)?)?;

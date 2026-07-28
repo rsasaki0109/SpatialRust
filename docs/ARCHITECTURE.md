@@ -220,3 +220,13 @@ wgpu sharing is unavailable on wasm32; browser callers construct a main-thread
 runtime asynchronously. Remote byte access requires a bounded range plan before
 fetch, an abort signal, `206` plus exact response-length evidence, and explicit
 admission into the bounded WASM cache.
+
+The standalone `spatialrust-py` wheel wraps that same Web viewer envelope
+instead of defining another state model. NumPy viewer geometry either retains
+three contiguous SoA owners without copying or enters owned Rust storage through
+an explicitly named, byte-receipted copy. Native launch creates only the winit
+state/input shell; renderer uploads remain separate. The independently packaged
+`spatialrust-jupyter` AnyWidget validates state with the Rust binding and sends
+it to `spatialrust-web` through a versioned iframe protocol with exact
+source/origin checks. Neither adapter chooses a device, range source, upload, or
+readback.
