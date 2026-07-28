@@ -7,13 +7,26 @@
 #![deny(unsafe_code)]
 #![warn(missing_docs)]
 
+mod adapters;
 mod controls;
 mod error;
 #[cfg(feature = "native")]
 mod native;
 mod overlay;
 mod state;
+mod timeline;
 
+#[cfg(feature = "camera")]
+pub use adapters::camera_frustum_visual;
+#[cfg(feature = "scene-gaussian")]
+pub use adapters::gaussian_visual;
+#[cfg(feature = "semantic")]
+pub use adapters::semantic_visual;
+#[cfg(feature = "scene")]
+pub use adapters::{mesh_visual, surfel_visual};
+#[cfg(feature = "mapping")]
+pub use adapters::{pose_graph_visual, trajectory_visual};
+pub use adapters::{AdaptedGeometry, AdaptedVisual, AdapterReceipt};
 pub use controls::{InputAction, ViewerController};
 pub use error::{ViewerError, ViewerResult};
 #[cfg(feature = "native")]
@@ -23,3 +36,4 @@ pub use state::{
     AttributeSummary, InspectorSelection, LayerPresentation, ViewerState, ViewportSize,
     VIEWER_STATE_VERSION,
 };
+pub use timeline::{FrameTimestamps, RgbdFrameView, RgbdPixelSample, RgbdTimeline};

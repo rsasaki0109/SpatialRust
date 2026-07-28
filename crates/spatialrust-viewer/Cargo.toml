@@ -12,10 +12,24 @@ description = "Native viewer state, controls, and debug overlays for SpatialRust
 default = []
 serde = ["dep:serde", "spatialrust-math/serde", "spatialrust-viz/serde"]
 native = ["dep:winit"]
+scene = ["dep:spatialrust-scene"]
+scene-gaussian = ["scene", "spatialrust-scene/gaussian"]
+mapping = ["dep:spatialrust-mapping"]
+camera = ["dep:spatialrust-camera"]
+semantic = ["dep:spatialrust-semantic"]
+adapters-all = ["scene-gaussian", "mapping", "camera", "semantic"]
 
 [dependencies]
 serde = { workspace = true, optional = true }
 spatialrust-math = { workspace = true }
 spatialrust-viz = { workspace = true }
+spatialrust-camera = { workspace = true, optional = true }
+spatialrust-mapping = { workspace = true, optional = true }
+spatialrust-scene = { workspace = true, optional = true }
+spatialrust-semantic = { workspace = true, optional = true }
 thiserror.workspace = true
 winit = { workspace = true, optional = true }
+
+[dev-dependencies]
+spatialrust-core.workspace = true
+spatialrust-sync.workspace = true
