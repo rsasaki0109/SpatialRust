@@ -794,7 +794,7 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | 137 | Complete | 127–132, 134 | Bounded COPC/index-driven frustum and LOD streaming with cancellation, progressive refinement, and strict memory/upload/point budgets |
 | 138 | Complete | 134–137 | WebAssembly/WebGPU viewer with portable scene state, browser input, and bounded remote data access |
 | 139 | Complete | 135–138 | Python and Jupyter adapters using the same viewer state and explicit ownership/transfer contracts |
-| 140 | Planned | 133–139 | Cross-platform headless image conformance, native/Web/Python smoke tests, performance receipts, documentation, migration guidance, and Visual release gate |
+| 140 | Complete | 133–139 | Cross-platform headless image conformance, native/Web/Python smoke tests, performance receipts, documentation, migration guidance, and Visual release gate |
 
 ### Visual delivery slices
 
@@ -861,6 +861,13 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | --- | --- | --- |
 | 139A | Complete | abi3 wheel import, strict shared viewer-state round-trip, shared reducer input, validated native launch receipt, retained contiguous NumPy SoA pointer identity/lifetime, explicit AoS copy isolation, and exact byte receipts |
 | 139B | Complete | AnyWidget transport with Rust state validation, exact source/origin/version checks, Web embed handshake, Python round-trip tests, and executable nbclient notebook smoke |
+
+### Epic 140 progress
+
+| Slice | Status | Evidence |
+| --- | --- | --- |
+| 140A | Complete | Fail-closed whole-image 64×64 RGBA hash, exact geometry/frame/readback ledgers, mandatory headless adapter, and Linux/Windows/macOS renderer/viewer matrix |
+| 140B | Complete | wasm32 plus real-browser smoke, Python 3.8/current and executable Jupyter notebook coverage, Visual guide and `visual-1` migration policy, typed fresh-evidence budgets, and committed allowed receipt |
 
 ### Visual completion gates
 

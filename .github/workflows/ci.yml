@@ -324,6 +324,76 @@ jobs:
           cargo test -p spatialrust-platform streaming
           cargo run -p spatialrust --no-default-features --features platform,pipeline-streaming --example streaming_1_2_release_gate
 
+  visual-platform-conformance:
+    name: Visual conformance (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Linux software Vulkan adapter
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libvulkan1 mesa-vulkan-drivers
+      - name: Test Visual contracts, strict image, viewer, and LOD
+        run: |
+          cargo test -p spatialrust-viz
+          cargo test -p spatialrust-render-wgpu --features wgpu
+          cargo test -p spatialrust-viewer --all-features
+          cargo test -p spatialrust-lod --all-features
+          cargo test -p spatialrust-platform visual
+          cargo run -p spatialrust --no-default-features --features render-wgpu --example visual_headless_conformance
+          cargo run -p spatialrust --no-default-features --features platform --example visual_release_gate
+
+  visual-web-conformance:
+    name: Visual Web/WASM browser conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build WebGPU and browser WASM surfaces
+        run: |
+          cargo check -p spatialrust-web --target wasm32-unknown-unknown --features wasm,webgpu
+          cargo build -p spatialrust-web --target wasm32-unknown-unknown --features wasm
+          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          wasm-bindgen \
+            --target web \
+            --out-dir crates/spatialrust-web/web/pkg \
+            target/wasm32-unknown-unknown/debug/spatialrust_web.wasm
+      - name: Run real headless-browser smoke
+        run: |
+          set -euo pipefail
+          python -m http.server 8765 --directory crates/spatialrust-web/web >browser-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8765/browser_smoke.html >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          google-chrome \
+            --headless=new \
+            --no-sandbox \
+            --enable-unsafe-webgpu \
+            --use-angle=swiftshader \
+            --enable-features=Vulkan \
+            --virtual-time-budget=15000 \
+            --dump-dom \
+            http://127.0.0.1:8765/browser_smoke.html >browser-smoke-dom.txt
+          grep -F "SpatialRust Web viewer smoke: PASS" browser-smoke-dom.txt
+
   bench:
     name: Benchmark compile
     runs-on: ubuntu-latest

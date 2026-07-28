@@ -230,3 +230,13 @@ state/input shell; renderer uploads remain separate. The independently packaged
 it to `spatialrust-web` through a versioned iframe protocol with exact
 source/origin checks. Neither adapter chooses a device, range source, upload, or
 readback.
+
+The aggregate boundary is machine-checked by `VisualReleaseGate`. Stable
+backend-independent contracts and provisional adapters are registered
+explicitly. The gate requires strict Linux/Windows/macOS headless image
+evidence, native/browser/Python/Jupyter smoke evidence, transfer and LOD
+receipts, documentation and unsafe audit, and acknowledgement of the
+`visual-1` migration policy. It fails closed on missing, skipped, duplicate,
+future-dated, older-than-30-day, over-budget, or experimentally unstable
+evidence. The canonical decision and measurements are committed in
+`docs/VISUAL_RELEASE_RECEIPT.md`.
