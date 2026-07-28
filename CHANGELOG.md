@@ -19,6 +19,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+### Added
+
+- **Visual wgpu renderer (Epics 133–134)**: backend-independent borrowed
+  visualization contracts now feed an explicit, feature-gated wgpu backend.
+  Point, line, and indexed-triangle geometry stays device-resident across
+  headless color/depth passes; point styles support uniform, RGB, and scalar
+  color maps with pixel-sized quads. Caller-requested RGBA screenshots and point
+  picking emit exact readback receipts, while camera bounds fitting, runtime
+  identity, pipeline caching, and bounded buffer recycling remain explicit.
+
 ## [1.2.0] — 2026-07-27
 
 ### Added

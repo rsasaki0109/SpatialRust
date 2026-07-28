@@ -23,3 +23,6 @@ spatialrust-gpu = { workspace = true, features = ["gpu-wgpu"], optional = true }
 spatialrust-viz = { workspace = true, optional = true }
 thiserror.workspace = true
 wgpu = { workspace = true, optional = true }
+
+[dev-dependencies]
+spatialrust-math.workspace = true

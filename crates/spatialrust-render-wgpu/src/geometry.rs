@@ -3,7 +3,7 @@ use spatialrust_viz::{DeviceIdentity, VisualResidency};
 use crate::{runtime::BufferSlot, RenderResult, WgpuRenderer};
 
 /// Device-resident geometry topology.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum GpuGeometryKind {
     /// Independent points.
     Points,
