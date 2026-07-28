@@ -64,6 +64,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   strict origin/source checks, canonical frontend state validation, and an
   executable notebook smoke fixture for the Web viewer embed.
 
+- **Visual conformance and release gate (Epic 140)**: a fail-closed whole-image
+  renderer fixture and Linux/Windows/macOS matrix enforce canonical pixels and
+  exact upload/readback ledgers. A typed aggregate gate covers native,
+  Web/WASM/browser, Python 3.8/current, Jupyter, bounded LOD, docs, security,
+  API stability, and unsafe audit; it rejects missing, skipped, duplicate,
+  stale, future-dated, over-budget, or wrong-migration evidence. The Visual
+  guide, `visual-1` migration policy, and allowed release receipt are committed.
+
 ## [1.2.0] — 2026-07-27
 
 ### Added

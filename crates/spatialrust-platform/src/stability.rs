@@ -186,6 +186,41 @@ impl StabilityRegistry {
         registry
     }
 
+    /// Seeds the Visual 1 release surface.
+    ///
+    /// Backend-independent contracts are stable. Renderers, viewers, LOD, and
+    /// language/browser adapters remain provisional behind explicit features.
+    #[must_use]
+    pub fn visual_surface() -> Self {
+        let mut registry = Self::new();
+        for path in [
+            "spatialrust-viz::VisualPrimitive",
+            "spatialrust-viz::Camera",
+            "spatialrust-viz::VisualStyle",
+            "spatialrust-viz::VisualLayer",
+            "spatialrust-viz::TransferReceipt",
+        ] {
+            registry.register(path, ApiStabilityClass::Stable);
+        }
+        for path in [
+            "spatialrust-render-wgpu::WgpuRenderer",
+            "spatialrust-render-wgpu::GpuGeometry",
+            "spatialrust-render-wgpu::HeadlessRender",
+            "spatialrust-viewer::ViewerState",
+            "spatialrust-viewer::ViewerController",
+            "spatialrust-lod::LodPlanner",
+            "spatialrust-lod::LodGpuCache",
+            "spatialrust-web::WebViewerState",
+            "spatialrust-web::RangePlanner",
+            "python::ViewerState",
+            "python::ViewerPointSource",
+            "spatialrust_jupyter::ViewerWidget",
+        ] {
+            registry.register(path, ApiStabilityClass::Provisional);
+        }
+        registry
+    }
+
     /// Seeds the north-star crate surface used by Epic 100 gates.
     #[must_use]
     pub fn north_star_surface() -> Self {
@@ -263,6 +298,20 @@ mod tests {
         );
         assert_eq!(
             registry.lookup("spatialrust-pipeline::StreamingPipeline").unwrap().class,
+            ApiStabilityClass::Provisional
+        );
+        assert_eq!(registry.experimental_count(), 0);
+    }
+
+    #[test]
+    fn visual_surface_freezes_contracts_but_not_adapters() {
+        let registry = StabilityRegistry::visual_surface();
+        assert_eq!(
+            registry.lookup("spatialrust-viz::TransferReceipt").unwrap().class,
+            ApiStabilityClass::Stable
+        );
+        assert_eq!(
+            registry.lookup("spatialrust-web::RangePlanner").unwrap().class,
             ApiStabilityClass::Provisional
         );
         assert_eq!(registry.experimental_count(), 0);

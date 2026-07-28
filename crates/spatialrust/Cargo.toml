@@ -344,6 +344,16 @@ path = "examples/vision_2_release_gate.rs"
 required-features = ["platform"]
 
 [[example]]
+name = "visual_release_gate"
+path = "examples/visual_release_gate.rs"
+required-features = ["platform"]
+
+[[example]]
+name = "visual_headless_conformance"
+path = "examples/visual_headless_conformance.rs"
+required-features = ["render-wgpu"]
+
+[[example]]
 name = "streaming_1_2_release_gate"
 path = "examples/streaming_1_2_release_gate.rs"
 required-features = ["platform", "pipeline-streaming"]
