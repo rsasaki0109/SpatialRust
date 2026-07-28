@@ -1,4 +1,6 @@
-use std::sync::{Arc, OnceLock};
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 #[cfg(feature = "gpu-image")]
 use std::collections::HashMap;
@@ -66,6 +68,7 @@ pub const MULTI_GATHER4_STORAGE_BUFFERS: u32 = 10;
 pub const MULTI_GATHER2_STORAGE_BUFFERS: u32 = 6;
 
 #[cfg(feature = "gpu-wgpu")]
+#[cfg(not(target_arch = "wasm32"))]
 static SHARED_RUNTIME: OnceLock<Result<Arc<WgpuRuntime>, String>> = OnceLock::new();
 
 #[cfg(feature = "gpu-wgpu")]
@@ -83,6 +86,7 @@ impl WgpuRuntime {
     }
 
     /// Returns a process-wide shared headless runtime, initializing it on first use.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn shared() -> SpatialResult<Arc<Self>> {
         match SHARED_RUNTIME.get_or_init(init_shared_runtime) {
             Ok(runtime) => Ok(Arc::clone(runtime)),
@@ -230,7 +234,12 @@ impl WgpuRuntime {
         self.upload_pool.clear();
     }
 
-    async fn new_headless_async(preference: WgpuPowerPreference) -> SpatialResult<Self> {
+    /// Creates a headless runtime asynchronously.
+    ///
+    /// This is the browser/WebGPU construction path because blocking a WASM
+    /// main thread is not supported. Native callers may also use it from their
+    /// async executor.
+    pub async fn new_headless_async(preference: WgpuPowerPreference) -> SpatialResult<Self> {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -312,11 +321,12 @@ fn max_gather_channels_for_limit(storage_buffers_per_stage: u32) -> u32 {
 }
 
 #[cfg(feature = "gpu-wgpu")]
+#[cfg(not(target_arch = "wasm32"))]
 fn init_shared_runtime() -> Result<Arc<WgpuRuntime>, String> {
     WgpuRuntime::new_headless().map(Arc::new).map_err(|error| error.to_string())
 }
 
-#[cfg(all(feature = "gpu-wgpu", test))]
+#[cfg(all(feature = "gpu-wgpu", test, not(target_arch = "wasm32")))]
 mod tests {
     use super::WgpuRuntime;
     use crate::pipeline_cache::ComputePipelineCache;

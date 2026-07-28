@@ -250,6 +250,13 @@ viewer-full = [
 lod = ["viz", "records", "dep:spatialrust-lod", "spatialrust-lod/records"]
 lod-copc = ["lod", "io-copc", "spatialrust-lod/copc"]
 viewer-lod = ["viewer", "render-wgpu", "lod-copc"]
+web = ["viewer", "dep:spatialrust-web"]
+web-wasm = ["web", "spatialrust-web/wasm"]
+web-webgpu = [
+    "web-wasm",
+    "render-wgpu",
+    "spatialrust-web/webgpu",
+]
 north-star = [
     "records",
     "arrow-full",
@@ -301,6 +308,7 @@ spatialrust-viz = { workspace = true, optional = true }
 spatialrust-render-wgpu = { workspace = true, optional = true }
 spatialrust-viewer = { workspace = true, optional = true }
 spatialrust-lod = { workspace = true, optional = true }
+spatialrust-web = { workspace = true, optional = true }
 ctrlc = { version = "3.4", optional = true }
 
 [dev-dependencies]

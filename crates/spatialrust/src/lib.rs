@@ -62,6 +62,8 @@ pub use spatialrust_viewer as viewer;
 pub use spatialrust_vision as vision;
 #[cfg(feature = "viz")]
 pub use spatialrust_viz as viz;
+#[cfg(feature = "web")]
+pub use spatialrust_web as web;
 
 pub use spatialrust_core::{
     CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
