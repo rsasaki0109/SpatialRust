@@ -219,7 +219,12 @@ interchange-full = ["interchange-gltf", "interchange-openusd"]
 distribute = ["dep:spatialrust-distribute"]
 platform = ["dep:spatialrust-platform"]
 viz = ["dep:spatialrust-viz", "spatialrust-viz/core"]
-render-wgpu = ["viz", "gpu-wgpu", "dep:spatialrust-render-wgpu"]
+render-wgpu = [
+    "viz",
+    "gpu-wgpu",
+    "dep:spatialrust-render-wgpu",
+    "spatialrust-render-wgpu/wgpu",
+]
 north-star = [
     "records",
     "arrow-full",

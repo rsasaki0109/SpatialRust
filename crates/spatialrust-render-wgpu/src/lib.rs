@@ -8,9 +8,13 @@
 #![warn(missing_docs)]
 
 mod error;
+#[cfg(feature = "wgpu")]
 mod geometry;
+#[cfg(feature = "wgpu")]
 mod runtime;
 
 pub use error::{RenderError, RenderResult};
+#[cfg(feature = "wgpu")]
 pub use geometry::{GpuGeometry, GpuGeometryKind};
+#[cfg(feature = "wgpu")]
 pub use runtime::WgpuRenderer;
