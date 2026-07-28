@@ -191,6 +191,11 @@ That crate's default build contains only portable viewer state, input reduction,
 attribute inspection, and owned debug-overlay adapters. Its `native` feature
 adds winit window/event handling; it does not upload geometry. Applications
 retain control of explicit renderer upload and presentation integration.
+Scene, mapping, camera, and semantic adapters are separate additive viewer
+features. Mesh storage is borrowed directly; adapters that must transpose AoS
+data or generate lines return a byte-exact `AdapterReceipt`. Synchronized RGB-D
+inspection borrows image/cloud payloads and validates dimensions, ordering, and
+sensor skew before exposing a timeline frame.
 
 Native windowing, Web/WASM bindings, and Python/Jupyter adapters are independently
 feature-gated. Large-cloud display consumes the bounded records and persisted

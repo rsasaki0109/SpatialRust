@@ -36,6 +36,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   plane, cluster, correspondence, bounds, and search-radius overlays expose
   deterministic borrowed visual layers without hidden GPU transfers.
 
+- **Scene, mapping, semantic, and RGB-D inspection (Epic 136)**: explicit
+  viewer adapters cover reconstructed meshes, surfels, Gaussian primitives,
+  trajectories, pose graphs, calibrated camera frusta, and semantic centroids
+  with source/count/copy receipts. A borrowed RGB-D/cloud timeline rejects
+  dimension, timestamp-skew, ordering, and payload/timestamp mismatches and
+  provides deterministic nearest-frame and calibrated pixel inspection.
+
 ## [1.2.0] — 2026-07-27
 
 ### Added

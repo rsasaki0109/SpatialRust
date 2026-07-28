@@ -231,6 +231,22 @@ render-wgpu = [
 ]
 viewer = ["viz", "dep:spatialrust-viewer"]
 viewer-native = ["viewer", "render-wgpu", "spatialrust-viewer/native"]
+viewer-scene = ["viewer", "scene", "spatialrust-viewer/scene"]
+viewer-gaussian = [
+    "viewer-scene",
+    "scene-gaussian",
+    "spatialrust-viewer/scene-gaussian",
+]
+viewer-mapping = ["viewer", "mapping", "spatialrust-viewer/mapping"]
+viewer-rgbd = ["viewer", "camera-rgbd", "spatialrust-viewer/camera"]
+viewer-semantic = ["viewer", "semantic", "spatialrust-viewer/semantic"]
+viewer-full = [
+    "viewer-native",
+    "viewer-gaussian",
+    "viewer-mapping",
+    "viewer-rgbd",
+    "viewer-semantic",
+]
 north-star = [
     "records",
     "arrow-full",
