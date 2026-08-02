@@ -42,6 +42,9 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 Post-MVP additions:
 
 - Unified file IO via `read_point_cloud_file` / `write_point_cloud_file`
+- Explicit `spatialrust_io::StorageRoots` for external input/output storage;
+  `io-manifest` adds checksummed size receipts without adding storage policy to
+  `spatialrust-core`
 - `MvpPipelineConfig::*_policy` for feature-gated GPU MVP stages
 - `MvpPipelineResult::receipt` for per-stage backend and transfer accounting
 

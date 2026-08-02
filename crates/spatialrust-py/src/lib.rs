@@ -8,6 +8,8 @@
 #![allow(clippy::useless_conversion)]
 #![deny(unsafe_code)]
 
+use std::path::PathBuf;
+
 #[allow(unsafe_code)]
 mod dlpack_capsule;
 mod viewer;
@@ -50,6 +52,7 @@ use spatialrust::image_io::{
     decode_path as decode_image_path, encode_path as encode_image_path, DecodeOptions,
     DecodedMetadata, DecodedPixels, EncodeOptions, ImageFileFormat,
 };
+use spatialrust::io::{DatasetManifest, ReceiptRole, StorageRoots};
 use spatialrust::math::{Mat3, Mat4, Vec2, Vec3};
 use spatialrust::metrics::{chamfer_distance as chamfer, hausdorff_distance as hausdorff};
 use spatialrust::pipeline::{
@@ -1091,7 +1094,8 @@ impl PyPointCloudStream {
     run_points=65536,
     max_runs=1024,
     spool_dir=None,
-    spool_limit_bytes=2147483648
+    spool_limit_bytes=2147483648,
+    input_root=None
 ))]
 #[allow(clippy::too_many_arguments)]
 fn open_point_cloud_stream(
@@ -1105,6 +1109,7 @@ fn open_point_cloud_stream(
     max_runs: usize,
     spool_dir: Option<String>,
     spool_limit_bytes: u64,
+    input_root: Option<String>,
 ) -> PyResult<PyPointCloudStream> {
     let options = StreamOptions::new(
         chunk_points,
@@ -1112,6 +1117,8 @@ fn open_point_cloud_stream(
     )
     .map_err(to_py_err)?;
     let cancellation = CancellationToken::default();
+    let roots = StorageRoots::new(input_root.map(PathBuf::from), None);
+    let path = roots.resolve_input(&path).map_err(to_py_err)?.to_string_lossy().into_owned();
     let source =
         open_python_stream_source(&path, options, cancellation.clone()).map_err(to_py_err)?;
     let mut pipeline = StreamingPipeline::new(source, path.clone()).map_err(to_py_err)?;
@@ -1533,15 +1540,34 @@ fn hausdorff_distance(a: &PyPointCloud, b: &PyPointCloud) -> PyResult<f64> {
 
 /// Reads a point cloud from a file (PCD/PLY/LAS/COPC by extension).
 #[pyfunction]
-fn read(path: &str) -> PyResult<PyPointCloud> {
-    let inner = read_point_cloud_file(path).map_err(to_py_err)?;
+#[pyo3(signature = (path, input_root=None))]
+fn read(path: &str, input_root: Option<String>) -> PyResult<PyPointCloud> {
+    let roots = StorageRoots::new(input_root.map(PathBuf::from), None);
+    let resolved = roots.resolve_input(path).map_err(to_py_err)?;
+    let inner = read_point_cloud_file(&resolved).map_err(to_py_err)?;
     Ok(PyPointCloud { inner })
 }
 
 /// Writes a point cloud to a file (format chosen by extension).
 #[pyfunction]
-fn write(path: &str, cloud: &PyPointCloud) -> PyResult<()> {
-    write_point_cloud_file(path, &cloud.inner).map_err(to_py_err)
+#[pyo3(signature = (path, cloud, output_root=None, manifest_path=None))]
+fn write(
+    path: &str,
+    cloud: &PyPointCloud,
+    output_root: Option<String>,
+    manifest_path: Option<String>,
+) -> PyResult<()> {
+    let roots = StorageRoots::new(None, output_root.map(PathBuf::from));
+    let resolved = roots.resolve_output(path).map_err(to_py_err)?;
+    roots.ensure_output_parent(&resolved).map_err(to_py_err)?;
+    write_point_cloud_file(&resolved, &cloud.inner).map_err(to_py_err)?;
+    if let Some(manifest_path) = manifest_path {
+        let manifest_path = roots.resolve_output(manifest_path).map_err(to_py_err)?;
+        let mut manifest = DatasetManifest::new();
+        manifest.add_file(ReceiptRole::Output, &resolved).map_err(to_py_err)?;
+        manifest.write_json(manifest_path).map_err(to_py_err)?;
+    }
+    Ok(())
 }
 
 /// Voxel-grid downsamples a cloud. `policy` is one of "auto", "cpu", "cpu-single".
@@ -1728,6 +1754,93 @@ fn run_pipeline(
     }
 
     let result = MvpPipeline::new(config).run(&cloud.inner).map_err(to_py_err)?;
+
+    let normal = result.plane.model.normal;
+    let transfers = result.receipt.transfer_stats();
+    let resolved_policies = vec![
+        format!("{:?}", result.receipt.voxel.resolved_policy()),
+        format!("{:?}", result.receipt.normals.resolved_policy()),
+        format!("{:?}", result.receipt.plane.resolved_policy()),
+        format!("{:?}", result.receipt.clusters.resolved_policy()),
+    ];
+    Ok(PyPipelineResult {
+        output: PyPointCloud { inner: result.output },
+        downsampled: PyPointCloud { inner: result.downsampled },
+        cluster_count: result.clusters.cluster_count,
+        cluster_sizes: result.clusters.cluster_sizes,
+        plane_inliers: result.plane.inlier_count,
+        plane_normal: (normal.x, normal.y, normal.z),
+        resolved_policies,
+        host_to_device_bytes: transfers.host_to_device_bytes(),
+        device_to_device_bytes: transfers.device_to_device_bytes(),
+        device_to_host_bytes: transfers.device_to_host_bytes(),
+    })
+}
+
+/// Reads, runs the MVP pipeline, and writes a point cloud using explicit data roots.
+///
+/// Relative `input` and `output` paths are resolved under `input_root` and
+/// `output_root`. When `manifest_path` is supplied, the manifest contains
+/// local input/output size and SHA-256 receipts.
+#[pyfunction]
+#[pyo3(signature = (
+    input,
+    output,
+    input_root=None,
+    output_root=None,
+    manifest_path=None,
+    leaf_size=0.05,
+    cluster_tolerance=None,
+    min_cluster_size=None,
+    plane_distance=None,
+    policy="auto"
+))]
+#[allow(clippy::too_many_arguments)]
+fn run_pipeline_files(
+    input: &str,
+    output: &str,
+    input_root: Option<String>,
+    output_root: Option<String>,
+    manifest_path: Option<String>,
+    leaf_size: f32,
+    cluster_tolerance: Option<f32>,
+    min_cluster_size: Option<usize>,
+    plane_distance: Option<f32>,
+    policy: &str,
+) -> PyResult<PyPipelineResult> {
+    let roots = StorageRoots::new(
+        input_root.map(PathBuf::from),
+        output_root.map(PathBuf::from),
+    );
+    let input_path = roots.resolve_input(input).map_err(to_py_err)?;
+    let output_path = roots.resolve_output(output).map_err(to_py_err)?;
+    let manifest_path = manifest_path
+        .map(|path| roots.resolve_output(path))
+        .transpose()
+        .map_err(to_py_err)?;
+    let cloud = read_point_cloud_file(&input_path).map_err(to_py_err)?;
+
+    let mut config = MvpPipelineConfig::with_voxel_leaf_size(leaf_size);
+    config.voxel_policy = parse_policy(policy)?;
+    if let Some(tol) = cluster_tolerance {
+        config.cluster.cluster_tolerance = tol;
+    }
+    if let Some(min) = min_cluster_size {
+        config.cluster.min_cluster_size = min;
+    }
+    if let Some(dist) = plane_distance {
+        config.plane.distance_threshold = dist;
+    }
+    let result = MvpPipeline::new(config).run(&cloud).map_err(to_py_err)?;
+
+    roots.ensure_output_parent(&output_path).map_err(to_py_err)?;
+    write_point_cloud_file(&output_path, &result.output).map_err(to_py_err)?;
+    if let Some(manifest_path) = manifest_path {
+        let mut manifest = DatasetManifest::new();
+        manifest.add_file(ReceiptRole::Input, &input_path).map_err(to_py_err)?;
+        manifest.add_file(ReceiptRole::Output, &output_path).map_err(to_py_err)?;
+        manifest.write_json(manifest_path).map_err(to_py_err)?;
+    }
 
     let normal = result.plane.model.normal;
     let transfers = result.receipt.transfer_stats();
@@ -4509,6 +4622,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(statistical_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(radius_outlier_removal, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
+    m.add_function(wrap_pyfunction!(run_pipeline_files, m)?)?;
     m.add_function(wrap_pyfunction!(region_growing, m)?)?;
     m.add_function(wrap_pyfunction!(dbscan, m)?)?;
     m.add_function(wrap_pyfunction!(ground_segmentation, m)?)?;

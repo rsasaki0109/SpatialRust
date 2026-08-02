@@ -137,6 +137,7 @@ def test_exports_present():
     for name in (
         "PointCloud", "PointCloudStream", "open_point_cloud_stream",
         "voxel_downsample", "dbscan", "register_icp",
+        "run_pipeline_files",
         "voxelize", "knn_graph", "chamfer_distance", "oriented_bounding_box",
         "rgbd_to_point_cloud", "depth_to_xyz",
         "resize_image", "letterbox_image", "normalize_image_chw", "resize_normalize_image_chw",
@@ -167,6 +168,37 @@ def test_bounded_point_cloud_stream_and_receipt(tmp_path):
     receipt = __import__("json").loads(stream.receipt_json())
     assert receipt["input_points"] == 3
     assert receipt["output_points"] == 2
+
+
+def test_external_storage_roots_and_manifest(tmp_path):
+    input_root = tmp_path / "input"
+    output_root = tmp_path / "output"
+    input_root.mkdir()
+    (input_root / "scan.pcd").write_text(
+        "VERSION .7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\n"
+        "COUNT 1 1 1\nWIDTH 3\nHEIGHT 1\nPOINTS 3\nDATA ascii\n"
+        "0 0 0\n1 0 0\n2 0 0\n",
+        encoding="ascii",
+    )
+
+    cloud = sr.read("scan.pcd", input_root=str(input_root))
+    sr.write(
+        "runs/copy.pcd",
+        cloud,
+        output_root=str(output_root),
+        manifest_path="receipts/copy.json",
+    )
+
+    manifest_path = output_root / "receipts" / "copy.json"
+    assert (output_root / "runs" / "copy.pcd").exists()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["version"] == 1
+    assert manifest["entries"][0]["role"] == "output"
+    assert manifest["entries"][0]["size_bytes"] > 0
+    assert len(manifest["entries"][0]["sha256"]) == 64
+
+    with pytest.raises(ValueError):
+        sr.read("../scan.pcd", input_root=str(input_root))
 
 
 # --------------------------------------------------------------------------- #

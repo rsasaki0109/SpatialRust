@@ -108,10 +108,13 @@ pub use spatialrust_io::{
     read_copc_url, read_copc_url_info, read_copc_url_with_query, HttpByteSource,
 };
 
+pub use spatialrust_io::StorageRoots;
 pub use spatialrust_io::{
     detect_point_cloud_format, read_point_cloud_file, read_point_cloud_file_with_format,
     write_point_cloud_file, write_point_cloud_file_with_format, PointCloudFileFormat,
 };
+#[cfg(feature = "io-manifest")]
+pub use spatialrust_io::{DatasetManifest, FileReceipt, ReceiptRole, DATASET_MANIFEST_VERSION};
 
 #[cfg(feature = "search-kdtree")]
 pub use spatialrust_search::{

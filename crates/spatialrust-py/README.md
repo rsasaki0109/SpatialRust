@@ -113,6 +113,12 @@ print(stream.receipt_json())
 Call `stream.cancel()` to stop cooperatively at a chunk boundary. Retained
 Python chunks are caller-owned and are outside the native pipeline budget.
 
+Pass `input_root="/media/sasaki/aiueo/datasets"` to resolve a relative stream
+path on an external SSD. `read()` and `write()` accept `input_root`/
+`output_root`; `write(..., manifest_path=...)` records the output size and
+SHA-256. Use `run_pipeline_files()` when one manifest should contain both the
+input and output receipts.
+
 ## Quickstart
 
 ```python
@@ -148,7 +154,7 @@ reloaded = sr.read("labeled.las")
 | `PointCloud.xyz()` | XYZ as an `(N, 3)` float32 array |
 | `PointCloud.labels()` | Cluster labels as `(N,)` int32, or `None` |
 | `PointCloud.field_names()` / `len(cloud)` | Schema fields / point count |
-| `read(path)` / `write(path, cloud)` | IO by file extension |
+| `read(path, input_root=None)` / `write(path, cloud, output_root=None, manifest_path=None)` | Explicit external roots and output receipt |
 | `voxel_downsample(cloud, leaf_size, policy="auto")` | Voxel-grid downsample |
 | `crop_box(cloud, min, max, invert=False)` | Keep/drop points inside an AABB |
 | `pass_through(cloud, field, min, max, invert=False)` | Keep/drop points by a field's value range |
@@ -167,6 +173,7 @@ reloaded = sr.read("labeled.las")
 | `statistical_outlier_removal(cloud, k_neighbors=16, std_mul=1.0)` | Drop points far from their k-NN (SOR) |
 | `radius_outlier_removal(cloud, radius=0.5, min_neighbors=4)` | Drop points with too few neighbors in radius (ROR) |
 | `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline with resolved backend and transfer-byte properties |
+| `run_pipeline_files(input, output, input_root=None, output_root=None, manifest_path=None, ...)` | File-backed MVP pipeline with explicit roots and input/output manifest |
 | `iss_keypoints(cloud, salient_radius=0.2, non_max_radius=0.15, ...)` | ISS keypoints (sparse salient sub-cloud) |
 | `orient_normals(cloud, k_neighbors=15)` | Estimate normals, then orient them consistently (MST) |
 | `detect_boundary(cloud, search_radius=0.1, angle_threshold=1.5708, ...)` | Boundary / edge points (sparse sub-cloud) |

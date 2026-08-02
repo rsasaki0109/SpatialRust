@@ -19,6 +19,7 @@ io-copc = ["dep:copc-streaming", "dep:copc-core", "dep:copc-writer", "dep:pollst
 io-copc-http = ["io-copc", "dep:ureq"]
 streaming = ["dep:spatialrust-records"]
 serde = ["spatialrust-core/serde"]
+io-manifest = ["dep:serde", "dep:serde_json", "dep:sha2"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
@@ -32,8 +33,12 @@ copc-core = { workspace = true, optional = true }
 copc-writer = { workspace = true, optional = true }
 pollster = { workspace = true, optional = true }
 ureq = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
 
 [dev-dependencies]
+tempfile.workspace = true
 
 [[example]]
 name = "bounded_pcd_to_ply"

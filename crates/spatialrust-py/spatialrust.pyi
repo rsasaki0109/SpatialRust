@@ -25,7 +25,7 @@ __all__: list[str] = [
     "open_point_cloud_stream",
     "write", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
     "orient_normals", "detect_boundary", "mls_smooth", "farthest_point_sampling",
-    "statistical_outlier_removal", "radius_outlier_removal", "run_pipeline",
+    "statistical_outlier_removal", "radius_outlier_removal", "run_pipeline", "run_pipeline_files",
     "region_growing", "dbscan", "ground_segmentation", "segment_multi_plane",
     "ransac_sphere", "ransac_cylinder", "chamfer_distance", "hausdorff_distance",
     "apply_transform", "recenter", "scale", "normalize_unit_sphere", "merge",
@@ -604,8 +604,13 @@ class RegistrationResult:
 # --------------------------------------------------------------------------- #
 # IO
 # --------------------------------------------------------------------------- #
-def read(path: str) -> PointCloud: ...
-def write(path: str, cloud: PointCloud) -> None: ...
+def read(path: str, input_root: Optional[str] = ...) -> PointCloud: ...
+def write(
+    path: str,
+    cloud: PointCloud,
+    output_root: Optional[str] = ...,
+    manifest_path: Optional[str] = ...,
+) -> None: ...
 def open_point_cloud_stream(
     path: str,
     chunk_points: int = ...,
@@ -617,6 +622,7 @@ def open_point_cloud_stream(
     max_runs: int = ...,
     spool_dir: Optional[str] = ...,
     spool_limit_bytes: int = ...,
+    input_root: Optional[str] = ...,
 ) -> PointCloudStream: ...
 
 # --------------------------------------------------------------------------- #
@@ -755,6 +761,18 @@ def radius_graph(cloud: PointCloud, radius: float) -> _I32Array:
 # --------------------------------------------------------------------------- #
 def run_pipeline(
     cloud: PointCloud,
+    leaf_size: float = ...,
+    cluster_tolerance: Optional[float] = ...,
+    min_cluster_size: Optional[int] = ...,
+    plane_distance: Optional[float] = ...,
+    policy: str = ...,
+) -> PipelineResult: ...
+def run_pipeline_files(
+    input: str,
+    output: str,
+    input_root: Optional[str] = ...,
+    output_root: Optional[str] = ...,
+    manifest_path: Optional[str] = ...,
     leaf_size: float = ...,
     cluster_tolerance: Optional[float] = ...,
     min_cluster_size: Optional[int] = ...,
