@@ -1,0 +1,22 @@
+[package]
+name = "spatialrust-mapping"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Trajectories, pose graphs, and localization primitives for SpatialRust"
+
+[features]
+default = []
+vision-odometry = ["dep:spatialrust-vision"]
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-math.workspace = true
+spatialrust-sync.workspace = true
+spatialrust-vision = { workspace = true, optional = true, features = ["odometry"] }
+thiserror.workspace = true
+
+[dev-dependencies]

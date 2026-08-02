@@ -72,6 +72,19 @@ fn inner_roi_bounds(cloud: &spatialrust::PointCloud, fraction: f32) -> spatialru
     )
 }
 
+#[cfg(all(feature = "mvp", feature = "mvp-http"))]
+fn inner_xy_bounds(bounds: spatialrust::CopcBounds, fraction: f64) -> spatialrust::CopcBounds {
+    let center_x = 0.5 * (bounds.min[0] + bounds.max[0]);
+    let center_y = 0.5 * (bounds.min[1] + bounds.max[1]);
+    let half_x = 0.5 * fraction * (bounds.max[0] - bounds.min[0]);
+    let half_y = 0.5 * fraction * (bounds.max[1] - bounds.min[1]);
+    spatialrust::CopcBounds::from_ranges(
+        (center_x - half_x, center_x + half_x),
+        (center_y - half_y, center_y + half_y),
+        (bounds.min[2], bounds.max[2]),
+    )
+}
+
 #[cfg(feature = "mvp")]
 #[test]
 fn mvp_public_pcd_copc_bounds_resolution_and_pipeline() {
@@ -140,23 +153,24 @@ fn mvp_public_pcd_copc_bounds_resolution_and_pipeline() {
 #[test]
 #[ignore = "requires network; run bench/public_copc/run.py --http"]
 fn mvp_http_autzen_copc_bounds_smoke() {
-    use spatialrust::{read_copc_url_info, read_copc_url_with_query, CopcBounds, CopcQuery};
+    use spatialrust::{read_copc_url_info, read_copc_url_with_query, CopcQuery};
 
     const AUTZEN_URL: &str = "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz";
 
     let info = read_copc_url_info(AUTZEN_URL).expect("autzen copc info");
-    let full_count = read_copc_url_with_query(AUTZEN_URL, None).expect("autzen full read").len();
-    let roi = CopcBounds::from_ranges(
-        (info.root_bounds.min[0], info.root_bounds.min[0] + 100.0),
-        (info.root_bounds.min[1], info.root_bounds.min[1] + 100.0),
-        (info.root_bounds.min[2], info.root_bounds.min[2] + 5.0),
-    );
+    assert!(info.point_count > 0, "Autzen COPC header reported no points");
+    let roi = inner_xy_bounds(info.root_bounds, 0.25);
     let bounds_count = read_copc_url_with_query(AUTZEN_URL, Some(&CopcQuery::bounds(roi)))
         .expect("autzen bounds")
         .len();
 
-    assert!(full_count > bounds_count);
+    assert!(bounds_count > 0, "central Autzen ROI returned no points");
+    assert!(
+        u64::try_from(bounds_count).unwrap() < info.point_count,
+        "{bounds_count} vs {}",
+        info.point_count
+    );
     eprintln!("HTTP Autzen COPC smoke");
-    eprintln!("  full points   : {full_count}");
+    eprintln!("  header points : {}", info.point_count);
     eprintln!("  roi points    : {bounds_count}");
 }

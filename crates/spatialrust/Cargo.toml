@@ -10,7 +10,11 @@ description = "Next-generation spatial computing framework for Rust"
 
 [features]
 default = []
-serde = ["spatialrust-core/serde", "spatialrust-math/serde"]
+serde = [
+    "spatialrust-core/serde",
+    "spatialrust-math/serde",
+    "spatialrust-viewer?/serde",
+]
 tensor-aoso = ["spatialrust-core/tensor-aoso"]
 io-pcd = ["spatialrust-io/io-pcd"]
 io-ply = ["spatialrust-io/io-ply"]
@@ -19,6 +23,7 @@ io-laz = ["spatialrust-io/io-laz"]
 io-e57 = ["spatialrust-io/io-e57"]
 io-copc = ["spatialrust-io/io-copc"]
 io-copc-http = ["io-copc", "spatialrust-io/io-copc-http"]
+io-streaming = ["records", "spatialrust-io/streaming"]
 search-kdtree = ["spatialrust-search/search-kdtree"]
 search-parallel = ["search-kdtree", "spatialrust-search/parallel"]
 search-graph = ["spatialrust-search/search-graph"]
@@ -113,6 +118,21 @@ mvp = [
 ]
 mvp-http = ["mvp", "io-copc-http"]
 pipeline-mvp = ["spatialrust-pipeline/pipeline-mvp"]
+pipeline-streaming = [
+    "records",
+    "io-streaming",
+    "spatialrust-pipeline/pipeline-streaming",
+]
+streaming-cli = [
+    "pipeline-streaming",
+    "io-pcd",
+    "io-ply",
+    "io-las",
+    "io-laz",
+    "io-copc-http",
+    "records-receipt-json",
+    "dep:ctrlc",
+]
 pipeline-mvp-gpu = [
     "spatialrust-pipeline/pipeline-mvp-gpu",
     "filter-voxel-gpu",
@@ -122,10 +142,136 @@ pipeline-mvp-gpu = [
 ]
 gpu-wgpu = ["spatialrust-gpu/gpu-wgpu"]
 gpu-aoso-staging = ["gpu-wgpu", "tensor-aoso", "spatialrust-gpu/gpu-aoso-staging"]
+gpu-image = ["gpu-wgpu", "image", "spatialrust-gpu/gpu-image"]
 metrics-distance = ["spatialrust-metrics/metrics-distance"]
 transform-ops = ["spatialrust-transform/transform-ops"]
 voxelize-occupancy = ["spatialrust-voxelize/voxelize-occupancy"]
 voxelize-range-image = ["spatialrust-voxelize/voxelize-range-image"]
+image = ["dep:spatialrust-image"]
+tensor = ["dep:spatialrust-tensor"]
+tensor-image = ["tensor", "image", "spatialrust-tensor/image"]
+tensor-spatial = ["tensor", "spatialrust-tensor/spatial"]
+tensor-dlpack = ["tensor", "spatialrust-tensor/dlpack"]
+ai = ["tensor", "dep:spatialrust-ai"]
+ai-onnxruntime = ["ai", "spatialrust-ai/onnxruntime"]
+ai-onnxruntime-cuda = ["ai-onnxruntime", "spatialrust-ai/onnxruntime-cuda"]
+ai-onnxruntime-tensorrt = ["ai-onnxruntime-cuda", "spatialrust-ai/onnxruntime-tensorrt"]
+ai-onnxruntime-directml = ["ai-onnxruntime", "spatialrust-ai/onnxruntime-directml"]
+image-io = ["image", "dep:spatialrust-image-io"]
+image-io-standard = ["image-io", "spatialrust-image-io/standard"]
+image-io-tiff = ["image-io", "spatialrust-image-io/tiff"]
+image-io-openexr = ["image-io", "spatialrust-image-io/openexr"]
+image-io-full = ["image-io-standard", "image-io-tiff", "image-io-openexr"]
+camera = ["dep:spatialrust-camera"]
+camera-rgbd = ["image", "camera"]
+vision = ["image", "dep:spatialrust-vision"]
+vision-resize = ["vision", "spatialrust-vision/resize"]
+vision-preprocess = ["vision-resize", "spatialrust-vision/preprocess"]
+vision-warp = ["vision-resize", "spatialrust-vision/warp"]
+vision-imgproc-filter = ["vision", "spatialrust-vision/imgproc-filter"]
+vision-imgproc-morphology = ["vision", "spatialrust-vision/imgproc-morphology"]
+vision-imgproc-analysis = ["vision", "spatialrust-vision/imgproc-analysis"]
+vision-imgproc-canny = ["vision-imgproc-filter", "spatialrust-vision/imgproc-canny"]
+vision-feature2d = ["vision", "spatialrust-vision/feature2d"]
+vision-geometry = ["vision", "camera", "spatialrust-vision/geometry"]
+vision-odometry = ["vision-geometry", "vision-feature2d", "spatialrust-vision/odometry"]
+vision-photography = ["vision-warp", "vision-geometry", "spatialrust-vision/photography"]
+mapping-vision-odometry = ["vision-odometry", "mapping", "spatialrust-mapping/vision-odometry"]
+vision-detection = ["vision", "spatialrust-vision/detection"]
+vision-dense = ["vision-detection", "spatialrust-vision/dense"]
+vision-spatial = ["vision-dense", "camera-rgbd", "spatialrust-vision/spatial"]
+vision-ai-adapters = ["vision-preprocess", "vision-dense", "tensor-image", "spatialrust-vision/ai-adapters"]
+vision-video = ["vision-dense", "spatialrust-vision/video"]
+vision-video-adapters = ["vision-video", "spatialrust-vision/video-adapters"]
+vision-full = [
+    "vision-preprocess",
+    "vision-warp",
+    "vision-imgproc-filter",
+    "vision-imgproc-morphology",
+    "vision-imgproc-analysis",
+    "vision-imgproc-canny",
+    "vision-feature2d",
+    "vision-geometry",
+    "vision-odometry",
+    "vision-photography",
+    "vision-detection",
+    "vision-dense",
+    "vision-spatial",
+    "vision-ai-adapters",
+    "vision-video-adapters",
+]
+ai-vision-pipeline = ["ai", "vision-ai-adapters", "vision-spatial"]
+records = ["dep:spatialrust-records"]
+records-receipt-json = ["records", "spatialrust-records/receipt-json"]
+arrow-c-data = ["records", "dep:spatialrust-arrow", "spatialrust-arrow/arrow-c-data"]
+arrow-c-stream = ["arrow-c-data", "spatialrust-arrow/arrow-c-stream"]
+arrow-c-device = ["arrow-c-data", "spatialrust-arrow/arrow-c-device"]
+arrow-full = ["arrow-c-stream", "arrow-c-device"]
+sync = ["records", "dep:spatialrust-sync"]
+sync-mcap = ["sync", "spatialrust-sync/mcap"]
+mapping = ["sync", "dep:spatialrust-mapping"]
+scene = ["dep:spatialrust-scene"]
+scene-gaussian = ["scene", "spatialrust-scene/gaussian"]
+semantic = ["records", "dep:spatialrust-semantic"]
+episode = ["sync", "dep:spatialrust-episode"]
+runtime = ["sync", "dep:spatialrust-runtime"]
+runtime-graph = ["runtime", "distribute", "spatialrust-runtime/execution-graph"]
+runtime-ros2 = ["runtime", "spatialrust-runtime/ros2"]
+interchange-gltf = ["scene", "dep:spatialrust-interchange", "spatialrust-interchange/gltf"]
+interchange-openusd = ["scene", "dep:spatialrust-interchange", "spatialrust-interchange/openusd"]
+interchange-full = ["interchange-gltf", "interchange-openusd"]
+distribute = ["dep:spatialrust-distribute"]
+platform = ["dep:spatialrust-platform"]
+viz = ["dep:spatialrust-viz", "spatialrust-viz/core"]
+render-wgpu = [
+    "viz",
+    "gpu-wgpu",
+    "dep:spatialrust-render-wgpu",
+    "spatialrust-render-wgpu/wgpu",
+]
+viewer = ["viz", "dep:spatialrust-viewer"]
+viewer-native = ["viewer", "render-wgpu", "spatialrust-viewer/native"]
+viewer-scene = ["viewer", "scene", "spatialrust-viewer/scene"]
+viewer-gaussian = [
+    "viewer-scene",
+    "scene-gaussian",
+    "spatialrust-viewer/scene-gaussian",
+]
+viewer-mapping = ["viewer", "mapping", "spatialrust-viewer/mapping"]
+viewer-rgbd = ["viewer", "camera-rgbd", "spatialrust-viewer/camera"]
+viewer-semantic = ["viewer", "semantic", "spatialrust-viewer/semantic"]
+viewer-full = [
+    "viewer-native",
+    "viewer-gaussian",
+    "viewer-mapping",
+    "viewer-rgbd",
+    "viewer-semantic",
+]
+lod = ["viz", "records", "dep:spatialrust-lod", "spatialrust-lod/records"]
+lod-copc = ["lod", "io-copc", "spatialrust-lod/copc"]
+viewer-lod = ["viewer", "render-wgpu", "lod-copc"]
+web = ["viewer", "dep:spatialrust-web"]
+web-wasm = ["web", "spatialrust-web/wasm"]
+web-webgpu = [
+    "web-wasm",
+    "render-wgpu",
+    "spatialrust-web/webgpu",
+]
+north-star = [
+    "records",
+    "arrow-full",
+    "sync",
+    "mapping",
+    "scene",
+    "scene-gaussian",
+    "semantic",
+    "episode",
+    "runtime",
+    "interchange-full",
+    "distribute",
+    "platform",
+]
+north-star-e2e = ["north-star", "ai-vision-pipeline", "sync-mcap", "runtime-ros2"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
@@ -141,13 +287,91 @@ spatialrust-pipeline = { workspace = true }
 spatialrust-metrics = { workspace = true }
 spatialrust-transform = { workspace = true }
 spatialrust-voxelize = { workspace = true }
+spatialrust-image = { workspace = true, optional = true }
+spatialrust-tensor = { workspace = true, optional = true }
+spatialrust-ai = { workspace = true, optional = true }
+spatialrust-image-io = { workspace = true, optional = true }
+spatialrust-camera = { workspace = true, optional = true }
+spatialrust-vision = { workspace = true, optional = true }
+spatialrust-records = { workspace = true, optional = true }
+spatialrust-arrow = { workspace = true, optional = true }
+spatialrust-sync = { workspace = true, optional = true }
+spatialrust-mapping = { workspace = true, optional = true }
+spatialrust-scene = { workspace = true, optional = true }
+spatialrust-semantic = { workspace = true, optional = true }
+spatialrust-episode = { workspace = true, optional = true }
+spatialrust-runtime = { workspace = true, optional = true }
+spatialrust-interchange = { workspace = true, optional = true }
+spatialrust-distribute = { workspace = true, optional = true }
+spatialrust-platform = { workspace = true, optional = true }
+spatialrust-viz = { workspace = true, optional = true }
+spatialrust-render-wgpu = { workspace = true, optional = true }
+spatialrust-viewer = { workspace = true, optional = true }
+spatialrust-lod = { workspace = true, optional = true }
+spatialrust-web = { workspace = true, optional = true }
+ctrlc = { version = "3.4", optional = true }
 
 [dev-dependencies]
+
+[[test]]
+name = "vision_api_v1"
+path = "tests/vision_api_v1.rs"
+required-features = ["platform", "camera-rgbd", "vision-full"]
+
+[[test]]
+name = "streaming_cli"
+path = "tests/streaming_cli.rs"
+required-features = ["streaming-cli"]
+
+[[example]]
+name = "north_star_demo"
+path = "examples/north_star_demo.rs"
+required-features = ["north-star-e2e"]
+
+[[example]]
+name = "vision_1_cpu"
+path = "examples/vision_1_cpu.rs"
+required-features = ["vision-full"]
+
+[[example]]
+name = "vision_1_release_gate"
+path = "examples/vision_1_release_gate.rs"
+required-features = ["platform"]
+
+[[example]]
+name = "vision_2_release_gate"
+path = "examples/vision_2_release_gate.rs"
+required-features = ["platform"]
+
+[[example]]
+name = "visual_release_gate"
+path = "examples/visual_release_gate.rs"
+required-features = ["platform"]
+
+[[example]]
+name = "visual_headless_conformance"
+path = "examples/visual_headless_conformance.rs"
+required-features = ["render-wgpu"]
+
+[[example]]
+name = "streaming_1_2_release_gate"
+path = "examples/streaming_1_2_release_gate.rs"
+required-features = ["platform", "pipeline-streaming"]
+
+[[example]]
+name = "video_tracking_e2e"
+path = "examples/video_tracking_e2e.rs"
+required-features = ["image-io-standard", "vision-video"]
 
 [[bin]]
 name = "spatialrust-mvp"
 path = "src/bin/spatialrust_mvp.rs"
 required-features = ["mvp"]
+
+[[bin]]
+name = "spatialrust-stream"
+path = "src/bin/spatialrust_stream.rs"
+required-features = ["streaming-cli"]
 
 [[example]]
 name = "readme_mvp_preview"
@@ -183,3 +407,8 @@ required-features = [
     "filter-voxel",
     "feature-normal",
 ]
+
+[[example]]
+name = "native_viewer"
+path = "examples/native_viewer.rs"
+required-features = ["viewer-native"]

@@ -1,4 +1,11 @@
-use std::sync::{Arc, OnceLock};
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Arc;
+use std::sync::OnceLock;
+
+#[cfg(feature = "gpu-image")]
+use std::collections::HashMap;
+#[cfg(feature = "gpu-image")]
+use std::sync::Mutex;
 
 use spatialrust_core::{DeviceKind, SpatialError, SpatialResult, SpatialRuntime};
 
@@ -14,6 +21,42 @@ pub struct WgpuRuntime {
     pipelines: OnceLock<ComputePipelineCache>,
     max_gather_channels: u32,
     upload_pool: GpuBufferPool,
+    adapter_info: WgpuAdapterInfo,
+    #[cfg(feature = "gpu-image")]
+    image_texture_pool: Mutex<HashMap<(u32, u32), Vec<wgpu::Texture>>>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_gray_pipeline: OnceLock<crate::image::kernels::gray::GrayPipeline>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_blur_pipeline: OnceLock<crate::image::kernels::box_blur::BlurPipeline>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_spatial_pipelines: OnceLock<crate::image::kernels::spatial::SpatialPipelines>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_ai_pack_pipeline: OnceLock<crate::image::ai_tensor::AiPackPipeline>,
+}
+
+/// Stable, serializable-friendly identity for the selected wgpu adapter.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WgpuAdapterInfo {
+    /// Human-readable adapter name.
+    pub name: String,
+    /// Graphics API backend such as Vulkan, Metal, or DirectX 12.
+    pub backend: String,
+    /// Adapter class such as integrated, discrete, CPU, or virtual GPU.
+    pub device_type: String,
+    /// Driver name reported by wgpu.
+    pub driver: String,
+    /// Additional driver version/details reported by wgpu.
+    pub driver_info: String,
+}
+
+/// Adapter power preference used when creating a headless wgpu runtime.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum WgpuPowerPreference {
+    /// Prefer a discrete or otherwise high-performance adapter.
+    #[default]
+    HighPerformance,
+    /// Prefer an integrated or otherwise power-efficient adapter.
+    LowPower,
 }
 
 /// Minimum storage buffers required for the 4-channel gather kernel.
@@ -25,18 +68,25 @@ pub const MULTI_GATHER4_STORAGE_BUFFERS: u32 = 10;
 pub const MULTI_GATHER2_STORAGE_BUFFERS: u32 = 6;
 
 #[cfg(feature = "gpu-wgpu")]
+#[cfg(not(target_arch = "wasm32"))]
 static SHARED_RUNTIME: OnceLock<Result<Arc<WgpuRuntime>, String>> = OnceLock::new();
 
 #[cfg(feature = "gpu-wgpu")]
 impl WgpuRuntime {
-    /// Creates a headless wgpu runtime using the default adapter.
+    /// Creates a headless wgpu runtime preferring a high-performance adapter.
     ///
     /// Prefer [`Self::shared`] when running multiple GPU filters in one process.
     pub fn new_headless() -> SpatialResult<Self> {
-        pollster::block_on(Self::new_headless_async())
+        Self::new_headless_with_preference(WgpuPowerPreference::HighPerformance)
+    }
+
+    /// Creates a headless wgpu runtime with an explicit adapter power preference.
+    pub fn new_headless_with_preference(preference: WgpuPowerPreference) -> SpatialResult<Self> {
+        pollster::block_on(Self::new_headless_async(preference))
     }
 
     /// Returns a process-wide shared headless runtime, initializing it on first use.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn shared() -> SpatialResult<Arc<Self>> {
         match SHARED_RUNTIME.get_or_init(init_shared_runtime) {
             Ok(runtime) => Ok(Arc::clone(runtime)),
@@ -54,6 +104,79 @@ impl WgpuRuntime {
     #[must_use]
     pub fn queue(&self) -> &wgpu::Queue {
         &self.queue
+    }
+
+    /// Returns the selected adapter/backend receipt.
+    #[must_use]
+    pub const fn adapter_info(&self) -> &WgpuAdapterInfo {
+        &self.adapter_info
+    }
+
+    /// Blocks until all previously submitted work on this device is complete.
+    ///
+    /// Normal device-resident chains do not synchronize implicitly. This is an
+    /// explicit profiling/testing boundary or host-coordination primitive.
+    pub fn wait_idle(&self) {
+        self.device.poll(wgpu::Maintain::Wait);
+    }
+
+    #[cfg(feature = "gpu-image")]
+    pub(crate) fn acquire_image_texture(
+        &self,
+        width: u32,
+        height: u32,
+        label: &'static str,
+    ) -> wgpu::Texture {
+        if let Some(texture) = self
+            .image_texture_pool
+            .lock()
+            .expect("image texture pool poisoned")
+            .get_mut(&(width, height))
+            .and_then(Vec::pop)
+        {
+            return texture;
+        }
+        self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(label),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Uint,
+            usage: wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::STORAGE_BINDING,
+            view_formats: &[],
+        })
+    }
+
+    #[cfg(feature = "gpu-image")]
+    pub(crate) fn recycle_image_texture(&self, width: u32, height: u32, texture: wgpu::Texture) {
+        let mut pool = self.image_texture_pool.lock().expect("image texture pool poisoned");
+        let textures = pool.entry((width, height)).or_default();
+        if textures.len() < 8 {
+            textures.push(texture);
+        } else {
+            texture.destroy();
+        }
+    }
+
+    /// Returns the number of image textures retained for steady-state reuse.
+    #[cfg(feature = "gpu-image")]
+    #[must_use]
+    pub fn cached_image_texture_count(&self) -> usize {
+        self.image_texture_pool.lock().map(|pool| pool.values().map(Vec::len).sum()).unwrap_or(0)
+    }
+
+    /// Returns the number of initialized GPU image pipeline families.
+    #[cfg(feature = "gpu-image")]
+    #[must_use]
+    pub fn initialized_image_pipeline_count(&self) -> usize {
+        usize::from(self.image_gray_pipeline.get().is_some())
+            + usize::from(self.image_blur_pipeline.get().is_some())
+            + usize::from(self.image_spatial_pipelines.get().is_some())
+            + usize::from(self.image_ai_pack_pipeline.get().is_some())
     }
 
     /// Returns cached compute pipelines for this runtime's device.
@@ -111,7 +234,12 @@ impl WgpuRuntime {
         self.upload_pool.clear();
     }
 
-    async fn new_headless_async() -> SpatialResult<Self> {
+    /// Creates a headless runtime asynchronously.
+    ///
+    /// This is the browser/WebGPU construction path because blocking a WASM
+    /// main thread is not supported. Native callers may also use it from their
+    /// async executor.
+    pub async fn new_headless_async(preference: WgpuPowerPreference) -> SpatialResult<Self> {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -119,7 +247,10 @@ impl WgpuRuntime {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::LowPower,
+                power_preference: match preference {
+                    WgpuPowerPreference::HighPerformance => wgpu::PowerPreference::HighPerformance,
+                    WgpuPowerPreference::LowPower => wgpu::PowerPreference::LowPower,
+                },
                 compatible_surface: None,
                 force_fallback_adapter: false,
             })
@@ -130,6 +261,14 @@ impl WgpuRuntime {
                 )
             })?;
 
+        let raw_adapter_info = adapter.get_info();
+        let adapter_info = WgpuAdapterInfo {
+            name: raw_adapter_info.name,
+            backend: format!("{:?}", raw_adapter_info.backend),
+            device_type: format!("{:?}", raw_adapter_info.device_type),
+            driver: raw_adapter_info.driver,
+            driver_info: raw_adapter_info.driver_info,
+        };
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
@@ -155,6 +294,17 @@ impl WgpuRuntime {
             pipelines: OnceLock::new(),
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
+            adapter_info,
+            #[cfg(feature = "gpu-image")]
+            image_texture_pool: Mutex::new(HashMap::new()),
+            #[cfg(feature = "gpu-image")]
+            image_gray_pipeline: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_blur_pipeline: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_spatial_pipelines: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_ai_pack_pipeline: OnceLock::new(),
         })
     }
 }
@@ -178,11 +328,12 @@ fn max_gather_channels_for_limit(storage_buffers_per_stage: u32) -> u32 {
 }
 
 #[cfg(feature = "gpu-wgpu")]
+#[cfg(not(target_arch = "wasm32"))]
 fn init_shared_runtime() -> Result<Arc<WgpuRuntime>, String> {
     WgpuRuntime::new_headless().map(Arc::new).map_err(|error| error.to_string())
 }
 
-#[cfg(all(feature = "gpu-wgpu", test))]
+#[cfg(all(feature = "gpu-wgpu", test, not(target_arch = "wasm32")))]
 mod tests {
     use super::WgpuRuntime;
     use crate::pipeline_cache::ComputePipelineCache;

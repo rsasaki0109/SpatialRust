@@ -8,6 +8,13 @@ use crate::error::{las_format, las_parse, IoError};
 use crate::las::schema::schema_from_point_cloud;
 use crate::{PointWriter, WriteOptions};
 
+#[cfg(feature = "streaming")]
+use crate::streaming::records_io;
+#[cfg(feature = "streaming")]
+use spatialrust_records::{
+    BoundedSpatialRecordSink, RecordsError, RecordsResult, SchemaDescriptor, SpatialRecordChunk,
+};
+
 /// Output encoding for LAS writers.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum LasWriteFormat {
@@ -101,6 +108,155 @@ pub fn write_las_file(
     }
 
     las_writer.close().map_err(|error| las_format(error.to_string()))
+}
+
+/// Sequential LAS/LAZ sink that writes each leased chunk immediately.
+#[cfg(feature = "streaming")]
+pub struct LasChunkSink<W: Write + Seek + Send + Sync + 'static> {
+    writer: Writer<W>,
+    schema: SchemaDescriptor,
+    export_schema: PointSchema,
+    point_format: Format,
+    expected_points: Option<u64>,
+    written_points: u64,
+    finished: bool,
+}
+
+#[cfg(feature = "streaming")]
+impl<W: Write + Seek + Send + Sync + 'static> LasChunkSink<W> {
+    /// Creates a LAS/LAZ sink over a seekable writer.
+    pub fn new(
+        writer: W,
+        schema: SchemaDescriptor,
+        expected_points: u64,
+        format: LasWriteFormat,
+    ) -> Result<Self, IoError> {
+        if format == LasWriteFormat::Laz {
+            #[cfg(not(feature = "io-laz"))]
+            return Err(crate::error::laz_format(
+                "LAZ output requires the io-laz feature".to_owned(),
+            ));
+        }
+        let (point_format, export_schema) = schema_from_point_cloud(schema.point_schema())?;
+        let header = header_from_cloud(point_format, format)?;
+        let writer = Writer::new(writer, header).map_err(|error| las_format(error.to_string()))?;
+        Ok(Self {
+            writer,
+            schema,
+            export_schema,
+            point_format,
+            expected_points: Some(expected_points),
+            written_points: 0,
+            finished: false,
+        })
+    }
+
+    /// Creates a LAS/LAZ sink whose final point count is not known up front.
+    ///
+    /// The seekable LAS writer patches the header when [`Self::finish`] closes it.
+    pub fn new_open_ended(
+        writer: W,
+        schema: SchemaDescriptor,
+        format: LasWriteFormat,
+    ) -> Result<Self, IoError> {
+        if format == LasWriteFormat::Laz {
+            #[cfg(not(feature = "io-laz"))]
+            return Err(crate::error::laz_format(
+                "LAZ output requires the io-laz feature".to_owned(),
+            ));
+        }
+        let (point_format, export_schema) = schema_from_point_cloud(schema.point_schema())?;
+        let header = header_from_cloud(point_format, format)?;
+        let writer = Writer::new(writer, header).map_err(|error| las_format(error.to_string()))?;
+        Ok(Self {
+            writer,
+            schema,
+            export_schema,
+            point_format,
+            expected_points: None,
+            written_points: 0,
+            finished: false,
+        })
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl LasChunkSink<std::io::BufWriter<std::fs::File>> {
+    /// Creates a local LAS/LAZ file sink.
+    pub fn create(
+        path: impl AsRef<std::path::Path>,
+        schema: SchemaDescriptor,
+        expected_points: u64,
+        format: LasWriteFormat,
+    ) -> Result<Self, IoError> {
+        Self::new(
+            std::io::BufWriter::new(std::fs::File::create(path)?),
+            schema,
+            expected_points,
+            format,
+        )
+    }
+
+    /// Creates a local LAS/LAZ sink whose final point count is not known up front.
+    pub fn create_open_ended(
+        path: impl AsRef<std::path::Path>,
+        schema: SchemaDescriptor,
+        format: LasWriteFormat,
+    ) -> Result<Self, IoError> {
+        Self::new_open_ended(std::io::BufWriter::new(std::fs::File::create(path)?), schema, format)
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl<W: Write + Seek + Send + Sync + 'static> BoundedSpatialRecordSink for LasChunkSink<W> {
+    fn write_chunk(&mut self, chunk: &SpatialRecordChunk) -> RecordsResult<()> {
+        if self.finished {
+            return Err(RecordsError::InvalidConfiguration("LAS sink is already finished".into()));
+        }
+        let cloud = chunk.record().cloud();
+        if cloud.schema() != self.schema.point_schema() {
+            return Err(RecordsError::SchemaMismatch(
+                "LAS chunk schema differs from sink schema".into(),
+            ));
+        }
+        let next = self
+            .written_points
+            .checked_add(
+                u64::try_from(cloud.len())
+                    .map_err(|_| RecordsError::ReceiptOverflow("LAS chunk point count".into()))?,
+            )
+            .ok_or_else(|| RecordsError::ReceiptOverflow("LAS point count".into()))?;
+        if let Some(expected_points) = self.expected_points {
+            if next > expected_points {
+                return Err(RecordsError::InvalidChunk(format!(
+                    "LAS sink expected {expected_points} points but received at least {next}"
+                )));
+            }
+        }
+        for index in 0..cloud.len() {
+            let point = point_from_cloud(cloud, &self.export_schema, index, self.point_format)
+                .map_err(records_io)?;
+            self.writer
+                .write_point(point)
+                .map_err(|error| records_io(las_format(error.to_string())))?;
+        }
+        self.written_points = next;
+        Ok(())
+    }
+
+    fn finish(&mut self) -> RecordsResult<()> {
+        if let Some(expected_points) = self.expected_points {
+            if self.written_points != expected_points {
+                return Err(RecordsError::InvalidChunk(format!(
+                    "LAS sink expected {expected_points} points but received {}",
+                    self.written_points
+                )));
+            }
+        }
+        self.writer.close().map_err(|error| records_io(las_format(error.to_string())))?;
+        self.finished = true;
+        Ok(())
+    }
 }
 
 fn header_from_cloud(point_format: Format, format: LasWriteFormat) -> Result<Header, IoError> {

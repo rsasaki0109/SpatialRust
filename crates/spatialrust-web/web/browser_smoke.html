@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SpatialRust Web viewer smoke</title>
+<pre id="status">running</pre>
+<script type="module">
+  import init, { BrowserViewer } from "./pkg/spatialrust_web.js";
+
+  const status = document.querySelector("#status");
+  try {
+    await init();
+    const budget = JSON.stringify({
+      max_requests_per_plan: 2,
+      max_requested_bytes_per_plan: 8,
+      max_single_range_bytes: 4,
+      max_cache_bytes: 8,
+    });
+    const viewer = BrowserViewer.new_default(640, 480, budget);
+    viewer.apply_input_json(JSON.stringify({ kind: "zoom", delta: 1 }));
+    const state = JSON.parse(viewer.state_json());
+    if (state.revision !== 1 || state.viewer.viewport.width !== 640) {
+      throw new Error("viewer state round-trip mismatch");
+    }
+    const ranges = JSON.stringify([
+      { start: 0, end_exclusive: 4 },
+      { start: 4, end_exclusive: 8 },
+    ]);
+    const plan = JSON.parse(viewer.plan_ranges_json(ranges, false));
+    if (plan.fetch.length !== 2 || plan.requested_bytes !== 8) {
+      throw new Error("bounded range plan mismatch");
+    }
+    if (!navigator.gpu) {
+      throw new Error("WebGPU unavailable");
+    }
+    status.textContent = "SpatialRust Web viewer smoke: PASS";
+  } catch (error) {
+    status.textContent = `SpatialRust Web viewer smoke: FAIL\n${error.stack ?? error}`;
+    throw error;
+  }
+</script>

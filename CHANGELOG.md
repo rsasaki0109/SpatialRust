@@ -28,6 +28,382 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - **Execution receipts**: core `ExecutionReceipt`/`ExecutionOutput<T>`, per-stage
   `MvpPipelineResult::receipt`, CLI backend/transfer summaries, and Python
   `PipelineResult` receipt properties.
+- **Visual wgpu renderer (Epics 133–134)**: backend-independent borrowed
+  visualization contracts now feed an explicit, feature-gated wgpu backend.
+  Point, line, and indexed-triangle geometry stays device-resident across
+  headless color/depth passes; point styles support uniform, RGB, and scalar
+  color maps with pixel-sized quads. Caller-requested RGBA screenshots and point
+  picking emit exact readback receipts, while camera bounds fitting, runtime
+  identity, pipeline caching, and bounded buffer recycling remain explicit.
+
+- **Native viewer and debug overlays (Epic 135)**: the opt-in
+  `spatialrust-viewer` crate adds portable viewer state, orbit/pan/zoom and
+  bounds fitting, drag/drop admission, stable layer visibility/style state,
+  point-attribute inspection, and a winit native shell. Owned normal, voxel,
+  plane, cluster, correspondence, bounds, and search-radius overlays expose
+  deterministic borrowed visual layers without hidden GPU transfers.
+
+- **Scene, mapping, semantic, and RGB-D inspection (Epic 136)**: explicit
+  viewer adapters cover reconstructed meshes, surfels, Gaussian primitives,
+  trajectories, pose graphs, calibrated camera frusta, and semantic centroids
+  with source/count/copy receipts. A borrowed RGB-D/cloud timeline rejects
+  dimension, timestamp-skew, ordering, and payload/timestamp mismatches and
+  provides deterministic nearest-frame and calibrated pixel inspection.
+
+- **Bounded streaming LOD (Epic 137)**: `spatialrust-lod` adds validated index
+  hierarchies, camera-frustum selection, screen-error hysteresis, deterministic
+  point/upload/in-flight admission, obsolete-request cancellation, and
+  progressive resident-ancestor display. Record-memory leases, per-frame upload
+  limits, protected LRU GPU eviction, cleanup receipts, and an optional bounded
+  COPC query adapter make every materialization and transfer caller-visible.
+
+- **WebAssembly/WebGPU viewer (Epic 138)**: `spatialrust-web` round-trips the
+  versioned portable viewer state, maps strict browser input JSON through the
+  shared controller, and renders uploaded geometry through the same
+  device-resident wgpu backend. Its WASM surface provides AbortController-backed
+  exact HTTP Range fetches plus deterministic request/cache budgets, response
+  length validation, explicit JS/WASM copies, and LRU eviction receipts.
+
+- **Python and Jupyter viewer adapters (Epic 139)**: the abi3 Python wheel
+  exposes the canonical viewer state, shared input reducer, validated native
+  launch, retained zero-copy NumPy SoA columns, and byte-exact explicit-copy
+  receipts. `spatialrust-jupyter` adds a versioned AnyWidget transport with
+  strict origin/source checks, canonical frontend state validation, and an
+  executable notebook smoke fixture for the Web viewer embed.
+
+- **Visual conformance and release gate (Epic 140)**: a fail-closed whole-image
+  renderer fixture and Linux/Windows/macOS matrix enforce canonical pixels and
+  exact upload/readback ledgers. A typed aggregate gate covers native,
+  Web/WASM/browser, Python 3.8/current, Jupyter, bounded LOD, docs, security,
+  API stability, and unsafe audit; it rejects missing, skipped, duplicate,
+  stale, future-dated, over-budget, or wrong-migration evidence. The Visual
+  guide, `visual-1` migration policy, and allowed release receipt are committed.
+
+## [1.2.0] — 2026-07-27
+
+### Added
+
+- **SpatialRust 1.2 bounded-streaming contract (Epic 121)**:
+  `spatialrust-records` now provides positive stream options, concurrent
+  fail-closed memory reservations, cooperative cancellation, a strict
+  feature-gated JSON execution receipt, and a canonical
+  1M/10M/100M-by-chunk-size workload matrix. The runnable
+  `streaming_receipt` example records phases, bytes, peak tracked memory,
+  spill, and explicit transfers without changing `spatialrust-core`.
+
+- **Leased bounded record streams (Epic 122)**: additive bounded source/sink
+  traits preserve the existing record APIs while attaching deterministic chunk
+  identity, global point offsets, finite bounds, and drop-scoped memory
+  reservations. A single-worker prefetch adapter enforces queue and memory
+  admission before starting, and `RecyclingMemoryChunkSource` returns owned
+  column allocations to its pool in steady state. Core only gains the safe
+  ownership-preserving `PointCloud::into_parts` inverse and mutable column
+  iteration needed to clear recycled storage without allocating field names.
+
+- **Bounded point-cloud IO and spool contracts (Epic 123)**: feature-gated
+  PCD, PLY, LAS/LAZ, and deterministic local/HTTP COPC sources emit leased
+  chunks without whole-cloud materialization. Exact-count and open-ended sinks,
+  source-driven COPC output, bounded ASCII records, and extent-limited
+  temporary storage fail before exceeding their declared limits.
+
+- **Chunk-safe streaming operations (Epic 124)**: shared-budget crop and affine
+  transform adapters, compensated global position reductions, and
+  deterministic external voxel centroids compose outside
+  `spatialrust-core`. Voxel output is invariant to source chunk and sort-run
+  size, with explicit spill/run/file-handle limits.
+
+- **Rust, CLI, and Python streaming workflows (Epic 125)**:
+  `StreamingPipeline` provides a type-erased metered iterator and sink drain;
+  `spatialrust-stream` converts local/HTTP inputs to open-ended LAS/LAZ with
+  Ctrl-C cancellation and JSON receipts; Python `PointCloudStream` wraps the
+  same Rust iterator with cancellation and live receipts.
+
+- **SpatialRust 1.2 release gate (Epic 126)**: a dedicated Linux/Windows/macOS
+  matrix and `Streaming12ReleaseGate` enforce memory, spool, cleanup, copy,
+  transfer, determinism, and file-handle budgets. The runnable release receipt,
+  migration guide, stability registry, and feature-isolation gates complete
+  the bounded-streaming program.
+
+### Changed
+
+- **Prefetch admission under load**: the bounded prefetch preflight now
+  accounts for the producer lease held while a full queue blocks in addition
+  to queued and consumer leases. This removes a scheduler-dependent
+  end-of-stream error while preserving fail-closed memory behavior.
+
+- **GPU voxel dispatch and truthful Auto policy**: headless wgpu compute now
+  prefers a high-performance adapter while retaining an explicit low-power
+  option. Batched bitonic-sort/prefix-scan command recording and device-side
+  buffer clearing reduce measured centroid GPU latency by 16%–31% at
+  500k–2M points. A recycled-buffer usage mismatch that could panic at 2M is
+  fixed. Because the current CPU fast path remains faster through 2M points,
+  centroid `ExecutionPolicy::Auto` now stays on CPU until a new crossover is
+  measured; explicit GPU and GPU-resident paths remain available.
+
+## [1.1.0] — 2026-07-16
+
+### Added
+
+- **Centered 5×5 morphology (Epic 117E)**: exact grayscale rectangular
+  morphology now bypasses the large-window prefix/suffix and transpose engine
+  for the canonical centered Replicate case. Fixed extrema, direct row-major
+  vertical passes, safe SIMD dispatch, and bounded row blocks reduce the old
+  OpenCV gaps by 6.6×–31.8× and measure 1.22× faster for 1080p caller-output
+  opening; all 980 randomized operation comparisons remain bit-exact.
+
+- **Direct and fused 3×3 Sobel (Epic 116E)**: grayscale `u8` first derivatives
+  now use bounded parallel three-row `i16` rings instead of the generic
+  full-image `f64` intermediate. Added Rust/Python caller-output APIs for exact
+  `f32` derivatives, saturated absolute `u8` responses, and fused binary edge
+  masks. Packed NumPy inputs are borrowed without copying. Standalone Sobel
+  beats OpenCV 1.88× at 1080p and 2.03× at 4K; fused masks win 3.81×–6.64×
+  allocated and 2.95×–8.68× with caller-owned output across 300 bit-exact
+  randomized cases.
+
+- **Allocation-light Canny (Epic 118A/118C)**: `canny()` no longer materializes
+  public gradient, magnitude, and suppression images only to discard them.
+  Added safe strided `canny_into`, reusable `CannyWorkspace`, large-image
+  parallel stages, Python `out=`/workspace support, and a focused bit-exact
+  OpenCV comparison harness. Epic 118B/118D replace the full comparison-
+  magnitude image with parallel three-row rings and skip hysteresis when no
+  weak edges exist; 4K document-line reuse is 11.92× faster than the inspectable
+  path and measured 1.42× faster than OpenCV.
+- **Exact Euclidean distance transform**: `spatialrust-vision` now computes
+  foreground-to-nearest-background L2 distances in linear time, supports
+  anisotropic pixel spacing, exposes a NumPy binding, and includes native
+  Criterion plus OpenCV `DIST_MASK_PRECISE` comparison coverage.
+
+- **Vision 2 performance roadmap and documentation site**: Epics 112–120 now
+  define cost attribution, reusable workspaces, safe CPU dispatch, resize/color,
+  Gaussian/Sobel, morphology, Canny, explicit GPU-chain, and release-gate work.
+  GitHub Pages adds a searchable cross-workspace algorithm catalog beside the
+  generated Rust API.
+
+- **OpenCV comparison methodology v2 (Epic 111)**: seeded interleaved paired
+  timing, adaptive batching for sub-5-ms calls, robust dispersion and throughput
+  metrics, strict finite JSON, and workload-specific numerical/edge accuracy
+  across VGA, 1080p, and 4K. Results name the faster implementation per workload
+  instead of asserting blanket SpatialRust superiority.
+
+- **SpatialRust Vision 1.0 release gate (Epic 110)**: mandatory cross-platform,
+  Python, OpenCV, GPU-transfer, unsafe-audit, fixed performance-budget, example,
+  and migration-policy evidence with an executable release decision.
+
+- **Bounded spatial execution graph (Epic 109)**: deterministic DAG compilation,
+  same-device linear fusion groups, bounded source admission, cross-device
+  transfer validation, and per-run named copy receipts behind `runtime-graph`.
+
+- **Computational photography and panorama (Epic 108)**: gray-world white
+  balance, aligned well-exposedness fusion, bounded homography panorama canvas,
+  feather blending, Python entry points, and OpenCV warp parity receipts behind
+  an additive vision feature.
+
+- **Robust visual/RGB-D odometry integration (Epic 107)**: spatially balanced
+  keypoint selection, forward/backward LK validation, scale-explicit monocular
+  motion, metric depth-backed PnP, mapping `DeltaMotion` bridges, Python RGB-D
+  odometry, and an OpenCV pose receipt.
+
+- **Video recognition substrate (Epic 106)**: dense integer block flow,
+  adaptive Gaussian foreground segmentation, deterministic same-class IoU
+  tracking, and timestamped pull-based video source contracts. Codec/camera
+  adapters remain feature-gated; Python dense flow, OpenCV Farneback comparison,
+  and QQVGA/QVGA Criterion workloads cover the portable core.
+
+- **Camera calibration contracts (Epic 105)**: robust pinhole intrinsics,
+  Kannala–Brandt4 fisheye fitting, supplied-rotation stereo and hand-eye
+  translation solves, and fixed-camera sparse point bundle adjustment. All
+  solvers return common RMS/max/iteration receipts, validate rotations and
+  indices, and use deterministic small dense math without a native optimizer.
+
+- **Texture-backed GPU image chains (Epic 104)**: `GpuImage` now uses pooled
+  `rgba8uint` textures instead of component-expanded storage buffers. Explicit
+  upload/readback receipts compose through copy, RGB-to-gray, box blur, nearest
+  resize, Sobel, erosion, and dilation with no hidden host transfer. Runtime
+  adapter/backend identity and explicit `wait_idle` profiling boundaries are
+  exposed; synchronized VGA/1080p/4K Criterion groups cover steady-state chains.
+
+- **Reusable CPU vision kernels (Epic 103)**: stable caller-owned
+  `resize_into`, `rgb_to_gray_into`, `normalize_into`, and `pack_chw_into`
+  paths, NumPy `out=` bindings, size-aware safe parallel CHW packing, and a
+  VGA/1080p/4K allocation/reuse comparison receipt. The reference run records
+  both OpenCV's resize/color-conversion lead and SpatialRust's 8.54x–16.11x
+  reusable RGB-to-CHW advantage.
+
+- **Vision API conformance (Epic 102)**: a machine-readable stable/provisional
+  image-camera-vision registry, a compile-and-behavior API contract, and a
+  dedicated Linux/Windows/macOS CI matrix for the image, camera, and full vision
+  feature surface. Geometry, stereo, flow, AI adapters, and GPU images remain
+  explicitly provisional while ownership and common entry points are frozen.
+
+- **OpenCV comparison contract (Epic 101)**: versioned correctness/performance
+  JSON reports with environment receipts, raw timing samples, median/p95,
+  allocation/reuse modes, a canonical VGA/1080p/4K workload manifest, and an
+  aggregate runner. The schema tests are standard-library only; OpenCV remains
+  comparison tooling rather than a production dependency.
+
+- **RGB-D dense XYZ vs OpenCV**: `depth_to_xyz_dense` / `_into` with an x86_64 AVX2
+  fill path; Python `depth_to_xyz(..., out=)` for streaming reuse. Fast identity
+  packing for `rgbd_to_point_cloud`. The `bench/opencv_rgbd_comparison` harness
+  gates faster-or-equal medians against `cv.rgbd.depthTo3d` (alloc/into) and
+  against OpenCV depth+mask+color gather for colored clouds.
+
+- **Distributed execution deepen (Epic 99)**: `spatialrust-distribute` adds
+  cycle-aware partition topological order, validated `TransferPlan` /
+  `TransferLedger` with measurable copy bytes, and `BoundedTransferQueue`
+  watermark admissions; wired into `north-star-e2e`.
+
+- **Platform release-gate deepen (Epic 100)**: `spatialrust-platform` adds
+  performance budgets, a seeded north-star stability surface, baseline security
+  checklist helpers, conformance summaries, and an aggregated `ReleaseGate`
+  consumed by `north-star-e2e`.
+
+- **North-star E2E full portable path**: `north-star-e2e` now enables
+  `sync-mcap` and `runtime-ros2`, and the integration test/demo exercise MCAP
+  XYZ round-trip, ROS 2 CDR PointCloud2 loopback, USDA ASCII mesh export, and
+  Gaussian CPU soft-splat alongside the existing RGB→TSDF→glTF flow.
+
+- **ROS 2 / OpenUSD / Gaussian deepen**: `runtime-ros2` adds CDR LE
+  `PointCloud2` XYZ codecs and an in-process loopback node (no `rclrs` link);
+  `interchange-openusd` exports/imports USDA ASCII mesh stages; `scene-gaussian`
+  adds a CPU soft-splat renderer over `GaussianScene`.
+
+- **MCAP episode IO + TSDF meshing deepen**: `spatialrust-sync` `mcap` /
+  facade `sync-mcap` writes and reads XYZ stamped records to MCAP files;
+  `TsdfVolume::extract_mesh` uses truncation-band integration and marching
+  tetrahedra instead of the occupied-voxel triangle proxy.
+
+- **Canonical 2D → AI → 3D roadmap and image IO (Epic 83)**: `docs/ROADMAP.md`
+  reserves Epics 83–90; new `spatialrust-image-io` provides bounded path,
+  reader/writer, and memory PNG/JPEG/PNM codecs, independently gated TIFF and
+  OpenEXR, typed pixels, Exif orientation handling, Python/NumPy bindings,
+  property tests, and 640p/1080p/4K decode benchmarks.
+
+- **Shared CPU filters (Epic 84A–84B)**: `spatialrust-vision` now exposes a
+  common `BorderMode`, validated 1D/2D kernels, OpenCV-style filter2D
+  correlation, explicit convolution, f32-output and separable filters, and
+  normalized box/Gaussian blur, median and bilateral filters, signed
+  Sobel/Scharr/Laplacian derivatives, and Gaussian pyramids. The feature
+  includes strided-view property coverage, Python bindings/stubs, OpenCV
+  comparison, and 640p/1080p/4K benchmarks.
+
+- **CPU morphology (Epic 84C)**: validated rectangular, cross, elliptical,
+  diamond, and custom structuring elements; explicit-anchor erode/dilate;
+  open/close/gradient/top-hat/black-hat operations; additive feature and meta
+  feature; u8/u16/f32 and strided-view tests; Python bindings; exact OpenCV
+  comparisons; and 640p/1080p/4K benchmarks.
+
+- **CPU image analysis (Epic 84D)**: fixed and adaptive thresholds, u8/u16
+  Otsu selection, masked configurable histograms, exact u8 equalization,
+  contrast-limited adaptive equalization, and checked summed-area tables;
+  additive Rust/meta features, Python bindings/stubs, strided properties,
+  OpenCV comparisons, and representative-resolution benchmarks.
+
+- **Canny edge detection (Epic 84E)**: configurable 3/5/7 Sobel apertures,
+  L1/L2 gradient magnitude, directional non-maximum suppression, 8-neighbor
+  hysteresis, and inspectable intermediate stages; additive Rust/meta features,
+  strided and property tests, Python binding/stub, 640p/1080p/4K benchmark, and
+  exact OpenCV comparison across all six aperture/magnitude combinations.
+
+- **Tensor foundation (Epic 85A)**: new dependency-light `spatialrust-tensor`
+  crate with byte-addressable dtype, arbitrary-rank shape, signed element
+  strides, checked byte offsets/spans, explicit device identity, safe borrowed
+  CPU views, and named owned copies. Non-host device memory cannot be exposed as
+  a Rust byte slice, and the meta-crate integration is opt-in through `tensor`.
+
+- **Image/spatial tensor bridges (Epic 85B)**: packed interleaved images expose
+  zero-copy HWC views, packed planar images expose zero-copy CHW views, and
+  Schema-SoA `f32` point fields expose zero-copy one-dimensional views. Explicit
+  `pack_*` operations handle padded/ROI images, with feature-alone tests and
+  640p/1080p/4K packing benchmarks.
+
+- **DLPack and Python tensor interoperability (Epic 85C–85D)**: audited
+  `DLManagedTensorVersioned` major-version 1 CPU import/export, explicit deleter
+  transfer, read-only/copy flags, signed strides and byte offsets, malformed ABI
+  rejection, and zero-copy Python `__dlpack__`/`__dlpack_device__`. NumPy and
+  PyTorch round trips preserve allocations and producer lifetimes; device or
+  host copy requests remain explicit.
+
+- **Inference contracts and ONNX Runtime CPU (Epic 86)**: new optional
+  `spatialrust-ai` crate with named dynamic model metadata, stable backend and
+  session traits, explicit input/output copy permissions, CPU ONNX Runtime,
+  separately gated CUDA/TensorRT/DirectML providers, typed zero-copy I/O
+  Binding, caller-preallocated u8/u16/f32 outputs, runtime-allocation retention,
+  output-to-input chaining, Python bindings/stubs, reference-runtime comparison,
+  and 640p/1080p/4K Criterion coverage. Multi-byte raw storage is rejected at
+  zero-copy boundaries instead of being cast from an under-aligned byte buffer.
+
+- **Feature2D and ORB matching (Epic 87)**: checked keypoint, binary/float
+  descriptor, feature-set, and match contracts; Harris and Shi–Tomasi corners;
+  OpenCV-exact FAST-9/16 detection and scores; deterministic multi-scale ORB
+  with 256-bit rotated BRIEF; Hamming/L2 brute-force matching with ratio,
+  cross-check, and distance filters; Python/NumPy bindings and stubs; property
+  tests, OpenCV comparison, and 640p/1080p/4K Criterion baselines.
+
+- **Camera geometry, motion, and stereo (Epic 88)**: checked correspondence and
+  projective contracts; normalized DLT and deterministic RANSAC for homography,
+  fundamental, and essential matrices; triangulation and essential pose
+  disambiguation; EPnP-class PnP with iterative refine and RANSAC; sparse
+  pyramidal Lucas–Kanade tracking; stereo rig, rectify remap grids, SAD block
+  matching, and disparity-to-depth/XYZ reproject; Python bindings; OpenCV
+  comparison with documented tolerances; property tests; and Criterion coverage.
+
+- **Explicit GpuImage and chainable wgpu vision (Epic 89)**: `spatialrust-gpu`
+  `gpu-image` feature adds `GpuImage` ownership with packed/`ImageView` upload,
+  named stride packing, explicit readback, transfer receipts, and buffer
+  recycle; device-resident `copy_gpu_image`; BT.601 `rgb_to_gray_gpu`; gray
+  `box_blur_gpu` with replicate/constant-zero borders; facade `gpu-image` flag;
+  headless chain tests that keep mid-pipeline `device_to_host_bytes == 0`; and
+  640p/1080p/4K Criterion coverage. Texture-backed storage remains deferred.
+
+- **Model adapters and image → AI → point-cloud pipelines (Epic 90)**:
+  `MockInferenceBackend` / `ModelSource::Mock` for deterministic host inference
+  without ONNX; vision `ai-adapters` for letterbox NCHW prep and
+  tensor→`DepthMap`/`BinaryMask`/`Detection` decode; facade
+  `ai-vision-pipeline` E2E covering RGB → mock depth → unproject → MVP.
+
+- **Spatial records and Arrow bridges (Epic 91)**: new `spatialrust-records`
+  with versioned `SpatialRecord`, schema compatibility/migration, and in-memory
+  chunked sources/sinks; new `spatialrust-arrow` with Arrow C Data export/import,
+  C Stream over record sources, and CPU C Device arrays; facade flags
+  `records`, `arrow-c-data`, `arrow-c-stream`, `arrow-c-device`; ROADMAP 92–100
+  activated with planned delivery slices.
+
+- **Sensor time and frame graphs (Epic 92)**: new `spatialrust-sync` with clock
+  domains/`SyncQuality`, stamped records, calibrated `FrameGraph` lookups,
+  in-memory `MemoryEpisode` index, and `DeterministicReplayer` topic bundling;
+  `mcap` feature reserved for file codecs; facade `sync` / `sync-mcap`.
+
+- **Localization and mapping substrate (Epic 93)**: new `spatialrust-mapping`
+  with `Trajectory`/`StampedPose`, `RelativeMotionEstimator`/`SyntheticOdometry`,
+  `PoseGraph` root localization, and distance-based loop-closure candidates;
+  facade `mapping`.
+
+- **North-star substrate (Epics 94–100)**: new crates for scene reconstruction
+  (`spatialrust-scene` TSDF/surfel/mesh + gated Gaussians), semantic intelligence
+  (`spatialrust-semantic`), embodied episodes (`spatialrust-episode`), bounded
+  robotics runtime (`spatialrust-runtime` + `ros2` gate), glTF/OpenUSD
+  interchange (`spatialrust-interchange`), distributed execution
+  (`spatialrust-distribute`), and platform stability (`spatialrust-platform`);
+  facade `north-star` enables the stack without native heavy codecs.
+
+- **North-star E2E demo**: facade feature `north-star-e2e` adds an integration
+  test and example covering RGB → mock depth → stamped episode → pose graph →
+  TSDF mesh → glTF JSON, plus semantic search, bounded runtime, partition graph,
+  and platform conformance markers.
+
+- **AI-ready image and vision foundation (Epics 75–79)**: mutable ROI views,
+  planar/interleaved layouts and color metadata in `spatialrust-image`; new
+  feature-gated `spatialrust-vision` preprocessing, warp, detection, mask/RLE,
+  and dense spatial-map APIs; camera/point-cloud/pipeline bridges; Python/NumPy
+  bindings and stubs; property tests, OpenCV comparison, Criterion benchmark,
+  and an end-to-end vision-to-point-cloud demo.
+
+- **OpenCV-oriented image/camera foundation**: new `spatialrust-image` typed
+  packed buffers and strided zero-copy views; new `spatialrust-camera` pinhole
+  projection/unprojection, Brown–Conrady distortion, aligned depth/RGB-D to
+  XYZ/XYZRGB conversion, Python binding, MVP integration test, Criterion bench,
+  synthetic demo, and OpenCV `rgbd.depthTo3d` comparison harness.
+
 - **Euclidean cluster benchmark** (`bench/euclidean_cluster/`): CPU vs GPU timing
   harness with optional `--mvp-leaf` preprocess path
   (`notes/2026-07-03_euclidean_cluster_bench.md`).
@@ -284,6 +660,8 @@ stubtest CI.
 - COPC partial reads (bounds + LOD) in the library and `spatialrust-mvp` CLI.
 - wgpu voxel downsampling with automatic CPU/GPU policy selection.
 
-[Unreleased]: https://github.com/rsasaki0109/SpatialRust/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/rsasaki0109/SpatialRust/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/rsasaki0109/SpatialRust/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/rsasaki0109/SpatialRust/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/rsasaki0109/SpatialRust/releases/tag/v1.0.0
 [0.1.0]: https://github.com/rsasaki0109/SpatialRust/releases/tag/v0.1.0

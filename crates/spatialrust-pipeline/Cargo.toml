@@ -17,6 +17,11 @@ pipeline-mvp-gpu = [
     "spatialrust-features/feature-normal-gpu",
     "spatialrust-segmentation/segment-euclidean-gpu",
 ]
+pipeline-streaming = [
+    "dep:spatialrust-records",
+    "dep:spatialrust-io",
+    "spatialrust-records/receipt-json",
+]
 
 [dependencies]
 spatialrust-core = { workspace = true }
@@ -29,10 +34,16 @@ spatialrust-registration = { workspace = true, features = [
     "register-icp-point-to-plane",
     "register-gicp",
 ] }
+spatialrust-records = { workspace = true, optional = true }
+spatialrust-io = { workspace = true, optional = true, features = ["streaming"] }
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }
 criterion = { workspace = true }
+
+[[example]]
+name = "bounded_voxel"
+required-features = ["pipeline-streaming"]
 
 [[bench]]
 name = "mvp_xyzinormal"

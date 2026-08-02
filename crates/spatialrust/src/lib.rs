@@ -20,6 +20,51 @@ pub use spatialrust_segmentation as segmentation;
 pub use spatialrust_transform as transform;
 pub use spatialrust_voxelize as voxelize;
 
+#[cfg(feature = "ai")]
+pub use spatialrust_ai as ai;
+#[cfg(any(feature = "arrow-c-data", feature = "arrow-c-stream", feature = "arrow-c-device"))]
+pub use spatialrust_arrow as arrow;
+#[cfg(feature = "camera")]
+pub use spatialrust_camera as camera;
+#[cfg(feature = "distribute")]
+pub use spatialrust_distribute as distribute;
+#[cfg(feature = "episode")]
+pub use spatialrust_episode as episode;
+#[cfg(feature = "image")]
+pub use spatialrust_image as image;
+#[cfg(feature = "image-io")]
+pub use spatialrust_image_io as image_io;
+#[cfg(any(feature = "interchange-gltf", feature = "interchange-openusd"))]
+pub use spatialrust_interchange as interchange;
+#[cfg(feature = "lod")]
+pub use spatialrust_lod as lod;
+#[cfg(feature = "mapping")]
+pub use spatialrust_mapping as mapping;
+#[cfg(feature = "platform")]
+pub use spatialrust_platform as platform;
+#[cfg(feature = "records")]
+pub use spatialrust_records as records;
+#[cfg(feature = "render-wgpu")]
+pub use spatialrust_render_wgpu as render_wgpu;
+#[cfg(feature = "runtime")]
+pub use spatialrust_runtime as runtime;
+#[cfg(feature = "scene")]
+pub use spatialrust_scene as scene;
+#[cfg(feature = "semantic")]
+pub use spatialrust_semantic as semantic;
+#[cfg(feature = "sync")]
+pub use spatialrust_sync as sync;
+#[cfg(feature = "tensor")]
+pub use spatialrust_tensor as tensor;
+#[cfg(feature = "viewer")]
+pub use spatialrust_viewer as viewer;
+#[cfg(feature = "vision")]
+pub use spatialrust_vision as vision;
+#[cfg(feature = "viz")]
+pub use spatialrust_viz as viz;
+#[cfg(feature = "web")]
+pub use spatialrust_web as web;
+
 pub use spatialrust_core::{
     CpuDevice, CpuRuntime, DType, Device, DeviceKind, ExecutionOutput, ExecutionPolicy,
     ExecutionReceipt, FieldSemantic, FrameId, HasIntensity, HasNormals3, HasPositions3,
@@ -199,8 +244,36 @@ pub use spatialrust_voxelize::{voxelize, OccupancyGrid, VoxelFill, VoxelGridConf
 #[cfg(feature = "voxelize-range-image")]
 pub use spatialrust_voxelize::{range_image, RangeImage, RangeImageConfig};
 
+#[cfg(feature = "image")]
+pub use spatialrust_image::{
+    AlphaMode, ColorRange, ColorSpace, GrayImage, Image, ImageError, ImageLayout, ImageMetadata,
+    ImageRegion, ImageView, ImageViewMut, PlanarImage, PlanarImageView, RgbImage,
+};
+
+#[cfg(feature = "image-io")]
+pub use spatialrust_image_io::{
+    decode_bytes, decode_path, decode_reader, encode_bytes, encode_path, encode_writer,
+    DecodeLimits, DecodeOptions, DecodedImage, DecodedMetadata, DecodedPixels, EncodeOptions,
+    ImageFileFormat, ImageIoError, Orientation, SourceColorType,
+};
+
+#[cfg(feature = "camera-rgbd")]
+pub use spatialrust_camera::{
+    depth_to_point_cloud, depth_to_xyz_dense, depth_to_xyz_dense_into, rgbd_to_point_cloud,
+    BrownConrady, CameraError, CameraIntrinsics, DepthConversionOptions, PinholeCamera, RgbdError,
+};
+
+#[cfg(feature = "vision")]
+pub use spatialrust_vision::*;
+
 #[cfg(feature = "pipeline-mvp")]
 pub use spatialrust_pipeline::{
     MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineReceipt, MvpPipelineResult,
     MvpRegistrationMethod,
+};
+
+#[cfg(feature = "pipeline-streaming")]
+pub use spatialrust_pipeline::{
+    reduce_positions, ChunkMapOperation, ChunkMapSource, PositionReduction, StreamingVoxelConfig,
+    StreamingVoxelSource,
 };

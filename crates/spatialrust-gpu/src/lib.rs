@@ -29,6 +29,9 @@ mod aoso_staging;
 #[cfg(feature = "gpu-aoso-staging")]
 mod gpu_frame;
 
+#[cfg(feature = "gpu-image")]
+mod image;
+
 pub use buffer::DeviceBuffer;
 pub use device::{GpuDevice, WgpuDevice};
 
@@ -54,7 +57,10 @@ pub use kernels::{
 };
 
 #[cfg(feature = "gpu-wgpu")]
-pub use runtime::{WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS, MULTI_GATHER4_STORAGE_BUFFERS};
+pub use runtime::{
+    WgpuAdapterInfo, WgpuPowerPreference, WgpuRuntime, MULTI_GATHER2_STORAGE_BUFFERS,
+    MULTI_GATHER4_STORAGE_BUFFERS,
+};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use upload_cache::GpuBufferPool;
@@ -72,4 +78,11 @@ pub use aoso_staging::{
 #[cfg(feature = "gpu-aoso-staging")]
 pub use gpu_frame::{
     run_aoso_voxel_normal_frame, GpuExecutionReceipt, GpuFrameCapability, GpuSpatialFrame,
+};
+
+#[cfg(feature = "gpu-image")]
+pub use image::{
+    box_blur_gpu, copy_gpu_image, morphology_gpu, pack_ai_chw_gpu, resize_nearest_gpu,
+    rgb_to_gray_gpu, run_gpu_vision_chain, sobel_gpu, GpuAiTensor, GpuImage, GpuImageBorder,
+    GpuImageReceipt, GpuMorphology, GpuVisionChainOptions,
 };

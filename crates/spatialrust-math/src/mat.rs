@@ -118,6 +118,46 @@ impl Mat3<f64> {
             self.m[2][0] * v.x + self.m[2][1] * v.y + self.m[2][2] * v.z,
         )
     }
+
+    /// Matrix multiplication.
+    #[must_use]
+    pub fn mul_mat3(self, other: Self) -> Self {
+        Self::from_rows(
+            [
+                self.m[0][0] * other.m[0][0]
+                    + self.m[0][1] * other.m[1][0]
+                    + self.m[0][2] * other.m[2][0],
+                self.m[0][0] * other.m[0][1]
+                    + self.m[0][1] * other.m[1][1]
+                    + self.m[0][2] * other.m[2][1],
+                self.m[0][0] * other.m[0][2]
+                    + self.m[0][1] * other.m[1][2]
+                    + self.m[0][2] * other.m[2][2],
+            ],
+            [
+                self.m[1][0] * other.m[0][0]
+                    + self.m[1][1] * other.m[1][0]
+                    + self.m[1][2] * other.m[2][0],
+                self.m[1][0] * other.m[0][1]
+                    + self.m[1][1] * other.m[1][1]
+                    + self.m[1][2] * other.m[2][1],
+                self.m[1][0] * other.m[0][2]
+                    + self.m[1][1] * other.m[1][2]
+                    + self.m[1][2] * other.m[2][2],
+            ],
+            [
+                self.m[2][0] * other.m[0][0]
+                    + self.m[2][1] * other.m[1][0]
+                    + self.m[2][2] * other.m[2][0],
+                self.m[2][0] * other.m[0][1]
+                    + self.m[2][1] * other.m[1][1]
+                    + self.m[2][2] * other.m[2][1],
+                self.m[2][0] * other.m[0][2]
+                    + self.m[2][1] * other.m[1][2]
+                    + self.m[2][2] * other.m[2][2],
+            ],
+        )
+    }
 }
 
 impl<T: Scalar> Mat4<T> {

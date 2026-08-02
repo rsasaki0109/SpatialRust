@@ -7,6 +7,9 @@ use spatialrust_core::{DType, FieldSemantic, HasPositions3, PointCloud, PointFie
 use crate::error::{copc_format, copc_parse, IoError};
 use crate::{PointWriter, WriteOptions};
 
+#[cfg(feature = "streaming")]
+use spatialrust_records::{BoundedSpatialRecordSource, CancellationToken, SpatialRecordChunk};
+
 /// Writes point clouds to COPC files.
 pub struct CopcWriter;
 
@@ -305,6 +308,212 @@ fn read_scalar_as_f64(cloud: &PointCloud, field: &PointField, index: usize) -> C
             Ok(f64::from(values[index]))
         }
     }
+}
+
+/// Deterministic receipt for a bounded COPC streaming write.
+#[cfg(feature = "streaming")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CopcStreamingWriteReceipt {
+    /// Number of points consumed from the source.
+    pub points: u64,
+    /// Exact fixed-width bytes admitted to the writer's temporary spill.
+    pub spill_bytes: u64,
+}
+
+#[cfg(feature = "streaming")]
+struct SourcePointIter<'a, S: BoundedSpatialRecordSource> {
+    source: &'a mut S,
+    current: Option<SpatialRecordChunk>,
+    index: usize,
+    export_schema: PointSchema,
+    point_format: las::point::Format,
+    expected_points: u64,
+    emitted_points: u64,
+    ended: bool,
+}
+
+#[cfg(feature = "streaming")]
+impl<S: BoundedSpatialRecordSource> Iterator for SourcePointIter<'_, S> {
+    type Item = copc_core::Result<copc_core::LasPointRecord>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(chunk) = &self.current {
+                let cloud = chunk.record().cloud();
+                if self.index < cloud.len() {
+                    if self.emitted_points == self.expected_points {
+                        self.ended = true;
+                        return Some(Err(CopcCoreError::InvalidInput(format!(
+                            "source exceeds declared point count {}",
+                            self.expected_points
+                        ))));
+                    }
+                    let point = crate::las::point_from_cloud(
+                        cloud,
+                        &self.export_schema,
+                        self.index,
+                        self.point_format,
+                    )
+                    .map(|point| streaming_record_from_las(&point))
+                    .map_err(|error| CopcCoreError::InvalidInput(error.to_string()));
+                    self.index += 1;
+                    self.emitted_points += 1;
+                    return Some(point);
+                }
+                self.current = None;
+                self.index = 0;
+            }
+            if self.ended {
+                return None;
+            }
+            match self.source.next_chunk() {
+                Some(Ok(chunk)) => {
+                    if chunk.record().cloud().schema() != self.source.schema().point_schema() {
+                        self.ended = true;
+                        return Some(Err(CopcCoreError::InvalidInput(
+                            "source chunk schema changed during COPC write".into(),
+                        )));
+                    }
+                    self.current = Some(chunk);
+                }
+                Some(Err(error)) => {
+                    self.ended = true;
+                    return Some(Err(CopcCoreError::InvalidInput(error.to_string())));
+                }
+                None if self.emitted_points != self.expected_points => {
+                    self.ended = true;
+                    return Some(Err(CopcCoreError::InvalidInput(format!(
+                        "source ended at {} of {} declared points",
+                        self.emitted_points, self.expected_points
+                    ))));
+                }
+                None => {
+                    self.ended = true;
+                    return None;
+                }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "streaming")]
+struct CopcCancellation(CancellationToken);
+
+#[cfg(feature = "streaming")]
+impl copc_core::CancelCheck for CopcCancellation {
+    fn check(&self) -> copc_core::Result<()> {
+        self.0.check().map_err(|_| CopcCoreError::Cancelled)
+    }
+}
+
+#[cfg(feature = "streaming")]
+fn streaming_record_from_las(point: &las::Point) -> copc_core::LasPointRecord {
+    let (red, green, blue) = point
+        .color
+        .map(|color| (color.red, color.green, color.blue))
+        .unwrap_or((32_768, 32_768, 32_768));
+    let (
+        wave_packet_descriptor_index,
+        byte_offset_to_waveform_data,
+        waveform_packet_size,
+        return_point_waveform_location,
+    ) = point
+        .waveform
+        .as_ref()
+        .map(|waveform| {
+            (
+                waveform.wave_packet_descriptor_index,
+                waveform.byte_offset_to_waveform_data,
+                waveform.waveform_packet_size_in_bytes,
+                waveform.return_point_waveform_location,
+            )
+        })
+        .unwrap_or((0, 0, 0, 0.0));
+    copc_core::LasPointRecord {
+        x: point.x,
+        y: point.y,
+        z: point.z,
+        intensity: point.intensity,
+        return_number: point.return_number,
+        number_of_returns: point.number_of_returns,
+        classification: u8::from(point.classification),
+        scan_direction_flag: matches!(point.scan_direction, las::point::ScanDirection::LeftToRight),
+        edge_of_flight_line: point.is_edge_of_flight_line,
+        scan_angle: point.scan_angle,
+        user_data: point.user_data,
+        point_source_id: point.point_source_id,
+        synthetic: point.is_synthetic,
+        key_point: point.is_key_point,
+        withheld: point.is_withheld,
+        overlap: point.is_overlap,
+        scan_channel: point.scanner_channel,
+        gps_time: point.gps_time.unwrap_or(0.0),
+        red,
+        green,
+        blue,
+        nir: point.nir.unwrap_or(0),
+        wave_packet_descriptor_index,
+        byte_offset_to_waveform_data,
+        waveform_packet_size,
+        return_point_waveform_location,
+    }
+}
+
+/// Writes a bounded record source to COPC through the writer's fixed-width
+/// temporary spill, preflighting the complete spill extent before any points
+/// are consumed.
+#[cfg(feature = "streaming")]
+pub fn write_copc_stream<S: BoundedSpatialRecordSource>(
+    path: impl AsRef<Path>,
+    source: &mut S,
+    expected_points: u64,
+    params: &CopcWriterParams,
+    spool: &crate::SpoolOptions,
+) -> Result<CopcStreamingWriteReceipt, IoError> {
+    validate_copc_output_path(path.as_ref())?;
+    if expected_points == 0 {
+        return Err(copc_format("cannot write an empty point stream to COPC"));
+    }
+    let (point_format, export_schema) =
+        crate::las::schema_from_point_cloud(source.schema().point_schema())?;
+    let layout = copc_core::StreamingLayout {
+        point_format: point_format.to_u8().unwrap_or(0),
+        has_gps: point_format.has_gps_time,
+        has_color: point_format.has_color,
+        has_nir: point_format.has_nir,
+        has_waveform: point_format.has_waveform,
+    };
+    let spill_bytes = u64::try_from(layout.record_width())
+        .ok()
+        .and_then(|width| width.checked_mul(expected_points))
+        .ok_or_else(|| IoError::Streaming("COPC spill byte size overflow".into()))?;
+    if spill_bytes > spool.limit_bytes() {
+        return Err(IoError::Streaming(format!(
+            "COPC spill requires {spill_bytes} bytes, limit is {}",
+            spool.limit_bytes()
+        )));
+    }
+    let cancellation = source.cancellation_token();
+    let points = SourcePointIter {
+        source,
+        current: None,
+        index: 0,
+        export_schema,
+        point_format,
+        expected_points,
+        emitted_points: 0,
+        ended: false,
+    };
+    copc_writer::write_streaming_with_cancel(
+        path.as_ref(),
+        layout,
+        points,
+        params,
+        spool.directory(),
+        &CopcCancellation(cancellation),
+    )
+    .map_err(|error| copc_parse(error.to_string()))?;
+    Ok(CopcStreamingWriteReceipt { points: expected_points, spill_bytes })
 }
 
 #[cfg(test)]

@@ -1,0 +1,37 @@
+[package]
+name = "spatialrust-image-io"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Feature-gated image codecs and bounded stream IO for SpatialRust"
+
+[features]
+default = ["standard"]
+standard = ["png", "jpeg", "pnm", "exif"]
+png = ["image/png"]
+jpeg = ["image/jpeg"]
+pnm = ["image/pnm"]
+tiff = ["image/tiff", "exif"]
+openexr = ["image/openexr", "dep:exr"]
+exif = ["dep:kamadak-exif"]
+full = ["standard", "tiff", "openexr"]
+
+[dependencies]
+spatialrust-image.workspace = true
+image.workspace = true
+kamadak-exif = { workspace = true, optional = true }
+exr = { workspace = true, optional = true }
+thiserror.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+proptest.workspace = true
+tempfile.workspace = true
+
+[[bench]]
+name = "decode"
+harness = false
+required-features = ["standard"]

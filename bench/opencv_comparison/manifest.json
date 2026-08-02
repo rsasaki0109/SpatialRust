@@ -1,0 +1,56 @@
+{
+  "schema_version": "spatialrust.opencv-benchmark-manifest.v1",
+  "profiles": {
+    "vga": { "width": 640, "height": 480 },
+    "1080p": { "width": 1920, "height": 1080 },
+    "4k": { "width": 3840, "height": 2160 }
+  },
+  "required_statistics": [
+    "mean",
+    "median",
+    "p95",
+    "min",
+    "max",
+    "stdev",
+    "coefficient_of_variation",
+    "median_absolute_deviation",
+    "batch_size",
+    "samples"
+  ],
+  "publication_receipt": [
+    "platform",
+    "machine",
+    "logical_cpu_count",
+    "python_version",
+    "opencv_version",
+    "spatialrust_version"
+  ],
+  "workloads": [
+    { "id": "resize_bilinear", "domain": "imgproc", "modes": ["allocate", "reuse"] },
+    { "id": "rgb_to_gray", "domain": "imgproc", "modes": ["allocate", "reuse"] },
+    { "id": "gaussian_blur", "domain": "imgproc", "modes": ["allocate"] },
+    { "id": "sobel_x", "domain": "imgproc", "modes": ["allocate"] },
+    { "id": "canny", "domain": "imgproc", "modes": ["allocate"] },
+    { "id": "morphology_open", "domain": "imgproc", "modes": ["allocate"] },
+    { "id": "distance_transform_edt", "domain": "imgproc", "modes": ["allocate"] },
+    { "id": "connected_components", "domain": "imgproc", "modes": ["structured-mask"] },
+    { "id": "orb", "domain": "feature2d", "modes": ["allocate"] },
+    { "id": "stereo_bm", "domain": "calib3d", "modes": ["allocate"] },
+    { "id": "pinhole_calibration", "domain": "calib3d", "modes": ["allocate"] },
+    { "id": "fisheye_calibration", "domain": "calib3d", "modes": ["allocate"] },
+    { "id": "dense_optical_flow", "domain": "video", "modes": ["allocate"] },
+    { "id": "background_model", "domain": "video", "modes": ["streaming"] },
+    { "id": "multi_object_tracking", "domain": "video", "modes": ["streaming"] },
+    { "id": "visual_odometry", "domain": "localization", "modes": ["correctness"] },
+    { "id": "rgbd_odometry", "domain": "localization", "modes": ["correctness"] },
+    { "id": "exposure_fusion", "domain": "photography", "modes": ["allocate"] },
+    { "id": "panorama_pair", "domain": "photography", "modes": ["allocate"] },
+    { "id": "depth_to_xyz", "domain": "rgbd", "modes": ["allocate", "reuse"] },
+    { "id": "rgbd_to_point_cloud", "domain": "spatial-e2e", "modes": ["allocate"] },
+    { "id": "ai_preprocess", "domain": "dnn-adapter", "modes": ["allocate", "reuse"] },
+    { "id": "nms", "domain": "dnn-adapter", "modes": ["postprocess"] },
+    { "id": "batched_nms", "domain": "dnn-adapter", "modes": ["postprocess"] },
+    { "id": "soft_nms", "domain": "dnn-adapter", "modes": ["linear", "gaussian"] },
+    { "id": "rgbd_to_voxel", "domain": "spatial-e2e", "modes": ["allocate"] }
+  ]
+}

@@ -1,0 +1,110 @@
+[package]
+name = "spatialrust-vision"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "AI-ready image processing and vision algorithms for SpatialRust"
+
+[features]
+default = []
+resize = ["dep:rayon"]
+preprocess = ["resize", "dep:pulp"]
+warp = ["resize"]
+imgproc-filter = ["dep:pulp", "dep:rayon"]
+imgproc-morphology = ["dep:pulp", "dep:rayon"]
+imgproc-analysis = []
+imgproc-canny = ["imgproc-filter"]
+feature2d = ["imgproc-filter", "resize"]
+geometry = ["dep:spatialrust-camera"]
+odometry = ["geometry", "feature2d"]
+photography = ["warp", "geometry"]
+detection = []
+dense = ["detection", "dep:rayon"]
+spatial = ["dense", "dep:spatialrust-core", "dep:spatialrust-camera"]
+ai-adapters = ["preprocess", "dense", "detection", "dep:spatialrust-tensor", "dep:bytemuck", "spatialrust-tensor/image"]
+video = ["dense", "detection"]
+video-adapters = ["video"]
+full = ["preprocess", "warp", "imgproc-filter", "imgproc-morphology", "imgproc-analysis", "imgproc-canny", "feature2d", "geometry", "odometry", "photography", "detection", "dense", "spatial", "ai-adapters", "video-adapters"]
+
+[dependencies]
+spatialrust-image.workspace = true
+spatialrust-math.workspace = true
+spatialrust-core = { workspace = true, optional = true }
+spatialrust-camera = { workspace = true, optional = true }
+spatialrust-tensor = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true }
+thiserror.workspace = true
+rayon = { workspace = true, optional = true }
+pulp = { workspace = true, optional = true }
+
+[dev-dependencies]
+criterion.workspace = true
+proptest.workspace = true
+
+[[bench]]
+name = "preprocess"
+harness = false
+required-features = ["preprocess"]
+
+[[bench]]
+name = "resize"
+harness = false
+required-features = ["resize"]
+
+[[bench]]
+name = "filter"
+harness = false
+required-features = ["imgproc-filter"]
+
+[[bench]]
+name = "morphology"
+harness = false
+required-features = ["imgproc-morphology"]
+
+[[bench]]
+name = "analysis"
+harness = false
+required-features = ["imgproc-analysis"]
+
+[[bench]]
+name = "dense"
+harness = false
+required-features = ["dense"]
+
+[[bench]]
+name = "detection"
+harness = false
+required-features = ["detection"]
+
+[[bench]]
+name = "canny"
+harness = false
+required-features = ["imgproc-canny"]
+
+[[bench]]
+name = "feature2d"
+harness = false
+required-features = ["feature2d"]
+
+[[bench]]
+name = "geometry"
+harness = false
+required-features = ["geometry"]
+
+[[bench]]
+name = "video"
+harness = false
+required-features = ["video"]
+
+[[bench]]
+name = "odometry"
+harness = false
+required-features = ["odometry"]
+
+[[bench]]
+name = "photography"
+harness = false
+required-features = ["photography"]

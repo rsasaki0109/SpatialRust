@@ -68,6 +68,25 @@ this contract incrementally.
 | --- | --- |
 | MVP CLI flags | `--bounds`, `--resolution`, `--repeat` may gain aliases |
 | HTTP COPC (`mvp-http`) | URL IO is stable; timeout/retry policy may change |
+| Image (`image`) | Packed/planar ownership, metadata, regions, and strided view contracts are stable |
+| Camera (`camera`, `camera-rgbd`) | Pinhole/Brown-Conrady models and explicit RGB-D conversion entry points are stable |
+| Image IO (`image-io-*`) | Bounded codecs, typed decoded pixels, and source metadata are provisional |
+| AI (`ai-*`) | Backend/session, named dynamic I/O, copy policy, I/O binding, mock backend, and ONNX Runtime adapter APIs are provisional |
+| Vision (`vision-*`) | Base errors/borders, resize/filter entry points, detection/dense data contracts, and Feature2D data contracts are stable; geometry, stereo, optical flow, odometry, photography, video, and AI adapters remain provisional |
+| Tensor (`tensor-*`) | Dtype/layout/device ownership, typed host storage, external host owner, and DLPack APIs are provisional |
+| Records (`records`, `records-receipt-json`) | The 1.2 memory/options/cancellation/receipt and bounded source/sink/chunk contracts are stable; schema migration and concrete prefetch/recycling implementations remain provisional |
+| Streaming IO/pipeline/CLI | Format adapters, spool implementation, chunk operations, `StreamingPipeline`, CLI flags, and Python iterator are additive and provisional |
+| Arrow (`arrow-*`) | Arrow C Data/Stream/Device bridges for point clouds are provisional |
+| Sync (`sync`, `sync-mcap`) | Clock domains, frame graphs, stamped records, and deterministic episode replay are provisional |
+| Mapping (`mapping`) | Trajectories, relative motion estimators, pose graphs, loop closure, and feature-gated vision-odometry bridges are provisional |
+| Scene (`scene`, `scene-gaussian`) | TSDF/surfel/mesh reconstruction and Gaussian scene containers are provisional |
+| Semantic (`semantic`) | Embeddings, open-vocab labels, fusion, and semantic search are provisional |
+| Episode (`episode`) | Embodied episode schemas, annotations, augmentation, eval, and provenance are provisional |
+| Runtime (`runtime`, `runtime-graph`, `runtime-ros2`) | Bounded pipelines/graphs, fusion schedules, transfer receipts, tracing, diagnostics, and ROS 2 adapters are provisional |
+| Interchange (`interchange-*`) | glTF JSON and OpenUSD stage adapter contracts are provisional |
+| Distribute (`distribute`) | Partition graphs, backpressure, and named transfers are provisional |
+| Platform (`platform`) | API stability registry, conformance reports, security checklists, and LTS policy are provisional |
+| GPU image (`gpu-image`) | Texture-backed `GpuImage`, upload/readback, receipts, pooling, and image compute kernels are provisional through the Vision 1.0 gate |
 
 ## Algorithm crates
 
@@ -80,22 +99,64 @@ spatialrust-<area> / feature-<name>
 | Crate | 1.0 status | Notes |
 | --- | --- | --- |
 | `spatialrust-math` | Stable primitives | `Vec3`, `Mat4`, `Isometry3` |
+| `spatialrust-image` | Stable | Packed/planar ownership, metadata, regions, and strided CPU views; no hidden device transfers |
+| `spatialrust-image-io` | Provisional | Standard codecs by default; TIFF/OpenEXR independently gated |
+| `spatialrust-tensor` | Provisional | Generic tensor descriptors, explicit CPU ownership, image/spatial bridges, and feature-gated DLPack major-version 1 ABI |
+| `spatialrust-ai` | Provisional | Runtime-independent session contract; ONNX Runtime CPU and hardware providers are independently gated |
+| `spatialrust-records` | Stable bounded foundation | `MemoryBudget`, `MemoryTracker`, `CancellationToken`, `StreamOptions`, `StreamingReceipt`, `SpatialRecordChunk`, and bounded source/sink traits are stable for 1.2; schema evolution and concrete adapters remain provisional; Arrow-free |
+| `spatialrust-arrow` | Provisional | Arrow C Data/Stream/Device adapters; optional features only |
+| `spatialrust-sync` | Provisional | Sensor clocks, frame graphs, stamped records, deterministic replay; MCAP file codecs gated |
+| `spatialrust-mapping` | Provisional | Trajectories, odometry traits, pose graphs, loop closure, and explicit vision motion bridges |
+| `spatialrust-scene` | Provisional | TSDF, surfels, meshes; Gaussian containers + CPU soft-splat behind `gaussian` |
+| `spatialrust-semantic` | Provisional | Embeddings, entities, multimodal fusion/search |
+| `spatialrust-episode` | Provisional | Episode schema, annotation, augmentation, eval, provenance |
+| `spatialrust-runtime` | Provisional | Bounded pipelines and execution graphs, explicit transfer receipts, tracing/diagnostics; ROS 2 adapters gated |
+| `spatialrust-interchange` | Provisional | glTF JSON mesh bridge; USDA ASCII OpenUSD stage adapter |
+| `spatialrust-distribute` | Provisional | Partition graphs, topo schedules, backpressure queues, named measurable transfers |
+| `spatialrust-platform` | Provisional | Stability registry, conformance summaries, security checklist, LTS policy, performance budgets, release gate |
+| `spatialrust-camera` | Stable foundation | Pinhole/Brown–Conrady and named RGB-D conversion entry points are stable; mono/stereo/fisheye/hand-eye/BA calibration contracts are additive and provisional |
+| `spatialrust-vision` | Stable foundation | Errors, borders, resize/filter entry points, reusable resize/gray/normalize/CHW outputs, detection/dense and Feature2D data contracts are stable; geometry/stereo/flow/AI adapters remain provisional |
 | `spatialrust-search` | Stable with features | KD-tree behind `search-kdtree`; **chunked query traits** and **`search-parallel`** provisional |
 | `spatialrust-filtering` | Provisional | GPU thresholds may move |
 | `spatialrust-features` | Provisional | Normal GPU path still tuning |
 | `spatialrust-segmentation` | Provisional | RANSAC configs may extend; **GPU plane scoring** behind `segment-ransac-plane-gpu` |
 | `spatialrust-registration` | Provisional | New backends (TEASER++, etc.) expected |
-| `spatialrust-gpu` | Provisional | `WgpuRuntime`, `GpuBufferPool` upload/recycle API stable; kernel APIs still tuning |
-| `spatialrust-py` | Stable user surface | Stubs enforced by `mypy.stubtest` in CI |
+| `spatialrust-gpu` | Provisional | `WgpuRuntime`, `GpuBufferPool`; `GpuImage` / image kernels behind `gpu-image`; voxel/AoSoA kernel APIs still tuning |
+| `spatialrust-py` | Stable user surface | Stubs enforced by `mypy.stubtest`; new vision functions remain provisional with the Rust APIs |
 
 ## Explicitly out of 1.0 scope
 
 - `spatialrust-ros2` (not started)
-- `spatialrust-ai` / ONNX / DLPack export (not started)
 - `gpu-cuda` backend (feature placeholder only)
 - `SpatialTensor` chunked views (provisional API in `spatialrust-core`)
 
 ## Deprecation policy (from 1.0 onward)
+
+The machine-readable freeze list for the stable vision foundation is
+`StabilityRegistry::vision_v1_surface()`. The
+`vision_api_v1` compile-and-behavior test must remain green on Linux, Windows,
+and macOS. A symbol marked stable there follows the deprecation policy below;
+group-level provisional entries may evolve behind their existing feature flag.
+Every Vision 1 release candidate must additionally pass `Vision1ReleaseGate`,
+which requires named cross-platform/test/audit evidence, fixed performance
+measurements, OpenCV receipts, runnable examples, and migration-policy
+acknowledgement.
+
+Vision 2 keeps the Vision 1 stable surface unchanged and adds provisional plan,
+workspace, fused preprocessing, and GPU-resident entries through
+`StabilityRegistry::vision_v2_surface()`. A Vision 2 candidate must pass
+`Vision2ReleaseGate`, including three-OS conformance, native/Python
+allocate/reuse budgets, explicit resource and transfer measurements, generated
+documentation, dated receipts, and the `vision-2` migration policy.
+
+SpatialRust 1.2 freezes the additive bounded record foundation through
+`StabilityRegistry::bounded_streaming_v1_2_surface()`. Concrete format
+adapters, spool implementation, chunk algorithms, pipeline builder, CLI flags,
+and Python iterator remain provisional behind named features. Every 1.2
+candidate must pass `Streaming12ReleaseGate`, including three-OS conformance,
+memory/spill/cleanup/copy/transfer/determinism/file-handle budgets, all five
+Epic receipts, the runnable example, and the `bounded-streaming-1.2` migration
+policy. `SpatialTensor` remains provisional and is not an out-of-core source.
 
 1. Deprecate in minor release (`#[deprecated]` + CHANGELOG)
 2. Remove no sooner than next major release

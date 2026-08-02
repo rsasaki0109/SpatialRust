@@ -1402,17 +1402,17 @@ fn render_benchmark_chart() -> String {
     let log_x_min = 10_000_f64.log10();
     let log_x_max = 2_000_000_f64.log10();
     let log_x_span = log_x_max - log_x_min;
-    let y_max = 400.0_f64;
+    let y_max = 120.0_f64;
 
     let data: [(f64, f64, f64); 8] = [
-        (10_000.0, 0.8, 17.0),
-        (65_000.0, 4.7, 14.7),
-        (100_000.0, 7.0, 17.2),
-        (200_000.0, 23.8, 26.3),
-        (500_000.0, 94.0, 51.0),
-        (750_000.0, 148.0, 48.0),
-        (1_000_000.0, 155.0, 56.0),
-        (2_000_000.0, 389.0, 101.0),
+        (10_000.0, 0.252, 8.179),
+        (65_536.0, 1.719, 15.961),
+        (100_000.0, 2.643, 21.047),
+        (200_000.0, 5.088, 24.549),
+        (500_000.0, 11.555, 35.829),
+        (750_000.0, 18.280, 54.962),
+        (1_000_000.0, 23.887, 65.890),
+        (2_000_000.0, 47.290, 104.82),
     ];
 
     let x_px =
@@ -1439,7 +1439,7 @@ fn render_benchmark_chart() -> String {
     svg.push_str(r##"<text x="24" y="58" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">End-to-end filter latency vs point count (centroid, leaf=4.0)</text>"##);
     svg.push('\n');
 
-    for ms in [0.0, 100.0, 200.0, 300.0, 400.0] {
+    for ms in [0.0, 30.0, 60.0, 90.0, 120.0] {
         let y = y_px(ms);
         let _ = write!(
             svg,
@@ -1460,10 +1460,10 @@ fn render_benchmark_chart() -> String {
         );
     }
 
-    for ms in [0.0, 100.0, 200.0, 300.0, 400.0] {
+    for ms in [0.0, 30.0, 60.0, 90.0, 120.0] {
         let y = y_px(ms);
-        let label = if ms >= 399.0 { "400 ms" } else { "" };
-        if ms < 399.0 {
+        let label = if ms >= 119.0 { "120 ms" } else { "" };
+        if ms < 119.0 {
             let _ = write!(
                 svg,
                 r##"<text x="{plot_left:.1}" y="{y:.2}" dx="-8" text-anchor="end" dominant-baseline="middle" fill="#64748b" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">{ms:.0}</text>"##,
@@ -1531,17 +1531,16 @@ fn render_benchmark_chart() -> String {
         r##"<text x="{legend_x:.1}" y="{legend_y_gpu:.1}" dx="8" dominant-baseline="middle" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">GPU (centroid)</text>"##,
     );
 
-    // Headline insight placed in the empty upper-left of the plot so it never
-    // crosses the steeply climbing CPU line near 2M.
+    // Headline insight placed in the empty upper-left of the plot.
     let callout_x = x_px(60_000.0);
-    let callout_y = y_px(330.0);
+    let callout_y = y_px(99.0);
     let _ = write!(
         svg,
-        r##"<text x="{callout_x:.1}" y="{callout_y:.1}" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700">GPU is ~3.9x faster at 2M points</text>"##,
+        r##"<text x="{callout_x:.1}" y="{callout_y:.1}" fill="#f97316" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700">CPU leads end-to-end through 2M points</text>"##,
     );
     let _ = write!(
         svg,
-        r##"<text x="{callout_x:.1}" y="{:.1}" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">CPU stays ahead below ~200k; wgpu wins as clouds grow</text>"##,
+        r##"<text x="{callout_x:.1}" y="{:.1}" fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">GPU submit batching cuts latency; radix sort is the next target</text>"##,
         callout_y + 20.0,
     );
 
@@ -1716,7 +1715,7 @@ fn render_social_card() -> String {
     );
     svg.push('\n');
     svg.push_str(
-        r##"<text x="195" y="320" text-anchor="middle" dominant-baseline="middle" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">GPU voxel ~3.9x @ 2M</text>"##,
+        r##"<text x="195" y="320" text-anchor="middle" dominant-baseline="middle" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">Explicit wgpu compute</text>"##,
     );
     svg.push('\n');
     svg.push_str(

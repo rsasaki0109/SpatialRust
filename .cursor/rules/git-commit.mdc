@@ -1,0 +1,11 @@
+---
+description: Git commit message preferences for this project
+alwaysApply: true
+---
+
+# Git Commits
+
+When creating git commits in this project:
+
+- Do **not** add `Co-authored-by: Cursor` (or any Cursor co-author trailer) to commit messages.
+- Keep commit messages focused on the change itself, following the repository's existing style.

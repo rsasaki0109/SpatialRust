@@ -24,6 +24,54 @@ maturin develop --release        # builds the Rust extension into the venv
 maturin build --release --out dist
 ```
 
+ONNX Runtime is intentionally not part of the default wheel. Enable its CPU
+backend explicitly when building an inference wheel:
+
+```bash
+maturin develop --release --features onnxruntime
+```
+
+`OnnxRuntimeSession.run()` uses named CPU I/O Binding by default. Pass
+`copy=True` only when an explicit host conversion is acceptable.
+
+Feature2D is available in the default wheel. `harris_keypoints`,
+`shi_tomasi_keypoints`, and `fast_keypoints` return immutable keypoint metadata;
+`orb_features` returns those keypoints with a `uint8[N, 32]` descriptor matrix.
+Use `match_binary_descriptors` for Hamming distance or
+`match_float_descriptors` for Euclidean distance, with optional ratio,
+cross-check, and maximum-distance filters.
+
+Geometry bindings expose `estimate_homography_ransac`, `solve_pnp`, and
+`stereo_block_match` for NumPy `float64` / grayscale workflows.
+
+## Viewer and NumPy ownership
+
+`ViewerState` uses the same strict, versioned JSON contract as the native,
+WebAssembly, and Jupyter viewers. Input messages are applied by the shared Rust
+reducer. `launch_native()` opens the opt-in native shell on the calling thread;
+it does not upload geometry.
+
+```python
+import numpy as np
+import spatialrust as sr
+
+state = sr.ViewerState(1280, 720)
+state.apply_input_json('{"kind":"zoom","delta":1.0}')
+
+x = np.arange(100, dtype=np.float32)
+points = sr.ViewerPointSource.borrow_numpy(x, x + 1, x + 2)
+assert points.source_pointers[0] == x.__array_interface__["data"][0]
+print(points.transfer_receipt_json())  # zero host-to-host bytes
+
+owned = sr.ViewerPointSource.copy_from_numpy(np.column_stack([x, x, x]))
+snapshot, copy_receipt = owned.copy_to_numpy()
+```
+
+Borrowed sources retain the three NumPy owners and require contiguous
+`float32` SoA columns. Copying is never inferred: `copy_from_numpy()` and
+`copy_to_numpy()` report exact host bytes, while all CPU/GPU transfer counters
+remain zero until a separate renderer upload is requested.
+
 ## Test
 
 The bindings have a pytest suite (`tests/`) that exercises the NumPy ⇄ Rust
@@ -42,6 +90,28 @@ The package ships PEP 561 type information (`spatialrust.pyi` + `py.typed`), so
 editors and type checkers (mypy, pyright) get full autocomplete and signature
 checking for the compiled extension. CI runs `mypy.stubtest` on every push to
 keep the stubs in sync with the runtime API.
+
+## Bounded point-cloud streaming
+
+`open_point_cloud_stream()` reads local PCD/PLY/LAS/LAZ/COPC files through the
+same bounded Rust workflow used by the CLI. HTTP(S) COPC remains isolated in
+the CLI feature so default Python wheels do not acquire a TLS stack:
+
+```python
+stream = spatialrust.open_point_cloud_stream(
+    "scan.copc.laz",
+    chunk_points=65_536,
+    memory_budget_bytes=256 * 1024 * 1024,
+    crop=(0.0, 0.0, -10.0, 100.0, 100.0, 20.0),
+    voxel_leaf=0.1,
+)
+for chunk in stream:
+    process(chunk)
+print(stream.receipt_json())
+```
+
+Call `stream.cancel()` to stop cooperatively at a chunk boundary. Retained
+Python chunks are caller-owned and are outside the native pipeline budget.
 
 ## Quickstart
 
@@ -86,6 +156,13 @@ reloaded = sr.read("labeled.las")
 | `farthest_point_sampling(cloud, sample_size, seed_index=0)` | Even FPS downsampling to a target count |
 | `voxelize(cloud, voxel_size=0.1, mode="occupancy")` | Dense 3D occupancy/count grid `(nz, ny, nx)` for ML |
 | `range_image(cloud, width=1024, height=64, fov_up_deg=3.0, fov_down_deg=-25.0)` | Spherical LiDAR range image `(height, width)` |
+| `rgbd_to_point_cloud(depth, color, fx, fy, cx, cy, ...)` | Aligned `(H,W)` depth + `(H,W,3)` RGB to an XYZRGB cloud |
+| `resize_image` / `letterbox_image` / `normalize_image_chw` | Model-ready RGB resize, padding, and float32 CHW packing |
+| `rgb_to_gray_image` / `rgb_to_hsv_image` / `remap_image` | CPU color conversion and coordinate-map resampling |
+| `nms` / `batched_nms` / `soft_nms` | Detection post-processing for `(N,4)` xyxy boxes, including class-aware suppression |
+| `connected_components_image` / `find_mask_contours` | Row-major 4/8-connected labeling (borrowed packed input; any non-zero byte is foreground) and contour extraction |
+| `encode_mask_rle` / `decode_mask_rle` | Row-major or COCO column-major binary-mask RLE |
+| `point_map_to_point_cloud` | Filter a dense `(H,W,3)` point map into a native point cloud |
 | `knn_graph(cloud, k)` / `radius_graph(cloud, radius)` | PyG-style `(2, E)` `edge_index` for GNNs |
 | `statistical_outlier_removal(cloud, k_neighbors=16, std_mul=1.0)` | Drop points far from their k-NN (SOR) |
 | `radius_outlier_removal(cloud, radius=0.5, min_neighbors=4)` | Drop points with too few neighbors in radius (ROR) |
@@ -124,6 +201,8 @@ python examples/end_to_end.py --png demo.png           # full clean->cluster->re
 python examples/make_gifs.py                            # rotating cluster + voxel GIFs
 python examples/ml_preprocess.py --png ml.png          # point cloud -> ML tensors
 python examples/pyg_pointnet_demo.py --input scan.pcd  # SpatialRust -> PyG Data -> tiny GCN
+python examples/rgbd_pipeline.py                       # RGB-D -> colored cloud -> MVP
+python examples/vision_ai_pipeline.py                  # image AI -> masks/points -> MVP
 ```
 
 `segment_room.py` loads a real scan, runs the pipeline, and writes a labeled

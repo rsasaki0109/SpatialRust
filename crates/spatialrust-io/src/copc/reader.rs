@@ -1,6 +1,8 @@
 use std::path::Path;
 
 use copc_streaming::{ByteSource, CopcStreamingReader, FileSource};
+#[cfg(feature = "streaming")]
+use copc_streaming::{DecompressedChunk, VoxelKey};
 use las::Header;
 use spatialrust_core::{PointCloud, PointSchema, SpatialMetadata};
 
@@ -8,6 +10,14 @@ use crate::copc::query::{CopcFileInfo, CopcQuery};
 use crate::error::{copc_parse, IoError};
 use crate::las::{metadata_from_las_header, point_cloud_from_las_points, schema_for_las_header};
 use crate::{PointReader, ReadOptions};
+
+#[cfg(feature = "streaming")]
+use crate::streaming::{records_io, FormatStreamState};
+#[cfg(feature = "streaming")]
+use spatialrust_records::{
+    BoundedSpatialRecordSource, CancellationToken, MemoryReservation, MemoryTracker, RecordsResult,
+    SchemaDescriptor, SpatialRecordChunk, StreamOptions,
+};
 
 /// Reads point clouds from COPC files.
 pub struct CopcReader {
@@ -164,6 +174,239 @@ async fn read_query_points<S: ByteSource>(
             .map_err(|error| copc_parse(error.to_string()))
     } else {
         reader.query_points(&bounds).await.map_err(|error| copc_parse(error.to_string()))
+    }
+}
+
+/// Bounded, deterministic COPC source over any random-access byte source.
+#[cfg(feature = "streaming")]
+pub struct CopcChunkSource<S: ByteSource> {
+    reader: CopcStreamingReader<S>,
+    keys: Vec<VoxelKey>,
+    query_bounds: Option<copc_streaming::Aabb>,
+    metadata: SpatialMetadata,
+    state: FormatStreamState,
+    key_index: usize,
+    current: Option<DecompressedChunk>,
+    current_reservation: Option<MemoryReservation>,
+    current_offset: u32,
+}
+
+#[cfg(feature = "streaming")]
+impl<S: ByteSource> CopcChunkSource<S> {
+    /// Opens a byte source, loads matching hierarchy metadata, and orders nodes
+    /// by `(level, x, y, z)` for repeatable chunk identities.
+    pub fn from_source(
+        source: S,
+        query: Option<CopcQuery>,
+        options: StreamOptions,
+        cancellation: CancellationToken,
+    ) -> Result<Self, IoError> {
+        if let Some(query) = query {
+            query.validate()?;
+        }
+        let mut reader = pollster::block_on(CopcStreamingReader::open(source))
+            .map_err(|error| copc_parse(error.to_string()))?;
+        let query_bounds = query.map(|query| query.bounds.to_aabb());
+        pollster::block_on(async {
+            match (query, query_bounds.as_ref()) {
+                (Some(query), Some(bounds)) => {
+                    if let Some(level) = query.max_level_for_spacing(reader.copc_info().spacing) {
+                        reader.load_hierarchy_for_bounds_to_level(bounds, level).await
+                    } else {
+                        reader.load_hierarchy_for_bounds(bounds).await
+                    }
+                }
+                _ => reader.load_all_hierarchy().await,
+            }
+        })
+        .map_err(|error| copc_parse(error.to_string()))?;
+
+        let root = reader.copc_info().root_bounds();
+        let max_level =
+            query.and_then(|query| query.max_level_for_spacing(reader.copc_info().spacing));
+        let mut keys: Vec<_> = reader
+            .entries()
+            .filter(|(key, entry)| {
+                entry.point_count > 0
+                    && max_level.map_or(true, |level| key.level <= level)
+                    && query_bounds
+                        .as_ref()
+                        .map_or(true, |bounds| key.bounds(&root).intersects(bounds))
+            })
+            .map(|(key, _)| *key)
+            .collect();
+        keys.sort_by_key(|key| (key.level, key.x, key.y, key.z));
+
+        let schema = schema_for_las_header(reader.header().las_header());
+        let metadata = metadata_from_las_header();
+        let state = FormatStreamState::new("copc", schema, options, cancellation)?;
+        Ok(Self {
+            reader,
+            keys,
+            query_bounds,
+            metadata,
+            state,
+            key_index: 0,
+            current: None,
+            current_reservation: None,
+            current_offset: 0,
+        })
+    }
+
+    /// Returns the declared LAS point count from the COPC header.
+    #[must_use]
+    pub fn declared_point_count(&self) -> u64 {
+        self.reader.header().las_header().number_of_points()
+    }
+
+    fn load_next_node(&mut self) -> RecordsResult<bool> {
+        let Some(key) = self.keys.get(self.key_index).copied() else {
+            return Ok(false);
+        };
+        self.state.cancellation.check()?;
+        let entry = self.reader.get(&key).ok_or_else(|| {
+            spatialrust_records::RecordsError::InvalidChunk(format!(
+                "COPC hierarchy entry disappeared for {key:?}"
+            ))
+        })?;
+        let point_bytes = u64::from(entry.point_count)
+            .checked_mul(u64::from(
+                self.reader.header().las_header().point_format().len()
+                    + self.reader.header().las_header().point_format().extra_bytes,
+            ))
+            .ok_or_else(|| {
+                spatialrust_records::RecordsError::InvalidChunk(
+                    "COPC node byte size overflow".into(),
+                )
+            })?;
+        let working_bytes =
+            point_bytes.checked_add(u64::from(entry.byte_size)).ok_or_else(|| {
+                spatialrust_records::RecordsError::InvalidChunk(
+                    "COPC node working set overflow".into(),
+                )
+            })?;
+        let reservation = self.state.tracker.try_reserve(working_bytes)?;
+        let chunk = pollster::block_on(self.reader.fetch_chunk(&key))
+            .map_err(|error| records_io(copc_parse(error.to_string())))?;
+        self.current = Some(chunk);
+        self.current_reservation = Some(reservation);
+        self.current_offset = 0;
+        self.key_index += 1;
+        Ok(true)
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl CopcChunkSource<FileSource> {
+    /// Opens a local COPC file for bounded node and record chunk reads.
+    pub fn open(
+        path: impl AsRef<Path>,
+        query: Option<CopcQuery>,
+        options: StreamOptions,
+        cancellation: CancellationToken,
+    ) -> Result<Self, IoError> {
+        let source =
+            FileSource::open(path.as_ref()).map_err(|error| copc_parse(error.to_string()))?;
+        Self::from_source(source, query, options, cancellation)
+    }
+}
+
+#[cfg(all(feature = "streaming", feature = "io-copc-http"))]
+impl CopcChunkSource<crate::copc::HttpByteSource> {
+    /// Opens a remote COPC URL using bounded HTTP range requests.
+    pub fn open_url(
+        url: &str,
+        query: Option<CopcQuery>,
+        options: StreamOptions,
+        cancellation: CancellationToken,
+    ) -> Result<Self, IoError> {
+        Self::from_source(crate::copc::HttpByteSource::new(url)?, query, options, cancellation)
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl<S: ByteSource> BoundedSpatialRecordSource for CopcChunkSource<S> {
+    fn schema(&self) -> &SchemaDescriptor {
+        &self.state.schema
+    }
+
+    fn options(&self) -> &StreamOptions {
+        &self.state.options
+    }
+
+    fn memory_tracker(&self) -> &MemoryTracker {
+        &self.state.tracker
+    }
+
+    fn cancellation_token(&self) -> CancellationToken {
+        self.state.cancellation.clone()
+    }
+
+    fn max_chunk_bytes(&self) -> u64 {
+        self.state.max_chunk_bytes
+    }
+
+    fn next_chunk(&mut self) -> Option<RecordsResult<SpatialRecordChunk>> {
+        loop {
+            if self.current.is_none() {
+                match self.load_next_node() {
+                    Ok(true) => {}
+                    Ok(false) => return None,
+                    Err(error) => return Some(Err(error)),
+                }
+            }
+            let chunk = self.current.as_ref().expect("loaded above");
+            let remaining = chunk.point_count - self.current_offset;
+            let count = remaining.min(self.state.options.chunk_points() as u32);
+            let point_vec_bytes = match u64::try_from(std::mem::size_of::<las::Point>())
+                .ok()
+                .and_then(|size| size.checked_mul(u64::from(count)))
+            {
+                Some(bytes) => bytes,
+                None => {
+                    return Some(Err(spatialrust_records::RecordsError::InvalidChunk(
+                        "COPC decoded point buffer size overflow".into(),
+                    )));
+                }
+            };
+            let reservation =
+                match self.state.reserve_points_with_scratch(count as usize, point_vec_bytes) {
+                    Ok(reservation) => reservation,
+                    Err(error) => return Some(Err(error)),
+                };
+            let end = self.current_offset + count;
+            let mut points = match self.reader.read_points_range(chunk, self.current_offset..end) {
+                Ok(points) => points,
+                Err(error) => return Some(Err(records_io(copc_parse(error.to_string())))),
+            };
+            if let Some(bounds) = &self.query_bounds {
+                points.retain(|point| {
+                    point.x >= bounds.min[0]
+                        && point.x <= bounds.max[0]
+                        && point.y >= bounds.min[1]
+                        && point.y <= bounds.max[1]
+                        && point.z >= bounds.min[2]
+                        && point.z <= bounds.max[2]
+                });
+            }
+            self.current_offset = end;
+            if end == chunk.point_count {
+                self.current = None;
+                self.current_reservation = None;
+            }
+            if points.is_empty() {
+                continue;
+            }
+            let cloud = match point_cloud_from_las_points(
+                self.state.schema.point_schema().clone(),
+                self.metadata.clone(),
+                points,
+            ) {
+                Ok(cloud) => cloud,
+                Err(error) => return Some(Err(records_io(error))),
+            };
+            return Some(self.state.lease(cloud, reservation));
+        }
     }
 }
 

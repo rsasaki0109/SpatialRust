@@ -1,0 +1,18 @@
+[package]
+name = "spatialrust-episode"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Embodied-AI episode schemas, annotation, augmentation, and evaluation for SpatialRust"
+
+[features]
+default = []
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-sync.workspace = true
+spatialrust-records.workspace = true
+thiserror.workspace = true

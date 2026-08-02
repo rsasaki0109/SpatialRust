@@ -210,46 +210,24 @@ fn filter_valid_sorted_entries(
         mapped_at_creation: false,
     });
 
-    queue.write_buffer(
-        &flags_buffer,
-        0,
-        &vec![0u8; (buffer_len * std::mem::size_of::<u32>() as u64) as usize],
-    );
-    queue.write_buffer(
-        &inclusive_buffer,
-        0,
-        &vec![0u8; (buffer_len * std::mem::size_of::<u32>() as u64) as usize],
-    );
-    queue.write_buffer(
-        &scan_scratch_buffer,
-        0,
-        &vec![0u8; (buffer_len * std::mem::size_of::<u32>() as u64) as usize],
-    );
-
-    let params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-sort-filter-params"),
-        size: std::mem::size_of::<FilterParams>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-
     let pipelines = runtime.pipelines();
     let layout = &pipelines.voxel_sort_filter.bind_group_layout;
-
+    let mark_params = create_filter_params_buffer(device, point_count, padded_count, 0);
     let mark_bind_group = create_filter_bind_group(
         device,
         layout,
-        &params_buffer,
+        &mark_params,
         entries_buffer,
         &flags_buffer,
         &scan_scratch_buffer,
         &inclusive_buffer,
         &output_buffer,
     );
+    let init_params = create_filter_params_buffer(device, point_count, padded_count, 0);
     let init_bind_group = create_filter_bind_group(
         device,
         layout,
-        &params_buffer,
+        &init_params,
         entries_buffer,
         &flags_buffer,
         &scan_scratch_buffer,
@@ -258,12 +236,13 @@ fn filter_valid_sorted_entries(
     );
 
     let dispatch_padded = padded_count.div_ceil(WORKGROUP_SIZE);
-
-    write_filter_params(queue, &params_buffer, point_count, padded_count, 0);
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("voxel-sort-filter-batched-encoder"),
+    });
+    encoder.clear_buffer(&flags_buffer, 0, None);
+    encoder.clear_buffer(&inclusive_buffer, 0, None);
+    encoder.clear_buffer(&scan_scratch_buffer, 0, None);
     {
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("voxel-sort-filter-mark-encoder"),
-        });
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-sort-filter-mark-pass"),
             timestamp_writes: None,
@@ -271,15 +250,9 @@ fn filter_valid_sorted_entries(
         pass.set_pipeline(&pipelines.voxel_sort_filter.mark);
         pass.set_bind_group(0, &mark_bind_group, &[]);
         pass.dispatch_workgroups(dispatch_padded, 1, 1);
-        drop(pass);
-        queue.submit(Some(encoder.finish()));
     }
 
-    write_filter_params(queue, &params_buffer, point_count, padded_count, 0);
     {
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("voxel-sort-filter-init-encoder"),
-        });
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-sort-filter-init-pass"),
             timestamp_writes: None,
@@ -287,28 +260,23 @@ fn filter_valid_sorted_entries(
         pass.set_pipeline(&pipelines.voxel_sort_filter.init);
         pass.set_bind_group(0, &init_bind_group, &[]);
         pass.dispatch_workgroups(dispatch_padded, 1, 1);
-        drop(pass);
-        queue.submit(Some(encoder.finish()));
     }
 
     let mut scan_read = &inclusive_buffer;
     let mut scan_write = &scan_scratch_buffer;
     let mut stride = 1u32;
     while stride < padded_count {
-        write_filter_params(queue, &params_buffer, point_count, padded_count, stride);
+        let scan_params = create_filter_params_buffer(device, point_count, padded_count, stride);
         let scan_bind_group = create_filter_bind_group(
             device,
             layout,
-            &params_buffer,
+            &scan_params,
             entries_buffer,
             &flags_buffer,
             scan_read,
             scan_write,
             &output_buffer,
         );
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("voxel-sort-filter-scan-encoder"),
-        });
         {
             let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("voxel-sort-filter-scan-pass"),
@@ -318,10 +286,10 @@ fn filter_valid_sorted_entries(
             pass.set_bind_group(0, &scan_bind_group, &[]);
             pass.dispatch_workgroups(dispatch_padded, 1, 1);
         }
-        queue.submit(Some(encoder.finish()));
         std::mem::swap(&mut scan_read, &mut scan_write);
         stride *= 2;
     }
+    queue.submit(Some(encoder.finish()));
 
     let valid_count = read_filter_valid_count(device, queue, scan_read, padded_count)?;
     if valid_count != point_count as usize {
@@ -330,11 +298,11 @@ fn filter_valid_sorted_entries(
         )));
     }
 
-    write_filter_params(queue, &params_buffer, point_count, padded_count, 0);
+    let scatter_params = create_filter_params_buffer(device, point_count, padded_count, 0);
     let scatter_bind_group = create_filter_bind_group(
         device,
         layout,
-        &params_buffer,
+        &scatter_params,
         entries_buffer,
         &flags_buffer,
         scan_read,
@@ -391,15 +359,18 @@ struct FilterParams {
     _pad: u32,
 }
 
-fn write_filter_params(
-    queue: &wgpu::Queue,
-    params_buffer: &wgpu::Buffer,
+fn create_filter_params_buffer(
+    device: &wgpu::Device,
     point_count: u32,
     padded_count: u32,
     scan_stride: u32,
-) {
+) -> wgpu::Buffer {
     let params = FilterParams { point_count, padded_count, scan_stride, _pad: 0 };
-    queue.write_buffer(params_buffer, 0, bytemuck::bytes_of(&params));
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("voxel-sort-filter-params"),
+        contents: bytemuck::bytes_of(&params),
+        usage: wgpu::BufferUsages::UNIFORM,
+    })
 }
 
 fn read_filter_valid_count(
@@ -456,21 +427,8 @@ fn sort_entries_gpu(
     let device = runtime.device();
     let queue = runtime.queue();
     let pipelines = runtime.pipelines();
-
-    let params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-sort-params"),
-        size: std::mem::size_of::<SortParams>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("voxel-sort-bind-group"),
-        layout: &pipelines.voxel_sort.bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry { binding: 0, resource: params_buffer.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 1, resource: entries_buffer.as_entire_binding() },
-        ],
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("voxel-sort-batched-encoder"),
     });
 
     let mut k = 2u32;
@@ -478,10 +436,24 @@ fn sort_entries_gpu(
         let mut j = k / 2;
         while j >= 1 {
             let params = SortParams { padded_count, pair_distance: j, block_width: k, _pad: 0 };
-            queue.write_buffer(&params_buffer, 0, bytemuck::bytes_of(&params));
-
-            let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("voxel-sort-encoder"),
+            let params_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("voxel-sort-params"),
+                contents: bytemuck::bytes_of(&params),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("voxel-sort-bind-group"),
+                layout: &pipelines.voxel_sort.bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: params_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: entries_buffer.as_entire_binding(),
+                    },
+                ],
             });
             {
                 let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -492,11 +464,11 @@ fn sort_entries_gpu(
                 pass.set_bind_group(0, &bind_group, &[]);
                 pass.dispatch_workgroups(padded_count.div_ceil(WORKGROUP_SIZE), 1, 1);
             }
-            queue.submit(Some(encoder.finish()));
             j /= 2;
         }
         k *= 2;
     }
+    queue.submit(Some(encoder.finish()));
 
     Ok(entries_buffer)
 }

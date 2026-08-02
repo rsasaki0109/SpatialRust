@@ -60,6 +60,18 @@ jobs:
             args: --workspace
           - name: spatialrust-serde
             args: -p spatialrust --features serde
+          - name: spatialrust-records-receipt-json
+            args: -p spatialrust-records --features receipt-json
+          - name: spatialrust-records-receipt-json-meta
+            args: -p spatialrust --features records-receipt-json
+          - name: spatialrust-io-streaming-all
+            args: -p spatialrust-io --no-default-features --features io-pcd,io-ply,io-las,io-laz,io-copc-http,streaming
+          - name: spatialrust-pipeline-streaming
+            args: -p spatialrust-pipeline --no-default-features --features pipeline-streaming
+          - name: spatialrust-pipeline-streaming-meta
+            args: -p spatialrust --no-default-features --features pipeline-streaming
+          - name: spatialrust-streaming-cli
+            args: -p spatialrust --no-default-features --features streaming-cli
           - name: spatialrust-io-pcd
             args: -p spatialrust-io --features io-pcd
           - name: spatialrust-io-pcd-meta
@@ -254,11 +266,133 @@ jobs:
         run: |
           python -m venv .venv
           . .venv/bin/activate
-          pip install maturin pytest numpy mypy
+          pip install maturin pytest numpy mypy "anywidget>=0.9,<0.10" nbclient nbformat ipykernel hatchling
           maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
+          pip install --no-deps -e python/spatialrust-jupyter
+          python crates/spatialrust-py/examples/video_tracking_e2e.py --no-gif
           pytest crates/spatialrust-py/tests
+          pytest python/spatialrust-jupyter/tests
+          # The comparison report contract stays stdlib-only. OpenCV itself is
+          # intentionally not a production or default-CI dependency.
+          python bench/opencv_comparison/test_report.py
           # Fail the build if the .pyi type stubs drift from the runtime API.
-          python -m mypy.stubtest spatialrust --ignore-missing-stub
+          python -m mypy.stubtest spatialrust --ignore-missing-stub \
+            --allowlist crates/spatialrust-py/stubtest_allowlist.txt \
+            --ignore-unused-allowlist
+
+  vision-platform-conformance:
+    name: Vision conformance (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test stable image, camera, and vision surface
+        run: |
+          cargo test -p spatialrust-image
+          cargo test -p spatialrust-camera
+          cargo test -p spatialrust-vision --no-default-features --features full
+          cargo test -p spatialrust-platform vision1
+          cargo test -p spatialrust-platform vision2
+          cargo test -p spatialrust --no-default-features --features platform,camera-rgbd,vision-full --test vision_api_v1
+          cargo run -p spatialrust --no-default-features --features vision-full --example vision_1_cpu
+          cargo run -p spatialrust --no-default-features --features platform --example vision_1_release_gate
+          cargo run -p spatialrust --no-default-features --features platform --example vision_2_release_gate
+          cargo run -p spatialrust --no-default-features --features image-io-standard,vision-video --example video_tracking_e2e
+
+  streaming-platform-conformance:
+    name: Streaming 1.2 conformance (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test bounded-streaming contracts and release gate
+        run: |
+          cargo test -p spatialrust-records --features receipt-json
+          cargo test -p spatialrust-io --no-default-features --features io-pcd,io-ply,io-las,io-laz,io-copc-http,streaming
+          cargo test -p spatialrust-pipeline --no-default-features --features pipeline-streaming
+          cargo test -p spatialrust --no-default-features --features streaming-cli --test streaming_cli
+          cargo test -p spatialrust-platform streaming
+          cargo run -p spatialrust --no-default-features --features platform,pipeline-streaming --example streaming_1_2_release_gate
+
+  visual-platform-conformance:
+    name: Visual conformance (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Linux software Vulkan adapter
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libvulkan1 mesa-vulkan-drivers
+      - name: Test Visual contracts, strict image, viewer, and LOD
+        run: |
+          cargo test -p spatialrust-viz
+          cargo test -p spatialrust-render-wgpu --features wgpu
+          cargo test -p spatialrust-viewer --all-features
+          cargo test -p spatialrust-lod --all-features
+          cargo test -p spatialrust-platform visual
+          cargo run -p spatialrust --no-default-features --features render-wgpu --example visual_headless_conformance
+          cargo run -p spatialrust --no-default-features --features platform --example visual_release_gate
+
+  visual-web-conformance:
+    name: Visual Web/WASM browser conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build WebGPU and browser WASM surfaces
+        run: |
+          cargo check -p spatialrust-web --target wasm32-unknown-unknown --features wasm,webgpu
+          cargo build -p spatialrust-web --target wasm32-unknown-unknown --features wasm
+          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          wasm-bindgen \
+            --target web \
+            --out-dir crates/spatialrust-web/web/pkg \
+            target/wasm32-unknown-unknown/debug/spatialrust_web.wasm
+      - name: Run real headless-browser smoke
+        run: |
+          set -euo pipefail
+          python -m http.server 8765 --directory crates/spatialrust-web/web >browser-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8765/browser_smoke.html >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          google-chrome \
+            --headless=new \
+            --no-sandbox \
+            --enable-unsafe-webgpu \
+            --use-angle=swiftshader \
+            --enable-features=Vulkan \
+            --virtual-time-budget=15000 \
+            --dump-dom \
+            http://127.0.0.1:8765/browser_smoke.html >browser-smoke-dom.txt
+          grep -F "SpatialRust Web viewer smoke: PASS" browser-smoke-dom.txt
 
   bench:
     name: Benchmark compile

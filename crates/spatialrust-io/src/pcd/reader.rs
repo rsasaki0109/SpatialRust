@@ -9,6 +9,16 @@ use crate::pcd::header::{read_binary_payload, PcdDataKind, PcdHeader};
 use crate::pcd::schema::schema_from_pcd_fields;
 use crate::{PointReader, ReadOptions};
 
+#[cfg(feature = "streaming")]
+use crate::streaming::{
+    read_bounded_ascii_line, records_io, FormatStreamState, MAX_ASCII_RECORD_BYTES,
+};
+#[cfg(feature = "streaming")]
+use spatialrust_records::{
+    BoundedSpatialRecordSource, CancellationToken, MemoryTracker, RecordsResult, SchemaDescriptor,
+    SpatialRecordChunk, StreamOptions,
+};
+
 /// Reads point clouds from PCD files or streams.
 pub struct PcdReader<R: BufRead> {
     reader: R,
@@ -382,6 +392,191 @@ pub fn read_pcd_file(path: impl AsRef<std::path::Path>) -> Result<PointCloud, Io
     let file = std::fs::File::open(path.as_ref())?;
     let mut reader = std::io::BufReader::new(file);
     read_pcd(&mut reader)
+}
+
+/// Bounded sequential PCD source for ASCII and interleaved binary payloads.
+///
+/// Field-major `binary_compressed` PCD requires a bounded spool adapter.
+#[cfg(feature = "streaming")]
+pub struct PcdChunkSource<R: BufRead> {
+    reader: R,
+    header: PcdHeader,
+    metadata: SpatialMetadata,
+    state: FormatStreamState,
+    loaded: usize,
+}
+
+#[cfg(feature = "streaming")]
+impl<R: BufRead> PcdChunkSource<R> {
+    /// Parses the header and creates a bounded PCD source.
+    pub fn new(
+        mut reader: R,
+        options: StreamOptions,
+        cancellation: CancellationToken,
+    ) -> Result<Self, IoError> {
+        let (header, _) = PcdHeader::parse(&mut reader)?;
+        if header.data == PcdDataKind::BinaryCompressed {
+            return Err(pcd_format("binary_compressed PCD requires the bounded spool adapter"));
+        }
+        let schema = schema_from_pcd_fields(&header.fields)?;
+        let metadata = metadata_from_header(&header);
+        let state = FormatStreamState::new("pcd", schema, options, cancellation)?;
+        Ok(Self { reader, header, metadata, state, loaded: 0 })
+    }
+
+    /// Returns the parsed header, including the declared total point count.
+    #[must_use]
+    pub fn header(&self) -> &PcdHeader {
+        &self.header
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl PcdChunkSource<std::io::BufReader<std::fs::File>> {
+    /// Opens a local PCD file for bounded chunk reads.
+    pub fn open(
+        path: impl AsRef<std::path::Path>,
+        options: StreamOptions,
+        cancellation: CancellationToken,
+    ) -> Result<Self, IoError> {
+        Self::new(std::io::BufReader::new(std::fs::File::open(path)?), options, cancellation)
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl<R: BufRead> BoundedSpatialRecordSource for PcdChunkSource<R> {
+    fn schema(&self) -> &SchemaDescriptor {
+        &self.state.schema
+    }
+
+    fn options(&self) -> &StreamOptions {
+        &self.state.options
+    }
+
+    fn memory_tracker(&self) -> &MemoryTracker {
+        &self.state.tracker
+    }
+
+    fn cancellation_token(&self) -> CancellationToken {
+        self.state.cancellation.clone()
+    }
+
+    fn max_chunk_bytes(&self) -> u64 {
+        self.state.max_chunk_bytes
+    }
+
+    fn next_chunk(&mut self) -> Option<RecordsResult<SpatialRecordChunk>> {
+        if self.loaded == self.header.points {
+            return None;
+        }
+        let count = (self.header.points - self.loaded).min(self.state.options.chunk_points());
+        let scratch = match self.header.data {
+            PcdDataKind::Ascii => 0,
+            PcdDataKind::Binary => match self
+                .header
+                .point_step()
+                .checked_mul(count)
+                .and_then(|bytes| u64::try_from(bytes).ok())
+            {
+                Some(bytes) => bytes,
+                None => {
+                    return Some(Err(spatialrust_records::RecordsError::InvalidChunk(
+                        "PCD binary chunk size overflow".into(),
+                    )));
+                }
+            },
+            PcdDataKind::BinaryCompressed => unreachable!("rejected by constructor"),
+        };
+        let reservation = match self.state.reserve_points_with_scratch(count, scratch) {
+            Ok(reservation) => reservation,
+            Err(error) => return Some(Err(error)),
+        };
+        let schema = self.state.schema.point_schema().clone();
+        let mut buffers = PointBufferSet::new();
+        for field in schema.fields() {
+            buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, count));
+        }
+
+        let decoded = match self.header.data {
+            PcdDataKind::Ascii => read_ascii_chunk(
+                &mut self.reader,
+                &self.header,
+                &schema,
+                &mut buffers,
+                count,
+                self.loaded,
+            ),
+            PcdDataKind::Binary => {
+                let mut payload = vec![0_u8; self.header.point_step() * count];
+                std::io::Read::read_exact(&mut self.reader, &mut payload)
+                    .map_err(IoError::from)
+                    .and_then(|()| {
+                        payload.chunks_exact(self.header.point_step()).try_for_each(|point| {
+                            decode_binary_point(&self.header.fields, point, &schema, &mut buffers)
+                        })
+                    })
+            }
+            PcdDataKind::BinaryCompressed => unreachable!("rejected by constructor"),
+        };
+        if let Err(error) = decoded {
+            return Some(Err(records_io(error)));
+        }
+        let cloud = match PointCloud::try_from_parts(schema, buffers, self.metadata.clone()) {
+            Ok(cloud) => cloud,
+            Err(error) => return Some(Err(error.into())),
+        };
+        self.loaded += count;
+        Some(self.state.lease(cloud, reservation))
+    }
+}
+
+#[cfg(feature = "streaming")]
+fn read_ascii_chunk<R: BufRead>(
+    reader: &mut R,
+    header: &PcdHeader,
+    schema: &PointSchema,
+    buffers: &mut PointBufferSet,
+    count: usize,
+    point_offset: usize,
+) -> Result<(), IoError> {
+    let mut loaded = 0;
+    let mut line = [0_u8; MAX_ASCII_RECORD_BYTES];
+    while loaded < count {
+        let Some(line) = read_bounded_ascii_line(reader, &mut line, "PCD")? else {
+            return Err(pcd_parse(format!(
+                "unexpected EOF after {} of {} ASCII points",
+                point_offset + loaded,
+                header.points
+            )));
+        };
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+        let mut tokens = trimmed.split_whitespace();
+        for field in &header.fields {
+            if field.name.eq_ignore_ascii_case("rgb") {
+                let packed = parse_packed_rgb(
+                    tokens.next().ok_or_else(|| pcd_parse("missing rgb token in ASCII PCD"))?,
+                )?;
+                push_to_field(buffers, schema, "r", packed.0)?;
+                push_to_field(buffers, schema, "g", packed.1)?;
+                push_to_field(buffers, schema, "b", packed.2)?;
+            } else {
+                for _ in 0..field.count {
+                    let token = tokens
+                        .next()
+                        .ok_or_else(|| pcd_parse(format!("missing field `{}`", field.name)))?;
+                    let value = token
+                        .parse::<f32>()
+                        .map_err(|_| pcd_parse(format!("invalid ASCII value `{token}`")))?;
+                    push_to_field(buffers, schema, &field.name, value)?;
+                }
+            }
+        }
+        loaded += 1;
+    }
+    Ok(())
 }
 
 #[cfg(test)]

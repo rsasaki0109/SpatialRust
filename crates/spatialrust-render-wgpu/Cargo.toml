@@ -1,0 +1,28 @@
+[package]
+name = "spatialrust-render-wgpu"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Explicit wgpu rendering backend for SpatialRust visualization contracts"
+
+[features]
+default = []
+wgpu = [
+    "dep:bytemuck",
+    "dep:spatialrust-gpu",
+    "dep:spatialrust-viz",
+    "dep:wgpu",
+]
+
+[dependencies]
+bytemuck = { workspace = true, optional = true }
+spatialrust-gpu = { workspace = true, features = ["gpu-wgpu"], optional = true }
+spatialrust-viz = { workspace = true, optional = true }
+thiserror.workspace = true
+wgpu = { workspace = true, optional = true }
+
+[dev-dependencies]
+spatialrust-math.workspace = true

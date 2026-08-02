@@ -12,12 +12,14 @@ description = "GPU runtime and device buffers for SpatialRust"
 default = []
 gpu-wgpu = ["dep:wgpu", "dep:bytemuck", "dep:pollster"]
 gpu-aoso-staging = ["gpu-wgpu", "spatialrust-core/tensor-aoso"]
+gpu-image = ["gpu-wgpu", "dep:spatialrust-image"]
 gpu-cuda = []
 
 [dependencies]
 spatialrust-core = { workspace = true }
 spatialrust-math = { workspace = true }
 spatialrust-search = { workspace = true }
+spatialrust-image = { workspace = true, optional = true }
 thiserror = { workspace = true }
 wgpu = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
@@ -32,6 +34,11 @@ required-features = ["gpu-wgpu"]
 name = "aoso_frame_pipeline"
 harness = false
 required-features = ["gpu-aoso-staging"]
+
+[[bench]]
+name = "gpu_image_pipeline"
+harness = false
+required-features = ["gpu-image"]
 
 [dev-dependencies]
 criterion = { workspace = true }

@@ -1,0 +1,18 @@
+[package]
+name = "spatialrust-scene"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "TSDF volumes, surfaces, meshes, and feature-gated Gaussian scenes for SpatialRust"
+
+[features]
+default = []
+gaussian = []
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-math.workspace = true
+thiserror.workspace = true

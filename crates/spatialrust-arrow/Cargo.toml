@@ -1,0 +1,24 @@
+[package]
+name = "spatialrust-arrow"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Arrow C Data/Stream/Device adapters for SpatialRust point records"
+
+[features]
+default = []
+arrow-c-data = ["dep:spatialrust-records"]
+arrow-c-stream = ["arrow-c-data"]
+arrow-c-device = ["arrow-c-data"]
+full = ["arrow-c-stream", "arrow-c-device"]
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-records = { workspace = true, optional = true }
+thiserror.workspace = true
+
+[dev-dependencies]
+spatialrust-records = { workspace = true }

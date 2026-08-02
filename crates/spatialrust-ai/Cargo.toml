@@ -1,0 +1,30 @@
+[package]
+name = "spatialrust-ai"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Backend-independent inference contracts for SpatialRust"
+
+[features]
+default = []
+onnxruntime = ["dep:ort"]
+onnxruntime-cuda = ["onnxruntime", "ort/cuda"]
+onnxruntime-tensorrt = ["onnxruntime-cuda", "ort/tensorrt"]
+onnxruntime-directml = ["onnxruntime", "ort/directml"]
+
+[dependencies]
+bytemuck.workspace = true
+spatialrust-tensor.workspace = true
+thiserror.workspace = true
+ort = { version = "=2.0.0-rc.12", optional = true, default-features = false, features = ["std", "ndarray", "download-binaries", "tls-native", "copy-dylibs", "api-24"] }
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "onnxruntime"
+harness = false
+required-features = ["onnxruntime"]

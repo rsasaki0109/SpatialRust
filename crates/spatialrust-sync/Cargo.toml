@@ -1,0 +1,24 @@
+[package]
+name = "spatialrust-sync"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Sensor time, frame graphs, and deterministic multimodal replay for SpatialRust"
+
+[features]
+default = []
+# File-backed MCAP uses the Foxglove `mcap` crate (no zstd/lz4 by default).
+mcap = ["dep:mcap"]
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-math.workspace = true
+spatialrust-records.workspace = true
+thiserror.workspace = true
+mcap = { version = "0.25", optional = true, default-features = false }
+
+[dev-dependencies]
+tempfile.workspace = true

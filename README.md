@@ -26,7 +26,7 @@ The hero GIF above is **real MVP pipeline output** (not a mockup): it uses the p
 
 | ⚡ GPU-accelerated | 🗂️ COPC-native | 🦀 Pure Rust | 🧩 Composable |
 | --- | --- | --- | --- |
-| wgpu voxel filter, **~3.9× at 2M points**, automatic CPU fallback | **bounds + LOD** partial reads straight off disk — no full-tile load | no C++ / FFI binding layer to fight | one MVP crate: **IO → filter → segment → register** |
+| explicit wgpu voxel and normal kernels, automatic CPU fallback | **bounds + LOD** partial reads straight off disk — no full-tile load | no C++ / FFI binding layer to fight | one MVP crate: **IO → filter → segment → register** |
 
 <p align="center">
   <img src="docs/assets/clusters_rotating.gif" alt="A multi-object point cloud rotating, each object colored by its DBSCAN cluster label" width="380">
@@ -36,12 +36,13 @@ The hero GIF above is **real MVP pipeline output** (not a mockup): it uses the p
 
 ## Why SpatialRust?
 
-| | Typical C++ stack (PCL / Open3D bindings) | SpatialRust |
+| | Typical C++ stack (PCL / Open3D / OpenCV bindings) | SpatialRust |
 | --- | --- | --- |
 | Core language | C++ + FFI glue | **Native Rust** |
-| GPU path | varies by wrapper | **wgpu voxel filter** with CPU fallback |
+| Vision runtime | OpenCV linked into the app | **OpenCV optional for tests only** — production vision is Rust |
+| GPU path | varies by wrapper | **wgpu voxel / normals** with CPU fallback |
 | COPC | bolt-on scripts | **bounds + LOD queries** in library & CLI |
-| Pipeline | glue code | **composable MVP crate** |
+| Pipeline | glue code across image + cloud libs | **one MVP + north-star graph**: IO → filter → segment → register → scene |
 
 **One command** from LAS/COPC to labeled clusters:
 
@@ -62,23 +63,38 @@ cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
 
 ## Performance
 
-The voxel downsampler runs on CPU or GPU (wgpu). `ExecutionPolicy::Auto` keeps small clouds on the CPU — where it's fastest — and switches to the GPU as point counts grow, so you get the best of both without tuning.
+The voxel downsampler runs on CPU or GPU (wgpu). The current end-to-end
+`point_xyzi` centroid rebaseline finds no GPU crossover through 2M points, so
+`ExecutionPolicy::Auto` stays on CPU for this mode. Explicit GPU execution is
+available for profiling and GPU-resident workflows; callers opt into it with
+`without_gpu_min_points()`.
 
 <p align="center">
-  <img src="docs/assets/benchmark_voxel.svg" alt="Voxel downsample latency: CPU vs GPU across point counts, showing the GPU crossover above ~200k points and ~3.9x speedup at 2M" width="960">
+  <img src="docs/assets/benchmark_voxel.svg" alt="2026-07-16 end-to-end centroid voxel latency: CPU remains faster through 2M points, while GPU submit batching reduces the GPU path latency" width="960">
 </p>
 
-End-to-end centroid filter latency (leaf=4.0), measured via `cargo bench -p spatialrust-filtering`:
+End-to-end centroid filter latency (`point_xyzi`, leaf=4.0, release build):
 
 | Points | CPU | GPU | Winner |
 | ---: | ---: | ---: | :--- |
-| 100k | **~7 ms** | ~17 ms | CPU |
-| 200k | **~24 ms** | ~26 ms | ~even |
-| 500k | ~94 ms | **~51 ms** | GPU |
-| 1M | ~155 ms | **~56 ms** | GPU (~2.8x) |
-| 2M | ~389 ms | **~101 ms** | GPU (~3.9x) |
+| 10k | **~0.252 ms** | ~8.18 ms | CPU |
+| 65,536 | **~1.72 ms** | ~16.0 ms | CPU |
+| 100k | **~2.64 ms** | ~21.0 ms | CPU |
+| 200k | **~5.09 ms** | ~24.5 ms | CPU |
+| 500k | **~11.6 ms** | ~35.8 ms | CPU |
+| 750k | **~18.3 ms** | ~55.0 ms | CPU |
+| 1M | **~23.9 ms** | ~65.9 ms | CPU |
+| 2M | **~47.3 ms** | ~105 ms | CPU |
 
-Reproduce: `cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.
+The CPU values use the 100-sample Criterion rebaseline. GPU optimization probes
+use isolated 10-sample processes to bound driver allocation growth. GPU model
+identity is intentionally omitted; the run used a high-performance discrete
+adapter with the Vulkan backend. See the dated
+[CPU receipt](notes/2026-07-16_cpu_voxel_rebaseline.md) and
+[GPU receipt](notes/2026-07-16_gpu_voxel_acceleration.md).
+
+Reproduce:
+`cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.
 
 Normal estimation has an optional wgpu path (`GpuNormalEstimator`, `feature-normal-gpu`). In **radius mode** the neighbor search runs entirely on the GPU via a uniform grid (covariance + Jacobi eigensolver included), which is **up to ~50× faster** than the CPU KD-tree estimator:
 
@@ -126,6 +142,254 @@ Indicative local result on one Windows machine (Open3D 0.19.0, Python 3.12, 460,
 
 Record CPU, Open3D version, Python version, and thread settings before publishing new numbers.
 
+### vs OpenCV
+
+SpatialRust is **not** “OpenCV rewritten in Rust.” OpenCV remains a strong tuned image kernel library; we use it as a **correctness oracle** ([vision harness](bench/opencv_vision_comparison/), [RGB-D harness](bench/opencv_rgbd_comparison/)), not as a production dependency. SpatialRust instead focuses on an explicit, Rust-native spatial pipeline:
+
+| | OpenCV-centered stack | SpatialRust |
+| --- | --- | --- |
+| Rust production deps | Often pulls OpenCV/C++ through FFI | **No OpenCV in the Rust runtime** — pure Rust crates; OpenCV only in optional Python comparison benches |
+| 2D → 3D continuity | Image modules, then a separate point-cloud stack | **One repo**: filters/Feature2D/geometry → RGB-D → clouds → wgpu → sync/scene/export |
+| Memory / devices | `cv::Mat` habits; copies are easy to hide | **Explicit, named host↔device transfers**; production APIs forbid silent copies |
+| Safety | C++ ABI + wrappers | Public crates keep **`#![deny(unsafe_code)]`** outside audited FFI/GPU boundaries |
+| Data model | Arrays + ad-hoc metadata | **Versioned `SpatialRecord`**, schema evolution, episodes, MCAP XYZ, ROS 2 CDR PointCloud2 |
+| Reproducible ORB | Private learned BRIEF table | **Documented fixed-seed BRIEF** with interoperable Hamming distances |
+| 3D / robotics surface | Not the primary product | **COPC bounds+LOD, MVP cloud pipeline, TSDF/USDA/Gaussian, ReleaseGate** |
+
+#### CPU vision speed
+
+Seeded, interleaved Python API timings on one Windows 11 host (OpenCV 4.10,
+12 threads, OpenCL off; CPython 3.12; three warmups; VGA/1080p/4K use
+20/8/3 samples). Each cell names the faster implementation and median-latency
+ratio; these are machine-specific measurements, not universal guarantees.
+
+| Workload | VGA | 1080p | 4K |
+| --- | ---: | ---: | ---: |
+| AI CHW preprocess, allocate | **SpatialRust 4.48×** | **SpatialRust 9.27×** | **SpatialRust 9.14×** |
+| AI CHW preprocess, reuse vs OpenCV allocate | **SpatialRust 8.16×** | **SpatialRust 14.56×** | **SpatialRust 15.78×** |
+| Fused resize → normalized CHW, allocate[^fused-chw-2026] | — | **SpatialRust 2.21×** | **SpatialRust 2.02×** |
+| Fused resize → normalized CHW, reuse vs OpenCV allocate[^fused-chw-2026] | — | **SpatialRust 3.56×** | **SpatialRust 3.02×** |
+| Bilinear resize, allocate[^resize-2026] | OpenCV 1.19× | OpenCV 1.49× | OpenCV 1.60× |
+| Bilinear resize, reuse[^resize-2026] | **SpatialRust 1.10×** | OpenCV 2.40× | OpenCV 2.01× |
+| RGB to gray, allocate[^gray-2026] | OpenCV 1.73× | **SpatialRust 1.03×** | **SpatialRust 1.05×** |
+| RGB to gray, reuse[^gray-2026] | OpenCV 1.22× | OpenCV 1.08× | OpenCV 1.03× |
+| Fused 2× resize → gray, allocate[^fused-gray-2026] | — | **SpatialRust 1.12×** | OpenCV 1.01× |
+| Fused 2× resize → gray, reuse[^fused-gray-2026] | — | OpenCV 1.90× | OpenCV 1.58× |
+| Gaussian blur 5×5[^gaussian-2026] | OpenCV 139.02× | OpenCV 1.74× | OpenCV 1.68× |
+| Sobel X 3×3, allocate[^sobel-direct-2026] | OpenCV 1.07× | **SpatialRust 1.88×** | **SpatialRust 2.03×** |
+| Fused abs(Sobel X) → binary mask, allocate[^sobel-direct-2026] | **SpatialRust 3.81×** | **SpatialRust 4.87×** | **SpatialRust 6.64×** |
+| Fused abs(Sobel X) → binary mask, reuse[^sobel-direct-2026] | **SpatialRust 2.95×** | **SpatialRust 6.63×** | **SpatialRust 8.68×** |
+| Morphology open 5×5, allocate[^morphology-2026] | OpenCV 4.51× | OpenCV 1.98× | OpenCV 2.30× |
+| Morphology open 5×5, reuse[^morphology-2026] | OpenCV 1.90× | **SpatialRust 1.22×** | OpenCV 1.50× |
+| Morphology open 511×511, allocate[^morphology-2026] | OpenCV 2.10× | **SpatialRust 2.61×** | **SpatialRust 2.40×** |
+| Morphology open 511×511, reuse[^morphology-2026] | OpenCV 2.46× | **SpatialRust 3.25×** | **SpatialRust 2.77×** |
+| Canny 3×3, reuse, document lines[^canny-2026] | OpenCV 1.40× | **SpatialRust 1.38×** | **SpatialRust 1.47×** |
+| Canny 3×3, reuse, sensor noise[^canny-2026] | OpenCV 2.29× | **SpatialRust 2.59×** | **SpatialRust 2.75×** |
+| Exact Euclidean distance transform, allocate | OpenCV 1.99× | OpenCV 1.85× | OpenCV 1.45× |
+| Exact Euclidean distance transform, reuse | OpenCV 1.02× | OpenCV 1.06× | **SpatialRust 1.07×** |
+
+The current CPU result is deliberately mixed: SpatialRust's fused typed CHW
+path wins, while OpenCV's tuned general-purpose image kernels lead the present
+SpatialRust scalar paths. Full medians, p95, dispersion, throughput, and raw
+samples are produced by the [performance harness](bench/opencv_vision_comparison/performance.py);
+the dated [Epic 111 receipt](notes/2026-07-15_epic111_opencv_comparison_v2.md)
+records the exact environment and methodology.
+
+[^gaussian-2026]: The VGA cell retains the Epic 111 historical baseline. The
+  band-local 3×3/5×5 `u8` engine supersedes the 1080p/4K cells on the same
+  Windows host with OpenCV 4.13: 3.443 ms vs 1.983 ms at 1080p and 12.402 ms
+  vs 7.397 ms at 4K. Caller-output medians were 3.054/1.473 ms at 1080p and
+  10.635/5.169 ms at 4K (SpatialRust/OpenCV). The band pipeline improves the
+  prior SpatialRust allocated medians by 1.80× and 1.70× respectively while
+  retaining the existing error boundary. OpenCV still leads this standalone
+  operation.
+
+[^canny-2026]: The 3×3 fast path keeps inspectable intermediates opt-in, adds
+  caller-owned output plus reusable `CannyWorkspace`, and replaces the full
+  `i32` magnitude image with a parallel three-row-per-worker ring. When no weak
+  edges exist, it also skips unnecessary hysteresis traversal. Weak-candidate
+  frontier seeding avoids pushing every initial strong edge on dense noise.
+  The focused OpenCV 4.13 receipt is bit-exact across 300 randomized images.
+  Document-line reuse medians are OpenCV/SpatialRust 3.075/2.221 ms at 1080p
+  and 11.832/8.034 ms at 4K. Sensor-noise reuse is a SpatialRust win at 1080p
+  and 4K, while VGA remains an OpenCV win. Native 4K document lines improved
+  from 96.914 ms inspectable to the allocation-light path.
+
+[^resize-2026]: The packed RGB8 half-scale path precomputes arbitrary-scale
+  Q11 sampling coefficients and specializes exact 2× downsampling as a
+  row-parallel 2×2 average. On the OpenCV 4.13 focused receipt, caller-owned
+  VGA output measured 0.120 ms versus 0.133 ms (SpatialRust 1.10×); 1080p,
+  4K, and 8K reuse remain OpenCV wins by 2.40×, 2.01×, and 1.85×. Canonical
+  half-scale pixels are exact, and 300 arbitrary-size cases have maximum
+  absolute error 1. See the [focused harness](bench/opencv_resize_comparison/).
+
+[^gray-2026]: The packed RGB8 Q14 BT.601 path uses size-aware Rayon blocks and
+  CPU target-feature dispatch. On the OpenCV 4.13 focused receipt, allocated
+  SpatialRust calls measured 0.825 ms versus 0.850 ms at 1080p and 2.338 ms
+  versus 2.452 ms at 4K. At 8K, caller-owned reuse measured 5.754 ms versus
+  5.885 ms (SpatialRust 1.02×). VGA and 1080p/4K reuse remain narrow OpenCV
+  wins. Three hundred randomized cases retain maximum absolute error 1. See
+  the [focused harness](bench/opencv_rgb_gray_comparison/).
+
+[^fused-gray-2026]: `resize_rgb_to_gray` combines the reusable Q11 bilinear
+  plan and Q14 BT.601 conversion without materializing an intermediate RGB
+  image. For the canonical 1920×1080→960×540 allocated pipeline, SpatialRust
+  measured 0.677 ms versus OpenCV's two-call 0.755 ms (1.12×). The allocated
+  4K→1080p result was effectively tied (2.687 ms versus 2.665 ms), while
+  OpenCV leads 8K allocation and every caller-owned-output profile. The fused
+  result is bit-exact with SpatialRust's unfused path; 300 randomized cases
+  and canonical profiles differ from OpenCV by at most 1/255. See the
+  [focused harness](bench/opencv_fused_resize_gray_comparison/).
+
+[^fused-chw-2026]: `resize_pack_chw` combines Q11 bilinear resize, `f32`
+  scaling/normalization, and planar CHW packing without an intermediate HWC
+  image. Against OpenCV 4.13 `dnn.blobFromImage`, allocated calls measured
+  1.617 ms versus 3.570 ms for 1080p→640×640 and 2.117 ms versus 4.272 ms for
+  4K→640×640. The 4K→1280×720 profile measured 3.592 ms versus 8.359 ms
+  (SpatialRust 2.33×). Caller-owned SpatialRust output is 3.02×–3.56× faster
+  than OpenCV allocation. Three hundred randomized cases are bit-exact with
+  the SpatialRust unfused path and differ from OpenCV by at most 1/255. See
+  the [focused harness](bench/opencv_fused_resize_chw_comparison/).
+
+The additive paired-gradient path keeps standalone Sobel compatibility while
+also exposing exact fused 3×3 L1 magnitude (`abs(Gx) + abs(Gy)`). On a newer
+OpenCV 4.13 receipt, the fused allocated Python call is **1.86× faster at
+1080p, 2.19× at 4K, and 2.42× at 8K** because SpatialRust writes one result
+instead of materializing paired gradients, two absolute-value images, and an
+addition result. Caller-owned reuse ties at 1080p and favors OpenCV at 4K/8K;
+OpenCV also remains faster for standalone `spatialGradient`. See the
+[focused harness](bench/opencv_sobel_l1_comparison/) and
+[dated receipt](notes/2026-07-16_paired_sobel_l1_acceleration.md).
+
+[^sobel-direct-2026]: The grayscale `u8` 3×3 first-derivative path replaces
+  the generic full-image `f64` intermediate with parallel three-row `i16`
+  rings, writes `f32` directly, and borrows packed NumPy input without copying.
+  Against OpenCV 4.13, standalone allocation measured 1.134 ms versus 2.137 ms
+  at 1080p and 3.737 ms versus 7.582 ms at 4K, reversing the former
+  20.31×–23.30× deficits while retaining max error zero. VGA remains a narrow
+  OpenCV win. `sobel_threshold_3x3_u8` additionally fuses signed Sobel,
+  absolute saturation, and binary threshold; it wins 3.81×–6.64× allocated and
+  2.95×–8.68× with caller-owned output. Three hundred randomized X/Y cases are
+  bit-exact. See the
+  [focused harness](bench/opencv_sobel_threshold_comparison/).
+
+[^morphology-2026]: Rectangular morphology was remeasured separately with
+    OpenCV 4.13, OpenCL off, with both allocated and caller-owned-output Python
+    API timing scopes. `MorphologyWorkspace` retains all full-image and
+    per-worker line scratch; `out=` retains object identity.
+    The separable sliding min/max path is bit-exact across 980 randomized
+    operation cases. A centered 5×5 Replicate path uses fixed extrema and
+    direct row-major vertical passes instead of prefix/suffix buffers and two
+    transposes. It cuts the old 5×5 gaps by 6.6×–31.8× and wins 1080p reuse by
+    1.22× on the dated host; OpenCV still leads the other 5×5 profiles. See the
+    [focused harness](bench/opencv_morphology_comparison/),
+    [small-kernel receipt](notes/2026-07-16_morphology_small_kernel.md), and
+    [workspace receipt](notes/2026-07-16_morphology_workspace_reuse.md).
+
+The EDT fast path is exact on the canonical masks and reduced the native 4K
+allocation benchmark from 451.63 ms to about 75 ms. With caller-owned output
+and [`DistanceTransformWorkspace`](https://rsasaki0109.github.io/SpatialRust/spatialrust_vision/struct.DistanceTransformWorkspace.html),
+the optimized native canonical Criterion median is about 35 ms. The Python API comparison
+above gives SpatialRust a measured 1.07× 4K reuse lead, with maximum error zero;
+VGA and 1080p remain narrow OpenCV wins. See the
+[acceleration receipt](notes/2026-07-15_exact_edt_acceleration.md).
+
+For AI detection post-processing, the seeded Python NMS harness uses identical
+float32 boxes, scores, and thresholds and requires exact kept-index parity
+before publishing timings:
+
+| NMS candidates | OpenCV `dnn.NMSBoxes` | SpatialRust `nms` | Result |
+| ---: | ---: | ---: | ---: |
+| 100 | 0.298 ms | 0.033 ms | **SpatialRust 8.95×** |
+| 1,000 | 8.720 ms | 2.286 ms | **SpatialRust 3.82×** |
+| 8,400 (YOLO-style) | 407.086 ms | 126.562 ms | **SpatialRust 3.22×** |
+
+These Windows-host medians include each Python API call and returned indices;
+see the [NMS harness](bench/opencv_nms_comparison/) and dated
+[receipt](notes/2026-07-15_nms_opencv_acceleration.md).
+
+Class-aware post-processing uses the same exact-index gate against OpenCV
+`dnn.NMSBoxesBatched`. SpatialRust stores kept indices by class, so candidates
+never scan already-kept boxes from unrelated classes:
+
+| Batched NMS profile | OpenCV | SpatialRust | Result |
+| --- | ---: | ---: | ---: |
+| 1,000 candidates / 20 classes | 3.538 ms | 0.134 ms | **SpatialRust 26.38×** |
+| 8,400 candidates / 80 classes | 211.762 ms | 2.178 ms | **SpatialRust 97.25×** |
+
+Both profiles returned exactly the same globally score-ordered indices. See
+the [batched NMS harness](bench/opencv_batched_nms_comparison/) and dated
+[receipt](notes/2026-07-15_batched_nms_opencv_acceleration.md).
+
+Soft-NMS retains overlapping detections while decaying their scores. The
+linear and Gaussian methods use an active-candidate max scan, cached box areas,
+and a non-overlap fast path:
+
+| Soft-NMS profile | Method | OpenCV | SpatialRust | Result |
+| --- | --- | ---: | ---: | ---: |
+| 100 candidates | Linear | 0.092 ms | 0.015 ms | **SpatialRust 6.33×** |
+| 100 candidates | Gaussian | 0.108 ms | 0.015 ms | **SpatialRust 7.40×** |
+| 1,000 candidates | Linear | 5.636 ms | 1.649 ms | **SpatialRust 3.42×** |
+| 1,000 candidates | Gaussian | 6.047 ms | 1.293 ms | **SpatialRust 4.68×** |
+| 8,400 candidates | Linear | 310.709 ms | 76.660 ms | **SpatialRust 4.05×** |
+| 8,400 candidates | Gaussian | 213.696 ms | 39.816 ms | **SpatialRust 5.37×** |
+
+All profiles exactly matched OpenCV's kept-index order; updated float32 scores
+stayed within `1.79e-7`. See the [Soft-NMS harness](bench/opencv_soft_nms_comparison/)
+and dated [receipt](notes/2026-07-15_soft_nms_opencv_acceleration.md).
+
+Connected-component labeling uses horizontal runs plus union-find instead of
+per-pixel flood fill. Packed NumPy masks are borrowed without an input copy,
+and all non-zero `uint8` values are foreground, matching OpenCV. Against
+OpenCV 4.13's explicit row-major SAUF algorithm on structured masks:
+
+| Profile | Pattern | OpenCV SAUF | SpatialRust | Result |
+| --- | --- | ---: | ---: | ---: |
+| VGA | Segmentation blobs | 1.284 ms | 0.413 ms | **SpatialRust 3.11×** |
+| VGA | Document lines | 1.271 ms | 0.352 ms | **SpatialRust 3.61×** |
+| 1080p | Segmentation blobs | 6.763 ms | 2.815 ms | **SpatialRust 2.40×** |
+| 1080p | Document lines | 6.649 ms | 2.407 ms | **SpatialRust 2.76×** |
+| 4K | Segmentation blobs | 21.356 ms | 9.838 ms | **SpatialRust 2.17×** |
+| 4K | Document lines | 21.075 ms | 8.606 ms | **SpatialRust 2.45×** |
+
+Labels, areas, and bounding boxes matched exactly on every canonical profile
+and 320 additional seeded randomized 4/8-connectivity cases. The speed claim is
+limited to the named structured masks; dense random noise still favors OpenCV.
+See the [connected-components harness](bench/opencv_connected_components_comparison/)
+and dated [receipt](notes/2026-07-15_connected_components_opencv_acceleration.md).
+
+#### Vision accuracy
+
+The same deterministic RGB inputs passed all VGA, 1080p, and 4K gates:
+
+| Workload | OpenCV comparison result at VGA / 1080p / 4K |
+| --- | --- |
+| Bilinear resize | Canonical half-scale exact; 300 arbitrary-size cases max error 1/255 |
+| RGB to gray | Max error 1/255; 99.72%–99.74% exact pixels across VGA–8K |
+| Fused bilinear resize → gray | Exact versus SpatialRust unfused; OpenCV max error 1/255 across 300 randomized cases and 1080p–8K half reductions |
+| AI CHW preprocess | Max float error `5.96e-8` |
+| Fused resize → normalized CHW | Exact versus SpatialRust unfused; OpenCV max float error `0.003921628` across 300 randomized cases |
+| Gaussian blur | Canonical 5×5 profiles exact; 300 randomized 3×3/5×5/7×7 cases max error 2/255 |
+| Sobel X 3×3 | Exact values (max error 0) |
+| Morphology open 5×5 | Exact pixels (max error 0) |
+| Canny | Precision, recall, F1, and IoU all 1.0 |
+| Exact Euclidean distance transform | Exact values on canonical profiles; separate irregular-mask max float error `9.54e-7` |
+| Connected components (SAUF ordering) | Exact labels, areas, and bounding boxes on structured profiles and 320 randomized cases |
+
+The broader correctness harness also checks filters, analysis, keypoints,
+matching, and geometry with documented tolerances (exact pixels where we claim
+parity; residual/translation/disparity tolerances where OpenCV's private
+contracts differ). RGB-D unprojection tracks `cv.rgbd.depthTo3d` to ~`1e-5` m.
+
+On dense `H×W×3` XYZ (320×240, OpenCL off, local Windows laptop), `spatialrust.depth_to_xyz` beats OpenCV `rgbd.depthTo3d` in the [RGB-D harness](bench/opencv_rgbd_comparison/) — about **1.4–1.5×** when both allocate, and about **2.1–2.2×** when both fill a reused buffer (`out=` / OpenCV `points3d`). Colored `rgbd_to_point_cloud` is about **20×** faster than OpenCV `depthTo3d` + NumPy mask/color gather. Re-run the harness before quoting numbers elsewhere; x86_64 builds use an audited AVX2 fill when available.
+
+```powershell
+python bench\opencv_vision_comparison\run.py
+python bench\opencv_vision_comparison\performance.py
+python bench\opencv_rgbd_comparison\run.py
+python bench\opencv_nms_comparison\performance.py
+```
+
 ### Registration methods
 
 Four registration backends, compared on a synthetic box corner (7500 points, small misalignment):
@@ -143,9 +407,29 @@ See [notes](notes/2026-06-15_registration_bench.md). Reproduce: `cargo bench -p 
 
 MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and registration (ICP point-to-point/point-to-plane, GICP, NDT). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design and [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md) for the optional-feature and CPU/GPU execution contract.
 
+The opt-in Visual stack adds borrowed visualization contracts, explicit wgpu
+rendering, native inspection/debug overlays, bounded COPC LOD, and shared
+Web/Python/Jupyter viewer state. Start with the
+[visualization guide](docs/VISUALIZATION.md), then see the
+[`visual-1` migration policy](docs/VISUAL_MIGRATION.md) and
+[release receipt](docs/VISUAL_RELEASE_RECEIPT.md).
+
+Browse the published [algorithm catalog](https://rsasaki0109.github.io/SpatialRust/algorithms.html),
+[Rust API reference](https://rsasaki0109.github.io/SpatialRust/spatialrust/index.html),
+and [Vision 2 performance program](https://rsasaki0109.github.io/SpatialRust/vision2.html).
+The fail-closed [Vision 2 release receipt](docs/VISION_2_RELEASE_RECEIPT.md)
+and [migration guide](docs/VISION_2_MIGRATION.md) record the canonical
+performance/resource budgets and explicit CPU/GPU ownership guidance.
+
+SpatialRust 1.2 adds deterministic bounded-memory point-cloud execution across
+local/HTTP IO, chunk-safe operations, Rust/CLI/Python workflows, and explicit
+spill. See the [streaming release receipt](docs/STREAMING_RELEASE_RECEIPT.md)
+and [migration guide](docs/STREAMING_MIGRATION.md) for limits, stability, and
+reproduction commands.
+
 ## Workspace crates
 
-One dataflow, eleven crates — each pipeline stage maps to the crate that implements it, all sitting on a small math/core/search foundation:
+One dataflow, focused crates — each pipeline stage maps to the crate that implements it, all sitting on a small math/core/search foundation:
 
 <p align="center">
   <img src="docs/assets/architecture.svg" alt="SpatialRust architecture: Load → Voxel → Normals → Plane → Cluster → Register → Save dataflow with implementing crates, wgpu voxel acceleration, and the core/math/search foundation" width="960">
@@ -156,6 +440,12 @@ One dataflow, eleven crates — each pipeline stage maps to the crate that imple
 | `spatialrust` | Meta crate / stable re-exports |
 | `spatialrust-core` | Point schema, metadata, execution traits |
 | `spatialrust-math` | Vec/Mat/Pose math primitives |
+| `spatialrust-image` | Typed image buffers and zero-copy strided views |
+| `spatialrust-image-io` | Bounded PNG/JPEG/PNM codecs; opt-in TIFF/OpenEXR |
+| `spatialrust-tensor` | Runtime-independent dtype/shape/stride/device ownership and DLPack |
+| `spatialrust-ai` | Explicit-copy inference contracts and opt-in ONNX Runtime providers |
+| `spatialrust-camera` | Pinhole/Brown–Conrady camera models and RGB-D conversion |
+| `spatialrust-vision` | CPU filters, Feature2D/ORB matching, resize/preprocess, warps, detection postprocess, masks, and dense spatial maps |
 | `spatialrust-io` | Point cloud readers/writers (PCD, PLY, LAS, COPC) |
 | `spatialrust-search` | KD-tree search, k-NN / radius graphs |
 | `spatialrust-filtering` | Voxel / FPS downsample, outlier removal, crop, MLS |
@@ -183,6 +473,76 @@ print(result.plane_normal)                        # dominant plane normal (nx, n
 labels = result.labels()                          # (N,) int32 cluster ids
 sr.write("labeled.las", result.output)            # LAS/PCD/PLY/COPC by extension
 ```
+
+Aligned RGB-D images feed the same point-cloud pipeline without an OpenCV
+runtime dependency:
+
+```python
+depth = np.ones((480, 640), dtype=np.float32)
+rgb = np.zeros((480, 640, 3), dtype=np.uint8)
+cloud = sr.rgbd_to_point_cloud(
+    depth, rgb, fx=525.0, fy=525.0, cx=319.5, cy=239.5
+)
+result = sr.run_pipeline(cloud, leaf_size=0.03)
+```
+
+Rust users enable `camera-rgbd`; projection/unprojection supports optional
+Brown–Conrady radial and tangential distortion. The reproducible numerical and
+timing comparison against OpenCV is under `bench/opencv_rgbd_comparison/`.
+
+The `vision-full` feature adds an AI-ready CPU image path with explicit data
+ownership: nearest/bilinear/bicubic/area resize, letterbox and CHW normalization,
+color conversion, remap/warps, IoU/NMS/Soft-NMS, connected components, contours,
+RLE masks, and depth/confidence/flow/point maps. Dense maps bridge explicitly to
+calibrated cameras and point clouds; no API performs a hidden device transfer.
+
+```python
+model_image, transform = sr.letterbox_image(rgb, 640, 640)
+chw = sr.normalize_image_chw(model_image)                  # float32 (3,H,W)
+keep = sr.nms(boxes_xyxy, scores, iou_threshold=0.5)
+cloud = sr.point_map_to_point_cloud(points, confidence, 0.5)
+```
+
+The reproducible algorithm comparison is in
+`bench/opencv_vision_comparison/`; the complete synthetic demo is
+`crates/spatialrust-py/examples/vision_ai_pipeline.py`.
+
+The video E2E demo generates and reloads the same deterministic 12-frame PGM
+sequence in Rust and Python, estimates dense optical flow, detects the two
+moving objects, and preserves track IDs through the native IoU tracker:
+
+<p align="center">
+  <img src="docs/assets/video_tracking_e2e.gif" alt="Two textured objects moving in opposite directions with SpatialRust dense optical-flow vectors and stable track IDs 1 and 2" width="576">
+</p>
+
+```powershell
+cargo run -p spatialrust --no-default-features --features image-io-standard,vision-video --example video_tracking_e2e
+maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
+.venv/Scripts/python.exe crates/spatialrust-py/examples/video_tracking_e2e.py
+```
+
+Both paths assert object-center flow `(+2,+1)` / `(-2,-1)` for all 11 frame
+pairs and stable track IDs `1,2`. The Python run regenerates the GIF above.
+
+The same feature includes Harris, Shi–Tomasi, exact FAST-9/16, multi-scale ORB,
+and checked Hamming/L2 descriptor matching. Python exposes `orb_features` and
+NumPy matcher functions; OpenCV is used only by the numerical comparison suite.
+
+An ONNX Runtime wheel is opt-in (`maturin develop --features onnxruntime`). Its
+Python API uses named CPU I/O Binding by default; `copy=True` is the explicit
+fallback for inputs that must be repacked:
+
+```python
+session = sr.OnnxRuntimeSession("model.onnx", deterministic=True)
+input_tensor = sr.tensor_copy_from_numpy(chw)
+outputs = session.run({"images": input_tensor})
+scores = np.from_dlpack(outputs["scores"])
+```
+
+The Rust features are `ai`, `ai-onnxruntime`, and separate
+`ai-onnxruntime-{cuda,tensorrt,directml}` provider gates. The optional ONNX
+Runtime adapter currently has a feature-specific Rust 1.88 MSRV; it does not
+raise the default workspace MSRV.
 
 <p align="center">
   <img src="docs/assets/python_segmentation.png" alt="Top-down view of clusters segmented from the public PCL table_scene_lms400 point cloud via a single Python run_pipeline() call" width="540">
@@ -300,7 +660,14 @@ PCD/PLY/LAS/COPC -> voxel downsample -> normals -> plane RANSAC -> clustering ->
   <img src="docs/assets/readme_mvp_pipeline.gif" alt="Terminal-style receipt of a real SpatialRust MVP run on the public PCL table_scene_lms400 cloud: left panel shows the evolving top-down result, right panel types measured load, voxel, plane, and cluster counts" width="640">
 </p>
 
-GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode). GPU plane, normal, and Euclidean sparse-grid construction use the same policy flags (`--plane-policy`, `--normal-policy`, `--cluster-policy`). `MvpPipelineResult::receipt` exposes the resolved backend and explicit transfer accounting for each stage.
+GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto`
+currently keeps centroid voxel filtering on CPU because the latest end-to-end
+receipt found no GPU crossover through 2M points. Explicit GPU execution remains
+available with the threshold disabled. GPU plane, normal, and Euclidean
+clustering use the same policy flags (`--plane-policy`, `--normal-policy`,
+`--cluster-policy`). GPU sparse-grid construction and deterministic host
+component labeling are exposed in the stage receipt through
+`MvpPipelineResult::receipt` together with explicit transfer accounting.
 
 ```bash
 cargo test -p spatialrust-gpu --features gpu-wgpu

@@ -17,11 +17,13 @@ io-laz = ["io-las", "las/laz"]
 io-e57 = ["dep:e57"]
 io-copc = ["dep:copc-streaming", "dep:copc-core", "dep:copc-writer", "dep:pollster", "io-laz"]
 io-copc-http = ["io-copc", "dep:ureq"]
+streaming = ["dep:spatialrust-records"]
 serde = ["spatialrust-core/serde"]
 
 [dependencies]
 spatialrust-core = { workspace = true }
 spatialrust-math = { workspace = true }
+spatialrust-records = { workspace = true, optional = true }
 thiserror = { workspace = true }
 las = { workspace = true, optional = true }
 e57 = { workspace = true, optional = true }
@@ -32,3 +34,7 @@ pollster = { workspace = true, optional = true }
 ureq = { workspace = true, optional = true }
 
 [dev-dependencies]
+
+[[example]]
+name = "bounded_pcd_to_ply"
+required-features = ["io-pcd", "io-ply", "streaming"]

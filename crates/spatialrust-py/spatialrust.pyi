@@ -11,11 +11,112 @@ import numpy as np
 from numpy.typing import NDArray
 
 __version__: str
+__all__: list[str] = [
+    "__version__", "ImageMetadata", "Tensor", "Keypoint2", "OnnxRuntimeSession",
+    "GaussianBlurWorkspace",
+    "DLPackTensorView", "PointCloud", "PointCloudStream", "PipelineResult", "RegionResult",
+    "ViewerState", "ViewerPointSource",
+    "DbscanResult", "GroundResult", "MultiPlaneResult", "SphereResult",
+    "CylinderResult", "RegistrationResult", "MultiObjectTracker", "read_image",
+    "tensor_copy_from_numpy", "tensor_view_from_dlpack", "harris_keypoints",
+    "shi_tomasi_keypoints", "fast_keypoints", "orb_features",
+    "estimate_homography_ransac", "solve_pnp", "estimate_rgbd_odometry", "stereo_block_match",
+    "match_binary_descriptors", "match_float_descriptors", "write_image", "read",
+    "open_point_cloud_stream",
+    "write", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
+    "orient_normals", "detect_boundary", "mls_smooth", "farthest_point_sampling",
+    "statistical_outlier_removal", "radius_outlier_removal", "run_pipeline",
+    "region_growing", "dbscan", "ground_segmentation", "segment_multi_plane",
+    "ransac_sphere", "ransac_cylinder", "chamfer_distance", "hausdorff_distance",
+    "apply_transform", "recenter", "scale", "normalize_unit_sphere", "merge",
+    "centroid", "bounding_box", "oriented_bounding_box", "voxelize", "range_image",
+    "rgbd_to_point_cloud", "depth_to_xyz", "calibrate_pinhole_camera",
+    "calibrate_fisheye_angles", "dense_flow_image", "gray_world_white_balance_image",
+    "stitch_panorama_pair", "filter2d_image", "gaussian_blur_image",
+    "median_blur_image", "bilateral_filter_image", "sobel_image", "sobel_abs_image", "sobel_threshold_image", "spatial_gradient_image",
+    "sobel_l1_magnitude_image", "scharr_image",
+    "laplacian_image", "pyr_down_image", "pyr_up_image", "MorphologyWorkspace", "morphology_image",
+    "threshold_image", "otsu_threshold_image", "adaptive_threshold_image",
+    "histogram_image", "equalize_histogram_image", "clahe_image",
+    "integral_image_u8", "CannyWorkspace", "canny_image", "resize_image", "letterbox_image",
+    "normalize_image_chw", "resize_normalize_image_chw", "rgb_to_gray_image", "resize_rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
+    "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
+    "find_mask_contours",
+    "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
+    "radius_graph", "register_icp", "register_point_to_plane", "register_gicp",
+    "register_ndt", "register_fpfh_ransac", "register_fpfh_keypoints",
+]
 
 # Convenient aliases for the array shapes the bindings exchange.
 _F32Array = NDArray[np.float32]  # positions, grids, range images, transforms
+_F64Array = NDArray[np.float64]
+_BoolArray = NDArray[np.bool_]
 _I32Array = NDArray[np.int32]  # labels, edge_index
+_I16Array = NDArray[np.int16]
+_U32Array = NDArray[np.uint32]
 _Vec3 = tuple[float, float, float]
+_U8Array = NDArray[np.uint8]
+_U16Array = NDArray[np.uint16]
+
+@final
+class ViewerState:
+    """Portable viewer state shared with native, Web, and Jupyter adapters."""
+
+    def __new__(
+        cls, width: int = ..., height: int = ...
+    ) -> ViewerState: ...
+    @staticmethod
+    def from_json(state_json: str) -> ViewerState: ...
+    def to_json(self) -> str: ...
+    def apply_input_json(self, input_json: str) -> None: ...
+    @property
+    def version(self) -> int: ...
+    @property
+    def revision(self) -> int: ...
+    def native_launch_receipt(self, title: str) -> str: ...
+    def launch_native(self, title: str = ...) -> None: ...
+
+@final
+class ViewerPointSource:
+    """Explicit borrowed or copied point columns for viewer adapters."""
+
+    @staticmethod
+    def borrow_numpy(
+        x: _F32Array, y: _F32Array, z: _F32Array
+    ) -> ViewerPointSource: ...
+    @staticmethod
+    def copy_from_numpy(positions: _F32Array) -> ViewerPointSource: ...
+    @property
+    def ownership(self) -> str: ...
+    @property
+    def source_pointers(self) -> tuple[int, int, int]: ...
+    def __len__(self) -> int: ...
+    def transfer_receipt_json(self) -> str: ...
+    def copy_to_numpy(self) -> tuple[_F32Array, str]: ...
+
+@final
+class ImageMetadata:
+    """Container, sample type, and Exif orientation from image decoding."""
+
+    @property
+    def format(self) -> str: ...
+    @property
+    def color_type(self) -> str: ...
+    @property
+    def orientation(self) -> int: ...
+    @property
+    def orientation_applied(self) -> bool: ...
+    def __repr__(self) -> str: ...
+
+def read_image(
+    path: str, apply_orientation: bool = ...
+) -> tuple[NDArray[np.uint8] | NDArray[np.uint16] | NDArray[np.float32], ImageMetadata]: ...
+def write_image(
+    path: str,
+    image: NDArray[np.uint8] | NDArray[np.uint16],
+    format: str,
+    jpeg_quality: int = ...,
+) -> None: ...
 
 @final
 class PointCloud:
@@ -40,6 +141,334 @@ class PointCloud:
 
     def __len__(self) -> int: ...
     def __repr__(self) -> str: ...
+
+@final
+class PointCloudStream:
+    """Pull-based bounded-memory point-cloud iterator."""
+
+    def __iter__(self) -> PointCloudStream: ...
+    def __next__(self) -> PointCloud: ...
+    def cancel(self) -> None: ...
+    def receipt_json(self) -> str: ...
+
+def depth_to_xyz(
+    depth: _F32Array,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    depth_scale: float = ...,
+    min_depth: float = ...,
+    max_depth: float = ...,
+    distortion: Optional[tuple[float, float, float, float, float]] = ...,
+    out: Optional[_F32Array] = ...,
+) -> _F32Array:
+    """Convert depth to a dense ``(H, W, 3)`` XYZ image (invalid → NaN).
+
+    If ``out`` is a contiguous ``(H, W, 3)`` float32 array it is filled in place.
+    """
+    ...
+
+def calibrate_pinhole_camera(
+    camera_points: _F64Array,
+    pixels: _F64Array,
+    width: int,
+    height: int,
+    huber_delta: float = ...,
+    max_iterations: int = ...,
+) -> tuple[float, float, float, float, float, float]: ...
+
+def calibrate_fisheye_angles(
+    theta: _F64Array, distorted_radius: _F64Array
+) -> tuple[float, float, float, float, float]: ...
+def dense_flow_image(
+    previous: _U8Array,
+    next: _U8Array,
+    block_radius: int = ...,
+    search_radius: int = ...,
+) -> _F32Array: ...
+
+@final
+class MultiObjectTracker:
+    """Deterministic same-class IoU tracker with persistent track IDs."""
+
+    def __new__(
+        cls,
+        iou_threshold: float = ...,
+        max_missed: int = ...,
+        min_confirmed_hits: int = ...,
+    ) -> MultiObjectTracker: ...
+    def update(
+        self,
+        boxes: _F32Array,
+        scores: _F32Array,
+        class_ids: NDArray[np.int64],
+    ) -> list[
+        tuple[int, float, float, float, float, int, float, int, int, int, bool]
+    ]:
+        """Return ``id, box, class, score, age, hits, missed, confirmed`` tuples."""
+        ...
+
+def rgbd_to_point_cloud(
+    depth: _F32Array,
+    color: _U8Array,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    depth_scale: float = ...,
+    min_depth: float = ...,
+    max_depth: float = ...,
+    distortion: Optional[tuple[float, float, float, float, float]] = ...,
+) -> PointCloud:
+    """Convert aligned depth and RGB images to an XYZRGB point cloud."""
+    ...
+
+# --------------------------------------------------------------------------- #
+# Image preprocessing, detection, masks, and dense spatial data
+# --------------------------------------------------------------------------- #
+def filter2d_image(
+    image: _U8Array, kernel: NDArray[np.float64], delta: float = ...
+) -> _U8Array: ...
+
+@final
+class GaussianBlurWorkspace:
+    """Reusable host scratch storage for RGB uint8 Gaussian blur."""
+
+    def __init__(self) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+    @property
+    def allocated_bytes(self) -> int: ...
+
+def gaussian_blur_image(
+    image: _U8Array,
+    kernel_width: int,
+    kernel_height: int,
+    sigma_x: float,
+    sigma_y: Optional[float] = ...,
+    out: Optional[_U8Array] = ...,
+    workspace: Optional[GaussianBlurWorkspace] = ...,
+) -> _U8Array: ...
+def median_blur_image(image: _U8Array, kernel_size: int) -> _U8Array: ...
+def bilateral_filter_image(
+    image: _U8Array,
+    diameter: int,
+    sigma_color: float,
+    sigma_space: float,
+) -> _U8Array: ...
+def sobel_image(
+    image: _U8Array,
+    dx: int,
+    dy: int,
+    kernel_size: int = ...,
+    scale: float = ...,
+    delta: float = ...,
+    out: Optional[_F32Array] = ...,
+) -> _F32Array: ...
+def sobel_abs_image(
+    image: _U8Array,
+    dx: int,
+    dy: int,
+    out: Optional[_U8Array] = ...,
+) -> _U8Array: ...
+def sobel_threshold_image(
+    image: _U8Array,
+    dx: int,
+    dy: int,
+    threshold: int,
+    out: Optional[_U8Array] = ...,
+) -> _U8Array: ...
+def spatial_gradient_image(
+    image: _U8Array,
+    out_dx: Optional[_I16Array] = ...,
+    out_dy: Optional[_I16Array] = ...,
+) -> tuple[_I16Array, _I16Array]: ...
+def sobel_l1_magnitude_image(
+    image: _U8Array,
+    out: Optional[_I16Array] = ...,
+) -> _I16Array: ...
+def scharr_image(
+    image: _U8Array,
+    dx: int,
+    dy: int,
+    scale: float = ...,
+    delta: float = ...,
+) -> _F32Array: ...
+def laplacian_image(
+    image: _U8Array,
+    kernel_size: int = ...,
+    scale: float = ...,
+    delta: float = ...,
+) -> _F32Array: ...
+def pyr_down_image(image: _U8Array) -> _U8Array: ...
+def pyr_up_image(image: _U8Array) -> _U8Array: ...
+
+@final
+class MorphologyWorkspace:
+    """Reusable host scratch storage for rectangular uint8 morphology."""
+
+    def __init__(self) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+    @property
+    def worker_capacity(self) -> int: ...
+    @property
+    def line_capacity(self) -> int: ...
+
+def morphology_image(
+    image: _U8Array,
+    operation: str,
+    kernel_width: int,
+    kernel_height: int,
+    shape: str = ...,
+    iterations: int = ...,
+    out: Optional[_U8Array] = ...,
+    workspace: Optional[MorphologyWorkspace] = ...,
+) -> _U8Array: ...
+def threshold_image(
+    image: _U8Array,
+    threshold: float,
+    max_value: int = ...,
+    threshold_type: str = ...,
+) -> _U8Array: ...
+def otsu_threshold_image(
+    image: _U8Array, max_value: int = ..., threshold_type: str = ...
+) -> tuple[int, _U8Array]: ...
+def adaptive_threshold_image(
+    image: _U8Array,
+    block_size: int,
+    c: float,
+    method: str = ...,
+    max_value: int = ...,
+    threshold_type: str = ...,
+) -> _U8Array: ...
+def histogram_image(image: _U8Array) -> NDArray[np.uint64]: ...
+def equalize_histogram_image(image: _U8Array) -> _U8Array: ...
+def clahe_image(
+    image: _U8Array,
+    clip_limit: float = ...,
+    tiles_x: int = ...,
+    tiles_y: int = ...,
+) -> _U8Array: ...
+def integral_image_u8(image: _U8Array) -> NDArray[np.float64]: ...
+
+@final
+class CannyWorkspace:
+    """Reusable host scratch storage for allocation-light Canny detection."""
+
+    def __init__(self) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+    @property
+    def allocated_bytes(self) -> int: ...
+
+def canny_image(
+    image: _U8Array,
+    low_threshold: float,
+    high_threshold: float,
+    aperture_size: int = ...,
+    l2_gradient: bool = ...,
+    out: Optional[_U8Array] = ...,
+    workspace: Optional[CannyWorkspace] = ...,
+) -> _U8Array: ...
+def resize_image(
+    image: _U8Array,
+    width: int,
+    height: int,
+    interpolation: str = ...,
+    out: Optional[_U8Array] = ...,
+) -> _U8Array: ...
+def letterbox_image(
+    image: _U8Array,
+    width: int,
+    height: int,
+    interpolation: str = ...,
+    fill: Optional[tuple[int, int, int]] = ...,
+) -> tuple[_U8Array, tuple[float, int, int, int, int]]: ...
+def normalize_image_chw(
+    image: _U8Array,
+    scale: float = ...,
+    mean: Optional[tuple[float, float, float]] = ...,
+    std: Optional[tuple[float, float, float]] = ...,
+    out: Optional[_F32Array] = ...,
+) -> _F32Array: ...
+def resize_normalize_image_chw(
+    image: _U8Array,
+    width: int,
+    height: int,
+    scale: float = ...,
+    mean: Optional[tuple[float, float, float]] = ...,
+    std: Optional[tuple[float, float, float]] = ...,
+    out: Optional[_F32Array] = ...,
+) -> _F32Array: ...
+def rgb_to_gray_image(image: _U8Array, out: Optional[_U8Array] = ...) -> _U8Array: ...
+def resize_rgb_to_gray_image(
+    image: _U8Array,
+    width: int,
+    height: int,
+    out: Optional[_U8Array] = ...,
+) -> _U8Array: ...
+def rgb_to_hsv_image(image: _U8Array) -> _U8Array: ...
+def remap_image(
+    image: _U8Array,
+    map_x: _F32Array,
+    map_y: _F32Array,
+    interpolation: str = ...,
+    fill: Optional[tuple[int, int, int]] = ...,
+) -> _U8Array: ...
+def nms(
+    boxes: _F32Array,
+    scores: _F32Array,
+    score_threshold: float = ...,
+    iou_threshold: float = ...,
+) -> NDArray[np.int64]: ...
+def batched_nms(
+    boxes: _F32Array,
+    scores: _F32Array,
+    class_ids: NDArray[np.int64],
+    score_threshold: float = ...,
+    iou_threshold: float = ...,
+) -> NDArray[np.int64]: ...
+def soft_nms(
+    boxes: _F32Array,
+    scores: _F32Array,
+    score_threshold: float = ...,
+    iou_threshold: float = ...,
+    method: str = ...,
+    sigma: float = ...,
+) -> tuple[list[int], list[float]]: ...
+def connected_components_image(
+    mask: _U8Array,
+    connectivity: int = ...,
+) -> tuple[_U32Array, list[tuple[int, int, tuple[float, float, float, float]]]]: ...
+
+@final
+class DistanceTransformWorkspace:
+    """Reusable host scratch storage for exact unit-spacing distance transforms."""
+
+    def __init__(self) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+
+def distance_transform_edt(
+    mask: _U8Array,
+    spacing: tuple[float, float] = ...,
+    out: Optional[_F32Array] = ...,
+    workspace: Optional[DistanceTransformWorkspace] = ...,
+) -> _F32Array: ...
+def find_mask_contours(
+    mask: _U8Array, epsilon: float = ...
+) -> list[list[tuple[int, int]]]: ...
+def encode_mask_rle(mask: _U8Array, coco: bool = ...) -> list[int]: ...
+def decode_mask_rle(
+    width: int, height: int, counts: Sequence[int], coco: bool = ...
+) -> _U8Array: ...
+def point_map_to_point_cloud(
+    points: _F32Array,
+    confidence: Optional[_F32Array] = ...,
+    min_confidence: float = ...,
+) -> PointCloud: ...
 
 @final
 class PipelineResult:
@@ -177,6 +606,18 @@ class RegistrationResult:
 # --------------------------------------------------------------------------- #
 def read(path: str) -> PointCloud: ...
 def write(path: str, cloud: PointCloud) -> None: ...
+def open_point_cloud_stream(
+    path: str,
+    chunk_points: int = ...,
+    memory_budget_bytes: int = ...,
+    crop: Optional[tuple[float, float, float, float, float, float]] = ...,
+    translation: Optional[_Vec3] = ...,
+    voxel_leaf: Optional[float] = ...,
+    run_points: int = ...,
+    max_runs: int = ...,
+    spool_dir: Optional[str] = ...,
+    spool_limit_bytes: int = ...,
+) -> PointCloudStream: ...
 
 # --------------------------------------------------------------------------- #
 # Filters
@@ -363,3 +804,156 @@ def register_fpfh_keypoints(
     ransac_iterations: int = ...,
     k_neighbors: int = ...,
 ) -> RegistrationResult: ...
+@final
+class Tensor:
+    @property
+    def shape(self) -> list[int]: ...
+    @property
+    def dtype(self) -> str: ...
+    def __dlpack_device__(self) -> tuple[int, int]: ...
+    def __dlpack__(
+        self,
+        stream: object | None = ...,
+        *,
+        max_version: tuple[int, int] | None = ...,
+        dl_device: tuple[int, int] | None = ...,
+        copy: bool | None = ...,
+    ) -> object: ...
+    def copy(self) -> Tensor: ...
+
+@final
+class Keypoint2:
+    @property
+    def x(self) -> float: ...
+    @property
+    def y(self) -> float: ...
+    @property
+    def size(self) -> float: ...
+    @property
+    def angle_degrees(self) -> float | None: ...
+    @property
+    def response(self) -> float: ...
+    @property
+    def octave(self) -> int: ...
+    @property
+    def class_id(self) -> int | None: ...
+
+def harris_keypoints(
+    image: _U8Array,
+    max_corners: int = ...,
+    quality_level: float = ...,
+    min_distance: float = ...,
+    block_size: int = ...,
+    gradient_size: int = ...,
+    k: float = ...,
+) -> list[Keypoint2]: ...
+def shi_tomasi_keypoints(
+    image: _U8Array,
+    max_corners: int = ...,
+    quality_level: float = ...,
+    min_distance: float = ...,
+    block_size: int = ...,
+    gradient_size: int = ...,
+) -> list[Keypoint2]: ...
+def fast_keypoints(
+    image: _U8Array,
+    threshold: int = ...,
+    nonmax_suppression: bool = ...,
+) -> list[Keypoint2]: ...
+def orb_features(
+    image: _U8Array,
+    max_features: int = ...,
+    scale_factor: float = ...,
+    levels: int = ...,
+    edge_threshold: int = ...,
+    fast_threshold: int = ...,
+    patch_size: int = ...,
+    score_type: str = ...,
+) -> tuple[list[Keypoint2], _U8Array]: ...
+def estimate_homography_ransac(
+    source: _F64Array,
+    target: _F64Array,
+    threshold: float = ...,
+    confidence: float = ...,
+    max_iterations: int = ...,
+    seed: int = ...,
+) -> tuple[_F64Array, _BoolArray, _F64Array]: ...
+def solve_pnp(
+    object_points: _F64Array,
+    image_points: _F64Array,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    width: int = ...,
+    height: int = ...,
+) -> tuple[_F64Array, _F64Array]: ...
+def estimate_rgbd_odometry(
+    depth: _F32Array,
+    source: _F64Array,
+    target: _F64Array,
+    fx: float,
+    fy: float,
+    cx: float,
+    cy: float,
+    depth_scale: float = ...,
+    threshold: float = ...,
+) -> tuple[_F64Array, _F64Array, _BoolArray, int]: ...
+def gray_world_white_balance_image(image: _U8Array) -> _U8Array: ...
+def stitch_panorama_pair(
+    source: _U8Array,
+    target: _U8Array,
+    homography: _F64Array,
+    max_output_pixels: int = ...,
+) -> tuple[_U8Array, int, int]: ...
+def stereo_block_match(
+    left: _U8Array,
+    right: _U8Array,
+    window_size: int = ...,
+    min_disparity: int = ...,
+    num_disparities: int = ...,
+    uniqueness_ratio: float = ...,
+) -> _F32Array: ...
+def match_binary_descriptors(
+    query: _U8Array,
+    train: _U8Array,
+    cross_check: bool = ...,
+    ratio: float | None = ...,
+    max_distance: float | None = ...,
+) -> list[tuple[int, int, float]]: ...
+def match_float_descriptors(
+    query: _F32Array,
+    train: _F32Array,
+    cross_check: bool = ...,
+    ratio: float | None = ...,
+    max_distance: float | None = ...,
+) -> list[tuple[int, int, float]]: ...
+
+@final
+class OnnxRuntimeSession:
+    def __new__(
+        cls,
+        path: str,
+        *,
+        intra_threads: int | None = ...,
+        inter_threads: int | None = ...,
+        deterministic: bool = ...,
+    ) -> OnnxRuntimeSession: ...
+    @property
+    def inputs(self) -> list[tuple[str, str, list[str]]]: ...
+    @property
+    def outputs(self) -> list[tuple[str, str, list[str]]]: ...
+    def run(self, inputs: dict[str, Tensor], *, copy: bool = ...) -> dict[str, Tensor]: ...
+
+def tensor_copy_from_numpy(array: NDArray[np.generic]) -> Tensor: ...
+@final
+class DLPackTensorView:
+    @property
+    def shape(self) -> list[int]: ...
+    @property
+    def dtype(self) -> str: ...
+    @property
+    def version(self) -> tuple[int, int]: ...
+    def copy(self) -> Tensor: ...
+
+def tensor_view_from_dlpack(producer: object) -> DLPackTensorView: ...

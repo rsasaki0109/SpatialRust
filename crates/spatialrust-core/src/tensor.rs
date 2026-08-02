@@ -37,7 +37,7 @@ impl<'a> SpatialTensor<'a> {
 
     /// Returns the underlying point cloud.
     #[must_use]
-    pub const fn cloud(&self) -> &PointCloud {
+    pub const fn cloud(&self) -> &'a PointCloud {
         self.cloud
     }
 

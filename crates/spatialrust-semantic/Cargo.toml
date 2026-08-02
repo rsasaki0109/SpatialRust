@@ -1,0 +1,18 @@
+[package]
+name = "spatialrust-semantic"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Semantic entities, embeddings, and multimodal fusion/search for SpatialRust"
+
+[features]
+default = []
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-math.workspace = true
+spatialrust-records.workspace = true
+thiserror.workspace = true

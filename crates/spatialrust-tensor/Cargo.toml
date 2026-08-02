@@ -1,0 +1,30 @@
+[package]
+name = "spatialrust-tensor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Small tensor metadata and explicit CPU ownership contracts for SpatialRust"
+
+[features]
+default = []
+dlpack = []
+image = ["dep:spatialrust-image"]
+spatial = ["dep:spatialrust-core"]
+
+[dependencies]
+spatialrust-image = { workspace = true, optional = true }
+spatialrust-core = { workspace = true, optional = true }
+bytemuck.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+criterion.workspace = true
+
+[[bench]]
+name = "image_bridge"
+harness = false
+required-features = ["image"]

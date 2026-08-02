@@ -20,7 +20,7 @@
 <rect x="80" y="300" width="230" height="40" rx="16" fill="#0b1224" stroke="#334155"/>
 <rect x="326" y="300" width="150" height="40" rx="16" fill="#0b1224" stroke="#334155"/>
 <rect x="492" y="300" width="250" height="40" rx="16" fill="#0b1224" stroke="#334155"/>
-<text x="195" y="320" text-anchor="middle" dominant-baseline="middle" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">GPU voxel ~3.9x @ 2M</text>
+<text x="195" y="320" text-anchor="middle" dominant-baseline="middle" fill="#38bdf8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">Explicit wgpu compute</text>
 <text x="401" y="320" text-anchor="middle" dominant-baseline="middle" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18">11 crates</text>
 <text x="617" y="320" text-anchor="middle" dominant-baseline="middle" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18">MIT / Apache-2.0</text>
 <text x="82" y="400" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="22">cargo run --features mvp --bin spatialrust-mvp -- scan.las out.las</text>

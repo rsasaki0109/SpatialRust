@@ -1,0 +1,26 @@
+[package]
+name = "spatialrust-records"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Versioned spatial records, schema evolution, and chunked streams for SpatialRust"
+
+[features]
+default = []
+receipt-json = ["dep:serde", "dep:serde_json"]
+
+[dependencies]
+spatialrust-core.workspace = true
+thiserror.workspace = true
+serde = { workspace = true, optional = true }
+serde_json = { version = "1", optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[[example]]
+name = "streaming_receipt"
+required-features = ["receipt-json"]
