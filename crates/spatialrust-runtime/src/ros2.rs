@@ -133,39 +133,103 @@ pub fn decode_point_cloud2_xyz(bytes: &[u8]) -> RuntimeResult<PointCloud2Xyz> {
     let height = r.read_u32()?;
     let width = r.read_u32()?;
     let field_count = r.read_u32()?;
+    let mut x_offset = None;
+    let mut y_offset = None;
+    let mut z_offset = None;
     for _ in 0..field_count {
-        let _name = r.read_string()?;
-        let _offset = r.read_u32()?;
-        let _datatype = r.read_u8()?;
+        let name = r.read_string()?;
+        let offset = r.read_u32()?;
+        let datatype = r.read_u8()?;
         r.align(4);
-        let _count = r.read_u32()?;
+        let count = r.read_u32()?;
+        if count == 1 && datatype == 7 {
+            match name.to_ascii_lowercase().as_str() {
+                "x" => x_offset = Some(offset),
+                "y" => y_offset = Some(offset),
+                "z" => z_offset = Some(offset),
+                _ => {}
+            }
+        }
     }
-    let _is_bigendian = r.read_bool()?;
+    let is_bigendian = r.read_bool()?;
     let point_step = r.read_u32()?;
-    let _row_step = r.read_u32()?;
+    let row_step = r.read_u32()?;
     let data_len = r.read_u32()? as usize;
     let data = r.read_bytes(data_len)?;
     let _is_dense = r.read_bool()?;
     if height == 0 || width == 0 {
         return Ok(PointCloud2Xyz { frame_id, stamp_sec, stamp_nanosec, xyz: Vec::new() });
     }
-    if point_step < 12 {
+    let x_offset = x_offset.ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 is missing float32 x field".into())
+    })?;
+    let y_offset = y_offset.ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 is missing float32 y field".into())
+    })?;
+    let z_offset = z_offset.ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 is missing float32 z field".into())
+    })?;
+    let last_offset = x_offset.max(y_offset).max(z_offset);
+    if u64::from(point_step) < u64::from(last_offset) + 4 {
         return Err(RuntimeError::InvalidConfiguration(
-            "point_step must be at least 12 for XYZ".into(),
+            "PointCloud2 point_step does not contain XYZ fields".into(),
         ));
     }
-    let points = (height as usize).saturating_mul(width as usize);
-    let mut xyz = Vec::with_capacity(points * 3);
-    for i in 0..points {
-        let base = i * point_step as usize;
-        if base + 12 > data.len() {
-            return Err(RuntimeError::InvalidConfiguration(
-                "PointCloud2 data shorter than point_step layout".into(),
-            ));
+    let height = height as usize;
+    let width = width as usize;
+    let point_step = point_step as usize;
+    let row_step = row_step as usize;
+    let row_bytes = width.checked_mul(point_step).ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 row size overflow".into())
+    })?;
+    if row_step < row_bytes {
+        return Err(RuntimeError::InvalidConfiguration(
+            "PointCloud2 row_step is shorter than one row".into(),
+        ));
+    }
+    let required_bytes = row_step.checked_mul(height).ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 data size overflow".into())
+    })?;
+    if required_bytes > data.len() {
+        return Err(RuntimeError::InvalidConfiguration(
+            "PointCloud2 data is shorter than row_step × height".into(),
+        ));
+    }
+    let points = height.checked_mul(width).ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 point count overflow".into())
+    })?;
+    let xyz_capacity = points.checked_mul(3).ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 XYZ capacity overflow".into())
+    })?;
+    let mut xyz = Vec::with_capacity(xyz_capacity);
+    for row in 0..height {
+        for column in 0..width {
+            let base = row
+                .checked_mul(row_step)
+                .and_then(|value| value.checked_add(column.checked_mul(point_step)?))
+                .ok_or_else(|| {
+                    RuntimeError::InvalidConfiguration("PointCloud2 point offset overflow".into())
+                })?;
+            for offset in [x_offset, y_offset, z_offset] {
+                let start = base.checked_add(offset as usize).ok_or_else(|| {
+                    RuntimeError::InvalidConfiguration("PointCloud2 field offset overflow".into())
+                })?;
+                let end = start.checked_add(4).ok_or_else(|| {
+                    RuntimeError::InvalidConfiguration("PointCloud2 field end overflow".into())
+                })?;
+                if end > data.len() {
+                    return Err(RuntimeError::InvalidConfiguration(
+                        "PointCloud2 data shorter than field layout".into(),
+                    ));
+                }
+                let value = if is_bigendian {
+                    f32::from_be_bytes(data[start..end].try_into().unwrap())
+                } else {
+                    f32::from_le_bytes(data[start..end].try_into().unwrap())
+                };
+                xyz.push(value);
+            }
         }
-        xyz.push(f32::from_le_bytes(data[base..base + 4].try_into().unwrap()));
-        xyz.push(f32::from_le_bytes(data[base + 4..base + 8].try_into().unwrap()));
-        xyz.push(f32::from_le_bytes(data[base + 8..base + 12].try_into().unwrap()));
     }
     PointCloud2Xyz::try_new(frame_id, stamp_sec, stamp_nanosec, xyz)
 }
@@ -362,8 +426,8 @@ impl<'a> CdrReader<'a> {
 #[cfg(test)]
 mod tests {
     use super::{
-        decode_point_cloud2_xyz, encode_point_cloud2_xyz, CatalogRos2Adapter, LoopbackRos2Node,
-        PointCloud2Xyz, Ros2Adapter, POINT_CLOUD2_TYPE,
+        decode_point_cloud2_xyz, encode_point_cloud2_xyz, write_point_field, CatalogRos2Adapter,
+        CdrWriter, LoopbackRos2Node, PointCloud2Xyz, Ros2Adapter, POINT_CLOUD2_TYPE,
     };
 
     #[test]
@@ -382,5 +446,44 @@ mod tests {
         let taken = node.take("/points").unwrap();
         let decoded = decode_point_cloud2_xyz(&taken).unwrap();
         assert_eq!(decoded, msg);
+    }
+
+    #[test]
+    fn decodes_xyz_offsets_and_row_padding() {
+        let mut writer = CdrWriter::new();
+        writer.write_encap();
+        writer.write_i32(3);
+        writer.write_u32(4);
+        writer.write_string("padded_lidar").unwrap();
+        writer.write_u32(2); // height
+        writer.write_u32(2); // width
+        writer.write_u32(4); // fields
+        write_point_field(&mut writer, "z", 8).unwrap();
+        write_point_field(&mut writer, "intensity", 12).unwrap();
+        write_point_field(&mut writer, "x", 0).unwrap();
+        write_point_field(&mut writer, "y", 4).unwrap();
+        writer.write_bool(false);
+        writer.write_u32(16); // point_step
+        writer.write_u32(40); // row_step includes eight bytes of row padding
+
+        let mut data = Vec::new();
+        for row in 0..2 {
+            for column in 0..2 {
+                let base = (row * 2 + column) as f32;
+                for value in [base + 1.0, base + 2.0, base + 3.0, base + 4.0] {
+                    data.extend_from_slice(&value.to_le_bytes());
+                }
+            }
+            data.extend_from_slice(&[0; 8]);
+        }
+        writer.write_u32(data.len() as u32);
+        writer.write_bytes(&data);
+        writer.write_bool(true);
+
+        let decoded = decode_point_cloud2_xyz(&writer.into_bytes()).unwrap();
+        assert_eq!(decoded.frame_id, "padded_lidar");
+        assert_eq!(decoded.stamp_sec, 3);
+        assert_eq!(decoded.stamp_nanosec, 4);
+        assert_eq!(decoded.xyz, vec![1.0, 2.0, 3.0, 2.0, 3.0, 4.0, 3.0, 4.0, 5.0, 4.0, 5.0, 6.0,]);
     }
 }

@@ -28,6 +28,7 @@ members = [
     "crates/spatialrust-semantic",
     "crates/spatialrust-episode",
     "crates/spatialrust-runtime",
+    "crates/spatialrust-ros2",
     "crates/spatialrust-interchange",
     "crates/spatialrust-distribute",
     "crates/spatialrust-platform",
@@ -79,6 +80,7 @@ spatialrust-scene = { path = "crates/spatialrust-scene", version = "1.2.0", defa
 spatialrust-semantic = { path = "crates/spatialrust-semantic", version = "1.2.0" }
 spatialrust-episode = { path = "crates/spatialrust-episode", version = "1.2.0" }
 spatialrust-runtime = { path = "crates/spatialrust-runtime", version = "1.2.0", default-features = false }
+spatialrust-ros2 = { path = "crates/spatialrust-ros2", version = "1.2.0", default-features = false }
 spatialrust-interchange = { path = "crates/spatialrust-interchange", version = "1.2.0", default-features = false }
 spatialrust-distribute = { path = "crates/spatialrust-distribute", version = "1.2.0" }
 spatialrust-platform = { path = "crates/spatialrust-platform", version = "1.2.0" }
@@ -114,6 +116,7 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 web-sys = "0.3"
+rusqlite = { version = "0.31", default-features = false, features = ["bundled"] }
 
 [profile.release]
 lto = "thin"

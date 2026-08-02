@@ -220,6 +220,7 @@ episode = ["sync", "dep:spatialrust-episode"]
 runtime = ["sync", "dep:spatialrust-runtime"]
 runtime-graph = ["runtime", "distribute", "spatialrust-runtime/execution-graph"]
 runtime-ros2 = ["runtime", "spatialrust-runtime/ros2"]
+rosbag2-sqlite = ["dep:spatialrust-ros2", "spatialrust-ros2/rosbag2-sqlite"]
 interchange-gltf = ["scene", "dep:spatialrust-interchange", "spatialrust-interchange/gltf"]
 interchange-openusd = ["scene", "dep:spatialrust-interchange", "spatialrust-interchange/openusd"]
 interchange-full = ["interchange-gltf", "interchange-openusd"]
@@ -304,6 +305,7 @@ spatialrust-scene = { workspace = true, optional = true }
 spatialrust-semantic = { workspace = true, optional = true }
 spatialrust-episode = { workspace = true, optional = true }
 spatialrust-runtime = { workspace = true, optional = true }
+spatialrust-ros2 = { workspace = true, optional = true }
 spatialrust-interchange = { workspace = true, optional = true }
 spatialrust-distribute = { workspace = true, optional = true }
 spatialrust-platform = { workspace = true, optional = true }
