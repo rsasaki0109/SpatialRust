@@ -29,3 +29,7 @@ tempfile.workspace = true
 [[example]]
 name = "rosbag2_to_las"
 required-features = ["rosbag2-sqlite"]
+
+[[example]]
+name = "rosbag2_ingest"
+required-features = ["rosbag2-sqlite"]

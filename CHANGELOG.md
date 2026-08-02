@@ -25,7 +25,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   `spatialrust-ros2` crate opens rosbag2 SQLite files read-only, lists topics,
   decodes CDR `sensor_msgs/msg/PointCloud2` XYZ fields with optional float32
   intensity, splits oversized messages into bounded `SpatialRecordChunk`
-  leases, and provides a bounded SQLite-to-LAS example with checksummed
+  leases, and provides bounded SQLite-to-LAS examples for single-topic and
+  inventory-driven batch ingest with per-topic receipts and checksummed
   input/output manifests. Native ROS 2 executors, custom message bindings,
   compressed bag storage, and non-float32-intensity attributes remain separate
   follow-up boundaries.

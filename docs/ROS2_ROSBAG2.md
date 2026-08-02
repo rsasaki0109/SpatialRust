@@ -36,3 +36,34 @@ cargo run -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_to_las
 
 The path is explicit at the application boundary, so input and output can
 remain on separate storage roots. Sensor data is not a repository fixture.
+
+## Inventory and batch conversion
+
+For a bag with multiple topics, inventory the SQLite metadata first. This
+does not decode or copy point data:
+
+```bash
+cargo run -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_ingest -- \
+  /media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/rosbag2_2020_09_23-15_58_07.db3 \
+  --list-topics \
+  --receipt /media/sasaki/aiueo/spatialrust-results/rosbag2-inventory.json
+```
+
+Batch conversion selects every CDR `sensor_msgs/msg/PointCloud2` topic by
+default. Unsupported topics are recorded as `skipped`; use repeated
+`--topic` flags to make a focused selection:
+
+```bash
+cargo run -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_ingest -- \
+  /media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/rosbag2_2020_09_23-15_58_07.db3 \
+  --output-dir /media/sasaki/aiueo/spatialrust-results/rosbag2-batch \
+  --topic /lidar_front/points_raw \
+  --topic /lidar_rear/points_raw
+```
+
+The batch command writes one LAS and one topic receipt per converted topic,
+plus `rosbag2.ingest.receipt.json` and
+`rosbag2.ingest.manifest.json` in the output directory by default. Relative
+paths can instead be placed under separate `--input-root` and `--output-root`
+directories. Output names include the SQLite topic id, so distinct topics do
+not overwrite one another.
