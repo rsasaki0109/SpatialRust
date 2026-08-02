@@ -57,6 +57,14 @@ pub enum IoError {
     #[error("streaming io error: {0}")]
     Streaming(String),
 
+    /// Input/output root or dataset path contract failure.
+    #[error("storage path error: {0}")]
+    Storage(String),
+
+    /// Dataset manifest serialization or receipt failure.
+    #[error("manifest error: {0}")]
+    Manifest(String),
+
     /// Core data model error propagated from `spatialrust-core`.
     #[error(transparent)]
     Core(#[from] SpatialError),

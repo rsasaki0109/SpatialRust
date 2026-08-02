@@ -4,8 +4,8 @@ use std::error::Error;
 use std::path::{Path, PathBuf};
 
 use spatialrust::io::{
-    CopcChunkSource, LasChunkSink, LasChunkSource, LasWriteFormat, PcdChunkSource, PlyChunkSource,
-    SpoolOptions,
+    CopcChunkSource, DatasetManifest, LasChunkSink, LasChunkSource, LasWriteFormat, PcdChunkSource,
+    PlyChunkSource, ReceiptRole, SpoolOptions, StorageRoots,
 };
 use spatialrust::math::{Mat3, Mat4, Vec3};
 use spatialrust::pipeline::{StreamingPipeline, StreamingVoxelConfig};
@@ -28,6 +28,9 @@ struct Config {
     spool_dir: PathBuf,
     spool_bytes: u64,
     receipt: Option<PathBuf>,
+    manifest: Option<PathBuf>,
+    input_root: Option<PathBuf>,
+    output_root: Option<PathBuf>,
 }
 
 fn main() {
@@ -39,13 +42,24 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let config = parse_args(std::env::args().skip(1))?;
+    let roots = StorageRoots::new(config.input_root.clone(), config.output_root.clone());
+    let input_path = if config.input.starts_with("http://") || config.input.starts_with("https://")
+    {
+        PathBuf::from(&config.input)
+    } else {
+        roots.resolve_input(&config.input)?
+    };
+    let output_path = roots.resolve_output(&config.output)?;
+    let receipt_path = config.receipt.map(|path| roots.resolve_output(path)).transpose()?;
+    let manifest_path = config.manifest.map(|path| roots.resolve_output(path)).transpose()?;
+    let input_text = input_path.to_string_lossy().into_owned();
     let options = StreamOptions::new(config.chunk_points, MemoryBudget::new(config.memory_bytes)?)?;
     let cancellation = CancellationToken::default();
     let interrupt = cancellation.clone();
     ctrlc::set_handler(move || interrupt.cancel())?;
 
-    let source = open_source(&config.input, options, cancellation)?;
-    let mut pipeline = StreamingPipeline::new(source, config.input.clone())?;
+    let source = open_source(&input_text, options, cancellation)?;
+    let mut pipeline = StreamingPipeline::new(source, input_text.clone())?;
     if let Some((min, max)) = config.crop {
         pipeline = pipeline.crop(min, max, false)?;
     }
@@ -65,15 +79,28 @@ fn run() -> Result<(), Box<dyn Error>> {
         )?)?;
     }
 
-    let format = output_format(&config.output)?;
+    roots.ensure_output_parent(&output_path)?;
+    let format = output_format(&output_path)?;
     let mut sink =
-        LasChunkSink::create_open_ended(&config.output, pipeline.schema().clone(), format)?;
+        LasChunkSink::create_open_ended(&output_path, pipeline.schema().clone(), format)?;
     let receipt = pipeline.run_to_sink(&mut sink)?;
     let json = receipt.to_json()?;
-    if let Some(path) = config.receipt {
+    if let Some(path) = receipt_path {
+        roots.ensure_output_parent(&path)?;
         std::fs::write(path, format!("{json}\n"))?;
     } else {
         println!("{json}");
+    }
+    if let Some(path) = manifest_path {
+        let mut manifest = DatasetManifest::new();
+        if input_text.starts_with("http://") || input_text.starts_with("https://") {
+            manifest.add_uri(ReceiptRole::Input, input_text);
+        } else {
+            manifest.add_file(ReceiptRole::Input, &input_path)?;
+        }
+        manifest.add_file(ReceiptRole::Output, &output_path)?;
+        manifest.write_json(&path)?;
+        eprintln!("wrote manifest {}", path.display());
     }
     Ok(())
 }
@@ -134,6 +161,9 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
         spool_dir: std::env::temp_dir(),
         spool_bytes: DEFAULT_STREAM_MEMORY_BUDGET_BYTES.saturating_mul(8),
         receipt: None,
+        manifest: None,
+        input_root: None,
+        output_root: None,
     };
     while let Some(flag) = args.next() {
         match flag.as_str() {
@@ -145,6 +175,13 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
             "--spool-limit" => config.spool_bytes = parse_one(&mut args, &flag)?,
             "--spool-dir" => config.spool_dir = PathBuf::from(next_value(&mut args, &flag)?),
             "--receipt" => config.receipt = Some(PathBuf::from(next_value(&mut args, &flag)?)),
+            "--manifest" => config.manifest = Some(PathBuf::from(next_value(&mut args, &flag)?)),
+            "--input-root" => {
+                config.input_root = Some(PathBuf::from(next_value(&mut args, &flag)?));
+            }
+            "--output-root" => {
+                config.output_root = Some(PathBuf::from(next_value(&mut args, &flag)?));
+            }
             "--translate" => {
                 config.translation = Some([
                     parse_one(&mut args, &flag)?,
@@ -191,7 +228,7 @@ fn usage() -> String {
     "usage: spatialrust-stream INPUT OUTPUT [--chunk-points N] [--memory-budget BYTES] \
      [--crop MINX MINY MINZ MAXX MAXY MAXZ] [--translate X Y Z] [--voxel LEAF] \
      [--run-points N] [--max-runs N] [--spool-dir DIR] [--spool-limit BYTES] \
-     [--receipt PATH]"
+     [--receipt PATH] [--manifest PATH] [--input-root DIR] [--output-root DIR]"
         .into()
 }
 
@@ -213,5 +250,33 @@ mod tests {
         assert_eq!(config.voxel_leaf, Some(0.2));
         assert_eq!(config.crop, Some(([0.0, 1.0, 2.0], [3.0, 4.0, 5.0])));
         assert_eq!(output_format(&config.output).unwrap(), LasWriteFormat::Laz);
+    }
+
+    #[test]
+    fn parses_external_storage_roots_and_manifest() {
+        let config = parse_args(
+            [
+                "scan.pcd",
+                "runs/out.laz",
+                "--input-root",
+                "/media/sasaki/aiueo/input",
+                "--output-root",
+                "/media/sasaki/aiueo/output",
+                "--manifest",
+                "runs/out.json",
+            ]
+            .into_iter()
+            .map(str::to_owned),
+        )
+        .unwrap();
+        assert_eq!(
+            config.input_root.as_deref(),
+            Some(std::path::Path::new("/media/sasaki/aiueo/input"))
+        );
+        assert_eq!(
+            config.output_root.as_deref(),
+            Some(std::path::Path::new("/media/sasaki/aiueo/output"))
+        );
+        assert_eq!(config.manifest.as_deref(), Some(std::path::Path::new("runs/out.json")));
     }
 }

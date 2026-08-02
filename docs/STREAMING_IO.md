@@ -53,3 +53,9 @@ cargo run -p spatialrust-io --example bounded_pcd_to_ply `
 Holding more than one chunk at once is allowed, but every live lease remains
 charged to the shared memory budget. Drop a processed chunk before pulling the
 next one when the budget is sized for one chunk.
+
+The `spatialrust-stream` CLI additionally accepts `--input-root` and
+`--output-root` for external storage, plus `--manifest PATH` for local
+input/output size and SHA-256 receipts. See
+`/home/sasaki/workspace/SpatialRust/docs/EXTERNAL_STORAGE.md` for the complete
+path contract.

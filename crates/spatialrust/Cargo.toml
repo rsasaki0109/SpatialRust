@@ -23,6 +23,7 @@ io-laz = ["spatialrust-io/io-laz"]
 io-e57 = ["spatialrust-io/io-e57"]
 io-copc = ["spatialrust-io/io-copc"]
 io-copc-http = ["io-copc", "spatialrust-io/io-copc-http"]
+io-manifest = ["spatialrust-io/io-manifest"]
 io-streaming = ["records", "spatialrust-io/streaming"]
 search-kdtree = ["spatialrust-search/search-kdtree"]
 search-parallel = ["search-kdtree", "spatialrust-search/parallel"]
@@ -115,6 +116,7 @@ mvp = [
     "segment-euclidean",
     "register-icp",
     "pipeline-mvp",
+    "io-manifest",
 ]
 mvp-http = ["mvp", "io-copc-http"]
 pipeline-mvp = ["spatialrust-pipeline/pipeline-mvp"]
@@ -131,6 +133,7 @@ streaming-cli = [
     "io-laz",
     "io-copc-http",
     "records-receipt-json",
+    "io-manifest",
     "dep:ctrlc",
 ]
 pipeline-mvp-gpu = [

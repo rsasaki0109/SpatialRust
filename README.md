@@ -641,6 +641,19 @@ let cloud = read_point_cloud_file("scan.las")?;
 write_point_cloud_file("output.ply", &cloud)?;
 ```
 
+For datasets on an external SSD, resolve logical input/output paths explicitly
+and emit a size/SHA-256 manifest:
+
+```bash
+cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
+  --input-root /media/sasaki/aiueo/datasets \
+  --output-root /media/sasaki/aiueo/spatialrust-results \
+  --manifest runs/scan.json boreas/scan.las runs/scan.ply
+```
+
+See [`docs/EXTERNAL_STORAGE.md`](docs/EXTERNAL_STORAGE.md) for the Python and
+bounded-streaming equivalents.
+
 COPC partial read:
 
 ```rust

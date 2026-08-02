@@ -10,13 +10,18 @@
 //!   --voxel-mode approximate --leaf-size 0.2 scan.las out.las
 //! ```
 
-use std::{env, path::Path, process::ExitCode, time::Instant};
+use std::{
+    env,
+    path::{Path, PathBuf},
+    process::ExitCode,
+    time::Instant,
+};
 
 use spatialrust::{
     detect_point_cloud_format, read_copc_file_info, read_copc_file_with_query,
-    read_point_cloud_file, write_point_cloud_file, CopcBounds, CopcQuery, ExecutionPolicy,
-    MvpPipeline, MvpPipelineConfig, PointCloudFileFormat, VoxelAggregationMode,
-    VoxelGridDownsampleConfig,
+    read_point_cloud_file, write_point_cloud_file, CopcBounds, CopcQuery, DatasetManifest,
+    ExecutionPolicy, MvpPipeline, MvpPipelineConfig, PointCloudFileFormat, ReceiptRole,
+    StorageRoots, VoxelAggregationMode, VoxelGridDownsampleConfig,
 };
 #[cfg(feature = "io-copc-http")]
 use spatialrust::{read_copc_url_info, read_copc_url_with_query};
@@ -52,6 +57,9 @@ Options:
   --resolution <METERS>      COPC max point spacing LOD (requires COPC input; uses root bounds
                              when --bounds is omitted)
   --repeat <N>               Run the MVP pipeline N times (default: 1); logs per-iteration timing
+  --input-root <PATH>        Resolve relative INPUT paths under this root (external SSD friendly)
+  --output-root <PATH>       Resolve relative OUTPUT/manifest paths under this root
+  --manifest <PATH>          Write input/output size and SHA-256 receipts as JSON
   -h, --help                 Show this help
 "
     );
@@ -64,9 +72,7 @@ fn parse_execution_policy(value: &str, stage: &str) -> Result<ExecutionPolicy, S
         "gpu" => {
             #[cfg(not(feature = "pipeline-mvp-gpu"))]
             {
-                return Err(format!(
-                    "GPU {stage} policy requires `--features mvp,pipeline-mvp-gpu`"
-                ));
+                Err(format!("GPU {stage} policy requires `--features mvp,pipeline-mvp-gpu`"))
             }
             #[cfg(feature = "pipeline-mvp-gpu")]
             {
@@ -302,6 +308,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut cluster_policy = ExecutionPolicy::Auto;
     let mut copc = CopcQueryOptions::default();
     let mut repeat = 1_usize;
+    let mut input_root = None;
+    let mut output_root = None;
+    let mut manifest_path = None;
     let mut input_path = None;
     let mut output_path = None;
 
@@ -347,6 +356,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let value = args.next().ok_or("--repeat requires a positive integer")?;
                 repeat = parse_repeat(&value)?;
             }
+            "--input-root" => {
+                input_root =
+                    Some(PathBuf::from(args.next().ok_or("--input-root requires a path")?));
+            }
+            "--output-root" => {
+                output_root =
+                    Some(PathBuf::from(args.next().ok_or("--output-root requires a path")?));
+            }
+            "--manifest" => {
+                manifest_path =
+                    Some(PathBuf::from(args.next().ok_or("--manifest requires a path")?));
+            }
             value if value.starts_with('-') => {
                 return Err(format!("unknown option `{value}`").into());
             }
@@ -362,15 +383,24 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let input_path = input_path.ok_or("missing INPUT path")?;
-    let output_path = output_path.ok_or("missing OUTPUT path")?;
+    let input_arg = input_path.ok_or("missing INPUT path")?;
+    let output_arg = output_path.ok_or("missing OUTPUT path")?;
+    let roots = StorageRoots::new(input_root, output_root);
+    let input_path = if is_http_copc_input(&input_arg) {
+        PathBuf::from(&input_arg)
+    } else {
+        roots.resolve_input(&input_arg)?
+    };
+    let output_path = roots.resolve_output(&output_arg)?;
+    let manifest_path = manifest_path.map(|path| roots.resolve_output(path)).transpose()?;
+    let input_path_text = input_path.to_string_lossy().into_owned();
 
-    if !is_http_copc_input(&input_path) && !Path::new(&input_path).exists() {
-        return Err(format!("input file not found: {input_path}").into());
+    if !is_http_copc_input(&input_path_text) && !Path::new(&input_path).exists() {
+        return Err(format!("input file not found: {}", input_path.display()).into());
     }
 
-    eprintln!("loading {input_path}");
-    let input = load_input(&input_path, copc)?;
+    eprintln!("loading {}", input_path.display());
+    let input = load_input(&input_path_text, copc)?;
     let input_points = input.len();
     eprintln!("input points: {input_points}");
 
@@ -406,7 +436,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let result = result.expect("pipeline produced no result");
     let elapsed = *timings.last().expect("repeat timings");
 
+    roots.ensure_output_parent(&output_path)?;
     write_point_cloud_file(&output_path, &result.output)?;
+
+    if let Some(manifest_path) = manifest_path {
+        let mut manifest = DatasetManifest::new();
+        if is_http_copc_input(&input_path_text) {
+            manifest.add_uri(ReceiptRole::Input, input_path_text.clone());
+        } else {
+            manifest.add_file(ReceiptRole::Input, &input_path)?;
+        }
+        manifest.add_file(ReceiptRole::Output, &output_path)?;
+        manifest.write_json(&manifest_path)?;
+        eprintln!("wrote manifest {}", manifest_path.display());
+    }
 
     eprintln!("output points: {}", result.output.len());
     eprintln!("plane inliers: {}", result.plane.inlier_count);
@@ -426,7 +469,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         transfers.device_to_host_bytes(),
     );
     eprintln!("elapsed: {:.3?}", elapsed);
-    eprintln!("wrote {output_path}");
+    eprintln!("wrote {}", output_path.display());
 
     Ok(())
 }

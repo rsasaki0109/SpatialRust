@@ -7,9 +7,12 @@
 
 mod error;
 mod format;
+#[cfg(feature = "io-manifest")]
+mod manifest;
 mod options;
 #[cfg(feature = "streaming")]
 mod spool;
+mod storage;
 #[cfg(all(
     feature = "streaming",
     any(feature = "io-pcd", feature = "io-ply", feature = "io-las", feature = "io-copc")
@@ -42,9 +45,12 @@ pub use format::{
     detect_point_cloud_format, read_point_cloud_file, read_point_cloud_file_with_format,
     write_point_cloud_file, write_point_cloud_file_with_format, PointCloudFileFormat,
 };
+#[cfg(feature = "io-manifest")]
+pub use manifest::{DatasetManifest, FileReceipt, ReceiptRole, DATASET_MANIFEST_VERSION};
 pub use options::{ReadOptions, WriteOptions};
 #[cfg(feature = "streaming")]
 pub use spool::{BoundedSpool, SpoolOptions};
+pub use storage::StorageRoots;
 pub use traits::{PointReader, PointSink, PointStream, PointWriter};
 
 #[cfg(feature = "io-pcd")]
