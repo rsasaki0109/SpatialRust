@@ -15,4 +15,7 @@ pub enum MappingError {
     /// Graph inconsistency.
     #[error("pose graph error: {0}")]
     Graph(String),
+    /// Wrapped point-cloud validation failure.
+    #[error(transparent)]
+    Spatial(#[from] spatialrust_core::SpatialError),
 }

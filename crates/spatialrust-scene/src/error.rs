@@ -12,4 +12,7 @@ pub enum SceneError {
     /// Missing data for an operation.
     #[error("missing `{0}`")]
     Missing(String),
+    /// Wrapped point-cloud validation failure.
+    #[error(transparent)]
+    Spatial(#[from] spatialrust_core::SpatialError),
 }

@@ -326,6 +326,7 @@ and pose-graph substrate first.
 | 93B | Complete | `RelativeMotionEstimator` + `SyntheticOdometry` | `mapping` |
 | 93C | Complete | `PoseGraph` relative edges and root localization | `mapping` |
 | 93D | Complete | Loop-closure candidate search by translation distance | `mapping` |
+| 93E | Complete | Bounded topic-prefix scan odometry with generic matcher and optional ICP adapter | `mapping`, `mapping-scan-icp` |
 
 Epic 93 completes when stamped poses can be buffered, differenced into relative
 motion, and localized on a pose graph with loop-closure candidates without
@@ -342,6 +343,13 @@ pulling ROS 2 or MCAP file codecs.
 | 98 | `interchange-gltf`, `interchange-openusd` | `spatialrust-interchange` |
 | 99 | `distribute` | `spatialrust-distribute` |
 | 100 | `platform` | `spatialrust-platform` |
+
+## Epic 94 delivery slices
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 94A | Complete | Direct `PointCloud` column integration into TSDF with explicit sensor origin and no temporary interleave | `scene` |
+| 94B | Complete | Explicit sensor-to-volume pose integration without transformed-cloud allocation | `scene` |
 
 ## Epic 99 delivery slices
 

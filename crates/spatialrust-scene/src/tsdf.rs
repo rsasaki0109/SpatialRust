@@ -1,6 +1,7 @@
 //! Dense TSDF volume integration and mesh extraction.
 
-use spatialrust_math::Vec3;
+use spatialrust_core::{HasPositions3, PointCloud};
+use spatialrust_math::{Isometry3, TransformPoint, Vec3};
 
 use crate::marching_cubes::{polygonise_tet, tetrahedra};
 use crate::{SceneError, SceneResult, TriangleMesh};
@@ -93,6 +94,43 @@ impl TsdfVolume {
         Ok(())
     }
 
+    /// Integrates XYZ columns directly from a point cloud without interleaving
+    /// or allocating a temporary coordinate vector.
+    ///
+    /// Returns the number of point samples visited. Invalid metric samples are
+    /// ignored by [`TsdfVolume::integrate_point`] with the same semantics as
+    /// [`TsdfVolume::integrate_xyz`].
+    pub fn integrate_cloud(
+        &mut self,
+        cloud: &PointCloud,
+        sensor_origin: Vec3<f32>,
+    ) -> SceneResult<usize> {
+        let (x, y, z) = cloud.positions3()?;
+        for index in 0..cloud.len() {
+            self.integrate_point(Vec3::new(x[index], y[index], z[index]), sensor_origin);
+        }
+        Ok(cloud.len())
+    }
+
+    /// Integrates a point cloud after an explicit sensor-to-volume pose.
+    ///
+    /// Both positions and the supplied sensor origin are transformed by
+    /// `volume_t_sensor`; no transformed point-cloud allocation is created.
+    pub fn integrate_cloud_with_pose(
+        &mut self,
+        cloud: &PointCloud,
+        volume_t_sensor: Isometry3<f32>,
+        sensor_origin: Vec3<f32>,
+    ) -> SceneResult<usize> {
+        let (x, y, z) = cloud.positions3()?;
+        let volume_sensor_origin = volume_t_sensor.transform_point(sensor_origin);
+        for index in 0..cloud.len() {
+            let point = volume_t_sensor.transform_point(Vec3::new(x[index], y[index], z[index]));
+            self.integrate_point(point, volume_sensor_origin);
+        }
+        Ok(cloud.len())
+    }
+
     /// Extracts the zero isolevel surface with marching tetrahedra.
     ///
     /// Voxels with weight `< min_weight` are treated as free space (`+truncation`).
@@ -177,6 +215,7 @@ const CORNER_OFFSETS: [[usize; 3]; 8] =
 #[cfg(test)]
 mod tests {
     use super::TsdfVolume;
+    use spatialrust_core::{PointCloudBuilder, StandardSchemas};
     use spatialrust_math::Vec3;
 
     #[test]
@@ -197,5 +236,38 @@ mod tests {
         let mesh = volume.extract_mesh(1.0);
         assert!(mesh.positions.is_empty());
         assert!(mesh.indices.is_empty());
+    }
+
+    #[test]
+    fn integrates_point_cloud_columns_without_interleave() {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        builder.push_point([0.0, 0.0, 0.0]).unwrap();
+        builder.push_point([0.2, 0.0, 0.0]).unwrap();
+        let cloud = builder.build().unwrap();
+        let origin = Vec3::new(0.0, 0.0, -1.0);
+        let mut from_cloud =
+            TsdfVolume::try_new(Vec3::new(-1.0, -1.0, -1.0), 0.25, [8, 8, 8], 0.5).unwrap();
+        let mut from_xyz = from_cloud.clone();
+        assert_eq!(from_cloud.integrate_cloud(&cloud, origin).unwrap(), 2);
+        from_xyz.integrate_xyz(&[0.0, 0.0, 0.0, 0.2, 0.0, 0.0], origin).unwrap();
+        assert_eq!(from_cloud, from_xyz);
+    }
+
+    #[test]
+    fn integrates_point_cloud_with_explicit_sensor_pose() {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        builder.push_point([0.0, 0.0, 0.0]).unwrap();
+        builder.push_point([0.2, 0.0, 0.0]).unwrap();
+        let cloud = builder.build().unwrap();
+        let mut volume =
+            TsdfVolume::try_new(Vec3::new(-1.0, -1.0, -1.0), 0.25, [8, 8, 8], 0.5).unwrap();
+        let pose = spatialrust_math::Isometry3::new(
+            spatialrust_math::Quat::<f32>::identity(),
+            Vec3::new(0.5, 0.0, 0.0),
+        );
+        assert_eq!(
+            volume.integrate_cloud_with_pose(&cloud, pose, Vec3::new(0.0, 0.0, -1.0)).unwrap(),
+            2
+        );
     }
 }

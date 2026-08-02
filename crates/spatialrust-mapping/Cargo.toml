@@ -11,12 +11,15 @@ description = "Trajectories, pose graphs, and localization primitives for Spatia
 [features]
 default = []
 vision-odometry = ["dep:spatialrust-vision"]
+scan-icp = ["dep:spatialrust-registration"]
 
 [dependencies]
 spatialrust-core.workspace = true
 spatialrust-math.workspace = true
 spatialrust-sync.workspace = true
 spatialrust-vision = { workspace = true, optional = true, features = ["odometry"] }
+spatialrust-registration = { workspace = true, optional = true, features = ["register-icp"] }
 thiserror.workspace = true
 
 [dev-dependencies]
+spatialrust-records.workspace = true
