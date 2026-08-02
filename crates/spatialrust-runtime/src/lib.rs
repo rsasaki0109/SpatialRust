@@ -28,6 +28,7 @@ pub use trace::{TraceEvent, TraceLevel, TraceLog};
 
 #[cfg(feature = "ros2")]
 pub use ros2::{
-    decode_point_cloud2_xyz, encode_point_cloud2_xyz, CatalogRos2Adapter, LoopbackRos2Node,
-    PointCloud2Xyz, Ros2Adapter, Ros2MessageHint, POINT_CLOUD2_TYPE,
+    decode_point_cloud2_xyz, encode_point_cloud2_xyz, point_cloud2_has_intensity,
+    CatalogRos2Adapter, LoopbackRos2Node, PointCloud2Xyz, Ros2Adapter, Ros2MessageHint,
+    POINT_CLOUD2_TYPE,
 };
