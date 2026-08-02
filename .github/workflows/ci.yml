@@ -229,7 +229,7 @@ jobs:
       - name: Build and test
         run: |
           case "${{ matrix.name }}" in
-            spatialrust-gpu-crate|spatialrust-filter-voxel-gpu|spatialrust-mvp-gpu-integration)
+            spatialrust-segmentation|spatialrust-pipeline-mvp-gpu|spatialrust-gpu-crate|spatialrust-filter-voxel-gpu|spatialrust-mvp-gpu-integration)
               cargo test ${{ matrix.args }} --no-run
               ;;
             *)
