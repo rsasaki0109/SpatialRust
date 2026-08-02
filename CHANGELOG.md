@@ -36,6 +36,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   input/output manifests. Native ROS 2 executors, custom message bindings,
   compressed bag storage, and non-float32-intensity attributes remain separate
   follow-up boundaries.
+- **Bounded sensor-time episode assembly**: `spatialrust-sync` now provides
+  `MemoryEpisodeBuilder` admission by record count, point count, and allocated
+  column bytes. `FrameGraph::transform_record_to` applies calibrated rigid
+  transforms to positions, normals, and sensor origins while preserving all
+  other fields, metadata timestamps, schema, and `RecordProvenance`. The ROS 2
+  adapter includes a bounded front/rear synchronization preview with an
+  explicit no-calibration time-domain assumption and count-only receipt.
 - **GPU Euclidean clustering** (`segment-euclidean-gpu`): GPU sparse-grid key
   generation/sort/compaction with deterministic host component labeling,
   `GpuEuclideanClusterExtractor`, `EuclideanClusterExtractor::extract_with_policy`,

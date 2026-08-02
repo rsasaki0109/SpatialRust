@@ -303,10 +303,16 @@ file codecs via the Foxglove `mcap` crate (no compression codecs by default).
 | 92B | Complete | `FrameGraph` / `FrameEdge` with inverse-aware lookup | `sync` |
 | 92C | Complete | Topic channels + `MemoryEpisode` index; file MCAP XYZ round-trip | `sync`, `sync-mcap` |
 | 92D | Complete | `DeterministicReplayer` with nearest-topic bundling | `sync` |
+| 92E | Complete | Bounded `MemoryEpisodeBuilder` with record/point/allocated-byte admission | `sync` |
+| 92F | Complete | `SpatialRecord` frame transformation preserving columns, metadata, and provenance; bounded rosbag2 sync preview | `sync`, `rosbag2-sqlite` |
 
 Epic 92 completes when stamped multimodal records can be indexed deterministically,
-bundled within a sync window, and transformed across a calibrated frame graph.
-Optional `sync-mcap` write/read path covers XYZ-only stamped clouds today.
+collected under explicit episode limits, bundled within a sync window, and
+transformed across a calibrated frame graph without dropping record lineage.
+The rosbag2 preview treats PointCloud2 header stamps as one external ROS time
+domain and reports that assumption explicitly; it does not claim clock
+calibration. Optional `sync-mcap` write/read path covers XYZ-only stamped clouds
+today.
 
 ## Epic 93 delivery slices
 

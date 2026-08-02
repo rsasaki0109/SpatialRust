@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 
 mod clock;
+mod episode_builder;
 mod error;
 mod frame_graph;
 mod replay;
@@ -16,6 +17,7 @@ mod stamped;
 mod mcap_io;
 
 pub use clock::{ClockDomain, ClockId, StampedTime, SyncQuality};
+pub use episode_builder::{EpisodeLimits, MemoryEpisodeBuilder};
 pub use error::{SyncError, SyncResult};
 pub use frame_graph::{FrameEdge, FrameGraph};
 pub use replay::{DeterministicReplayer, EpisodeIndex, MemoryEpisode, SyncWindow, TopicId};

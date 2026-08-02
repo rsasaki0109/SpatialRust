@@ -24,6 +24,7 @@ rusqlite = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 spatialrust-io = { workspace = true, features = ["io-las", "streaming", "io-manifest"] }
+spatialrust-sync.workspace = true
 tempfile.workspace = true
 
 [[example]]
@@ -32,4 +33,8 @@ required-features = ["rosbag2-sqlite"]
 
 [[example]]
 name = "rosbag2_ingest"
+required-features = ["rosbag2-sqlite"]
+
+[[example]]
+name = "rosbag2_sync_preview"
 required-features = ["rosbag2-sqlite"]
