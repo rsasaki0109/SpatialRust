@@ -9,6 +9,7 @@
 mod bounded;
 mod error;
 mod migrate;
+mod provenance;
 mod record;
 mod schema;
 mod stream;
@@ -21,6 +22,7 @@ pub use bounded::{
 };
 pub use error::{RecordsError, RecordsResult};
 pub use migrate::{migrate_record, FieldFill, MigrationPolicy};
+pub use provenance::{RecordProvenance, RECORD_PROVENANCE_VERSION};
 pub use record::SpatialRecord;
 pub use schema::{
     compare_schemas, CompatVerdict, SchemaCompatReport, SchemaDescriptor, SchemaId, SchemaVersion,

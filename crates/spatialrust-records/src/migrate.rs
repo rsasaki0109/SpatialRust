@@ -79,7 +79,7 @@ pub fn migrate_record(
         buffers,
         record.metadata().clone(),
     )?;
-    SpatialRecord::try_new(target.clone(), cloud)
+    SpatialRecord::try_new_with_provenance(target.clone(), cloud, record.provenance().clone())
 }
 
 fn clone_buffer(buffer: &PointBuffer) -> RecordsResult<PointBuffer> {
@@ -168,5 +168,24 @@ mod tests {
         let migrated = migrate_record(&source, &target, MigrationPolicy::default()).unwrap();
         assert!(migrated.cloud().field("intensity").is_err());
         assert_eq!(migrated.cloud().len(), 1);
+    }
+
+    #[test]
+    fn migration_preserves_record_provenance() {
+        let source = xyz_record().with_provenance(
+            crate::RecordProvenance::try_new("bag-1")
+                .unwrap()
+                .with_stream_id("lidar")
+                .with_sequence(Some(9)),
+        );
+        let target = SchemaDescriptor::try_new(
+            "point",
+            SchemaVersion::new(1, 1),
+            StandardSchemas::point_xyzi(),
+        )
+        .unwrap();
+        let migrated =
+            crate::migrate_record(&source, &target, crate::MigrationPolicy::default()).unwrap();
+        assert_eq!(migrated.provenance(), source.provenance());
     }
 }

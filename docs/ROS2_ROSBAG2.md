@@ -12,7 +12,9 @@ split across multiple chunks. SQLite payload, decoded message storage, and
 emitted columns are included in the same hard memory budget; no bag copy or
 full-bag materialization is performed. The selected topic's schema is fixed at
 open time as either XYZ or XYZI, and a later change in intensity presence fails
-closed.
+closed. Each emitted record also carries frame/timestamp metadata and a
+protocol-independent `RecordProvenance` envelope identifying the input bag,
+topic, and deterministic chunk sequence.
 
 Native `rclrs` executors, custom ROS message definitions, compressed
 `.db3.zstd` storage, and PointCloud2 attributes other than float32 intensity

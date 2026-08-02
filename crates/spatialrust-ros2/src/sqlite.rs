@@ -8,7 +8,7 @@ use spatialrust_core::{
 };
 use spatialrust_records::{
     BoundedSpatialRecordSource, CancellationToken, ChunkIdentity, MemoryReservation, MemoryTracker,
-    RecordsError, RecordsResult, SchemaDescriptor, SchemaVersion, SpatialRecord,
+    RecordProvenance, RecordsError, RecordsResult, SchemaDescriptor, SchemaVersion, SpatialRecord,
     SpatialRecordChunk, StreamOptions,
 };
 use spatialrust_runtime::{
@@ -78,6 +78,7 @@ pub fn list_topics(path: impl AsRef<Path>) -> Rosbag2Result<Vec<Rosbag2Topic>> {
 /// leased chunks when it exceeds `StreamOptions::chunk_points()`.
 pub struct Rosbag2PointCloudSource {
     connection: Connection,
+    source_id: String,
     topic: Rosbag2Topic,
     schema: SchemaDescriptor,
     options: StreamOptions,
@@ -101,6 +102,9 @@ impl Rosbag2PointCloudSource {
         options: StreamOptions,
         cancellation: CancellationToken,
     ) -> Rosbag2Result<Self> {
+        let path = path.as_ref();
+        let source_uri = path.display().to_string();
+        let source_id = format!("rosbag2-sqlite:{source_uri}");
         let connection = open_connection(path)?;
         let topics = read_topics(&connection)?;
         let topic = topics.into_iter().find(|topic| topic.name == topic_name).ok_or_else(|| {
@@ -144,6 +148,7 @@ impl Rosbag2PointCloudSource {
 
         Ok(Self {
             connection,
+            source_id,
             topic,
             schema,
             options,
@@ -305,7 +310,15 @@ impl Rosbag2PointCloudSource {
                 Timestamp::from_nanos(pending.timestamp),
             ),
         )?;
-        let record = SpatialRecord::try_new(self.schema.clone(), cloud)?;
+        let provenance = RecordProvenance::try_new(self.source_id.clone())
+            .map_err(Rosbag2Error::Records)?
+            .with_source_uri(
+                self.source_id.strip_prefix("rosbag2-sqlite:").unwrap_or(&self.source_id),
+            )
+            .with_stream_id(self.topic.name.clone())
+            .with_sequence(Some(self.next_sequence));
+        let record =
+            SpatialRecord::try_new_with_provenance(self.schema.clone(), cloud, provenance)?;
         Ok(SpatialRecordChunk::try_from_reserved(
             ChunkIdentity { sequence: self.next_sequence, point_offset: self.next_point_offset },
             record,
@@ -592,6 +605,7 @@ mod tests {
     #[test]
     fn source_orders_messages_and_splits_chunks() {
         let (_directory, path) = bag_file();
+        let source_uri = path.display().to_string();
         let options = StreamOptions::new(2, MemoryBudget::new(1024 * 1024).unwrap()).unwrap();
         let mut source = Rosbag2PointCloudSource::open(
             path,
@@ -607,6 +621,10 @@ mod tests {
         assert_eq!(first.identity().point_offset, 0);
         assert_eq!(first.record().metadata().timestamp.as_nanos(), 7_000_000_002);
         assert_eq!(first.record().metadata().frame_id.0, "lidar");
+        assert_eq!(first.record().provenance().source_id, format!("rosbag2-sqlite:{source_uri}"));
+        assert_eq!(first.record().provenance().source_uri.as_deref(), Some(source_uri.as_str()));
+        assert_eq!(first.record().provenance().stream_id.as_deref(), Some("/lidar/points"));
+        assert_eq!(first.record().provenance().sequence, Some(0));
         assert_eq!(first.record().cloud().len(), 2);
         assert_eq!(
             first.record().cloud().field("x").unwrap(),

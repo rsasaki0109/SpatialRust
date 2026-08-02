@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
+  a validated, protocol-independent `RecordProvenance` envelope for source
+  identity, source URI, logical stream, and deterministic sequence. Schema
+  migration, chunk slicing, bounded crop/transform, and external voxel
+  aggregation preserve lineage; the rosbag2 source populates it without adding
+  ROS or SQLite types to `spatialrust-core`.
 - **rosbag2 SQLite PointCloud2 source**: the new feature-gated
   `spatialrust-ros2` crate opens rosbag2 SQLite files read-only, lists topics,
   decodes CDR `sensor_msgs/msg/PointCloud2` XYZ fields with optional float32

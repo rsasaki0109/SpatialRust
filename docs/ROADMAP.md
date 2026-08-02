@@ -261,7 +261,7 @@ Data/Stream/Device live in `spatialrust-arrow` behind independent features.
 
 | Slice | Status | Scope | Feature |
 | --- | --- | --- | --- |
-| 91A | Complete | `SchemaId`/`SchemaVersion`/`SchemaDescriptor`, compatibility reports, `SpatialRecord` | `records` |
+| 91A | Complete | `SchemaId`/`SchemaVersion`/`SchemaDescriptor`, compatibility reports, `SpatialRecord`, and validated `RecordProvenance` lineage | `records` |
 | 91B | Complete | `SpatialRecordSource`/`Sink`, `MemoryChunkSource`/`Sink`, migrate with fill/drop policy | `records` |
 | 91C | Complete | Arrow C Data export/import for `PointCloud` struct columns | `arrow-c-data` |
 | 91D | Complete | Arrow C Stream over record sources; CPU Arrow C Device array export/import | `arrow-c-stream`, `arrow-c-device` |

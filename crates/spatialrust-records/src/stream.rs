@@ -2,7 +2,7 @@
 
 use spatialrust_core::{PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, SpatialTensor};
 
-use crate::{RecordsError, RecordsResult, SchemaDescriptor, SpatialRecord};
+use crate::{RecordProvenance, RecordsError, RecordsResult, SchemaDescriptor, SpatialRecord};
 
 /// Pull-based source of versioned spatial records.
 pub trait SpatialRecordSource {
@@ -28,6 +28,7 @@ pub trait SpatialRecordSink {
 pub struct MemoryChunkSource {
     schema: SchemaDescriptor,
     metadata: SpatialMetadata,
+    provenance: RecordProvenance,
     cloud: PointCloud,
     chunk_size: usize,
     offset: usize,
@@ -40,6 +41,16 @@ impl MemoryChunkSource {
         cloud: PointCloud,
         chunk_size: usize,
     ) -> RecordsResult<Self> {
+        Self::try_new_with_provenance(schema, cloud, chunk_size, RecordProvenance::default())
+    }
+
+    /// Creates a chunked source with explicit lineage copied to every chunk.
+    pub fn try_new_with_provenance(
+        schema: SchemaDescriptor,
+        cloud: PointCloud,
+        chunk_size: usize,
+        provenance: RecordProvenance,
+    ) -> RecordsResult<Self> {
         if chunk_size == 0 {
             return Err(RecordsError::InvalidConfiguration("chunk_size must be positive".into()));
         }
@@ -49,7 +60,14 @@ impl MemoryChunkSource {
             ));
         }
         cloud.validate()?;
-        Ok(Self { metadata: cloud.metadata().clone(), schema, cloud, chunk_size, offset: 0 })
+        Ok(Self {
+            metadata: cloud.metadata().clone(),
+            provenance,
+            schema,
+            cloud,
+            chunk_size,
+            offset: 0,
+        })
     }
 
     /// Creates a source using [`SpatialTensor`]’s default chunk size as a hint.
@@ -74,7 +92,7 @@ impl SpatialRecordSource for MemoryChunkSource {
         let end = (self.offset + self.chunk_size).min(self.cloud.len());
         let range = self.offset..end;
         self.offset = end;
-        Some(slice_cloud(&self.schema, &self.cloud, &self.metadata, range))
+        Some(slice_cloud(&self.schema, &self.cloud, &self.metadata, &self.provenance, range))
     }
 }
 
@@ -84,6 +102,7 @@ pub struct MemoryChunkSink {
     schema: Option<SchemaDescriptor>,
     buffers: PointBufferSet,
     metadata: SpatialMetadata,
+    provenance: RecordProvenance,
     len: usize,
 }
 
@@ -105,11 +124,15 @@ impl MemoryChunkSink {
                 PointBufferSet::new(),
                 self.metadata,
             )?;
-            return Ok(Some(SpatialRecord::try_new(schema, cloud)?));
+            return Ok(Some(SpatialRecord::try_new_with_provenance(
+                schema,
+                cloud,
+                self.provenance,
+            )?));
         }
         let cloud =
             PointCloud::try_from_parts(schema.point_schema().clone(), self.buffers, self.metadata)?;
-        Ok(Some(SpatialRecord::try_new(schema, cloud)?))
+        Ok(Some(SpatialRecord::try_new_with_provenance(schema, cloud, self.provenance)?))
     }
 }
 
@@ -119,6 +142,7 @@ impl SpatialRecordSink for MemoryChunkSink {
             None => {
                 self.schema = Some(record.schema().clone());
                 self.metadata = record.metadata().clone();
+                self.provenance = record.provenance().clone().without_sequence();
             }
             Some(schema) if schema != record.schema() => {
                 return Err(RecordsError::SchemaMismatch(
@@ -145,6 +169,7 @@ fn slice_cloud(
     schema: &SchemaDescriptor,
     cloud: &PointCloud,
     metadata: &SpatialMetadata,
+    provenance: &RecordProvenance,
     range: std::ops::Range<usize>,
 ) -> RecordsResult<SpatialRecord> {
     let mut buffers = PointBufferSet::new();
@@ -154,7 +179,7 @@ fn slice_cloud(
     }
     let chunk =
         PointCloud::try_from_parts(schema.point_schema().clone(), buffers, metadata.clone())?;
-    SpatialRecord::try_new(schema.clone(), chunk)
+    SpatialRecord::try_new_with_provenance(schema.clone(), chunk, provenance.clone())
 }
 
 fn slice_buffer(
@@ -224,7 +249,17 @@ mod tests {
         let schema =
             SchemaDescriptor::try_new("point", SchemaVersion::new(1, 0), cloud.schema().clone())
                 .unwrap();
-        let mut source = MemoryChunkSource::try_new(schema.clone(), cloud, 2).unwrap();
+        let provenance = crate::RecordProvenance::try_new("memory-source")
+            .unwrap()
+            .with_stream_id("points")
+            .with_sequence(Some(7));
+        let mut source = MemoryChunkSource::try_new_with_provenance(
+            schema.clone(),
+            cloud,
+            2,
+            provenance.clone(),
+        )
+        .unwrap();
         let mut sink = MemoryChunkSink::new();
         let mut chunks = 0;
         while let Some(record) = source.next_record() {
@@ -235,6 +270,9 @@ mod tests {
         let assembled = sink.into_record().unwrap().unwrap();
         assert_eq!(assembled.cloud().len(), 5);
         assert_eq!(assembled.schema(), &schema);
+        assert_eq!(assembled.provenance().source_id, provenance.source_id);
+        assert_eq!(assembled.provenance().stream_id, provenance.stream_id);
+        assert_eq!(assembled.provenance().sequence, None);
         let _ = SpatialRecord::try_new(schema, assembled.into_cloud());
     }
 }
