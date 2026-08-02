@@ -351,6 +351,12 @@ pulling ROS 2 or MCAP file codecs.
 | 94A | Complete | Direct `PointCloud` column integration into TSDF with explicit sensor origin and no temporary interleave | `scene` |
 | 94B | Complete | Explicit sensor-to-volume pose integration without transformed-cloud allocation | `scene` |
 
+## Epic 95 delivery slices
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 95A | Complete | `SpatialRecordEntity` centroid/label/embedding adapter with copied provenance and frame/timestamp metadata | `semantic` |
+
 ## Epic 99 delivery slices
 
 | Slice | Status | Scope | Feature |

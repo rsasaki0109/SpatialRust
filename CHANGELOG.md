@@ -55,6 +55,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   without allocating an interleaved temporary buffer. `integrate_cloud_with_pose`
   extends the same path with an explicit sensor-to-volume isometry, transforming
   positions and sensor origin in the integration loop.
+- **SpatialRecord semantic adapter**: `spatialrust-semantic` now provides
+  `SpatialRecordEntity` and deterministic `record_entity_id`, validating label
+  confidence, deriving a finite XYZ centroid from capability columns, and
+  retaining `RecordProvenance`, frame, and timestamp. Embeddings remain caller-
+  supplied, so no AI runtime is pulled into the semantic default build.
 - **GPU Euclidean clustering** (`segment-euclidean-gpu`): GPU sparse-grid key
   generation/sort/compaction with deterministic host component labeling,
   `GpuEuclideanClusterExtractor`, `EuclideanClusterExtractor::extract_with_policy`,
