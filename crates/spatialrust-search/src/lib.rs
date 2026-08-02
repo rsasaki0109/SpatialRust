@@ -31,7 +31,8 @@ pub use staging::{
 };
 pub use traits::{NearestNeighborIndex, Neighbor, RadiusSearchIndex, SpatialIndex};
 pub use uniform_grid::{
-    build_grid, euclidean_cluster_roots, grid_bounds, uniform_grid_fits, MAX_UNIFORM_GRID_CELLS,
+    build_grid, euclidean_cluster_roots, euclidean_cluster_roots_from_segments, grid_bounds,
+    uniform_grid_fits, MAX_UNIFORM_GRID_CELLS,
 };
 
 #[cfg(feature = "parallel")]

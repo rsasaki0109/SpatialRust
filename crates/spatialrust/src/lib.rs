@@ -21,10 +21,12 @@ pub use spatialrust_transform as transform;
 pub use spatialrust_voxelize as voxelize;
 
 pub use spatialrust_core::{
-    CpuDevice, DType, Device, DeviceKind, ExecutionPolicy, FieldSemantic, FrameId, HasIntensity,
-    HasNormals3, HasPositions3, PointBuffer, PointCloud, PointCloudBuilder, PointField,
-    PointSchema, SpatialAlgorithm, SpatialError, SpatialMetadata, SpatialResult, SpatialTensor,
-    SpatialTensorChunk, StandardSchemas, Timestamp, DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE,
+    CpuDevice, CpuRuntime, DType, Device, DeviceKind, ExecutionOutput, ExecutionPolicy,
+    ExecutionReceipt, FieldSemantic, FrameId, HasIntensity, HasNormals3, HasPositions3,
+    PointBuffer, PointCloud, PointCloudBuilder, PointField, PointSchema, SpatialAlgorithm,
+    SpatialError, SpatialMetadata, SpatialResult, SpatialRuntime, SpatialTensor,
+    SpatialTensorChunk, StandardSchemas, Timestamp, TransferDirection, TransferStats,
+    DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE,
 };
 
 #[cfg(feature = "tensor-aoso")]
@@ -199,5 +201,6 @@ pub use spatialrust_voxelize::{range_image, RangeImage, RangeImageConfig};
 
 #[cfg(feature = "pipeline-mvp")]
 pub use spatialrust_pipeline::{
-    MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult, MvpRegistrationMethod,
+    MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineReceipt, MvpPipelineResult,
+    MvpRegistrationMethod,
 };

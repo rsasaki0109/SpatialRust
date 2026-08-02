@@ -141,7 +141,7 @@ See [notes](notes/2026-06-15_registration_bench.md). Reproduce: `cargo bench -p 
 
 ## Status
 
-MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and registration (ICP point-to-point/point-to-plane, GICP, NDT). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design.
+MVP pipeline is implemented end-to-end: PCD/PLY/LAS/COPC IO, voxel downsampling (CPU + optional wgpu), normals, RANSAC plane segmentation, Euclidean clustering, region growing, and registration (ICP point-to-point/point-to-plane, GICP, NDT). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the master design and [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md) for the optional-feature and CPU/GPU execution contract.
 
 ## Workspace crates
 
@@ -267,7 +267,8 @@ selects GPU from ~2k points for plane/cluster MVP paths and ~10k for normals.
 When GPU normals run without an explicit `search_radius`, MVP derives one from
 the voxel leaf (`normal_gpu_radius_scale`, default `2.0`) to use the fast grid path.
 Full-cloud plane bench: ~11× speedup (`bench/ransac_plane/`). Cluster bench:
-`bench/euclidean_cluster/` — grid union-find path matches CPU clusters; ~1.15× on MVP ~1.4k pts, ~1.0× on 460k full cloud (GPU KD-tree BFS path, Epic 69).
+`bench/euclidean_cluster/` — GPU sparse-grid construction matches CPU cluster
+labels; deterministic component union remains an explicit host stage.
 
 ### Library
 
@@ -299,7 +300,7 @@ PCD/PLY/LAS/COPC -> voxel downsample -> normals -> plane RANSAC -> clustering ->
   <img src="docs/assets/readme_mvp_pipeline.gif" alt="Terminal-style receipt of a real SpatialRust MVP run on the public PCL table_scene_lms400 cloud: left panel shows the evolving top-down result, right panel types measured load, voxel, plane, and cluster counts" width="640">
 </p>
 
-GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode). GPU plane, normal, and Euclidean clustering use the same policy flags (`--plane-policy`, `--normal-policy`, `--cluster-policy`).
+GPU voxel downsampling (wgpu) is available behind features. `ExecutionPolicy::Auto` keeps CPU for clouds below ~500k points (centroid mode). GPU plane, normal, and Euclidean sparse-grid construction use the same policy flags (`--plane-policy`, `--normal-policy`, `--cluster-policy`). `MvpPipelineResult::receipt` exposes the resolved backend and explicit transfer accounting for each stage.
 
 ```bash
 cargo test -p spatialrust-gpu --features gpu-wgpu

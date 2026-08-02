@@ -1,6 +1,8 @@
 //! GPU-resident spatial frame ownership and chained execution.
 
-use spatialrust_core::{PointSchema, SpatialError, SpatialResult, SpatialTensor};
+use spatialrust_core::{
+    PointSchema, SpatialError, SpatialResult, SpatialTensor, TransferDirection, TransferStats,
+};
 
 use crate::aoso_staging::runtime_device_key;
 use crate::{
@@ -29,29 +31,33 @@ pub enum GpuFrameCapability {
 /// Transfer and logical-stage receipt for one GPU frame.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct GpuExecutionReceipt {
-    host_to_device_bytes: u64,
-    gpu_to_gpu_bytes: u64,
-    device_to_host_bytes: u64,
+    transfers: TransferStats,
     stages: Vec<&'static str>,
 }
 
 impl GpuExecutionReceipt {
+    /// Returns the common transfer accounting for this execution.
+    #[must_use]
+    pub const fn transfer_stats(&self) -> TransferStats {
+        self.transfers
+    }
+
     /// Returns bytes uploaded from host memory.
     #[must_use]
     pub const fn host_to_device_bytes(&self) -> u64 {
-        self.host_to_device_bytes
+        self.transfers.host_to_device_bytes()
     }
 
     /// Returns bytes copied between GPU buffers.
     #[must_use]
     pub const fn gpu_to_gpu_bytes(&self) -> u64 {
-        self.gpu_to_gpu_bytes
+        self.transfers.device_to_device_bytes()
     }
 
     /// Returns bytes explicitly read back to host memory.
     #[must_use]
     pub const fn device_to_host_bytes(&self) -> u64 {
-        self.device_to_host_bytes
+        self.transfers.device_to_host_bytes()
     }
 
     /// Returns the logical GPU stages recorded by the high-level pipeline.
@@ -274,8 +280,10 @@ impl GpuSpatialFrame {
         })?;
         let reduced =
             reduce_voxel_attributes_aoso_chunks(runtime, &self.attributes, segments, aggregation)?;
-        self.receipt.device_to_host_bytes +=
-            (reduced.len() * reduced.layout().stride_f32() * std::mem::size_of::<f32>()) as u64;
+        self.receipt.transfers.record(
+            TransferDirection::DeviceToHost,
+            (reduced.len() * reduced.layout().stride_f32() * std::mem::size_of::<f32>()) as u64,
+        );
         self.receipt.stages.push("attribute-reduce");
         Ok(reduced)
     }
@@ -314,7 +322,7 @@ impl GpuSpatialFrame {
         let positions = values.chunks_exact(3).map(|p| [p[0], p[1], p[2]]).collect();
         drop(mapped);
         staging.unmap();
-        self.receipt.device_to_host_bytes += byte_len as u64;
+        self.receipt.transfers.record(TransferDirection::DeviceToHost, byte_len as u64);
         Ok(positions)
     }
 
@@ -353,8 +361,8 @@ pub fn run_aoso_voxel_normal_frame(
     frame.attach_voxel_segments(segments)?;
     frame.attach_radius_grid(grid)?;
     frame.attach_normals(runtime, normals)?;
-    frame.receipt.host_to_device_bytes = upload_bytes;
-    frame.receipt.gpu_to_gpu_bytes = upload_bytes;
+    frame.receipt.transfers.record(TransferDirection::HostToDevice, upload_bytes);
+    frame.receipt.transfers.record(TransferDirection::DeviceToDevice, upload_bytes);
     frame.receipt.stages = vec!["upload", "voxel-segments", "radius-grid", "radius-normals"];
     Ok(frame)
 }

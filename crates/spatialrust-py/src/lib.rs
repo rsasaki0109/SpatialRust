@@ -174,6 +174,18 @@ pub struct PyPipelineResult {
     /// Unit normal of the dominant plane as (nx, ny, nz).
     #[pyo3(get)]
     plane_normal: (f32, f32, f32),
+    /// Resolved backend for voxel, normals, plane, and cluster stages.
+    #[pyo3(get)]
+    resolved_policies: Vec<String>,
+    /// Total host-to-device bytes recorded by the pipeline.
+    #[pyo3(get)]
+    host_to_device_bytes: u64,
+    /// Total device-to-device bytes recorded by the pipeline.
+    #[pyo3(get)]
+    device_to_device_bytes: u64,
+    /// Total device-to-host bytes recorded by the pipeline.
+    #[pyo3(get)]
+    device_to_host_bytes: u64,
 }
 
 #[pymethods]
@@ -704,6 +716,13 @@ fn run_pipeline(
     let result = MvpPipeline::new(config).run(&cloud.inner).map_err(to_py_err)?;
 
     let normal = result.plane.model.normal;
+    let transfers = result.receipt.transfer_stats();
+    let resolved_policies = vec![
+        format!("{:?}", result.receipt.voxel.resolved_policy()),
+        format!("{:?}", result.receipt.normals.resolved_policy()),
+        format!("{:?}", result.receipt.plane.resolved_policy()),
+        format!("{:?}", result.receipt.clusters.resolved_policy()),
+    ];
     Ok(PyPipelineResult {
         output: PyPointCloud { inner: result.output },
         downsampled: PyPointCloud { inner: result.downsampled },
@@ -711,6 +730,10 @@ fn run_pipeline(
         cluster_sizes: result.clusters.cluster_sizes,
         plane_inliers: result.plane.inlier_count,
         plane_normal: (normal.x, normal.y, normal.z),
+        resolved_policies,
+        host_to_device_bytes: transfers.host_to_device_bytes(),
+        device_to_device_bytes: transfers.device_to_device_bytes(),
+        device_to_host_bytes: transfers.device_to_host_bytes(),
     })
 }
 

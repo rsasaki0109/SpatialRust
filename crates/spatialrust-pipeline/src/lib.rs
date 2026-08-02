@@ -8,5 +8,6 @@ mod mvp;
 
 #[cfg(feature = "pipeline-mvp")]
 pub use mvp::{
-    MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineResult, MvpRegistrationMethod,
+    MvpIcpConfig, MvpPipeline, MvpPipelineConfig, MvpPipelineReceipt, MvpPipelineResult,
+    MvpRegistrationMethod,
 };

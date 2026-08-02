@@ -411,6 +411,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("output points: {}", result.output.len());
     eprintln!("plane inliers: {}", result.plane.inlier_count);
     eprintln!("clusters: {}", result.clusters.cluster_count);
+    eprintln!(
+        "resolved policies: voxel={:?}, normals={:?}, plane={:?}, clusters={:?}",
+        result.receipt.voxel.resolved_policy(),
+        result.receipt.normals.resolved_policy(),
+        result.receipt.plane.resolved_policy(),
+        result.receipt.clusters.resolved_policy(),
+    );
+    let transfers = result.receipt.transfer_stats();
+    eprintln!(
+        "transfers: host->device={} B, device->device={} B, device->host={} B",
+        transfers.host_to_device_bytes(),
+        transfers.device_to_device_bytes(),
+        transfers.device_to_host_bytes(),
+    );
     eprintln!("elapsed: {:.3?}", elapsed);
     eprintln!("wrote {output_path}");
 

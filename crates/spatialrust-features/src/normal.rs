@@ -1,8 +1,7 @@
-#[cfg(feature = "feature-normal-gpu")]
-use spatialrust_core::DeviceKind;
 use spatialrust_core::{
-    DType, ExecutionPolicy, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet, PointCloud,
-    PointField, PointSchema, SpatialError, SpatialResult,
+    DType, DeviceKind, ExecutionOutput, ExecutionPolicy, ExecutionReceipt, FieldSemantic,
+    HasPositions3, PointBuffer, PointBufferSet, PointCloud, PointField, PointSchema, SpatialError,
+    SpatialResult, TransferDirection,
 };
 use spatialrust_math::{symmetric_eigen3, Mat3, Vec3};
 use spatialrust_search::{parallel_worker_count, KdTree, Neighbor, RadiusSearchIndex};
@@ -166,30 +165,96 @@ impl NormalEstimator {
 
     /// Estimates normals using the given execution policy.
     ///
-    /// With the `feature-normal-gpu` feature, [`ExecutionPolicy::Auto`] and
-    /// [`ExecutionPolicy::Gpu`] run covariance analysis on wgpu when the input
-    /// meets [`NormalEstimationConfig::effective_gpu_min_points`].
+    /// With the `feature-normal-gpu` feature, [`ExecutionPolicy::Auto`]
+    /// runs covariance analysis on wgpu when the input meets
+    /// [`NormalEstimationConfig::effective_gpu_min_points`]. An explicit GPU
+    /// policy is strict and does not use the threshold; use `Auto` for fallback.
     pub fn estimate_with_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<PointCloud> {
+        self.estimate_with_policy_and_receipt(input, policy).map(ExecutionOutput::into_output)
+    }
+
+    /// Estimates normals and returns execution/transfer accounting.
+    pub fn estimate_with_policy_and_receipt(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionOutput<PointCloud>> {
+        policy.validate()?;
+        let resolved_policy = self.receipt_policy(input, policy)?;
+        let output = self.estimate_policy_output(input, policy)?;
+        let mut receipt = ExecutionReceipt::new(policy, resolved_policy);
+        receipt.record_stage("normal-estimation");
+        if matches!(resolved_policy, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
+            let input_bytes = (input.len() * 3 * std::mem::size_of::<f32>()) as u64;
+            let neighbor_bytes = if self.config.search_radius.is_none() {
+                (input.len().saturating_mul(self.config.k_neighbors.max(1))
+                    * std::mem::size_of::<u32>()) as u64
+            } else {
+                0
+            };
+            let output_bytes = (output.len() * 4 * std::mem::size_of::<f32>()) as u64;
+            receipt.record_transfer(TransferDirection::HostToDevice, input_bytes);
+            receipt.record_transfer(TransferDirection::HostToDevice, neighbor_bytes);
+            receipt.record_transfer(TransferDirection::DeviceToHost, output_bytes);
+            receipt.record_stage("gpu-readback");
+        }
+        Ok(ExecutionOutput::new(output, receipt))
+    }
+
+    fn estimate_policy_output(
         &self,
         input: &PointCloud,
         policy: ExecutionPolicy,
     ) -> SpatialResult<PointCloud> {
         #[cfg(feature = "feature-normal-gpu")]
         {
-            let resolved = self.resolve_policy(input, policy);
+            let resolved = self.resolve_policy(input, policy)?;
             if matches!(resolved, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
                 return crate::normal_gpu::GpuNormalEstimator::new(self.config).estimate(input);
             }
+        }
+
+        #[cfg(not(feature = "feature-normal-gpu"))]
+        if policy.requests_gpu() {
+            return Err(SpatialError::InvalidArgument(
+                "GPU normal estimation requires the feature-normal-gpu feature".to_owned(),
+            ));
         }
 
         let _ = policy;
         self.estimate(input)
     }
 
+    fn receipt_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionPolicy> {
+        #[cfg(feature = "feature-normal-gpu")]
+        {
+            self.resolve_policy(input, policy)
+        }
+        #[cfg(not(feature = "feature-normal-gpu"))]
+        {
+            let _ = input;
+            Ok(match policy {
+                ExecutionPolicy::Auto => ExecutionPolicy::CpuSingle,
+                other => other,
+            })
+        }
+    }
+
     /// Returns whether the given policy selects the GPU backend for this input.
     #[cfg(feature = "feature-normal-gpu")]
     pub fn selects_gpu_backend(&self, input: &PointCloud, policy: ExecutionPolicy) -> bool {
-        matches!(self.resolve_policy(input, policy), ExecutionPolicy::Gpu(DeviceKind::Wgpu))
+        matches!(
+            self.resolve_policy(input, policy).ok(),
+            Some(ExecutionPolicy::Gpu(DeviceKind::Wgpu))
+        )
     }
 
     /// Returns whether a GPU uniform-grid normal pass fits the input bounds at `radius`.
@@ -204,22 +269,30 @@ impl NormalEstimator {
     #[cfg(feature = "feature-normal-gpu")]
     fn should_use_gpu(&self, input: &PointCloud) -> bool {
         self.config.effective_gpu_min_points().map_or(true, |min_points| input.len() >= min_points)
+            && spatialrust_gpu::WgpuRuntime::shared().is_ok()
     }
 
     #[cfg(feature = "feature-normal-gpu")]
-    fn resolve_policy(&self, input: &PointCloud, policy: ExecutionPolicy) -> ExecutionPolicy {
+    fn resolve_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionPolicy> {
         match policy {
             ExecutionPolicy::Auto => {
                 if self.should_use_gpu(input) {
-                    ExecutionPolicy::Gpu(DeviceKind::Wgpu)
+                    Ok(ExecutionPolicy::Gpu(DeviceKind::Wgpu))
                 } else {
-                    ExecutionPolicy::CpuSingle
+                    Ok(ExecutionPolicy::CpuSingle)
                 }
             }
-            ExecutionPolicy::Gpu(DeviceKind::Wgpu) if !self.should_use_gpu(input) => {
-                ExecutionPolicy::CpuSingle
-            }
-            other => other,
+            ExecutionPolicy::Gpu(DeviceKind::Cpu) => Err(SpatialError::InvalidArgument(
+                "GPU execution policy cannot target the CPU device".to_owned(),
+            )),
+            ExecutionPolicy::Gpu(DeviceKind::Cuda) => Err(SpatialError::InvalidArgument(
+                "CUDA normal estimation is not available".to_owned(),
+            )),
+            other => Ok(other),
         }
     }
 }
@@ -546,7 +619,9 @@ fn clone_buffer(buffer: &PointBuffer) -> SpatialResult<PointBuffer> {
 mod tests {
     use super::{orient_normal_towards_viewpoint, NormalEstimationConfig, NormalEstimator};
     use crate::FeatureEstimator;
-    use spatialrust_core::{HasNormals3, PointCloudBuilder, StandardSchemas};
+    use spatialrust_core::{
+        DeviceKind, ExecutionPolicy, HasNormals3, PointCloudBuilder, StandardSchemas,
+    };
     use spatialrust_math::Vec3;
 
     fn plane_cloud() -> spatialrust_core::PointCloud {
@@ -625,5 +700,14 @@ mod tests {
         let estimator = NormalEstimator::new(NormalEstimationConfig::k_neighbors(10));
         let output = estimator.estimate(&input).unwrap();
         assert!(output.field("curvature").is_ok());
+    }
+
+    #[test]
+    fn rejects_unsupported_explicit_gpu_policy() {
+        let estimator = NormalEstimator::new(NormalEstimationConfig::default());
+        let error = estimator
+            .estimate_with_policy(&plane_cloud(), ExecutionPolicy::Gpu(DeviceKind::Cuda))
+            .unwrap_err();
+        assert!(matches!(error, spatialrust_core::SpatialError::InvalidArgument(_)));
     }
 }

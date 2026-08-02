@@ -1,6 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
-use spatialrust_core::{SpatialError, SpatialResult};
+use spatialrust_core::{DeviceKind, SpatialError, SpatialResult, SpatialRuntime};
 
 use crate::pipeline_cache::ComputePipelineCache;
 use crate::upload_cache::GpuBufferPool;
@@ -156,6 +156,13 @@ impl WgpuRuntime {
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
         })
+    }
+}
+
+#[cfg(feature = "gpu-wgpu")]
+impl SpatialRuntime for WgpuRuntime {
+    fn device_kind(&self) -> DeviceKind {
+        DeviceKind::Wgpu
     }
 }
 

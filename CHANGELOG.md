@@ -21,10 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
-- **GPU Euclidean clustering** (`segment-euclidean-gpu`): WGSL uniform-grid label
-  propagation, `GpuEuclideanClusterExtractor`,
-  `EuclideanClusterExtractor::extract_with_policy`, MVP `cluster_policy`, and CLI
-  `--cluster-policy auto|cpu|gpu`.
+- **GPU Euclidean clustering** (`segment-euclidean-gpu`): GPU sparse-grid key
+  generation/sort/compaction with deterministic host component labeling,
+  `GpuEuclideanClusterExtractor`, `EuclideanClusterExtractor::extract_with_policy`,
+  MVP `cluster_policy`, and CLI `--cluster-policy auto|cpu|gpu`.
+- **Execution receipts**: core `ExecutionReceipt`/`ExecutionOutput<T>`, per-stage
+  `MvpPipelineResult::receipt`, CLI backend/transfer summaries, and Python
+  `PipelineResult` receipt properties.
 - **Euclidean cluster benchmark** (`bench/euclidean_cluster/`): CPU vs GPU timing
   harness with optional `--mvp-leaf` preprocess path
   (`notes/2026-07-03_euclidean_cluster_bench.md`).
@@ -43,18 +46,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   the spatial extent would exceed the wgpu cell cap.
 - MVP integration tests: `EuclideanClusterConfig` partial initializers include
   `..Default::default()` for `gpu_min_points`.
-- **GPU Euclidean cluster label propagation**: iteration count scales with grid
-  span and point count; CPU fallback when propagation does not converge
-  (`notes/2026-07-03_gpu_euclidean_cluster_fix.md`).
-- **Grid union-find clustering** (Epic 67): replace WGSL Jacobi loops with CPU
-  grid UF in `euclidean_cluster_roots_grid` (~4× faster on 460k pts, MVP path
-  ~1.15×; `notes/2026-07-03_gpu_euclidean_cluster_speedup.md`).
+- **GPU Euclidean cluster contract**: removed the misleading CPU-only GPU entry
+  point; GPU policy now dispatches sparse-grid construction and reports the
+  explicit host component-labeling stage.
 - **Shared `uniform_grid` module** (Epic 68): `spatialrust-search` hosts grid
   bounds/build/cluster roots; GPU normals and cluster paths reuse it
   (`notes/2026-07-03_cpu_grid_euclidean_cluster.md`).
-- **GPU cluster adaptive backend** (Epic 69): dense scans (≥50k pts) use KD-tree
-  BFS in `GpuEuclideanClusterExtractor`; smaller clouds use parallel grid UF with
-  deferred path compression (`notes/2026-07-03_gpu_euclidean_cluster_epic69.md`).
 - **Chunked spatial index queries** (Epic 70): `ChunkedRadiusSearchIndex`,
   `ChunkedNearestNeighborIndex`, and `SpatialTensor` staging helpers in
   `spatialrust-search` (`notes/2026-07-03_spatial_index_chunked_queries.md`).

@@ -3,7 +3,9 @@
 //! Chains voxel downsampling, normal estimation, plane segmentation, clustering,
 //! and optional ICP registration.
 
-use spatialrust_core::{ExecutionPolicy, PointCloud, SpatialResult};
+use spatialrust_core::{
+    ExecutionPolicy, ExecutionReceipt, PointCloud, SpatialResult, TransferDirection, TransferStats,
+};
 use spatialrust_features::{NormalEstimationConfig, NormalEstimator};
 use spatialrust_filtering::{VoxelGridDownsample, VoxelGridDownsampleConfig};
 use spatialrust_math::Isometry3;
@@ -114,6 +116,58 @@ pub struct MvpPipelineResult {
     pub registration: Option<RegistrationResult>,
     /// Primary pipeline output (labeled cluster cloud).
     pub output: PointCloud,
+    /// Per-stage execution and transfer accounting.
+    pub receipt: MvpPipelineReceipt,
+}
+
+/// Execution receipt for the stages of one MVP pipeline run.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MvpPipelineReceipt {
+    /// Voxel downsampling receipt.
+    pub voxel: ExecutionReceipt,
+    /// Normal estimation receipt.
+    pub normals: ExecutionReceipt,
+    /// Plane segmentation receipt.
+    pub plane: ExecutionReceipt,
+    /// Euclidean clustering receipt.
+    pub clusters: ExecutionReceipt,
+    /// Optional CPU registration receipt.
+    pub registration: Option<ExecutionReceipt>,
+}
+
+impl MvpPipelineReceipt {
+    /// Aggregates transfer accounting across all pipeline stages.
+    #[must_use]
+    pub fn transfer_stats(&self) -> TransferStats {
+        let mut stats = TransferStats::default();
+        for receipt in [&self.voxel, &self.normals, &self.plane, &self.clusters]
+            .into_iter()
+            .chain(self.registration.iter())
+        {
+            stats.record(TransferDirection::HostToDevice, receipt.host_to_device_bytes());
+            stats.record(TransferDirection::DeviceToDevice, receipt.device_to_device_bytes());
+            stats.record(TransferDirection::DeviceToHost, receipt.device_to_host_bytes());
+        }
+        stats
+    }
+
+    /// Returns total bytes uploaded from host memory.
+    #[must_use]
+    pub fn host_to_device_bytes(&self) -> u64 {
+        self.transfer_stats().host_to_device_bytes()
+    }
+
+    /// Returns total bytes copied between device buffers.
+    #[must_use]
+    pub fn device_to_device_bytes(&self) -> u64 {
+        self.transfer_stats().device_to_device_bytes()
+    }
+
+    /// Returns total bytes read back to host memory.
+    #[must_use]
+    pub fn device_to_host_bytes(&self) -> u64 {
+        self.transfer_stats().device_to_host_bytes()
+    }
 }
 
 /// Builder-style MVP pipeline runner.
@@ -137,8 +191,9 @@ impl MvpPipeline {
 
     /// Runs the full MVP pipeline on the input cloud.
     pub fn run(&self, input: &PointCloud) -> SpatialResult<MvpPipelineResult> {
-        let downsampled = VoxelGridDownsample::new(self.config.voxel)
-            .filter_with_policy(input, self.config.voxel_policy)?;
+        let (downsampled, voxel_receipt) = VoxelGridDownsample::new(self.config.voxel)
+            .filter_with_policy_and_receipt(input, self.config.voxel_policy)?
+            .into_parts();
 
         let normal_config = {
             #[cfg(feature = "pipeline-mvp-gpu")]
@@ -162,16 +217,19 @@ impl MvpPipeline {
                 self.config.normals
             }
         };
-        let with_normals = NormalEstimator::new(normal_config)
-            .estimate_with_policy(&downsampled, self.config.normal_policy)?;
+        let (with_normals, normals_receipt) = NormalEstimator::new(normal_config)
+            .estimate_with_policy_and_receipt(&downsampled, self.config.normal_policy)?
+            .into_parts();
 
-        let plane = RansacPlaneSegmenter::new(self.config.plane)
-            .segment_with_policy(&with_normals, self.config.plane_policy)?;
+        let (plane, plane_receipt) = RansacPlaneSegmenter::new(self.config.plane)
+            .segment_with_policy_and_receipt(&with_normals, self.config.plane_policy)?
+            .into_parts();
 
-        let clusters = EuclideanClusterExtractor::new(self.config.cluster)
-            .extract_with_policy(&plane.outliers, self.config.cluster_policy)?;
+        let (clusters, clusters_receipt) = EuclideanClusterExtractor::new(self.config.cluster)
+            .extract_with_policy_and_receipt(&plane.outliers, self.config.cluster_policy)?
+            .into_parts();
 
-        let registration = if let Some(icp_config) = &self.config.icp {
+        let (registration, registration_receipt) = if let Some(icp_config) = &self.config.icp {
             // Point-to-plane aligns against the normal-bearing cloud; the others
             // use the plain downsampled cloud as the reference target.
             let target = match icp_config.method {
@@ -195,9 +253,12 @@ impl MvpPipeline {
                     GicpRegistration::new(gicp_config(&icp_config.icp)).align(&source, target)?
                 }
             };
-            Some(result)
+            let mut receipt =
+                ExecutionReceipt::new(ExecutionPolicy::CpuSingle, ExecutionPolicy::CpuSingle);
+            receipt.record_stage("registration");
+            (Some(result), Some(receipt))
         } else {
-            None
+            (None, None)
         };
 
         Ok(MvpPipelineResult {
@@ -207,6 +268,13 @@ impl MvpPipeline {
             plane,
             clusters,
             registration,
+            receipt: MvpPipelineReceipt {
+                voxel: voxel_receipt,
+                normals: normals_receipt,
+                plane: plane_receipt,
+                clusters: clusters_receipt,
+                registration: registration_receipt,
+            },
         })
     }
 }
@@ -290,6 +358,14 @@ mod tests {
         assert!(result.clusters.cluster_count >= 1);
         assert!(result.output.field("label").is_ok());
         assert!(result.registration.is_none());
+        assert_eq!(
+            result.receipt.voxel.resolved_policy(),
+            spatialrust_core::ExecutionPolicy::CpuSingle
+        );
+        assert_eq!(result.receipt.normals.stages(), &["normal-estimation"]);
+        assert_eq!(result.receipt.plane.stages(), &["plane-segmentation"]);
+        assert_eq!(result.receipt.clusters.stages(), &["euclidean-clustering"]);
+        assert_eq!(result.receipt.host_to_device_bytes(), 0);
     }
 
     #[test]
@@ -415,6 +491,9 @@ mod tests {
 
         let result = pipeline.run(&sample_cloud()).unwrap();
         assert!(!result.downsampled.is_empty());
+        assert_eq!(result.receipt.voxel.resolved_policy(), ExecutionPolicy::Gpu(DeviceKind::Wgpu));
+        assert!(result.receipt.voxel.host_to_device_bytes() > 0);
+        assert!(result.receipt.voxel.device_to_host_bytes() > 0);
     }
 
     #[cfg(feature = "pipeline-mvp-gpu")]
@@ -429,6 +508,8 @@ mod tests {
 
         let result = pipeline.run(&sample_cloud()).unwrap();
         assert!(result.plane.inlier_count >= 10);
+        assert_eq!(result.receipt.plane.resolved_policy(), ExecutionPolicy::Gpu(DeviceKind::Wgpu));
+        assert!(result.receipt.plane.device_to_host_bytes() > 0);
     }
 
     #[cfg(feature = "pipeline-mvp-gpu")]
@@ -443,6 +524,11 @@ mod tests {
 
         let result = pipeline.run(&sample_cloud()).unwrap();
         assert!(result.with_normals.field("normal_x").is_ok());
+        assert_eq!(
+            result.receipt.normals.resolved_policy(),
+            ExecutionPolicy::Gpu(DeviceKind::Wgpu)
+        );
+        assert!(result.receipt.normals.device_to_host_bytes() > 0);
     }
 
     #[cfg(feature = "pipeline-mvp-gpu")]
@@ -475,5 +561,11 @@ mod tests {
 
         let result = pipeline.run(&sample_cloud()).unwrap();
         assert!(result.clusters.cluster_count >= 1);
+        assert_eq!(
+            result.receipt.clusters.resolved_policy(),
+            ExecutionPolicy::Gpu(DeviceKind::Wgpu)
+        );
+        assert!(result.receipt.clusters.host_to_device_bytes() > 0);
+        assert!(result.receipt.clusters.device_to_host_bytes() > 0);
     }
 }

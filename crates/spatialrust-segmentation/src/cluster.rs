@@ -2,7 +2,10 @@ use std::collections::{HashMap, VecDeque};
 
 #[cfg(feature = "segment-euclidean-gpu")]
 use spatialrust_core::DeviceKind;
-use spatialrust_core::{ExecutionPolicy, HasPositions3, PointCloud, SpatialError, SpatialResult};
+use spatialrust_core::{
+    ExecutionOutput, ExecutionPolicy, ExecutionReceipt, HasPositions3, PointCloud, SpatialError,
+    SpatialResult, TransferDirection,
+};
 use spatialrust_search::{KdTree, RadiusSearchIndex};
 
 use crate::cloud::with_labels;
@@ -112,28 +115,84 @@ impl EuclideanClusterExtractor {
 
     /// Clusters the input cloud using the given execution policy.
     ///
-    /// With the `segment-euclidean-gpu` feature, [`ExecutionPolicy::Auto`] and
-    /// [`ExecutionPolicy::Gpu`] run grid union-find clustering when the input
-    /// meets [`EuclideanClusterConfig::effective_gpu_min_points`] and the uniform
-    /// grid fits within the cell cap.
+    /// With the `segment-euclidean-gpu` feature, [`ExecutionPolicy::Auto`]
+    /// runs grid union-find clustering when the input meets
+    /// [`EuclideanClusterConfig::effective_gpu_min_points`] and the uniform
+    /// grid fits within the cell cap. An explicit GPU policy is strict and
+    /// returns an error when the grid cannot fit; use `Auto` for fallback.
     pub fn extract_with_policy(
         &self,
         input: &PointCloud,
         policy: ExecutionPolicy,
     ) -> SpatialResult<EuclideanClusterResult> {
+        self.extract_with_policy_and_receipt(input, policy).map(ExecutionOutput::into_output)
+    }
+
+    /// Clusters the input cloud and returns execution/transfer accounting.
+    pub fn extract_with_policy_and_receipt(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionOutput<EuclideanClusterResult>> {
+        policy.validate()?;
+        let (output, resolved_policy, transfers) = self.extract_policy_output(input, policy)?;
+        let mut receipt = ExecutionReceipt::new(policy, resolved_policy);
+        receipt.record_stage("euclidean-clustering");
+        if let Some(transfers) = transfers {
+            receipt
+                .record_transfer(TransferDirection::HostToDevice, transfers.host_to_device_bytes());
+            receipt.record_transfer(
+                TransferDirection::DeviceToDevice,
+                transfers.device_to_device_bytes(),
+            );
+            receipt
+                .record_transfer(TransferDirection::DeviceToHost, transfers.device_to_host_bytes());
+            receipt.record_stage("gpu-sparse-grid");
+            receipt.record_stage("cpu-component-labeling");
+        }
+        Ok(ExecutionOutput::new(output, receipt))
+    }
+
+    fn extract_policy_output(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<(
+        EuclideanClusterResult,
+        ExecutionPolicy,
+        Option<spatialrust_core::TransferStats>,
+    )> {
         #[cfg(feature = "segment-euclidean-gpu")]
         {
-            let resolved = self.resolve_policy(input, policy);
-            if matches!(resolved, ExecutionPolicy::Gpu(DeviceKind::Wgpu))
-                && self.gpu_grid_fits(input)
-            {
-                return crate::cluster_gpu::GpuEuclideanClusterExtractor::new(self.config)
-                    .extract(input);
+            let resolved = self.resolve_policy(input, policy)?;
+            if matches!(resolved, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
+                if !self.gpu_grid_fits(input) {
+                    if policy.allows_fallback() {
+                        return Ok((self.extract(input)?, ExecutionPolicy::CpuSingle, None));
+                    }
+                    return Err(SpatialError::InvalidArgument(
+                        "point cloud does not fit the GPU Euclidean clustering grid".to_owned(),
+                    ));
+                }
+                let (output, transfers) =
+                    crate::cluster_gpu::GpuEuclideanClusterExtractor::new(self.config)
+                        .extract_with_receipt(input)?;
+                return Ok((output, resolved, Some(transfers)));
             }
         }
 
-        let _ = policy;
-        self.extract(input)
+        #[cfg(not(feature = "segment-euclidean-gpu"))]
+        if policy.requests_gpu() {
+            return Err(SpatialError::InvalidArgument(
+                "GPU Euclidean clustering requires the segment-euclidean-gpu feature".to_owned(),
+            ));
+        }
+
+        let resolved_policy = match policy {
+            ExecutionPolicy::Auto => ExecutionPolicy::CpuSingle,
+            other => other,
+        };
+        Ok((self.extract(input)?, resolved_policy, None))
     }
 
     #[cfg(feature = "segment-euclidean-gpu")]
@@ -147,22 +206,30 @@ impl EuclideanClusterExtractor {
     #[cfg(feature = "segment-euclidean-gpu")]
     fn should_use_gpu(&self, input: &PointCloud) -> bool {
         self.config.effective_gpu_min_points().map_or(true, |min_points| input.len() >= min_points)
+            && spatialrust_gpu::WgpuRuntime::shared().is_ok()
     }
 
     #[cfg(feature = "segment-euclidean-gpu")]
-    fn resolve_policy(&self, input: &PointCloud, policy: ExecutionPolicy) -> ExecutionPolicy {
+    fn resolve_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionPolicy> {
         match policy {
             ExecutionPolicy::Auto => {
                 if self.should_use_gpu(input) {
-                    ExecutionPolicy::Gpu(DeviceKind::Wgpu)
+                    Ok(ExecutionPolicy::Gpu(DeviceKind::Wgpu))
                 } else {
-                    ExecutionPolicy::CpuSingle
+                    Ok(ExecutionPolicy::CpuSingle)
                 }
             }
-            ExecutionPolicy::Gpu(DeviceKind::Wgpu) if !self.should_use_gpu(input) => {
-                ExecutionPolicy::CpuSingle
-            }
-            other => other,
+            ExecutionPolicy::Gpu(DeviceKind::Cpu) => Err(SpatialError::InvalidArgument(
+                "GPU execution policy cannot target the CPU device".to_owned(),
+            )),
+            ExecutionPolicy::Gpu(DeviceKind::Cuda) => Err(SpatialError::InvalidArgument(
+                "CUDA Euclidean clustering is not available".to_owned(),
+            )),
+            other => Ok(other),
         }
     }
 }
@@ -284,7 +351,7 @@ fn validate_cluster_config(config: EuclideanClusterConfig) -> SpatialResult<()> 
 #[cfg(test)]
 mod tests {
     use super::{EuclideanClusterConfig, EuclideanClusterExtractor};
-    use spatialrust_core::{PointCloudBuilder, StandardSchemas};
+    use spatialrust_core::{DeviceKind, ExecutionPolicy, PointCloudBuilder, StandardSchemas};
 
     fn three_clusters() -> spatialrust_core::PointCloud {
         let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
@@ -330,5 +397,14 @@ mod tests {
         });
         let result = extractor.extract(&input).unwrap();
         assert_eq!(result.cluster_count, 0);
+    }
+
+    #[test]
+    fn rejects_unsupported_explicit_gpu_policy() {
+        let extractor = EuclideanClusterExtractor::new(EuclideanClusterConfig::default());
+        let error = extractor
+            .extract_with_policy(&three_clusters(), ExecutionPolicy::Gpu(DeviceKind::Cuda))
+            .unwrap_err();
+        assert!(matches!(error, spatialrust_core::SpatialError::InvalidArgument(_)));
     }
 }

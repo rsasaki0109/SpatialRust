@@ -1,18 +1,14 @@
-use spatialrust_core::{HasPositions3, PointCloud, SpatialResult};
-use spatialrust_search::euclidean_cluster_roots;
+use spatialrust_core::{HasPositions3, PointCloud, SpatialResult, TransferStats};
+use spatialrust_gpu::{euclidean_cluster_roots_gpu_with_receipt, WgpuRuntime};
 
-use crate::cluster::{
-    extract_cpu_roots, finalize_euclidean_clusters, EuclideanClusterConfig, EuclideanClusterResult,
-    DEFAULT_GPU_KDTREE_MIN_POINTS,
-};
+use crate::cluster::{finalize_euclidean_clusters, EuclideanClusterConfig, EuclideanClusterResult};
 use crate::segmenter::PointCloudSegmenter;
 
-/// Grid-accelerated Euclidean cluster extractor.
+/// GPU-grid-backed Euclidean cluster extractor.
 ///
-/// Connected components use uniform-grid union-find for smaller clouds and KD-tree
-/// BFS for dense scans (see [`DEFAULT_GPU_KDTREE_MIN_POINTS`]); cluster size
-/// filtering and label remapping reuse the CPU helpers so results match
-/// [`crate::EuclideanClusterExtractor`] partition semantics.
+/// Sparse grid key generation, sorting, and compaction run on wgpu. Connected
+/// component labeling and cluster-size filtering remain deterministic host-side
+/// stages, matching [`crate::EuclideanClusterExtractor`] semantics.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GpuEuclideanClusterExtractor {
     config: EuclideanClusterConfig,
@@ -33,21 +29,35 @@ impl GpuEuclideanClusterExtractor {
 
     /// Clusters the input cloud using the grid union-find backend.
     pub fn extract(&self, input: &PointCloud) -> SpatialResult<EuclideanClusterResult> {
+        self.extract_with_receipt(input).map(|(result, _)| result)
+    }
+
+    /// Clusters the input cloud and returns GPU grid transfer accounting.
+    pub fn extract_with_receipt(
+        &self,
+        input: &PointCloud,
+    ) -> SpatialResult<(EuclideanClusterResult, TransferStats)> {
         if input.is_empty() {
-            return Ok(EuclideanClusterResult {
-                cloud: input.clone(),
-                cluster_count: 0,
-                cluster_sizes: Vec::new(),
-            });
+            return Ok((
+                EuclideanClusterResult {
+                    cloud: input.clone(),
+                    cluster_count: 0,
+                    cluster_sizes: Vec::new(),
+                },
+                TransferStats::default(),
+            ));
         }
 
         let (x, y, z) = input.positions3()?;
-        let roots = if input.len() >= DEFAULT_GPU_KDTREE_MIN_POINTS {
-            extract_cpu_roots(input, self.config)?
-        } else {
-            euclidean_cluster_roots(x, y, z, self.config.cluster_tolerance)?
-        };
-        finalize_euclidean_clusters(input, &roots, self.config)
+        let runtime = WgpuRuntime::shared()?;
+        let (roots, transfers) = euclidean_cluster_roots_gpu_with_receipt(
+            &runtime,
+            x,
+            y,
+            z,
+            self.config.cluster_tolerance,
+        )?;
+        Ok((finalize_euclidean_clusters(input, &roots, self.config)?, transfers))
     }
 }
 

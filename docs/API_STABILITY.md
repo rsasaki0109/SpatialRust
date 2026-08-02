@@ -29,6 +29,14 @@ until their individual 1.0 milestones.
 | `SpatialError`, `SpatialResult` | Error surface |
 | `SpatialMetadata`, `FrameId`, `Timestamp` | Frame metadata |
 | `Device`, `DeviceKind`, `CpuDevice` | Device tagging (CUDA is enum-only until backend lands) |
+| `SpatialRuntime`, `CpuRuntime` | Backend identity and execution-policy compatibility boundary |
+| `ExecutionReceipt`, `ExecutionOutput<T>` | Requested/resolved policy, stage, and transfer accounting boundary |
+
+`ExecutionPolicy::Auto` is the only policy that permits an algorithm to choose
+CPU fallback. `ExecutionPolicy::Gpu(DeviceKind)` is an explicit backend
+request; unsupported backends and invalid device targets must return an error
+instead of silently running on CPU. The GPU stage crates are being migrated to
+this contract incrementally.
 
 ### Provisional
 
@@ -36,6 +44,7 @@ until their individual 1.0 milestones.
 | --- | --- |
 | `SpatialTensor`, `SpatialTensorChunk` | Provisional chunked views over `PointCloud` (`spatial_tensor()`) |
 | `AoSoAXyzChunk`, `SpatialTensorChunk::pack_xyz*` | Provisional interleaved chunk packing (`tensor-aoso`) |
+| `TransferDirection`, `TransferStats` | Provisional transfer accounting shared by execution backends |
 
 ### Rules (unchanged at 1.0)
 
@@ -51,7 +60,7 @@ until their individual 1.0 milestones.
 | IO | `read_point_cloud_file`, `write_point_cloud_file` |
 | COPC | `read_copc_file`, `read_copc_file_with_query`, `CopcBounds`, `CopcQuery`, `CopcFileInfo`, `CopcWriterParams` |
 | Transform | `bounding_box`, `centroid`, `apply_transform`, `normalize_unit_sphere`, `merge_clouds` |
-| Pipeline | `MvpPipeline`, `MvpPipelineConfig`, `MvpPipelineResult` |
+| Pipeline | `MvpPipeline`, `MvpPipelineConfig`, `MvpPipelineResult`, `MvpPipelineReceipt` |
 
 ### Provisional
 

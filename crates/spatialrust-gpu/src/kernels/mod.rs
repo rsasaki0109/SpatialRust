@@ -88,7 +88,10 @@ pub use voxel_segments_gpu::{
 };
 
 #[cfg(feature = "gpu-wgpu")]
-pub use euclidean_cluster::{euclidean_cluster_roots_gpu, euclidean_cluster_roots_grid};
+pub use euclidean_cluster::{
+    euclidean_cluster_roots_gpu, euclidean_cluster_roots_gpu_with_receipt,
+    euclidean_cluster_roots_grid,
+};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use ransac_plane::{score_ransac_plane_hypotheses_gpu, GpuPlaneScore};

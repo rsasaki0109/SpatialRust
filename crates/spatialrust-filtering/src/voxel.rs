@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hasher};
 
+#[cfg(feature = "filter-voxel-gpu")]
+use spatialrust_core::TransferDirection;
 use spatialrust_core::{
-    DType, DeviceKind, ExecutionPolicy, FieldSemantic, HasPositions3, PointBuffer, PointBufferSet,
-    PointCloud, PointField, PointSchema, SpatialError, SpatialResult,
+    DType, DeviceKind, ExecutionOutput, ExecutionPolicy, ExecutionReceipt, FieldSemantic,
+    HasPositions3, PointBuffer, PointBufferSet, PointCloud, PointField, PointSchema, SpatialError,
+    SpatialResult,
 };
 use spatialrust_math::Vec3;
 
@@ -200,14 +203,33 @@ impl VoxelGridDownsample {
     /// and performs centroid or approximate-first aggregation on wgpu.
     ///
     /// [`ExecutionPolicy::Auto`] picks GPU only when the input meets
-    /// [`VoxelGridDownsampleConfig::gpu_min_points`]. Explicit GPU requests below the
-    /// threshold fall back to CPU to avoid upload/readback overhead on small clouds.
+    /// [`VoxelGridDownsampleConfig::gpu_min_points`]. An explicit GPU request is
+    /// strict and does not use the point-count heuristic; use `Auto` when CPU
+    /// fallback is desired.
     pub fn filter_with_policy(
         &self,
         input: &PointCloud,
         policy: ExecutionPolicy,
     ) -> SpatialResult<PointCloud> {
-        self.filter_internal(input, policy)
+        self.filter_with_policy_and_receipt(input, policy).map(ExecutionOutput::into_output)
+    }
+
+    /// Applies the filter and returns execution/transfer accounting.
+    pub fn filter_with_policy_and_receipt(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionOutput<PointCloud>> {
+        policy.validate()?;
+        let resolved_policy = self.resolve_policy(input, policy)?;
+        let output = self.filter_internal(input, policy)?;
+        let mut receipt = ExecutionReceipt::new(policy, resolved_policy);
+        receipt.record_stage("voxel-downsample");
+        #[cfg(feature = "filter-voxel-gpu")]
+        if matches!(resolved_policy, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
+            record_gpu_voxel_transfers(input, &output, &mut receipt);
+        }
+        Ok(ExecutionOutput::new(output, receipt))
     }
 }
 
@@ -227,6 +249,7 @@ impl VoxelGridDownsample {
         input: &PointCloud,
         policy: ExecutionPolicy,
     ) -> SpatialResult<PointCloud> {
+        policy.validate()?;
         if input.is_empty() {
             return Ok(input.clone());
         }
@@ -246,7 +269,7 @@ impl VoxelGridDownsample {
             }
         };
         let origin_is_min = self.config.origin.is_none();
-        let policy = self.resolve_policy(input, policy);
+        let policy = self.resolve_policy(input, policy)?;
 
         if matches!(policy, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
             #[cfg(feature = "filter-voxel-gpu")]
@@ -340,19 +363,23 @@ impl VoxelGridDownsample {
         PointCloud::try_from_parts(schema, buffers, input.metadata().clone())
     }
 
-    fn resolve_policy(&self, input: &PointCloud, policy: ExecutionPolicy) -> ExecutionPolicy {
+    fn resolve_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionPolicy> {
         match policy {
             ExecutionPolicy::Auto => {
                 if self.should_use_gpu(input) {
-                    ExecutionPolicy::Gpu(DeviceKind::Wgpu)
+                    Ok(ExecutionPolicy::Gpu(DeviceKind::Wgpu))
                 } else {
-                    ExecutionPolicy::CpuSingle
+                    Ok(ExecutionPolicy::CpuSingle)
                 }
             }
-            ExecutionPolicy::Gpu(DeviceKind::Wgpu) if !self.should_use_gpu(input) => {
-                ExecutionPolicy::CpuSingle
-            }
-            other => other,
+            ExecutionPolicy::Gpu(DeviceKind::Cpu) => Err(SpatialError::InvalidArgument(
+                "GPU execution policy cannot target the CPU device".to_owned(),
+            )),
+            other => Ok(other),
         }
     }
 
@@ -360,8 +387,8 @@ impl VoxelGridDownsample {
         #[cfg(feature = "filter-voxel-gpu")]
         {
             match self.config.effective_gpu_min_points(input.schema()) {
-                Some(min_points) => input.len() >= min_points,
-                None => true,
+                Some(min_points) if input.len() < min_points => false,
+                _ => spatialrust_gpu::WgpuRuntime::shared().is_ok(),
             }
         }
         #[cfg(not(feature = "filter-voxel-gpu"))]
@@ -383,6 +410,42 @@ fn count_non_position_f32_fields(schema: &PointSchema) -> usize {
             ) && matches!(field.dtype, DType::F32 | DType::F16)
         })
         .count()
+}
+
+#[cfg(feature = "filter-voxel-gpu")]
+fn record_gpu_voxel_transfers(
+    input: &PointCloud,
+    output: &PointCloud,
+    receipt: &mut ExecutionReceipt,
+) {
+    // The host-staged voxel kernels upload XYZ and each attribute channel, then
+    // read back the reduced channels. U8 channels use a four-byte GPU storage
+    // lane, so the receipt reports the actual staged payload rather than the
+    // compact host representation.
+    let input_bytes = gpu_voxel_payload_bytes(input.schema(), input.len());
+    let output_bytes = gpu_voxel_payload_bytes(output.schema(), output.len());
+    receipt.record_transfer(TransferDirection::HostToDevice, input_bytes);
+    receipt.record_transfer(TransferDirection::DeviceToHost, output_bytes);
+    receipt.record_stage("gpu-readback");
+}
+
+#[cfg(feature = "filter-voxel-gpu")]
+fn gpu_voxel_payload_bytes(schema: &PointSchema, point_count: usize) -> u64 {
+    let scalar_bytes = schema
+        .fields()
+        .iter()
+        .filter(|field| {
+            !matches!(
+                field.semantic,
+                FieldSemantic::PositionX | FieldSemantic::PositionY | FieldSemantic::PositionZ
+            )
+        })
+        .map(|field| {
+            let lanes = point_count.saturating_mul(field.components);
+            lanes.saturating_mul(4)
+        })
+        .sum::<usize>();
+    point_count.saturating_mul(3 * std::mem::size_of::<f32>()).saturating_add(scalar_bytes) as u64
 }
 
 #[derive(Clone, Debug, Default)]
@@ -1442,7 +1505,7 @@ mod tests {
 
     #[cfg(feature = "filter-voxel-gpu")]
     #[test]
-    fn gpu_policy_falls_back_to_cpu_below_threshold() {
+    fn unsupported_explicit_gpu_policy_does_not_fallback_to_cpu() {
         use spatialrust_core::ExecutionPolicy;
 
         let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
@@ -1452,14 +1515,11 @@ mod tests {
 
         let filter = VoxelGridDownsample::new(VoxelGridDownsampleConfig::centroid(0.5));
         let cpu = filter.filter(&input).unwrap();
-        let gpu = filter
-            .filter_with_policy(&input, ExecutionPolicy::Gpu(spatialrust_core::DeviceKind::Wgpu))
-            .unwrap();
-
-        assert_eq!(cpu.len(), gpu.len());
-        let (cpu_x, _, _) = cpu.positions3().unwrap();
-        let (gpu_x, _, _) = gpu.positions3().unwrap();
-        assert!((cpu_x[0] - gpu_x[0]).abs() < 1e-5);
+        let error = filter
+            .filter_with_policy(&input, ExecutionPolicy::Gpu(spatialrust_core::DeviceKind::Cuda))
+            .unwrap_err();
+        assert!(matches!(error, spatialrust_core::SpatialError::InvalidArgument(_)));
+        assert_eq!(cpu.len(), 1);
     }
 
     #[cfg(feature = "filter-voxel-gpu")]

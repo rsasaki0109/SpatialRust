@@ -11,6 +11,20 @@ pub enum DeviceKind {
     Cuda,
 }
 
+impl DeviceKind {
+    /// Returns whether this device kind represents host CPU execution.
+    #[must_use]
+    pub const fn is_cpu(self) -> bool {
+        matches!(self, Self::Cpu)
+    }
+
+    /// Returns whether this device kind represents an accelerator device.
+    #[must_use]
+    pub const fn is_gpu(self) -> bool {
+        matches!(self, Self::Wgpu | Self::Cuda)
+    }
+}
+
 /// Minimal device abstraction defined in core and extended by `spatialrust-gpu`.
 pub trait Device: core::fmt::Debug + Send + Sync + 'static {
     /// Returns the kind of this device.

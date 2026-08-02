@@ -1,6 +1,9 @@
 #[cfg(feature = "segment-ransac-plane-gpu")]
-use spatialrust_core::DeviceKind;
-use spatialrust_core::{ExecutionPolicy, HasPositions3, PointCloud, SpatialError, SpatialResult};
+use spatialrust_core::TransferDirection;
+use spatialrust_core::{
+    DeviceKind, ExecutionOutput, ExecutionPolicy, ExecutionReceipt, HasPositions3, PointCloud,
+    SpatialError, SpatialResult,
+};
 use spatialrust_math::Vec3;
 
 use crate::cloud::extract_mask;
@@ -141,45 +144,122 @@ impl RansacPlaneSegmenter {
 
     /// Segments the dominant plane using the given execution policy.
     ///
-    /// With the `segment-ransac-plane-gpu` feature, [`ExecutionPolicy::Auto`] and
-    /// [`ExecutionPolicy::Gpu`] run hypothesis scoring on wgpu when the input meets
-    /// [`RansacPlaneConfig::effective_gpu_min_points`].
+    /// With the `segment-ransac-plane-gpu` feature, [`ExecutionPolicy::Auto`]
+    /// runs hypothesis scoring on wgpu when the input meets
+    /// [`RansacPlaneConfig::effective_gpu_min_points`]. An explicit GPU policy
+    /// is strict and does not use the threshold; use `Auto` for fallback.
     pub fn segment_with_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<RansacPlaneSegmentation> {
+        self.segment_with_policy_and_receipt(input, policy).map(ExecutionOutput::into_output)
+    }
+
+    /// Segments a plane and returns execution/transfer accounting.
+    pub fn segment_with_policy_and_receipt(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionOutput<RansacPlaneSegmentation>> {
+        policy.validate()?;
+        let resolved_policy = self.receipt_policy(input, policy)?;
+        let output = self.segment_policy_output(input, policy)?;
+        let mut receipt = ExecutionReceipt::new(policy, resolved_policy);
+        receipt.record_stage("plane-segmentation");
+        if matches!(resolved_policy, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
+            #[cfg(feature = "segment-ransac-plane-gpu")]
+            {
+                let hypothesis_count = crate::plane_ransac::generate_hypotheses(
+                    input.len(),
+                    self.config.max_iterations,
+                    self.config.seed,
+                )
+                .len();
+                let input_bytes = (input.len() * 3 * std::mem::size_of::<f32>()) as u64;
+                let hypothesis_bytes = (hypothesis_count * 4 * std::mem::size_of::<u32>()) as u64;
+                let score_bytes = (hypothesis_count
+                    * std::mem::size_of::<spatialrust_gpu::GpuPlaneScore>())
+                    as u64;
+                receipt.record_transfer(TransferDirection::HostToDevice, input_bytes);
+                receipt.record_transfer(TransferDirection::HostToDevice, hypothesis_bytes);
+                receipt.record_transfer(TransferDirection::DeviceToHost, score_bytes);
+                receipt.record_stage("gpu-score-readback");
+            }
+        }
+        Ok(ExecutionOutput::new(output, receipt))
+    }
+
+    fn segment_policy_output(
         &self,
         input: &PointCloud,
         policy: ExecutionPolicy,
     ) -> SpatialResult<RansacPlaneSegmentation> {
         #[cfg(feature = "segment-ransac-plane-gpu")]
         {
-            let resolved = self.resolve_policy(input, policy);
+            let resolved = self.resolve_policy(input, policy)?;
             if matches!(resolved, ExecutionPolicy::Gpu(DeviceKind::Wgpu)) {
                 return crate::plane_gpu::GpuRansacPlaneSegmenter::new(self.config).segment(input);
             }
+        }
+
+        #[cfg(not(feature = "segment-ransac-plane-gpu"))]
+        if policy.requests_gpu() {
+            return Err(SpatialError::InvalidArgument(
+                "GPU plane segmentation requires the segment-ransac-plane-gpu feature".to_owned(),
+            ));
         }
 
         let _ = policy;
         self.segment_cpu(input)
     }
 
-    #[cfg(feature = "segment-ransac-plane-gpu")]
-    fn should_use_gpu(&self, input: &PointCloud) -> bool {
-        self.config.effective_gpu_min_points().map_or(true, |min_points| input.len() >= min_points)
+    fn receipt_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionPolicy> {
+        #[cfg(feature = "segment-ransac-plane-gpu")]
+        {
+            self.resolve_policy(input, policy)
+        }
+        #[cfg(not(feature = "segment-ransac-plane-gpu"))]
+        {
+            let _ = input;
+            Ok(match policy {
+                ExecutionPolicy::Auto => ExecutionPolicy::CpuSingle,
+                other => other,
+            })
+        }
     }
 
     #[cfg(feature = "segment-ransac-plane-gpu")]
-    fn resolve_policy(&self, input: &PointCloud, policy: ExecutionPolicy) -> ExecutionPolicy {
+    fn should_use_gpu(&self, input: &PointCloud) -> bool {
+        self.config.effective_gpu_min_points().map_or(true, |min_points| input.len() >= min_points)
+            && spatialrust_gpu::WgpuRuntime::shared().is_ok()
+    }
+
+    #[cfg(feature = "segment-ransac-plane-gpu")]
+    fn resolve_policy(
+        &self,
+        input: &PointCloud,
+        policy: ExecutionPolicy,
+    ) -> SpatialResult<ExecutionPolicy> {
         match policy {
             ExecutionPolicy::Auto => {
                 if self.should_use_gpu(input) {
-                    ExecutionPolicy::Gpu(DeviceKind::Wgpu)
+                    Ok(ExecutionPolicy::Gpu(DeviceKind::Wgpu))
                 } else {
-                    ExecutionPolicy::CpuSingle
+                    Ok(ExecutionPolicy::CpuSingle)
                 }
             }
-            ExecutionPolicy::Gpu(DeviceKind::Wgpu) if !self.should_use_gpu(input) => {
-                ExecutionPolicy::CpuSingle
-            }
-            other => other,
+            ExecutionPolicy::Gpu(DeviceKind::Cpu) => Err(SpatialError::InvalidArgument(
+                "GPU execution policy cannot target the CPU device".to_owned(),
+            )),
+            ExecutionPolicy::Gpu(DeviceKind::Cuda) => Err(SpatialError::InvalidArgument(
+                "CUDA plane segmentation is not available".to_owned(),
+            )),
+            other => Ok(other),
         }
     }
 
@@ -272,7 +352,9 @@ impl PointCloudSegmenter for RansacPlaneSegmenter {
 #[cfg(test)]
 mod tests {
     use super::{PlaneModel, RansacPlaneConfig, RansacPlaneSegmenter};
-    use spatialrust_core::{HasPositions3, PointCloudBuilder, StandardSchemas};
+    use spatialrust_core::{
+        DeviceKind, ExecutionPolicy, HasPositions3, PointCloudBuilder, StandardSchemas,
+    };
     use spatialrust_math::Vec3;
 
     fn plane_with_outliers() -> spatialrust_core::PointCloud {
@@ -322,5 +404,14 @@ mod tests {
         let outliers = segmenter.extract_outliers(&input).unwrap();
         let (_, _, z) = outliers.positions3().unwrap();
         assert!(z.iter().all(|value| *value > 1.0));
+    }
+
+    #[test]
+    fn rejects_unsupported_explicit_gpu_policy() {
+        let segmenter = RansacPlaneSegmenter::new(RansacPlaneConfig::default());
+        let error = segmenter
+            .segment_with_policy(&plane_with_outliers(), ExecutionPolicy::Gpu(DeviceKind::Cuda))
+            .unwrap_err();
+        assert!(matches!(error, spatialrust_core::SpatialError::InvalidArgument(_)));
     }
 }

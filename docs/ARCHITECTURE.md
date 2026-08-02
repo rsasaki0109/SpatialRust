@@ -32,12 +32,13 @@ North star: **Rust-native spatial computing**
 5. Euclidean clustering
 6. ICP registration
 7. Save output
-8. Partial wgpu execution (voxel key assignment via `filter-voxel-gpu`)
+8. Feature-gated wgpu execution with explicit host/device receipts
 
 Post-MVP additions:
 
 - Unified file IO via `read_point_cloud_file` / `write_point_cloud_file`
-- `MvpPipelineConfig::voxel_policy` for GPU voxel downsampling (`pipeline-mvp-gpu`)
+- `MvpPipelineConfig::*_policy` for feature-gated GPU MVP stages
+- `MvpPipelineResult::receipt` for per-stage backend and transfer accounting
 
 ## Dependency direction
 

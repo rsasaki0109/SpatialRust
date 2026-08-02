@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use spatialrust_core::{SpatialError, SpatialResult};
 
 /// Upper bound on dense grid cells; callers should fall back when exceeded.
@@ -134,6 +136,119 @@ pub fn euclidean_cluster_roots(
         &sorted,
         &cell_start,
     ))
+}
+
+/// Computes Euclidean component roots from pre-built sparse grid segments.
+///
+/// This is the shared component-labeling phase for GPU-backed clustering: a
+/// backend may build and sort the sparse grid on an accelerator, then pass the
+/// compact segment metadata here for deterministic host-side union-find. The
+/// distance predicate and minimum-root semantics are identical to
+/// [`euclidean_cluster_roots`].
+pub fn euclidean_cluster_roots_from_segments(
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    cluster_tolerance: f32,
+    keys: &[(i64, i64, i64)],
+    point_indices: &[u32],
+    cell_starts: &[u32],
+    cell_counts: &[u32],
+) -> SpatialResult<Vec<u32>> {
+    if x.len() != y.len() || x.len() != z.len() {
+        return Err(SpatialError::InvalidArgument("xyz arrays must have equal length".to_owned()));
+    }
+    if cluster_tolerance <= 0.0 || cluster_tolerance.is_nan() {
+        return Err(SpatialError::InvalidArgument("cluster_tolerance must be positive".to_owned()));
+    }
+    if keys.len() != cell_starts.len() || keys.len() != cell_counts.len() {
+        return Err(SpatialError::BufferLengthMismatch {
+            expected: keys.len(),
+            found: cell_starts.len().max(cell_counts.len()),
+        });
+    }
+    if point_indices.len() != x.len() {
+        return Err(SpatialError::BufferLengthMismatch {
+            expected: x.len(),
+            found: point_indices.len(),
+        });
+    }
+    if x.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut cell_by_key = HashMap::with_capacity(keys.len());
+    for (cell, &key) in keys.iter().enumerate() {
+        if cell_by_key.insert(key, cell).is_some() {
+            return Err(SpatialError::InvalidArgument(
+                "sparse grid segments contain duplicate cell keys".to_owned(),
+            ));
+        }
+    }
+
+    let mut seen = vec![false; x.len()];
+    for cell in 0..keys.len() {
+        let start = cell_starts[cell] as usize;
+        let end = start.checked_add(cell_counts[cell] as usize).ok_or_else(|| {
+            SpatialError::InvalidArgument("sparse grid segment overflow".to_owned())
+        })?;
+        if end > point_indices.len() {
+            return Err(SpatialError::InvalidArgument(
+                "sparse grid segment exceeds point index buffer".to_owned(),
+            ));
+        }
+        for &point in &point_indices[start..end] {
+            let index = point as usize;
+            if index >= x.len() || std::mem::replace(&mut seen[index], true) {
+                return Err(SpatialError::InvalidArgument(
+                    "sparse grid point indices are not a permutation".to_owned(),
+                ));
+            }
+        }
+    }
+    if seen.iter().any(|present| !present) {
+        return Err(SpatialError::InvalidArgument(
+            "sparse grid point indices do not cover the input cloud".to_owned(),
+        ));
+    }
+
+    let radius_sq = cluster_tolerance * cluster_tolerance;
+    let mut parent: Vec<u32> = (0..x.len() as u32).collect();
+    for cell in 0..keys.len() {
+        let key = keys[cell];
+        let start = cell_starts[cell] as usize;
+        let end = start + cell_counts[cell] as usize;
+        for dz in -1_i64..=1 {
+            for dy in -1_i64..=1 {
+                for dx in -1_i64..=1 {
+                    let neighbor_key = (
+                        key.0.saturating_add(dx),
+                        key.1.saturating_add(dy),
+                        key.2.saturating_add(dz),
+                    );
+                    let Some(&neighbor_cell) = cell_by_key.get(&neighbor_key) else {
+                        continue;
+                    };
+                    let neighbor_start = cell_starts[neighbor_cell] as usize;
+                    let neighbor_end = neighbor_start + cell_counts[neighbor_cell] as usize;
+                    for &a in &point_indices[start..end] {
+                        let a = a as usize;
+                        for &b in &point_indices[neighbor_start..neighbor_end] {
+                            let b = b as usize;
+                            let dx = x[b] - x[a];
+                            let dy = y[b] - y[a];
+                            let dz = z[b] - z[a];
+                            if dx * dx + dy * dy + dz * dz <= radius_sq {
+                                union_min_root(&mut parent, a as u32, b as u32);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(compress_roots(&mut parent, x.len()))
 }
 
 /// Minimum point count before the `parallel` feature uses threaded union-find.
@@ -444,7 +559,7 @@ fn cell_index(cx: i32, cy: i32, cz: i32, dimx: u32, dimy: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use super::euclidean_cluster_roots;
+    use super::{euclidean_cluster_roots, euclidean_cluster_roots_from_segments};
 
     #[test]
     fn long_chain_is_one_component() {
@@ -458,5 +573,26 @@ mod tests {
         let z = vec![0.0_f32; len];
         let roots = euclidean_cluster_roots(&x, &y, &z, 1.5).unwrap();
         assert!(roots.iter().all(|&root| root == 0));
+    }
+
+    #[test]
+    fn prebuilt_sparse_segments_match_direct_grid_roots() {
+        let x = [0.0_f32, 0.5, 2.0];
+        let y = [0.0_f32; 3];
+        let z = [0.0_f32; 3];
+        let expected = euclidean_cluster_roots(&x, &y, &z, 1.0).unwrap();
+        let actual = euclidean_cluster_roots_from_segments(
+            &x,
+            &y,
+            &z,
+            1.0,
+            &[(0, 0, 0), (2, 0, 0)],
+            &[0, 1, 2],
+            &[0, 2],
+            &[2, 1],
+        )
+        .unwrap();
+
+        assert_eq!(actual, expected);
     }
 }

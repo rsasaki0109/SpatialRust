@@ -60,6 +60,8 @@ small = sr.voxel_downsample(cloud, leaf_size=0.1, policy="auto")
 result = sr.run_pipeline(cloud, leaf_size=0.1, cluster_tolerance=0.3)
 print(result)                      # PipelineResult(points=..., clusters=..., ...)
 print(result.plane_normal)         # (nx, ny, nz) of the dominant plane
+print(result.resolved_policies)    # backend chosen for voxel/normals/plane/cluster
+print(result.host_to_device_bytes, result.device_to_host_bytes)
 labels = result.labels()           # (N,) int32 cluster ids
 xyz = result.output.xyz()          # (N, 3) float32
 
@@ -87,7 +89,7 @@ reloaded = sr.read("labeled.las")
 | `knn_graph(cloud, k)` / `radius_graph(cloud, radius)` | PyG-style `(2, E)` `edge_index` for GNNs |
 | `statistical_outlier_removal(cloud, k_neighbors=16, std_mul=1.0)` | Drop points far from their k-NN (SOR) |
 | `radius_outlier_removal(cloud, radius=0.5, min_neighbors=4)` | Drop points with too few neighbors in radius (ROR) |
-| `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline |
+| `run_pipeline(cloud, leaf_size=0.05, cluster_tolerance=None, min_cluster_size=None, plane_distance=None, policy="auto")` | Full MVP pipeline with resolved backend and transfer-byte properties |
 | `iss_keypoints(cloud, salient_radius=0.2, non_max_radius=0.15, ...)` | ISS keypoints (sparse salient sub-cloud) |
 | `orient_normals(cloud, k_neighbors=15)` | Estimate normals, then orient them consistently (MST) |
 | `detect_boundary(cloud, search_radius=0.1, angle_threshold=1.5708, ...)` | Boundary / edge points (sparse sub-cloud) |

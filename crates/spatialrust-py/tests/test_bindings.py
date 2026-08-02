@@ -336,6 +336,10 @@ def test_run_pipeline_smoke():
     assert res.cluster_count >= 1
     assert res.plane_inliers > 0
     assert len(res.plane_normal) == 3
+    assert res.resolved_policies == ["CpuSingle"] * 4
+    assert res.host_to_device_bytes == 0
+    assert res.device_to_device_bytes == 0
+    assert res.device_to_host_bytes == 0
     assert "PipelineResult(" in repr(res)
 
 
