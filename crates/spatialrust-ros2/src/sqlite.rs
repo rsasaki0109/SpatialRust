@@ -12,12 +12,15 @@ use spatialrust_records::{
     SpatialRecordChunk, StreamOptions,
 };
 use spatialrust_runtime::{
-    decode_point_cloud2_xyz, PointCloud2Xyz, RuntimeError, POINT_CLOUD2_TYPE,
+    decode_point_cloud2_xyz, point_cloud2_has_intensity, PointCloud2Xyz, RuntimeError,
+    POINT_CLOUD2_TYPE,
 };
 use thiserror::Error;
 
 /// Stable schema family for XYZ columns decoded from ROS 2 PointCloud2.
 pub const ROSBAG2_POINT_XYZ_SCHEMA_ID: &str = "ros2.sensor_msgs.msg.PointCloud2.xyz";
+/// Stable schema family for XYZ-I columns decoded from ROS 2 PointCloud2.
+pub const ROSBAG2_POINT_XYZI_SCHEMA_ID: &str = "ros2.sensor_msgs.msg.PointCloud2.xyzi";
 
 const CDR_SCRATCH_OVERHEAD_BYTES: u64 = 64 * 1024;
 
@@ -68,7 +71,7 @@ pub fn list_topics(path: impl AsRef<Path>) -> Rosbag2Result<Vec<Rosbag2Topic>> {
     read_topics(&connection)
 }
 
-/// Bounded, deterministic PointCloud2 XYZ source backed by rosbag2 SQLite.
+/// Bounded, deterministic PointCloud2 XYZ/XYZI source backed by rosbag2 SQLite.
 ///
 /// The SQLite connection is opened read-only. One selected topic is traversed
 /// in `(timestamp, id)` order. A PointCloud2 message may be split into several
@@ -82,6 +85,7 @@ pub struct Rosbag2PointCloudSource {
     cancellation: CancellationToken,
     max_chunk_bytes: u64,
     max_message_bytes: u64,
+    has_intensity: bool,
     cursor: Option<MessageCursor>,
     pending: Option<PendingPointCloud>,
     next_sequence: u64,
@@ -116,13 +120,15 @@ impl Rosbag2PointCloudSource {
             )));
         }
 
+        let has_intensity = first_message_has_intensity(&connection, topic.id)?;
+        let (schema_id, point_schema) = if has_intensity {
+            (ROSBAG2_POINT_XYZI_SCHEMA_ID, StandardSchemas::point_xyzi())
+        } else {
+            (ROSBAG2_POINT_XYZ_SCHEMA_ID, StandardSchemas::point_xyz())
+        };
         let max_message_bytes = max_message_bytes(&connection, topic.id)?;
-        let schema = SchemaDescriptor::try_new(
-            ROSBAG2_POINT_XYZ_SCHEMA_ID,
-            SchemaVersion::new(1, 0),
-            StandardSchemas::point_xyz(),
-        )?;
-        let max_record_bytes = xyz_capacity_bytes(options.chunk_points())?;
+        let schema = SchemaDescriptor::try_new(schema_id, SchemaVersion::new(1, 0), point_schema)?;
+        let max_record_bytes = point_capacity_bytes(options.chunk_points(), has_intensity)?;
         let max_message_working_bytes = message_working_bytes(max_message_bytes)?;
         let max_chunk_bytes = max_record_bytes
             .checked_add(max_message_working_bytes)
@@ -145,6 +151,7 @@ impl Rosbag2PointCloudSource {
             cancellation,
             max_chunk_bytes,
             max_message_bytes,
+            has_intensity,
             cursor: None,
             pending: None,
             next_sequence: 0,
@@ -210,7 +217,13 @@ impl Rosbag2PointCloudSource {
             let mut reservation = self.tracker.try_reserve(working_bytes)?;
             let message = decode_point_cloud2_xyz(&data)?;
             drop(data);
-            let decoded_bytes = xyz_capacity_bytes(message.point_count())?;
+            if message.intensity.is_some() != self.has_intensity {
+                return Err(Rosbag2Error::InvalidBag(format!(
+                    "PointCloud2 fields changed in topic `{}`",
+                    self.topic.name
+                )));
+            }
+            let decoded_bytes = point_capacity_bytes(message.point_count(), self.has_intensity)?;
             reservation.shrink_to(
                 decoded_bytes
                     .checked_add(CDR_SCRATCH_OVERHEAD_BYTES)
@@ -248,6 +261,10 @@ impl Rosbag2PointCloudSource {
                     .ok_or_else(|| Rosbag2Error::InvalidBag("chunk point count overflow".into()))?,
             )
             .ok_or_else(|| Rosbag2Error::InvalidBag("chunk range overflow".into()))?;
+        let point_end = pending
+            .offset
+            .checked_add(count)
+            .ok_or_else(|| Rosbag2Error::InvalidBag("chunk point range overflow".into()))?;
         let values =
             pending.message.xyz.get(start..end).ok_or_else(|| {
                 Rosbag2Error::InvalidBag("decoded XYZ range is out of bounds".into())
@@ -265,8 +282,23 @@ impl Rosbag2PointCloudSource {
         buffers.insert("x", PointBuffer::from_f32(x));
         buffers.insert("y", PointBuffer::from_f32(y));
         buffers.insert("z", PointBuffer::from_f32(z));
+        if self.has_intensity {
+            let intensity = pending
+                .message
+                .intensity
+                .as_ref()
+                .and_then(|values| values.get(pending.offset..point_end))
+                .ok_or_else(|| {
+                    Rosbag2Error::InvalidBag("decoded intensity range is out of bounds".into())
+                })?;
+            buffers.insert("intensity", PointBuffer::from_f32(intensity.to_vec()));
+        }
         let cloud = PointCloud::try_from_parts(
-            StandardSchemas::point_xyz(),
+            if self.has_intensity {
+                StandardSchemas::point_xyzi()
+            } else {
+                StandardSchemas::point_xyz()
+            },
             buffers,
             SpatialMetadata::new(
                 pending.message.frame_id.as_str(),
@@ -339,16 +371,17 @@ impl BoundedSpatialRecordSource for Rosbag2PointCloudSource {
             return self.next_chunk();
         }
 
-        let reservation = match self.tracker.try_reserve(match xyz_capacity_bytes(count) {
-            Ok(bytes) => bytes,
-            Err(error) => return self.fail(error),
-        }) {
-            Ok(reservation) => reservation,
-            Err(error) => {
-                self.pending = Some(pending);
-                return self.fail(Rosbag2Error::Records(error));
-            }
-        };
+        let reservation =
+            match self.tracker.try_reserve(match point_capacity_bytes(count, self.has_intensity) {
+                Ok(bytes) => bytes,
+                Err(error) => return self.fail(error),
+            }) {
+                Ok(reservation) => reservation,
+                Err(error) => {
+                    self.pending = Some(pending);
+                    return self.fail(Rosbag2Error::Records(error));
+                }
+            };
         let next_offset = pending.offset + count;
         let chunk = match self.build_chunk(&pending, count, reservation) {
             Ok(chunk) => chunk,
@@ -456,6 +489,21 @@ fn max_message_bytes(connection: &Connection, topic_id: i64) -> Rosbag2Result<u6
         .map_err(|_| Rosbag2Error::InvalidBag("negative message length".into()))
 }
 
+fn first_message_has_intensity(connection: &Connection, topic_id: i64) -> Rosbag2Result<bool> {
+    let data: Option<Vec<u8>> = connection
+        .query_row(
+            "SELECT data FROM messages WHERE topic_id = ?1 \
+             ORDER BY timestamp ASC, id ASC LIMIT 1",
+            params![topic_id],
+            |row| row.get(0),
+        )
+        .optional()?;
+    let Some(data) = data else {
+        return Ok(false);
+    };
+    Ok(point_cloud2_has_intensity(&data)?)
+}
+
 fn message_working_bytes(raw_bytes: u64) -> Rosbag2Result<u64> {
     raw_bytes
         .checked_mul(2)
@@ -463,11 +511,11 @@ fn message_working_bytes(raw_bytes: u64) -> Rosbag2Result<u64> {
         .ok_or_else(|| Rosbag2Error::InvalidBag("message working-set overflow".into()))
 }
 
-fn xyz_capacity_bytes(point_count: usize) -> Rosbag2Result<u64> {
+fn point_capacity_bytes(point_count: usize, has_intensity: bool) -> Rosbag2Result<u64> {
     u64::try_from(point_count)
         .ok()
-        .and_then(|count| count.checked_mul(12))
-        .ok_or_else(|| Rosbag2Error::InvalidBag("XYZ capacity overflow".into()))
+        .and_then(|count| count.checked_mul(if has_intensity { 16 } else { 12 }))
+        .ok_or_else(|| Rosbag2Error::InvalidBag("point-column capacity overflow".into()))
 }
 
 fn ros_timestamp_ns(message: &PointCloud2Xyz) -> Rosbag2Result<u64> {
@@ -486,7 +534,10 @@ fn ros_timestamp_ns(message: &PointCloud2Xyz) -> Rosbag2Result<u64> {
 
 #[cfg(test)]
 mod tests {
-    use super::{list_topics, Rosbag2PointCloudSource, ROSBAG2_POINT_XYZ_SCHEMA_ID};
+    use super::{
+        list_topics, Rosbag2PointCloudSource, ROSBAG2_POINT_XYZI_SCHEMA_ID,
+        ROSBAG2_POINT_XYZ_SCHEMA_ID,
+    };
     use rusqlite::{params, Connection};
     use spatialrust_core::PointBuffer;
     use spatialrust_records::{
@@ -585,5 +636,69 @@ mod tests {
         drop(fourth);
         assert!(source.next_chunk().is_none());
         assert_eq!(source.memory_tracker().snapshot().current_bytes, 0);
+    }
+
+    fn bag_file_with_intensity() -> (tempfile::TempDir, std::path::PathBuf) {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("sample-intensity.db3");
+        let connection = Connection::open(&path).unwrap();
+        connection
+            .execute_batch(
+                "CREATE TABLE topics(id INTEGER PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL, serialization_format TEXT NOT NULL);\
+                 CREATE TABLE messages(id INTEGER PRIMARY KEY, topic_id INTEGER NOT NULL, timestamp INTEGER NOT NULL, data BLOB NOT NULL);",
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO topics(id,name,type,serialization_format) VALUES(1,?1,?2,'cdr')",
+                params!["/lidar/points", POINT_CLOUD2_TYPE],
+            )
+            .unwrap();
+        for (id, stamp, offset) in [(1_i64, 20_i64, 0.0_f32), (2, 10, 10.0)] {
+            let message = PointCloud2Xyz::try_new_with_intensity(
+                "lidar",
+                7,
+                id as u32,
+                vec![offset, 1.0, 2.0, offset + 1.0, 3.0, 4.0, offset + 2.0, 5.0, 6.0],
+                vec![100.0 + offset, 101.0 + offset, 102.0 + offset],
+            )
+            .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO messages(id,topic_id,timestamp,data) VALUES(?1,1,?2,?3)",
+                    params![id, stamp, encode_point_cloud2_xyz(&message).unwrap()],
+                )
+                .unwrap();
+        }
+        drop(connection);
+        (directory, path)
+    }
+
+    #[test]
+    fn source_preserves_intensity_and_selects_xyzi_schema() {
+        let (_directory, path) = bag_file_with_intensity();
+        let options = StreamOptions::new(2, MemoryBudget::new(1024 * 1024).unwrap()).unwrap();
+        let mut source = Rosbag2PointCloudSource::open(
+            path,
+            "/lidar/points",
+            options,
+            CancellationToken::default(),
+        )
+        .unwrap();
+        assert_eq!(source.schema().id.as_str(), ROSBAG2_POINT_XYZI_SCHEMA_ID);
+
+        let first = source.next_chunk().unwrap().unwrap();
+        assert_eq!(
+            first.record().cloud().field("intensity").unwrap(),
+            &PointBuffer::from_f32(vec![110.0, 111.0])
+        );
+        drop(first);
+        let second = source.next_chunk().unwrap().unwrap();
+        assert_eq!(
+            second.record().cloud().field("intensity").unwrap(),
+            &PointBuffer::from_f32(vec![112.0])
+        );
+        drop(second);
+        assert!(source.next_chunk().is_some());
     }
 }

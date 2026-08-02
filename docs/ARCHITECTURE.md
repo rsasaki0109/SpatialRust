@@ -118,8 +118,8 @@ runtime-independent PointCloud2 CDR and type-negotiation contracts;
 `spatialrust-ros2` owns the optional read-only rosbag2 SQLite source behind
 `rosbag2-sqlite`. Native `rclrs` executors, custom message bindings, and
 compressed bag storage remain separate adapter features. The source emits
-bounded `SpatialRecordChunk` leases and never places ROS 2 or SQLite types in
-`spatialrust-core`.
+bounded XYZ/XYZI `SpatialRecordChunk` leases and never places ROS 2 or SQLite
+types in `spatialrust-core`.
 
 ## Roadmap epics
 

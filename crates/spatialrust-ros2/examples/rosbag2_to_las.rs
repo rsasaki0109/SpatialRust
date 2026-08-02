@@ -12,7 +12,7 @@ use spatialrust_ros2::Rosbag2PointCloudSource;
 
 #[derive(Serialize)]
 struct Receipt {
-    schema: &'static str,
+    schema: String,
     input: String,
     topic: String,
     output: String,
@@ -58,8 +58,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     sink.finish()?;
 
     let snapshot = source.memory_tracker().snapshot();
+    let schema_kind = if source.schema().id.as_str().ends_with(".xyzi") { "xyzi" } else { "xyz" };
     let receipt = Receipt {
-        schema: "spatialrust.rosbag2.pointcloud2.xyz.receipt",
+        schema: format!("spatialrust.rosbag2.pointcloud2.{schema_kind}.receipt"),
         input: input.display().to_string(),
         topic: topic.clone(),
         output: output.display().to_string(),

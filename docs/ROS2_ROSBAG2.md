@@ -6,15 +6,19 @@ rosbag2 bags that store `sensor_msgs/msg/PointCloud2` messages serialized as
 CDR.
 
 The source selects one topic, orders messages by `(timestamp, id)`, decodes
-XYZ `float32` fields, and emits bounded `SpatialRecordChunk` leases. A single
-PointCloud2 message may be split across multiple chunks. SQLite payload,
-decoded message storage, and emitted columns are included in the same hard
-memory budget; no bag copy or full-bag materialization is performed.
+XYZ `float32` fields plus an optional scalar `intensity` `float32` field, and
+emits bounded `SpatialRecordChunk` leases. A single PointCloud2 message may be
+split across multiple chunks. SQLite payload, decoded message storage, and
+emitted columns are included in the same hard memory budget; no bag copy or
+full-bag materialization is performed. The selected topic's schema is fixed at
+open time as either XYZ or XYZI, and a later change in intensity presence fails
+closed.
 
 Native `rclrs` executors, custom ROS message definitions, compressed
-`.db3.zstd` storage, and non-XYZ PointCloud2 attributes are outside this first
-adapter slice. The adapter rejects unsupported topic types and serialization
-formats instead of silently dropping them.
+`.db3.zstd` storage, and PointCloud2 attributes other than float32 intensity
+are outside this adapter slice. The adapter rejects unsupported topic types,
+serialization formats, and intensity layouts instead of silently dropping
+them.
 
 ## Bounded conversion
 

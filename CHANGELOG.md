@@ -23,11 +23,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 - **rosbag2 SQLite PointCloud2 source**: the new feature-gated
   `spatialrust-ros2` crate opens rosbag2 SQLite files read-only, lists topics,
-  decodes CDR `sensor_msgs/msg/PointCloud2` XYZ fields, splits oversized
-  messages into bounded `SpatialRecordChunk` leases, and provides a bounded
-  SQLite-to-LAS example with checksummed input/output manifests. Native ROS 2
-  executors, custom message bindings, compressed bag storage, and non-XYZ
-  attributes remain separate follow-up boundaries.
+  decodes CDR `sensor_msgs/msg/PointCloud2` XYZ fields with optional float32
+  intensity, splits oversized messages into bounded `SpatialRecordChunk`
+  leases, and provides a bounded SQLite-to-LAS example with checksummed
+  input/output manifests. Native ROS 2 executors, custom message bindings,
+  compressed bag storage, and non-float32-intensity attributes remain separate
+  follow-up boundaries.
 - **GPU Euclidean clustering** (`segment-euclidean-gpu`): GPU sparse-grid key
   generation/sort/compaction with deterministic host component labeling,
   `GpuEuclideanClusterExtractor`, `EuclideanClusterExtractor::extract_with_policy`,

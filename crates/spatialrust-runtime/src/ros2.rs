@@ -63,7 +63,7 @@ pub const POINT_CLOUD2_TYPE: &str = "sensor_msgs/msg/PointCloud2";
 /// CDR encapsulation header for little-endian ROS 2 messages.
 const CDR_LE_ENCAP: [u8; 4] = [0x00, 0x01, 0x00, 0x00];
 
-/// Interleaved XYZ PointCloud2 payload.
+/// Interleaved XYZ or XYZ-I PointCloud2 payload.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PointCloud2Xyz {
     /// ROS frame id.
@@ -74,6 +74,8 @@ pub struct PointCloud2Xyz {
     pub stamp_nanosec: u32,
     /// Interleaved XYZ floats.
     pub xyz: Vec<f32>,
+    /// Optional per-point float32 LiDAR intensity values.
+    pub intensity: Option<Vec<f32>>,
 }
 
 impl PointCloud2Xyz {
@@ -89,7 +91,44 @@ impl PointCloud2Xyz {
                 "xyz length must be a multiple of 3".into(),
             ));
         }
-        Ok(Self { frame_id: frame_id.into(), stamp_sec, stamp_nanosec, xyz })
+        Ok(Self { frame_id: frame_id.into(), stamp_sec, stamp_nanosec, xyz, intensity: None })
+    }
+
+    /// Creates a validated XYZ-I cloud.
+    pub fn try_new_with_intensity(
+        frame_id: impl Into<String>,
+        stamp_sec: i32,
+        stamp_nanosec: u32,
+        xyz: Vec<f32>,
+        intensity: Vec<f32>,
+    ) -> RuntimeResult<Self> {
+        Self::try_new_with_optional_intensity(
+            frame_id,
+            stamp_sec,
+            stamp_nanosec,
+            xyz,
+            Some(intensity),
+        )
+    }
+
+    fn try_new_with_optional_intensity(
+        frame_id: impl Into<String>,
+        stamp_sec: i32,
+        stamp_nanosec: u32,
+        xyz: Vec<f32>,
+        intensity: Option<Vec<f32>>,
+    ) -> RuntimeResult<Self> {
+        if xyz.len() % 3 != 0 {
+            return Err(RuntimeError::InvalidConfiguration(
+                "xyz length must be a multiple of 3".into(),
+            ));
+        }
+        if intensity.as_ref().is_some_and(|values| values.len() != xyz.len() / 3) {
+            return Err(RuntimeError::InvalidConfiguration(
+                "intensity length must match the XYZ point count".into(),
+            ));
+        }
+        Ok(Self { frame_id: frame_id.into(), stamp_sec, stamp_nanosec, xyz, intensity })
     }
 
     /// Returns point count.
@@ -99,7 +138,7 @@ impl PointCloud2Xyz {
     }
 }
 
-/// Encodes an XYZ PointCloud2 as ROS 2 CDR little-endian bytes.
+/// Encodes an XYZ or XYZ-I PointCloud2 as ROS 2 CDR little-endian bytes.
 pub fn encode_point_cloud2_xyz(msg: &PointCloud2Xyz) -> RuntimeResult<Vec<u8>> {
     let mut w = CdrWriter::new();
     w.write_encap();
@@ -109,21 +148,70 @@ pub fn encode_point_cloud2_xyz(msg: &PointCloud2Xyz) -> RuntimeResult<Vec<u8>> {
     let width = msg.point_count() as u32;
     w.write_u32(1); // height
     w.write_u32(width);
-    w.write_u32(3); // fields length
+    let intensity = msg.intensity.as_deref();
+    if intensity.is_some_and(|values| values.len() != msg.point_count()) {
+        return Err(RuntimeError::InvalidConfiguration(
+            "intensity length must match the XYZ point count".into(),
+        ));
+    }
+    w.write_u32(if intensity.is_some() { 4 } else { 3 }); // fields length
     write_point_field(&mut w, "x", 0)?;
     write_point_field(&mut w, "y", 4)?;
     write_point_field(&mut w, "z", 8)?;
+    if intensity.is_some() {
+        write_point_field(&mut w, "intensity", 12)?;
+    }
     w.write_bool(false); // is_bigendian
-    w.write_u32(12); // point_step
-    w.write_u32(width.saturating_mul(12)); // row_step
-    let data: Vec<u8> = msg.xyz.iter().flat_map(|v| v.to_le_bytes()).collect();
-    w.write_u32(data.len() as u32);
+    let point_step = if intensity.is_some() { 16 } else { 12 };
+    w.write_u32(point_step); // point_step
+    w.write_u32(width.saturating_mul(point_step)); // row_step
+    let mut data = Vec::with_capacity(msg.point_count() * point_step as usize);
+    for (index, point) in msg.xyz.chunks_exact(3).enumerate() {
+        for value in point {
+            data.extend_from_slice(&value.to_le_bytes());
+        }
+        if let Some(intensity) = intensity {
+            data.extend_from_slice(&intensity[index].to_le_bytes());
+        }
+    }
+    let data_len = u32::try_from(data.len())
+        .map_err(|_| RuntimeError::InvalidConfiguration("PointCloud2 data is too large".into()))?;
+    w.write_u32(data_len);
     w.write_bytes(&data);
     w.write_bool(true); // is_dense
     Ok(w.into_bytes())
 }
 
-/// Decodes an XYZ PointCloud2 from ROS 2 CDR little-endian bytes.
+/// Inspects a PointCloud2 CDR header without materializing its point data.
+pub fn point_cloud2_has_intensity(bytes: &[u8]) -> RuntimeResult<bool> {
+    let mut r = CdrReader::new(bytes)?;
+    r.expect_encap()?;
+    let _stamp_sec = r.read_i32()?;
+    let _stamp_nanosec = r.read_u32()?;
+    let _frame_id = r.read_string()?;
+    let _height = r.read_u32()?;
+    let _width = r.read_u32()?;
+    let field_count = r.read_u32()?;
+    let mut has_intensity = false;
+    for _ in 0..field_count {
+        let name = r.read_string()?;
+        let _offset = r.read_u32()?;
+        let datatype = r.read_u8()?;
+        r.align(4);
+        let count = r.read_u32()?;
+        if name.eq_ignore_ascii_case("intensity") {
+            if count != 1 || datatype != 7 {
+                return Err(RuntimeError::InvalidConfiguration(
+                    "PointCloud2 intensity must be a scalar float32 field".into(),
+                ));
+            }
+            has_intensity = true;
+        }
+    }
+    Ok(has_intensity)
+}
+
+/// Decodes an XYZ or XYZ-I PointCloud2 from ROS 2 CDR little-endian bytes.
 pub fn decode_point_cloud2_xyz(bytes: &[u8]) -> RuntimeResult<PointCloud2Xyz> {
     let mut r = CdrReader::new(bytes)?;
     r.expect_encap()?;
@@ -136,19 +224,26 @@ pub fn decode_point_cloud2_xyz(bytes: &[u8]) -> RuntimeResult<PointCloud2Xyz> {
     let mut x_offset = None;
     let mut y_offset = None;
     let mut z_offset = None;
+    let mut intensity_offset = None;
     for _ in 0..field_count {
         let name = r.read_string()?;
         let offset = r.read_u32()?;
         let datatype = r.read_u8()?;
         r.align(4);
         let count = r.read_u32()?;
-        if count == 1 && datatype == 7 {
-            match name.to_ascii_lowercase().as_str() {
-                "x" => x_offset = Some(offset),
-                "y" => y_offset = Some(offset),
-                "z" => z_offset = Some(offset),
-                _ => {}
+        match name.to_ascii_lowercase().as_str() {
+            "x" if count == 1 && datatype == 7 => x_offset = Some(offset),
+            "y" if count == 1 && datatype == 7 => y_offset = Some(offset),
+            "z" if count == 1 && datatype == 7 => z_offset = Some(offset),
+            "intensity" => {
+                if count != 1 || datatype != 7 {
+                    return Err(RuntimeError::InvalidConfiguration(
+                        "PointCloud2 intensity must be a scalar float32 field".into(),
+                    ));
+                }
+                intensity_offset = Some(offset);
             }
+            _ => {}
         }
     }
     let is_bigendian = r.read_bool()?;
@@ -158,7 +253,13 @@ pub fn decode_point_cloud2_xyz(bytes: &[u8]) -> RuntimeResult<PointCloud2Xyz> {
     let data = r.read_bytes(data_len)?;
     let _is_dense = r.read_bool()?;
     if height == 0 || width == 0 {
-        return Ok(PointCloud2Xyz { frame_id, stamp_sec, stamp_nanosec, xyz: Vec::new() });
+        return PointCloud2Xyz::try_new_with_optional_intensity(
+            frame_id,
+            stamp_sec,
+            stamp_nanosec,
+            Vec::new(),
+            intensity_offset.map(|_| Vec::new()),
+        );
     }
     let x_offset = x_offset.ok_or_else(|| {
         RuntimeError::InvalidConfiguration("PointCloud2 is missing float32 x field".into())
@@ -169,10 +270,14 @@ pub fn decode_point_cloud2_xyz(bytes: &[u8]) -> RuntimeResult<PointCloud2Xyz> {
     let z_offset = z_offset.ok_or_else(|| {
         RuntimeError::InvalidConfiguration("PointCloud2 is missing float32 z field".into())
     })?;
-    let last_offset = x_offset.max(y_offset).max(z_offset);
+    let last_offset = [x_offset, y_offset, z_offset]
+        .into_iter()
+        .chain(intensity_offset)
+        .max()
+        .expect("XYZ offsets are present");
     if u64::from(point_step) < u64::from(last_offset) + 4 {
         return Err(RuntimeError::InvalidConfiguration(
-            "PointCloud2 point_step does not contain XYZ fields".into(),
+            "PointCloud2 point_step does not contain the declared fields".into(),
         ));
     }
     let height = height as usize;
@@ -202,6 +307,7 @@ pub fn decode_point_cloud2_xyz(bytes: &[u8]) -> RuntimeResult<PointCloud2Xyz> {
         RuntimeError::InvalidConfiguration("PointCloud2 XYZ capacity overflow".into())
     })?;
     let mut xyz = Vec::with_capacity(xyz_capacity);
+    let mut intensity = intensity_offset.map(|_| Vec::with_capacity(points));
     for row in 0..height {
         for column in 0..width {
             let base = row
@@ -211,27 +317,36 @@ pub fn decode_point_cloud2_xyz(bytes: &[u8]) -> RuntimeResult<PointCloud2Xyz> {
                     RuntimeError::InvalidConfiguration("PointCloud2 point offset overflow".into())
                 })?;
             for offset in [x_offset, y_offset, z_offset] {
-                let start = base.checked_add(offset as usize).ok_or_else(|| {
-                    RuntimeError::InvalidConfiguration("PointCloud2 field offset overflow".into())
-                })?;
-                let end = start.checked_add(4).ok_or_else(|| {
-                    RuntimeError::InvalidConfiguration("PointCloud2 field end overflow".into())
-                })?;
-                if end > data.len() {
-                    return Err(RuntimeError::InvalidConfiguration(
-                        "PointCloud2 data shorter than field layout".into(),
-                    ));
-                }
-                let value = if is_bigendian {
-                    f32::from_be_bytes(data[start..end].try_into().unwrap())
-                } else {
-                    f32::from_le_bytes(data[start..end].try_into().unwrap())
-                };
-                xyz.push(value);
+                xyz.push(read_point_f32(data, base, offset, is_bigendian)?);
+            }
+            if let (Some(intensity), Some(offset)) = (&mut intensity, intensity_offset) {
+                intensity.push(read_point_f32(data, base, offset, is_bigendian)?);
             }
         }
     }
-    PointCloud2Xyz::try_new(frame_id, stamp_sec, stamp_nanosec, xyz)
+    PointCloud2Xyz::try_new_with_optional_intensity(
+        frame_id,
+        stamp_sec,
+        stamp_nanosec,
+        xyz,
+        intensity,
+    )
+}
+
+fn read_point_f32(data: &[u8], base: usize, offset: u32, is_bigendian: bool) -> RuntimeResult<f32> {
+    let start = base.checked_add(offset as usize).ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 field offset overflow".into())
+    })?;
+    let end = start.checked_add(4).ok_or_else(|| {
+        RuntimeError::InvalidConfiguration("PointCloud2 field end overflow".into())
+    })?;
+    if end > data.len() {
+        return Err(RuntimeError::InvalidConfiguration(
+            "PointCloud2 data shorter than field layout".into(),
+        ));
+    }
+    let bytes = data[start..end].try_into().unwrap();
+    Ok(if is_bigendian { f32::from_be_bytes(bytes) } else { f32::from_le_bytes(bytes) })
 }
 
 fn write_point_field(w: &mut CdrWriter, name: &str, offset: u32) -> RuntimeResult<()> {
@@ -426,8 +541,9 @@ impl<'a> CdrReader<'a> {
 #[cfg(test)]
 mod tests {
     use super::{
-        decode_point_cloud2_xyz, encode_point_cloud2_xyz, write_point_field, CatalogRos2Adapter,
-        CdrWriter, LoopbackRos2Node, PointCloud2Xyz, Ros2Adapter, POINT_CLOUD2_TYPE,
+        decode_point_cloud2_xyz, encode_point_cloud2_xyz, point_cloud2_has_intensity,
+        write_point_field, CatalogRos2Adapter, CdrWriter, LoopbackRos2Node, PointCloud2Xyz,
+        Ros2Adapter, POINT_CLOUD2_TYPE,
     };
 
     #[test]
@@ -441,10 +557,27 @@ mod tests {
         let msg =
             PointCloud2Xyz::try_new("lidar", 1, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]).unwrap();
         let bytes = encode_point_cloud2_xyz(&msg).unwrap();
+        assert!(!point_cloud2_has_intensity(&bytes).unwrap());
         let mut node = LoopbackRos2Node::new();
         node.publish("/points", bytes.clone());
         let taken = node.take("/points").unwrap();
         let decoded = decode_point_cloud2_xyz(&taken).unwrap();
+        assert_eq!(decoded, msg);
+    }
+
+    #[test]
+    fn roundtrips_xyzi_cdr_and_loopback() {
+        let msg = PointCloud2Xyz::try_new_with_intensity(
+            "lidar",
+            1,
+            2,
+            vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            vec![10.0, 20.0],
+        )
+        .unwrap();
+        let bytes = encode_point_cloud2_xyz(&msg).unwrap();
+        assert!(point_cloud2_has_intensity(&bytes).unwrap());
+        let decoded = decode_point_cloud2_xyz(&bytes).unwrap();
         assert_eq!(decoded, msg);
     }
 
@@ -485,5 +618,6 @@ mod tests {
         assert_eq!(decoded.stamp_sec, 3);
         assert_eq!(decoded.stamp_nanosec, 4);
         assert_eq!(decoded.xyz, vec![1.0, 2.0, 3.0, 2.0, 3.0, 4.0, 3.0, 4.0, 5.0, 4.0, 5.0, 6.0,]);
+        assert_eq!(decoded.intensity, Some(vec![4.0, 5.0, 6.0, 7.0]));
     }
 }
