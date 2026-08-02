@@ -32,4 +32,5 @@ winit = { workspace = true, optional = true }
 
 [dev-dependencies]
 spatialrust-core.workspace = true
+spatialrust-records.workspace = true
 spatialrust-sync.workspace = true

@@ -12,7 +12,9 @@ split across multiple chunks. SQLite payload, decoded message storage, and
 emitted columns are included in the same hard memory budget; no bag copy or
 full-bag materialization is performed. The selected topic's schema is fixed at
 open time as either XYZ or XYZI, and a later change in intensity presence fails
-closed.
+closed. Each emitted record also carries frame/timestamp metadata and a
+protocol-independent `RecordProvenance` envelope identifying the input bag,
+topic, and deterministic chunk sequence.
 
 Native `rclrs` executors, custom ROS message definitions, compressed
 `.db3.zstd` storage, and PointCloud2 attributes other than float32 intensity
@@ -36,3 +38,55 @@ cargo run -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_to_las
 
 The path is explicit at the application boundary, so input and output can
 remain on separate storage roots. Sensor data is not a repository fixture.
+
+## Inventory and batch conversion
+
+For a bag with multiple topics, inventory the SQLite metadata first. This
+does not decode or copy point data:
+
+```bash
+cargo run -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_ingest -- \
+  /media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/rosbag2_2020_09_23-15_58_07.db3 \
+  --list-topics \
+  --receipt /media/sasaki/aiueo/spatialrust-results/rosbag2-inventory.json
+```
+
+Batch conversion selects every CDR `sensor_msgs/msg/PointCloud2` topic by
+default. Unsupported topics are recorded as `skipped`; use repeated
+`--topic` flags to make a focused selection:
+
+```bash
+cargo run -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_ingest -- \
+  /media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/rosbag2_2020_09_23-15_58_07.db3 \
+  --output-dir /media/sasaki/aiueo/spatialrust-results/rosbag2-batch \
+  --topic /lidar_front/points_raw \
+  --topic /lidar_rear/points_raw
+```
+
+The batch command writes one LAS and one topic receipt per converted topic,
+plus `rosbag2.ingest.receipt.json` and
+`rosbag2.ingest.manifest.json` in the output directory by default. Relative
+paths can instead be placed under separate `--input-root` and `--output-root`
+directories. Output names include the SQLite topic id, so distinct topics do
+not overwrite one another.
+
+## Bounded synchronization preview
+
+The sync boundary can retain a small front/rear episode, build a deterministic
+timestamp index, and count nearest-topic matches without materializing the bag:
+
+```bash
+cargo run -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_sync_preview -- \
+  /media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/rosbag2_2020_09_23-15_58_07.db3 \
+  /media/sasaki/aiueo/spatialrust-results/rosbag2-sync-preview.receipt.json \
+  /lidar_front/points_raw \
+  /lidar_rear/points_raw \
+  8 \
+  100000000
+```
+
+The optional final arguments are the maximum retained chunks per topic and
+the maximum pairing delta in nanoseconds. The receipt contains only counts,
+schemas, frames, limits, and match statistics. It records that PointCloud2
+header stamps were treated as one external ROS time domain for this preview;
+no clock calibration or sensor-frame identity transform is inferred.

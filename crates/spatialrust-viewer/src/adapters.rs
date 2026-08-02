@@ -1,4 +1,4 @@
-#[cfg(any(feature = "scene", feature = "mapping", feature = "camera", feature = "semantic"))]
+#[cfg(any(feature = "scene", feature = "mapping", feature = "camera"))]
 use spatialrust_math::Vec3;
 #[cfg(any(feature = "scene", feature = "mapping", feature = "camera"))]
 use spatialrust_viz::LinearRgba;
@@ -339,6 +339,48 @@ pub fn semantic_visual(
     )
 }
 
+/// Converts lineage-preserving record entities to semantic centroid points.
+///
+/// The wrapper slice remains the source of the adapter receipt; only the
+/// renderer-facing XYZ and confidence columns are materialized.
+#[cfg(feature = "semantic")]
+pub fn spatial_record_entity_visual(
+    namespace: &str,
+    entities: &[spatialrust_semantic::SpatialRecordEntity],
+) -> ViewerResult<AdaptedVisual> {
+    let visible: Vec<_> = entities
+        .iter()
+        .filter_map(|record_entity| {
+            record_entity.entity().centroid.map(|point| (record_entity, point))
+        })
+        .collect();
+    let mut x = Vec::with_capacity(visible.len());
+    let mut y = Vec::with_capacity(visible.len());
+    let mut z = Vec::with_capacity(visible.len());
+    let mut confidence = Vec::with_capacity(visible.len());
+    for (record_entity, point) in &visible {
+        x.push(point.x);
+        y.push(point.y);
+        z.push(point.z);
+        confidence.push(
+            record_entity
+                .entity()
+                .labels
+                .iter()
+                .map(|label| label.confidence)
+                .fold(0.0_f32, f32::max),
+        );
+    }
+    point_scalar_visual(
+        namespace,
+        "record-semantic",
+        "Record semantic entities",
+        source_identity(entities),
+        entities.len(),
+        PointScalarColumns { x, y, z, name: "confidence", values: confidence },
+    )
+}
+
 #[cfg(any(feature = "scene", feature = "semantic"))]
 struct PointScalarColumns<'a> {
     x: Vec<f32>,
@@ -600,5 +642,32 @@ mod tests {
             panic!("semantic adapter must produce points");
         };
         assert_eq!(points.scalar.unwrap().values, &[0.8]);
+    }
+
+    #[cfg(feature = "semantic")]
+    #[test]
+    fn record_semantic_adapter_keeps_wrapper_identity_and_confidence() {
+        let entities = [spatialrust_semantic::SpatialRecordEntity {
+            entity: spatialrust_semantic::SemanticEntity {
+                id: spatialrust_semantic::EntityId::new("record:bag:lidar:3"),
+                centroid: Some(Vec3::new(4.0, 5.0, 6.0)),
+                labels: vec![spatialrust_semantic::OpenVocabLabel {
+                    text: "vehicle".into(),
+                    confidence: 0.9,
+                }],
+                embedding: None,
+            },
+            provenance: spatialrust_records::RecordProvenance::unknown(),
+            frame_id: spatialrust_core::FrameId::new("map"),
+            timestamp: spatialrust_core::Timestamp::from_nanos(11),
+        }];
+        let adapted = super::spatial_record_entity_visual("room", &entities).unwrap();
+        assert_eq!(adapted.receipt.source_identity, entities.as_ptr() as usize);
+        assert_eq!(adapted.receipt.source_count, 1);
+        assert_eq!(adapted.receipt.output_count, 1);
+        let VisualPrimitive::Points(points) = adapted.as_layer().unwrap().primitive else {
+            panic!("record semantic adapter must produce points");
+        };
+        assert_eq!(points.scalar.unwrap().values, &[0.9]);
     }
 }

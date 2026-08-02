@@ -261,7 +261,7 @@ Data/Stream/Device live in `spatialrust-arrow` behind independent features.
 
 | Slice | Status | Scope | Feature |
 | --- | --- | --- | --- |
-| 91A | Complete | `SchemaId`/`SchemaVersion`/`SchemaDescriptor`, compatibility reports, `SpatialRecord` | `records` |
+| 91A | Complete | `SchemaId`/`SchemaVersion`/`SchemaDescriptor`, compatibility reports, `SpatialRecord`, and validated `RecordProvenance` lineage | `records` |
 | 91B | Complete | `SpatialRecordSource`/`Sink`, `MemoryChunkSource`/`Sink`, migrate with fill/drop policy | `records` |
 | 91C | Complete | Arrow C Data export/import for `PointCloud` struct columns | `arrow-c-data` |
 | 91D | Complete | Arrow C Stream over record sources; CPU Arrow C Device array export/import | `arrow-c-stream`, `arrow-c-device` |
@@ -303,10 +303,16 @@ file codecs via the Foxglove `mcap` crate (no compression codecs by default).
 | 92B | Complete | `FrameGraph` / `FrameEdge` with inverse-aware lookup | `sync` |
 | 92C | Complete | Topic channels + `MemoryEpisode` index; file MCAP XYZ round-trip | `sync`, `sync-mcap` |
 | 92D | Complete | `DeterministicReplayer` with nearest-topic bundling | `sync` |
+| 92E | Complete | Bounded `MemoryEpisodeBuilder` with record/point/allocated-byte admission | `sync` |
+| 92F | Complete | `SpatialRecord` frame transformation preserving columns, metadata, and provenance; bounded rosbag2 sync preview | `sync`, `rosbag2-sqlite` |
 
 Epic 92 completes when stamped multimodal records can be indexed deterministically,
-bundled within a sync window, and transformed across a calibrated frame graph.
-Optional `sync-mcap` write/read path covers XYZ-only stamped clouds today.
+collected under explicit episode limits, bundled within a sync window, and
+transformed across a calibrated frame graph without dropping record lineage.
+The rosbag2 preview treats PointCloud2 header stamps as one external ROS time
+domain and reports that assumption explicitly; it does not claim clock
+calibration. Optional `sync-mcap` write/read path covers XYZ-only stamped clouds
+today.
 
 ## Epic 93 delivery slices
 
@@ -320,6 +326,7 @@ and pose-graph substrate first.
 | 93B | Complete | `RelativeMotionEstimator` + `SyntheticOdometry` | `mapping` |
 | 93C | Complete | `PoseGraph` relative edges and root localization | `mapping` |
 | 93D | Complete | Loop-closure candidate search by translation distance | `mapping` |
+| 93E | Complete | Bounded topic-prefix scan odometry with generic matcher and optional ICP adapter | `mapping`, `mapping-scan-icp` |
 
 Epic 93 completes when stamped poses can be buffered, differenced into relative
 motion, and localized on a pose graph with loop-closure candidates without
@@ -336,6 +343,19 @@ pulling ROS 2 or MCAP file codecs.
 | 98 | `interchange-gltf`, `interchange-openusd` | `spatialrust-interchange` |
 | 99 | `distribute` | `spatialrust-distribute` |
 | 100 | `platform` | `spatialrust-platform` |
+
+## Epic 94 delivery slices
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 94A | Complete | Direct `PointCloud` column integration into TSDF with explicit sensor origin and no temporary interleave | `scene` |
+| 94B | Complete | Explicit sensor-to-volume pose integration without transformed-cloud allocation | `scene` |
+
+## Epic 95 delivery slices
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 95A | Complete | `SpatialRecordEntity` centroid/label/embedding adapter with copied provenance and frame/timestamp metadata | `semantic` |
 
 ## Epic 99 delivery slices
 
@@ -810,6 +830,7 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | 135B | Normal, voxel, plane, cluster, correspondence, bounds, and search-radius overlays | canonical algorithm fixtures and stable overlay identity |
 | 136A | Mesh, surfel, Gaussian, trajectory, pose graph, frustum, and semantic adapters | source-identity and geometry-count parity tests |
 | 136B | Synchronized RGB/depth/cloud timeline and projection inspection | deterministic timestamp/frame alignment fixtures |
+| 136C | Lineage-preserving `SpatialRecordEntity` semantic viewer adapter | source identity/count, confidence, and generated-byte receipt tests |
 | 137A | Camera-driven bounded LOD request planner with hysteresis and cancellation | deterministic selection across traversal order and camera jitter |
 | 137B | Leased chunk upload, GPU eviction, progressive refinement, and hard budgets | memory/upload/point/in-flight denial, cancellation, and cleanup receipts |
 | 138A | WASM/WebGPU renderer and serializable viewer state | browser smoke test and native/Web headless parity |
@@ -840,6 +861,7 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | --- | --- | --- |
 | 136A | Complete | Mesh zero-copy pointer identity plus surfel, Gaussian RGB/opacity, trajectory, pose-graph, calibrated frustum, and semantic centroid adapters with exact source/output/generated-byte receipts |
 | 136B | Complete | Borrowed RGB/depth/cloud frames, bounded timestamp skew, ordered nearest-frame selection, exact dimension/payload validation, calibrated pixel unprojection, and invalid-depth handling |
+| 136C | Complete | Direct `SpatialRecordEntity` slice adaptation retains wrapper source identity while materializing only renderer XYZ/confidence columns with explicit generated-byte accounting |
 
 ### Epic 137 progress
 

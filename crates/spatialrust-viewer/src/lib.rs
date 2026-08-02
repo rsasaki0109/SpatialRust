@@ -20,12 +20,12 @@ mod timeline;
 pub use adapters::camera_frustum_visual;
 #[cfg(feature = "scene-gaussian")]
 pub use adapters::gaussian_visual;
-#[cfg(feature = "semantic")]
-pub use adapters::semantic_visual;
 #[cfg(feature = "scene")]
 pub use adapters::{mesh_visual, surfel_visual};
 #[cfg(feature = "mapping")]
 pub use adapters::{pose_graph_visual, trajectory_visual};
+#[cfg(feature = "semantic")]
+pub use adapters::{semantic_visual, spatial_record_entity_visual};
 pub use adapters::{AdaptedGeometry, AdaptedVisual, AdapterReceipt};
 pub use controls::{InputAction, ViewerController};
 pub use error::{ViewerError, ViewerResult};

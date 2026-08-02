@@ -9,6 +9,6 @@ mod error;
 mod search;
 
 pub use embedding::{cosine_similarity, Embedding};
-pub use entity::{EntityId, OpenVocabLabel, SemanticEntity};
+pub use entity::{record_entity_id, EntityId, OpenVocabLabel, SemanticEntity, SpatialRecordEntity};
 pub use error::{SemanticError, SemanticResult};
 pub use search::{FusionScore, MultimodalFusion, SemanticSearchIndex};

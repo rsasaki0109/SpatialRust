@@ -6,6 +6,7 @@
 mod error;
 mod motion;
 mod pose_graph;
+mod scan;
 mod trajectory;
 #[cfg(feature = "vision-odometry")]
 mod vision;
@@ -13,6 +14,9 @@ mod vision;
 pub use error::{MappingError, MappingResult};
 pub use motion::{DeltaMotion, RelativeMotionEstimator, SyntheticOdometry};
 pub use pose_graph::{PoseGraph, PoseGraphEdge, PoseNodeId};
+#[cfg(feature = "scan-icp")]
+pub use scan::IcpScanMatcher;
+pub use scan::{ScanMatcher, ScanOdometry, ScanOdometryConfig, ScanOdometryResult};
 pub use trajectory::{StampedPose, Trajectory};
 #[cfg(feature = "vision-odometry")]
 pub use vision::{delta_from_monocular_odometry, delta_from_rgbd_odometry};

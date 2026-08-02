@@ -12,8 +12,8 @@ use spatialrust_io::{BoundedSpool, SpoolOptions};
 use spatialrust_math::{Mat4, Vec3};
 use spatialrust_records::{
     BoundedSpatialRecordSource, CancellationToken, ChunkIdentity, MemoryReservation, MemoryTracker,
-    RecordsError, RecordsResult, SchemaDescriptor, SpatialRecord, SpatialRecordChunk,
-    StreamOptions,
+    RecordProvenance, RecordsError, RecordsResult, SchemaDescriptor, SpatialRecord,
+    SpatialRecordChunk, StreamOptions,
 };
 
 /// Per-chunk operation that preserves the input schema.
@@ -139,6 +139,7 @@ impl<S: BoundedSpatialRecordSource> BoundedSpatialRecordSource for ChunkMapSourc
                 Ok(cloud) => cloud,
                 Err(error) => return Some(Err(error)),
             };
+            let provenance = input.record().provenance().clone();
             drop(input);
             if cloud.is_empty() {
                 continue;
@@ -151,7 +152,11 @@ impl<S: BoundedSpatialRecordSource> BoundedSpatialRecordSource for ChunkMapSourc
                 sequence: self.next_sequence,
                 point_offset: self.next_point_offset,
             };
-            let record = match SpatialRecord::try_new(self.schema.clone(), cloud) {
+            let record = match SpatialRecord::try_new_with_provenance(
+                self.schema.clone(),
+                cloud,
+                provenance,
+            ) {
                 Ok(record) => record,
                 Err(error) => return Some(Err(error)),
             };
@@ -393,6 +398,7 @@ pub struct StreamingVoxelSource {
     cancellation: CancellationToken,
     max_chunk_bytes: u64,
     metadata: SpatialMetadata,
+    provenance: RecordProvenance,
     _spool: BoundedSpool,
     _merge_reservation: MemoryReservation,
     runs: Vec<RunCursor>,
@@ -422,6 +428,7 @@ impl StreamingVoxelSource {
             .map_err(|error| RecordsError::InvalidConfiguration(error.to_string()))?;
         let mut run_metas = Vec::with_capacity(config.max_runs);
         let mut metadata = None;
+        let mut provenance = None;
         let leaf = f64::from(config.leaf_size());
         let mut expected_sequence = 0_u64;
         let mut expected_point_offset = 0_u64;
@@ -448,6 +455,19 @@ impl StreamingVoxelSource {
                 .ok_or_else(|| RecordsError::ReceiptOverflow("voxel input point offset".into()))?;
             if metadata.is_none() {
                 metadata = Some(cloud.metadata().clone());
+            }
+            let chunk_provenance = chunk.record().provenance().clone().without_sequence();
+            match &provenance {
+                None => provenance = Some(chunk_provenance),
+                Some(expected)
+                    if expected.source_id == chunk_provenance.source_id
+                        && expected.source_uri == chunk_provenance.source_uri
+                        && expected.stream_id == chunk_provenance.stream_id => {}
+                Some(_) => {
+                    return Err(RecordsError::InvalidChunk(
+                        "voxel input provenance changed across chunks".into(),
+                    ));
+                }
             }
             let (x, y, z) = positions(cloud)?;
             for local_index in 0..cloud.len() {
@@ -499,6 +519,7 @@ impl StreamingVoxelSource {
             cancellation,
             max_chunk_bytes,
             metadata: metadata.unwrap_or_default(),
+            provenance: provenance.unwrap_or_default(),
             _spool: spool,
             _merge_reservation: merge_reservation,
             runs,
@@ -619,7 +640,11 @@ impl BoundedSpatialRecordSource for StreamingVoxelSource {
         };
         let identity =
             ChunkIdentity { sequence: self.next_sequence, point_offset: self.next_point_offset };
-        let record = match SpatialRecord::try_new(self.schema.clone(), cloud) {
+        let record = match SpatialRecord::try_new_with_provenance(
+            self.schema.clone(),
+            cloud,
+            self.provenance.clone(),
+        ) {
             Ok(record) => record,
             Err(error) => return Some(Err(error)),
         };

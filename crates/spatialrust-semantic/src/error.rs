@@ -12,4 +12,7 @@ pub enum SemanticError {
     /// Missing entity or embedding.
     #[error("missing `{0}`")]
     Missing(String),
+    /// Wrapped point-cloud validation failure.
+    #[error(transparent)]
+    Spatial(#[from] spatialrust_core::SpatialError),
 }

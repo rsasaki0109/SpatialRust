@@ -9,6 +9,18 @@ pub enum SyncError {
     /// Invalid configuration.
     #[error("invalid sync configuration: {0}")]
     InvalidConfiguration(String),
+    /// A bounded episode would exceed one of its configured limits.
+    #[error("episode {resource} limit exceeded: requested {requested} with {current} already held (limit {limit})")]
+    EpisodeLimitExceeded {
+        /// Resource whose limit was exceeded.
+        resource: &'static str,
+        /// Resource amount requested by the next record.
+        requested: u64,
+        /// Resource amount already held by the builder.
+        current: u64,
+        /// Configured maximum resource amount.
+        limit: u64,
+    },
     /// Missing frame or topic.
     #[error("missing `{0}`")]
     #[allow(dead_code)]
