@@ -1,0 +1,31 @@
+[package]
+name = "spatialrust-ros2"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "ROS 2 message and rosbag2 adapters for SpatialRust"
+
+[features]
+default = []
+# Read-only rosbag2 SQLite storage. Native rclrs executors remain out of scope.
+rosbag2-sqlite = ["dep:rusqlite"]
+
+[dependencies]
+spatialrust-core.workspace = true
+spatialrust-records.workspace = true
+spatialrust-runtime = { workspace = true, default-features = false, features = ["ros2"] }
+thiserror.workspace = true
+rusqlite = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde.workspace = true
+serde_json.workspace = true
+spatialrust-io = { workspace = true, features = ["io-las", "streaming", "io-manifest"] }
+tempfile.workspace = true
+
+[[example]]
+name = "rosbag2_to_las"
+required-features = ["rosbag2-sqlite"]

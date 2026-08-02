@@ -46,6 +46,8 @@ pub use spatialrust_platform as platform;
 pub use spatialrust_records as records;
 #[cfg(feature = "render-wgpu")]
 pub use spatialrust_render_wgpu as render_wgpu;
+#[cfg(feature = "rosbag2-sqlite")]
+pub use spatialrust_ros2 as ros2;
 #[cfg(feature = "runtime")]
 pub use spatialrust_runtime as runtime;
 #[cfg(feature = "scene")]

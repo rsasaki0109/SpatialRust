@@ -111,6 +111,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-semantic` | Provisional | Embeddings, entities, multimodal fusion/search |
 | `spatialrust-episode` | Provisional | Episode schema, annotation, augmentation, eval, provenance |
 | `spatialrust-runtime` | Provisional | Bounded pipelines and execution graphs, explicit transfer receipts, tracing/diagnostics; ROS 2 adapters gated |
+| `spatialrust-ros2` | Provisional | Read-only rosbag2 SQLite PointCloud2 CDR source; native executors and custom message bindings remain separate |
 | `spatialrust-interchange` | Provisional | glTF JSON mesh bridge; USDA ASCII OpenUSD stage adapter |
 | `spatialrust-distribute` | Provisional | Partition graphs, topo schedules, backpressure queues, named measurable transfers |
 | `spatialrust-platform` | Provisional | Stability registry, conformance summaries, security checklist, LTS policy, performance budgets, release gate |
@@ -126,7 +127,7 @@ spatialrust-<area> / feature-<name>
 
 ## Explicitly out of 1.0 scope
 
-- `spatialrust-ros2` (not started)
+- native `rclrs` execution and custom ROS 2 message bindings
 - `gpu-cuda` backend (feature placeholder only)
 - `SpatialTensor` chunked views (provisional API in `spatialrust-core`)
 

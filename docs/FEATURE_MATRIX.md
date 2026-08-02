@@ -15,6 +15,7 @@ should normally depend on `spatialrust` and select only the profiles they need.
 | `gpu-aoso-staging` | AoSoA core packing plus GPU-resident frame APIs | Chained GPU execution with explicit readback |
 | `serde` | serde derives for core/math metadata and schemas | Configuration and metadata serialization |
 | `io-manifest` | explicit storage roots plus file manifests | SHA-256/size receipts for local IO |
+| `rosbag2-sqlite` | read-only rosbag2 SQLite PointCloud2 CDR source | Bounded XYZ records in `spatialrust-ros2`; native ROS 2 executors remain separate |
 
 The Python extension selects its supported meta-crate features in
 `crates/spatialrust-py/Cargo.toml`. It is intentionally outside the Rust
@@ -27,6 +28,7 @@ workspace because its build requires a Python toolchain.
 | `spatialrust-core` | schema, metadata, `PointCloud`, tensors, execution contracts | serde, AoSoA packing | none |
 | `spatialrust-math` | vector/matrix/pose math | serde | none |
 | `spatialrust-io` | no format enabled by default | PCD, PLY, LAS/LAZ, E57, COPC, HTTP COPC, explicit roots/manifests | format and checksum crates are optional |
+| `spatialrust-ros2` | ROS 2 type contracts through `spatialrust-runtime` | read-only rosbag2 SQLite PointCloud2 CDR streaming | `rusqlite` is isolated behind `rosbag2-sqlite` |
 | `spatialrust-search` | KD-tree | graph, parallel queries | none |
 | `spatialrust-filtering` | voxel | GPU voxel, outlier, crop, FPS, MLS | wgpu/search optional |
 | `spatialrust-features` | normals | ISS, orientation, boundary, GPU normals | wgpu/search optional |
