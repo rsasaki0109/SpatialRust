@@ -830,6 +830,7 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | 135B | Normal, voxel, plane, cluster, correspondence, bounds, and search-radius overlays | canonical algorithm fixtures and stable overlay identity |
 | 136A | Mesh, surfel, Gaussian, trajectory, pose graph, frustum, and semantic adapters | source-identity and geometry-count parity tests |
 | 136B | Synchronized RGB/depth/cloud timeline and projection inspection | deterministic timestamp/frame alignment fixtures |
+| 136C | Lineage-preserving `SpatialRecordEntity` semantic viewer adapter | source identity/count, confidence, and generated-byte receipt tests |
 | 137A | Camera-driven bounded LOD request planner with hysteresis and cancellation | deterministic selection across traversal order and camera jitter |
 | 137B | Leased chunk upload, GPU eviction, progressive refinement, and hard budgets | memory/upload/point/in-flight denial, cancellation, and cleanup receipts |
 | 138A | WASM/WebGPU renderer and serializable viewer state | browser smoke test and native/Web headless parity |
@@ -860,6 +861,7 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 | --- | --- | --- |
 | 136A | Complete | Mesh zero-copy pointer identity plus surfel, Gaussian RGB/opacity, trajectory, pose-graph, calibrated frustum, and semantic centroid adapters with exact source/output/generated-byte receipts |
 | 136B | Complete | Borrowed RGB/depth/cloud frames, bounded timestamp skew, ordered nearest-frame selection, exact dimension/payload validation, calibrated pixel unprojection, and invalid-depth handling |
+| 136C | Complete | Direct `SpatialRecordEntity` slice adaptation retains wrapper source identity while materializing only renderer XYZ/confidence columns with explicit generated-byte accounting |
 
 ### Epic 137 progress
 
