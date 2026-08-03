@@ -12,6 +12,7 @@ mod controls;
 mod error;
 #[cfg(feature = "native")]
 mod native;
+mod observatory;
 mod overlay;
 mod state;
 mod studio;
@@ -32,6 +33,10 @@ pub use controls::{InputAction, ViewerController};
 pub use error::{ViewerError, ViewerResult};
 #[cfg(feature = "native")]
 pub use native::{NativeViewer, NativeViewerOptions};
+pub use observatory::{
+    CalibrationArtifact, CalibrationObservatoryState, ClockCalibration, FrameTransform,
+    CALIBRATION_OBSERVATORY_STATE_VERSION,
+};
 pub use overlay::{DebugOverlay, OverlayGeometry, OverlayKind};
 pub use state::{
     AttributeSummary, InspectorSelection, LayerPresentation, ViewerState, ViewportSize,

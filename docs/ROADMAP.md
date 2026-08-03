@@ -964,3 +964,4 @@ evidence, and fail-closed acceptance gates live in
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | 145A | Complete | Portable Spatial Studio state and one-screen source-bound dashboard for layers, timeline, calibration/TF gates, and explicit pipeline metrics | `spatialrust-viewer::StudioState`, `rosbag2_studio`, external `145a-spatial-studio-v2` JSON/HTML/manifest |
+| 145B | Complete | TF/Calibration Observatory for artifact status, clock diagnostics, source-bound edges, graph topology, and fail-closed composition admission | `spatialrust-viewer::CalibrationObservatoryState`, `rosbag2_calibration_observatory`, external `145b-tf-calibration-observatory` JSON/HTML/manifest |

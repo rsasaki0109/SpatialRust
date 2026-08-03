@@ -80,6 +80,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   manifest under the external SSD. It requires exact source identity and
   refuses to admit mismatched TF or unmanifested E2E geometry; the canonical
   dashboard remains visibly blocked for mapping until real calibration exists.
+- **TF / Calibration Observatory (145B)**: `spatialrust-viewer` now exposes
+  artifact, clock, frame-edge, graph-topology, and composition admission state.
+  The feature-gated `rosbag2_calibration_observatory` example emits a portable
+  JSON state, HTML dashboard, and checksummed manifest. Opaque artifacts are
+  never treated as applied calibration, and source-mismatched TF edges remain
+  outside the accepted graph.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
