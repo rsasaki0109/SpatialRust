@@ -913,3 +913,48 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 - Mandatory native windowing, browser, Python, ROS 2, CUDA, or codec dependencies
   in the default workspace feature set.
 - Claims of universal interactive frame-rate parity across adapters or hardware.
+
+## Operational v1.3 program (Epics 141–146)
+
+The foundation and Visual programs are complete. The next program validates the
+same contracts against external rosbag2 data without moving sensor or derived
+artifacts into the repository. Its canonical input, storage roots, current
+evidence, and fail-closed acceptance gates live in
+[`docs/REAL_DATA_ACCEPTANCE.md`](REAL_DATA_ACCEPTANCE.md).
+
+| Epic | Status | Depends on | Outcome |
+| --- | --- | --- | --- |
+| 141 | Active | 91–100, 133–140 | External-data acceptance contract, canonical rosbag2 baseline, and reproducible run identity |
+| 142 | Active | 141 | External SSD result-root preflight, run-scoped manifests, resumable checkpoints, and cleanup |
+| 143 | Active | 141–142 | Full rosbag2 → records → sync → odometry → TSDF → semantic → Viewer/glTF/OpenUSD E2E |
+| 144 | Complete | 142–143 | Memory/transfer/latency budgets, benchmark receipts, failure recovery, and deterministic rerun comparison |
+| 145 | Planned | 143–144 | ROS 2 publish, edge/distributed partition execution, and optional AI runtime boundaries |
+| 146 | Planned | 141–145 | API stability, Python/docs/CI updates, security review, and v1.3 release receipt |
+
+### Epic 141 acceptance slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 141A | Complete | Canonical external input snapshot, topic counts, output hashes, storage policy, and fail-closed downstream gates | [`docs/REAL_DATA_ACCEPTANCE.md`](REAL_DATA_ACCEPTANCE.md) |
+| 141B | Complete | Automated absolute-root/free-space preflight and local checksum manifest validation | `storage-preflight`, `DatasetManifest::validate_local_files`, and rosbag2 CLI smoke |
+
+### Epic 142 progress
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 142A | Complete | Atomic run-scoped stage checkpoint, complete-run resume verification, and narrow temp cleanup | `rosbag2_e2e --resume`, external `142a-checkpoint-smoke` receipt |
+| 142B | Complete | Persisted bounded XYZ/XYZI ingest episode and summary for partial-stage resume, with manifest-tracked survivors | `--stop-after ingest` → `--resume`, external `142b-ingest-resume-smoke-v2` receipt/manifest |
+
+### Epic 143 progress
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 143A | Complete | Bounded external rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF vertical smoke | `rosbag2_e2e`, external receipt/manifest under `v1-3/143a-e2e-smoke` |
+| 143B | Active | Calibration/frame readiness gate, then calibration-aware full-bag mapping, semantic quality, and interchange acceptance | external readiness receipt is fail-closed; pending clock/frame artifacts and full-run receipt |
+
+### Epic 144 progress
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 144A | Complete | Versioned stage timing, bounded memory observations, explicit transfer counters, and fresh-source baseline | Receipt version 2 under `v1-3/144-performance-fresh` |
+| 144B | Complete | Three-run variance, bounded-smoke stage budgets, failure-safe non-overwriting comparison, and deterministic hash report | `rosbag2_e2e_compare`, external `144-comparison-smoke-v2` receipt |

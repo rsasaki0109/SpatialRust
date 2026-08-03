@@ -21,6 +21,42 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **v1.3 real-data acceptance contract**: `docs/REAL_DATA_ACCEPTANCE.md` fixes
+  the external rosbag2 snapshot, topic/count/hash baseline, SSD result-root
+  policy, bounded synchronization evidence, and explicit calibration and
+  downstream E2E gates. Sensor and derived artifacts remain outside the repo.
+- **External storage preflight and manifest verification**: the opt-in
+  `storage-preflight` feature rejects relative/missing output roots and free
+  space below the caller's floor before source admission. `DatasetManifest`
+  can read and re-hash existing JSON receipts, while `rosbag2_ingest` exposes
+  `--min-output-free-bytes` and `--verify-manifest` for bounded runs.
+- **Bounded rosbag2 E2E smoke**: the feature-gated `rosbag2_e2e` example now
+  connects external PointCloud2 records through deterministic synchronization,
+  bounded ICP odometry, TSDF extraction, record semantic entities, borrowed
+  Viewer layers, embedded glTF export, and a re-hashed run manifest. It keeps
+  calibration and front/rear fusion explicitly out of the acceptance claim.
+- **Run-scoped checkpointing**: `rosbag2_e2e` atomically records each completed
+  stage, refuses to overwrite partial runs, verifies complete runs with
+  `--resume`, and removes only stale checkpoint temp files. Ingested
+  PointXYZ/PointXYZI episodes now have an atomic, provenance-preserving binary
+  artifact and JSON summary so `--stop-after ingest` can resume downstream
+  work without reopening the rosbag2 database; those survivors are tracked as
+  auxiliary manifest entries.
+- **E2E performance receipt**: receipt version 2 records fresh-vs-resume mode,
+  per-stage wall time, configured/observed memory, and explicit host/device
+  transfer counters. The canonical bounded smoke has a 68.7-second observed
+  pipeline, with ICP odometry as the dominant measured stage.
+- **E2E repeated-run comparison**: `rosbag2_e2e_compare` rejects mixed input or
+  resume receipts, compares canonical input/episode/glTF hashes, computes
+  median/p95/CV stage statistics, and evaluates bounded-smoke budgets in an
+  atomic external comparison receipt.
+- **Calibration/frame readiness inventory (143B)**:
+  `rosbag2_calibration_readiness` records the canonical bag's front/rear and
+  relevant ROS topic presence, optionally registers external clock/frame files
+  by size and SHA-256, and exits non-zero with an atomic blocker receipt when
+  either artifact is absent. It does not interpret artifact contents or apply
+  transforms. The canonical receipt is external at
+  `/media/sasaki/aiueo/spatialrust-results/v1-3/143b-calibration-readiness/rosbag2.calibration.readiness.json`.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema

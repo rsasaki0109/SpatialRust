@@ -109,6 +109,7 @@ image = { version = "0.24.9", default-features = false }
 kamadak-exif = "0.6.1"
 exr = { version = "=1.72.0", default-features = false }
 tempfile = "3"
+fs2 = "0.4.3"
 winit = "0.30"
 serde_json = "1"
 sha2 = "0.10"
