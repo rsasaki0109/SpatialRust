@@ -535,6 +535,39 @@ payload bytes, set `publish_ready:false` and `mapping_admitted:false`, and
 exited with status 2. The output manifest still records the canonical input and
 readiness receipt for auditability.
 
+## 145I Edge Partition Execution Receipt evidence
+
+`rosbag2_edge_partition` consumes the source-bound JSON produced by
+`rosbag2_live_publish` and executes its bounded packets through an explicit
+edge-to-host `PartitionGraph`. The adapter validates the deterministic
+`edge -> host` topology, creates one named `HostToNetwork` explicit-copy
+transfer per packet, and admits transfers through a bounded
+`BoundedTransferQueue`; no implicit transport, device copy, frame transform, or
+front/rear fusion is introduced.
+
+The primary positive evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145i-edge-partition-v2/edge-partition.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145i-edge-partition-v2/edge-partition.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145i-edge-partition-v2/edge-partition.manifest.json`
+
+The run consumed the canonical 145H live-publish receipt, admitted four of
+four packets, completed four named transfers in deterministic order, and
+recorded a queue depth of two with two soft-limit trips and zero hard rejects.
+The explicit-copy ledger counted 1,856,132 bytes. The state is
+`partition_ready:true` but `mapping_admitted:false`: the canonical readiness
+receipt still has no registered clock/frame calibration, so the partition
+receipt is an inspection/execution result rather than calibrated-world mapping.
+
+The negative source-binding probe is retained at:
+
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145i-edge-partition-validation-probe-v2/edge-partition.json`.
+
+It used a deliberately wrong expected SHA, emitted zero transfers, set
+`partition_ready:false` and `mapping_admitted:false`, and exited with status 2.
+Its manifest retains the upstream live-publish and calibration-readiness inputs
+for auditability.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,

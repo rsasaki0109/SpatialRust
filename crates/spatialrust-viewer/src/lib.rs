@@ -11,6 +11,7 @@ mod adapters;
 mod controls;
 mod dataset_health;
 mod digital_twin;
+mod edge_partition;
 mod error;
 mod live_publish;
 mod map_diff;
@@ -42,6 +43,10 @@ pub use dataset_health::{
 };
 pub use digital_twin::{
     DigitalTwinAsset, DigitalTwinState, DigitalTwinSummary, DIGITAL_TWIN_STATE_VERSION,
+};
+pub use edge_partition::{
+    EdgePartition, EdgePartitionState, EdgePartitionSummary, EdgePartitionTransfer,
+    EDGE_PARTITION_STATE_VERSION,
 };
 pub use error::{ViewerError, ViewerResult};
 pub use live_publish::{

@@ -24,6 +24,7 @@ rusqlite = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 spatialrust-ai.workspace = true
+spatialrust-distribute.workspace = true
 spatialrust-io = { workspace = true, features = ["io-las", "streaming", "io-manifest", "storage-preflight"] }
 spatialrust-interchange = { workspace = true, features = ["gltf"] }
 spatialrust-mapping = { workspace = true, features = ["scan-icp"] }
@@ -95,3 +96,6 @@ required-features = ["rosbag2-sqlite"]
 [[example]]
 name = "rosbag2_live_publish"
 required-features = ["rosbag2-sqlite"]
+
+[[example]]
+name = "rosbag2_edge_partition"
