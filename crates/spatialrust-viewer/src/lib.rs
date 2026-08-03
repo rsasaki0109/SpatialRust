@@ -12,6 +12,7 @@ mod controls;
 mod dataset_health;
 mod digital_twin;
 mod error;
+mod live_publish;
 mod map_diff;
 #[cfg(feature = "native")]
 mod native;
@@ -43,6 +44,10 @@ pub use digital_twin::{
     DigitalTwinAsset, DigitalTwinState, DigitalTwinSummary, DIGITAL_TWIN_STATE_VERSION,
 };
 pub use error::{ViewerError, ViewerResult};
+pub use live_publish::{
+    LivePublishPacket, LivePublishState, LivePublishSummary, LivePublishTopic,
+    LivePublishTransport, LIVE_PUBLISH_STATE_VERSION,
+};
 pub use map_diff::{
     MapDiffBounds, MapDiffCell, MapDiffMap, MapDiffState, MapDiffSummary, MAP_DIFF_STATE_VERSION,
 };

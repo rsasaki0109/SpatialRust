@@ -928,7 +928,7 @@ evidence, and fail-closed acceptance gates live in
 | 142 | Active | 141 | External SSD result-root preflight, run-scoped manifests, resumable checkpoints, and cleanup |
 | 143 | Active | 141–142 | Full rosbag2 → records → sync → odometry → TSDF → semantic → Viewer/glTF/OpenUSD E2E |
 | 144 | Complete | 142–143 | Memory/transfer/latency budgets, benchmark receipts, failure recovery, and deterministic rerun comparison |
-| 145 | Planned | 143–144 | ROS 2 publish, edge/distributed partition execution, and optional AI runtime boundaries |
+| 145 | Active | 143–144 | ROS 2 publish, edge/distributed partition execution, and optional AI runtime boundaries |
 | 146 | Planned | 141–145 | API stability, Python/docs/CI updates, security review, and v1.3 release receipt |
 
 ### Epic 141 acceptance slices
@@ -970,3 +970,4 @@ evidence, and fail-closed acceptance gates live in
 | 145E | Complete | AI Semantic Overlay with deterministic mock inference, explicit CPU tensor transfer receipt, RGB class palette, bounded source-index predictions, canvas dashboard, and fail-closed source/frame/calibration gates | `spatialrust-viewer::SemanticOverlayState`, `rosbag2_semantic_overlay`, external `145e-ai-semantic-overlay` JSON/HTML/manifest |
 | 145F | Complete | Portable glTF/USD Digital Twin with byte-identical canonical glTF, explicit ASCII USDA companion/reference layer, optional source-bound semantic attachment, polished dashboard, and fail-closed source/frame/calibration gates | `spatialrust-viewer::DigitalTwinState`, `rosbag2_digital_twin`, external `145f-digital-twin` JSON/HTML/manifest plus negative validation probe |
 | 145G | Complete | Source-bound Dataset Health Dashboard aggregating canonical identity, topic inventory, mesh/readiness checks, 145A–145F stage health, storage receipts, and fail-closed mapping admission | `spatialrust-viewer::DatasetHealthState`, `rosbag2_dataset_health`, external `145g-dataset-health-v2` JSON/HTML/manifest plus wrong-source negative probe |
+| 145H | Complete | Source-bound ROS 2 PointCloud2 Live Publish Bridge with explicit topic/frame mapping, bounded deterministic packets, CPU CDR loopback round-trip receipt, transport counters, dashboard, and fail-closed source/frame/calibration gates | `spatialrust-viewer::LivePublishState`, `rosbag2_live_publish`, external `145h-live-publish-v2` JSON/HTML/manifest plus wrong-source validation probe |
