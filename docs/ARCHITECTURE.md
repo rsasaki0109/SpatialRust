@@ -119,8 +119,9 @@ runtime-independent PointCloud2 CDR and type-negotiation contracts;
 `rosbag2-sqlite`. Native `rclrs` executors, custom message bindings, and
 compressed bag storage remain separate adapter features. The source emits
 bounded XYZ/XYZI `SpatialRecordChunk` leases with frame/timestamp metadata and
-protocol-independent `spatialrust-records::RecordProvenance`; it never places
-ROS 2 or SQLite types in `spatialrust-core`.
+protocol-independent `spatialrust-records::RecordProvenance`; its bounded
+TF inventory preserves source frame edges without composing or applying them.
+It never places ROS 2 or SQLite types in `spatialrust-core`.
 
 Versioned record envelopes remain in `spatialrust-records`. Their concrete
 point fields are described by `SchemaDescriptor`, capture time and coordinate

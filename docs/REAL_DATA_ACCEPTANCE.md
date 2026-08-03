@@ -203,6 +203,27 @@ the command exits non-zero after atomically preserving the blocker receipt.
 This is an intentional fail-closed result: the two sensor frames remain
 separate and no calibration-aware mapping claim is made.
 
+### Separate-source TF parser evidence
+
+An additional read-only inventory was run against
+`/media/sasaki/aiueo/datasets/migrated/autoware_data/all-sensors-bag1/all-sensors-bag1_compressed_0.db3`,
+whose SHA-256 is
+`74e5915719a7b7b4820b5339207eeade0c656deaa38b8e5b5e8d18787a58ac22`. This is
+not the canonical 2020 capture: it is a separate 2022 sensor fixture with
+`/tf_static`, `/tf`, and `velodyne_*` frame names. The source-bound receipt
+decoded one `/tf_static` message containing 14 transforms, observed all four
+requested Velodyne frames, and passed its own identity and truncation checks:
+
+`/media/sasaki/aiueo/spatialrust-results/v1-3/143b-tf-inventory/all-sensors-bag1.tf-static.inventory.json`
+
+The guard was also exercised with the canonical bag and the fixture SHA as the
+expected identity. It wrote
+`/media/sasaki/aiueo/spatialrust-results/v1-3/143b-tf-inventory/canonical-wrong-source.tf-static.inventory.json`
+and exited non-zero because the observed canonical SHA is
+`b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8`. This
+evidence validates the TF parser and source binding only; it does not register
+clock or front/rear calibration for the canonical input.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
@@ -258,6 +279,7 @@ The comparison receipt is
 | Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
 | Bounded vertical E2E | rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF receipt | Accepted as 143A smoke only |
 | Calibration/frame readiness | External inventory receipt for required topics and registered calibration artifacts | Recorded as 143B blocker; not ready |
+| Source-bound TF inventory | Exact input SHA, bounded `/tf_static` CDR decode, and required-frame receipt | Accepted as separate-source parser evidence; not canonical calibration |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
 | Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Not accepted; no extrinsic evidence |
 | Mapping/reconstruction | Bounded odometry, pose graph, TSDF, and mesh receipt on this input | Not accepted; 143A prefix smoke only |
@@ -286,8 +308,10 @@ Every future E2E run must record:
 
 ## Next implementation gates
 
-1. Provide and register the clock calibration and front/rear extrinsic artifacts;
-   the 143B readiness receipt currently records both as missing.
+1. Provide and register clock calibration and front/rear extrinsic artifacts for
+   the canonical input; the separate `all-sensors-bag1` TF receipt cannot
+   satisfy this gate and the 143B readiness receipt currently records both as
+   missing.
 2. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
    TSDF run before adding any semantic model runtime.
 3. Add semantic, Viewer, and interchange quality receipts only after the
