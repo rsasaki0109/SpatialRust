@@ -274,6 +274,27 @@ expected input SHA and is rejected before any frame edge enters the graph.
 This is an inspection/dashboard acceptance slice, not acceptance of fused
 world mapping.
 
+## 145B TF / Calibration Observatory evidence
+
+rosbag2_calibration_observatory exposes calibration artifact status, clock
+diagnostics, source-bound TF edges, graph topology, and composition state in a
+portable JSON/HTML observatory. It does not interpret opaque calibration
+files, apply a clock model, compose TF, or accept edges from another input
+identity.
+
+The external evidence is:
+
+- /media/sasaki/aiueo/spatialrust-results/v1-3/145b-tf-calibration-observatory/calibration-observatory.json
+- /media/sasaki/aiueo/spatialrust-results/v1-3/145b-tf-calibration-observatory/calibration-observatory.html
+- /media/sasaki/aiueo/spatialrust-results/v1-3/145b-tf-calibration-observatory/calibration-observatory.manifest.json
+
+The canonical state has an exact input SHA match, but both calibration
+artifacts are not_registered, the clock model is not applied, the TF
+inventory has a different expected input SHA, zero edges are accepted, and
+calibration_admitted:false. The HTML panel renders NO ACCEPTED EDGES and
+the source mismatch as blockers. This is observability evidence; it does not
+change the blocked mapping acceptance row.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
