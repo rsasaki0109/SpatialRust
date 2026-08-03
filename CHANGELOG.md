@@ -86,6 +86,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   JSON state, HTML dashboard, and checksummed manifest. Opaque artifacts are
   never treated as applied calibration, and source-mismatched TF edges remain
   outside the accepted graph.
+- **One-command Replay Demo (145C)**: `spatialrust-viewer` now exposes a
+  portable deterministic replay trace state. The feature-gated
+  `rosbag2_replay_demo` example performs a bounded, exact-source rosbag2 replay
+  and emits JSON, a static HTML dashboard, and a checksummed manifest on the
+  external SSD. Replay readiness is separate from mapping admission, so absent
+  clock/TF calibration remains visibly fail-closed.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema

@@ -14,6 +14,7 @@ mod error;
 mod native;
 mod observatory;
 mod overlay;
+mod replay;
 mod state;
 mod studio;
 mod timeline;
@@ -38,6 +39,10 @@ pub use observatory::{
     CALIBRATION_OBSERVATORY_STATE_VERSION,
 };
 pub use overlay::{DebugOverlay, OverlayGeometry, OverlayKind};
+pub use replay::{
+    ReplayArtifact, ReplayDemoState, ReplaySample, ReplaySummary, ReplayTopic,
+    REPLAY_DEMO_STATE_VERSION,
+};
 pub use state::{
     AttributeSummary, InspectorSelection, LayerPresentation, ViewerState, ViewportSize,
     VIEWER_STATE_VERSION,

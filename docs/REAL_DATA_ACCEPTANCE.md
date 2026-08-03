@@ -295,6 +295,38 @@ calibration_admitted:false. The HTML panel renders NO ACCEPTED EDGES and
 the source mismatch as blockers. This is observability evidence; it does not
 change the blocked mapping acceptance row.
 
+## 145C one-command deterministic replay evidence
+
+`rosbag2_replay_demo` provides a bounded, one-command replay trace for the
+canonical bag. It requires an absolute input and output path plus the exact
+expected input SHA-256, retains two records per canonical lidar topic, verifies
+the deterministic replay order with a second walk, and writes a portable JSON
+state, static HTML dashboard, and checksummed manifest. It uses the
+PointCloud2 header stamp in the explicit `ros2-external` domain; it does not
+apply clock calibration, TF composition, or front/rear fusion.
+
+The external evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145c-one-command-replay-demo/replay-demo.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145c-one-command-replay-demo/replay-demo.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145c-one-command-replay-demo/replay-demo.manifest.json`
+
+The observed input SHA-256 exactly matches
+`b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8`. The
+bounded episode contains four records and 115,972 points across the front and
+rear topics, with two matched bundles. The maximum matched timestamp delta is
+92,435,944 ns inside the configured 100,000,000 ns window, and deterministic
+order verification passed. The manifest re-hashes three local entries totaling
+713,683,963 bytes; the output directory was created on the external SSD after
+a free-space preflight.
+
+The resulting state is `replay_ready:true` and
+`mapping_admitted:false`. `calibration_applied:false` remains visible, and the
+dashboard lists the missing clock calibration, unapplied TF/frame composition,
+and source-bound calibration requirement as blockers. This is a replay and
+inspection acceptance slice, not acceptance of calibrated or fused-world
+mapping.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
