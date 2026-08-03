@@ -184,6 +184,26 @@ This is accepted as vertical contract smoke evidence only. It does not apply
 clock calibration or a front/rear extrinsic, does not fuse the two frames, and
 does not claim full-bag mapping or semantic model quality.
 
+## 144A performance baseline evidence
+
+Receipt version 2 adds an explicit `performance` section with a run mode,
+stage wall-clock measurements, bounded memory observations, and host/device
+transfer counters. The fresh-source smoke at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/144-performance-fresh/` retained
+the same four records and 115,972 points. Its observed pipeline time was
+68,684,129,437 ns (about 68.7 s): ingest 119,269,194 ns, synchronization
+210,747 ns, ICP odometry 65,411,209,963 ns, TSDF 2,478,270,941 ns, glTF
+interchange 669,718,884 ns, and semantic/Viewer 5,329,307 ns.
+
+The configured source and episode budgets were 268,435,456 bytes each; the
+retained episode was 1,855,552 bytes and peak source tracking was 993,608
+bytes. Host-to-device, device-to-host, and hidden-device-copy counters were
+all zero. The manifest re-hashed five local entries totaling 738,239,481
+bytes. The receipt and manifest are:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/144-performance-fresh/rosbag2.e2e.receipt.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/144-performance-fresh/rosbag2.e2e.manifest.json`
+
 ## Acceptance gates
 
 | Gate | Requirement | Current status |
@@ -194,6 +214,7 @@ does not claim full-bag mapping or semantic model quality.
 | Deterministic ingest | Repeated output trees produce the same per-topic LAS hashes and counts | Accepted |
 | Output-root preflight | Absolute external result root and minimum free-space floor checked before bag access | Accepted |
 | Run-scoped checkpoint | Atomic stage state, complete-run verification, persisted ingest artifact, and no-overwrite partial resume | Accepted as 142A/142B smoke |
+| Performance receipt | Stage wall time, bounded memory observations, and explicit host/device transfer counters | Accepted as 144A smoke |
 | Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
 | Bounded vertical E2E | rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF receipt | Accepted as 143A smoke only |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |

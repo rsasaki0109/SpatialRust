@@ -12,6 +12,7 @@ use std::{
     fs::File,
     io::{BufReader, BufWriter, Read, Write},
     path::{Path, PathBuf},
+    time::Instant,
 };
 
 use serde::{Deserialize, Serialize};
@@ -41,7 +42,9 @@ use spatialrust_viewer::{mesh_visual, spatial_record_entity_visual};
 use spatialrust_viz::{LayerId, LinearRgba, VisualScene};
 
 const RECEIPT_SCHEMA: &str = "spatialrust.rosbag2.e2e.receipt";
-const RECEIPT_VERSION: u32 = 1;
+const RECEIPT_VERSION: u32 = 2;
+const PERFORMANCE_SCHEMA: &str = "spatialrust.rosbag2.e2e.performance";
+const PERFORMANCE_VERSION: u32 = 1;
 const CHECKPOINT_SCHEMA: &str = "spatialrust.rosbag2.e2e.checkpoint";
 const CHECKPOINT_VERSION: u32 = 1;
 const INGEST_CHECKPOINT_SCHEMA: &str = "spatialrust.rosbag2.e2e.ingest";
@@ -86,7 +89,9 @@ struct E2eReceipt {
     output_dir: String,
     front_topic: String,
     rear_topic: String,
+    run_mode: &'static str,
     storage: StorageReceipt,
+    performance: PerformanceReceipt,
     ingest: IngestReceipt,
     sync: SyncReceipt,
     odometry: OdometryReceipt,
@@ -138,6 +143,42 @@ struct StorageReceipt {
     required_free_bytes: u64,
     available_before_bytes: u64,
     available_after_pipeline_bytes: u64,
+}
+
+#[derive(Serialize)]
+struct PerformanceReceipt {
+    schema: &'static str,
+    version: u32,
+    observed_pipeline_wall_ns: u64,
+    stages: StageTimingReceipt,
+    memory: MemoryReceipt,
+    transfers: TransferReceipt,
+}
+
+#[derive(Serialize)]
+struct StageTimingReceipt {
+    preflight_wall_ns: u64,
+    ingest_wall_ns: u64,
+    sync_wall_ns: u64,
+    odometry_wall_ns: u64,
+    tsdf_wall_ns: u64,
+    interchange_wall_ns: u64,
+    semantic_viewer_wall_ns: u64,
+}
+
+#[derive(Serialize)]
+struct MemoryReceipt {
+    configured_source_budget_bytes: u64,
+    configured_episode_budget_bytes: u64,
+    retained_episode_bytes: u64,
+    peak_source_bytes: u64,
+}
+
+#[derive(Serialize)]
+struct TransferReceipt {
+    host_to_device_bytes: u64,
+    device_to_host_bytes: u64,
+    hidden_device_copies: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -253,10 +294,13 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let config = parse_args(env::args().skip(1))?;
+    let pipeline_started = Instant::now();
     let roots = StorageRoots::new(None, Some(config.output_root.clone()));
+    let preflight_started = Instant::now();
     let before = roots.preflight_output(config.min_output_free_bytes)?;
     let input = config.input.clone();
     let output_dir = roots.resolve_output(&config.output_dir)?;
+    let preflight_wall_ns = elapsed_wall_ns(preflight_started)?;
     let checkpoint_path = output_dir.join("rosbag2.e2e.checkpoint.json");
     let episode_path = output_dir.join(EPISODE_CHECKPOINT_FILE);
     let ingest_checkpoint_path = output_dir.join(INGEST_CHECKPOINT_FILE);
@@ -265,11 +309,13 @@ fn run() -> Result<(), Box<dyn Error>> {
     let limits =
         EpisodeLimits::new(max_records, DEFAULT_EPISODE_MAX_POINTS, DEFAULT_EPISODE_MAX_BYTES);
     let output_exists = output_dir.exists();
+    let run_mode = if output_exists { "ingested-artifact-resume" } else { "fresh-source-ingest" };
     let temporary_files_removed = if output_exists && config.resume {
         remove_run_temps(&[&checkpoint_path, &episode_path, &ingest_checkpoint_path])?
     } else {
         0
     };
+    let ingest_started = Instant::now();
     let (mut checkpoint, episode, ingest) = if output_exists {
         if !config.resume {
             return Err(format!(
@@ -390,6 +436,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         )?;
         (checkpoint, episode, ingest)
     };
+    let ingest_wall_ns = elapsed_wall_ns(ingest_started)?;
 
     if config.stop_after_ingest {
         eprintln!(
@@ -404,6 +451,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     let front_id = TopicId::new(config.front_topic.clone());
     let rear_id = TopicId::new(config.rear_topic.clone());
     let window = SyncWindow { max_delta_ns: config.max_delta_ns, max_uncertainty_ns: 0 };
+    let sync_started = Instant::now();
     let mut replayer = DeterministicReplayer::new(&episode);
     let mut matched_front_stamps = BTreeSet::new();
     let mut matched_bundles = 0_u64;
@@ -422,6 +470,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         return Err("no front/rear bundles matched within the configured window".into());
     }
     advance_checkpoint(&mut checkpoint, &checkpoint_path, CheckpointStage::Synchronized, &[])?;
+    let sync_wall_ns = elapsed_wall_ns(sync_started)?;
 
     let front_records: Vec<StampedRecord> = episode
         .records()
@@ -435,6 +484,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         return Err("at least two synchronized front records are required for odometry".into());
     }
     let front_episode = MemoryEpisode::from_records(front_records);
+    let odometry_started = Instant::now();
     let odometry =
         ScanOdometry::try_new(ScanOdometryConfig::new(front_episode.records().len(), 3))?;
     let matcher = IcpScanMatcher::new(IcpConfig {
@@ -444,7 +494,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     });
     let odometry_result = odometry.estimate(&front_episode, &front_id, &matcher)?;
     advance_checkpoint(&mut checkpoint, &checkpoint_path, CheckpointStage::Odometry, &[])?;
+    let odometry_wall_ns = elapsed_wall_ns(odometry_started)?;
 
+    let tsdf_started = Instant::now();
     let mut volume = TsdfVolume::try_new(TSDF_ORIGIN, TSDF_VOXEL_SIZE, TSDF_DIMS, TSDF_TRUNCATION)?;
     let mut integrated_points = 0_u64;
     for (record, pose) in front_episode.records().iter().zip(odometry_result.trajectory.samples()) {
@@ -458,6 +510,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     }
     let mesh = volume.extract_mesh(1.0);
     advance_checkpoint(&mut checkpoint, &checkpoint_path, CheckpointStage::Tsdf, &[])?;
+    let tsdf_wall_ns = elapsed_wall_ns(tsdf_started)?;
+
+    let interchange_started = Instant::now();
     let gltf_json = export_triangle_mesh_gltf_json(&mesh)?;
     let (gltf_vertices, gltf_indices) = import_triangle_mesh_gltf_json(&gltf_json)?;
     let gltf_path = output_dir.join("tsdf.mesh.gltf");
@@ -468,7 +523,9 @@ fn run() -> Result<(), Box<dyn Error>> {
         CheckpointStage::Interchange,
         std::slice::from_ref(&gltf_path),
     )?;
+    let interchange_wall_ns = elapsed_wall_ns(interchange_started)?;
 
+    let semantic_viewer_started = Instant::now();
     let mut entities = Vec::with_capacity(front_episode.records().len());
     for record in front_episode.records() {
         entities.push(SpatialRecordEntity::try_from_record(
@@ -490,10 +547,13 @@ fn run() -> Result<(), Box<dyn Error>> {
     visual_scene.add_layer(mesh_layer)?;
     visual_scene.add_layer(semantic_layer)?;
     advance_checkpoint(&mut checkpoint, &checkpoint_path, CheckpointStage::Viewer, &[])?;
+    let semantic_viewer_wall_ns = elapsed_wall_ns(semantic_viewer_started)?;
 
     let after = StoragePreflight::check(&config.output_root, config.min_output_free_bytes)?;
     let receipt_path = output_dir.join("rosbag2.e2e.receipt.json");
     let manifest_path = output_dir.join("rosbag2.e2e.manifest.json");
+    let peak_source_bytes =
+        ingest.topics.iter().map(|topic| topic.peak_source_bytes).max().unwrap_or(0);
     let receipt = E2eReceipt {
         schema: RECEIPT_SCHEMA,
         version: RECEIPT_VERSION,
@@ -501,11 +561,37 @@ fn run() -> Result<(), Box<dyn Error>> {
         output_dir: output_dir.display().to_string(),
         front_topic: config.front_topic.clone(),
         rear_topic: config.rear_topic.clone(),
+        run_mode,
         storage: StorageReceipt {
             root: before.root.display().to_string(),
             required_free_bytes: before.required_free_bytes,
             available_before_bytes: before.available_bytes,
             available_after_pipeline_bytes: after.available_bytes,
+        },
+        performance: PerformanceReceipt {
+            schema: PERFORMANCE_SCHEMA,
+            version: PERFORMANCE_VERSION,
+            observed_pipeline_wall_ns: elapsed_wall_ns(pipeline_started)?,
+            stages: StageTimingReceipt {
+                preflight_wall_ns,
+                ingest_wall_ns,
+                sync_wall_ns,
+                odometry_wall_ns,
+                tsdf_wall_ns,
+                interchange_wall_ns,
+                semantic_viewer_wall_ns,
+            },
+            memory: MemoryReceipt {
+                configured_source_budget_bytes: ingest.source_memory_budget_bytes,
+                configured_episode_budget_bytes: ingest.episode_max_bytes,
+                retained_episode_bytes: ingest.retained_bytes,
+                peak_source_bytes,
+            },
+            transfers: TransferReceipt {
+                host_to_device_bytes: 0,
+                device_to_host_bytes: 0,
+                hidden_device_copies: 0,
+            },
         },
         ingest: ingest.clone(),
         sync: SyncReceipt {
@@ -756,6 +842,10 @@ fn next_value(
     flag: &str,
 ) -> Result<String, Box<dyn Error>> {
     args.next().ok_or_else(|| format!("{flag} requires another value").into())
+}
+
+fn elapsed_wall_ns(started: Instant) -> Result<u64, Box<dyn Error>> {
+    u64::try_from(started.elapsed().as_nanos()).map_err(|_| "wall-clock duration overflow".into())
 }
 
 struct LoadedEpisode {

@@ -42,6 +42,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   artifact and JSON summary so `--stop-after ingest` can resume downstream
   work without reopening the rosbag2 database; those survivors are tracked as
   auxiliary manifest entries.
+- **E2E performance receipt**: receipt version 2 records fresh-vs-resume mode,
+  per-stage wall time, configured/observed memory, and explicit host/device
+  transfer counters. The canonical bounded smoke has a 68.7-second observed
+  pipeline, with ICP odometry as the dominant measured stage.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
