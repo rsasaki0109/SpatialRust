@@ -35,6 +35,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   bounded ICP odometry, TSDF extraction, record semantic entities, borrowed
   Viewer layers, embedded glTF export, and a re-hashed run manifest. It keeps
   calibration and front/rear fusion explicitly out of the acceptance claim.
+- **Run-scoped checkpointing**: `rosbag2_e2e` atomically records each completed
+  stage, refuses to overwrite partial runs, verifies complete runs with
+  `--resume`, and removes only stale checkpoint temp files.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema

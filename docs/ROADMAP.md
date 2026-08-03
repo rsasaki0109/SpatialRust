@@ -925,7 +925,7 @@ evidence, and fail-closed acceptance gates live in
 | Epic | Status | Depends on | Outcome |
 | --- | --- | --- | --- |
 | 141 | Active | 91–100, 133–140 | External-data acceptance contract, canonical rosbag2 baseline, and reproducible run identity |
-| 142 | Planned | 141 | External SSD result-root preflight, run-scoped manifests, resumable checkpoints, and cleanup |
+| 142 | Active | 141 | External SSD result-root preflight, run-scoped manifests, resumable checkpoints, and cleanup |
 | 143 | Active | 141–142 | Full rosbag2 → records → sync → odometry → TSDF → semantic → Viewer/glTF/OpenUSD E2E |
 | 144 | Planned | 142–143 | Memory/transfer/latency budgets, benchmark receipts, failure recovery, and deterministic rerun comparison |
 | 145 | Planned | 143–144 | ROS 2 publish, edge/distributed partition execution, and optional AI runtime boundaries |
@@ -937,6 +937,13 @@ evidence, and fail-closed acceptance gates live in
 | --- | --- | --- | --- |
 | 141A | Complete | Canonical external input snapshot, topic counts, output hashes, storage policy, and fail-closed downstream gates | [`docs/REAL_DATA_ACCEPTANCE.md`](REAL_DATA_ACCEPTANCE.md) |
 | 141B | Complete | Automated absolute-root/free-space preflight and local checksum manifest validation | `storage-preflight`, `DatasetManifest::validate_local_files`, and rosbag2 CLI smoke |
+
+### Epic 142 progress
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 142A | Complete | Atomic run-scoped stage checkpoint, complete-run resume verification, and narrow temp cleanup | `rosbag2_e2e --resume`, external `142a-checkpoint-smoke` receipt |
+| 142B | Planned | Persisted intermediate artifacts for partial-stage resume and survivor cleanup policy | pending stage artifact format |
 
 ### Epic 143 progress
 

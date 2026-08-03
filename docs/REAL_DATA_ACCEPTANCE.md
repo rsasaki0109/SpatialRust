@@ -117,6 +117,23 @@ the external receipt and manifest under
 messages into 1,536 chunks and 22,266,624 points, and re-hashed four local
 manifest files totaling 1,159,004,968 bytes. No repository data was created.
 
+## 142A checkpoint and resume smoke evidence
+
+The E2E runner now writes an atomic, run-scoped control-plane checkpoint at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/142a-checkpoint-smoke/rosbag2.e2e.checkpoint.json`.
+The real-data smoke advanced through ingest, synchronization, odometry, TSDF,
+interchange, Viewer, receipt, manifest verification, and `complete`. The run
+used the 20 GiB floor, observed 159,474,601,984 bytes before processing and
+159,360,425,984 bytes after the pipeline, and left no checkpoint temp file.
+
+Running the same run directory with `--resume` did not reopen the bag or
+overwrite outputs. It loaded the complete checkpoint and re-hashed the three
+manifested local files, totaling 736,379,864 bytes. Partial checkpoints fail
+closed and remain available for audit; only the narrow atomic checkpoint temp
+file is eligible for cleanup. The checkpoint is intentionally excluded from
+the data manifest because it is advanced after the manifest and is control
+plane state rather than a dataset payload.
+
 ## 143A bounded E2E smoke evidence
 
 The bounded E2E example
@@ -154,6 +171,7 @@ does not claim full-bag mapping or semantic model quality.
 | Bounded ingest | 256 MiB configured memory ceiling and receipt peak below the ceiling | Accepted |
 | Deterministic ingest | Repeated output trees produce the same per-topic LAS hashes and counts | Accepted |
 | Output-root preflight | Absolute external result root and minimum free-space floor checked before bag access | Accepted |
+| Run-scoped checkpoint | Atomic stage state, complete-run resume verification, and fail-closed partial-run handling | Accepted as 142A smoke |
 | Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
 | Bounded vertical E2E | rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF receipt | Accepted as 143A smoke only |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
@@ -184,8 +202,8 @@ Every future E2E run must record:
 
 ## Next implementation gates
 
-1. Add run-scoped checkpoints, survivor cleanup, and deterministic resume to the
-   external result-root policy.
+1. Persist intermediate stage artifacts so partial checkpoints can resume stage
+   work, while retaining the no-overwrite rule.
 2. Provide or register the clock calibration and front/rear extrinsic artifact.
 3. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
    TSDF run before adding any semantic model runtime.
