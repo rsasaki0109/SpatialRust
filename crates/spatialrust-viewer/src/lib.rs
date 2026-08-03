@@ -10,6 +10,7 @@
 mod adapters;
 mod controls;
 mod error;
+mod map_diff;
 #[cfg(feature = "native")]
 mod native;
 mod observatory;
@@ -32,6 +33,9 @@ pub use adapters::{semantic_visual, spatial_record_entity_visual};
 pub use adapters::{AdaptedGeometry, AdaptedVisual, AdapterReceipt};
 pub use controls::{InputAction, ViewerController};
 pub use error::{ViewerError, ViewerResult};
+pub use map_diff::{
+    MapDiffBounds, MapDiffCell, MapDiffMap, MapDiffState, MapDiffSummary, MAP_DIFF_STATE_VERSION,
+};
 #[cfg(feature = "native")]
 pub use native::{NativeViewer, NativeViewerOptions};
 pub use observatory::{

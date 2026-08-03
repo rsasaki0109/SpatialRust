@@ -16,7 +16,9 @@ mod usd;
 pub use error::{InterchangeError, InterchangeResult};
 
 #[cfg(feature = "gltf")]
-pub use gltf::{export_triangle_mesh_gltf_json, import_triangle_mesh_gltf_json};
+pub use gltf::{
+    decode_triangle_mesh_gltf_json, export_triangle_mesh_gltf_json, import_triangle_mesh_gltf_json,
+};
 #[cfg(feature = "openusd")]
 pub use usd::{
     export_stage_usda, import_mesh_from_usda, MemoryUsdStageAdapter, UsdPrimPath, UsdStageAdapter,

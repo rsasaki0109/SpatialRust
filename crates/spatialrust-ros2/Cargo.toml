@@ -73,3 +73,7 @@ required-features = ["rosbag2-sqlite"]
 [[example]]
 name = "rosbag2_replay_demo"
 required-features = ["rosbag2-sqlite"]
+
+[[example]]
+name = "rosbag2_map_diff"
+required-features = ["rosbag2-sqlite"]

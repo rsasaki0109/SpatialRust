@@ -327,6 +327,49 @@ and source-bound calibration requirement as blockers. This is a replay and
 inspection acceptance slice, not acceptance of calibrated or fused-world
 mapping.
 
+## 145D source-bound TSDF/glTF Map Diff evidence
+
+`rosbag2_map_diff` compares two existing E2E run directories without reopening
+the rosbag2 source. It re-validates both manifests, decodes the embedded
+SpatialRust glTF position/index buffers, requires the configured canonical
+input SHA and matching map frame, and computes stable-index displacement,
+added/removed vertex counts, topology/hash equality, and a bounded 16×16
+spatial heatmap. It never transforms either map or fuses uncalibrated frames.
+
+The primary external evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145d-map-diff-v2/map-diff.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145d-map-diff-v2/map-diff.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145d-map-diff-v2/map-diff.manifest.json`
+
+The base map is the 143A two-record canonical smoke at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/143a-e2e-smoke/`; the candidate
+map is a fresh three-record canonical run at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145d-map-diff-candidate/`. Both
+input manifest entries re-hash to
+`b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8` and both
+maps use `lidar_front` coordinates. The candidate contains 1,074,930 vertices
+and 358,310 triangles versus 1,064,304 vertices and 354,768 triangles in the
+base.
+
+With a 1,000 µm change threshold, the diff compared 1,064,304 stable-index
+vertices, found 1,063,615 changed vertices and 10,626 candidate-only vertices,
+and populated 143 of 256 heatmap cells. Maximum displacement was 121,954,730
+µm, mean displacement 25,504,301 µm, and p95 displacement 82,791,440 µm. The
+map hashes and decoded topology are different, so the dashboard visibly
+renders a non-zero change surface. The manifest re-hashes nine local entries
+totaling 759,440,844 bytes.
+
+The state is `compare_ready:true` but `mapping_admitted:false`: the time basis
+is the uncalibrated PointCloud2 header stamp, TF/frame composition is not
+applied, and calibrated source-bound map evidence is still required. A
+same-hash 143A-versus-144 performance comparison under
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145d-map-diff-identical-smoke/`
+also produced zero changed vertices. The negative source-binding probe at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145d-map-diff-validation-probe/map-diff.json`
+withholds all comparison cells and reports `compare_ready:false` when the
+expected input identity is wrong.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
