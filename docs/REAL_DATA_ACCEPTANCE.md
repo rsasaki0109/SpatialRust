@@ -408,6 +408,48 @@ It used a deliberately wrong 64-character SHA, emitted zero predictions,
 recorded `runtime:"not run: source/frame admission failed"`, set
 `overlay_ready:false`, wrote its six-entry manifest, and exited with status 2.
 
+## 145F glTF/USD Digital Twin evidence
+
+`rosbag2_digital_twin` consumes the existing receipt-backed 143A glTF map
+without reopening the canonical DB3. It requires the exact canonical input
+SHA-256 and expected frame, copies the accepted glTF payload byte-for-byte,
+and writes an ASCII USDA companion/reference layer that points explicitly to
+`@digital-twin.gltf@`. The slice intentionally does not add an OpenUSD
+runtime, reinterpret arbitrary USD geometry, or apply an implicit calibration
+transform. An optional semantic overlay is attached only after its own
+source/frame state has passed the same identity checks.
+
+The positive external evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145f-digital-twin/digital-twin.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145f-digital-twin/digital-twin.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145f-digital-twin/digital-twin.gltf`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145f-digital-twin/digital-twin.usda`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145f-digital-twin/digital-twin.manifest.json`
+
+The canonical input SHA-256 is
+`b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8`, and the
+observed frame is `lidar_front`. The bundle preserves 1,064,304 vertices and
+354,768 triangles. The copied glTF SHA-256 is
+`94a2d1405d392bed35182ecd2a69aba80cda3891562799904966fb1350bd1330`, equal
+to the 143A source map by byte comparison. The USDA receipt is 631 bytes and
+contains the canonical SHA, frame, source time basis, geometry counts, and
+the explicit glTF asset reference. The 145E semantic receipt is attached as a
+source-bound auxiliary layer. The manifest re-hashes nine local entries
+totaling 760,092,196 bytes.
+
+The state is `twin_ready:true` and `mapping_admitted:false`. The dashboard
+keeps the header-stamp time basis, absent clock calibration, unapplied TF/frame
+composition, and inspection-only USDA companion semantics visible as
+blockers/notices. No unapproved conversion, calibration, or fusion is treated
+as acceptance evidence.
+
+The negative source-binding probe is retained at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145f-digital-twin-validation-probe/digital-twin.json`.
+It used a deliberately wrong expected SHA, emitted no glTF or USDA files,
+withheld the semantic layer, wrote a seven-entry manifest with
+`twin_ready:false`, and exited with status 2.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
