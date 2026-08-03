@@ -184,6 +184,25 @@ This is accepted as vertical contract smoke evidence only. It does not apply
 clock calibration or a front/rear extrinsic, does not fuse the two frames, and
 does not claim full-bag mapping or semantic model quality.
 
+## 143B calibration/frame readiness inventory
+
+The feature-gated `rosbag2_calibration_readiness` example now records the
+calibration boundary before any frame-aware mapping is admitted. It inventories
+the canonical bag's requested front/rear PointCloud2 topics and the relevant
+`/clock`, `/tf`, `/tf_static`, and `/odom` topic names. Optional clock and frame
+artifacts can be registered only through absolute paths; registration records
+the external file size and SHA-256. The gate deliberately does not interpret an
+artifact format, apply a clock correction, or invent a `FrameGraph` edge.
+
+The canonical run wrote
+`/media/sasaki/aiueo/spatialrust-results/v1-3/143b-calibration-readiness/rosbag2.calibration.readiness.json`.
+Both sensor topics were present and supported (768 front messages and 767 rear
+messages), while `/clock`, `/tf`, `/tf_static`, and `/odom` were absent. No
+clock or frame artifact was registered, so `registration_ready` is `false` and
+the command exits non-zero after atomically preserving the blocker receipt.
+This is an intentional fail-closed result: the two sensor frames remain
+separate and no calibration-aware mapping claim is made.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
@@ -238,6 +257,7 @@ The comparison receipt is
 | Performance receipt | Stage wall time, bounded memory observations, and explicit host/device transfer counters | Accepted as 144A smoke |
 | Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
 | Bounded vertical E2E | rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF receipt | Accepted as 143A smoke only |
+| Calibration/frame readiness | External inventory receipt for required topics and registered calibration artifacts | Recorded as 143B blocker; not ready |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
 | Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Not accepted; no extrinsic evidence |
 | Mapping/reconstruction | Bounded odometry, pose graph, TSDF, and mesh receipt on this input | Not accepted; 143A prefix smoke only |
@@ -266,7 +286,8 @@ Every future E2E run must record:
 
 ## Next implementation gates
 
-1. Provide or register the clock calibration and front/rear extrinsic artifact.
+1. Provide and register the clock calibration and front/rear extrinsic artifacts;
+   the 143B readiness receipt currently records both as missing.
 2. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
    TSDF run before adding any semantic model runtime.
 3. Add semantic, Viewer, and interchange quality receipts only after the

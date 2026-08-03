@@ -50,6 +50,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   resume receipts, compares canonical input/episode/glTF hashes, computes
   median/p95/CV stage statistics, and evaluates bounded-smoke budgets in an
   atomic external comparison receipt.
+- **Calibration/frame readiness inventory (143B)**:
+  `rosbag2_calibration_readiness` records the canonical bag's front/rear and
+  relevant ROS topic presence, optionally registers external clock/frame files
+  by size and SHA-256, and exits non-zero with an atomic blocker receipt when
+  either artifact is absent. It does not interpret artifact contents or apply
+  transforms. The canonical receipt is external at
+  `/media/sasaki/aiueo/spatialrust-results/v1-3/143b-calibration-readiness/rosbag2.calibration.readiness.json`.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
