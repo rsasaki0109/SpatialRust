@@ -204,6 +204,27 @@ bytes. The receipt and manifest are:
 - `/media/sasaki/aiueo/spatialrust-results/v1-3/144-performance-fresh/rosbag2.e2e.receipt.json`
 - `/media/sasaki/aiueo/spatialrust-results/v1-3/144-performance-fresh/rosbag2.e2e.manifest.json`
 
+## 144B repeated-run comparison evidence
+
+`rosbag2_e2e_compare` compares at least two absolute receipt paths without
+reopening the bag. It rejects mixed receipt versions, inputs, topics, limits,
+or resume modes; compares the canonical input, persisted episode, and glTF
+hashes; and writes an atomic non-overwriting comparison receipt.
+
+Three sequential `fresh-source-ingest` runs under
+`/media/sasaki/aiueo/spatialrust-results/v1-3/144-performance-fresh`,
+`/media/sasaki/aiueo/spatialrust-results/v1-3/144-performance-fresh-2`, and
+`/media/sasaki/aiueo/spatialrust-results/v1-3/144-performance-fresh-3` all
+matched the input/episode/glTF hashes. The observed-pipeline samples were
+66,701,571,887, 67,060,768,484, and 68,684,129,437 ns; median was
+67,060,768,484 ns, p95/max was 68,684,129,437 ns, and coefficient of variation
+was 1.28%. All bounded-smoke stage budgets passed, including the 70 s ICP,
+5 s TSDF, 2 s interchange, and 80 s pipeline ceilings. Memory observations
+and zero-transfer counters were stable across all three runs.
+
+The comparison receipt is
+`/media/sasaki/aiueo/spatialrust-results/v1-3/144-comparison-smoke-v2/rosbag2.e2e.comparison.json`.
+
 ## Acceptance gates
 
 | Gate | Requirement | Current status |

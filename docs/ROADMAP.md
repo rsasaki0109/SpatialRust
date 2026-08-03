@@ -927,7 +927,7 @@ evidence, and fail-closed acceptance gates live in
 | 141 | Active | 91–100, 133–140 | External-data acceptance contract, canonical rosbag2 baseline, and reproducible run identity |
 | 142 | Active | 141 | External SSD result-root preflight, run-scoped manifests, resumable checkpoints, and cleanup |
 | 143 | Active | 141–142 | Full rosbag2 → records → sync → odometry → TSDF → semantic → Viewer/glTF/OpenUSD E2E |
-| 144 | Active | 142–143 | Memory/transfer/latency budgets, benchmark receipts, failure recovery, and deterministic rerun comparison |
+| 144 | Complete | 142–143 | Memory/transfer/latency budgets, benchmark receipts, failure recovery, and deterministic rerun comparison |
 | 145 | Planned | 143–144 | ROS 2 publish, edge/distributed partition execution, and optional AI runtime boundaries |
 | 146 | Planned | 141–145 | API stability, Python/docs/CI updates, security review, and v1.3 release receipt |
 
@@ -957,4 +957,4 @@ evidence, and fail-closed acceptance gates live in
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | 144A | Complete | Versioned stage timing, bounded memory observations, explicit transfer counters, and fresh-source baseline | Receipt version 2 under `v1-3/144-performance-fresh` |
-| 144B | Planned | Repeated-run variance, stage budgets, failure recovery, and deterministic comparison report | pending repeated-run policy |
+| 144B | Complete | Three-run variance, bounded-smoke stage budgets, failure-safe non-overwriting comparison, and deterministic hash report | `rosbag2_e2e_compare`, external `144-comparison-smoke-v2` receipt |

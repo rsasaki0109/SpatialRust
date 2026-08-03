@@ -46,6 +46,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   per-stage wall time, configured/observed memory, and explicit host/device
   transfer counters. The canonical bounded smoke has a 68.7-second observed
   pipeline, with ICP odometry as the dominant measured stage.
+- **E2E repeated-run comparison**: `rosbag2_e2e_compare` rejects mixed input or
+  resume receipts, compares canonical input/episode/glTF hashes, computes
+  median/p95/CV stage statistics, and evaluates bounded-smoke budgets in an
+  atomic external comparison receipt.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
