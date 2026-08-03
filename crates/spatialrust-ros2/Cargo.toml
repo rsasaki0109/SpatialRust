@@ -31,7 +31,7 @@ spatialrust-registration = { workspace = true, features = ["register-icp"] }
 spatialrust-scene.workspace = true
 spatialrust-semantic.workspace = true
 spatialrust-sync.workspace = true
-spatialrust-viewer = { workspace = true, features = ["mapping", "scene", "semantic"] }
+spatialrust-viewer = { workspace = true, features = ["mapping", "scene", "semantic", "serde"] }
 spatialrust-viz.workspace = true
 tempfile.workspace = true
 
@@ -60,4 +60,8 @@ required-features = ["rosbag2-sqlite"]
 
 [[example]]
 name = "rosbag2_tf_inventory"
+required-features = ["rosbag2-sqlite"]
+
+[[example]]
+name = "rosbag2_studio"
 required-features = ["rosbag2-sqlite"]

@@ -958,3 +958,9 @@ evidence, and fail-closed acceptance gates live in
 | --- | --- | --- | --- |
 | 144A | Complete | Versioned stage timing, bounded memory observations, explicit transfer counters, and fresh-source baseline | Receipt version 2 under `v1-3/144-performance-fresh` |
 | 144B | Complete | Three-run variance, bounded-smoke stage budgets, failure-safe non-overwriting comparison, and deterministic hash report | `rosbag2_e2e_compare`, external `144-comparison-smoke-v2` receipt |
+
+### Epic 145 progress
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 145A | Complete | Portable Spatial Studio state and one-screen source-bound dashboard for layers, timeline, calibration/TF gates, and explicit pipeline metrics | `spatialrust-viewer::StudioState`, `rosbag2_studio`, external `145a-spatial-studio-v2` JSON/HTML/manifest |

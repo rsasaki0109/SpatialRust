@@ -250,6 +250,30 @@ It re-hashed the canonical input as
 artifacts `not_registered`. No candidate was registered or treated as usable
 for mapping. The separate `all-sensors-bag1` receipt remains diagnostic only.
 
+## 145A source-bound Spatial Studio dashboard
+
+`rosbag2_studio` creates a portable JSON state and a static HTML dashboard from
+the canonical bag plus explicit readiness, TF, and E2E receipts. The viewer
+crate owns only renderer-independent state; ROS/SQLite parsing remains in the
+feature-gated example. The dashboard joins the point-cloud/derived layer
+inventory, timeline, calibration gate, frame inventory, and explicit
+performance counters on one screen.
+
+The external evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145a-spatial-studio-v2/spatial-studio.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145a-spatial-studio-v2/spatial-studio.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145a-spatial-studio-v2/spatial-studio.manifest.json`
+
+The state records four renderable receipt-backed layers, 1,535 timeline
+samples, the uncalibrated PointCloud2 header-stamp basis, the 66.7-second
+performance receipt, and zero hidden device copies. It remains
+`mapping_admitted:false`: the canonical readiness receipt has no registered
+clock/frame artifacts, while the supplied TF inventory has a different
+expected input SHA and is rejected before any frame edge enters the graph.
+This is an inspection/dashboard acceptance slice, not acceptance of fused
+world mapping.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,

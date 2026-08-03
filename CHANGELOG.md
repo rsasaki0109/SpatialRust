@@ -73,6 +73,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   `/media/sasaki/aiueo/spatialrust-results/v1-3/143b-calibration-survey/canonical.calibration.readiness.json`;
   the canonical mapping gate remains blocked until real source-matched
   evidence is supplied.
+- **Spatial Studio source-bound dashboard (145A)**: `spatialrust-viewer`
+  now exposes a portable `StudioState` for layer inventory, timeline,
+  calibration/TF admission, and explicit pipeline metrics. The feature-gated
+  `rosbag2_studio` example emits JSON, a static HTML dashboard, and an output
+  manifest under the external SSD. It requires exact source identity and
+  refuses to admit mismatched TF or unmanifested E2E geometry; the canonical
+  dashboard remains visibly blocked for mapping until real calibration exists.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema

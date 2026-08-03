@@ -34,3 +34,4 @@ winit = { workspace = true, optional = true }
 spatialrust-core.workspace = true
 spatialrust-records.workspace = true
 spatialrust-sync.workspace = true
+serde_json.workspace = true

@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use spatialrust_viz::{Camera, LayerId, PointColor, VisualPrimitive, VisualScene, VisualStyle};
 
 use crate::{ViewerError, ViewerResult};
@@ -92,14 +94,57 @@ impl ViewerState {
     /// Creates an empty viewer state.
     pub fn try_new(camera: Camera, viewport: ViewportSize) -> ViewerResult<Self> {
         validate_camera(camera)?;
-        Ok(Self {
+        let state = Self {
             version: VIEWER_STATE_VERSION,
             camera,
             viewport,
             layers: Vec::new(),
             selected_layer: None,
             pending_files: Vec::new(),
-        })
+        };
+        state.validate()?;
+        Ok(state)
+    }
+
+    /// Validates the complete portable state before it is handed to a
+    /// renderer, serialized, or embedded in a larger Studio state.
+    pub fn validate(&self) -> ViewerResult<()> {
+        if self.version != VIEWER_STATE_VERSION {
+            return Err(ViewerError::InvalidState(format!(
+                "unsupported viewer state version {}",
+                self.version
+            )));
+        }
+        validate_camera(self.camera)?;
+        ViewportSize::try_new(self.viewport.width, self.viewport.height)?;
+
+        let mut ids = BTreeSet::new();
+        for layer in &self.layers {
+            LayerId::try_new(layer.id.as_str().to_owned())?;
+            if !ids.insert(layer.id.as_str()) {
+                return Err(ViewerError::InvalidState(format!(
+                    "duplicate viewer layer `{}`",
+                    layer.id.as_str()
+                )));
+            }
+            validate_style_attributes(layer, &layer.style)?;
+        }
+        if let Some(selected) = &self.selected_layer {
+            if !ids.contains(selected.as_str()) {
+                return Err(ViewerError::InvalidState(
+                    "selected viewer layer is absent from layers".into(),
+                ));
+            }
+        }
+        for path in &self.pending_files {
+            let extension = path.rsplit('.').next().unwrap_or_default().to_ascii_lowercase();
+            if !matches!(extension.as_str(), "pcd" | "ply" | "las" | "laz" | "copc" | "e57") {
+                return Err(ViewerError::InvalidState(format!(
+                    "unsupported pending file extension in `{path}`"
+                )));
+            }
+        }
+        Ok(())
     }
 
     /// Synchronizes layer metadata from a borrowed visual scene.
