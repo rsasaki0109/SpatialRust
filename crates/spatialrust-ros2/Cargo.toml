@@ -91,3 +91,7 @@ required-features = ["rosbag2-sqlite"]
 [[example]]
 name = "rosbag2_dataset_health"
 required-features = ["rosbag2-sqlite"]
+
+[[example]]
+name = "rosbag2_live_publish"
+required-features = ["rosbag2-sqlite"]

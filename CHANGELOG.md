@@ -119,6 +119,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   `rosbag2_dataset_health` example emits a JSON dashboard, static HTML, and
   checksummed manifest on the external SSD; exact source/frame mismatches
   withhold stage aggregation and mapping admission fail-closed.
+- **ROS 2 Live Publish Bridge (145H)**: `spatialrust-viewer` now exposes a
+  topic/frame-bound `LivePublishState` with explicit CDR payload, queue, and
+  round-trip receipts. The feature-gated `rosbag2_live_publish` example
+  publishes a bounded canonical episode through the CPU loopback adapter,
+  emits a static dashboard and checksummed manifest, and withholds packets on
+  source or topic-frame identity mismatch; uncalibrated packets remain
+  inspection-only.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema

@@ -493,6 +493,48 @@ stage aggregation, set `dataset_ready:false` and `mapping_admitted:false`,
 and exited with status 2. Its manifest still records the checked canonical and
 readiness inputs, making the fail-closed decision auditable.
 
+## 145H ROS 2 Live Publish Bridge evidence
+
+`rosbag2_live_publish` reads a bounded deterministic episode from the canonical
+rosbag2 input, encodes each retained XYZ/XYZI record as explicit little-endian
+ROS 2 `sensor_msgs/msg/PointCloud2` CDR, publishes it through the CPU
+`in-process-loopback` adapter, and decodes each packet immediately for an exact
+round-trip check. Native `rclrs` executors remain outside the portable
+workspace boundary. The bridge uses an explicit source-topic to publish-topic
+map and a topic-specific expected-frame map; front and rear frames are never
+implicitly fused or renamed.
+
+The primary positive evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145h-live-publish-v2/live-publish.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145h-live-publish-v2/live-publish.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145h-live-publish-v2/live-publish.manifest.json`
+
+The canonical input SHA-256 is
+`b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8`. The
+bounded episode retained four records and 115,972 points from 1,535 source
+messages. It published four packets and received four exact CDR round trips:
+two `/lidar_front/points_raw` packets on
+`/spatialrust/lidar_front/points_raw` with frame `lidar_front`, and two
+`/lidar_rear/points_raw` packets on `/spatialrust/lidar_rear/points_raw` with
+frame `lidar_rear`. Deterministic order verification passed. Host encode and
+decode receipts are each 1,856,132 bytes; device upload/readback are both zero;
+the adapter queue capacity is one with zero backpressure events. The manifest
+re-hashes four local entries totaling 713,689,578 bytes.
+
+The state is `publish_ready:true` but `mapping_admitted:false`. The timestamp
+basis is the PointCloud2 header stamp in the `ros2-external` domain, and no
+clock or TF transform was applied. The canonical readiness receipt remains
+`registration_ready:false`, so publish is inspection transport only and cannot
+be reported as calibrated-world mapping.
+
+The negative source-binding probe is retained at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145h-live-publish-validation-probe/live-publish.json`.
+It used a deliberately wrong expected SHA, emitted zero packets and zero CDR
+payload bytes, set `publish_ready:false` and `mapping_admitted:false`, and
+exited with status 2. The output manifest still records the canonical input and
+readiness receipt for auditability.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
