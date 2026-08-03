@@ -224,6 +224,32 @@ and exited non-zero because the observed canonical SHA is
 evidence validates the TF parser and source binding only; it does not register
 clock or front/rear calibration for the canonical input.
 
+### Canonical calibration artifact survey
+
+On 2026-08-03, the external SSD was searched read-only for artifacts matching
+the canonical bag identity. The canonical directory
+`/media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/`
+contains only the bag, its `metadata.yaml`, and SQLite WAL/SHM sidecars. The
+companion archive
+`/media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2-astuff-1-lidar-only.tar.gz`
+contains only the same bag directory, metadata, and DB3 payload. The migration
+manifest
+`/media/sasaki/aiueo/datasets/migrated/autoware_data-migration-20260802.sha256`
+contains no clock, TF, extrinsic, or frame-calibration artifact for this input.
+An external filename/content search for the canonical bag name, starting
+timestamp, and `/lidar_front/points_raw`/`/lidar_rear/points_raw` identifiers
+found no additional source candidate outside the existing SpatialRust result
+receipts.
+
+The refreshed fail-closed readiness receipt is
+`/media/sasaki/aiueo/spatialrust-results/v1-3/143b-calibration-survey/canonical.calibration.readiness.json`.
+It re-hashed the canonical input as
+`b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8`, confirmed
+768 front and 767 rear PointCloud2 messages, confirmed that `/clock`, `/tf`,
+`/tf_static`, and `/odom` are absent, and exited non-zero with both calibration
+artifacts `not_registered`. No candidate was registered or treated as usable
+for mapping. The separate `all-sensors-bag1` receipt remains diagnostic only.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
@@ -280,6 +306,7 @@ The comparison receipt is
 | Bounded vertical E2E | rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF receipt | Accepted as 143A smoke only |
 | Calibration/frame readiness | External inventory receipt for required topics and registered calibration artifacts | Recorded as 143B blocker; not ready |
 | Source-bound TF inventory | Exact input SHA, bounded `/tf_static` CDR decode, and required-frame receipt | Accepted as separate-source parser evidence; not canonical calibration |
+| Canonical artifact availability | Clock and front/rear frame artifacts matching the canonical input identity | Blocked; read-only SSD survey found no matching artifacts |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
 | Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Not accepted; no extrinsic evidence |
 | Mapping/reconstruction | Bounded odometry, pose graph, TSDF, and mesh receipt on this input | Not accepted; 143A prefix smoke only |
@@ -310,8 +337,7 @@ Every future E2E run must record:
 
 1. Provide and register clock calibration and front/rear extrinsic artifacts for
    the canonical input; the separate `all-sensors-bag1` TF receipt cannot
-   satisfy this gate and the 143B readiness receipt currently records both as
-   missing.
+   satisfy this gate, and the latest survey receipt records both as missing.
 2. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
    TSDF run before adding any semantic model runtime.
 3. Add semantic, Viewer, and interchange quality receipts only after the

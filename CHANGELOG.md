@@ -65,6 +65,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   fails closed on source mismatch. A separate external fixture receipt under
   `/media/sasaki/aiueo/spatialrust-results/v1-3/143b-tf-inventory/` demonstrates
   the parser; it is not canonical front/rear calibration evidence.
+- **Canonical calibration artifact survey (143B)**: the external SSD was
+  searched read-only against the canonical bag identity, its migration
+  manifest, the companion archive, and canonical topic/time identifiers. No
+  matching clock or front/rear frame artifact was found. The refreshed
+  fail-closed readiness receipt is external at
+  `/media/sasaki/aiueo/spatialrust-results/v1-3/143b-calibration-survey/canonical.calibration.readiness.json`;
+  the canonical mapping gate remains blocked until real source-matched
+  evidence is supplied.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
