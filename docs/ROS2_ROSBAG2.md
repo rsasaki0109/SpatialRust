@@ -70,6 +70,34 @@ paths can instead be placed under separate `--input-root` and `--output-root`
 directories. Output names include the SQLite topic id, so distinct topics do
 not overwrite one another.
 
+## Source-bound TF inventory
+
+The `rosbag2_tf_inventory` example provides a bounded, read-only inventory for
+`tf2_msgs/msg/TFMessage` topics. The runtime CDR decoder preserves each
+`TransformStamped` edge and its timestamp, translation, and quaternion; it does
+not compose a frame graph, infer a root, or apply calibration. Every run must
+provide the exact input SHA-256, and a mismatch writes a blocker receipt without
+decoding payloads.
+
+For the separate sensor fixture that contains static Velodyne transforms:
+
+```bash
+cargo run -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_tf_inventory -- \
+  /media/sasaki/aiueo/datasets/migrated/autoware_data/all-sensors-bag1/all-sensors-bag1_compressed_0.db3 \
+  --output /media/sasaki/aiueo/spatialrust-results/v1-3/143b-tf-inventory/all-sensors-bag1.tf-static.inventory.json \
+  --expected-input-sha256 74e5915719a7b7b4820b5339207eeade0c656deaa38b8e5b5e8d18787a58ac22 \
+  --require-frame sensor_kit_base_link \
+  --require-frame velodyne_front \
+  --require-frame velodyne_left \
+  --require-frame velodyne_right
+```
+
+The receipt is source-bound and external to the repository. The fixture has
+one `/tf_static` message with 14 transforms and the required frames, but it is
+a separate capture with different topic and frame names from the canonical
+2020 front/rear bag. Its transforms must not be attached to that canonical bag
+as calibration evidence.
+
 ## Bounded synchronization preview
 
 The sync boundary can retain a small front/rear episode, build a deterministic

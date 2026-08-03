@@ -950,7 +950,7 @@ evidence, and fail-closed acceptance gates live in
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | 143A | Complete | Bounded external rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF vertical smoke | `rosbag2_e2e`, external receipt/manifest under `v1-3/143a-e2e-smoke` |
-| 143B | Active | Calibration/frame readiness gate, then calibration-aware full-bag mapping, semantic quality, and interchange acceptance | external readiness receipt is fail-closed; pending clock/frame artifacts and full-run receipt |
+| 143B | Active | Calibration/frame readiness gate, source-bound TF inventory, then calibration-aware full-bag mapping, semantic quality, and interchange acceptance | external readiness receipt is fail-closed; separate-source TF fixture is diagnostic; canonical clock/frame artifacts and full-run receipt pending |
 
 ### Epic 144 progress
 

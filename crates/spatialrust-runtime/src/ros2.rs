@@ -59,6 +59,8 @@ impl Ros2Adapter for CatalogRos2Adapter {
 
 /// Canonical ROS 2 type name for PointCloud2.
 pub const POINT_CLOUD2_TYPE: &str = "sensor_msgs/msg/PointCloud2";
+/// Canonical ROS 2 type name for TFMessage.
+pub const TF_MESSAGE_TYPE: &str = "tf2_msgs/msg/TFMessage";
 
 /// CDR encapsulation header for little-endian ROS 2 messages.
 const CDR_LE_ENCAP: [u8; 4] = [0x00, 0x01, 0x00, 0x00];
@@ -76,6 +78,23 @@ pub struct PointCloud2Xyz {
     pub xyz: Vec<f32>,
     /// Optional per-point float32 LiDAR intensity values.
     pub intensity: Option<Vec<f32>>,
+}
+
+/// One `geometry_msgs/msg/TransformStamped` decoded from a ROS 2 TFMessage.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TfTransform {
+    /// Header timestamp seconds.
+    pub stamp_sec: i32,
+    /// Header timestamp nanoseconds.
+    pub stamp_nanosec: u32,
+    /// Parent coordinate frame.
+    pub frame_id: String,
+    /// Child coordinate frame.
+    pub child_frame_id: String,
+    /// Translation in meters as x/y/z.
+    pub translation: [f64; 3],
+    /// Quaternion rotation as x/y/z/w.
+    pub rotation_xyzw: [f64; 4],
 }
 
 impl PointCloud2Xyz {
@@ -209,6 +228,59 @@ pub fn point_cloud2_has_intensity(bytes: &[u8]) -> RuntimeResult<bool> {
         }
     }
     Ok(has_intensity)
+}
+
+/// Decodes a ROS 2 CDR little-endian `tf2_msgs/msg/TFMessage` payload.
+///
+/// The transform message uses the ROS 2 CDR alignment origin immediately
+/// after the four-byte encapsulation header for its nested float64 fields.
+/// This function preserves message order and does not compose or otherwise
+/// interpret the frame edges.
+pub fn decode_tf_message(bytes: &[u8]) -> RuntimeResult<Vec<TfTransform>> {
+    let mut reader = CdrReader::new(bytes)?;
+    reader.expect_encap()?;
+    let count = reader.read_u32()? as usize;
+    let minimum_bytes_per_transform = 8_usize;
+    if count > bytes.len().saturating_sub(8) / minimum_bytes_per_transform {
+        return Err(RuntimeError::InvalidConfiguration(
+            "TFMessage transform count exceeds the payload bound".into(),
+        ));
+    }
+    let mut transforms = Vec::with_capacity(count);
+    for _ in 0..count {
+        let stamp_sec = reader.read_i32()?;
+        let stamp_nanosec = reader.read_u32()?;
+        if stamp_nanosec >= 1_000_000_000 {
+            return Err(RuntimeError::InvalidConfiguration(
+                "TF transform nanosecond field is outside [0, 1_000_000_000)".into(),
+            ));
+        }
+        let frame_id = reader.read_string()?;
+        let child_frame_id = reader.read_string()?;
+        if frame_id.is_empty() || child_frame_id.is_empty() {
+            return Err(RuntimeError::InvalidConfiguration(
+                "TF transform frame identifiers must not be empty".into(),
+            ));
+        }
+        let translation =
+            [reader.read_f64_from(4)?, reader.read_f64_from(4)?, reader.read_f64_from(4)?];
+        let rotation_xyzw = [
+            reader.read_f64_from(4)?,
+            reader.read_f64_from(4)?,
+            reader.read_f64_from(4)?,
+            reader.read_f64_from(4)?,
+        ];
+        transforms.push(TfTransform {
+            stamp_sec,
+            stamp_nanosec,
+            frame_id,
+            child_frame_id,
+            translation,
+            rotation_xyzw,
+        });
+    }
+    reader.require_end()?;
+    Ok(transforms)
 }
 
 /// Decodes an XYZ or XYZ-I PointCloud2 from ROS 2 CDR little-endian bytes.
@@ -411,6 +483,15 @@ impl CdrWriter {
         }
     }
 
+    #[cfg(test)]
+    fn align_from(&mut self, n: usize, origin: usize) {
+        let relative = self.buf.len().saturating_sub(origin);
+        let rem = relative % n;
+        if rem != 0 {
+            self.buf.resize(self.buf.len() + n - rem, 0);
+        }
+    }
+
     fn write_u8(&mut self, v: u8) {
         self.buf.push(v);
     }
@@ -427,6 +508,11 @@ impl CdrWriter {
 
     fn write_u32(&mut self, v: u32) {
         self.align(4);
+        self.buf.extend_from_slice(&v.to_le_bytes());
+    }
+
+    #[cfg(test)]
+    fn write_f64(&mut self, v: f64) {
         self.buf.extend_from_slice(&v.to_le_bytes());
     }
 
@@ -478,6 +564,14 @@ impl<'a> CdrReader<'a> {
         }
     }
 
+    fn align_from(&mut self, n: usize, origin: usize) {
+        let relative = self.pos.saturating_sub(origin);
+        let rem = relative % n;
+        if rem != 0 {
+            self.pos += n - rem;
+        }
+    }
+
     fn read_u8(&mut self) -> RuntimeResult<u8> {
         let v = *self
             .buf
@@ -501,6 +595,12 @@ impl<'a> CdrReader<'a> {
         self.align(4);
         let bytes = self.read_exact(4)?;
         Ok(u32::from_le_bytes(bytes.try_into().unwrap()))
+    }
+
+    fn read_f64_from(&mut self, origin: usize) -> RuntimeResult<f64> {
+        self.align_from(8, origin);
+        let bytes = self.read_exact(8)?;
+        Ok(f64::from_le_bytes(bytes.try_into().unwrap()))
     }
 
     fn read_bytes(&mut self, len: usize) -> RuntimeResult<&'a [u8]> {
@@ -536,14 +636,24 @@ impl<'a> CdrReader<'a> {
         String::from_utf8(bytes[..len - 1].to_vec())
             .map_err(|_| RuntimeError::InvalidConfiguration("CDR string is not UTF-8".into()))
     }
+
+    fn require_end(&self) -> RuntimeResult<()> {
+        if self.pos != self.buf.len() {
+            return Err(RuntimeError::InvalidConfiguration(format!(
+                "CDR payload has {} trailing bytes",
+                self.buf.len().saturating_sub(self.pos)
+            )));
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        decode_point_cloud2_xyz, encode_point_cloud2_xyz, point_cloud2_has_intensity,
-        write_point_field, CatalogRos2Adapter, CdrWriter, LoopbackRos2Node, PointCloud2Xyz,
-        Ros2Adapter, POINT_CLOUD2_TYPE,
+        decode_point_cloud2_xyz, decode_tf_message, encode_point_cloud2_xyz,
+        point_cloud2_has_intensity, write_point_field, CatalogRos2Adapter, CdrWriter,
+        LoopbackRos2Node, PointCloud2Xyz, Ros2Adapter, TfTransform, POINT_CLOUD2_TYPE,
     };
 
     #[test]
@@ -619,5 +729,62 @@ mod tests {
         assert_eq!(decoded.stamp_nanosec, 4);
         assert_eq!(decoded.xyz, vec![1.0, 2.0, 3.0, 2.0, 3.0, 4.0, 3.0, 4.0, 5.0, 4.0, 5.0, 6.0,]);
         assert_eq!(decoded.intensity, Some(vec![4.0, 5.0, 6.0, 7.0]));
+    }
+
+    fn encode_tf_message(transforms: &[TfTransform]) -> Vec<u8> {
+        let mut writer = CdrWriter::new();
+        writer.write_encap();
+        writer.write_u32(transforms.len() as u32);
+        for transform in transforms {
+            writer.write_i32(transform.stamp_sec);
+            writer.write_u32(transform.stamp_nanosec);
+            writer.write_string(&transform.frame_id).unwrap();
+            writer.write_string(&transform.child_frame_id).unwrap();
+            writer.align_from(8, 4);
+            for value in transform.translation.into_iter().chain(transform.rotation_xyzw) {
+                writer.write_f64(value);
+            }
+        }
+        writer.into_bytes()
+    }
+
+    #[test]
+    fn decodes_tf_message_with_nested_float64_alignment() {
+        let expected = vec![TfTransform {
+            stamp_sec: 12,
+            stamp_nanosec: 34,
+            frame_id: "base_link".into(),
+            child_frame_id: "lidar_front".into(),
+            translation: [1.0, -2.0, 3.5],
+            rotation_xyzw: [0.0, 0.0, 0.707, 0.707],
+        }];
+        assert_eq!(decode_tf_message(&encode_tf_message(&expected)).unwrap(), expected);
+    }
+
+    #[test]
+    fn rejects_invalid_tf_message_timestamp_and_trailing_bytes() {
+        let transform = TfTransform {
+            stamp_sec: 0,
+            stamp_nanosec: 1_000_000_000,
+            frame_id: "base".into(),
+            child_frame_id: "sensor".into(),
+            translation: [0.0; 3],
+            rotation_xyzw: [0.0, 0.0, 0.0, 1.0],
+        };
+        let error = decode_tf_message(&encode_tf_message(&[transform])).unwrap_err();
+        assert!(error.to_string().contains("nanosecond"));
+
+        let valid = TfTransform {
+            stamp_sec: 0,
+            stamp_nanosec: 0,
+            frame_id: "base".into(),
+            child_frame_id: "sensor".into(),
+            translation: [0.0; 3],
+            rotation_xyzw: [0.0, 0.0, 0.0, 1.0],
+        };
+        let mut bytes = encode_tf_message(&[valid]);
+        bytes.push(1);
+        let error = decode_tf_message(&bytes).unwrap_err();
+        assert!(error.to_string().contains("trailing"));
     }
 }

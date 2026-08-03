@@ -12,8 +12,8 @@ use spatialrust_records::{
     SpatialRecordChunk, StreamOptions,
 };
 use spatialrust_runtime::{
-    decode_point_cloud2_xyz, point_cloud2_has_intensity, PointCloud2Xyz, RuntimeError,
-    POINT_CLOUD2_TYPE,
+    decode_point_cloud2_xyz, decode_tf_message, point_cloud2_has_intensity, PointCloud2Xyz,
+    RuntimeError, TfTransform, POINT_CLOUD2_TYPE, TF_MESSAGE_TYPE,
 };
 use thiserror::Error;
 
@@ -65,10 +65,71 @@ pub struct Rosbag2Topic {
     pub message_count: u64,
 }
 
+/// One bounded rosbag2 TFMessage with its SQLite capture timestamp.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Rosbag2TfMessage {
+    /// SQLite message timestamp in nanoseconds.
+    pub bag_timestamp: u64,
+    /// Ordered transforms carried by the TFMessage.
+    pub transforms: Vec<TfTransform>,
+}
+
 /// Lists topics from a rosbag2 SQLite file without modifying it.
 pub fn list_topics(path: impl AsRef<Path>) -> Rosbag2Result<Vec<Rosbag2Topic>> {
     let connection = open_connection(path)?;
     read_topics(&connection)
+}
+
+/// Reads at most `max_messages` TFMessage payloads from one rosbag2 topic.
+///
+/// The SQLite source remains read-only and message order is `(timestamp, id)`.
+/// This function decodes TF edges but does not compose them, select a root, or
+/// claim that the result belongs to another bag or sensor naming scheme.
+pub fn list_tf_messages(
+    path: impl AsRef<Path>,
+    topic_name: &str,
+    max_messages: usize,
+) -> Rosbag2Result<Vec<Rosbag2TfMessage>> {
+    if max_messages == 0 {
+        return Err(Rosbag2Error::InvalidBag("TF message limit must be greater than zero".into()));
+    }
+    let connection = open_connection(path)?;
+    let topics = read_topics(&connection)?;
+    let topic = topics
+        .into_iter()
+        .find(|topic| topic.name == topic_name)
+        .ok_or_else(|| Rosbag2Error::InvalidBag(format!("topic `{topic_name}` was not found")))?;
+    if topic.type_name != TF_MESSAGE_TYPE {
+        return Err(Rosbag2Error::Unsupported(format!(
+            "topic `{}` has type `{}`, expected `{TF_MESSAGE_TYPE}`",
+            topic.name, topic.type_name
+        )));
+    }
+    if !topic.serialization_format.eq_ignore_ascii_case("cdr") {
+        return Err(Rosbag2Error::Unsupported(format!(
+            "topic `{}` uses serialization `{}`, only CDR is supported",
+            topic.name, topic.serialization_format
+        )));
+    }
+    let limit = i64::try_from(max_messages)
+        .map_err(|_| Rosbag2Error::InvalidBag("TF message limit exceeds SQLite bounds".into()))?;
+    let mut statement = connection.prepare(
+        "SELECT timestamp, data FROM messages WHERE topic_id = ?1 \
+         ORDER BY timestamp ASC, id ASC LIMIT ?2",
+    )?;
+    let rows = statement.query_map(params![topic.id, limit], |row| {
+        Ok((row.get::<_, i64>(0)?, row.get::<_, Vec<u8>>(1)?))
+    })?;
+    let mut messages = Vec::new();
+    for row in rows {
+        let (timestamp, data) = row?;
+        let bag_timestamp = u64::try_from(timestamp).map_err(|_| {
+            Rosbag2Error::InvalidBag(format!("TF message has negative timestamp {timestamp}"))
+        })?;
+        let transforms = decode_tf_message(&data)?;
+        messages.push(Rosbag2TfMessage { bag_timestamp, transforms });
+    }
+    Ok(messages)
 }
 
 /// Bounded, deterministic PointCloud2 XYZ/XYZI source backed by rosbag2 SQLite.
@@ -548,7 +609,7 @@ fn ros_timestamp_ns(message: &PointCloud2Xyz) -> Rosbag2Result<u64> {
 #[cfg(test)]
 mod tests {
     use super::{
-        list_topics, Rosbag2PointCloudSource, ROSBAG2_POINT_XYZI_SCHEMA_ID,
+        list_tf_messages, list_topics, Rosbag2PointCloudSource, ROSBAG2_POINT_XYZI_SCHEMA_ID,
         ROSBAG2_POINT_XYZ_SCHEMA_ID,
     };
     use rusqlite::{params, Connection};
@@ -556,7 +617,40 @@ mod tests {
     use spatialrust_records::{
         BoundedSpatialRecordSource, CancellationToken, MemoryBudget, StreamOptions,
     };
-    use spatialrust_runtime::{encode_point_cloud2_xyz, PointCloud2Xyz, POINT_CLOUD2_TYPE};
+    use spatialrust_runtime::{
+        encode_point_cloud2_xyz, PointCloud2Xyz, TfTransform, POINT_CLOUD2_TYPE, TF_MESSAGE_TYPE,
+    };
+
+    fn align_from(bytes: &mut Vec<u8>, alignment: usize, origin: usize) {
+        let relative = bytes.len().saturating_sub(origin);
+        let remainder = relative % alignment;
+        if remainder != 0 {
+            bytes.resize(bytes.len() + alignment - remainder, 0);
+        }
+    }
+
+    fn write_string(bytes: &mut Vec<u8>, value: &str) {
+        while bytes.len() % 4 != 0 {
+            bytes.push(0);
+        }
+        bytes.extend_from_slice(&u32::try_from(value.len() + 1).unwrap().to_le_bytes());
+        bytes.extend_from_slice(value.as_bytes());
+        bytes.push(0);
+    }
+
+    fn encode_tf_message(transform: &TfTransform) -> Vec<u8> {
+        let mut bytes = vec![0x00, 0x01, 0x00, 0x00];
+        bytes.extend_from_slice(&1_u32.to_le_bytes());
+        bytes.extend_from_slice(&transform.stamp_sec.to_le_bytes());
+        bytes.extend_from_slice(&transform.stamp_nanosec.to_le_bytes());
+        write_string(&mut bytes, &transform.frame_id);
+        write_string(&mut bytes, &transform.child_frame_id);
+        align_from(&mut bytes, 8, 4);
+        for value in transform.translation.into_iter().chain(transform.rotation_xyzw) {
+            bytes.extend_from_slice(&value.to_le_bytes());
+        }
+        bytes
+    }
 
     fn bag_file() -> (tempfile::TempDir, std::path::PathBuf) {
         let directory = tempfile::tempdir().unwrap();
@@ -600,6 +694,46 @@ mod tests {
         assert_eq!(topics.len(), 1);
         assert_eq!(topics[0].name, "/lidar/points");
         assert_eq!(topics[0].message_count, 2);
+    }
+
+    #[test]
+    fn lists_and_decodes_bounded_tf_messages() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("tf.db3");
+        let connection = Connection::open(&path).unwrap();
+        connection
+            .execute_batch(
+                "CREATE TABLE topics(id INTEGER PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL, serialization_format TEXT NOT NULL);\
+                 CREATE TABLE messages(id INTEGER PRIMARY KEY, topic_id INTEGER NOT NULL, timestamp INTEGER NOT NULL, data BLOB NOT NULL);",
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO topics(id,name,type,serialization_format) VALUES(1,?1,?2,'cdr')",
+                params!["/tf_static", TF_MESSAGE_TYPE],
+            )
+            .unwrap();
+        let transform = TfTransform {
+            stamp_sec: 12,
+            stamp_nanosec: 34,
+            frame_id: "base_link".into(),
+            child_frame_id: "lidar_front".into(),
+            translation: [1.0, -2.0, 3.5],
+            rotation_xyzw: [0.0, 0.0, 0.707, 0.707],
+        };
+        connection
+            .execute(
+                "INSERT INTO messages(id,topic_id,timestamp,data) VALUES(1,1,42,?1)",
+                params![encode_tf_message(&transform)],
+            )
+            .unwrap();
+        drop(connection);
+
+        let messages = list_tf_messages(&path, "/tf_static", 1).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].bag_timestamp, 42);
+        assert_eq!(messages[0].transforms, vec![transform]);
+        assert!(list_tf_messages(&path, "/tf_static", 0).is_err());
     }
 
     #[test]

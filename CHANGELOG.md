@@ -57,6 +57,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   either artifact is absent. It does not interpret artifact contents or apply
   transforms. The canonical receipt is external at
   `/media/sasaki/aiueo/spatialrust-results/v1-3/143b-calibration-readiness/rosbag2.calibration.readiness.json`.
+- **Source-bound rosbag2 TF inventory (143B)**: `spatialrust-runtime` now
+  decodes little-endian CDR `tf2_msgs/msg/TFMessage` payloads, while
+  `spatialrust-ros2` exposes bounded `list_tf_messages` access and the
+  `rosbag2_tf_inventory` receipt example. The CLI requires an exact input
+  SHA-256, records transform edges without composing or applying them, and
+  fails closed on source mismatch. A separate external fixture receipt under
+  `/media/sasaki/aiueo/spatialrust-results/v1-3/143b-tf-inventory/` demonstrates
+  the parser; it is not canonical front/rear calibration evidence.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
