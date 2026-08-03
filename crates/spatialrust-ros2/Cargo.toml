@@ -23,6 +23,7 @@ rusqlite = { workspace = true, optional = true }
 [dev-dependencies]
 serde.workspace = true
 serde_json.workspace = true
+spatialrust-ai.workspace = true
 spatialrust-io = { workspace = true, features = ["io-las", "streaming", "io-manifest", "storage-preflight"] }
 spatialrust-interchange = { workspace = true, features = ["gltf"] }
 spatialrust-mapping = { workspace = true, features = ["scan-icp"] }
@@ -31,6 +32,7 @@ spatialrust-registration = { workspace = true, features = ["register-icp"] }
 spatialrust-scene.workspace = true
 spatialrust-semantic.workspace = true
 spatialrust-sync.workspace = true
+spatialrust-tensor.workspace = true
 spatialrust-viewer = { workspace = true, features = ["mapping", "scene", "semantic", "serde"] }
 spatialrust-viz.workspace = true
 tempfile.workspace = true
@@ -76,4 +78,8 @@ required-features = ["rosbag2-sqlite"]
 
 [[example]]
 name = "rosbag2_map_diff"
+required-features = ["rosbag2-sqlite"]
+
+[[example]]
+name = "rosbag2_semantic_overlay"
 required-features = ["rosbag2-sqlite"]

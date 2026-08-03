@@ -16,6 +16,7 @@ mod native;
 mod observatory;
 mod overlay;
 mod replay;
+mod semantic_overlay;
 mod state;
 mod studio;
 mod timeline;
@@ -29,7 +30,7 @@ pub use adapters::{mesh_visual, surfel_visual};
 #[cfg(feature = "mapping")]
 pub use adapters::{pose_graph_visual, trajectory_visual};
 #[cfg(feature = "semantic")]
-pub use adapters::{semantic_visual, spatial_record_entity_visual};
+pub use adapters::{semantic_overlay_visual, semantic_visual, spatial_record_entity_visual};
 pub use adapters::{AdaptedGeometry, AdaptedVisual, AdapterReceipt};
 pub use controls::{InputAction, ViewerController};
 pub use error::{ViewerError, ViewerResult};
@@ -46,6 +47,10 @@ pub use overlay::{DebugOverlay, OverlayGeometry, OverlayKind};
 pub use replay::{
     ReplayArtifact, ReplayDemoState, ReplaySample, ReplaySummary, ReplayTopic,
     REPLAY_DEMO_STATE_VERSION,
+};
+pub use semantic_overlay::{
+    SemanticOverlayClass, SemanticOverlayEntity, SemanticOverlayModel, SemanticOverlayState,
+    SemanticOverlaySummary, SEMANTIC_CONFIDENCE_SCALE, SEMANTIC_OVERLAY_STATE_VERSION,
 };
 pub use state::{
     AttributeSummary, InspectorSelection, LayerPresentation, ViewerState, ViewportSize,
