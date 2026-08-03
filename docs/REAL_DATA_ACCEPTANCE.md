@@ -568,6 +568,40 @@ It used a deliberately wrong expected SHA, emitted zero transfers, set
 Its manifest retains the upstream live-publish and calibration-readiness inputs
 for auditability.
 
+## 145J-A Interactive Mission Cockpit evidence
+
+`rosbag2_mission_cockpit` joins the canonical source with the accepted 145H
+live-publish and 145I edge-partition receipts. It re-reads only the bounded
+packet records needed to produce a source-indexed XYZ sample; packet order,
+topic/frame identity, and transfer admission remain receipt-backed. The
+self-contained HTML dashboard provides orbit/zoom, timeline playback, layer
+visibility, point selection, source-index inspection, distance measurement, and
+an edge-to-host graph. It does not apply a clock or TF transform and does not
+claim calibrated-world geometry.
+
+The primary positive evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145j-mission-cockpit-v2/mission-cockpit.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145j-mission-cockpit-v2/mission-cockpit.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145j-mission-cockpit-v2/mission-cockpit.manifest.json`
+
+The run retained four ordered packet frames and 115,972 source points, with
+192 sampled points per frame (768 bounded interaction points). The source,
+publish, and partition gates passed; the edge-to-host graph recorded four
+completed transfers, 1,856,132 payload bytes, and 1,856,132 explicit-copy
+bytes. The state is `publish_ready:true`, `partition_ready:true`, and
+`mapping_admitted:false` because the canonical readiness receipt has no
+registered clock/frame calibration.
+
+The negative source-binding probe is retained at:
+
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145j-mission-cockpit-validation-probe-v2/mission-cockpit.json`.
+
+It used a deliberately wrong expected SHA, withheld all packet frames and
+transfer links, set `publish_ready:false`, `partition_ready:false`, and
+`mapping_admitted:false`, and exited with status 2. Its manifest still records
+the canonical input and all upstream receipts for auditability.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,

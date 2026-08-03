@@ -15,6 +15,7 @@ mod edge_partition;
 mod error;
 mod live_publish;
 mod map_diff;
+mod mission_cockpit;
 #[cfg(feature = "native")]
 mod native;
 mod observatory;
@@ -55,6 +56,11 @@ pub use live_publish::{
 };
 pub use map_diff::{
     MapDiffBounds, MapDiffCell, MapDiffMap, MapDiffState, MapDiffSummary, MAP_DIFF_STATE_VERSION,
+};
+pub use mission_cockpit::{
+    MissionCockpitFrame, MissionCockpitLayer, MissionCockpitLink, MissionCockpitNode,
+    MissionCockpitPoint, MissionCockpitState, MissionCockpitSummary, MissionCockpitTimeline,
+    MISSION_COCKPIT_MAX_SAMPLED_POINTS, MISSION_COCKPIT_STATE_VERSION,
 };
 #[cfg(feature = "native")]
 pub use native::{NativeViewer, NativeViewerOptions};

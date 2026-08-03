@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **145J-A interactive Mission Cockpit**: `MissionCockpitState` and the
+  feature-gated `rosbag2_mission_cockpit` example join source-bound 145H/145I
+  receipts with a bounded source-indexed XYZ sample. The self-contained
+  dashboard adds 3D orbit/zoom, timeline playback, layer toggles, point
+  selection, distance measurement, and an edge-to-host graph while keeping
+  calibration/mapping admission fail-closed.
 - **v1.3 real-data acceptance contract**: `docs/REAL_DATA_ACCEPTANCE.md` fixes
   the external rosbag2 snapshot, topic/count/hash baseline, SSD result-root
   policy, bounded synchronization evidence, and explicit calibration and
