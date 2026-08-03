@@ -116,7 +116,11 @@ pub use spatialrust_io::{
     write_point_cloud_file, write_point_cloud_file_with_format, PointCloudFileFormat,
 };
 #[cfg(feature = "io-manifest")]
-pub use spatialrust_io::{DatasetManifest, FileReceipt, ReceiptRole, DATASET_MANIFEST_VERSION};
+pub use spatialrust_io::{
+    DatasetManifest, FileReceipt, ManifestValidation, ReceiptRole, DATASET_MANIFEST_VERSION,
+};
+#[cfg(feature = "storage-preflight")]
+pub use spatialrust_io::{StoragePreflight, DEFAULT_MIN_OUTPUT_FREE_BYTES};
 
 #[cfg(feature = "search-kdtree")]
 pub use spatialrust_search::{

@@ -33,6 +33,13 @@ and every run receipt records available bytes before and after execution. The
 52 GiB available on the workspace filesystem; the latter is not an output
 target.
 
+The `storage-preflight` feature exposes `StoragePreflight::check` and
+`StorageRoots::preflight_output`. Both require an existing absolute directory
+and reject the run before source admission when the requested floor is not
+available. The rosbag2 batch example exposes this as
+`--min-output-free-bytes`; `--verify-manifest` re-hashes all local manifest
+entries before accepting the generated manifest.
+
 ## Canonical input snapshot
 
 The rosbag2 SQLite snapshot is:
@@ -91,6 +98,25 @@ It performs no clock calibration and invents no front/rear extrinsic transform.
 This is accepted as a bounded synchronization smoke test only, not as a fused
 mapping result.
 
+## 141B preflight and manifest smoke evidence
+
+The read-only inventory smoke confirmed the preflight before opening the bag:
+
+```text
+root=/media/sasaki/aiueo/spatialrust-results
+available_bytes=163900334080
+required_free_bytes=21474836480
+```
+
+The bounded front-topic run used
+`--output-root /media/sasaki/aiueo/spatialrust-results`,
+`--output-dir v1-3/141b-smoke`,
+`--min-output-free-bytes 21474836480`, and `--verify-manifest`. It produced
+the external receipt and manifest under
+`/media/sasaki/aiueo/spatialrust-results/v1-3/141b-smoke/`, converted 768
+messages into 1,536 chunks and 22,266,624 points, and re-hashed four local
+manifest files totaling 1,159,004,968 bytes. No repository data was created.
+
 ## Acceptance gates
 
 | Gate | Requirement | Current status |
@@ -99,6 +125,7 @@ mapping result.
 | Topic scope | Two supported PointCloud2 topics, eleven explicit skips, zero failures | Accepted |
 | Bounded ingest | 256 MiB configured memory ceiling and receipt peak below the ceiling | Accepted |
 | Deterministic ingest | Repeated output trees produce the same per-topic LAS hashes and counts | Accepted |
+| Output-root preflight | Absolute external result root and minimum free-space floor checked before bag access | Accepted |
 | Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
 | Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Not accepted; no extrinsic evidence |
@@ -128,7 +155,7 @@ Every future E2E run must record:
 
 ## Next implementation gates
 
-1. Add the result-root preflight and run-scoped manifest policy.
+1. Extend the result-root preflight and manifest policy to run-scoped receipts.
 2. Provide or register the clock calibration and front/rear extrinsic artifact.
 3. Run the bounded full-bag path through odometry and TSDF before adding any
    semantic model runtime.

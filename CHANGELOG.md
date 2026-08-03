@@ -25,6 +25,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   the external rosbag2 snapshot, topic/count/hash baseline, SSD result-root
   policy, bounded synchronization evidence, and explicit calibration and
   downstream E2E gates. Sensor and derived artifacts remain outside the repo.
+- **External storage preflight and manifest verification**: the opt-in
+  `storage-preflight` feature rejects relative/missing output roots and free
+  space below the caller's floor before source admission. `DatasetManifest`
+  can read and re-hash existing JSON receipts, while `rosbag2_ingest` exposes
+  `--min-output-free-bytes` and `--verify-manifest` for bounded runs.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema

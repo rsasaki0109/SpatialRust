@@ -23,7 +23,7 @@ rusqlite = { workspace = true, optional = true }
 [dev-dependencies]
 serde.workspace = true
 serde_json.workspace = true
-spatialrust-io = { workspace = true, features = ["io-las", "streaming", "io-manifest"] }
+spatialrust-io = { workspace = true, features = ["io-las", "streaming", "io-manifest", "storage-preflight"] }
 spatialrust-sync.workspace = true
 tempfile.workspace = true
 

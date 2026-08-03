@@ -46,11 +46,15 @@ pub use format::{
     write_point_cloud_file, write_point_cloud_file_with_format, PointCloudFileFormat,
 };
 #[cfg(feature = "io-manifest")]
-pub use manifest::{DatasetManifest, FileReceipt, ReceiptRole, DATASET_MANIFEST_VERSION};
+pub use manifest::{
+    DatasetManifest, FileReceipt, ManifestValidation, ReceiptRole, DATASET_MANIFEST_VERSION,
+};
 pub use options::{ReadOptions, WriteOptions};
 #[cfg(feature = "streaming")]
 pub use spool::{BoundedSpool, SpoolOptions};
 pub use storage::StorageRoots;
+#[cfg(feature = "storage-preflight")]
+pub use storage::{StoragePreflight, DEFAULT_MIN_OUTPUT_FREE_BYTES};
 pub use traits::{PointReader, PointSink, PointStream, PointWriter};
 
 #[cfg(feature = "io-pcd")]

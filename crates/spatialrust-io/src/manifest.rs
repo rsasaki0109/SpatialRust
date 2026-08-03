@@ -85,6 +85,17 @@ pub struct DatasetManifest {
     pub entries: Vec<FileReceipt>,
 }
 
+/// Summary returned after re-hashing every local manifest entry.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ManifestValidation {
+    /// Number of local files re-hashed successfully.
+    pub checked_local_files: u64,
+    /// Number of URI entries that intentionally have no local checksum.
+    pub uri_entries: u64,
+    /// Total bytes observed across checked local files.
+    pub total_bytes: u64,
+}
+
 impl Default for DatasetManifest {
     fn default() -> Self {
         Self::new()
@@ -107,6 +118,84 @@ impl DatasetManifest {
     /// Adds a URI receipt without claiming a local byte count or checksum.
     pub fn add_uri(&mut self, role: ReceiptRole, uri: impl Into<PathBuf>) {
         self.entries.push(FileReceipt::from_uri(role, uri));
+    }
+
+    /// Reads a JSON manifest from disk without trusting its file receipts.
+    pub fn read_json(path: impl AsRef<Path>) -> Result<Self, IoError> {
+        let path = path.as_ref();
+        let text = std::fs::read_to_string(path).map_err(|error| {
+            IoError::Manifest(format!("cannot read dataset manifest `{}`: {error}", path.display()))
+        })?;
+        serde_json::from_str(&text).map_err(|error| {
+            IoError::Manifest(format!(
+                "cannot parse dataset manifest `{}`: {error}",
+                path.display()
+            ))
+        })
+    }
+
+    /// Re-hashes local entries and rejects missing, changed, or partial receipts.
+    pub fn validate_local_files(&self) -> Result<ManifestValidation, IoError> {
+        if self.version != DATASET_MANIFEST_VERSION {
+            return Err(IoError::Manifest(format!(
+                "unsupported dataset manifest version {}; expected {}",
+                self.version, DATASET_MANIFEST_VERSION
+            )));
+        }
+        let mut checked_local_files = 0_u64;
+        let mut uri_entries = 0_u64;
+        let mut total_bytes = 0_u64;
+        for entry in &self.entries {
+            match (&entry.size_bytes, &entry.sha256) {
+                (Some(expected_size), Some(expected_sha256)) => {
+                    let actual = FileReceipt::from_path(entry.role, &entry.path)?;
+                    if actual.size_bytes != entry.size_bytes {
+                        return Err(IoError::Manifest(format!(
+                            "size mismatch for `{}`: expected {:?}, observed {:?}",
+                            entry.path.display(),
+                            entry.size_bytes,
+                            actual.size_bytes
+                        )));
+                    }
+                    if actual.sha256.as_deref() != Some(expected_sha256.as_str()) {
+                        return Err(IoError::Manifest(format!(
+                            "checksum mismatch for `{}`: expected {}, observed {}",
+                            entry.path.display(),
+                            expected_sha256,
+                            actual.sha256.as_deref().unwrap_or("<missing>")
+                        )));
+                    }
+                    checked_local_files = checked_local_files.checked_add(1).ok_or_else(|| {
+                        IoError::Manifest(
+                            "local file count overflow while validating manifest".into(),
+                        )
+                    })?;
+                    total_bytes = total_bytes.checked_add(*expected_size).ok_or_else(|| {
+                        IoError::Manifest(
+                            "total byte count overflow while validating manifest".into(),
+                        )
+                    })?;
+                }
+                (None, None) if is_uri(&entry.path) => {
+                    uri_entries = uri_entries.checked_add(1).ok_or_else(|| {
+                        IoError::Manifest("URI count overflow while validating manifest".into())
+                    })?;
+                }
+                (None, None) => {
+                    return Err(IoError::Manifest(format!(
+                        "manifest entry `{}` has no checksum and is not a URI",
+                        entry.path.display()
+                    )));
+                }
+                _ => {
+                    return Err(IoError::Manifest(format!(
+                        "manifest entry `{}` has a partial size/checksum receipt",
+                        entry.path.display()
+                    )));
+                }
+            }
+        }
+        Ok(ManifestValidation { checked_local_files, uri_entries, total_bytes })
     }
 
     /// Serializes this manifest as pretty-printed JSON.
@@ -135,6 +224,10 @@ fn hex_digest(bytes: &[u8]) -> String {
         output.push_str(&format!("{byte:02x}"));
     }
     output
+}
+
+fn is_uri(path: &Path) -> bool {
+    path.to_string_lossy().contains("://")
 }
 
 #[cfg(test)]
@@ -172,5 +265,52 @@ mod tests {
         assert_eq!(decoded.entries[0].role, ReceiptRole::Input);
         assert_eq!(decoded.entries[0].size_bytes, Some(4));
         assert_eq!(decoded.entries[1].sha256, None);
+        let validation = decoded.validate_local_files().unwrap();
+        assert_eq!(validation.checked_local_files, 1);
+        assert_eq!(validation.uri_entries, 1);
+        assert_eq!(validation.total_bytes, 4);
+
+        let manifest_path = directory.path().join("manifest.json");
+        decoded.write_json(&manifest_path).unwrap();
+        assert_eq!(DatasetManifest::read_json(&manifest_path).unwrap(), decoded);
+    }
+
+    #[test]
+    fn rejects_changed_local_file() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("scan.bin");
+        std::fs::write(&path, b"before").unwrap();
+        let mut manifest = DatasetManifest::new();
+        manifest.add_file(ReceiptRole::Input, &path).unwrap();
+        std::fs::write(&path, b"after").unwrap();
+
+        let error = manifest.validate_local_files().unwrap_err();
+        assert!(error.to_string().contains("mismatch"));
+    }
+
+    #[test]
+    fn rejects_partial_or_unchecked_local_receipts() {
+        let path = std::path::PathBuf::from("/tmp/scan.bin");
+        let partial = DatasetManifest {
+            version: DATASET_MANIFEST_VERSION,
+            entries: vec![FileReceipt {
+                role: ReceiptRole::Input,
+                path: path.clone(),
+                size_bytes: Some(1),
+                sha256: None,
+            }],
+        };
+        assert!(partial.validate_local_files().unwrap_err().to_string().contains("partial"));
+
+        let unchecked = DatasetManifest {
+            version: DATASET_MANIFEST_VERSION,
+            entries: vec![FileReceipt {
+                role: ReceiptRole::Input,
+                path,
+                size_bytes: None,
+                sha256: None,
+            }],
+        };
+        assert!(unchecked.validate_local_files().unwrap_err().to_string().contains("not a URI"));
     }
 }

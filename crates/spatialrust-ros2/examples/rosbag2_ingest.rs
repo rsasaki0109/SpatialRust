@@ -30,6 +30,8 @@ struct Config {
     manifest: Option<PathBuf>,
     input_root: Option<PathBuf>,
     output_root: Option<PathBuf>,
+    min_output_free_bytes: Option<u64>,
+    verify_manifest: bool,
     chunk_points: usize,
     memory_bytes: u64,
 }
@@ -119,6 +121,15 @@ fn main() {
 fn run() -> Result<(), Box<dyn Error>> {
     let config = parse_args(env::args().skip(1))?;
     let roots = StorageRoots::new(config.input_root.clone(), config.output_root.clone());
+    if let Some(required_free_bytes) = config.min_output_free_bytes {
+        let preflight = roots.preflight_output(required_free_bytes)?;
+        eprintln!(
+            "output preflight: root={} available_bytes={} required_free_bytes={}",
+            preflight.root.display(),
+            preflight.available_bytes,
+            preflight.required_free_bytes
+        );
+    }
     let input = roots.resolve_input(&config.input)?;
     let input_text = input.display().to_string();
     let topics = list_topics(&input)?;
@@ -259,6 +270,13 @@ fn run() -> Result<(), Box<dyn Error>> {
     }
     for path in successful_receipts {
         manifest.add_file(ReceiptRole::Auxiliary, path)?;
+    }
+    if config.verify_manifest {
+        let validation = manifest.validate_local_files()?;
+        eprintln!(
+            "validated manifest: local_files={} uri_entries={} total_bytes={}",
+            validation.checked_local_files, validation.uri_entries, validation.total_bytes
+        );
     }
     manifest.write_json(&manifest_path)?;
     eprintln!("wrote receipt {}", receipt_path.display());
@@ -428,6 +446,8 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
         manifest: None,
         input_root: None,
         output_root: None,
+        min_output_free_bytes: None,
+        verify_manifest: false,
         chunk_points: DEFAULT_STREAM_CHUNK_POINTS,
         memory_bytes: DEFAULT_STREAM_MEMORY_BUDGET_BYTES,
     };
@@ -447,6 +467,10 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
             "--output-root" => {
                 config.output_root = Some(PathBuf::from(next_value(&mut args, &flag)?));
             }
+            "--min-output-free-bytes" => {
+                config.min_output_free_bytes = Some(parse_one(&mut args, &flag)?);
+            }
+            "--verify-manifest" => config.verify_manifest = true,
             "--chunk-points" => config.chunk_points = parse_one(&mut args, &flag)?,
             "--memory-budget" => config.memory_bytes = parse_one(&mut args, &flag)?,
             _ => return Err(format!("unknown option `{flag}`\n{}", usage()).into()),
@@ -458,6 +482,9 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
     }
     if config.list_topics && config.manifest.is_some() {
         return Err("--manifest is only available for batch conversion".into());
+    }
+    if config.list_topics && config.verify_manifest {
+        return Err("--verify-manifest is only available for batch conversion".into());
     }
     Ok(config)
 }
@@ -482,7 +509,8 @@ fn next_value(
 fn usage() -> String {
     "usage: rosbag2_ingest INPUT_DB3 [--list-topics] [--output-dir DIR] \
      [--topic TOPIC]... [--receipt PATH] [--manifest PATH] \
-     [--input-root DIR] [--output-root DIR] [--chunk-points N] [--memory-budget BYTES]"
+     [--input-root DIR] [--output-root DIR] [--min-output-free-bytes BYTES] \
+     [--verify-manifest] [--chunk-points N] [--memory-budget BYTES]"
         .into()
 }
 
@@ -506,6 +534,9 @@ mod tests {
                 "/media/input",
                 "--output-root",
                 "/media/output",
+                "--min-output-free-bytes",
+                "4096",
+                "--verify-manifest",
                 "--chunk-points",
                 "32",
                 "--memory-budget",
@@ -520,6 +551,8 @@ mod tests {
         assert_eq!(config.chunk_points, 32);
         assert_eq!(config.memory_bytes, 4096);
         assert_eq!(config.input_root.as_deref(), Some(std::path::Path::new("/media/input")));
+        assert_eq!(config.min_output_free_bytes, Some(4096));
+        assert!(config.verify_manifest);
     }
 
     #[test]

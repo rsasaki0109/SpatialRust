@@ -936,4 +936,4 @@ evidence, and fail-closed acceptance gates live in
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | 141A | Complete | Canonical external input snapshot, topic counts, output hashes, storage policy, and fail-closed downstream gates | [`docs/REAL_DATA_ACCEPTANCE.md`](REAL_DATA_ACCEPTANCE.md) |
-| 141B | Planned | Automated preflight and manifest validation against the canonical result root | external-root test and receipt |
+| 141B | Complete | Automated absolute-root/free-space preflight and local checksum manifest validation | `storage-preflight`, `DatasetManifest::validate_local_files`, and rosbag2 CLI smoke |
