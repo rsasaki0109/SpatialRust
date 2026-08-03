@@ -126,6 +126,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   emits a static dashboard and checksummed manifest, and withholds packets on
   source or topic-frame identity mismatch; uncalibrated packets remain
   inspection-only.
+- **Edge Partition Execution Receipt (145I)**: `spatialrust-viewer` now
+  exposes source-bound edge/host partition, named-transfer, and queue receipts.
+  The `rosbag2_edge_partition` example consumes a verified live-publish state,
+  exercises `spatialrust-distribute` graph/topology/backpressure contracts,
+  emits a portable dashboard and manifest, and withholds transfers on source or
+  upstream admission failure; calibrated mapping remains a separate gate.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
