@@ -30,6 +30,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   space below the caller's floor before source admission. `DatasetManifest`
   can read and re-hash existing JSON receipts, while `rosbag2_ingest` exposes
   `--min-output-free-bytes` and `--verify-manifest` for bounded runs.
+- **Bounded rosbag2 E2E smoke**: the feature-gated `rosbag2_e2e` example now
+  connects external PointCloud2 records through deterministic synchronization,
+  bounded ICP odometry, TSDF extraction, record semantic entities, borrowed
+  Viewer layers, embedded glTF export, and a re-hashed run manifest. It keeps
+  calibration and front/rear fusion explicitly out of the acceptance claim.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema

@@ -117,6 +117,34 @@ the external receipt and manifest under
 messages into 1,536 chunks and 22,266,624 points, and re-hashed four local
 manifest files totaling 1,159,004,968 bytes. No repository data was created.
 
+## 143A bounded E2E smoke evidence
+
+The bounded E2E example
+`rosbag2_e2e` ran against the canonical input with two retained chunks per
+topic under
+`/media/sasaki/aiueo/spatialrust-results/v1-3/143a-e2e-smoke/`. The run
+checked the 20 GiB floor before opening the bag and observed 162,144,653,312
+bytes available before the pipeline and 162,025,279,488 bytes after the
+pipeline stages. It retained four records and 115,972 points within the
+256 MiB source/episode budgets, then matched two front/rear bundles with a
+maximum delta of 92,435,944 ns.
+
+The front-only, same-frame downstream smoke produced one bounded ICP motion,
+integrated 57,986 points into a 200×200×80 TSDF, extracted 1,064,304 vertices
+and 354,768 triangles, created two deterministic semantic record entities,
+and validated two Viewer layers without device uploads. The embedded glTF
+output is 22,705,791 bytes with SHA-256
+`94a2d1405d392bed35182ecd2a69aba80cda3891562799904966fb1350bd1330`.
+The manifest re-hashed the canonical input, glTF output, and E2E receipt as
+three local entries totaling 736,379,566 bytes. The receipt and manifest are:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/143a-e2e-smoke/rosbag2.e2e.receipt.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/143a-e2e-smoke/rosbag2.e2e.manifest.json`
+
+This is accepted as vertical contract smoke evidence only. It does not apply
+clock calibration or a front/rear extrinsic, does not fuse the two frames, and
+does not claim full-bag mapping or semantic model quality.
+
 ## Acceptance gates
 
 | Gate | Requirement | Current status |
@@ -127,10 +155,11 @@ manifest files totaling 1,159,004,968 bytes. No repository data was created.
 | Deterministic ingest | Repeated output trees produce the same per-topic LAS hashes and counts | Accepted |
 | Output-root preflight | Absolute external result root and minimum free-space floor checked before bag access | Accepted |
 | Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
+| Bounded vertical E2E | rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF receipt | Accepted as 143A smoke only |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
 | Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Not accepted; no extrinsic evidence |
-| Mapping/reconstruction | Bounded odometry, pose graph, TSDF, and mesh receipt on this input | Not run |
-| Semantic/Viewer/interchange | Record semantic entities, Viewer layer, and glTF/OpenUSD receipt on this input | Not run |
+| Mapping/reconstruction | Bounded odometry, pose graph, TSDF, and mesh receipt on this input | Not accepted; 143A prefix smoke only |
+| Semantic/Viewer/interchange | Record semantic entities, Viewer layer, and glTF/OpenUSD receipt on this input | Not accepted; deterministic adapter smoke only |
 | Data hygiene | No sensor or derived artifacts in the repository; all paths are external | Accepted |
 
 Full v1.3 acceptance requires all rows to be accepted. Until clock and frame
@@ -155,9 +184,10 @@ Every future E2E run must record:
 
 ## Next implementation gates
 
-1. Extend the result-root preflight and manifest policy to run-scoped receipts.
+1. Add run-scoped checkpoints, survivor cleanup, and deterministic resume to the
+   external result-root policy.
 2. Provide or register the clock calibration and front/rear extrinsic artifact.
-3. Run the bounded full-bag path through odometry and TSDF before adding any
-   semantic model runtime.
-4. Add semantic, Viewer, and interchange receipts only after the geometric
-   output has a valid frame and provenance chain.
+3. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
+   TSDF run before adding any semantic model runtime.
+4. Add semantic, Viewer, and interchange quality receipts only after the
+   geometric output has a valid frame and provenance chain.
