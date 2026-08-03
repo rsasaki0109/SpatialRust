@@ -92,6 +92,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   and emits JSON, a static HTML dashboard, and a checksummed manifest on the
   external SSD. Replay readiness is separate from mapping admission, so absent
   clock/TF calibration remains visibly fail-closed.
+- **Source-bound Map Diff (145D)**: `spatialrust-interchange` can decode the
+  embedded buffers emitted by its minimal glTF exporter, while
+  `spatialrust-viewer` exposes `MapDiffState` for source/frame-bound geometry
+  comparison. The feature-gated `rosbag2_map_diff` example emits stable-index
+  displacement metrics, topology/hash checks, a 16×16 HTML heatmap, and a
+  checksummed external manifest; uncalibrated maps remain inspection-only.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema

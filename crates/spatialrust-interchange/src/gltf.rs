@@ -39,25 +39,153 @@ pub fn export_triangle_mesh_gltf_json(mesh: &TriangleMesh) -> InterchangeResult<
 /// Full binary decode is intentionally limited to validating SpatialRust-authored payloads
 /// that embed `accessors` counts.
 pub fn import_triangle_mesh_gltf_json(json: &str) -> InterchangeResult<(usize, usize)> {
-    let vertex_count = extract_count(json, "\"type\":\"VEC3\"")?;
-    let index_count = extract_count(json, "\"type\":\"SCALAR\"")?;
-    Ok((vertex_count, index_count))
+    let mesh = decode_triangle_mesh_gltf_json(json)?;
+    Ok((mesh.vertex_count(), mesh.indices.len()))
 }
 
-fn extract_count(json: &str, marker: &str) -> InterchangeResult<usize> {
+/// Decodes a SpatialRust-exported glTF JSON mesh with embedded base64 buffers.
+///
+/// The portable interchange boundary intentionally accepts only the minimal
+/// glTF shape emitted by [`export_triangle_mesh_gltf_json`]. It does not fetch
+/// external buffers, interpret arbitrary glTF scenes, or apply transforms.
+pub fn decode_triangle_mesh_gltf_json(json: &str) -> InterchangeResult<TriangleMesh> {
+    if !json.contains(r#""version":"2.0""#) {
+        return Err(InterchangeError::InvalidConfiguration(
+            "missing glTF 2.0 asset version".into(),
+        ));
+    }
+    let vertex_count = extract_accessor_count(json, "VEC3")?;
+    let index_count = extract_accessor_count(json, "SCALAR")?;
+    let buffers = extract_embedded_buffers(json)?;
+    if buffers.len() < 2 {
+        return Err(InterchangeError::InvalidConfiguration(
+            "glTF mesh requires embedded position and index buffers".into(),
+        ));
+    }
+    let position_bytes = base64_decode(buffers[0])?;
+    let index_bytes = base64_decode(buffers[1])?;
+    let expected_position_bytes = vertex_count
+        .checked_mul(3)
+        .and_then(|count| count.checked_mul(std::mem::size_of::<f32>()))
+        .ok_or_else(|| {
+            InterchangeError::InvalidConfiguration("position byte count overflow".into())
+        })?;
+    let expected_index_bytes =
+        index_count.checked_mul(std::mem::size_of::<u32>()).ok_or_else(|| {
+            InterchangeError::InvalidConfiguration("index byte count overflow".into())
+        })?;
+    if position_bytes.len() != expected_position_bytes {
+        return Err(InterchangeError::InvalidConfiguration(format!(
+            "position buffer has {} bytes; expected {}",
+            position_bytes.len(),
+            expected_position_bytes
+        )));
+    }
+    if index_bytes.len() != expected_index_bytes {
+        return Err(InterchangeError::InvalidConfiguration(format!(
+            "index buffer has {} bytes; expected {}",
+            index_bytes.len(),
+            expected_index_bytes
+        )));
+    }
+
+    let mut positions = Vec::with_capacity(vertex_count * 3);
+    for chunk in position_bytes.chunks_exact(4) {
+        positions.push(f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+    }
+    let mut indices = Vec::with_capacity(index_count);
+    for chunk in index_bytes.chunks_exact(4) {
+        let index = u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+        if usize::try_from(index).map_or(true, |index| index >= vertex_count) {
+            return Err(InterchangeError::InvalidConfiguration(format!(
+                "mesh index {} is outside {} vertices",
+                index, vertex_count
+            )));
+        }
+        indices.push(index);
+    }
+    Ok(TriangleMesh { positions, indices })
+}
+
+fn extract_accessor_count(json: &str, value_type: &str) -> InterchangeResult<usize> {
+    let marker = format!(r#""type":"{value_type}""#);
     let idx = json
-        .find(marker)
+        .find(&marker)
         .ok_or_else(|| InterchangeError::InvalidConfiguration(format!("missing {marker}")))?;
     let before = &json[..idx];
     let key = "\"count\":";
     let count_idx = before
         .rfind(key)
-        .ok_or_else(|| InterchangeError::InvalidConfiguration("missing count".into()))?;
+        .ok_or_else(|| InterchangeError::InvalidConfiguration("missing accessor count".into()))?;
     let rest = &before[count_idx + key.len()..];
     let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
-    digits
-        .parse()
-        .map_err(|_| InterchangeError::InvalidConfiguration("count is not an integer".into()))
+    digits.parse().map_err(|_| {
+        InterchangeError::InvalidConfiguration("accessor count is not an integer".into())
+    })
+}
+
+fn extract_embedded_buffers(json: &str) -> InterchangeResult<Vec<&str>> {
+    let marker = r#""uri":"data:application/octet-stream;base64,"#;
+    let buffers: Vec<_> =
+        json.split(marker).skip(1).filter_map(|rest| rest.split('"').next()).collect();
+    if buffers.iter().any(|buffer| buffer.is_empty() && !json.contains(r#""byteLength":0"#)) {
+        return Err(InterchangeError::InvalidConfiguration(
+            "embedded glTF buffer URI is empty or malformed".into(),
+        ));
+    }
+    Ok(buffers)
+}
+
+fn base64_decode(value: &str) -> InterchangeResult<Vec<u8>> {
+    if value.len() % 4 != 0 {
+        return Err(InterchangeError::InvalidConfiguration(
+            "base64 buffer length must be a multiple of four".into(),
+        ));
+    }
+    let mut output = Vec::with_capacity(value.len() / 4 * 3);
+    for (chunk_index, chunk) in value.as_bytes().chunks_exact(4).enumerate() {
+        let a = base64_value(chunk[0]).ok_or_else(|| invalid_base64(chunk_index))?;
+        let b = base64_value(chunk[1]).ok_or_else(|| invalid_base64(chunk_index))?;
+        let c = if chunk[2] == b'=' {
+            0
+        } else {
+            base64_value(chunk[2]).ok_or_else(|| invalid_base64(chunk_index))?
+        };
+        let d = if chunk[3] == b'=' {
+            0
+        } else {
+            base64_value(chunk[3]).ok_or_else(|| invalid_base64(chunk_index))?
+        };
+        output.push((a << 2) | (b >> 4));
+        if chunk[2] != b'=' {
+            output.push((b << 4) | (c >> 2));
+        }
+        if chunk[3] != b'=' {
+            if chunk[2] == b'=' {
+                return Err(invalid_base64(chunk_index));
+            }
+            output.push((c << 6) | d);
+        }
+        if (chunk[2] == b'=' || chunk[3] == b'=') && chunk_index + 1 != value.len() / 4 {
+            return Err(invalid_base64(chunk_index));
+        }
+    }
+    Ok(output)
+}
+
+fn base64_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'A'..=b'Z' => Some(byte - b'A'),
+        b'a'..=b'z' => Some(byte - b'a' + 26),
+        b'0'..=b'9' => Some(byte - b'0' + 52),
+        b'+' => Some(62),
+        b'/' => Some(63),
+        _ => None,
+    }
+}
+
+fn invalid_base64(chunk_index: usize) -> InterchangeError {
+    InterchangeError::InvalidConfiguration(format!("invalid base64 buffer at chunk {chunk_index}"))
 }
 
 fn f32_slice_as_bytes(values: &[f32]) -> Vec<u8> {
@@ -90,7 +218,10 @@ fn base64_encode(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{export_triangle_mesh_gltf_json, import_triangle_mesh_gltf_json};
+    use super::{
+        decode_triangle_mesh_gltf_json, export_triangle_mesh_gltf_json,
+        import_triangle_mesh_gltf_json,
+    };
     use spatialrust_scene::TriangleMesh;
 
     #[test]
@@ -103,5 +234,14 @@ mod tests {
         let (vertices, indices) = import_triangle_mesh_gltf_json(&json).unwrap();
         assert_eq!(vertices, 3);
         assert_eq!(indices, 3);
+        assert_eq!(decode_triangle_mesh_gltf_json(&json).unwrap(), mesh);
+    }
+
+    #[test]
+    fn rejects_invalid_embedded_index() {
+        let mesh = TriangleMesh { positions: vec![0.0, 0.0, 0.0], indices: vec![] };
+        let json = export_triangle_mesh_gltf_json(&mesh).unwrap();
+        let invalid = json.replace("\"byteLength\":0", "\"byteLength\":4");
+        assert!(decode_triangle_mesh_gltf_json(&invalid).is_err());
     }
 }
