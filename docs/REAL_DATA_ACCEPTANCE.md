@@ -370,6 +370,44 @@ also produced zero changed vertices. The negative source-binding probe at
 withholds all comparison cells and reports `compare_ready:false` when the
 expected input identity is wrong.
 
+## 145E AI Semantic Overlay evidence
+
+`rosbag2_semantic_overlay` reads the existing receipt-backed 143A glTF map
+without reopening or modifying the canonical DB3. It requires the exact
+canonical input SHA-256 and an expected frame, samples at most 4,096 map
+vertices, and feeds explicit CPU-owned `[1,4,N]` features
+`(normalized x, y, z, horizontal radius)` into the deterministic
+`spatialrust-ai` `MockProfile::SemanticClasses`. The mock profile is a
+visualization fixture, not a learned ontology or production model.
+
+The primary external evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145e-ai-semantic-overlay/semantic-overlay.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145e-ai-semantic-overlay/semantic-overlay.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145e-ai-semantic-overlay/semantic-overlay.manifest.json`
+
+The run checked the canonical SHA-256
+`b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8`, matched
+the `lidar_front` frame, and produced `overlay_ready:true` for 4,094 bounded
+predictions over 1,064,304 input vertices. All three declared classes were
+represented: `ground` 497, `structure` 3,096, and `object` 501. Mean
+confidence was `797875` millionths and p95 was `960000` millionths. The model
+receipt records 65,504 input host bytes, 32,752 output host bytes, and zero
+device upload/readback bytes. The manifest re-hashes six local entries totaling
+737,996,457 bytes.
+
+`mapping_admitted:false` is intentional. The state and dashboard expose the
+header-stamp time basis, missing clock calibration, unapplied TF/frame
+composition, visualization-only deterministic mock, and missing
+source-bound production model receipt as blockers. No unapproved conversion or
+fusion is accepted as mapping evidence.
+
+The negative source-binding probe is retained at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145e-ai-semantic-overlay-validation-probe/semantic-overlay.json`.
+It used a deliberately wrong 64-character SHA, emitted zero predictions,
+recorded `runtime:"not run: source/frame admission failed"`, set
+`overlay_ready:false`, wrote its six-entry manifest, and exited with status 2.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,

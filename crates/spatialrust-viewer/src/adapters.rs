@@ -12,6 +12,8 @@ use spatialrust_viz::{PointColor, PointStyle};
 #[cfg(any(feature = "scene", feature = "mapping", feature = "camera", feature = "semantic"))]
 use crate::ViewerError;
 use crate::ViewerResult;
+#[cfg(feature = "semantic")]
+use crate::{SemanticOverlayState, SEMANTIC_CONFIDENCE_SCALE};
 
 /// Evidence describing one explicit scene-to-visual adaptation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -381,6 +383,81 @@ pub fn spatial_record_entity_visual(
     )
 }
 
+/// Converts a validated AI semantic overlay into RGB-colored confidence points.
+///
+/// The state remains the receipt source. This adapter only materializes the
+/// renderer-facing XYZ, RGB, and confidence columns, and refuses a blocked
+/// source/frame overlay instead of rendering unbound predictions.
+#[cfg(feature = "semantic")]
+pub fn semantic_overlay_visual(
+    namespace: &str,
+    state: &SemanticOverlayState,
+) -> ViewerResult<AdaptedVisual> {
+    state.validate()?;
+    if !state.overlay_ready {
+        return Err(ViewerError::InvalidState("cannot render a blocked semantic overlay".into()));
+    }
+    let mut x = Vec::with_capacity(state.entities.len());
+    let mut y = Vec::with_capacity(state.entities.len());
+    let mut z = Vec::with_capacity(state.entities.len());
+    let mut red = Vec::with_capacity(state.entities.len());
+    let mut green = Vec::with_capacity(state.entities.len());
+    let mut blue = Vec::with_capacity(state.entities.len());
+    let mut confidence = Vec::with_capacity(state.entities.len());
+    for entity in &state.entities {
+        let class =
+            state.classes.iter().find(|class| class.class_id == entity.class_id).ok_or_else(
+                || ViewerError::InvalidState("semantic overlay class is missing".into()),
+            )?;
+        let coordinates = entity.centroid_um.map(|value| value as f64 / 1_000_000.0);
+        if coordinates.iter().any(|value| !value.is_finite()) {
+            return Err(ViewerError::InvalidState(
+                "semantic overlay coordinate is not finite".into(),
+            ));
+        }
+        x.push(coordinates[0] as f32);
+        y.push(coordinates[1] as f32);
+        z.push(coordinates[2] as f32);
+        red.push(class.color_rgb[0]);
+        green.push(class.color_rgb[1]);
+        blue.push(class.color_rgb[2]);
+        confidence.push(entity.confidence_million as f32 / SEMANTIC_CONFIDENCE_SCALE as f32);
+    }
+    let generated_bytes = bytes_f32(
+        x.len()
+            .checked_add(y.len())
+            .and_then(|value| value.checked_add(z.len()))
+            .and_then(|value| value.checked_add(confidence.len()))
+            .ok_or_else(|| {
+                ViewerError::InvalidState("semantic overlay point count overflow".into())
+            })?,
+    )?
+    .checked_add(red.len().checked_mul(3).ok_or_else(|| {
+        ViewerError::InvalidState("semantic overlay RGB byte count overflow".into())
+    })?)
+    .ok_or_else(|| ViewerError::InvalidState("semantic overlay byte count overflow".into()))?;
+    Ok(AdaptedVisual {
+        id: adapter_id(namespace, "semantic-overlay")?,
+        label: "AI semantic overlay".into(),
+        geometry: AdaptedGeometry::Points {
+            x,
+            y,
+            z,
+            rgb: Some([red, green, blue]),
+            scalar: Some(("confidence".into(), confidence)),
+        },
+        style: VisualStyle::Points(PointStyle::try_new(5.0, PointColor::Rgb)?),
+        receipt: AdapterReceipt {
+            source_identity: state.entities.as_ptr() as usize,
+            source_count: usize::try_from(state.summary.sampled_point_count).map_err(|_| {
+                ViewerError::InvalidState("semantic overlay source count overflows usize".into())
+            })?,
+            output_count: state.entities.len(),
+            generated_bytes,
+        },
+    })
+}
+
 #[cfg(any(feature = "scene", feature = "semantic"))]
 struct PointScalarColumns<'a> {
     x: Vec<f32>,
@@ -669,5 +746,72 @@ mod tests {
             panic!("record semantic adapter must produce points");
         };
         assert_eq!(points.scalar.unwrap().values, &[0.9]);
+    }
+
+    #[cfg(feature = "semantic")]
+    #[test]
+    fn semantic_overlay_adapter_preserves_class_rgb_and_receipt_counts() {
+        let sha = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        let source =
+            super::super::StudioSource::try_new("canonical", "/media/input.db3", sha, sha, true)
+                .unwrap();
+        let model = super::super::SemanticOverlayModel::try_new(
+            "mock-semantic-classes",
+            "mock",
+            "deterministic test profile",
+            true,
+            4,
+            3,
+            16,
+            8,
+            0,
+            0,
+        )
+        .unwrap();
+        let class = super::super::SemanticOverlayClass::try_new(
+            2,
+            "object",
+            [255, 143, 83],
+            1,
+            950_000,
+            950_000,
+        )
+        .unwrap();
+        let entity = super::super::SemanticOverlayEntity::try_new(
+            "semantic:0",
+            0,
+            2,
+            "object",
+            950_000,
+            [1_000_000, 2_000_000, 3_000_000],
+        )
+        .unwrap();
+        let summary = super::super::SemanticOverlaySummary::try_new(
+            1, 1, 1, 1, 1, 950_000, 950_000, 1_000_000, true, true, false,
+        )
+        .unwrap();
+        let state = super::super::SemanticOverlayState::try_new(
+            "AI Semantic Overlay",
+            source,
+            "lidar_front",
+            "lidar_front",
+            "PointCloud2 header stamp",
+            model,
+            vec![class],
+            vec![entity],
+            Vec::new(),
+            summary,
+            vec!["clock calibration not applied".into()],
+        )
+        .unwrap();
+        let adapted = super::semantic_overlay_visual("overlay", &state).unwrap();
+        assert_eq!(adapted.receipt.source_count, 1);
+        assert_eq!(adapted.receipt.output_count, 1);
+        assert_eq!(adapted.receipt.generated_bytes, 19);
+        let VisualPrimitive::Points(points) = adapted.as_layer().unwrap().primitive else {
+            panic!("semantic overlay adapter must produce points");
+        };
+        assert_eq!(points.rgb.unwrap().red, &[255]);
+        assert_eq!(points.scalar.unwrap().values, &[0.95]);
     }
 }

@@ -98,6 +98,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   comparison. The feature-gated `rosbag2_map_diff` example emits stable-index
   displacement metrics, topology/hash checks, a 16×16 HTML heatmap, and a
   checksummed external manifest; uncalibrated maps remain inspection-only.
+- **AI Semantic Overlay (145E)**: `spatialrust-ai` adds a deterministic
+  `SemanticClasses` mock profile with explicit host tensor copy policies, and
+  `spatialrust-viewer` exposes quantized, source-indexed
+  `SemanticOverlayState` plus an RGB/confidence adapter. The feature-gated
+  `rosbag2_semantic_overlay` example reuses a receipt-backed E2E glTF map to
+  emit a portable JSON state, canvas dashboard, and checksummed manifest.
+  Source/frame identity mismatches withhold inference, while absent clock/TF
+  calibration and a production model receipt keep mapping admission blocked.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
