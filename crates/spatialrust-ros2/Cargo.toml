@@ -83,3 +83,7 @@ required-features = ["rosbag2-sqlite"]
 [[example]]
 name = "rosbag2_semantic_overlay"
 required-features = ["rosbag2-sqlite"]
+
+[[example]]
+name = "rosbag2_digital_twin"
+required-features = ["rosbag2-sqlite"]
