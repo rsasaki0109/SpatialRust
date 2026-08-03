@@ -1,0 +1,136 @@
+# SpatialRust v1.3 real-data acceptance contract
+
+Status: active baseline, observed 2026-08-03. This document defines the
+external-data acceptance boundary for the post-Epic-140 operational program;
+it does not claim that the full downstream mapping or semantic pipeline has
+already passed.
+
+## Scope and storage boundary
+
+The canonical source is read-only and remains outside the repository. Source
+and derived sensor data must not be copied into
+`/home/sasaki/workspace/SpatialRust` or committed to Git.
+
+| Role | Canonical path |
+| --- | --- |
+| Code workspace | `/home/sasaki/workspace/SpatialRust` |
+| Input root | `/media/sasaki/aiueo/datasets/migrated` |
+| Result root | `/media/sasaki/aiueo/spatialrust-results` |
+| Canonical input | `/media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/rosbag2_2020_09_23-15_58_07.db3` |
+| Input metadata | `/media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/metadata.yaml` |
+
+New runs should use a run-scoped directory of the form
+`/media/sasaki/aiueo/spatialrust-results/v1-3/<run-id>/`. Each run must write a
+manifest before it is considered accepted. The manifest includes every input,
+output, receipt, and temporary-spool survivor with role, byte size, and
+SHA-256. Temporary files are confined to the result root and must be removed
+or listed explicitly when a run fails.
+
+The initial operational free-space floor is 20 GiB on the result filesystem.
+A preflight check must fail before opening the bag when the floor is not met,
+and every run receipt records available bytes before and after execution. The
+2026-08-03 observation was 155 GiB available on `/media/sasaki/aiueo` and
+52 GiB available on the workspace filesystem; the latter is not an output
+target.
+
+## Canonical input snapshot
+
+The rosbag2 SQLite snapshot is:
+
+| Field | Value |
+| --- | --- |
+| Storage | `sqlite3` |
+| Size | `713670656` bytes |
+| SHA-256 | `b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c` |
+| Duration | `76854162986` ns |
+| Starting timestamp | `1600901887524769241` ns since epoch |
+| Total messages | `1535` |
+| Supported PointCloud2 topics | `2` |
+| Explicitly skipped non-PointCloud2 topics | `11` |
+| Failed topics | `0` |
+
+The inventory and batch receipt evidence is retained at
+`/media/sasaki/aiueo/spatialrust-results/rosbag2-e2e/batch-inventory.json` and
+`/media/sasaki/aiueo/spatialrust-results/rosbag2-e2e/batch-provenance/rosbag2.ingest.receipt.json`.
+
+## Topic baseline
+
+| Topic | Messages | Schema | Chunks | Points | Peak tracked bytes |
+| --- | ---: | --- | ---: | ---: | ---: |
+| `/lidar_front/points_raw` | 768 | `ros2.sensor_msgs.msg.PointCloud2.xyzi` | 1536 | 22,266,624 | 993,608 |
+| `/lidar_rear/points_raw` | 767 | `ros2.sensor_msgs.msg.PointCloud2.xyzi` | 1534 | 22,237,631 | 993,608 |
+
+The corresponding batch-provenance LAS outputs are:
+
+| Output | Size | SHA-256 |
+| --- | ---: | --- |
+| `/media/sasaki/aiueo/spatialrust-results/rosbag2-e2e/batch-provenance/topic-2-lidar_front_points_raw.las` | 445,332,707 bytes | `0c7fff23b82bdd94b5a9af2ad858190269509df3973b5ed95f2b99fa00121700` |
+| `/media/sasaki/aiueo/spatialrust-results/rosbag2-e2e/batch-provenance/topic-8-lidar_rear_points_raw.las` | 444,752,847 bytes | `b77be6f9fa959a877f3c0a2738d18d72855259c50dce97949738d4e96c4c7189` |
+
+The equivalent `batch-ingest` outputs have the same two hashes. This is the
+current byte-level deterministic output evidence for identical input and
+conversion settings.
+
+## Bounded synchronization baseline
+
+The existing bounded preview uses eight records per topic, a 100 ms matching
+window, 256 MiB source and episode byte budgets, and a two-million-point
+episode limit. Its receipt is
+`/media/sasaki/aiueo/spatialrust-results/rosbag2-sync-preview.receipt.json`.
+
+Observed values:
+
+- 16 retained records and 463,888 retained points;
+- 7,422,208 retained episode bytes;
+- 8 matched bundles;
+- maximum matched delta `92,435,944` ns;
+- front/rear frames remain `lidar_front`/`lidar_rear`.
+
+The preview treats PointCloud2 header stamps as one external ROS clock domain.
+It performs no clock calibration and invents no front/rear extrinsic transform.
+This is accepted as a bounded synchronization smoke test only, not as a fused
+mapping result.
+
+## Acceptance gates
+
+| Gate | Requirement | Current status |
+| --- | --- | --- |
+| Input identity | Exact input size, SHA-256, metadata, and topic inventory | Accepted |
+| Topic scope | Two supported PointCloud2 topics, eleven explicit skips, zero failures | Accepted |
+| Bounded ingest | 256 MiB configured memory ceiling and receipt peak below the ceiling | Accepted |
+| Deterministic ingest | Repeated output trees produce the same per-topic LAS hashes and counts | Accepted |
+| Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
+| Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
+| Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Not accepted; no extrinsic evidence |
+| Mapping/reconstruction | Bounded odometry, pose graph, TSDF, and mesh receipt on this input | Not run |
+| Semantic/Viewer/interchange | Record semantic entities, Viewer layer, and glTF/OpenUSD receipt on this input | Not run |
+| Data hygiene | No sensor or derived artifacts in the repository; all paths are external | Accepted |
+
+Full v1.3 acceptance requires all rows to be accepted. Until clock and frame
+calibration evidence exists, front/rear data may be inspected separately but
+must not be reported as a fused world reconstruction.
+
+## Required full-run receipt
+
+Every future E2E run must record:
+
+- input and output manifest entries with role, size, and SHA-256;
+- repository commit, enabled feature set, command/configuration, host, and
+  available result-disk bytes before/after;
+- source topic/message/chunk/point counts, skipped and failed topics, and
+  peak tracked bytes;
+- clock-domain, calibration artifact identity, frame-graph path, and
+  uncertainty/quality values;
+- per-stage record/point/byte counts, dropped items with reasons, generated
+  output hashes, and explicit host/device transfer bytes;
+- deterministic run identity so a rerun can be compared without overwriting
+  the prior result directory.
+
+## Next implementation gates
+
+1. Add the result-root preflight and run-scoped manifest policy.
+2. Provide or register the clock calibration and front/rear extrinsic artifact.
+3. Run the bounded full-bag path through odometry and TSDF before adding any
+   semantic model runtime.
+4. Add semantic, Viewer, and interchange receipts only after the geometric
+   output has a valid frame and provenance chain.

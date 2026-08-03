@@ -913,3 +913,27 @@ COPC/index-driven LOD follows the Epics 127–132 contracts.
 - Mandatory native windowing, browser, Python, ROS 2, CUDA, or codec dependencies
   in the default workspace feature set.
 - Claims of universal interactive frame-rate parity across adapters or hardware.
+
+## Operational v1.3 program (Epics 141–146)
+
+The foundation and Visual programs are complete. The next program validates the
+same contracts against external rosbag2 data without moving sensor or derived
+artifacts into the repository. Its canonical input, storage roots, current
+evidence, and fail-closed acceptance gates live in
+[`docs/REAL_DATA_ACCEPTANCE.md`](REAL_DATA_ACCEPTANCE.md).
+
+| Epic | Status | Depends on | Outcome |
+| --- | --- | --- | --- |
+| 141 | Active | 91–100, 133–140 | External-data acceptance contract, canonical rosbag2 baseline, and reproducible run identity |
+| 142 | Planned | 141 | External SSD result-root preflight, run-scoped manifests, resumable checkpoints, and cleanup |
+| 143 | Planned | 141–142 | Full rosbag2 → records → sync → odometry → TSDF → semantic → Viewer/glTF/OpenUSD E2E |
+| 144 | Planned | 142–143 | Memory/transfer/latency budgets, benchmark receipts, failure recovery, and deterministic rerun comparison |
+| 145 | Planned | 143–144 | ROS 2 publish, edge/distributed partition execution, and optional AI runtime boundaries |
+| 146 | Planned | 141–145 | API stability, Python/docs/CI updates, security review, and v1.3 release receipt |
+
+### Epic 141 acceptance slices
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 141A | Complete | Canonical external input snapshot, topic counts, output hashes, storage policy, and fail-closed downstream gates | [`docs/REAL_DATA_ACCEPTANCE.md`](REAL_DATA_ACCEPTANCE.md) |
+| 141B | Planned | Automated preflight and manifest validation against the canonical result root | external-root test and receipt |

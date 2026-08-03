@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **v1.3 real-data acceptance contract**: `docs/REAL_DATA_ACCEPTANCE.md` fixes
+  the external rosbag2 snapshot, topic/count/hash baseline, SSD result-root
+  policy, bounded synchronization evidence, and explicit calibration and
+  downstream E2E gates. Sensor and derived artifacts remain outside the repo.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
