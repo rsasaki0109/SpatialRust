@@ -134,6 +134,28 @@ file is eligible for cleanup. The checkpoint is intentionally excluded from
 the data manifest because it is advanced after the manifest and is control
 plane state rather than a dataset payload.
 
+## 142B partial-ingest resume smoke evidence
+
+The E2E runner now persists the bounded `MemoryEpisode` immediately after
+ingest as
+`/media/sasaki/aiueo/spatialrust-results/v1-3/142b-ingest-resume-smoke-v2/rosbag2.e2e.episode.bin`
+with an atomic ingest summary at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/142b-ingest-resume-smoke-v2/rosbag2.e2e.ingest.json`.
+The binary checkpoint preserves the PointXYZ/PointXYZI schema family, ROS
+clock stamp and quality, frame/timestamp metadata, sensor origin, and
+`RecordProvenance`; the reader validates its magic, version, bounds, counts,
+and trailing bytes before admitting records.
+
+The real-data run used `--stop-after ingest`, then resumed the same directory
+with `--resume` without reopening the DB3. It loaded four XYZI records and
+115,972 points, matched two bundles, completed the same ICP/TSDF/semantic/
+Viewer/glTF path, and re-hashed five local manifest entries totaling
+738,238,733 bytes. The glTF hash remained
+`94a2d1405d392bed35182ecd2a69aba80cda3891562799904966fb1350bd1330`.
+Episode and ingest artifacts remain as auxiliary manifest survivors for audit
+and a future deeper-stage resume; the run-scoped checkpoint remains excluded
+because it is advanced after manifest creation.
+
 ## 143A bounded E2E smoke evidence
 
 The bounded E2E example
@@ -171,7 +193,7 @@ does not claim full-bag mapping or semantic model quality.
 | Bounded ingest | 256 MiB configured memory ceiling and receipt peak below the ceiling | Accepted |
 | Deterministic ingest | Repeated output trees produce the same per-topic LAS hashes and counts | Accepted |
 | Output-root preflight | Absolute external result root and minimum free-space floor checked before bag access | Accepted |
-| Run-scoped checkpoint | Atomic stage state, complete-run resume verification, and fail-closed partial-run handling | Accepted as 142A smoke |
+| Run-scoped checkpoint | Atomic stage state, complete-run verification, persisted ingest artifact, and no-overwrite partial resume | Accepted as 142A/142B smoke |
 | Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
 | Bounded vertical E2E | rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF receipt | Accepted as 143A smoke only |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
@@ -202,10 +224,8 @@ Every future E2E run must record:
 
 ## Next implementation gates
 
-1. Persist intermediate stage artifacts so partial checkpoints can resume stage
-   work, while retaining the no-overwrite rule.
-2. Provide or register the clock calibration and front/rear extrinsic artifact.
-3. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
+1. Provide or register the clock calibration and front/rear extrinsic artifact.
+2. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
    TSDF run before adding any semantic model runtime.
-4. Add semantic, Viewer, and interchange quality receipts only after the
+3. Add semantic, Viewer, and interchange quality receipts only after the
    geometric output has a valid frame and provenance chain.

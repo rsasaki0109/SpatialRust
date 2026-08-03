@@ -943,7 +943,7 @@ evidence, and fail-closed acceptance gates live in
 | Slice | Status | Scope | Evidence |
 | --- | --- | --- | --- |
 | 142A | Complete | Atomic run-scoped stage checkpoint, complete-run resume verification, and narrow temp cleanup | `rosbag2_e2e --resume`, external `142a-checkpoint-smoke` receipt |
-| 142B | Planned | Persisted intermediate artifacts for partial-stage resume and survivor cleanup policy | pending stage artifact format |
+| 142B | Complete | Persisted bounded XYZ/XYZI ingest episode and summary for partial-stage resume, with manifest-tracked survivors | `--stop-after ingest` → `--resume`, external `142b-ingest-resume-smoke-v2` receipt/manifest |
 
 ### Epic 143 progress
 
