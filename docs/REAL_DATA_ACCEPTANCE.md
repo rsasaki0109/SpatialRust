@@ -450,6 +450,49 @@ It used a deliberately wrong expected SHA, emitted no glTF or USDA files,
 withheld the semantic layer, wrote a seven-entry manifest with
 `twin_ready:false`, and exited with status 2.
 
+## 145G Dataset Health Dashboard evidence
+
+`rosbag2_dataset_health` aggregates the canonical source, the external
+readiness receipt, and the validated 145A–145F stage snapshots into one
+source-bound health state. It re-hashes the canonical input and every accepted
+stage artifact, checks the front/rear PointCloud2 inventory, verifies the
+receipt-backed mesh counts, records free-space and output-manifest totals, and
+renders a static dashboard. Stage artifacts are accepted only when their source
+identity matches; a wrong source identity withholds the complete stage
+aggregation and remains a CLI failure.
+
+The primary positive evidence is:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145g-dataset-health-v2/dataset-health.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145g-dataset-health-v2/dataset-health.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145g-dataset-health-v2/dataset-health.manifest.json`
+
+The canonical input is
+`/media/sasaki/aiueo/datasets/migrated/autoware_data/rosbag2_2020_09_23-15_58_07/rosbag2_2020_09_23-15_58_07.db3`
+with SHA-256
+`b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8`. The
+dashboard observed two accepted lidar topics, 1,535 source messages, four
+retained records, and 115,972 retained points. All six stages were present:
+145A, 145C, 145D, 145E, and 145F passed source-bound validation, while 145B
+remained an explicit warning because no registered calibration composition was
+available. The state recorded 25 stage/source artifacts and 18 checks: 13
+passes, two warnings, and three non-critical blocked checks.
+
+The positive state is `dataset_ready:true` but
+`mapping_admitted:false`. The canonical bag contains no `/clock`, `/tf`,
+`/tf_static`, or `/odom` topic, and the calibration readiness receipt remains
+`registration_ready:false`; these are visible blockers for calibrated mapping,
+not reasons to hide the otherwise healthy replay/inspection dataset. No
+separate TF fixture, inferred transform, unapproved conversion, or cross-source
+fusion is admitted.
+
+The negative source-binding probe is retained at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145g-dataset-health-validation-probe/dataset-health.json`.
+It used a deliberately wrong 64-character expected SHA, emitted no 145A–145F
+stage aggregation, set `dataset_ready:false` and `mapping_admitted:false`,
+and exited with status 2. Its manifest still records the checked canonical and
+readiness inputs, making the fail-closed decision auditable.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,

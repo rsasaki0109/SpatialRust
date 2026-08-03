@@ -9,6 +9,7 @@
 
 mod adapters;
 mod controls;
+mod dataset_health;
 mod digital_twin;
 mod error;
 mod map_diff;
@@ -34,6 +35,10 @@ pub use adapters::{pose_graph_visual, trajectory_visual};
 pub use adapters::{semantic_overlay_visual, semantic_visual, spatial_record_entity_visual};
 pub use adapters::{AdaptedGeometry, AdaptedVisual, AdapterReceipt};
 pub use controls::{InputAction, ViewerController};
+pub use dataset_health::{
+    DatasetHealthCheck, DatasetHealthStage, DatasetHealthState, DatasetHealthSummary,
+    DatasetHealthTopic, DATASET_HEALTH_STATE_VERSION,
+};
 pub use digital_twin::{
     DigitalTwinAsset, DigitalTwinState, DigitalTwinSummary, DIGITAL_TWIN_STATE_VERSION,
 };

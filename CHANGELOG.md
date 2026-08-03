@@ -113,6 +113,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   HTML dashboard, and checksummed manifest. Optional semantic attachment is
   source/frame checked, and wrong canonical identity withholds both geometry
   assets fail-closed.
+- **Dataset Health Dashboard (145G)**: `spatialrust-viewer` now exposes a
+  source-bound `DatasetHealthState` that aggregates topic, canonical artifact,
+  frame, calibration, and 145A–145F stage health. The feature-gated
+  `rosbag2_dataset_health` example emits a JSON dashboard, static HTML, and
+  checksummed manifest on the external SSD; exact source/frame mismatches
+  withhold stage aggregation and mapping admission fail-closed.
 - **Versioned record lineage**: `spatialrust-records::SpatialRecord` now carries
   a validated, protocol-independent `RecordProvenance` envelope for source
   identity, source URI, logical stream, and deterministic sequence. Schema
