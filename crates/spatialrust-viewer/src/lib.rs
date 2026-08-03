@@ -14,6 +14,7 @@ mod error;
 mod native;
 mod overlay;
 mod state;
+mod studio;
 mod timeline;
 
 #[cfg(feature = "camera")]
@@ -35,5 +36,9 @@ pub use overlay::{DebugOverlay, OverlayGeometry, OverlayKind};
 pub use state::{
     AttributeSummary, InspectorSelection, LayerPresentation, ViewerState, ViewportSize,
     VIEWER_STATE_VERSION,
+};
+pub use studio::{
+    StudioCalibration, StudioFrameGraph, StudioLayer, StudioPerformance, StudioSource,
+    StudioStageMetric, StudioState, StudioTimeline, STUDIO_STATE_VERSION,
 };
 pub use timeline::{FrameTimestamps, RgbdFrameView, RgbdPixelSample, RgbdTimeline};
