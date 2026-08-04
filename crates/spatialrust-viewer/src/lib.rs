@@ -16,6 +16,7 @@ mod edge_partition;
 mod error;
 mod live_publish;
 mod map_diff;
+mod mapping_gate;
 mod mission_cockpit;
 #[cfg(feature = "native")]
 mod native;
@@ -61,6 +62,10 @@ pub use live_publish::{
 };
 pub use map_diff::{
     MapDiffBounds, MapDiffCell, MapDiffMap, MapDiffState, MapDiffSummary, MAP_DIFF_STATE_VERSION,
+};
+pub use mapping_gate::{
+    FullBagMappingState, MappingGateSummary, MappingOdometrySummary, MappingSourceSummary,
+    MappingTsdfSummary, FULL_BAG_MAPPING_STATE_VERSION,
 };
 pub use mission_cockpit::{
     MissionCockpitFrame, MissionCockpitLayer, MissionCockpitLink, MissionCockpitNode,

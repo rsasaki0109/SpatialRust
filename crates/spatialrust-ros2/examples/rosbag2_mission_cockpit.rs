@@ -28,10 +28,10 @@ use spatialrust_sync::{
     StampedTime,
 };
 use spatialrust_viewer::{
-    CalibrationEvidenceState, EdgePartitionState, LivePublishPacket, LivePublishState,
-    MissionCockpitFrame, MissionCockpitLayer, MissionCockpitLink, MissionCockpitNode,
-    MissionCockpitPoint, MissionCockpitState, MissionCockpitSummary, MissionCockpitTimeline,
-    ReplayArtifact, StudioSource, MISSION_COCKPIT_MAX_SAMPLED_POINTS,
+    CalibrationEvidenceState, EdgePartitionState, FullBagMappingState, LivePublishPacket,
+    LivePublishState, MissionCockpitFrame, MissionCockpitLayer, MissionCockpitLink,
+    MissionCockpitNode, MissionCockpitPoint, MissionCockpitState, MissionCockpitSummary,
+    MissionCockpitTimeline, ReplayArtifact, StudioSource, MISSION_COCKPIT_MAX_SAMPLED_POINTS,
 };
 
 const CHUNK_POINTS: usize = 65_536;
@@ -50,6 +50,7 @@ struct Config {
     edge_partition_json: PathBuf,
     calibration_readiness: PathBuf,
     calibration_evidence: Option<PathBuf>,
+    mapping_state: Option<PathBuf>,
     output_dir: PathBuf,
     expected_sha256: String,
     sample_points: usize,
@@ -118,6 +119,16 @@ fn run() -> Result<(), Box<dyn Error>> {
         .transpose()?;
     let calibration_evidence_receipt = config
         .calibration_evidence
+        .as_ref()
+        .map(|path| FileReceipt::from_path(ReceiptRole::Auxiliary, path))
+        .transpose()?;
+    let mapping_state = config
+        .mapping_state
+        .as_ref()
+        .map(|path| read_json::<FullBagMappingState>(path))
+        .transpose()?;
+    let mapping_state_receipt = config
+        .mapping_state
         .as_ref()
         .map(|path| FileReceipt::from_path(ReceiptRole::Auxiliary, path))
         .transpose()?;
@@ -192,6 +203,24 @@ fn run() -> Result<(), Box<dyn Error>> {
     } else {
         true
     };
+    let mapping_gate_admitted = if let Some(mapping) = &mapping_state {
+        mapping.validate()?;
+        let source_bound = mapping.source.identity_matches
+            && mapping.source.path == input_path
+            && mapping.source.observed_sha256 == observed_sha256;
+        if !source_bound {
+            push_blocker(&mut blockers, "full-bag mapping state is bound to a different input");
+        }
+        if !mapping.summary.mapping_admitted {
+            push_blocker(&mut blockers, "full-bag mapping admission is incomplete");
+        }
+        for blocker in &mapping.blockers {
+            push_blocker(&mut blockers, format!("full-bag-mapping: {blocker}"));
+        }
+        source_bound && mapping.summary.mapping_admitted
+    } else {
+        true
+    };
     if !live_publish.summary.calibration_applied || !edge_partition.summary.calibration_applied {
         push_blocker(
             &mut blockers,
@@ -263,10 +292,12 @@ fn run() -> Result<(), Box<dyn Error>> {
         && readiness.registration_ready
         && evidence_registration_ready
         && live_publish.summary.calibration_registered
-        && edge_partition.summary.calibration_registered;
+        && edge_partition.summary.calibration_registered
+        && mapping_state.as_ref().map_or(true, |mapping| mapping.summary.calibration_registered);
     let calibration_applied = calibration_registered
         && live_publish.summary.calibration_applied
-        && edge_partition.summary.calibration_applied;
+        && edge_partition.summary.calibration_applied
+        && mapping_gate_admitted;
     let summary = MissionCockpitSummary::try_new(
         frame_count,
         frame_count,
@@ -300,6 +331,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     if let Some(receipt) = &calibration_evidence_receipt {
         artifacts.push(replay_artifact("calibration-evidence", receipt)?);
     }
+    if let Some(receipt) = &mapping_state_receipt {
+        artifacts.push(replay_artifact("full-bag-mapping", receipt)?);
+    }
     let expected_frame_ids = live_publish.expected_frame_ids.clone();
     let state = MissionCockpitState::try_new(
         format!("Spatial Mission Cockpit — {}", file_label(&config.input)),
@@ -324,6 +358,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     manifest.entries.push(edge_receipt);
     manifest.entries.push(readiness_receipt);
     if let Some(receipt) = calibration_evidence_receipt {
+        manifest.entries.push(receipt);
+    }
+    if let Some(receipt) = mapping_state_receipt {
         manifest.entries.push(receipt);
     }
     manifest.entries.push(FileReceipt::from_path(ReceiptRole::Output, &state_path)?);
@@ -650,10 +687,11 @@ fn validate_config(config: &Config) -> Result<(), Box<dyn Error>> {
         || !config.edge_partition_json.is_absolute()
         || !config.calibration_readiness.is_absolute()
         || config.calibration_evidence.as_ref().is_some_and(|path| !path.is_absolute())
+        || config.mapping_state.as_ref().is_some_and(|path| !path.is_absolute())
         || !config.output_dir.is_absolute()
     {
         return Err(
-            "input, receipt, --calibration-readiness, --calibration-evidence, and --output-dir paths must be absolute".into(),
+            "input, receipt, --calibration-readiness, --calibration-evidence, --mapping-state, and --output-dir paths must be absolute".into(),
         );
     }
     if config.sample_points == 0 || config.sample_points > MISSION_COCKPIT_MAX_SAMPLED_POINTS {
@@ -676,6 +714,7 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
     let mut edge_partition_json = None;
     let mut calibration_readiness = None;
     let mut calibration_evidence = None;
+    let mut mapping_state = None;
     let mut output_dir = None;
     let mut expected_sha256 = None;
     let mut sample_points = DEFAULT_SAMPLE_POINTS;
@@ -694,6 +733,7 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
             "--calibration-evidence" => {
                 calibration_evidence = Some(PathBuf::from(next_value(&mut args, &flag)?))
             }
+            "--mapping-state" => mapping_state = Some(PathBuf::from(next_value(&mut args, &flag)?)),
             "--output-dir" => output_dir = Some(PathBuf::from(next_value(&mut args, &flag)?)),
             "--expected-input-sha256" => expected_sha256 = Some(next_value(&mut args, &flag)?),
             "--sample-points" => sample_points = parse_usize(&mut args, &flag)?,
@@ -709,6 +749,7 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
         calibration_readiness: calibration_readiness
             .ok_or("--calibration-readiness is required")?,
         calibration_evidence,
+        mapping_state,
         output_dir: output_dir.ok_or("--output-dir is required")?,
         expected_sha256: expected_sha256.ok_or("--expected-input-sha256 is required")?,
         sample_points,
@@ -846,6 +887,8 @@ mod tests {
                 "/media/readiness.json",
                 "--calibration-evidence",
                 "/media/evidence.json",
+                "--mapping-state",
+                "/media/mapping.json",
                 "--output-dir",
                 "/media/output",
                 "--expected-input-sha256",
@@ -860,6 +903,7 @@ mod tests {
         assert_eq!(config.sample_points, 128);
         assert_eq!(config.live_publish_json, PathBuf::from("/media/live.json"));
         assert_eq!(config.calibration_evidence, Some(PathBuf::from("/media/evidence.json")));
+        assert_eq!(config.mapping_state, Some(PathBuf::from("/media/mapping.json")));
     }
 
     #[test]
@@ -870,6 +914,7 @@ mod tests {
             edge_partition_json: "/media/edge.json".into(),
             calibration_readiness: "/media/readiness.json".into(),
             calibration_evidence: None,
+            mapping_state: None,
             output_dir: "/media/output".into(),
             expected_sha256: SHA.into(),
             sample_points: MISSION_COCKPIT_MAX_SAMPLED_POINTS + 1,

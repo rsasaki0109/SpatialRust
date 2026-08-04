@@ -698,7 +698,7 @@ The comparison receipt is
 | Canonical artifact availability | Clock and front/rear frame artifacts matching the canonical input identity | Blocked; read-only SSD survey found no matching artifacts |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
 | Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Not accepted; no extrinsic evidence |
-| Mapping/reconstruction | Bounded odometry, pose graph, TSDF, and mesh receipt on this input | Not accepted; 143A prefix smoke only |
+| Mapping/reconstruction | Bounded full-bag, frame-aware odometry, pose graph, TSDF, and mesh receipt on this input | Implementation gate recorded by 145K-A; canonical admission remains blocked by missing clock/frame evidence |
 | Semantic/Viewer/interchange | Record semantic entities, Viewer layer, and glTF/OpenUSD receipt on this input | Not accepted; deterministic adapter smoke only |
 | Data hygiene | No sensor or derived artifacts in the repository; all paths are external | Accepted |
 
@@ -730,7 +730,53 @@ Every future E2E run must record:
    preserve their external file receipts. The separate `all-sensors-bag1` TF
    receipt cannot satisfy this gate, and the latest survey receipt records both
    canonical artifacts as missing.
-2. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
-   TSDF run before adding any semantic model runtime.
+2. Run `rosbag2_full_bag_mapping` with those source-bound artifacts and accept
+   its complete-record/point/byte, corrected-clock, frame-path, odometry, and
+   TSDF/glTF receipts. The implementation and canonical blocked receipt now
+   exist under the 145K-A evidence section below.
 3. Add semantic, Viewer, and interchange quality receipts only after the
    geometric output has a valid frame and provenance chain.
+
+## 145K-A bounded full-bag mapping gate evidence
+
+`spatialrust-viewer::FullBagMappingState` is the portable admission contract
+for the next geometric stage. The feature-gated
+`rosbag2_full_bag_mapping` example:
+
+- consumes every selected front/rear PointCloud2 record within explicit
+  record, point, byte, chunk, and source-memory bounds;
+- reassembles source chunks sharing one PointCloud2 timestamp/frame before
+  odometry, applies a registered clock model with an anchored drift term, and
+  resolves only accepted source-bound root-to-sensor frame paths;
+- runs full selected-stream ICP odometry and a pose graph, integrates both
+  sensors into a root-frame TSDF, writes embedded glTF, and records all stage
+  totals and source receipts; and
+- writes a blocked JSON/HTML/manifest receipt when calibration is absent,
+  without opening the mapping pipeline or inventing calibration.
+
+Canonical no-artifact execution:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145k-full-bag-mapping-v3/full-bag-mapping.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145k-full-bag-mapping-v3/full-bag-mapping.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145k-full-bag-mapping-v3/full-bag-mapping.manifest.json`
+
+The observed input SHA matched the canonical SHA exactly. Because no
+`--calibration-evidence` state was supplied, the receipt has
+`calibration_registered:false`, `full_bag_processed:false`, and
+`mapping_admitted:false`, records seven non-empty blockers, checks three local
+files in its manifest, and exits with status 2. No fused map or mesh was
+written.
+
+Mission Cockpit integration with the same blocked mapping state is recorded at:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145k-mission-cockpit-v3/mission-cockpit.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145k-mission-cockpit-v3/mission-cockpit.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145k-mission-cockpit-v3/mission-cockpit.manifest.json`
+
+The cockpit includes the mapping-state checksum and propagates its blockers;
+its `mapping_admitted` remains false even when packet inspection is available.
+
+The wrong-input negative probe is recorded at
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145k-full-bag-mapping-validation-probe-v1/full-bag-mapping.json`.
+It reports `identity_matches:false`, preserves the observed canonical SHA,
+keeps `mapping_admitted:false`, exits 2, and writes a three-file manifest.
