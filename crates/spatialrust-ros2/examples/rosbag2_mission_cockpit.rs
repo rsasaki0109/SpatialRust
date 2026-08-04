@@ -28,10 +28,10 @@ use spatialrust_sync::{
     StampedTime,
 };
 use spatialrust_viewer::{
-    EdgePartitionState, LivePublishPacket, LivePublishState, MissionCockpitFrame,
-    MissionCockpitLayer, MissionCockpitLink, MissionCockpitNode, MissionCockpitPoint,
-    MissionCockpitState, MissionCockpitSummary, MissionCockpitTimeline, ReplayArtifact,
-    StudioSource, MISSION_COCKPIT_MAX_SAMPLED_POINTS,
+    CalibrationEvidenceState, EdgePartitionState, LivePublishPacket, LivePublishState,
+    MissionCockpitFrame, MissionCockpitLayer, MissionCockpitLink, MissionCockpitNode,
+    MissionCockpitPoint, MissionCockpitState, MissionCockpitSummary, MissionCockpitTimeline,
+    ReplayArtifact, StudioSource, MISSION_COCKPIT_MAX_SAMPLED_POINTS,
 };
 
 const CHUNK_POINTS: usize = 65_536;
@@ -49,6 +49,7 @@ struct Config {
     live_publish_json: PathBuf,
     edge_partition_json: PathBuf,
     calibration_readiness: PathBuf,
+    calibration_evidence: Option<PathBuf>,
     output_dir: PathBuf,
     expected_sha256: String,
     sample_points: usize,
@@ -110,6 +111,16 @@ fn run() -> Result<(), Box<dyn Error>> {
     let readiness_value: Value = read_json(&config.calibration_readiness)?;
     let readiness =
         readiness_gate(&readiness_value, &input_path, &observed_sha256, input_receipt.size_bytes)?;
+    let calibration_evidence = config
+        .calibration_evidence
+        .as_ref()
+        .map(|path| read_json::<CalibrationEvidenceState>(path))
+        .transpose()?;
+    let calibration_evidence_receipt = config
+        .calibration_evidence
+        .as_ref()
+        .map(|path| FileReceipt::from_path(ReceiptRole::Auxiliary, path))
+        .transpose()?;
 
     let mut blockers = Vec::new();
     if !source_identity_match {
@@ -163,6 +174,24 @@ fn run() -> Result<(), Box<dyn Error>> {
     for blocker in &edge_partition.blockers {
         push_blocker(&mut blockers, format!("edge-partition: {blocker}"));
     }
+    let evidence_registration_ready = if let Some(evidence) = &calibration_evidence {
+        evidence.validate()?;
+        let source_bound = evidence.source.identity_matches
+            && evidence.source.path == input_path
+            && evidence.source.observed_sha256 == observed_sha256;
+        if !source_bound {
+            push_blocker(&mut blockers, "calibration evidence is bound to a different input");
+        }
+        if !evidence.registration_ready {
+            push_blocker(&mut blockers, "calibration evidence registration is incomplete");
+        }
+        for blocker in &evidence.blockers {
+            push_blocker(&mut blockers, format!("calibration-evidence: {blocker}"));
+        }
+        source_bound && evidence.registration_ready
+    } else {
+        true
+    };
     if !live_publish.summary.calibration_applied || !edge_partition.summary.calibration_applied {
         push_blocker(
             &mut blockers,
@@ -232,6 +261,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     let calibration_registered = admitted_frames
         && readiness.source_bound
         && readiness.registration_ready
+        && evidence_registration_ready
         && live_publish.summary.calibration_registered
         && edge_partition.summary.calibration_registered;
     let calibration_applied = calibration_registered
@@ -261,12 +291,15 @@ fn run() -> Result<(), Box<dyn Error>> {
     let edge_receipt = FileReceipt::from_path(ReceiptRole::Auxiliary, &config.edge_partition_json)?;
     let readiness_receipt =
         FileReceipt::from_path(ReceiptRole::Auxiliary, &config.calibration_readiness)?;
-    let artifacts = vec![
+    let mut artifacts = vec![
         replay_artifact("canonical-input", &input_receipt)?,
         replay_artifact("live-publish", &live_receipt)?,
         replay_artifact("edge-partition", &edge_receipt)?,
         replay_artifact("calibration-readiness", &readiness_receipt)?,
     ];
+    if let Some(receipt) = &calibration_evidence_receipt {
+        artifacts.push(replay_artifact("calibration-evidence", receipt)?);
+    }
     let expected_frame_ids = live_publish.expected_frame_ids.clone();
     let state = MissionCockpitState::try_new(
         format!("Spatial Mission Cockpit — {}", file_label(&config.input)),
@@ -290,6 +323,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     manifest.entries.push(live_receipt);
     manifest.entries.push(edge_receipt);
     manifest.entries.push(readiness_receipt);
+    if let Some(receipt) = calibration_evidence_receipt {
+        manifest.entries.push(receipt);
+    }
     manifest.entries.push(FileReceipt::from_path(ReceiptRole::Output, &state_path)?);
     manifest.entries.push(FileReceipt::from_path(ReceiptRole::Output, &html_path)?);
     let validation = manifest.validate_local_files()?;
@@ -613,11 +649,11 @@ fn validate_config(config: &Config) -> Result<(), Box<dyn Error>> {
         || !config.live_publish_json.is_absolute()
         || !config.edge_partition_json.is_absolute()
         || !config.calibration_readiness.is_absolute()
+        || config.calibration_evidence.as_ref().is_some_and(|path| !path.is_absolute())
         || !config.output_dir.is_absolute()
     {
         return Err(
-            "input, receipt, --calibration-readiness, and --output-dir paths must be absolute"
-                .into(),
+            "input, receipt, --calibration-readiness, --calibration-evidence, and --output-dir paths must be absolute".into(),
         );
     }
     if config.sample_points == 0 || config.sample_points > MISSION_COCKPIT_MAX_SAMPLED_POINTS {
@@ -639,6 +675,7 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
     let mut live_publish_json = None;
     let mut edge_partition_json = None;
     let mut calibration_readiness = None;
+    let mut calibration_evidence = None;
     let mut output_dir = None;
     let mut expected_sha256 = None;
     let mut sample_points = DEFAULT_SAMPLE_POINTS;
@@ -654,6 +691,9 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
             "--calibration-readiness" => {
                 calibration_readiness = Some(PathBuf::from(next_value(&mut args, &flag)?))
             }
+            "--calibration-evidence" => {
+                calibration_evidence = Some(PathBuf::from(next_value(&mut args, &flag)?))
+            }
             "--output-dir" => output_dir = Some(PathBuf::from(next_value(&mut args, &flag)?)),
             "--expected-input-sha256" => expected_sha256 = Some(next_value(&mut args, &flag)?),
             "--sample-points" => sample_points = parse_usize(&mut args, &flag)?,
@@ -668,6 +708,7 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
         edge_partition_json: edge_partition_json.ok_or("--edge-partition-json is required")?,
         calibration_readiness: calibration_readiness
             .ok_or("--calibration-readiness is required")?,
+        calibration_evidence,
         output_dir: output_dir.ok_or("--output-dir is required")?,
         expected_sha256: expected_sha256.ok_or("--expected-input-sha256 is required")?,
         sample_points,
@@ -803,6 +844,8 @@ mod tests {
                 "/media/edge.json",
                 "--calibration-readiness",
                 "/media/readiness.json",
+                "--calibration-evidence",
+                "/media/evidence.json",
                 "--output-dir",
                 "/media/output",
                 "--expected-input-sha256",
@@ -816,6 +859,7 @@ mod tests {
         .unwrap();
         assert_eq!(config.sample_points, 128);
         assert_eq!(config.live_publish_json, PathBuf::from("/media/live.json"));
+        assert_eq!(config.calibration_evidence, Some(PathBuf::from("/media/evidence.json")));
     }
 
     #[test]
@@ -825,6 +869,7 @@ mod tests {
             live_publish_json: "/media/live.json".into(),
             edge_partition_json: "/media/edge.json".into(),
             calibration_readiness: "/media/readiness.json".into(),
+            calibration_evidence: None,
             output_dir: "/media/output".into(),
             expected_sha256: SHA.into(),
             sample_points: MISSION_COCKPIT_MAX_SAMPLED_POINTS + 1,

@@ -602,6 +602,43 @@ transfer links, set `publish_ready:false`, `partition_ready:false`, and
 `mapping_admitted:false`, and exited with status 2. Its manifest still records
 the canonical input and all upstream receipts for auditability.
 
+## 145J-B Calibration Evidence Gate evidence
+
+`rosbag2_calibration_evidence` is the next registration boundary after the
+opaque 143B artifact inventory. It accepts explicit clock and frame JSON
+documents only when their embedded source path, byte size, and SHA-256 exactly
+match the canonical bag. Clock evidence must expose source/target domains,
+method, sample count, p95 offset, and uncertainty. Frame evidence must expose a
+root, finite rigid edges, and an acyclic path to both requested front/rear
+frames. The example records evidence but does not solve, apply, or invent a
+clock model or TF transform.
+
+The canonical run intentionally supplied no calibration artifacts and wrote:
+
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145j-calibration-evidence-v2/calibration-evidence.json`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145j-calibration-evidence-v2/calibration-evidence.html`
+- `/media/sasaki/aiueo/spatialrust-results/v1-3/145j-calibration-evidence-v2/calibration-evidence.manifest.json`
+
+The source identity matched, but both artifact statuses are
+`not_registered`, the frame graph is empty, and `registration_ready:false`.
+The command exits 2 after atomically preserving the four-file manifest. This
+is the expected fail-closed result because the external SSD survey found no
+canonical clock or front/rear extrinsic artifact.
+
+The wrong-source validation probe is retained at:
+
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145j-calibration-evidence-validation-probe-v1/calibration-evidence.json`.
+
+It uses an all-`f` expected SHA, reports `identity_matches:false`, keeps
+`registration_ready:false`, and exits 2. The Mission Cockpit integration also
+consumed the canonical blocked evidence receipt at:
+
+`/media/sasaki/aiueo/spatialrust-results/v1-3/145j-mission-cockpit-145jb-v1/mission-cockpit.json`.
+
+That state retains four admitted packet frames and 768 bounded samples with
+`publish_ready:true` and `partition_ready:true`, adds the calibration-evidence
+receipt to its artifact list, and keeps `mapping_admitted:false`.
+
 ## 144A performance baseline evidence
 
 Receipt version 2 adds an explicit `performance` section with a run mode,
@@ -687,9 +724,12 @@ Every future E2E run must record:
 
 ## Next implementation gates
 
-1. Provide and register clock calibration and front/rear extrinsic artifacts for
-   the canonical input; the separate `all-sensors-bag1` TF receipt cannot
-   satisfy this gate, and the latest survey receipt records both as missing.
+1. Provide matching clock calibration and front/rear extrinsic JSON evidence
+   documents for the canonical input, register them with both
+   `rosbag2_calibration_readiness` and `rosbag2_calibration_evidence`, and
+   preserve their external file receipts. The separate `all-sensors-bag1` TF
+   receipt cannot satisfy this gate, and the latest survey receipt records both
+   canonical artifacts as missing.
 2. Extend the 143A prefix smoke to a bounded full-bag, frame-aware odometry and
    TSDF run before adding any semantic model runtime.
 3. Add semantic, Viewer, and interchange quality receipts only after the

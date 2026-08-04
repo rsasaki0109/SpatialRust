@@ -8,6 +8,7 @@
 #![warn(missing_docs)]
 
 mod adapters;
+mod calibration_evidence;
 mod controls;
 mod dataset_health;
 mod digital_twin;
@@ -37,6 +38,10 @@ pub use adapters::{pose_graph_visual, trajectory_visual};
 #[cfg(feature = "semantic")]
 pub use adapters::{semantic_overlay_visual, semantic_visual, spatial_record_entity_visual};
 pub use adapters::{AdaptedGeometry, AdaptedVisual, AdapterReceipt};
+pub use calibration_evidence::{
+    CalibrationEvidenceClock, CalibrationEvidenceFrame, CalibrationEvidenceState,
+    CALIBRATION_EVIDENCE_STATE_VERSION,
+};
 pub use controls::{InputAction, ViewerController};
 pub use dataset_health::{
     DatasetHealthCheck, DatasetHealthStage, DatasetHealthState, DatasetHealthSummary,

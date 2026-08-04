@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **145J-B calibration evidence gate**: `CalibrationEvidenceState` and the
+  feature-gated `rosbag2_calibration_evidence` example validate explicit,
+  source-bound clock quality values and a root-to-front/rear extrinsic graph.
+  `rosbag2_mission_cockpit` can consume the resulting receipt and expose its
+  registration blockers without applying an unverified clock or transform.
 - **145J-A interactive Mission Cockpit**: `MissionCockpitState` and the
   feature-gated `rosbag2_mission_cockpit` example join source-bound 145H/145I
   receipts with a bounded source-indexed XYZ sample. The self-contained
