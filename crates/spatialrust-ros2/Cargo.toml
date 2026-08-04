@@ -74,6 +74,10 @@ name = "rosbag2_calibration_observatory"
 required-features = ["rosbag2-sqlite"]
 
 [[example]]
+name = "rosbag2_calibration_evidence"
+required-features = ["rosbag2-sqlite"]
+
+[[example]]
 name = "rosbag2_replay_demo"
 required-features = ["rosbag2-sqlite"]
 
