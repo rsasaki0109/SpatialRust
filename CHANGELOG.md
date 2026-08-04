@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **145K-A bounded full-bag mapping gate**: `FullBagMappingState` and the
+  feature-gated `rosbag2_full_bag_mapping` example consume complete selected
+  PointCloud2 streams within explicit record/point/byte bounds, reassemble
+  source chunks, apply only registered clock/frame evidence, and emit
+  odometry/pose-graph/TSDF/glTF receipts. Mission Cockpit can consume the
+  mapping state; the canonical run remains fail-closed until matching
+  calibration artifacts exist.
 - **145J-B calibration evidence gate**: `CalibrationEvidenceState` and the
   feature-gated `rosbag2_calibration_evidence` example validate explicit,
   source-bound clock quality values and a root-to-front/rear extrinsic graph.
