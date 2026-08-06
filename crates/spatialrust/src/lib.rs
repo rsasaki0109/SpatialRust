@@ -34,7 +34,11 @@ pub use spatialrust_episode as episode;
 pub use spatialrust_image as image;
 #[cfg(feature = "image-io")]
 pub use spatialrust_image_io as image_io;
-#[cfg(any(feature = "interchange-gltf", feature = "interchange-openusd"))]
+#[cfg(any(
+    feature = "interchange-gltf",
+    feature = "interchange-openusd",
+    feature = "interchange-tiles3d"
+))]
 pub use spatialrust_interchange as interchange;
 #[cfg(feature = "lod")]
 pub use spatialrust_lod as lod;

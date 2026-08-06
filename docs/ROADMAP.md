@@ -75,6 +75,29 @@ Success is measured by end-to-end capabilities rather than crate count:
 The successor Goal is active. Epic 91 establishes versioned records and Arrow
 bridges; Epics 92–100 proceed in dependency order with per-Epic delivery slices.
 
+## 3D Tiles 1.1 point-cloud tileset program (Epic 147)
+
+The OGC 3D Tiles 1.1 standard is the de-facto streaming contract for massive
+3D point data in web, desktop, and digital-twin runtimes. SpatialRust already
+owns the COPC bounds/LOD substrate and a WebGPU/WASM viewer; exporting a
+deterministic, bounded `tileset.json` + `pnts` tile set lets any 3D Tiles
+consumer stream SpatialRust point clouds without a potree/PDAL rewrite. The
+tileset stays dependency-light in `spatialrust-interchange` and never depends
+on `spatialrust-core`, a GPU backend, or serde.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 147A | Complete | `pnts` binary codec: header, feature-table JSON, POSITION/RGB/RTC_CENTER, byte-aligned padding, round-trip decode | `tiles3d` |
+| 147B | Complete | `tileset.json` model: box bounding volumes, geometric error, refine, content URIs; strict JSON parse/serialize | `tiles3d` |
+| 147C | Complete | Deterministic octree tileset builder from interleaved positions with point budgets, per-tile RTC_CENTER, and write receipt | `tiles3d` |
+| 147D | Complete | Facade `interchange-tiles3d`, runnable example, FEATURE_MATRIX/CHANGELOG/notes | facade |
+
+The builder splits octants in a fixed bit order and writes one `pnts` payload
+per BFS tile id; leaf geometric error is zero and internal errors halve each
+level. Public APIs take plain `&[f32]`/`&[u8]` slices so the codec stays
+independent of `spatialrust-core`. Data is always owned host memory and no
+hidden host/device copy is introduced.
+
 ## Program invariants
 
 - `spatialrust-core` remains independent of image codecs and AI runtimes.
