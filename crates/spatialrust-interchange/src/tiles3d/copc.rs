@@ -153,14 +153,14 @@ pub fn export_copc_tileset(
         let (x, y, z) = cloud.positions3().map_err(|error| {
             InterchangeError::InvalidConfiguration(format!("COPC schema: {error}"))
         })?;
+        let rgb = extract_rgb(&cloud);
         let mut local_positions = Vec::with_capacity(cloud.len() * 3);
         for point_index in 0..cloud.len() {
             local_positions.push(x[point_index] - center[0] as f32);
             local_positions.push(y[point_index] - center[1] as f32);
             local_positions.push(z[point_index] - center[2] as f32);
         }
-        let table =
-            PntsFeatureTable { positions: local_positions, rgb: None, rtc_center: Some(center) };
+        let table = PntsFeatureTable { positions: local_positions, rgb, rtc_center: Some(center) };
         let pnts = encode_pnts(&table)?;
         let uri = format!("{}.pnts", tiles.len());
         let point_count = table.point_count();
@@ -239,6 +239,48 @@ fn bounds_diagonal(min: [f64; 3], max: [f64; 3]) -> f64 {
     (dx * dx + dy * dy + dz * dz).sqrt()
 }
 
+/// Extracts interleaved 8-bit RGB from a cloud's color fields when present.
+///
+/// LAS/COPC color is stored as `u16` (0–65535); 3D Tiles `pnts` RGB uses
+/// `u8` (0–255), so each channel is shifted right by eight bits. Returns
+/// `None` when the cloud has no color fields.
+fn extract_rgb(cloud: &spatialrust_core::PointCloud) -> Option<Vec<u8>> {
+    use spatialrust_core::{FieldSemantic, PointBuffer};
+
+    let field = |semantic: FieldSemantic| {
+        let name = match semantic {
+            FieldSemantic::ColorR => "red",
+            FieldSemantic::ColorG => "green",
+            FieldSemantic::ColorB => "blue",
+            _ => return None,
+        };
+        let buffer = cloud.field(name).ok()?;
+        match buffer {
+            PointBuffer::U16(values) => Some(values.as_slice()),
+            _ => None,
+        }
+    };
+
+    let (r, g, b) = match (
+        field(FieldSemantic::ColorR),
+        field(FieldSemantic::ColorG),
+        field(FieldSemantic::ColorB),
+    ) {
+        (Some(r), Some(g), Some(b)) => (r, g, b),
+        _ => return None,
+    };
+    if r.len() != cloud.len() || g.len() != cloud.len() || b.len() != cloud.len() {
+        return None;
+    }
+    let mut out = Vec::with_capacity(cloud.len() * 3);
+    for index in 0..cloud.len() {
+        out.push((r[index] >> 8) as u8);
+        out.push((g[index] >> 8) as u8);
+        out.push((b[index] >> 8) as u8);
+    }
+    Some(out)
+}
+
 fn io_error(error: std::io::Error) -> InterchangeError {
     InterchangeError::InvalidConfiguration(format!("tileset IO failure: {error}"))
 }
@@ -249,7 +291,7 @@ mod tests {
     use crate::tiles3d::pnts::decode_pnts;
     use crate::tiles3d::tileset::parse_tileset_json;
     use spatialrust_core::PointCloudBuilder;
-    use spatialrust_io::{write_copc_file_with_params, CopcWriterParams};
+    use spatialrust_io::{write_copc_file, write_copc_file_with_params, CopcWriterParams};
 
     fn dense_grid_cloud(count: usize) -> spatialrust_core::PointCloud {
         let mut builder = PointCloudBuilder::xyz();
@@ -319,6 +361,46 @@ mod tests {
             receipt.point_count < cloud.len() as u64,
             "level-0 export must expose only the root node chunk"
         );
+
+        let _ = std::fs::remove_dir_all(&out_dir);
+        let _ = std::fs::remove_file(&copc_path);
+    }
+
+    #[test]
+    fn preserves_rgb_from_las_color() {
+        use spatialrust_core::{PointCloudBuilder, StandardSchemas};
+
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyzrgb());
+        for index in 0..2_000usize {
+            let x = (index % 31) as f32 - 15.0;
+            let y = ((index / 31) % 29) as f32 - 14.0;
+            let z = ((index / (31 * 29)) % 23) as f32 - 11.0;
+            let r = ((index % 256) << 8) as f32;
+            let g = (((index * 7) % 256) << 8) as f32;
+            let b = (((index * 13) % 256) << 8) as f32;
+            builder.push_point([x, y, z, r, g, b]).unwrap();
+        }
+        let cloud = builder.build().unwrap();
+
+        let copc_path = std::env::temp_dir()
+            .join(format!("spatialrust_tiles3d_copc_rgb_{}.copc.laz", std::process::id()));
+        write_copc_file(&copc_path, &cloud).unwrap();
+
+        let out_dir = std::env::temp_dir()
+            .join(format!("spatialrust_tiles3d_copc_rgb_out_{}", std::process::id()));
+        let receipt =
+            export_copc_tileset(&copc_path, &out_dir, &CopcTilesetOptions::default()).unwrap();
+        assert_eq!(receipt.point_count, cloud.len() as u64);
+
+        let mut rgb_points = 0usize;
+        for tile in 0..receipt.tile_count {
+            let pnts = std::fs::read(out_dir.join(format!("{tile}.pnts"))).unwrap();
+            let decoded = decode_pnts(&pnts).unwrap();
+            let rgb = decoded.rgb.as_ref().expect("color-bearing COPC must write RGB");
+            assert_eq!(rgb.len(), decoded.point_count() * 3);
+            rgb_points += decoded.point_count();
+        }
+        assert_eq!(rgb_points, cloud.len());
 
         let _ = std::fs::remove_dir_all(&out_dir);
         let _ = std::fs::remove_file(&copc_path);
