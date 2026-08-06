@@ -12,7 +12,8 @@ description = "glTF and OpenUSD scene interchange adapters for SpatialRust"
 default = []
 gltf = []
 openusd = []
-full = ["gltf", "openusd"]
+tiles3d = []
+full = ["gltf", "openusd", "tiles3d"]
 
 [dependencies]
 spatialrust-scene.workspace = true

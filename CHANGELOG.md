@@ -21,6 +21,17 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Epic 147 OGC 3D Tiles 1.1 point-cloud tileset export** (`interchange-tiles3d`):
+  a dependency-light `pnts` binary codec, a validated `tileset.json` model with
+  box bounding volumes and geometric error, and a deterministic octree tileset
+  builder. Positions are stored relative to a per-tile `RTC_CENTER` so `f32`
+  precision is retained far from the origin; internal geometric error halves
+  each level and leaves are zero. `build_point_tileset` takes plain interleaved
+  positions plus optional RGB, and `write_point_tileset` emits `tileset.json`
+  plus one `.pnts` file per tile with a byte/point receipt. The `tiles3d_export`
+  example converts a PCD through the voxel filter into a tileset consumable by
+  any 3D Tiles 1.1 runtime. The codec never depends on `spatialrust-core`,
+  serde, or a GPU backend.
 - **145K-A bounded full-bag mapping gate**: `FullBagMappingState` and the
   feature-gated `rosbag2_full_bag_mapping` example consume complete selected
   PointCloud2 streams within explicit record/point/byte bounds, reassemble
