@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Epic 147E bounded COPC → 3D Tiles exporter** (`interchange-tiles3d-copc`):
+  `spatialrust-io` gains `CopcNodeReader`, which opens a COPC file once, loads
+  only hierarchy metadata, and yields one `PointCloud` per octree node in
+  deterministic `(level, x, y, z)` order. `spatialrust-interchange` adds
+  `export_copc_tileset`, which mirrors the COPC octree into a `tileset.json`
+  with one `pnts` tile per node and a per-tile `RTC_CENTER`, without ever
+  materializing the whole cloud. `max_level` bounds the exported hierarchy,
+  and the `tiles3d_copc_export` example converts a `.copc.laz` file directly.
 - **Epic 147 OGC 3D Tiles 1.1 point-cloud tileset export** (`interchange-tiles3d`):
   a dependency-light `pnts` binary codec, a validated `tileset.json` model with
   box bounding volumes and geometric error, and a deterministic octree tileset

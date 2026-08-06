@@ -1,3 +1,41 @@
+#[cfg(all(feature = "interchange-tiles3d-copc", feature = "io-copc"))]
+#[test]
+fn tiles3d_copc_public_api_end_to_end() {
+    use spatialrust::interchange::{decode_pnts, export_copc_tileset, CopcTilesetOptions};
+    use spatialrust::{write_copc_file_with_params, CopcWriterParams, PointCloudBuilder};
+
+    let mut builder = PointCloudBuilder::xyz();
+    for index in 0..7_000 {
+        let x = (index % 31) as f32 - 15.0;
+        let y = ((index / 31) % 29) as f32 - 14.0;
+        let z = ((index / (31 * 29)) % 23) as f32 - 11.0;
+        builder.push_point([x, y, z]).unwrap();
+    }
+    let cloud = builder.build().unwrap();
+
+    let copc_path = std::env::temp_dir()
+        .join(format!("spatialrust_tiles3d_copc_it_{}.copc.laz", std::process::id()));
+    write_copc_file_with_params(
+        &copc_path,
+        &cloud,
+        &CopcWriterParams { max_points_per_node: 96, max_depth: 8 },
+    )
+    .unwrap();
+
+    let out_dir = std::env::temp_dir()
+        .join(format!("spatialrust_tiles3d_copc_it_out_{}", std::process::id()));
+    let receipt =
+        export_copc_tileset(&copc_path, &out_dir, &CopcTilesetOptions::default()).unwrap();
+    assert_eq!(receipt.point_count, cloud.len() as u64);
+    assert!(receipt.tile_count > 1);
+    for tile in 0..receipt.tile_count {
+        let pnts = std::fs::read(out_dir.join(format!("{tile}.pnts"))).unwrap();
+        assert!(decode_pnts(&pnts).is_ok());
+    }
+    let _ = std::fs::remove_dir_all(&out_dir);
+    let _ = std::fs::remove_file(&copc_path);
+}
+
 #[cfg(all(feature = "interchange-tiles3d", feature = "io-pcd"))]
 #[test]
 fn tiles3d_public_api_end_to_end() {

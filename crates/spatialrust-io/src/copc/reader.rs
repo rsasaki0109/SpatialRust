@@ -410,6 +410,101 @@ impl<S: ByteSource> BoundedSpatialRecordSource for CopcChunkSource<S> {
     }
 }
 
+/// One COPC octree node exposed by [`CopcNodeReader`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CopcNode {
+    /// Octree level; 0 is the root.
+    pub level: i32,
+    /// Node X index at `level`.
+    pub x: i32,
+    /// Node Y index at `level`.
+    pub y: i32,
+    /// Node Z index at `level`.
+    pub z: i32,
+    /// World-space bounds of this node.
+    pub bounds: crate::copc::CopcBounds,
+    /// Points materialized by this node's chunk.
+    pub point_count: u64,
+}
+
+/// Bounded per-node COPC reader.
+///
+/// Opens a COPC file once, loads the full hierarchy (metadata only), and
+/// exposes one [`PointCloud`] per node on demand. Nodes are returned in
+/// deterministic `(level, x, y, z)` order so the hierarchy can be turned
+/// into a tile set without materializing the whole cloud.
+pub struct CopcNodeReader {
+    reader: CopcStreamingReader<FileSource>,
+    keys: Vec<copc_streaming::VoxelKey>,
+    root: copc_streaming::Aabb,
+    nodes: Vec<CopcNode>,
+    schema: PointSchema,
+    metadata: SpatialMetadata,
+}
+
+impl CopcNodeReader {
+    /// Opens a local COPC file and loads its hierarchy eagerly.
+    pub fn open(path: impl AsRef<Path>) -> Result<Self, IoError> {
+        let source =
+            FileSource::open(path.as_ref()).map_err(|error| copc_parse(error.to_string()))?;
+        let mut reader = pollster::block_on(CopcStreamingReader::open(source))
+            .map_err(|error| copc_parse(error.to_string()))?;
+        pollster::block_on(reader.load_all_hierarchy())
+            .map_err(|error| copc_parse(error.to_string()))?;
+        let root = reader.copc_info().root_bounds();
+        let schema = schema_for_las_header(reader.header().las_header());
+        let metadata = metadata_from_las_header();
+
+        let mut keys: Vec<_> = reader
+            .entries()
+            .filter(|(_, entry)| entry.point_count > 0)
+            .map(|(key, _)| *key)
+            .collect();
+        keys.sort_by_key(|key| (key.level, key.x, key.y, key.z));
+
+        let mut nodes = Vec::with_capacity(keys.len());
+        for key in &keys {
+            let bounds = key.bounds(&root);
+            let point_count =
+                reader.get(key).map(|entry| u64::from(entry.point_count)).unwrap_or(0);
+            nodes.push(CopcNode {
+                level: key.level,
+                x: key.x,
+                y: key.y,
+                z: key.z,
+                bounds: crate::copc::CopcBounds::new(bounds.min, bounds.max),
+                point_count,
+            });
+        }
+        Ok(Self { reader, keys, root, nodes, schema, metadata })
+    }
+
+    /// Node descriptors in deterministic `(level, x, y, z)` order.
+    #[must_use]
+    pub fn nodes(&self) -> &[CopcNode] {
+        &self.nodes
+    }
+
+    /// Root octree bounds.
+    #[must_use]
+    pub fn root_bounds(&self) -> crate::copc::CopcBounds {
+        crate::copc::CopcBounds::new(self.root.min, self.root.max)
+    }
+
+    /// Reads the points of one node by index into [`Self::nodes`].
+    pub fn read_node(&mut self, index: usize) -> Result<PointCloud, IoError> {
+        let key = *self
+            .keys
+            .get(index)
+            .ok_or_else(|| copc_parse(format!("COPC node index {index} is out of range")))?;
+        let chunk = pollster::block_on(self.reader.fetch_chunk(&key))
+            .map_err(|error| copc_parse(error.to_string()))?;
+        let points =
+            self.reader.read_points(&chunk).map_err(|error| copc_parse(error.to_string()))?;
+        point_cloud_from_las_points(self.schema.clone(), self.metadata.clone(), points)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{read_copc_file, read_copc_file_info, read_copc_file_with_query, CopcQuery};
@@ -518,6 +613,42 @@ mod tests {
         assert!(level0.len() <= level2.len());
         assert!(level2.len() <= full.len());
 
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn copc_node_reader_enumerates_hierarchy_bounded() {
+        use copc_writer::CopcWriterParams;
+
+        use crate::copc::writer::write_copc_file_with_params;
+
+        let cloud = dense_grid_cloud(7_000);
+        let path = std::env::temp_dir()
+            .join(format!("spatialrust_copc_nodes_{}.copc.laz", std::process::id()));
+        write_copc_file_with_params(
+            &path,
+            &cloud,
+            &CopcWriterParams { max_points_per_node: 96, max_depth: 8 },
+        )
+        .unwrap();
+
+        let mut reader = super::CopcNodeReader::open(&path).unwrap();
+        let nodes = reader.nodes().to_vec();
+        assert!(nodes.len() > 1, "expected a multi-node hierarchy");
+        assert!(nodes.iter().all(|node| node.point_count > 0));
+        assert!(
+            nodes.windows(2).all(|pair| (pair[0].level, pair[0].x, pair[0].y, pair[0].z)
+                <= (pair[1].level, pair[1].x, pair[1].y, pair[1].z)),
+            "nodes must be deterministically ordered"
+        );
+
+        let mut total = 0u64;
+        for index in 0..nodes.len() {
+            let cloud = reader.read_node(index).unwrap();
+            assert_eq!(cloud.len() as u64, nodes[index].point_count);
+            total += nodes[index].point_count;
+        }
+        assert_eq!(total, cloud.len() as u64, "per-node reads must reconstruct the cloud");
         let _ = std::fs::remove_file(path);
     }
 

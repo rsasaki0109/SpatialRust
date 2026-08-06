@@ -31,6 +31,8 @@ pub use tiles3d::{
     write_point_tileset, BoundingVolume, BuiltTile, BuiltTileset, PntsFeatureTable, Refinement,
     Tile, TileContent, Tileset, TilesetBuilderOptions, TilesetWriteReceipt,
 };
+#[cfg(feature = "tiles3d-copc")]
+pub use tiles3d::{export_copc_tileset, CopcTilesetOptions};
 #[cfg(feature = "openusd")]
 pub use usd::{
     export_stage_usda, import_mesh_from_usda, MemoryUsdStageAdapter, UsdPrimPath, UsdStageAdapter,

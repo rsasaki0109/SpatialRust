@@ -230,7 +230,17 @@ interchange-tiles3d = [
     "dep:spatialrust-interchange",
     "spatialrust-interchange/tiles3d",
 ]
-interchange-full = ["interchange-gltf", "interchange-openusd", "interchange-tiles3d"]
+interchange-tiles3d-copc = [
+    "interchange-tiles3d",
+    "io-copc",
+    "spatialrust-interchange/tiles3d-copc",
+]
+interchange-full = [
+    "interchange-gltf",
+    "interchange-openusd",
+    "interchange-tiles3d",
+    "interchange-tiles3d-copc",
+]
 distribute = ["dep:spatialrust-distribute"]
 platform = ["dep:spatialrust-platform"]
 viz = ["dep:spatialrust-viz", "spatialrust-viz/core"]
@@ -338,7 +348,7 @@ required-features = ["streaming-cli"]
 [[test]]
 name = "tiles3d_smoke"
 path = "tests/tiles3d_smoke.rs"
-required-features = ["interchange-tiles3d", "io-pcd"]
+required-features = ["interchange-tiles3d", "io-pcd", "interchange-tiles3d-copc", "io-copc"]
 
 [[example]]
 name = "north_star_demo"
@@ -434,3 +444,8 @@ required-features = ["viewer-native"]
 name = "tiles3d_export"
 path = "examples/tiles3d_export.rs"
 required-features = ["io-pcd", "filter-voxel", "interchange-tiles3d"]
+
+[[example]]
+name = "tiles3d_copc_export"
+path = "examples/tiles3d_copc_export.rs"
+required-features = ["io-copc", "interchange-tiles3d-copc"]

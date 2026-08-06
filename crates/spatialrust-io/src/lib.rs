@@ -94,8 +94,8 @@ pub use e57::{
 pub use copc::{
     copc_level_for_resolution, read_copc, read_copc_file, read_copc_file_in_bounds,
     read_copc_file_info, read_copc_file_with_query, write_copc, write_copc_file,
-    write_copc_file_with_params, CopcBounds, CopcFileInfo, CopcQuery, CopcReader, CopcWriter,
-    CopcWriterParams,
+    write_copc_file_with_params, CopcBounds, CopcFileInfo, CopcNode, CopcNodeReader, CopcQuery,
+    CopcReader, CopcWriter, CopcWriterParams,
 };
 #[cfg(all(feature = "io-copc", feature = "streaming"))]
 pub use copc::{write_copc_stream, CopcChunkSource, CopcStreamingWriteReceipt};
