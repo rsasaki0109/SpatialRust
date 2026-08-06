@@ -54,6 +54,8 @@ spatialrust = { path = "../spatialrust", features = [
     "records-receipt-json",
     "viewer-native",
     "web",
+    "interchange-tiles3d",
+    "interchange-tiles3d-copc",
 ] }
 
 # Keep this crate out of the main Rust workspace so `cargo test --workspace`

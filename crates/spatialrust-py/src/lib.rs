@@ -12,6 +12,7 @@ use std::path::PathBuf;
 
 #[allow(unsafe_code)]
 mod dlpack_capsule;
+mod tiles3d;
 mod viewer;
 
 use viewer::{PyViewerPointSource, PyViewerState};
@@ -4693,5 +4694,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(register_ndt, m)?)?;
     m.add_function(wrap_pyfunction!(register_fpfh_ransac, m)?)?;
     m.add_function(wrap_pyfunction!(register_fpfh_keypoints, m)?)?;
+    m.add_function(wrap_pyfunction!(tiles3d::export_tiles3d, m)?)?;
+    m.add_function(wrap_pyfunction!(tiles3d::export_copc_tiles3d, m)?)?;
     Ok(())
 }

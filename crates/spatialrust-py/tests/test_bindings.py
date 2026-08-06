@@ -1228,3 +1228,20 @@ def test_multi_object_tracker_preserves_ids_and_confirms():
     assert first[0][0] == second[0][0] == 1
     assert first[0][10] is False
     assert second[0][10] is True
+
+
+def test_export_tiles3d_writes_tileset_and_pnts(tmp_path):
+    cloud = sr.PointCloud.from_xyz(grid_plane(24, spacing=1.0))
+    out = str(tmp_path / "tiles")
+    receipt = sr.export_tiles3d(cloud, out, max_points_per_tile=16, max_depth=8)
+    assert receipt["point_count"] == 24 * 24
+    assert receipt["tile_count"] >= 1
+    assert (tmp_path / "tiles" / "tileset.json").exists()
+    assert (tmp_path / "tiles" / "0.pnts").exists()
+
+
+def test_export_copc_tiles3d_fails_closed_on_missing_input(tmp_path):
+    out = str(tmp_path / "copc-tiles")
+    with pytest.raises(RuntimeError):
+        sr.export_copc_tiles3d("/nonexistent/cloud.copc.laz", out)
+    assert not (tmp_path / "copc-tiles" / "tileset.json").exists()
