@@ -13,9 +13,12 @@ default = []
 gltf = []
 openusd = []
 tiles3d = []
-full = ["gltf", "openusd", "tiles3d"]
+tiles3d-copc = ["tiles3d", "dep:spatialrust-io", "dep:spatialrust-core"]
+full = ["gltf", "openusd", "tiles3d", "tiles3d-copc"]
 
 [dependencies]
 spatialrust-scene.workspace = true
 spatialrust-math.workspace = true
+spatialrust-core = { workspace = true, optional = true }
+spatialrust-io = { workspace = true, optional = true, features = ["io-copc"] }
 thiserror.workspace = true

@@ -14,7 +14,7 @@ pub use query::{copc_level_for_resolution, CopcBounds, CopcFileInfo, CopcQuery};
 pub use reader::CopcChunkSource;
 pub use reader::{
     read_copc, read_copc_file, read_copc_file_in_bounds, read_copc_file_info,
-    read_copc_file_with_query, CopcReader,
+    read_copc_file_with_query, CopcNode, CopcNodeReader, CopcReader,
 };
 pub use writer::{write_copc, write_copc_file, write_copc_file_with_params, CopcWriter};
 #[cfg(feature = "streaming")]

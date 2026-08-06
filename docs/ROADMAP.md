@@ -91,12 +91,15 @@ on `spatialrust-core`, a GPU backend, or serde.
 | 147B | Complete | `tileset.json` model: box bounding volumes, geometric error, refine, content URIs; strict JSON parse/serialize | `tiles3d` |
 | 147C | Complete | Deterministic octree tileset builder from interleaved positions with point budgets, per-tile RTC_CENTER, and write receipt | `tiles3d` |
 | 147D | Complete | Facade `interchange-tiles3d`, runnable example, FEATURE_MATRIX/CHANGELOG/notes | facade |
+| 147E | Complete | Bounded COPC → 3D Tiles exporter: `CopcNodeReader` per-node hierarchy walk in `spatialrust-io` plus `export_copc_tileset` in `spatialrust-interchange` | `tiles3d-copc` |
 
 The builder splits octants in a fixed bit order and writes one `pnts` payload
 per BFS tile id; leaf geometric error is zero and internal errors halve each
 level. Public APIs take plain `&[f32]`/`&[u8]` slices so the codec stays
 independent of `spatialrust-core`. Data is always owned host memory and no
-hidden host/device copy is introduced.
+hidden host/device copy is introduced. The COPC exporter (147E) walks a COPC
+file's octree hierarchy one node at a time, re-centers each node to its own
+`RTC_CENTER`, and never materializes the whole cloud.
 
 ## Program invariants
 
