@@ -822,6 +822,18 @@ def register_fpfh_keypoints(
     ransac_iterations: int = ...,
     k_neighbors: int = ...,
 ) -> RegistrationResult: ...
+
+def export_tiles3d(
+    cloud: PointCloud,
+    out_dir: str,
+    max_points_per_tile: int = ...,
+    max_depth: int = ...,
+) -> dict[str, int]: ...
+def export_copc_tiles3d(
+    copc_path: str,
+    out_dir: str,
+    max_level: int | None = ...,
+) -> dict[str, int]: ...
 @final
 class Tensor:
     @property

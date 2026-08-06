@@ -92,6 +92,7 @@ on `spatialrust-core`, a GPU backend, or serde.
 | 147C | Complete | Deterministic octree tileset builder from interleaved positions with point budgets, per-tile RTC_CENTER, and write receipt | `tiles3d` |
 | 147D | Complete | Facade `interchange-tiles3d`, runnable example, FEATURE_MATRIX/CHANGELOG/notes | facade |
 | 147E | Complete | Bounded COPC → 3D Tiles exporter: `CopcNodeReader` per-node hierarchy walk in `spatialrust-io` plus `export_copc_tileset` in `spatialrust-interchange` | `tiles3d-copc` |
+| 147F | Complete | Python `export_tiles3d` / `export_copc_tiles3d` bindings with typed stubs and smoke tests | Python tiles3d surface |
 
 The builder splits octants in a fixed bit order and writes one `pnts` payload
 per BFS tile id; leaf geometric error is zero and internal errors halve each

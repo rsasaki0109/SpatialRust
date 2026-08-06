@@ -37,7 +37,7 @@ workspace because its build requires a Python toolchain.
 | `spatialrust-gpu` | device markers only | wgpu runtime, AoSoA staging | wgpu/bytemuck/pollster optional |
 | `spatialrust-pipeline` | MVP pipeline | GPU MVP stages | algorithm crates only |
 | `spatialrust-interchange` | `interchange-gltf`, `interchange-openusd` | `tiles3d`: deterministic OGC 3D Tiles 1.1 `tileset.json` + `pnts` octree export; `tiles3d-copc`: bounded COPC hierarchy → tileset | `tiles3d-copc` pulls `spatialrust-io` + `spatialrust-core` for COPC node reads |
-| `spatialrust-py` | Python binding surface | selected meta-crate features | PyO3/NumPy |
+| `spatialrust-py` | Python binding surface | selected meta-crate features, including `export_tiles3d` / `export_copc_tiles3d` | PyO3/NumPy |
 
 ## Execution contract
 

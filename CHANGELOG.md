@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Epic 147F Python 3D Tiles bindings**: `export_tiles3d` converts a
+  `PointCloud` into a tileset directory and `export_copc_tiles3d` converts a
+  `.copc.laz` file into a bounded tileset, both returning a
+  `tileset_json_bytes`/`tile_count`/`point_count`/`pnts_bytes` dict. Typed
+  `.pyi` stubs and smoke tests gate the wheel build.
 - **Epic 147E bounded COPC → 3D Tiles exporter** (`interchange-tiles3d-copc`):
   `spatialrust-io` gains `CopcNodeReader`, which opens a COPC file once, loads
   only hierarchy metadata, and yields one `PointCloud` per octree node in
