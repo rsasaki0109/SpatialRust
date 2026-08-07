@@ -1245,3 +1245,51 @@ def test_export_copc_tiles3d_fails_closed_on_missing_input(tmp_path):
     with pytest.raises(RuntimeError):
         sr.export_copc_tiles3d("/nonexistent/cloud.copc.laz", out)
     assert not (tmp_path / "copc-tiles" / "tileset.json").exists()
+
+
+def test_point_cloud_arrow_c_array_zero_copy_interop():
+    pa = pytest.importorskip("pyarrow")
+    pts = np.array(
+        [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]], dtype=np.float32
+    )
+    cloud = sr.PointCloud.from_xyz(pts)
+    array = pa.array(cloud)
+    assert len(array.type) == 3
+    for field, expected in zip(array.type, ["x", "y", "z"]):
+        assert field.name == expected
+        assert field.type == pa.float32()
+    np.testing.assert_allclose(array.field("x").to_numpy(), pts[:, 0])
+    np.testing.assert_allclose(array.field("y").to_numpy(), pts[:, 1])
+    np.testing.assert_allclose(array.field("z").to_numpy(), pts[:, 2])
+    # The buffer is CPU-backed and shared (zero copy), not a Python object array.
+    assert array.field("x").buffers()[1].is_cpu
+    assert array.field("x").buffers()[1].size == pts.shape[0] * 4
+
+
+def test_point_cloud_stream_arrow_c_stream_batches(tmp_path):
+    pa = pytest.importorskip("pyarrow")
+    n = 1000
+    xs = np.linspace(0.0, 10.0, n, dtype=np.float32)
+    ys = np.linspace(0.0, 5.0, n, dtype=np.float32)
+    zs = np.zeros(n, dtype=np.float32)
+    pts = np.column_stack([xs, ys, zs]).astype(np.float32)
+    path = tmp_path / "stream.pcd"
+    with open(path, "w") as handle:
+        handle.write(
+            "# .PCD v0.7 - Point Cloud Data file format\n"
+            "VERSION 0.7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 1 1\n"
+            f"WIDTH {n}\nHEIGHT 1\nVIEWPOINT 0 0 0 1 0 0 0\nPOINTS {n}\nDATA ascii\n"
+        )
+        for i in range(n):
+            handle.write(f"{xs[i]:.6f} {ys[i]:.6f} {zs[i]:.6f}\n")
+
+    stream = sr.open_point_cloud_stream(str(path), chunk_points=256)
+    reader = pa.RecordBatchReader.from_stream(stream)
+    assert reader.schema.field("x").type == pa.float32()
+    batches = list(reader)
+    total = sum(batch.num_rows for batch in batches)
+    assert total == n
+    assert all(0 < batch.num_rows <= 256 for batch in batches)
+    # Concatenated x column matches the source.
+    concat = pa.concat_arrays([batch.column("x") for batch in batches])
+    np.testing.assert_allclose(np.array(concat), xs, rtol=1e-5)
