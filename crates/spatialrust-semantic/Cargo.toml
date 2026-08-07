@@ -10,9 +10,12 @@ description = "Semantic entities, embeddings, and multimodal fusion/search for S
 
 [features]
 default = []
+model = ["dep:spatialrust-ai", "dep:spatialrust-tensor"]
 
 [dependencies]
 spatialrust-core.workspace = true
 spatialrust-math.workspace = true
 spatialrust-records.workspace = true
+spatialrust-ai = { workspace = true, optional = true }
+spatialrust-tensor = { workspace = true, optional = true }
 thiserror.workspace = true

@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Epic 150 real AI semantic meaning** (`semantic-model`): `OnnxEntityEmbedder`
+  runs point-entity feature vectors through an already-open ONNX model session
+  with explicit copy policy and produces an `Embedding` ready for the existing
+  `SemanticSearchIndex`. The embedder never loads a model or picks a backend,
+  keeping device placement and transfer semantics explicit. A committed
+  `double_dynamic.onnx` fixture drives the facade integration test through the
+  real ONNX Runtime path (`feature → session → embedding → semantic search`),
+  and the `onnx_semantic` test requires `ai-onnxruntime`.
 - **Epic 149 Arrow canonical interchange in Python**: `PyPointCloud` exposes
   `__arrow_c_array__`, returning `(schema, array)` Arrow C Data capsules so
   PyArrow/pandas consume SpatialRust clouds zero-copy, and `PyPointCloudStream`
