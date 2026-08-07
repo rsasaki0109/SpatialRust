@@ -1,10 +1,12 @@
-//! Times core point-cloud operations on a PCD file, for the PCL comparison.
+//! Times core point-cloud operations on a PCD file, for the PCL/PDAL comparison.
 //!
 //! Run with the `mvp` + `filter-outlier` features:
 //! ```text
 //! cargo run --release --example bench_ops --features mvp,filter-outlier -- cloud.pcd
 //! ```
-//! Prints `operation,seconds,output_points` lines on stdout.
+//! Prints `operation,seconds,output_points` lines on stdout. The `translate_xyz`
+//! workload requires the `transform-ops` feature; the voxel/normal/outlier
+//! workloads always run.
 
 use std::time::Instant;
 
@@ -42,4 +44,15 @@ fn main() {
     let t = Instant::now();
     let radius_cleaned = ror.filter(&cloud).expect("radius outlier removal");
     println!("radius_outlier_removal,{:.4},{}", t.elapsed().as_secs_f64(), radius_cleaned.len());
+
+    #[cfg(feature = "transform-ops")]
+    {
+        // Translate XYZ by +1 m on each axis, matching PDAL filters.transformation.
+        use spatialrust::{apply_transform, Mat3, Mat4, Vec3};
+        let rotation = Mat3::<f32>::identity();
+        let transform = Mat4::<f32>::from_rotation_translation(rotation, Vec3::new(1.0, 1.0, 1.0));
+        let t = Instant::now();
+        let translated = apply_transform(&cloud, transform).expect("translate transform");
+        println!("translate_xyz,{:.4},{}", t.elapsed().as_secs_f64(), translated.len());
+    }
 }

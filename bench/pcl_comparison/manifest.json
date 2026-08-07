@@ -1,0 +1,37 @@
+{
+  "schema_version": "spatialrust.pointcloud-benchmark-manifest.v1",
+  "profiles": {
+    "small": { "points": 460400, "label": "public PCL table_scene_lms400" },
+    "full": { "points": 2000000, "label": "synthetic room scene" }
+  },
+  "required_statistics": [
+    "mean",
+    "median",
+    "p95",
+    "min",
+    "max",
+    "stdev",
+    "coefficient_of_variation",
+    "median_absolute_deviation",
+    "batch_size",
+    "samples"
+  ],
+  "publication_receipt": [
+    "platform",
+    "machine",
+    "logical_cpu_count",
+    "python_version",
+    "pcl_version",
+    "pdal_version",
+    "open3d_version",
+    "spatialrust_version"
+  ],
+  "workloads": [
+    { "id": "voxel_downsample", "domain": "filtering", "libraries": ["pcl", "pdal", "open3d"] },
+    { "id": "normal_estimation", "domain": "features", "libraries": ["pcl", "open3d"] },
+    { "id": "statistical_outlier_removal", "domain": "filtering", "libraries": ["pcl", "open3d"] },
+    { "id": "radius_outlier_removal", "domain": "filtering", "libraries": ["pcl", "open3d"] },
+    { "id": "translate_xyz", "domain": "io-transform", "libraries": ["pdal"] },
+    { "id": "reprojection", "domain": "io-transform", "libraries": ["pdal"] }
+  ]
+}

@@ -94,6 +94,29 @@ on `spatialrust-core`, a GPU backend, or serde.
 | 147E | Complete | Bounded COPC → 3D Tiles exporter: `CopcNodeReader` per-node hierarchy walk in `spatialrust-io` plus `export_copc_tileset` in `spatialrust-interchange`, with LAS color preserved as 8-bit `pnts` RGB | `tiles3d-copc` |
 | 147F | Complete | Python `export_tiles3d` / `export_copc_tiles3d` bindings with typed stubs and smoke tests | Python tiles3d surface |
 
+## Point-cloud conformance program (Epic 148)
+
+SpatialRust already proves image correctness and speed against OpenCV with
+dated, honest receipts (Epics 101–111). Epic 148 does the same for point
+clouds: reproducible PCL / PDAL comparisons on identical public clouds, with a
+versioned workload manifest, environment receipts, and per-operation winner
+reporting. It extends the existing `bench/pcl_comparison` and
+`bench/open3d_comparison` harnesses and adds a PDAL runner; every published
+number names the workload, machine, and library versions. PCL remains
+comparison tooling only and never enters a production feature.
+
+| Slice | Status | Scope | Evidence |
+| --- | --- | --- | --- |
+| 148A | Complete | Versioned point-cloud benchmark manifest (profiles, statistics, workloads) and stdlib-only report contract | `bench/pcl_comparison/manifest.json`, `report.py`, `test_report.py` |
+| 148B | Complete | PDAL runner with matching filters/operations on the identical cloud | `bench/pdal_comparison/` |
+| 148C | Planned | Unify PCL/PDAL/Open3D comparison receipts and aggregate runner with fail-closed checks | aggregate command |
+| 148D | Planned | Dated honest comparison receipt, docs, and README updates | note + `docs/` |
+
+Each slice lands as one reviewable PR. The manifest reserves VGA-class and
+full-size cloud profiles and at least the operations both libraries implement
+(voxel, normals, SOR, radius outlier removal, and PDAL-oriented IO/reprojection).
+
+
 The builder splits octants in a fixed bit order and writes one `pnts` payload
 per BFS tile id; leaf geometric error is zero and internal errors halve each
 level. Public APIs take plain `&[f32]`/`&[u8]` slices so the codec stays

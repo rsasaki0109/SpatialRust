@@ -1,0 +1,61 @@
+{
+  "environment": {
+    "logical_cpu_count": 8,
+    "machine": "x86_64",
+    "open3d_version": null,
+    "pcl_version": "1.14.0 (libpcl-dev)",
+    "pdal_version": null,
+    "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python_implementation": "CPython",
+    "python_version": "3.12.3",
+    "spatialrust_version": "1.2.0"
+  },
+  "generated_at": "2026-08-07T08:11:24.924875+00:00",
+  "kind": "performance",
+  "results": {
+    "input": {
+      "name": "table_scene_lms400.pcd",
+      "points": 460400,
+      "source": "https://github.com/PointCloudLibrary/data/blob/master/tutorials/table_scene_lms400.pcd"
+    },
+    "note": "honest single-run numbers; rerun on target hardware before portability claims",
+    "operations": [
+      {
+        "id": "voxel_downsample",
+        "output_points_pcl": 2215,
+        "output_points_sr": 2194,
+        "pcl_seconds": 0.0177,
+        "spatialrust_seconds": 0.0104,
+        "speedup": 1.7
+      },
+      {
+        "id": "normal_estimation",
+        "output_points_pcl": 460400,
+        "output_points_sr": 460400,
+        "pcl_seconds": 0.9893,
+        "spatialrust_seconds": 0.2171,
+        "speedup": 4.56
+      },
+      {
+        "id": "statistical_outlier_removal",
+        "output_points_pcl": 451983,
+        "output_points_sr": 451983,
+        "pcl_seconds": 1.1272,
+        "spatialrust_seconds": 0.2297,
+        "speedup": 4.91
+      },
+      {
+        "id": "radius_outlier_removal",
+        "output_points_pcl": 460379,
+        "output_points_sr": 460379,
+        "pcl_seconds": 0.72,
+        "spatialrust_seconds": 0.1088,
+        "speedup": 6.62
+      }
+    ]
+  },
+  "schema_version": "spatialrust.pointcloud-comparison.v1",
+  "status": "pass",
+  "suite": "pcl_comparison"
+}
