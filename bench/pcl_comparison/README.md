@@ -37,16 +37,17 @@ that fallback also needs NumPy and the SpatialRust Python extension.
 
 ## Indicative results
 
-Measured on one Windows machine (PCL 1.15.1 via vcpkg, MSYS2 g++ 16.1.0,
-release builds, 460,400-point public PCL `table_scene_lms400.pcd`). Throughput
-varies by CPU; run it yourself for numbers on your hardware.
+Measured on one Linux machine (PCL 1.14.x via libpcl-dev, g++ 16, release
+Rust build, 460,400-point public PCL `table_scene_lms400.pcd`, single-threaded
+where that is the default). Throughput varies by CPU and PCL build; run it
+yourself for numbers on your hardware. Dated receipt: `receipt-2026-08-07.json`.
 
 | Operation | SpatialRust | PCL | Speedup |
-| --- | ---: | ---: | ---: |
-| Radius Outlier Removal | 0.0899 s | 1.8784 s | **20.89× faster** |
-| Statistical Outlier Removal | 0.1664 s | 2.0933 s | **12.58× faster** |
-| Normal estimation | 0.1461 s | 1.9750 s | **13.52× faster** |
-| Voxel downsample | 0.0104 s | 0.0181 s | **1.74× faster** |
+| --- | ---: | ---: | :--- |
+| Voxel downsample | 0.0104 s | 0.0177 s | **1.70× faster** |
+| Normal estimation | 0.2171 s | 0.9893 s | **4.56× faster** |
+| Statistical Outlier Removal | 0.2297 s | 1.1272 s | **4.91× faster** |
+| Radius Outlier Removal | 0.1088 s | 0.7200 s | **6.62× faster** |
 
 SpatialRust is faster on neighborhood-statistics and density operations (radius
 outlier removal uses an early-exit density test; normals and SOR win too; voxel

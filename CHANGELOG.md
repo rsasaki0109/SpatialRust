@@ -21,6 +21,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Epic 148A/148B point-cloud conformance harness**: a versioned point-cloud
+  benchmark manifest (`spatialrust.pointcloud-benchmark-manifest.v1`) and a
+  stdlib-only report contract (`spatialrust.pointcloud-comparison.v1`) with
+  seven contract tests, plus a PDAL comparison runner
+  (`bench/pdal_comparison/`). `bench_ops` now also times `translate_xyz`
+  behind `transform-ops` to match PDAL's `filters.transformation`. A dated,
+  honest SpatialRust-vs-PCL receipt (`bench/pcl_comparison/receipt-2026-08-07.json`)
+  records voxel 1.70×, normals 4.56×, SOR 4.91×, and radius-outlier 6.62× on
+  the identical public 460,400-point cloud.
 - **Epic 147F Python 3D Tiles bindings**: `export_tiles3d` converts a
   `PointCloud` into a tileset directory and `export_copc_tiles3d` converts a
   `.copc.laz` file into a bounded tileset, both returning a
