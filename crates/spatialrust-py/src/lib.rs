@@ -11,6 +11,8 @@
 use std::path::PathBuf;
 
 #[allow(unsafe_code)]
+mod arrow_capsule;
+#[allow(unsafe_code)]
 mod dlpack_capsule;
 mod tiles3d;
 mod viewer;
@@ -1038,6 +1040,17 @@ impl PyPointCloud {
         self.inner.schema().fields().iter().map(|f| f.name.clone()).collect()
     }
 
+    /// Returns `(array, schema)` Arrow C Data capsules for zero-copy interop
+    /// with PyArrow (`pyarrow.array(cloud)` / `pyarrow.Table.from_arrays`).
+    #[pyo3(name = "__arrow_c_array__", signature = (_requested_schema = None))]
+    fn arrow_c_array<'py>(
+        &self,
+        py: Python<'py>,
+        _requested_schema: Option<&Bound<'py, PyAny>>,
+    ) -> PyResult<Py<PyAny>> {
+        arrow_capsule::export_point_cloud(py, &self.inner)
+    }
+
     /// Number of points.
     fn __len__(&self) -> usize {
         self.inner.len()
@@ -1054,7 +1067,7 @@ impl PyPointCloud {
 /// the Python caller and is separate from the native pipeline memory budget.
 #[pyclass(name = "PointCloudStream", unsendable)]
 pub struct PyPointCloudStream {
-    inner: StreamingPipelineIter,
+    inner: Option<StreamingPipelineIter>,
     cancellation: CancellationToken,
 }
 
@@ -1065,7 +1078,7 @@ impl PyPointCloudStream {
     }
 
     fn __next__(&mut self) -> PyResult<Option<PyPointCloud>> {
-        match self.inner.next() {
+        match self.inner.as_mut().and_then(Iterator::next) {
             Some(Ok(chunk)) => Ok(Some(PyPointCloud { inner: chunk.record().cloud().clone() })),
             Some(Err(error)) => Err(to_py_err(error)),
             None => Ok(None),
@@ -1077,9 +1090,26 @@ impl PyPointCloudStream {
         self.cancellation.cancel();
     }
 
+    /// Returns a single `arrow_array_stream` capsule for zero-copy PyArrow
+    /// consumption (`pa.RecordBatchReader.from_stream(stream)`).
+    #[pyo3(name = "__arrow_c_stream__", signature = (_requested_schema = None))]
+    fn arrow_c_stream<'py>(
+        mut slf: PyRefMut<'_, Self>,
+        py: Python<'py>,
+        _requested_schema: Option<&Bound<'py, PyAny>>,
+    ) -> PyResult<Py<PyAny>> {
+        let taken = slf.inner.take().ok_or_else(|| {
+            PyRuntimeError::new_err("point cloud stream is already consumed")
+        })?;
+        arrow_capsule::export_stream(py, taken)
+    }
+
     /// Returns the versioned JSON receipt observed so far.
     fn receipt_json(&self) -> PyResult<String> {
-        self.inner.receipt().and_then(|receipt| receipt.to_json()).map_err(to_py_err)
+        match &self.inner {
+            Some(inner) => inner.receipt().and_then(|receipt| receipt.to_json()).map_err(to_py_err),
+            None => Err(PyRuntimeError::new_err("point cloud stream is already consumed")),
+        }
     }
 }
 
@@ -1144,7 +1174,7 @@ fn open_point_cloud_stream(
             StreamingVoxelConfig::new(leaf, run_points, max_runs, spool).map_err(to_py_err)?;
         pipeline = pipeline.voxel(config).map_err(to_py_err)?;
     }
-    Ok(PyPointCloudStream { inner: pipeline.into_iter(), cancellation })
+    Ok(PyPointCloudStream { inner: Some(pipeline.into_iter()), cancellation })
 }
 
 fn open_python_stream_source(

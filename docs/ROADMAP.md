@@ -112,6 +112,21 @@ comparison tooling only and never enters a production feature.
 | 148C | Complete | Unify PCL/PDAL/Open3D comparison receipts and aggregate runner with fail-closed checks | `bench/pcl_comparison/aggregate.py` + tests |
 | 148D | Complete | Dated honest comparison receipt, docs, and README updates | `receipt-2026-08-07.json`, note |
 
+## Arrow canonical interchange program (Epic 149)
+
+SpatialRust already owns the audited Arrow C Data / Stream / Device substrate
+(91C/91D). Epic 149 promotes Arrow to the canonical cross-language zero-copy
+interchange: Python objects expose `__arrow_c_array__` / `__arrow_c_stream__`
+so PyArrow, pandas, and DuckDB consume SpatialRust records without copying, and
+Rust round-trips stay audited and explicit.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 149A | Complete | Python `__arrow_c_array__` on `PyPointCloud` via the existing C Data export, with PyArrow round-trip test | `arrow-c-data` |
+| 149B | Complete | `__arrow_c_stream__` on `PyPointCloudStream` for bounded record streaming | `arrow-c-stream` |
+| 149C | Complete | Facade docs, FEATURE_MATRIX/CHANGELOG/notes | docs |
+
+
 Each slice lands as one reviewable PR. The manifest reserves VGA-class and
 full-size cloud profiles and at least the operations both libraries implement
 (voxel, normals, SOR, radius outlier removal, and PDAL-oriented IO/reprojection).

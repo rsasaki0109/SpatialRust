@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Epic 149 Arrow canonical interchange in Python**: `PyPointCloud` exposes
+  `__arrow_c_array__`, returning `(schema, array)` Arrow C Data capsules so
+  PyArrow/pandas consume SpatialRust clouds zero-copy, and `PyPointCloudStream`
+  exposes `__arrow_c_stream__` for bounded record streaming into
+  `pa.RecordBatchReader`. Capsule destructors call the Arrow release callbacks
+  exactly once; verified against PyArrow round trips in the wheel test gate.
 - **Epic 148C/148D point-cloud conformance aggregator**: `aggregate.py` unifies
   PCL/PDAL/Open3D receipts into one `pointcloud-conformance-aggregate` report
   with fail-closed checks (unsupported suites, missing ids, duplicate

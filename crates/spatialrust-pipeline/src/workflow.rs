@@ -114,6 +114,12 @@ impl StreamingPipelineIter {
         self.source.cancellation_token()
     }
 
+    /// Returns the output record schema.
+    #[must_use]
+    pub fn schema(&self) -> &SchemaDescriptor {
+        self.source.schema()
+    }
+
     /// Clones the receipt as observed at the latest completed chunk boundary.
     pub fn receipt(&self) -> RecordsResult<StreamingReceipt> {
         let mut receipt = lock_receipt(&self.receipt)?;
