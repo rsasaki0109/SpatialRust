@@ -1293,3 +1293,34 @@ def test_point_cloud_stream_arrow_c_stream_batches(tmp_path):
     # Concatenated x column matches the source.
     concat = pa.concat_arrays([batch.column("x") for batch in batches])
     np.testing.assert_allclose(np.array(concat), xs, rtol=1e-5)
+
+
+def test_onnx_entity_embedder_runs_real_model(tmp_path):
+    model = bytes(
+        [
+            8, 8, 18, 16, 115, 112, 97, 116, 105, 97, 108, 114, 117, 115, 116, 45, 116,
+            101, 115, 116, 58, 106, 10, 27, 10, 5, 105, 110, 112, 117, 116, 10, 5, 105,
+            110, 112, 117, 116, 18, 6, 111, 117, 116, 112, 117, 116, 34, 3, 65, 100, 100,
+            18, 14, 100, 111, 117, 98, 108, 101, 95, 100, 121, 110, 97, 109, 105, 99, 90,
+            28, 10, 5, 105, 110, 112, 117, 116, 18, 19, 10, 17, 8, 1, 18, 13, 10, 7,
+            18, 5, 98, 97, 116, 99, 104, 10, 2, 8, 3, 98, 29, 10, 6, 111, 117, 116,
+            112, 117, 116, 18, 19, 10, 17, 8, 1, 18, 13, 10, 7, 18, 5, 98, 97, 116,
+            99, 104, 10, 2, 8, 3, 66, 4, 10, 0, 16, 13,
+        ]
+    )
+    path = tmp_path / "double_dynamic.onnx"
+    path.write_bytes(model)
+    try:
+        session = sr.OnnxRuntimeSession(str(path), deterministic=True)
+    except RuntimeError as error:
+        if "without the `onnxruntime` feature" in str(error):
+            pytest.skip("extension was intentionally built without ONNX Runtime")
+        raise
+
+    embedder = sr.OnnxEntityEmbedder(
+        session, "input", "output", [1, 3], [1, 3], copy=True
+    )
+    result = embedder.embed(session, np.array([1.0, 2.0, 3.0], dtype=np.float32))
+    # The fixture doubles its input.
+    np.testing.assert_allclose(result["embedding"], np.array([2.0, 4.0, 6.0]))
+    assert result["dim"] == 3

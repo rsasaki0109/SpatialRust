@@ -11,7 +11,7 @@ description = "Python bindings for SpatialRust point cloud processing"
 
 [features]
 default = []
-onnxruntime = ["spatialrust/ai-onnxruntime"]
+onnxruntime = ["spatialrust/ai-onnxruntime", "spatialrust/semantic-model"]
 
 [lib]
 # Importable module name: `import spatialrust`
