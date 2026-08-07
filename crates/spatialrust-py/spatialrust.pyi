@@ -986,6 +986,7 @@ class OnnxRuntimeSession:
     def outputs(self) -> list[tuple[str, str, list[str]]]: ...
     def run(self, inputs: dict[str, Tensor], *, copy: bool = ...) -> dict[str, Tensor]: ...
 
+@final
 class OnnxEntityEmbedder:
     """Embeds point-entity features through an ONNX session (Epic 150)."""
 
