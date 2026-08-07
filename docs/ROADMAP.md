@@ -126,6 +126,28 @@ Rust round-trips stay audited and explicit.
 | 149B | Complete | `__arrow_c_stream__` on `PyPointCloudStream` for bounded record streaming | `arrow-c-stream` |
 | 149C | Complete | Facade docs, FEATURE_MATRIX/CHANGELOG/notes | docs |
 
+## Real AI semantic meaning program (Epic 150)
+
+Epic 95 established semantic entities and embeddings with a deterministic mock
+profile. Epic 150 connects real ONNX inference to spatial semantic entities:
+point-cloud entity features are embedded through a model session, indexed in
+the existing `SemanticSearchIndex`, and searchable by open-vocabulary label.
+Heavy runtimes stay behind dedicated features; tests use a tiny deterministic
+ONNX model committed as fixture bytes so no external download is required.
+
+| Slice | Status | Scope | Feature |
+| --- | --- | --- | --- |
+| 150A | Complete | `OnnxEntityEmbedder`: entity feature tensors → ONNX embedding via an existing `ModelSession`, with explicit copy policy | `semantic`, `ai-onnxruntime` |
+| 150B | Complete | Fixture ONNX model bytes + embedder correctness tests against the mock/real boundary | fixture, tests |
+| 150C | Active | Facade wiring, Python binding, FEATURE_MATRIX/CHANGELOG/notes | facade |
+
+The embedder never loads a model itself; it consumes an already-open session so
+backend identity, device placement, and copy policy stay explicit. The fixture
+model maps a fixed-dimension feature vector to a fixed-dimension embedding so
+round trips are exact and no learned weights are implied. The facade
+`semantic-model` feature wires the embedder with the existing AI/ONNX surface.
+
+
 
 Each slice lands as one reviewable PR. The manifest reserves VGA-class and
 full-size cloud profiles and at least the operations both libraries implement

@@ -218,6 +218,12 @@ mapping-scan-icp = ["mapping", "spatialrust-mapping/scan-icp"]
 scene = ["dep:spatialrust-scene"]
 scene-gaussian = ["scene", "spatialrust-scene/gaussian"]
 semantic = ["records", "dep:spatialrust-semantic"]
+semantic-model = [
+    "semantic",
+    "spatialrust-semantic/model",
+    "ai",
+    "tensor",
+]
 episode = ["sync", "dep:spatialrust-episode"]
 runtime = ["sync", "dep:spatialrust-runtime"]
 runtime-graph = ["runtime", "distribute", "spatialrust-runtime/execution-graph"]
@@ -349,6 +355,11 @@ required-features = ["streaming-cli"]
 name = "tiles3d_smoke"
 path = "tests/tiles3d_smoke.rs"
 required-features = ["interchange-tiles3d", "io-pcd", "interchange-tiles3d-copc", "io-copc"]
+
+[[test]]
+name = "onnx_semantic"
+path = "tests/onnx_semantic.rs"
+required-features = ["ai-onnxruntime", "semantic-model"]
 
 [[example]]
 name = "north_star_demo"
