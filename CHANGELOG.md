@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Epic 148C/148D point-cloud conformance aggregator**: `aggregate.py` unifies
+  PCL/PDAL/Open3D receipts into one `pointcloud-conformance-aggregate` report
+  with fail-closed checks (unsupported suites, missing ids, duplicate
+  workloads). The report contract tests grew to eight cases, and the dated
+  PCL receipt is committed.
 - **Epic 148A/148B point-cloud conformance harness**: a versioned point-cloud
   benchmark manifest (`spatialrust.pointcloud-benchmark-manifest.v1`) and a
   stdlib-only report contract (`spatialrust.pointcloud-comparison.v1`) with

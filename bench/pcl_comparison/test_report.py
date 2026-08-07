@@ -132,6 +132,61 @@ def test_timing_statistics_and_percentile():
         pass
 
 
+def test_aggregate_merges_suites_and_rejects_duplicates():
+    from aggregate import aggregate, collect  # noqa: PLC0415
+
+    base = environment(
+        pcl_version="1.15.1",
+        pdal_version="2.6",
+        open3d_version="0.19.0",
+        spatialrust_version="1.2.0",
+    )
+
+    def suite_report(name, ops):
+        return make_report(
+            suite=name,
+            kind="performance",
+            status="pass",
+            environment_receipt=base,
+            results={"operations": ops},
+        )
+
+    pcl = suite_report(
+        "pcl_comparison",
+        [{"id": "voxel_downsample", "spatialrust_seconds": 0.0104, "pcl_seconds": 0.0177}],
+    )
+    pdal = suite_report(
+        "pdal_comparison",
+        [{"id": "translate_xyz", "spatialrust_seconds": 0.009, "pdal_seconds": 0.02}],
+    )
+    result = aggregate([pcl, pdal])
+    assert result["kind"] == "aggregate"
+    assert result["status"] == "pass"
+    assert result["results"]["suite_count"] == 2
+    assert result["results"]["workload_count"] == 2
+    ids = {w["id"] for w in result["results"]["workloads"]}
+    assert ids == {"voxel_downsample", "translate_xyz"}
+
+    duplicate = aggregate([pcl, pdal])
+    assert duplicate["results"]["suite_count"] == 2
+    try:
+        # A second suite repeating the same workload id must fail closed.
+        pcl2 = suite_report(
+            "pdal_comparison",
+            [{"id": "voxel_downsample", "spatialrust_seconds": 0.0, "pdal_seconds": 0.0}],
+        )
+        aggregate([pcl, pcl2])
+        raise AssertionError("duplicate workload must raise")
+    except ValueError:
+        pass
+    try:
+        # Aggregating the same receipt twice must also fail closed.
+        aggregate([pcl, pcl])
+        raise AssertionError("duplicate suite must raise")
+    except ValueError:
+        pass
+
+
 def main() -> int:
     tests = [
         ("schema_version_is_canonical", test_schema_version_is_canonical),
@@ -141,6 +196,7 @@ def main() -> int:
         ("wrong_schema_version_fails", test_wrong_schema_version_fails),
         ("non_finite_values_fail", test_non_finite_values_fail),
         ("timing_statistics_and_percentile", test_timing_statistics_and_percentile),
+        ("aggregate_merges_suites_and_rejects_duplicates", test_aggregate_merges_suites_and_rejects_duplicates),
     ]
     failures = 0
     for name, test in tests:

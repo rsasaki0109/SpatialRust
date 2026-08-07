@@ -1,6 +1,6 @@
 # Epic 148: point-cloud conformance program (PCL/PDAL comparison)
 
-Date: 2026-08-07. Slices 148A/148B.
+Date: 2026-08-07. Slices 148A–148D complete.
 
 ## Why
 
@@ -27,6 +27,10 @@ same fail-closed report contract style.
   filters.transformation translate, filters.reprojection) and `run.sh` that
   builds `bench_ops` and prints the side-by-side table. PDAL is comparison
   tooling only.
+- `bench/pcl_comparison/aggregate.py` — unifies PCL/PDAL/Open3D receipts into
+  one `pointcloud-conformance-aggregate` report. Rejects unsupported suites,
+  missing operation ids, and duplicate workloads (fail-closed), and validates
+  every input with `load_report`.
 - `crates/spatialrust/examples/bench_ops.rs` — adds a `translate_xyz` workload
   behind `transform-ops` so SpatialRust can be compared against PDAL's
   transform filter.
@@ -47,7 +51,8 @@ numbers, not portability guarantees.
 
 ## Next slices
 
-148C unifies PCL/PDAL/Open3D receipts into an aggregate runner with fail-closed
-checks; 148D publishes docs and a dated receipt. PDAL/Open3D were not installed
-on this host, so their runners are ready but their dated numbers must be
-produced on a machine with those tools.
+Epic 148 is complete. A future `full` (2M-point synthetic room) dated run and
+PDAL/Open3D dated receipts can be produced on machines with those tools; the
+aggregate runner already validates all three suite kinds. PDAL/Open3D were not
+installed on this host, so their runners are ready but their dated numbers must
+be produced on a machine with those tools.
