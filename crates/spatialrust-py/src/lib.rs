@@ -355,6 +355,100 @@ fn python_tensor_spec(spec: &spatialrust::ai::TensorSpec) -> (String, String, Ve
     (spec.name.clone(), tensor_dtype_name(spec.dtype), dimensions)
 }
 
+/// Embeds point-entity features through an ONNX session into a searchable
+/// embedding (Epic 150).
+///
+/// Args:
+///     session: spatialrust.OnnxRuntimeSession
+///     input_name: str
+///     output_name: str
+///     input_shape: list[int]
+///     output_shape: list[int]
+///     copy: bool (default True) — permit documented host copies
+#[pyclass(name = "OnnxEntityEmbedder", unsendable)]
+struct PyOnnxEntityEmbedder {
+    #[cfg(feature = "onnxruntime")]
+    inner: spatialrust::semantic::OnnxEntityEmbedder,
+}
+
+#[pymethods]
+impl PyOnnxEntityEmbedder {
+    #[new]
+    #[pyo3(signature = (session, input_name, output_name, input_shape, output_shape, copy=true))]
+    fn new(
+        session: &Bound<'_, PyAny>,
+        input_name: String,
+        output_name: String,
+        input_shape: Vec<usize>,
+        output_shape: Vec<usize>,
+        copy: bool,
+    ) -> PyResult<Self> {
+        #[cfg(feature = "onnxruntime")]
+        {
+            let _ = session; // session ownership is retained by the caller; embed() receives it.
+            let copy_policy = if copy { AiCopyPolicy::Allow } else { AiCopyPolicy::Forbid };
+            let descriptor = |shape: Vec<usize>| {
+                spatialrust::tensor::TensorDescriptor::contiguous(
+                    spatialrust::tensor::DataType::F32,
+                    shape,
+                    spatialrust::tensor::Device::CPU,
+                )
+            };
+            let inner = spatialrust::semantic::OnnxEntityEmbedder::try_new(
+                input_name,
+                output_name,
+                descriptor(input_shape),
+                descriptor(output_shape),
+                copy_policy,
+            )
+            .map_err(to_py_err)?;
+            Ok(Self { inner })
+        }
+        #[cfg(not(feature = "onnxruntime"))]
+        {
+            let _ = (session, input_name, output_name, input_shape, output_shape, copy);
+            Err(PyRuntimeError::new_err(
+                "this SpatialRust Python module was built without the `onnxruntime` feature",
+            ))
+        }
+    }
+
+    /// Embeds one feature vector; `features` length must match the input shape.
+    fn embed<'py>(
+        &self,
+        py: Python<'py>,
+        session: PyRefMut<'_, PyOnnxRuntimeSession>,
+        features: Vec<f32>,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        #[cfg(feature = "onnxruntime")]
+        {
+            let mut session = session;
+            let inner: &mut dyn ModelSession = session.inner.as_mut();
+            let embedding = self
+                .inner
+                .embed_one(inner, &features)
+                .map_err(to_py_err)?;
+            let dims = embedding.dim();
+            let values = embedding.as_slice().to_vec();
+            let array = numpy::IntoPyArray::into_pyarray_bound(
+                numpy::ndarray::Array1::from(values),
+                py,
+            );
+            let dict = PyDict::new_bound(py);
+            dict.set_item("embedding", array)?;
+            dict.set_item("dim", dims)?;
+            Ok(dict)
+        }
+        #[cfg(not(feature = "onnxruntime"))]
+        {
+            let _ = (py, session, features);
+            Err(PyRuntimeError::new_err(
+                "this SpatialRust Python module was built without the `onnxruntime` feature",
+            ))
+        }
+    }
+}
+
 #[pyclass(name = "DLPackTensorView", unsendable)]
 struct PyDlpackTensorView {
     inner: DlpackImport,
@@ -4610,6 +4704,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyCannyWorkspace>()?;
     m.add_class::<PyMultiObjectTracker>()?;
     m.add_class::<PyOnnxRuntimeSession>()?;
+    m.add_class::<PyOnnxEntityEmbedder>()?;
     m.add_class::<PyDlpackTensorView>()?;
     m.add_class::<PyPointCloud>()?;
     m.add_class::<PyPointCloudStream>()?;

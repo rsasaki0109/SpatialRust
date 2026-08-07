@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- **Epic 150C Python entity embedder**: `OnnxEntityEmbedder` in the Python
+  extension embeds point-entity feature vectors through an existing
+  `OnnxRuntimeSession` and returns a NumPy embedding vector with its dimension,
+  gated by the `onnxruntime` wheel feature. The `double_dynamic.onnx` fixture
+  proves the real ONNX path doubles `[1,2,3]` → `[2,4,6]`.
 - **Epic 150 real AI semantic meaning** (`semantic-model`): `OnnxEntityEmbedder`
   runs point-entity feature vectors through an already-open ONNX model session
   with explicit copy policy and produces an `Embedding` ready for the existing

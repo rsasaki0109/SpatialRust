@@ -139,7 +139,7 @@ ONNX model committed as fixture bytes so no external download is required.
 | --- | --- | --- | --- |
 | 150A | Complete | `OnnxEntityEmbedder`: entity feature tensors → ONNX embedding via an existing `ModelSession`, with explicit copy policy | `semantic`, `ai-onnxruntime` |
 | 150B | Complete | Fixture ONNX model bytes + embedder correctness tests against the mock/real boundary | fixture, tests |
-| 150C | Active | Facade wiring, Python binding, FEATURE_MATRIX/CHANGELOG/notes | facade |
+| 150C | Complete | Facade wiring, Python binding, FEATURE_MATRIX/CHANGELOG/notes | facade |
 
 The embedder never loads a model itself; it consumes an already-open session so
 backend identity, device placement, and copy policy stay explicit. The fixture

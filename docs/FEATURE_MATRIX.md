@@ -39,7 +39,7 @@ workspace because its build requires a Python toolchain.
 | `spatialrust-pipeline` | MVP pipeline | GPU MVP stages | algorithm crates only |
 | `spatialrust-interchange` | `interchange-gltf`, `interchange-openusd` | `tiles3d`: deterministic OGC 3D Tiles 1.1 `tileset.json` + `pnts` octree export; `tiles3d-copc`: bounded COPC hierarchy → tileset | `tiles3d-copc` pulls `spatialrust-io` + `spatialrust-core` for COPC node reads |
 | `spatialrust-arrow` | no capability by default | C Data `__arrow_c_array__`, C Stream `__arrow_c_stream__`, C Device `__arrow_c_device_array__` exports/imports for point records | `arrow-c-data`, `arrow-c-stream`, `arrow-c-device`; no Arrow runtime dependency |
-| `spatialrust-py` | Python binding surface | selected meta-crate features, including `export_tiles3d` / `export_copc_tiles3d`, Arrow C Data `__arrow_c_array__` / `__arrow_c_stream__` | PyO3/NumPy |
+| `spatialrust-py` | Python binding surface | selected meta-crate features, including `export_tiles3d` / `export_copc_tiles3d`, Arrow C Data `__arrow_c_array__` / `__arrow_c_stream__`, `OnnxEntityEmbedder` (onnxruntime) | PyO3/NumPy |
 
 ## Execution contract
 

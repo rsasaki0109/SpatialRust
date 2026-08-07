@@ -1,6 +1,6 @@
 # Epic 150: real AI semantic meaning via ONNX entity embeddings
 
-Date: 2026-08-07. Slices 150A/150B complete.
+Date: 2026-08-07. Slices 150A–150C complete.
 
 ## Why
 
@@ -26,6 +26,11 @@ data model.
   - real ONNX Runtime CPU session embeds `[1,2,3]` → `[2,4,6]` exactly;
   - the embedding is inserted into `SemanticSearchIndex` and found by a
     query embedding, proving the full feature → model → search path.
+- Python binding (150C): `PyOnnxEntityEmbedder` takes an existing
+  `OnnxRuntimeSession`, input/output names and shapes, and `copy` policy;
+  `embed()` returns a NumPy embedding plus its dimension. Gated by the
+  `onnxruntime` wheel feature; a `double_dynamic.onnx`-style Python test
+  doubles `[1,2,3]` → `[2,4,6]`.
 
 ## Contract notes
 
@@ -44,5 +49,7 @@ data model.
 
 ## Next slices
 
-150C: Python binding for the embedder and open-vocabulary search over indexed
-entities, plus a note with an example using a real public embedding model.
+Epic 150 is complete. A follow-up note can document using a real public
+open-vocabulary embedding model (e.g. CLIP image/text) with this surface; the
+wiring and tests already cover the full feature → model → embedding → search
+path in both Rust and Python.

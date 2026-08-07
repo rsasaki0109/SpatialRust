@@ -986,6 +986,25 @@ class OnnxRuntimeSession:
     def outputs(self) -> list[tuple[str, str, list[str]]]: ...
     def run(self, inputs: dict[str, Tensor], *, copy: bool = ...) -> dict[str, Tensor]: ...
 
+@final
+class OnnxEntityEmbedder:
+    """Embeds point-entity features through an ONNX session (Epic 150)."""
+
+    def __new__(
+        cls,
+        session: OnnxRuntimeSession,
+        input_name: str,
+        output_name: str,
+        input_shape: list[int],
+        output_shape: list[int],
+        copy: bool = ...,
+    ) -> OnnxEntityEmbedder: ...
+    def embed(
+        self, session: OnnxRuntimeSession, features: NDArray[np.float32]
+    ) -> dict[str, object]:
+        """Returns {\"embedding\": ndarray, \"dim\": int}."""
+        ...
+
 def tensor_copy_from_numpy(array: NDArray[np.generic]) -> Tensor: ...
 @final
 class DLPackTensorView:
