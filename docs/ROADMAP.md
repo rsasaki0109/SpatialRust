@@ -109,8 +109,8 @@ comparison tooling only and never enters a production feature.
 | --- | --- | --- | --- |
 | 148A | Complete | Versioned point-cloud benchmark manifest (profiles, statistics, workloads) and stdlib-only report contract | `bench/pcl_comparison/manifest.json`, `report.py`, `test_report.py` |
 | 148B | Complete | PDAL runner with matching filters/operations on the identical cloud | `bench/pdal_comparison/` |
-| 148C | Planned | Unify PCL/PDAL/Open3D comparison receipts and aggregate runner with fail-closed checks | aggregate command |
-| 148D | Planned | Dated honest comparison receipt, docs, and README updates | note + `docs/` |
+| 148C | Complete | Unify PCL/PDAL/Open3D comparison receipts and aggregate runner with fail-closed checks | `bench/pcl_comparison/aggregate.py` + tests |
+| 148D | Complete | Dated honest comparison receipt, docs, and README updates | `receipt-2026-08-07.json`, note |
 
 Each slice lands as one reviewable PR. The manifest reserves VGA-class and
 full-size cloud profiles and at least the operations both libraries implement
