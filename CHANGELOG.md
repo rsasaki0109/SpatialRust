@@ -21,6 +21,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- ASCII PCD integer fields reject fractional, nonfinite and out-of-range values
+  instead of silently rounding or saturating labels and IDs. Tests exercise
+  U8/U16/U32/I32 validation in full and bounded streaming readers.
 - Packed RGB PCD ASCII output now writes the float bit representation declared
   by TYPE F instead of an integer token, preserving colors on reload. ASCII
   TYPE U RGB is decoded as integer bits; malformed RGB layouts are rejected.
