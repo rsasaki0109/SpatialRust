@@ -5,6 +5,48 @@ use spatialrust_search::KdTree;
 use crate::kabsch::estimate_rigid_transform;
 use crate::registration::{PointCloudRegistration, RegistrationResult};
 
+/// Why a successful ICP call stopped; convergence does not certify the pose.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IcpStopReason {
+    /// The absolute mean squared correspondence distance was small enough.
+    FitnessThreshold,
+    /// Both translation length and rotation angle of the update were small enough.
+    TransformThreshold,
+    /// The iteration budget was exhausted without meeting a convergence threshold.
+    IterationLimit,
+}
+
+/// Measurements for one completed update (no additional nearest-neighbor pass).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct IcpIteration {
+    /// One-based update number.
+    pub iteration: usize,
+    /// Gated correspondences used to estimate this update.
+    pub correspondences: usize,
+    /// Gated correspondences after applying the update and rematching.
+    pub evaluated_correspondences: usize,
+    /// Post-update mean squared distance, or f64::MAX if there are no matches.
+    pub fitness: f64,
+    /// Previous post-update fitness minus this fitness; None for the first update.
+    /// Membership can change, so this is not an error on a fixed set of points.
+    pub fitness_change: Option<f64>,
+    /// Update translation length in the input coordinate units.
+    pub translation_delta: f64,
+    /// Shortest update rotation angle in radians.
+    pub rotation_delta_radians: f64,
+}
+
+/// Opt-in ICP history. Ordinary alignment does not allocate this history.
+#[derive(Clone, Debug, PartialEq)]
+pub struct IcpDiagnostics {
+    /// Ordinary registration result from the same updates.
+    pub result: RegistrationResult,
+    /// One row per completed update, in execution order.
+    pub history: Vec<IcpIteration>,
+    /// Criterion that stopped this successful call.
+    pub stop_reason: IcpStopReason,
+}
+
 /// Configuration for point-to-point ICP.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct IcpConfig {
@@ -69,6 +111,26 @@ impl IcpRegistration {
         source: &PointCloud,
         target: &PointCloud,
     ) -> SpatialResult<RegistrationResult> {
+        self.align_impl(source, target, |_| {}).map(|(result, _)| result)
+    }
+
+    /// Aligns with an opt-in history; errors use the same path as ordinary alignment.
+    pub fn align_with_trace(
+        &self,
+        source: &PointCloud,
+        target: &PointCloud,
+    ) -> SpatialResult<IcpDiagnostics> {
+        let mut history = Vec::new();
+        let (result, stop_reason) = self.align_impl(source, target, |row| history.push(row))?;
+        Ok(IcpDiagnostics { result, history, stop_reason })
+    }
+
+    fn align_impl(
+        &self,
+        source: &PointCloud,
+        target: &PointCloud,
+        mut observe: impl FnMut(IcpIteration),
+    ) -> SpatialResult<(RegistrationResult, IcpStopReason)> {
         if source.is_empty() || target.is_empty() {
             return Err(SpatialError::InvalidArgument(
                 "ICP requires non-empty source and target point clouds".to_owned(),
@@ -90,6 +152,8 @@ impl IcpRegistration {
 
         let mut iterations = 0usize;
         let mut converged = false;
+        let mut stop_reason = IcpStopReason::IterationLimit;
+        let mut previous_fitness = None;
 
         for _ in 0..self.config.max_iterations {
             iterations += 1;
@@ -129,7 +193,7 @@ impl IcpRegistration {
             transform = delta.compose(transform);
             apply_transform_in_place(&mut transformed, source_x, source_y, source_z, transform);
 
-            let fitness = final_fitness(
+            let (fitness, evaluated_correspondences) = evaluate_fitness(
                 &transformed,
                 target_x,
                 target_y,
@@ -137,29 +201,46 @@ impl IcpRegistration {
                 &tree,
                 max_distance_squared,
             );
+            let (translation_delta, rotation_delta_radians) = transform_delta_magnitudes(delta);
+            observe(IcpIteration {
+                iteration: iterations,
+                correspondences: pairs_source.len(),
+                evaluated_correspondences,
+                fitness,
+                fitness_change: previous_fitness.map(|previous| previous - fitness),
+                translation_delta,
+                rotation_delta_radians,
+            });
+            previous_fitness = Some(fitness);
             if fitness < self.config.fitness_epsilon {
                 converged = true;
+                stop_reason = IcpStopReason::FitnessThreshold;
                 break;
             }
             if transform_delta_below_epsilon(delta, self.config.transformation_epsilon) {
                 converged = true;
+                stop_reason = IcpStopReason::TransformThreshold;
                 break;
             }
         }
 
-        Ok(RegistrationResult {
-            transform,
-            fitness: final_fitness(
-                &transformed,
-                target_x,
-                target_y,
-                target_z,
-                &tree,
-                max_distance_squared,
-            ),
-            iterations,
-            converged,
-        })
+        Ok((
+            RegistrationResult {
+                transform,
+                fitness: evaluate_fitness(
+                    &transformed,
+                    target_x,
+                    target_y,
+                    target_z,
+                    &tree,
+                    max_distance_squared,
+                )
+                .0,
+                iterations,
+                converged,
+            },
+            stop_reason,
+        ))
     }
 }
 
@@ -186,27 +267,16 @@ fn apply_transform_in_place(
     }
 }
 
-fn mean_squared_error(source: &[Vec3<f32>], target: &[Vec3<f32>]) -> f64 {
-    let mut sum = 0.0_f64;
-    for (src, dst) in source.iter().zip(target) {
-        let dx = f64::from(src.x - dst.x);
-        let dy = f64::from(src.y - dst.y);
-        let dz = f64::from(src.z - dst.z);
-        sum += dx * dx + dy * dy + dz * dz;
-    }
-    sum / source.len() as f64
-}
-
-fn final_fitness(
+fn evaluate_fitness(
     transformed: &[Vec3<f32>],
     target_x: &[f32],
     target_y: &[f32],
     target_z: &[f32],
     tree: &KdTree,
     max_distance_squared: f32,
-) -> f64 {
-    let mut pairs_source = Vec::new();
-    let mut pairs_target = Vec::new();
+) -> (f64, usize) {
+    let mut sum = 0.0_f64;
+    let mut count = 0usize;
     for point in transformed {
         let Some(neighbor) =
             tree.nearest_one_within(point.x, point.y, point.z, max_distance_squared)
@@ -214,21 +284,22 @@ fn final_fitness(
             continue;
         };
         if neighbor.distance_squared <= max_distance_squared {
-            pairs_source.push(*point);
-            pairs_target.push(Vec3::new(
-                target_x[neighbor.index],
-                target_y[neighbor.index],
-                target_z[neighbor.index],
-            ));
+            let dx = f64::from(point.x - target_x[neighbor.index]);
+            let dy = f64::from(point.y - target_y[neighbor.index]);
+            let dz = f64::from(point.z - target_z[neighbor.index]);
+            sum += dx * dx + dy * dy + dz * dz;
+            count += 1;
         }
     }
-    if pairs_source.is_empty() {
-        return f64::MAX;
-    }
-    mean_squared_error(&pairs_source, &pairs_target)
+    (if count == 0 { f64::MAX } else { sum / count as f64 }, count)
 }
 
 fn transform_delta_below_epsilon(delta: Isometry3<f32>, epsilon: f64) -> bool {
+    let (translation_norm, rotation_angle) = transform_delta_magnitudes(delta);
+    translation_norm < epsilon && rotation_angle < epsilon
+}
+
+fn transform_delta_magnitudes(delta: Isometry3<f32>) -> (f64, f64) {
     let translation = delta.translation();
     let translation_norm =
         f64::from(translation.x).hypot(f64::from(translation.y)).hypot(f64::from(translation.z));
@@ -238,12 +309,12 @@ fn transform_delta_below_epsilon(delta: Isometry3<f32>, epsilon: f64) -> bool {
     // atan2 retains small angles when the f32 scalar component rounds to one.
     // abs(w) gives the same shortest angle for equivalent q and -q rotations.
     let rotation_angle = 2.0 * vector_norm.atan2(f64::from(rotation.w).abs());
-    translation_norm < epsilon && rotation_angle < epsilon
+    (translation_norm, rotation_angle)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{transform_delta_below_epsilon, IcpConfig, IcpRegistration};
+    use super::{transform_delta_below_epsilon, IcpConfig, IcpRegistration, IcpStopReason};
     use crate::registration::PointCloudRegistration;
     use crate::transform::transform_point_cloud;
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};
@@ -320,6 +391,21 @@ mod tests {
             .unwrap();
         assert!(settled.converged);
         assert!(settled.iterations > 1);
+        let trace = IcpRegistration::new(IcpConfig { max_iterations: 3, ..config })
+            .align_with_trace(&source, &target)
+            .unwrap();
+        assert_eq!(trace.result, settled);
+        assert_eq!(trace.stop_reason, IcpStopReason::TransformThreshold);
+        assert_eq!(trace.history.len(), settled.iterations);
+        assert!(trace.history[0].rotation_delta_radians > 0.04);
+        assert!(trace.history[0].translation_delta < config.transformation_epsilon);
+        assert_eq!(trace.history[0].fitness_change, None);
+        for rows in trace.history.windows(2) {
+            assert_eq!(rows[1].fitness_change, Some(rows[0].fitness - rows[1].fitness));
+        }
+        let capped = IcpRegistration::new(config).align_with_trace(&source, &target).unwrap();
+        assert_eq!(capped.stop_reason, IcpStopReason::IterationLimit);
+        assert_eq!(capped.result, first);
     }
 
     #[test]
@@ -336,6 +422,10 @@ mod tests {
         let result = registration.align(&source, &target).unwrap();
         assert!(result.fitness < 1e-4);
         assert!(result.converged);
+        let trace = registration.align_with_trace(&source, &target).unwrap();
+        assert_eq!(trace.result, result);
+        assert_eq!(trace.history.last().unwrap().fitness, result.fitness);
+        assert_eq!(trace.stop_reason, IcpStopReason::FitnessThreshold);
 
         let composed = result.transform.compose(shift);
         let probe = Vec3::new(0.2, 0.3, 0.0);

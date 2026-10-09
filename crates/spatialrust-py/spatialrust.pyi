@@ -43,7 +43,7 @@ __all__: list[str] = [
     "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
     "find_mask_contours",
     "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
-    "radius_graph", "distance_gated_support", "DistanceSupportIndex", "register_icp", "register_point_to_plane", "register_gicp",
+    "radius_graph", "distance_gated_support", "DistanceSupportIndex", "register_icp", "register_icp_diagnostics", "IcpIteration", "IcpDiagnostics", "register_point_to_plane", "register_gicp",
     "register_ndt", "register_fpfh_ransac", "register_fpfh_keypoints",
 ]
 
@@ -806,6 +806,47 @@ def register_icp(
     Raises ValueError for zero iterations, an invalid distance gate, fewer than
     three points, or nonfinite XYZ in either input. Native registration failures
     propagate as ValueError. Convergence does not certify pose correctness.
+    """
+    ...
+@final
+class IcpIteration:
+    """Immutable post-update metrics; correspondence membership can change."""
+    @property
+    def iteration(self) -> int: ...
+    @property
+    def correspondences(self) -> int: ...
+    @property
+    def evaluated_correspondences(self) -> int: ...
+    @property
+    def fitness(self) -> float: ...
+    @property
+    def fitness_change(self) -> Optional[float]: ...
+    @property
+    def translation_delta(self) -> float: ...
+    @property
+    def rotation_delta_radians(self) -> float: ...
+
+@final
+class IcpDiagnostics:
+    """Owned ICP result and a copied history list; no pose accuracy certificate."""
+    @property
+    def result(self) -> RegistrationResult: ...
+    @property
+    def history(self) -> list[IcpIteration]: ...
+    @property
+    def stop_reason(self) -> str: ...
+
+def register_icp_diagnostics(
+    source: PointCloud,
+    target: PointCloud,
+    max_correspondence_distance: float = ...,
+    max_iterations: int = ...,
+) -> IcpDiagnostics:
+    """Same updates and validation as register_icp, with opt-in history.
+
+    stop_reason is fitness_threshold, transform_threshold, or iteration_limit.
+    Delta units are coordinate units and radians; fitness is mean squared distance.
+    Native work runs outside the GIL. Ordinary register_icp allocates no history.
     """
     ...
 def register_point_to_plane(
