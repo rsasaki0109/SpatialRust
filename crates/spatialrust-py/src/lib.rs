@@ -2106,14 +2106,10 @@ fn support_with_tree(
     let (x, y, z) = source.positions3().map_err(to_py_err)?;
     let mut count = 0usize;
     let mut squared = 0.0f64;
-    let mut nearest = Vec::with_capacity(1);
     for i in 0..source.len() {
-        tree.nearest_k_into(x[i], y[i], z[i], 1, &mut nearest);
-        if let Some(neighbor) = nearest.first() {
-            if neighbor.distance_squared <= squared_gate {
-                count += 1;
-                squared += f64::from(neighbor.distance_squared);
-            }
+        if let Some(neighbor) = tree.nearest_one_within(x[i], y[i], z[i], squared_gate) {
+            count += 1;
+            squared += f64::from(neighbor.distance_squared);
         }
     }
     Ok((count, count as f64 / source.len() as f64,
