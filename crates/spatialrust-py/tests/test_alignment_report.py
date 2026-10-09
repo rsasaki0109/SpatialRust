@@ -32,6 +32,8 @@ def test_partial_overlap_and_escaped_content():
     assert '&lt;script&gt;' in rendered and '<script>' not in rendered
     assert 'do not certify' in rendered
     assert 'different sampling densities' in rendered
+    assert '3 / 3 points excluded from RMSE (100.0%)' in rendered
+    assert '1 / 4 points excluded from RMSE (25.0%)' in rendered
     assert '<script' not in rendered and 'src=' not in rendered
 
 
@@ -71,6 +73,17 @@ def test_native_float32_gate_rounding_is_accepted():
     report = fixture()
     report['aligned_support']['gated_rmse_metres'] = .10000000149
     assert 'gated RMSE: 0.1 m' in module.render_report(report)
+
+
+def test_low_rmse_does_not_hide_excluded_source_points():
+    report = fixture()
+    report['source_points'] = 5
+    for key in ['before_support', 'aligned_support']:
+        report[key].update(query_points=5, distance_gated_points=3,
+                           query_fraction=.6, gated_rmse_metres=1e-8)
+    rendered = module.render_report(report)
+    assert '2 / 5 points excluded from RMSE (40.0%)' in rendered
+    assert 'gated RMSE: 1e-08 m' in rendered
 
 
 def test_cli_exclusive_output_and_validation_before_write(tmp_path):

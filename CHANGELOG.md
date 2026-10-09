@@ -44,6 +44,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Alignment HTML reports show excluded point counts and fractions alongside
+  gated RMSE, making residuals based on only a subset of points explicit.
 - Python alignment CLI accepts `--html-report` to save its support diagnostic
   visualization alongside the aligned cloud and JSON, with failed-write cleanup.
 - Standalone Python alignment HTML/SVG diagnostic report compares forward and
