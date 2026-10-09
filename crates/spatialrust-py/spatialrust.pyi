@@ -142,7 +142,7 @@ class PointCloud:
     def __arrow_c_array__(
         self, requested_schema: object | None = None
     ) -> tuple[object, object]:
-        """Arrow C Data (schema, array) capsules for zero-copy PyArrow interop."""
+        """Arrow C Data (schema, array) capsules backed by an owned buffer copy."""
         ...
 
     def __len__(self) -> int: ...
@@ -159,7 +159,7 @@ class PointCloudStream:
     def __arrow_c_stream__(
         self, requested_schema: object | None = None
     ) -> object:
-        """Arrow C Stream capsule for zero-copy PyArrow record streaming."""
+        """Arrow C Stream capsule for PyArrow streaming with owned batch exports."""
         ...
 
 def depth_to_xyz(

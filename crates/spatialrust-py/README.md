@@ -354,3 +354,16 @@ On 2026-10-09 the locally rebuilt CPython 3.12 wheel passed the complete suite:
 102 passed and four skipped (two ONNX Runtime-disabled cases and two missing
 PyArrow cases). This is
 local evidence; Python 3.8 and remote CI results were not verified in that run.
+
+Arrow interoperability uses owned snapshots: `pyarrow.array(cloud)` exports
+(schema, array) capsules backed by copied native field buffers. PyArrow consumes
+those buffers, but the original PointCloud-to-export boundary is not zero-copy.
+Repeated exports currently allocate distinct buffers. Exported arrays remain
+valid after the original point cloud and other exports are released.
+
+`pyarrow.RecordBatchReader.from_stream(stream)` takes the stream once; a second
+consumer is rejected. The reader survives deletion of the Python stream wrapper,
+and returned record batches survive reader closure/deletion. Batch export also
+uses owned buffers. Tests verify these lifetimes with PyArrow 26.0.0 locally;
+this does not claim support for every PyArrow version or unrestricted schemas.
+The existing CI installs PyArrow and discovers these lifetime tests.

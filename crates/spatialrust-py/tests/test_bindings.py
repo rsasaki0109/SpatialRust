@@ -1247,7 +1247,7 @@ def test_export_copc_tiles3d_fails_closed_on_missing_input(tmp_path):
     assert not (tmp_path / "copc-tiles" / "tileset.json").exists()
 
 
-def test_point_cloud_arrow_c_array_zero_copy_interop():
+def test_point_cloud_arrow_c_array_owned_interop():
     pa = pytest.importorskip("pyarrow")
     pts = np.array(
         [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]], dtype=np.float32
@@ -1261,7 +1261,8 @@ def test_point_cloud_arrow_c_array_zero_copy_interop():
     np.testing.assert_allclose(array.field("x").to_numpy(), pts[:, 0])
     np.testing.assert_allclose(array.field("y").to_numpy(), pts[:, 1])
     np.testing.assert_allclose(array.field("z").to_numpy(), pts[:, 2])
-    # The buffer is CPU-backed and shared (zero copy), not a Python object array.
+    # The exported buffer is CPU-backed, not a Python object array.
+    # Native export first copies into an owned Arrow buffer.
     assert array.field("x").buffers()[1].is_cpu
     assert array.field("x").buffers()[1].size == pts.shape[0] * 4
 

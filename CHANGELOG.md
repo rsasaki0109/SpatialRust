@@ -665,6 +665,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Python Arrow documentation now describes owned buffer copies rather than
+  zero-copy point-cloud exports; PyArrow lifetime tests cover arrays and streams.
+
 - Direct Python ICP rejects invalid gates, zero iteration budgets and insufficient
   or nonfinite input clouds with named ValueErrors before native alignment.
 
