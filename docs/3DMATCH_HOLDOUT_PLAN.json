@@ -1,0 +1,267 @@
+{
+  "schema": "spatialrust.3dmatch-holdout-plan.v1",
+  "created_at_utc": "2026-10-09T23:03:54.719608+00:00",
+  "phase": "frozen_before_any_holdout_registration",
+  "discovery_commit": "8dad324",
+  "discovery_scenes": [
+    "7-scenes-redkitchen",
+    "sun3d-home_md-home_md_scan9_2012_sep_30",
+    "sun3d-hotel_umd-maryland_hotel3"
+  ],
+  "heldout_scenes": [
+    "sun3d-home_at-home_at_scan1_2013_jan_1",
+    "sun3d-hotel_umd-maryland_hotel1",
+    "sun3d-mit_76_studyroom-76-1studyroom2"
+  ],
+  "cases_per_scene": 3,
+  "cases_manifest_sha256": "986f83b3414133d349c8208b48546d116c734111b8cb259ba7d1befec40f7dd8",
+  "cases": [
+    {
+      "case_id": "sun3d-home_at-home_at_scan1_2013_jan_1-2-to-0",
+      "scene": "sun3d-home_at-home_at_scan1_2013_jan_1",
+      "pair": [
+        0,
+        2
+      ],
+      "file_sha256": {
+        "source": "6efc65df851d24bbac4b2cc04fb6d44ca19868bc8aeb9689820144ba99a95d9a",
+        "target": "9362112a462170d7179b4197c660f3263ca5897bc1efb4715ea16421d03e338c",
+        "reference_file": "46117e1b7fb3f33b6c857f3b0846bcee05454548d6ca5dab2bd5e9d3e88e1e22"
+      }
+    },
+    {
+      "case_id": "sun3d-home_at-home_at_scan1_2013_jan_1-28-to-24",
+      "scene": "sun3d-home_at-home_at_scan1_2013_jan_1",
+      "pair": [
+        24,
+        28
+      ],
+      "file_sha256": {
+        "source": "4d266d2839e1a7628575e17302ecf21ed9906fcc1723c43c75eee084e59030f7",
+        "target": "33a59c3688479aab9316e9702b70af838ae0162bb81b9bce8ba52c87c02cd287",
+        "reference_file": "e0a792d1cfb60f5f0e9a2621aa340f13ff30b258b040299f62ed738be72a2981"
+      }
+    },
+    {
+      "case_id": "sun3d-home_at-home_at_scan1_2013_jan_1-59-to-56",
+      "scene": "sun3d-home_at-home_at_scan1_2013_jan_1",
+      "pair": [
+        56,
+        59
+      ],
+      "file_sha256": {
+        "source": "b4d38fae897bb9e3e205b1813c825902adc3d0ccdd00f03e7760bcea94e2dd03",
+        "target": "cc538afc5e7d93cb365df8f70eb49b9d7928dfe0c931a04cba1ddf4017fcf4ee",
+        "reference_file": "d13c98236486e32e33ac0137578e2216964d792777d9874302540d7399284e2e"
+      }
+    },
+    {
+      "case_id": "sun3d-hotel_umd-maryland_hotel1-14-to-0",
+      "scene": "sun3d-hotel_umd-maryland_hotel1",
+      "pair": [
+        0,
+        14
+      ],
+      "file_sha256": {
+        "source": "c6055d03ee7f6f9e646ea535583ab77ac9aa776a14c076f311a5d8154a99a53f",
+        "target": "d2472795c78c819469d83636cd3f3de77805a38864630547317b5ae4eb182485",
+        "reference_file": "d6e2b577ef0b42475b2da606ea3e04347ff96ac75f4d12d7fdbac4f7c329b86e"
+      }
+    },
+    {
+      "case_id": "sun3d-hotel_umd-maryland_hotel1-24-to-14",
+      "scene": "sun3d-hotel_umd-maryland_hotel1",
+      "pair": [
+        14,
+        24
+      ],
+      "file_sha256": {
+        "source": "816aeb353d3d65c604d804ccfd7e7900039532eadc6cdef7bba6fbb10164efc5",
+        "target": "c6055d03ee7f6f9e646ea535583ab77ac9aa776a14c076f311a5d8154a99a53f",
+        "reference_file": "d15c9291143b4f8f7b92ab29f24032eff85b28839759d999d8f8fe38bfbe386f"
+      }
+    },
+    {
+      "case_id": "sun3d-hotel_umd-maryland_hotel1-55-to-53",
+      "scene": "sun3d-hotel_umd-maryland_hotel1",
+      "pair": [
+        53,
+        55
+      ],
+      "file_sha256": {
+        "source": "dd4387f46ccf487a6fb100e86668ae3950768d6a1999310afa18f01ffcb9caa0",
+        "target": "b79efb992954d6fe62225ff92bde779d27190e1a8d3ef90ba49066ba8d5d3b62",
+        "reference_file": "ef6f922a2cd75d9ecc0d361c8d68f3cd384b90e69dfee09e7a992cee5cc7369d"
+      }
+    },
+    {
+      "case_id": "sun3d-mit_76_studyroom-76-1studyroom2-2-to-0",
+      "scene": "sun3d-mit_76_studyroom-76-1studyroom2",
+      "pair": [
+        0,
+        2
+      ],
+      "file_sha256": {
+        "source": "6c5a6ae4a059edded96a8b1e75f1f18a15424be7469c88b011da6a624db460f5",
+        "target": "753a310a2a40a1307f69a9d4df08ef8585234d0aebedc70ec67572f30d7cd6ce",
+        "reference_file": "7889f91ff1afe136dcfed06cc4a3acb809bfcc4191d82dad770b5481a63b88df"
+      }
+    },
+    {
+      "case_id": "sun3d-mit_76_studyroom-76-1studyroom2-54-to-13",
+      "scene": "sun3d-mit_76_studyroom-76-1studyroom2",
+      "pair": [
+        13,
+        54
+      ],
+      "file_sha256": {
+        "source": "74bad478037b754e8b8bbd5254595e60bda15a20e78188c3c2257f8b863fe23d",
+        "target": "f246a4a5954b40ce484814f00be2e97d3a1f6a602bafce8d5f1422cea0b45f9e",
+        "reference_file": "8946e382cedece73cee11127029b373381c0be2da2efd2655053820e430f4a76"
+      }
+    },
+    {
+      "case_id": "sun3d-mit_76_studyroom-76-1studyroom2-65-to-63",
+      "scene": "sun3d-mit_76_studyroom-76-1studyroom2",
+      "pair": [
+        63,
+        65
+      ],
+      "file_sha256": {
+        "source": "37028d4b2ffc4bd4689cc4ddd1aad3fc0a327d1497371962af2da6f5303311b1",
+        "target": "e513ced05d6e3179fd5cfd3a56c7143379417e786b9a384312e891162fb20eba",
+        "reference_file": "672cd8abfe2c8f4cc51b57b06bfebfa2ed76dcde545f3f2a086fa3c7c30a7a0e"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "scene": "sun3d-home_at-home_at_scan1_2013_jan_1",
+      "archive_sha256": {
+        "fragments": "39de57e992a2be7e125c28fa75bf07b6e54fc045d577a8cee416ff2b58fc0cb0",
+        "evaluation": "0645890e675444a7b6a49e1e3ac1c443a55a761b65fb275dd5308980a200f757"
+      },
+      "selected_pairs": [
+        [
+          0,
+          2
+        ],
+        [
+          24,
+          28
+        ],
+        [
+          56,
+          59
+        ]
+      ],
+      "metadata_repository_matches_exact_values": true
+    },
+    {
+      "scene": "sun3d-hotel_umd-maryland_hotel1",
+      "archive_sha256": {
+        "fragments": "1ef056db5da302f292ce84248f0b777df054d6960061a1715fbb6f9316c684fb",
+        "evaluation": "1a7822280320c5b6652f30584735ce518af4f3bfd311f2e0a98696d2bbf93c70"
+      },
+      "selected_pairs": [
+        [
+          0,
+          14
+        ],
+        [
+          14,
+          24
+        ],
+        [
+          53,
+          55
+        ]
+      ],
+      "metadata_repository_matches_exact_values": true
+    },
+    {
+      "scene": "sun3d-mit_76_studyroom-76-1studyroom2",
+      "archive_sha256": {
+        "fragments": "dae054676bb08098b661996d03aa23ef6dff0980c7e579e95f0498a81b8370ca",
+        "evaluation": "f3f49cb14224e777dbb64244a6efae9e43a2d07fc69469e04fd650832535b14e"
+      },
+      "selected_pairs": [
+        [
+          0,
+          2
+        ],
+        [
+          13,
+          54
+        ],
+        [
+          63,
+          65
+        ]
+      ],
+      "metadata_repository_matches_exact_values": true
+    }
+  ],
+  "seeds": [
+    7,
+    8,
+    9
+  ],
+  "ransac_iterations": 10000,
+  "case_timeout_seconds": 1800,
+  "primary_rules": {
+    "trim_fractions": [
+      1.0,
+      0.8
+    ],
+    "motion_limit_metres": 0.2,
+    "publisher_score_squared_threshold": 0.04
+  },
+  "comparison_controls": {
+    "coarse_leaf": 0.1,
+    "feature_radius": 0.5,
+    "normal_neighbors": 20,
+    "global_gate": 0.2,
+    "stages": [
+      {
+        "leaf": 0.05,
+        "gate": 0.2,
+        "max_iterations": 50
+      },
+      {
+        "leaf": null,
+        "gate": 0.05,
+        "max_iterations": 50
+      }
+    ],
+    "evaluation_gate": 0.05
+  },
+  "secondary_analysis": "Forward/balanced candidate and stage selection; other motion limits are exploratory only.",
+  "native_sha256": "b60eaacc7c87b96d9f606393d998f04100a898392899f42b31f87841f98d82b9",
+  "open3d_native_sha256": "e99d5acb1ad93e609e83864ec69553a08b2a486e5d639241cc51e3c795e0f0d7",
+  "algorithm_source_sha256": {
+    "scripts/validate_3dmatch_holdout_plan.py": "6ff1dcde48a31c8f2342e412c2415a5c62a008e6a6e1ea3e52a9f083b0accae1",
+    "scripts/prepare_3dmatch_cases.py": "bbd2b458e6765ea50c656bd939511cf0d5d87c6acf26707a68aa94439fb6bda5",
+    "scripts/compare_public_global.py": "491eb829670cc355e7eababdd7e2d3e003a4668c2bdf295eba66a76e875d5d6b",
+    "scripts/compare_3dmatch_cases.py": "d332f9913574492bfcfc47e852efe704234daea498c4a2a7ecb28fbb8298e165",
+    "scripts/study_public_refinement.py": "afa860444c5b3eeffef02d4928f29b0b8fe97c6902285bbc6042329025b7b511",
+    "scripts/study_3dmatch_refinement_cases.py": "09945fff2690f9bb1b31ea6c7012f15164f682e52031db177d18bbf816ac0473",
+    "scripts/evaluate_3dmatch_refinement.py": "06fd166ccc0e326c0061a77cf42eeecfa76227fe7be70174a1e8b39fe8e6c697",
+    "scripts/study_stage_selection.py": "5b556ddedf6b46e8b1da0bb65c46600e148b054b3f33fc98c4e41ebb8bc93d9a",
+    "scripts/study_global_candidate_selection.py": "f76a202056ac6851d746663e7f05b1abd6fc5a991a415f473d7372dce3fd4c12",
+    "scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+    "scripts/evaluate_redwood_logs.py": "a30580eff8e004bba807196bc4e5b6ffa8ca841c2ab6dde0de5ba76d5c40d4c2",
+    "scripts/redwood_reference.py": "4a3b5aa45abe5a5a9ede5f7bddeb2a864b7cbbbcbf28ae231b224870f30b17cd",
+    "scripts/prepare_numpy_reference.py": "b43234a2bc5664ecaf29e86d16ec50d2db5434e57b87d780133438a63a242c32",
+    "crates/spatialrust-py/examples/align_global.py": "996c7f62860b427d6447c5e8b7bba7ec34d28f363f0082c457f9a8acb7acd60f",
+    "crates/spatialrust-py/examples/align_multiscale.py": "a36a399b7d3628fe25b5faf35374143f42cf5b6e8f77f5e3c3152f9bc467b06b",
+    "crates/spatialrust-py/examples/align_point_clouds.py": "74aaf8518b64efa34aafd78b7f236751aae94368df67a49fb294398c61dc0d46"
+  },
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.2.6",
+    "spatialrust": "1.2.0",
+    "open3d": "0.19.0"
+  },
+  "limits": "New fitting scenes within the same public benchmark, selected positive pairs; repeated seeds are not independent samples. No default changes or speed rankings."
+}
