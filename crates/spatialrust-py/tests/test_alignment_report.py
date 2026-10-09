@@ -75,6 +75,17 @@ def test_native_float32_gate_rounding_is_accepted():
     assert 'gated RMSE: 0.1 m' in module.render_report(report)
 
 
+@pytest.mark.parametrize('supplied,label', [(True, 'supplied by caller'), (False, 'default identity')])
+def test_prior_provenance(supplied, label):
+    report = fixture()
+    assert 'not recorded in this report' in module.render_report(report)
+    report['initial_transform_supplied'] = supplied
+    assert f'Initial pose: {label}' in module.render_report(report)
+    report['initial_transform_supplied'] = 1
+    with pytest.raises(ValueError, match='initial_transform_supplied'):
+        module.render_report(report)
+
+
 def test_low_rmse_does_not_hide_excluded_source_points():
     report = fixture()
     report['source_points'] = 5

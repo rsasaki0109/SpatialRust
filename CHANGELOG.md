@@ -44,6 +44,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Alignment diagnostics record whether the initial transform was supplied;
+  HTML reports show caller prior, default identity or unrecorded provenance.
 - Alignment HTML reports show excluded point counts and fractions alongside
   gated RMSE, making residuals based on only a subset of points explicit.
 - Python alignment CLI accepts `--html-report` to save its support diagnostic

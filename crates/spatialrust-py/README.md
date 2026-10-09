@@ -270,6 +270,8 @@ support, with point counts and gated RMSE. Asymmetric support can indicate parti
 overlap or different sampling densities. Excluded point counts explicitly show
 which fraction does not contribute to RMSE. Low RMSE does not certify the pose.
 It requires a new output file and uses no scripts, network or external viewer.
+The report also identifies a caller-supplied initial pose versus default identity;
+older JSON without this field displays unrecorded provenance.
 
 Run the file-based integration checks against an installed wheel:
 
