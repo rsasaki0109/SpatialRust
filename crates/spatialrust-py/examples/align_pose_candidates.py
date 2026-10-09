@@ -14,11 +14,11 @@ import shutil
 import numpy as np
 import spatialrust as sr
 
-from align_point_clouds import _align_clouds, rigid_matrix, validate_settings, validate_convergence, convergence_arguments, convergence_from_args
+from align_point_clouds import _align_clouds, rigid_matrix, validate_settings, validate_convergence, convergence_arguments, convergence_from_args, validate_trim_fraction
 
 
 def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.05,
-                        max_distance=.1, evaluation_distance=None, iterations=50, fine_distance=None, trace=False, convergence=None):
+                        max_distance=.1, evaluation_distance=None, iterations=50, fine_distance=None, trace=False, convergence=None, trim_fraction=1.0):
     """Return the selected full source and diagnostics without saving files.
 
     Validate every candidate before reading either cloud. A ValueError from an
@@ -31,6 +31,7 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
     poses = [rigid_matrix(value) for value in initial_transforms]
     evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
     validate_convergence(convergence)
+    validate_trim_fraction(trim_fraction)
     source, target = sr.read(str(source_path)), sr.read(str(target_path))
     records = []
     selected = None
@@ -46,7 +47,7 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
                 evaluation_distance=evaluation_distance, iterations=iterations,
                 initial_transform=pose, target_voxel_cache=target_voxel_cache,
                 before_support_cache=before_support_cache,
-                target_support_index_cache=target_support_index_cache, fine_distance=fine_distance, trace=trace, convergence=convergence)
+                target_support_index_cache=target_support_index_cache, fine_distance=fine_distance, trace=trace, convergence=convergence, trim_fraction=trim_fraction)
         except ValueError as error:
             records.append(dict(index=index, status='error', error=str(error),
                                 initial_transform_source_to_target=pose.tolist()))
@@ -93,6 +94,7 @@ def main():
     parser.add_argument('--html-report', action='store_true')
     parser.add_argument('--trace', action='store_true', help='record selected candidate ICP history')
     convergence_arguments(parser)
+    parser.add_argument("--trim-fraction", type=float, default=1.0, help="retain lowest-distance pairs in both ICP stages")
     args = parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory already exists; choose a new path')
@@ -100,7 +102,7 @@ def main():
     aligned, diagnostics = evaluate_candidates(
         args.source, args.target, poses, leaf=args.leaf,
         max_distance=args.max_distance, evaluation_distance=args.evaluation_distance,
-        iterations=args.iterations, fine_distance=args.fine_distance, trace=args.trace, convergence=convergence_from_args(args))
+        iterations=args.iterations, fine_distance=args.fine_distance, trace=args.trace, convergence=convergence_from_args(args), trim_fraction=args.trim_fraction)
     serialized = json.dumps(diagnostics, indent=2, allow_nan=False) + '\n'
     rendered = None
     if args.html_report:
