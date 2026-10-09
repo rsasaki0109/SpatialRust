@@ -49,6 +49,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Real-file Python multistart example evaluates 1–16 supplied rigid poses,
+  records failures and support scores, exports the selected full source, and
+  optionally renders HTML with overwrite protection and failed-write cleanup.
 - Bounded multistart alignment study compares candidate search with SOR, selects
   by original-source support without ground-truth labels, and records compute
   cost, failures and known-pose assessment in JSON/HTML.

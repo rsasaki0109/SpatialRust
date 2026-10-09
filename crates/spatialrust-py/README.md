@@ -283,6 +283,21 @@ Use `--evaluation-distance 0.1` to hold the support evaluation gate fixed while
 varying `--max-distance` for ICP. By default the two distances match. Both are
 recorded and displayed; changing evaluation distance does not change the pose.
 
+For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
+
+```bash
+python crates/spatialrust-py/examples/align_pose_candidates.py source.pcd target.pcd \
+  --initial-transforms poses.json --output-dir candidate-run --evaluation-distance .05 --html-report
+```
+
+The example evaluates each pose, chooses the highest forward supported-point
+count then lowest gated RMSE, and preserves input order for ties. It records
+candidate failures and scores in `alignment.json` and exports all original
+source points using the selected transform. HTML shows the selected result.
+It rereads inputs per candidate and adds compute; it neither generates poses
+nor guarantees a correct selection. All poses are validated before input reads,
+and the same exclusive-output and failed-write cleanup rules apply.
+
 Run the file-based integration checks against an installed wheel:
 
 ```bash
