@@ -20,7 +20,7 @@ __all__: list[str] = [
     "CylinderResult", "RegistrationResult", "MultiObjectTracker", "read_image",
     "tensor_copy_from_numpy", "tensor_view_from_dlpack", "harris_keypoints",
     "shi_tomasi_keypoints", "fast_keypoints", "orb_features",
-    "estimate_homography_ransac", "solve_pnp", "estimate_rgbd_odometry", "stereo_block_match",
+    "estimate_homography_ransac", "solve_pnp", "solve_pnp_ransac", "estimate_rgbd_odometry", "stereo_block_match",
     "match_binary_descriptors", "match_float_descriptors", "write_image", "read",
     "open_point_cloud_stream",
     "write", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
@@ -994,6 +994,20 @@ def solve_pnp(
     width: int = ...,
     height: int = ...,
 ) -> tuple[_F64Array, _F64Array]: ...
+def solve_pnp_ransac(
+    object_points: _F64Array,
+    image_points: _F64Array,
+    fx: float, fy: float, cx: float, cy: float,
+    width: int = ..., height: int = ...,
+    *, threshold: float = ..., confidence: float = ...,
+    max_iterations: int = ..., seed: int = ...,
+) -> tuple[_F64Array, _F64Array, _BoolArray, _F64Array]:
+    """Object-to-camera R/t, owned full-row inliers and reprojection pixel residuals.
+
+    Deterministic six-point RANSAC runs outside the GIL. Unprojectable rows use
+    maximum finite float64 residual; acceptance is not proof of a correct pose.
+    """
+    ...
 def estimate_rgbd_odometry(
     depth: _F32Array,
     source: _F64Array,

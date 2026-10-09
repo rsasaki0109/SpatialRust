@@ -1,9 +1,17 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **66%, provisional**. This is a subjective
+Current assessment (2026-10-10): **68%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 68% estimate adds owned, validated, GIL-releasing Python robust PnP and a
+240-run OpenCV 4.12.0 failure comparison. All 397 Python tests, 11 Rust geometry
+tests, 2 optional comparison tests, strict extension Clippy and stubtest pass.
+With 30% wrong volumetric correspondences, native plain fitting recovers 0/5
+and native RANSAC 5/5. Planar/near-planar noisy cases still expose a DLT
+initialization gap versus OpenCV, and collinear poses are ambiguous. This is
+verified robust functionality and external failure evidence, not parity.
 
 The 66% estimate adds geometry-conditioned failure diagnostics and visualization:
 point-to-point and point-to-plane information spectra, weak directions, and
