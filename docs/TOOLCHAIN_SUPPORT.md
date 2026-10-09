@@ -53,11 +53,23 @@ compatibility, not upstream maintenance. Local receipts are under
 
 The identical wheel also passes 491 tests with the same three ONNX skips on
 CPython 3.14.7, NumPy 2.5.3 and PyArrow 26.0.0, with archive/native/type/runtime
-verification, under `target/python314-wheel-validation/`. These two endpoints
+verification, under `/workspace/SpatialRust-python-delivery/target/python314-wheel-validation/`. These two endpoints
 plus the existing Python 3.12 checks are specific verified configurations;
 intermediate versions and free-threaded interpreters are not separately verified.
 Ubuntu/Python 3.14 is included in native runtime CI. Superseded branch CI runs
 are canceled by ref-based concurrency; tag publication runs are preserved.
+
+The source archive containing the frozen lockfile also rebuilds successfully
+under CPython 3.14 with the actual PEP 517 option
+`--config-settings=maturin.build-args=--locked`. The build uses a separate Cargo
+target directory and disables pip's wheel cache, so it cannot substitute the
+previously installed wheel. Its `cp38-abi3-linux_x86_64` wheel passes all 499
+current applicable tests with the same three ONNX skips in another isolated
+Python 3.14 environment, and installed native/stub/marker bytes plus runtime
+checks match this newly built artifact. The plain Linux tag verifies this host;
+it does not establish manylinux portability. Artifacts and receipt are under
+`/workspace/SpatialRust-python-delivery/target/frozen-source-wheel-locked-dist/`
+and `/workspace/SpatialRust-python-delivery/target/frozen-source-wheel-validation/`.
 
 ## Current stable toolchain
 
