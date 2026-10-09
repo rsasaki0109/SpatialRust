@@ -340,3 +340,17 @@ kernel completes its budget. Input validation runs outside the GIL without
 whole-cloud copies. Tests cover both source and target rejection and valid
 reuse after errors. This clarifies provisional API behavior, not a new stable
 API declaration or a degeneracy/pose correctness guarantee.
+
+The Python wheel CI retains `python-bindings-tests-3.8` and
+`python-bindings-tests-3.12` JUnit artifacts for 14 days. Results include passed,
+failed and skipped cases. Upload runs after failures as well; extension-build
+failures before pytest may have no test report. Locally, generate the same report:
+
+```bash
+python -m pytest crates/spatialrust-py/tests --junitxml=target/python-bindings-tests.xml
+```
+
+On 2026-10-09 the locally rebuilt CPython 3.12 wheel passed the complete suite:
+102 passed and four skipped (two ONNX Runtime-disabled cases and two missing
+PyArrow cases). This is
+local evidence; Python 3.8 and remote CI results were not verified in that run.

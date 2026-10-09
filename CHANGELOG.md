@@ -357,6 +357,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Python wheel CI retains per-version JUnit binding-test results for 14 days,
+  including results produced before a later CI failure.
+
 - Python point-to-point ICP releases the GIL during native registration, with
   concurrent shared-input and Python-thread progress integration checks.
 

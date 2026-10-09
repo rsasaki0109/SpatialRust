@@ -270,7 +270,7 @@ jobs:
           maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
           pip install --no-deps -e python/spatialrust-jupyter
           python crates/spatialrust-py/examples/video_tracking_e2e.py --no-gif
-          pytest crates/spatialrust-py/tests
+          pytest crates/spatialrust-py/tests --junitxml=target/python-bindings-tests.xml
           pytest python/spatialrust-jupyter/tests
           # The comparison report contract stays stdlib-only. OpenCV itself is
           # intentionally not a production or default-CI dependency.
@@ -279,6 +279,16 @@ jobs:
           python -m mypy.stubtest spatialrust --ignore-missing-stub \
             --allowlist crates/spatialrust-py/stubtest_allowlist.txt \
             --ignore-unused-allowlist
+
+      - name: Save Python binding test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-bindings-tests-${{ matrix.python }}
+          path: target/python-bindings-tests.xml
+          if-no-files-found: warn
+          retention-days: 14
+
 
   vision-platform-conformance:
     name: Vision conformance (${{ matrix.os }})
