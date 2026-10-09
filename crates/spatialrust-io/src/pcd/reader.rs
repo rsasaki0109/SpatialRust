@@ -93,7 +93,11 @@ fn read_pcd_body<R: BufRead>(
             decode_binary_payload(header, &schema, &payload, &mut buffers)?;
         }
         PcdDataKind::BinaryCompressed => {
-            let payload = read_binary_compressed_payload(reader)?;
+            let expected_size = header
+                .point_step()
+                .checked_mul(header.points)
+                .ok_or_else(|| pcd_format("binary_compressed PCD payload size overflow"))?;
+            let payload = read_binary_compressed_payload(reader, expected_size)?;
             decode_binary_compressed_payload(header, &schema, &payload, &mut buffers)?;
         }
     }
@@ -165,12 +169,27 @@ fn parse_packed_rgb(token: &str) -> Result<(f32, f32, f32), IoError> {
     Ok((((bits >> 16) & 0xFF) as f32, ((bits >> 8) & 0xFF) as f32, (bits & 0xFF) as f32))
 }
 
-fn read_binary_compressed_payload<R: BufRead>(reader: &mut R) -> Result<Vec<u8>, IoError> {
+fn read_binary_compressed_payload<R: BufRead>(
+    reader: &mut R,
+    expected_size: usize,
+) -> Result<Vec<u8>, IoError> {
     let mut size_buf = [0_u8; 4];
     reader.read_exact(&mut size_buf)?;
     let compressed_size = u32::from_le_bytes(size_buf) as usize;
     reader.read_exact(&mut size_buf)?;
     let uncompressed_size = u32::from_le_bytes(size_buf) as usize;
+
+    // Validate the file-controlled lengths before allocating either payload.
+    if uncompressed_size != expected_size {
+        return Err(pcd_format(format!(
+            "binary_compressed payload size mismatch: expected {expected_size}, found {uncompressed_size}"
+        )));
+    }
+    // A literal needs at most one control byte per output byte; back-references
+    // encode at least three output bytes in at most three input bytes.
+    if compressed_size > expected_size.saturating_mul(2) {
+        return Err(pcd_format("binary_compressed payload exceeds maximum LZF encoded size"));
+    }
 
     let compressed = read_binary_payload(reader, compressed_size)?;
     lzf_decompress(&compressed, uncompressed_size)
@@ -606,6 +625,37 @@ mod tests {
                 matches!(decoded.field("id").unwrap(), PointBuffer::U32(v) if v == &[u32::MAX])
             );
         }
+    }
+
+    #[test]
+    fn compressed_lengths_are_rejected_before_reading_payload() {
+        for (compressed, uncompressed, expected, message) in [
+            (1_u32, u32::MAX, 12_usize, "size mismatch"),
+            (u32::MAX, 12, 12, "maximum LZF"),
+            (1, 0, 0, "maximum LZF"),
+        ] {
+            let mut bytes = compressed.to_le_bytes().to_vec();
+            bytes.extend_from_slice(&uncompressed.to_le_bytes());
+            let mut reader = Cursor::new(bytes);
+            let error = super::read_binary_compressed_payload(&mut reader, expected).unwrap_err();
+            assert!(error.to_string().contains(message), "{error}");
+            assert_eq!(reader.position(), 8);
+        }
+    }
+
+    #[test]
+    fn malformed_lzf_returns_errors_and_overlapping_references_work() {
+        for (encoded, size) in [
+            (&[1_u8, 42][..], 2),
+            (&[32][..], 3),
+            (&[224][..], 9),
+            (&[32, 0][..], 3),
+            (&[0, 42][..], 2),
+        ] {
+            assert!(super::lzf_decompress(encoded, size).is_err());
+        }
+        assert_eq!(super::lzf_decompress(&[0, 42, 32, 0], 4).unwrap(), vec![42; 4]);
+        assert_eq!(super::lzf_decompress(&[], 0).unwrap(), Vec::<u8>::new());
     }
 
     #[test]

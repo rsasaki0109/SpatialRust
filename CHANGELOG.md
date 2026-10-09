@@ -21,6 +21,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Compressed PCD validates declared decoded size against its header and rejects
+  impossible LZF encoded lengths before allocating payload buffers. Tests cover
+  truncated data, invalid references and valid overlapping LZF references.
 - PCD scalar decoding and ASCII writing preserve float64 attributes and the
   full precision of signed/unsigned 32-bit integer fields instead of rounding
   them through float32. Regression tests cover ASCII/binary round trips and
