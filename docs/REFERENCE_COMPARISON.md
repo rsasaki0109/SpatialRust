@@ -1,5 +1,8 @@
 # Public reference pairs and refinement failures
 
+For original 3DMatch fragment/reference binding and the publisher's saved-log
+recall/precision metric, see [Redwood/3DMatch reference](3DMATCH_REFERENCE.md).
+
 The comparison tools separate declared reference pose accuracy from distance-gated
 proximity. They never pass the reference pose to a registration algorithm or use
 it to select a candidate or a trim fraction. Library algorithms differ in feature
