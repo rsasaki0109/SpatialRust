@@ -397,6 +397,16 @@ def render_report(report):
         for key in ['aligned_support', 'aligned_reverse_support']:
             if selected[key] != report[key]:
                 raise ValueError('selected candidate support differs from main report')
+    geometry_html = ''
+    if 'geometry_diagnostics' in report:
+        from analyze_geometry import render_geometry_section
+        geometry = report['geometry_diagnostics']
+        if not isinstance(geometry, dict) or set(geometry) != {'source', 'target'}:
+            raise ValueError('geometry diagnostics require source and target')
+        for name, count in [('source', source), ('target', target)]:
+            if not isinstance(geometry[name], dict) or type(geometry[name].get('points')) is not int or geometry[name]['points'] != count:
+                raise ValueError('geometry diagnostic point count mismatch')
+            geometry_html += render_geometry_section(geometry[name], name.title()+' geometry')
     return ('<!doctype html><html lang="en"><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<title>Alignment support report</title><style>body{font:16px system-ui;max-width:850px;margin:2rem auto;padding:1rem}'
@@ -407,7 +417,7 @@ def render_report(report):
             f'ICP fine correspondence gate: {fine_gate:.6g} m. '
             f'ICP converged: {str(report["converged"]).lower()}.</p>'
             f'<p>Initial pose: {prior_label}. A supplied prior is not independently verified.</p>'
-            + _global_summary(report) + ''.join(rows) + candidates_html + _trim_summary(report) + _trace_sections(report) +
+            + _global_summary(report) + ''.join(rows) + candidates_html + geometry_html + _trim_summary(report) + _trace_sections(report) +
             '<p>Each direction uses its own query point count. High forward support with lower reverse support '
             'can indicate partial overlap or different sampling densities; it does not identify the cause.</p>'
             '<p>RMSE includes only points within the distance gate. Low RMSE and convergence do not certify '

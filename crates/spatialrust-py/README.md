@@ -437,6 +437,28 @@ generated initialization from caller poses and shows parameters, candidate
 disagreement, full-source support and selected stage traces. Output attributes,
 exclusive-directory and write-cleanup contracts match the multiscale example.
 
+Use `align_global.py --geometry-diagnostics` to add full source/target conditional
+information spectra to JSON and HTML. This diagnoses weak rigid-motion directions
+assuming fixed point-to-point correspondences; it does not analyze ICP's actual
+retained pairs or certify a pose. The independent geometry tool can also inspect
+point-to-plane constraints from an input's unit normal columns:
+
+```bash
+python crates/spatialrust-py/examples/analyze_geometry.py target.pcd \
+  --surface-normals --output geometry.json --html geometry.html
+```
+
+`--surface-normals` needs optional PyArrow and normal_x/y/z fields. Without it,
+the tool uses point-to-point constraints and needs only NumPy plus SpatialRust
+for file IO. Centroid-relative coordinates and RMS-radius normalization make
+the spectrum invariant to origin and scale; translation parameters are divided
+by that radius (1 m fallback for coincident points). Eigenvalues below the
+relative 1e-6 threshold identify weak directions, saved as six-component vectors.
+A line loses a rotation degree of freedom. Planar point-to-point geometry can
+have rank six, whereas uniform planar normal constraints have rank three.
+A symmetric ring can still have full local rank and multiple global poses.
+These are conditional local geometry diagnostics, not noise covariance or confidence.
+
 For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
 
 ```bash

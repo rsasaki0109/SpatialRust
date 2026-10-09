@@ -32,7 +32,9 @@ def validate_global_settings(schedule, leaf, radius, distance, iterations, neigh
 def align_global_clouds(source,target,schedule,*,global_leaf=.1,feature_radius=.5,
         global_distance=.2,ransac_iterations=10000,normal_neighbors=20,seeds=None,
         max_coarse_points=5000,minimum_support=0,evaluation_distance=None,
-        source_name='source',target_name='target'):
+        source_name='source',target_name='target',include_geometry=False):
+    if type(include_geometry) is not bool:
+        raise ValueError('include_geometry must be boolean')
     seeds=[7,8,9] if seeds is None else seeds
     schedule,seeds=validate_global_settings(schedule,global_leaf,feature_radius,global_distance,
         ransac_iterations,normal_neighbors,seeds,max_coarse_points,minimum_support)
@@ -92,6 +94,9 @@ def align_global_clouds(source,target,schedule,*,global_leaf=.1,feature_radius=.
         candidate_count=len(seeds),successful_candidates=sum(r['status']=='success' for r in records),
         selected_index=selected_index,candidates=records,
         source_centroid_xyz_metres=source.xyz().mean(axis=0,dtype=np.float64).tolist())
+    if include_geometry:
+        from analyze_geometry import analyze_geometry
+        report['geometry_diagnostics']=dict(source=analyze_geometry(source.xyz()),target=analyze_geometry(target.xyz()))
     return aligned,report
 
 
@@ -101,6 +106,8 @@ def align_global_files(source_path,target_path,schedule,**settings):
     bound=inspect.signature(align_global_clouds).bind(None,None,schedule,**settings)
     bound.apply_defaults()
     options=bound.arguments
+    if type(options['include_geometry']) is not bool:
+        raise ValueError('include_geometry must be boolean')
     seeds=[7,8,9] if options['seeds'] is None else options['seeds']
     validate_global_settings(schedule,options['global_leaf'],options['feature_radius'],options['global_distance'],
         options['ransac_iterations'],options['normal_neighbors'],seeds,options['max_coarse_points'],options['minimum_support'])
@@ -127,13 +134,15 @@ def main():
     parser.add_argument('--minimum-support',type=float,default=0)
     parser.add_argument('--evaluation-distance',type=float)
     parser.add_argument('--html-report',action='store_true')
+    parser.add_argument('--geometry-diagnostics',action='store_true')
     args=parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory exists')
     aligned,report=align_global_files(args.source,args.target,json.loads(args.schedule.read_text()),
         global_leaf=args.global_leaf,feature_radius=args.feature_radius,global_distance=args.global_distance,
         ransac_iterations=args.ransac_iterations,normal_neighbors=args.normal_neighbors,seeds=args.seeds,
-        max_coarse_points=args.max_coarse_points,minimum_support=args.minimum_support,evaluation_distance=args.evaluation_distance)
+        max_coarse_points=args.max_coarse_points,minimum_support=args.minimum_support,evaluation_distance=args.evaluation_distance,
+        include_geometry=args.geometry_diagnostics)
     serialized=json.dumps(report,indent=2,allow_nan=False)+'\n'
     rendered=None
     if args.html_report:
