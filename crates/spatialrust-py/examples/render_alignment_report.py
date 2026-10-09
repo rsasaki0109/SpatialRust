@@ -141,6 +141,9 @@ def render_report(report):
     source = _count(report.get('source_points'), 'source_points')
     target = _count(report.get('target_points'), 'target_points')
     optimization_gate = _number(report.get('max_distance_metres'), 'max_distance_metres')
+    fine_gate = _number(report.get('fine_distance_metres', optimization_gate), 'fine_distance_metres')
+    if fine_gate <= 0:
+        raise ValueError('fine distance gate must be positive')
     gate = _number(report.get('evaluation_distance_metres', optimization_gate), 'evaluation_distance_metres')
     if gate == 0 or optimization_gate == 0:
         raise ValueError('max_distance_metres must be positive')
@@ -207,6 +210,7 @@ def render_report(report):
             '<main><h1>Alignment support report</h1>'
             f'<p>Source: {html.escape(report["source_file"])}<br>Target: {html.escape(report["target_file"])}</p>'
             f'<p>Evaluation distance gate: {gate:.6g} m. ICP correspondence gate: {optimization_gate:.6g} m. '
+            f'ICP fine correspondence gate: {fine_gate:.6g} m. '
             f'ICP converged: {str(report["converged"]).lower()}.</p>'
             f'<p>Initial pose: {prior_label}. A supplied prior is not independently verified.</p>'
             + ''.join(rows) + candidates_html +

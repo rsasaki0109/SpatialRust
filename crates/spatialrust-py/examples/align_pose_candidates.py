@@ -18,7 +18,7 @@ from align_point_clouds import _align_clouds, rigid_matrix, validate_settings
 
 
 def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.05,
-                        max_distance=.1, evaluation_distance=None, iterations=50):
+                        max_distance=.1, evaluation_distance=None, iterations=50, fine_distance=None):
     """Return the selected full source and diagnostics without saving files.
 
     Validate every candidate before reading either cloud. A ValueError from an
@@ -29,7 +29,7 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
     if not isinstance(initial_transforms, list) or not 1 <= len(initial_transforms) <= 16:
         raise ValueError('initial_transforms must be a JSON list of 1 to 16 rigid matrices')
     poses = [rigid_matrix(value) for value in initial_transforms]
-    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance)
+    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
     source, target = sr.read(str(source_path)), sr.read(str(target_path))
     records = []
     selected = None
@@ -45,7 +45,7 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
                 evaluation_distance=evaluation_distance, iterations=iterations,
                 initial_transform=pose, target_voxel_cache=target_voxel_cache,
                 before_support_cache=before_support_cache,
-                target_support_index_cache=target_support_index_cache)
+                target_support_index_cache=target_support_index_cache, fine_distance=fine_distance)
         except ValueError as error:
             records.append(dict(index=index, status='error', error=str(error),
                                 initial_transform_source_to_target=pose.tolist()))
@@ -85,6 +85,7 @@ def main():
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--leaf', type=float, default=.05)
     parser.add_argument('--max-distance', type=float, default=.1)
+    parser.add_argument('--fine-distance', type=float, help='full-resolution ICP gate; defaults to max-distance')
     parser.add_argument('--evaluation-distance', type=float,
                         help='shared support evaluation distance; defaults to max-distance')
     parser.add_argument('--iterations', type=int, default=50)
@@ -96,7 +97,7 @@ def main():
     aligned, diagnostics = evaluate_candidates(
         args.source, args.target, poses, leaf=args.leaf,
         max_distance=args.max_distance, evaluation_distance=args.evaluation_distance,
-        iterations=args.iterations)
+        iterations=args.iterations, fine_distance=args.fine_distance)
     serialized = json.dumps(diagnostics, indent=2, allow_nan=False) + '\n'
     rendered = None
     if args.html_report:

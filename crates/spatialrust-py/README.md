@@ -283,6 +283,11 @@ Use `--evaluation-distance 0.1` to hold the support evaluation gate fixed while
 varying `--max-distance` for ICP. By default the two distances match. Both are
 recorded and displayed; changing evaluation distance does not change the pose.
 
+Use `--fine-distance .02` to set a separate correspondence gate for full-resolution
+ICP while keeping `--max-distance .1` for the coarse voxel stage. Without this
+option both stages use max-distance. The evaluation gate stays independent and
+defaults to max-distance; stage gates are recorded in JSON and HTML.
+
 For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
 
 ```bash

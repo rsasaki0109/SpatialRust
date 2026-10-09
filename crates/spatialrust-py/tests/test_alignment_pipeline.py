@@ -28,6 +28,31 @@ def fixture_files(tmp_path):
     return paths, source, target
 
 
+def test_distinct_coarse_and_fine_gates_reach_correct_stages(tmp_path):
+    paths, _, _ = fixture_files(tmp_path)
+    with patch.object(sr, 'register_icp', wraps=sr.register_icp) as register:
+        _, report = example.align_files(*paths, max_distance=.1, fine_distance=.02)
+    assert [call.args[2] for call in register.call_args_list] == [.1, .02]
+    assert [stage['max_correspondence_distance_metres'] for stage in report['stages']] == [.1, .02]
+    assert report['evaluation_distance_metres'] == .1  # Diagnostic gate is independent.
+    assert report['fine_distance_metres'] == .02
+    default_cloud, default_report = example.align_files(*paths, max_distance=.1)
+    explicit_cloud, explicit_report = example.align_files(*paths, max_distance=.1, fine_distance=.1)
+    assert default_report == explicit_report
+    np.testing.assert_array_equal(default_cloud.xyz(), explicit_cloud.xyz())
+
+
+def test_invalid_fine_gate_is_rejected_before_file_io():
+    for gate in (0, -1, True, float('nan'), float('inf'), 1e30, 1e-30):
+        with patch.object(sr, 'read', side_effect=AssertionError('IO before validation')):
+            try:
+                example.align_files('missing', 'missing', fine_distance=gate)
+            except ValueError as error:
+                assert 'fine_distance' in str(error)
+            else:
+                raise AssertionError('invalid fine gate accepted')
+
+
 def test_full_resolution_roundtrip_and_transform_direction(tmp_path):
     paths, source, target = fixture_files(tmp_path)
     output = tmp_path / 'run'

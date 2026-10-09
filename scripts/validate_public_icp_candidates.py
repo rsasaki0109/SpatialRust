@@ -17,7 +17,7 @@ import spatialrust as sr
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'crates/spatialrust-py/examples'))
-from align_point_clouds import align_files
+from align_point_clouds import align_files, validate_settings
 from align_pose_candidates import evaluate_candidates
 from render_alignment_report import render_report
 
@@ -29,9 +29,14 @@ def main():
     parser.add_argument('--archive', type=Path, default=ROOT / 'target/public-icp-data/DemoICPPointClouds.zip')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'target/public-icp-candidate-validation')
     parser.add_argument('--iterations', type=int, default=5, help='positive maximum iterations per ICP stage')
+    parser.add_argument('--fine-distance', type=float, help='full-resolution ICP gate; defaults to .1 m')
     args = parser.parse_args()
     if args.iterations < 1:
         parser.error('iterations must be positive')
+    try:
+        validate_settings(.05, .1, args.iterations, .02, args.fine_distance)
+    except ValueError as error:
+        parser.error(str(error))
     args.output_dir.mkdir(parents=True, exist_ok=True)
     paths = [args.output_dir / name for name in ('cloud_bin_0.pcd', 'cloud_bin_1.pcd')]
     with zipfile.ZipFile(args.archive) as archive:
@@ -52,7 +57,7 @@ def main():
     perturbed[:3, :3] = extra @ prior[:3, :3]
     perturbed[:3, 3] = extra @ prior[:3, 3] + [.03, -.02, .01]
     poses = [np.eye(4).tolist(), prior.tolist(), perturbed.tolist()]
-    settings = dict(leaf=.05, max_distance=.1, evaluation_distance=.02, iterations=args.iterations)
+    settings = dict(leaf=.05, max_distance=.1, evaluation_distance=.02, iterations=args.iterations, fine_distance=args.fine_distance)
     print(f'Evaluating three candidates, at most {args.iterations} iterations per stage', file=sys.stderr, flush=True)
     started = time.perf_counter()
     aligned, report = evaluate_candidates(*paths, poses, **settings)
