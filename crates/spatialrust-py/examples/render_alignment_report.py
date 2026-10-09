@@ -189,6 +189,16 @@ def _trace_sections(report):
         name = stage.get('name')
         if not isinstance(name, str):
             raise ValueError('trace stage name must be text')
+        criteria = stage.get('convergence_criteria')
+        criteria_html = ''
+        if criteria is not None:
+            if not isinstance(criteria, dict) or set(criteria) != {'translation_epsilon', 'rotation_epsilon', 'fitness_epsilon'}:
+                raise ValueError('trace convergence criteria fields are invalid')
+            for value in criteria.values():
+                _number(value, 'trace convergence threshold')
+            criteria_html = (f'<p>Stopping thresholds: translation {criteria["translation_epsilon"]:.6g} m; '
+                             f'rotation {criteria["rotation_epsilon"]:.6g} rad; absolute MSE {criteria["fitness_epsilon"]:.6g} m². '
+                             'Zero disables a test; both transform thresholds must be met.</p>')
         previous = None
         rows = []
         for i, row in enumerate(history, 1):
@@ -222,6 +232,13 @@ def _trace_sections(report):
                         f'<td>{math.degrees(row["rotation_delta_radians"]):.6g}</td></tr>')
         if stage.get('kernel_fitness_metres_squared') != previous:
             raise ValueError('trace final fitness differs from stage result')
+        if criteria is not None:
+            final = history[-1]
+            expected = ('fitness_threshold' if previous is not None and previous < criteria['fitness_epsilon']
+                        else 'transform_threshold' if final['translation_delta_metres'] < criteria['translation_epsilon']
+                        and final['rotation_delta_radians'] < criteria['rotation_epsilon'] else 'iteration_limit')
+            if reason != expected:
+                raise ValueError('trace stop_reason disagrees with thresholds')
         charts = [
             _trace_chart('Gated correspondence count',
                          [[r[k] for r in history] for k in ('correspondences', 'evaluated_correspondences')],
@@ -231,7 +248,7 @@ def _trace_sections(report):
             _trace_chart('Rotation update (degrees)', [[math.degrees(r['rotation_delta_radians']) for r in history]], ['shortest angle']),
         ]
         sections.append(f'<section><h2>ICP iteration history: {html.escape(name)}</h2><p>Stop reason: {reason}.</p>'
-                        + ''.join(charts) + '<details><summary>All update measurements</summary><table><tr>'
+                        + criteria_html + ''.join(charts) + '<details><summary>All update measurements</summary><table><tr>'
                         '<th>Iteration</th><th>Used matches</th><th>Rematched</th><th>RMSE (m)</th>'
                         '<th>Translation (m)</th><th>Rotation (degrees)</th></tr>' + ''.join(rows) + '</table></details></section>')
     if not sections:

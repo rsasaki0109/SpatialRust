@@ -17,7 +17,7 @@ import spatialrust as sr
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'crates/spatialrust-py/examples'))
-from align_point_clouds import align_files, validate_settings
+from align_point_clouds import align_files, validate_settings, validate_convergence, convergence_arguments, convergence_from_args
 from align_pose_candidates import evaluate_candidates
 from render_alignment_report import render_report
 
@@ -31,11 +31,13 @@ def main():
     parser.add_argument('--iterations', type=int, default=5, help='positive maximum iterations per ICP stage')
     parser.add_argument('--fine-distance', type=float, help='full-resolution ICP gate; defaults to .1 m')
     parser.add_argument('--trace', action='store_true', help='record per-update ICP diagnostics')
+    convergence_arguments(parser)
     args = parser.parse_args()
     if args.iterations < 1:
         parser.error('iterations must be positive')
     try:
         validate_settings(.05, .1, args.iterations, .02, args.fine_distance)
+        validate_convergence(convergence_from_args(args))
     except ValueError as error:
         parser.error(str(error))
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -61,6 +63,8 @@ def main():
     settings = dict(leaf=.05, max_distance=.1, evaluation_distance=.02, iterations=args.iterations, fine_distance=args.fine_distance)
     if args.trace:
         settings['trace'] = True
+    if convergence_from_args(args) is not None:
+        settings['convergence'] = convergence_from_args(args)
     print(f'Evaluating three candidates, at most {args.iterations} iterations per stage', file=sys.stderr, flush=True)
     started = time.perf_counter()
     aligned, report = evaluate_candidates(*paths, poses, **settings)

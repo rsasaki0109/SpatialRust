@@ -800,6 +800,10 @@ def register_icp(
     target: PointCloud,
     max_correspondence_distance: float = ...,
     max_iterations: int = ...,
+    *,
+    translation_epsilon: Optional[float] = ...,
+    rotation_epsilon: Optional[float] = ...,
+    fitness_epsilon: Optional[float] = ...,
 ) -> RegistrationResult:
     """Point-to-point source-to-target ICP, with native work outside the GIL.
 
@@ -841,6 +845,10 @@ def register_icp_diagnostics(
     target: PointCloud,
     max_correspondence_distance: float = ...,
     max_iterations: int = ...,
+    *,
+    translation_epsilon: Optional[float] = ...,
+    rotation_epsilon: Optional[float] = ...,
+    fitness_epsilon: Optional[float] = ...,
 ) -> IcpDiagnostics:
     """Same updates and validation as register_icp, with opt-in history.
 

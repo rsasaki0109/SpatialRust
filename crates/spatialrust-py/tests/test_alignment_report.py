@@ -94,6 +94,19 @@ def test_inconsistent_trace_stage_is_rejected(field, value):
         module.render_report(report)
 
 
+def test_trace_reason_is_checked_against_explicit_criteria():
+    report = trace_fixture()
+    stage = report['stages'][0]
+    stage['convergence_criteria'] = dict(translation_epsilon=1e-3, rotation_epsilon=1e-4, fitness_epsilon=0)
+    with pytest.raises(ValueError, match='thresholds'):
+        module.render_report(report)
+    stage.update(stop_reason='transform_threshold', converged=True)
+    assert 'Stopping thresholds:' in module.render_report(report)
+    stage['convergence_criteria']['fitness_epsilon'] = 1
+    with pytest.raises(ValueError, match='thresholds'):
+        module.render_report(report)
+
+
 def candidate_fixture():
     report = fixture()
     identity = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]
