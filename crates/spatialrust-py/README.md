@@ -486,10 +486,21 @@ OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/compare_pnp_failures.py 
 
 The study compares plain/robust methods on volume, thin, plane and line geometry,
 with image noise and 30% wrong correspondences. Initializers and minimal sample
-sizes differ. Current evidence shows RANSAC helps volumetric outliers, while the
-SpatialRust DLT initializer remains weak for planar/near-planar geometry. JSON
-and HTML retain failures, input/native hashes and full-row independent metrics;
-neither a universal speed advantage nor OpenCV accuracy parity is claimed.
+sizes differ. SpatialRust now detects planar/near-planar object geometry and
+initializes from a homography before refining against the actual 3D points.
+The relative smallest/largest covariance eigenvalue cutoff is `1e-6`; collinear
+geometry (middle/largest at most `1e-10`) is rejected. Volumetric initialization
+continues to use DLT. These thresholds select an initializer, not a confidence
+estimate. Translation uses the same units as the input object points.
+
+In 60 paired synthetic conditions, this repair improves plain recovery from
+15 to 28 and robust recovery from 20 to 39, with no recovery regressions and
+unchanged OpenCV control rows. Noisy and contaminated planar cases still fail
+in some seeds; collinear generating poses are ambiguous. JSON and HTML retain
+failures, input/native hashes and independent metrics. A paired receipt can be
+validated with `scripts/report_pnp_repair.py BEFORE.json AFTER.json --output-dir DIR`;
+matching input hashes, calculation fingerprints and OpenCV results are required.
+Neither universal speed superiority nor OpenCV accuracy parity is claimed.
 
 For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
 

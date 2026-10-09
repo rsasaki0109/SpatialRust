@@ -6,12 +6,13 @@ use spatialrust_math::{
 
 use crate::{
     AbsolutePose, CameraMatrix3, GeometricEstimate, ObjectImageCorrespondence,
-    RobustEstimationOptions, VisionError, VisionResult,
+    PointCorrespondence2, RobustEstimationOptions, VisionError, VisionResult,
 };
 
 /// Estimates an object-to-camera pose from at least four correspondences.
 ///
-/// Uses a calibrated DLT initialization followed by Gauss–Newton refinement on
+/// Uses calibrated DLT, or plane-aware homography initialization for planar and
+/// near-planar object geometry, followed by Gauss–Newton refinement on
 /// the SE(3) tangent space. Four points are accepted for the final refine path
 /// when an initial pose is recoverable; RANSAC minimal samples use six points.
 pub fn solve_pnp(
@@ -131,6 +132,9 @@ fn estimate_pnp_dlt(
             "PnP DLT requires at least four correspondences".into(),
         ));
     }
+    if let Some(pose) = planar_initialization(correspondences, camera)? {
+        return Ok(pose);
+    }
     let mut normal = vec![vec![0.0; 12]; 12];
     for pair in correspondences {
         let object = pair.object();
@@ -203,6 +207,110 @@ fn estimate_pnp_dlt(
     } else {
         Ok(pose)
     }
+}
+
+/// Lift normalized plane coordinates through a homography. This avoids the
+/// extra null directions of 3D DLT when object points have negligible thickness.
+fn planar_initialization(
+    correspondences: &[ObjectImageCorrespondence],
+    camera: CameraMatrix3,
+) -> VisionResult<Option<AbsolutePose>> {
+    let origin = correspondences[0].object();
+    let extent = correspondences
+        .iter()
+        .map(|pair| {
+            let p = pair.object() - origin;
+            p.x.abs().max(p.y.abs()).max(p.z.abs())
+        })
+        .fold(0.0_f64, f64::max);
+    if !extent.is_finite() || extent == 0.0 {
+        return Err(VisionError::InvalidParameter("PnP object extent is zero or overflows".into()));
+    }
+    let mut mean = Vec3::new(0.0, 0.0, 0.0);
+    for pair in correspondences {
+        mean = mean + scale_vec(pair.object() - origin, 1.0 / extent);
+    }
+    mean = scale_vec(mean, 1.0 / correspondences.len() as f64);
+    let centroid = origin + scale_vec(mean, extent);
+    let mut covariance = [[0.0; 3]; 3];
+    for pair in correspondences {
+        let p = scale_vec(pair.object() - origin, 1.0 / extent) - mean;
+        let components = [p.x, p.y, p.z];
+        for row in 0..3 {
+            for column in 0..3 {
+                covariance[row][column] += components[row] * components[column];
+            }
+        }
+    }
+    if covariance.iter().flatten().any(|value| !value.is_finite())
+        || ![centroid.x, centroid.y, centroid.z].into_iter().all(f64::is_finite)
+    {
+        return Err(VisionError::InvalidParameter("PnP object covariance overflows".into()));
+    }
+    let eigen = symmetric_eigen3(Mat3::from_rows(covariance[0], covariance[1], covariance[2]));
+    if eigen.eigenvalues[1] <= eigen.eigenvalues[2] * 1e-10 {
+        return Err(VisionError::InvalidParameter("PnP object points are collinear".into()));
+    }
+    if eigen.eigenvalues[0] > eigen.eigenvalues[2] * 1e-6 {
+        return Ok(None);
+    }
+    let vectors = eigen.eigenvectors;
+    let u = Vec3::new(vectors.m[0][2], vectors.m[1][2], vectors.m[2][2]);
+    let v = Vec3::new(vectors.m[0][1], vectors.m[1][1], vectors.m[2][1]);
+    let n = u.cross(v);
+    let basis = Mat3::from_rows([u.x, v.x, n.x], [u.y, v.y, n.y], [u.z, v.z, n.z]);
+    let pairs = correspondences
+        .iter()
+        .map(|pair| {
+            let p = scale_vec(pair.object() - origin, 1.0 / extent) - mean;
+            let pixel = camera.normalize_pixel(pair.image());
+            PointCorrespondence2::try_new(
+                Vec2 { x: p.dot(u), y: p.dot(v) },
+                Vec2 { x: pixel.x, y: pixel.y },
+            )
+        })
+        .collect::<VisionResult<Vec<_>>>()?;
+    let homography = crate::multiview::estimate_homography(&pairs)?.matrix();
+    let a = Vec3::new(homography.m[0][0], homography.m[1][0], homography.m[2][0]);
+    let b = Vec3::new(homography.m[0][1], homography.m[1][1], homography.m[2][1]);
+    let c = Vec3::new(homography.m[0][2], homography.m[1][2], homography.m[2][2]);
+    let scale = (a.length() + b.length()) * 0.5;
+    if !scale.is_finite() || scale <= f64::EPSILON {
+        return Err(VisionError::InvalidParameter(
+            "PnP planar homography has invalid scale".into(),
+        ));
+    }
+    let mut best: Option<(AbsolutePose, usize, f64)> = None;
+    for sign in [1.0, -1.0] {
+        let first = scale_vec(a, sign / scale);
+        let second = scale_vec(b, sign / scale);
+        let third = first.cross(second);
+        let approximate = Mat3::from_rows(
+            [first.x, second.x, third.x],
+            [first.y, second.y, third.y],
+            [first.z, second.z, third.z],
+        );
+        let (camera_basis, _) = orthonormalize_rotation(approximate)?;
+        let rotation = camera_basis.mul_mat3(basis.transpose());
+        let translation = scale_vec(c, sign * extent / scale) - rotation.mul_vec3(centroid);
+        let pose = AbsolutePose::try_new(rotation, translation)?;
+        let positive = correspondences
+            .iter()
+            .filter(|pair| pose.transform_point(pair.object()).z > 0.0)
+            .count();
+        let error =
+            correspondences.iter().map(|pair| pnp_residual(pose, *pair, camera)).sum::<f64>();
+        if best.as_ref().map_or(true, |previous| {
+            positive > previous.1 || (positive == previous.1 && error < previous.2)
+        }) {
+            best = Some((pose, positive, error));
+        }
+    }
+    let (pose, positive, _) = best.expect("two planar signs evaluated");
+    if positive == 0 {
+        return Err(VisionError::InvalidParameter("PnP planar pose has no positive depth".into()));
+    }
+    Ok(Some(pose))
 }
 
 fn refine_pnp(
@@ -531,6 +639,114 @@ mod tests {
         assert!((pose.translation().x - estimated.translation().x).abs() < 2e-3);
         assert!((pose.translation().y - estimated.translation().y).abs() < 2e-3);
         assert!((pose.translation().z - estimated.translation().z).abs() < 2e-3);
+    }
+
+    #[test]
+    fn planar_initialization_recovers_arbitrary_plane_at_multiple_scales() {
+        let camera = camera();
+        let base = sample_pose();
+        let u = Vec3::new(0.8, 0.6, 0.0);
+        let v = Vec3::new(0.0, 0.0, 1.0);
+        let n = u.cross(v);
+        for scale in [1e-4, 1.0, 1e4] {
+            for thickness in [0.0, 1e-4] {
+                let pose = AbsolutePose::try_new(
+                    base.rotation(),
+                    super::scale_vec(base.translation(), scale),
+                )
+                .unwrap();
+                let pairs = (0..25)
+                    .map(|index| {
+                        let object = super::scale_vec(
+                            super::scale_vec(u, (index % 5) as f64 * 0.2 - 0.4)
+                                + super::scale_vec(v, (index / 5) as f64 * 0.2 - 0.4)
+                                + super::scale_vec(n, thickness * ((index % 3) as f64 - 1.0))
+                                + Vec3::new(0.3, -0.2, 0.1),
+                            scale,
+                        );
+                        ObjectImageCorrespondence::try_new(
+                            object,
+                            project_object_point(pose, camera, object).unwrap(),
+                        )
+                        .unwrap()
+                    })
+                    .collect::<Vec<_>>();
+                let estimated = solve_pnp(&pairs, camera).unwrap();
+                for (a, b) in
+                    estimated.rotation().m.iter().flatten().zip(pose.rotation().m.iter().flatten())
+                {
+                    assert!((a - b).abs() < 1e-5, "scale={scale}, thickness={thickness}");
+                }
+                let error = estimated.translation() - pose.translation();
+                assert!(error.length() / scale < 1e-5);
+            }
+        }
+    }
+
+    #[test]
+    fn planar_four_points_work_and_collinear_points_are_rejected() {
+        let camera = camera();
+        let pose = sample_pose();
+        let objects = [
+            Vec3::new(-0.4, -0.3, 0.0),
+            Vec3::new(0.4, -0.3, 0.0),
+            Vec3::new(-0.4, 0.3, 0.0),
+            Vec3::new(0.4, 0.3, 0.0),
+        ];
+        let pairs = objects
+            .iter()
+            .map(|&object| {
+                ObjectImageCorrespondence::try_new(
+                    object,
+                    project_object_point(pose, camera, object).unwrap(),
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
+        let estimated = solve_pnp(&pairs, camera).unwrap();
+        assert!((estimated.translation() - pose.translation()).length() < 1e-5);
+        let line = (0..8)
+            .map(|index| {
+                let object = Vec3::new(index as f64 * 0.1, 0.0, 0.0);
+                ObjectImageCorrespondence::try_new(
+                    object,
+                    project_object_point(pose, camera, object).unwrap(),
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
+        assert!(solve_pnp(&line, camera).is_err());
+    }
+
+    #[test]
+    fn planar_ransac_recovers_pose_with_incorrect_image_pairs() {
+        let camera = camera();
+        let pose = sample_pose();
+        let pairs = (0..30)
+            .map(|index| {
+                let object =
+                    Vec3::new((index % 6) as f64 * 0.2 - 0.5, (index / 6) as f64 * 0.2 - 0.4, 0.0);
+                let mut image = project_object_point(pose, camera, object).unwrap();
+                if index < 6 {
+                    image.x += 80.0;
+                    image.y -= 60.0;
+                }
+                ObjectImageCorrespondence::try_new(object, image).unwrap()
+            })
+            .collect::<Vec<_>>();
+        let estimate = solve_pnp_ransac(
+            &pairs,
+            camera,
+            RobustEstimationOptions {
+                threshold: 2.0,
+                max_iterations: 300,
+                seed: 7,
+                ..RobustEstimationOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(estimate.inlier_count(), 24);
+        assert!((estimate.model().translation() - pose.translation()).length() < 1e-5);
     }
 
     #[test]
