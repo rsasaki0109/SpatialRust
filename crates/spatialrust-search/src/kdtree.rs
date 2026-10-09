@@ -34,6 +34,68 @@ struct KdNode {
 }
 
 impl KdTree {
+    /// Finds the nearest point inside an inclusive squared-distance bound.
+    ///
+    /// Uses the same traversal and first-encountered tie policy as `nearest_one`,
+    /// without allocating a result vector. Negative/NaN bounds and nonfinite
+    /// query coordinates return `None`; positive infinity is an unbounded query.
+    #[must_use]
+    pub fn nearest_one_within(
+        &self,
+        x: f32,
+        y: f32,
+        z: f32,
+        max_distance_squared: f32,
+    ) -> Option<Neighbor> {
+        if max_distance_squared.is_nan()
+            || max_distance_squared < 0.0
+            || !x.is_finite()
+            || !y.is_finite()
+            || !z.is_finite()
+        {
+            return None;
+        }
+        let mut best = None;
+        self.nearest_one_within_recursive(self.root, [x, y, z], max_distance_squared, &mut best);
+        best
+    }
+
+    fn nearest_one_within_recursive(
+        &self,
+        node: u32,
+        query: [f32; 3],
+        bound: f32,
+        best: &mut Option<Neighbor>,
+    ) {
+        if node == INVALID_NODE {
+            return;
+        }
+        let data = self.nodes[node as usize];
+        if data.axis == AXIS_LEAF {
+            for order in data.start..data.end {
+                let (index, x, y, z) = self.ordered_point(order);
+                let distance = squared_distance(x, y, z, query[0], query[1], query[2]);
+                if distance <= bound
+                    && best.as_ref().map_or(true, |n| distance < n.distance_squared)
+                {
+                    *best = Some(Neighbor { index: index as usize, distance_squared: distance });
+                }
+            }
+            return;
+        }
+        let diff = query[data.axis as usize] - data.split;
+        let (near, far) =
+            if diff <= 0.0 { (data.left, data.right) } else { (data.right, data.left) };
+        self.nearest_one_within_recursive(near, query, bound, best);
+        // Before finding a point, equality must be visited to include the gate
+        // boundary. Once found, retain the original strict pruning/tie policy.
+        let visit_far =
+            best.as_ref().map_or(diff * diff <= bound, |n| diff * diff < n.distance_squared);
+        if visit_far {
+            self.nearest_one_within_recursive(far, query, bound, best);
+        }
+    }
+
     /// Builds a KD-tree from coordinate slices.
     #[must_use]
     pub fn from_slices(x: &[f32], y: &[f32], z: &[f32]) -> Self {
@@ -626,6 +688,43 @@ mod tests {
             vec![0.0, 0.0, 0.0, 1.0, 2.0, 0.0],
             vec![0.0, 0.0, 0.0, 0.0, 0.0, 5.0],
         )
+    }
+
+    #[test]
+    fn bounded_nearest_matches_unbounded_then_gate() {
+        let x: Vec<f32> = (0..257).map(|i| ((i * 37) % 101) as f32 / 13.0).collect();
+        let y: Vec<f32> = (0..257).map(|i| ((i * 53) % 97) as f32 / 17.0).collect();
+        let z: Vec<f32> = (0..257).map(|i| ((i * 19) % 89) as f32 / 11.0).collect();
+        let tree = KdTree::from_slices(&x, &y, &z);
+        for i in 0..1000 {
+            let query = [
+                ((i * 43) % 139) as f32 / 9.0 - 4.0,
+                ((i * 61) % 131) as f32 / 13.0 - 3.0,
+                ((i * 29) % 127) as f32 / 7.0 - 5.0,
+            ];
+            for bound in [0.0, 0.0025, 0.16, 4.0, f32::INFINITY] {
+                let expected = tree
+                    .nearest_one(query[0], query[1], query[2])
+                    .filter(|n| n.distance_squared <= bound);
+                assert_eq!(tree.nearest_one_within(query[0], query[1], query[2], bound), expected);
+            }
+        }
+    }
+
+    #[test]
+    fn bounded_nearest_handles_boundary_ties_and_invalid_queries() {
+        let x: Vec<f32> = (0..64).map(|i| if i % 2 == 0 { -1.0 } else { 1.0 }).collect();
+        let zero = vec![0.0; x.len()];
+        let tree = KdTree::from_slices(&x, &zero, &zero);
+        assert_eq!(tree.nearest_one_within(0.0, 0.0, 0.0, 1.0), tree.nearest_one(0.0, 0.0, 0.0));
+        assert!(tree.nearest_one_within(0.0, 0.0, 0.0, 0.99).is_none());
+        assert_eq!(tree.nearest_one_within(1.0, 0.0, 0.0, 0.0), tree.nearest_one(1.0, 0.0, 0.0));
+        assert!(tree.nearest_one_within(0.0, 0.0, 0.0, -1.0).is_none());
+        assert!(tree.nearest_one_within(0.0, 0.0, 0.0, f32::NAN).is_none());
+        assert!(tree.nearest_one_within(f32::NAN, 0.0, 0.0, 1.0).is_none());
+        assert!(KdTree::from_slices(&[], &[], &[])
+            .nearest_one_within(0.0, 0.0, 0.0, 1.0)
+            .is_none());
     }
 
     #[test]
