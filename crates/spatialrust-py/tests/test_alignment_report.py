@@ -67,7 +67,38 @@ def test_older_candidate_report_without_poses_stays_readable():
     report = candidate_fixture()
     for candidate in report['candidate_selection']['candidates']:
         candidate.pop('transform_source_to_target')
-    assert module.render_report(report).count('Unavailable') == 3
+    assert module.render_report(report).count('Unavailable') == 6
+
+
+def test_centroid_disagreement_is_invariant_to_source_origin():
+    report = candidate_fixture()
+    selection = report['candidate_selection']
+    selection['source_centroid_xyz_metres'] = [10, 0, 0]
+    # Quarter turn about the source centroid preserves its location despite
+    # differing pose translation. The last candidate moves it by (3, 4, 0).
+    selection['candidates'][1]['transform_source_to_target'][0][3] = 10
+    selection['candidates'][1]['transform_source_to_target'][1][3] = -10
+    selection['candidates'][2]['transform_source_to_target'][0][3] = 23
+    selection['candidates'][2]['transform_source_to_target'][1][3] = 4
+    rendered = module.render_report(report)
+    assert rendered.count('<td>0 m</td></tr>') == 2
+    assert '<td>5 m</td></tr>' in rendered
+    shift = [100, -20, 4]
+    selection['source_centroid_xyz_metres'] = [10 + shift[0], shift[1], shift[2]]
+    for candidate in selection['candidates']:
+        pose = candidate['transform_source_to_target']
+        for i in range(3):
+            pose[i][3] -= sum(pose[i][j]*shift[j] for j in range(3))
+    assert module.render_report(report) == rendered
+
+
+@pytest.mark.parametrize('centroid', [[], [0, 0], [0, 0, 0, 0],
+    [True, 0, 0], [float('nan'), 0, 0], [0, float('inf'), 0]])
+def test_invalid_candidate_centroid_rejected(centroid):
+    report = candidate_fixture()
+    report['candidate_selection']['source_centroid_xyz_metres'] = centroid
+    with pytest.raises(ValueError, match='centroid'):
+        module.render_report(report)
 
 
 @pytest.mark.parametrize('pose', [[], [[1]*4]*3,

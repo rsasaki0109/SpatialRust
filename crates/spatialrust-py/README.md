@@ -297,7 +297,10 @@ source points using the selected transform. HTML shows the selected result and
 candidate table with both support directions, forward RMSE, convergence and failures.
 The table also shows each successful candidate's rotation difference from the
 selected pose, with a 0–180 degree bar. This measures disagreement, not true
-pose error or a calibrated confidence. Translation disagreement is not shown.
+pose error or a calibrated confidence. Position disagreement is the distance
+between transformed source centroids, which also stays meaningful when the
+source coordinate origin changes. Rotation about that centroid can have zero
+centroid distance, so inspect both measures.
 Older candidate reports without pose matrices display an unavailable value.
 It reads each input once and shares read-only clouds across candidates;
 it also shares target voxelization, the original before-support result and an

@@ -57,6 +57,12 @@ def _candidate_table(selection, source, target, gate):
         raise ValueError('invalid selected candidate index')
     selected_rotation = (_candidate_rotation(candidates[selected])
                          if isinstance(candidates[selected], dict) else None)
+    centroid = selection.get('source_centroid_xyz_metres')
+    if centroid is not None:
+        if not isinstance(centroid, list) or len(centroid) != 3:
+            raise ValueError('candidate source centroid must contain three finite coordinates')
+        for value in centroid:
+            _number(value, 'candidate source centroid', minimum=-math.inf)
     rows, scores = [], []
     for index, candidate in enumerate(candidates):
         if not isinstance(candidate, dict) or type(candidate.get('index')) is not int or candidate['index'] != index:
@@ -64,7 +70,7 @@ def _candidate_table(selection, source, target, gate):
         if candidate.get('status') == 'error':
             if not isinstance(candidate.get('error'), str) or index == selected:
                 raise ValueError('invalid candidate failure')
-            rows.append(f'<tr><td>{index}</td><td colspan="5">Failed: {html.escape(candidate["error"])}</td></tr>')
+            rows.append(f'<tr><td>{index}</td><td colspan="6">Failed: {html.escape(candidate["error"])}</td></tr>')
             continue
         if candidate.get('status') != 'success' or type(candidate.get('converged')) is not bool:
             raise ValueError('invalid candidate status or convergence')
@@ -94,12 +100,21 @@ def _candidate_table(selection, source, target, gate):
         label = f'{index} (selected)' if index == selected else str(index)
         rotation = _candidate_rotation(candidate)
         difference = 'Unavailable'
+        position_difference = 'Unavailable'
         if rotation is not None and selected_rotation is not None:
             cosine = (sum(rotation[i][j]*selected_rotation[i][j] for i in range(3) for j in range(3)) - 1) / 2
             angle = 0. if rotation == selected_rotation else math.degrees(math.acos(max(-1., min(1., cosine))))
             difference = f'<meter min="0" max="180" value="{angle:.6g}"></meter> {angle:.2f}°'
+            if centroid is not None:
+                pose = candidate['transform_source_to_target']
+                chosen = candidates[selected]['transform_source_to_target']
+                delta = [sum((pose[i][j] - chosen[i][j])*centroid[j] for j in range(3))
+                         + pose[i][3] - chosen[i][3] for i in range(3)]
+                separation = _number(math.hypot(*delta), 'candidate centroid separation')
+                position_difference = f'{separation:.6g} m'
         rows.append(f'<tr><td>{label}</td><td>{displays[0]}</td><td>{displays[1]}</td>'
-                    f'<td>{residual}</td><td>{str(candidate["converged"]).lower()}</td><td>{difference}</td></tr>')
+                    f'<td>{residual}</td><td>{str(candidate["converged"]).lower()}</td><td>{difference}</td>'
+                    f'<td>{position_difference}</td></tr>')
     if not scores or type(selection.get('successful_candidates')) is not int or selection['successful_candidates'] != len(scores):
         raise ValueError('candidate success count mismatch')
     if min(scores, key=lambda score: (score[1], score[2]))[0] != selected:
@@ -108,12 +123,15 @@ def _candidate_table(selection, source, target, gate):
     if selection.get('rule') != rule:
         raise ValueError('unsupported candidate selection rule')
     return ('<section><h2>Pose candidates</h2><table><tr><th>Index</th><th>Forward support</th>'
-            '<th>Reverse support</th><th>Forward gated RMSE</th><th>Converged</th><th>Rotation from selected</th></tr>'
+            '<th>Reverse support</th><th>Forward gated RMSE</th><th>Converged</th><th>Rotation from selected</th>'
+            '<th>Source centroid from selected</th></tr>'
             + ''.join(rows) + '</table><p>Selection maximizes forward supported points, then minimizes gated RMSE; '
             'input order breaks ties. Reverse support and convergence are shown for inspection. '
             'Selection does not certify pose correctness. Rotation from selected measures candidate disagreement, '
             'not ground-truth error or a confidence probability. Similar scores with different poses can indicate '
-            'geometric ambiguity; translation disagreement is not measured here.</p></section>')
+            'geometric ambiguity. Source centroid from selected measures the distance between transformed '
+            'source centroids, not the difference between pose translation vectors. Rotations about the '
+            'centroid can have zero centroid distance.</p></section>')
 
 
 def render_report(report):

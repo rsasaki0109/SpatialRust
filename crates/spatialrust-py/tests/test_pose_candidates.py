@@ -36,6 +36,7 @@ def test_real_candidates_keep_failures_and_stable_ties(tmp_path, example):
     assert reader.call_count == 2
     assert [call.args[0] for call in reader.call_args_list] == list(map(str, paths))
     selection = report['candidate_selection']
+    np.testing.assert_array_equal(selection['source_centroid_xyz_metres'], source.mean(axis=0, dtype=np.float64))
     assert selection['selected_index'] == 1
     assert [c['status'] for c in selection['candidates']] == ['error', 'success', 'success']
     assert 'correspondences' in selection['candidates'][0]['error']
