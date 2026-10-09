@@ -505,6 +505,9 @@ Neither universal speed superiority nor OpenCV accuracy parity is claimed.
 To measure accuracy against a separately obtained reference pose, first run a
 file workflow and then evaluate its saved report:
 
+For public NumPy-pair preparation, a direct Open3D global comparison and fixed
+initialization trimming experiments, see [reference comparison](../../docs/REFERENCE_COMPARISON.md).
+
 ```bash
 python scripts/evaluate_pose_reference.py --reference reference.json \
   --reports run/alignment.json --output-dir accuracy

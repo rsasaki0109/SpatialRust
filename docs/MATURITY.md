@@ -1,9 +1,18 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **70%, provisional**. This is a subjective
+Current assessment (2026-10-10): **72%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 72% estimate adds a public supplied-reference pair, safe NumPy/PCD preparation,
+explicitly recorded near-rotation correction, ten controlled native/Open3D
+global registrations and twenty fixed-initialization trim replays. The study
+exposes shared drift on partial clouds and explains why proximity-based support
+can favor a worse pose; trimming improves median reference error but can worsen
+individual initializations. 450 Python tests and 20 optional comparison tests
+pass. The reference's original sensor lineage remains unverified, and a single
+public demonstration is not multiple-dataset physical ground-truth validation.
 
 The subsequent reference-pose evaluation slice leaves this assessment at 70%:
 all four file alignment workflows bind reports to source/target byte hashes,
