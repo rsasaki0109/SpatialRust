@@ -27,7 +27,7 @@ pub use registration::{PointCloudRegistration, RegistrationResult};
 pub use transform::transform_point_cloud;
 
 #[cfg(feature = "register-icp")]
-pub use icp::{IcpConfig, IcpRegistration};
+pub use icp::{IcpConfig, IcpDiagnostics, IcpIteration, IcpRegistration, IcpStopReason};
 
 #[cfg(feature = "register-icp-point-to-plane")]
 pub use point_to_plane::{PointToPlaneIcp, PointToPlaneIcpConfig};

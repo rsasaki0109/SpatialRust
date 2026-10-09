@@ -66,7 +66,7 @@ use spatialrust::records::{
 };
 use spatialrust::registration::{
     FpfhRansacConfig, FpfhRansacRegistration, GicpConfig, GicpRegistration, IcpConfig,
-    IcpRegistration, NdtConfig, NdtRegistration, PointCloudRegistration, PointToPlaneIcp,
+    IcpDiagnostics, IcpIteration, IcpRegistration, IcpStopReason, NdtConfig, NdtRegistration, PointCloudRegistration, PointToPlaneIcp,
     PointToPlaneIcpConfig, RegistrationResult,
 };
 use spatialrust::segmentation::{
@@ -2075,6 +2075,65 @@ impl PyRegistrationResult {
     }
 }
 
+/// Measurements for one completed ICP update.
+#[pyclass(name = "IcpIteration", frozen)]
+#[derive(Clone)]
+struct PyIcpIteration {
+    #[pyo3(get)]
+    iteration: usize,
+    #[pyo3(get)]
+    correspondences: usize,
+    #[pyo3(get)]
+    evaluated_correspondences: usize,
+    #[pyo3(get)]
+    fitness: f64,
+    #[pyo3(get)]
+    fitness_change: Option<f64>,
+    #[pyo3(get)]
+    translation_delta: f64,
+    #[pyo3(get)]
+    rotation_delta_radians: f64,
+}
+
+impl From<IcpIteration> for PyIcpIteration {
+    fn from(row: IcpIteration) -> Self {
+        Self {
+            iteration: row.iteration, correspondences: row.correspondences,
+            evaluated_correspondences: row.evaluated_correspondences,
+            fitness: row.fitness, fitness_change: row.fitness_change,
+            translation_delta: row.translation_delta, rotation_delta_radians: row.rotation_delta_radians,
+        }
+    }
+}
+
+/// Owned result and immutable per-update measurements from an opt-in ICP run.
+#[pyclass(name = "IcpDiagnostics", frozen)]
+struct PyIcpDiagnostics {
+    inner: IcpDiagnostics,
+}
+
+#[pymethods]
+impl PyIcpDiagnostics {
+    #[getter]
+    fn result(&self) -> PyRegistrationResult {
+        PyRegistrationResult::from_result(&self.inner.result)
+    }
+
+    #[getter]
+    fn history(&self) -> Vec<PyIcpIteration> {
+        self.inner.history.iter().copied().map(Into::into).collect()
+    }
+
+    #[getter]
+    fn stop_reason(&self) -> &'static str {
+        match self.inner.stop_reason {
+            IcpStopReason::FitnessThreshold => "fitness_threshold",
+            IcpStopReason::TransformThreshold => "transform_threshold",
+            IcpStopReason::IterationLimit => "iteration_limit",
+        }
+    }
+}
+
 /// Owned immutable reference index for repeated distance-support queries.
 #[pyclass(name = "DistanceSupportIndex", frozen)]
 struct PyDistanceSupportIndex {
@@ -2158,6 +2217,15 @@ fn register_icp(
     max_correspondence_distance: f32,
     max_iterations: usize,
 ) -> PyResult<PyRegistrationResult> {
+    let config = python_icp_config(max_correspondence_distance, max_iterations)?;
+    let result = py.allow_threads(|| {
+        validate_icp_inputs(&source.inner, &target.inner)?;
+        IcpRegistration::new(config).align(&source.inner, &target.inner).map_err(to_py_err)
+    })?;
+    Ok(PyRegistrationResult::from_result(&result))
+}
+
+fn python_icp_config(max_correspondence_distance: f32, max_iterations: usize) -> PyResult<IcpConfig> {
     let squared_gate = max_correspondence_distance * max_correspondence_distance;
     if max_correspondence_distance <= 0.0 || !squared_gate.is_finite() || squared_gate == 0.0 {
         return Err(PyValueError::new_err("max_correspondence_distance must be positive with finite nonzero f32 square"));
@@ -2165,19 +2233,32 @@ fn register_icp(
     if max_iterations == 0 {
         return Err(PyValueError::new_err("max_iterations must be at least 1"));
     }
-    let config = IcpConfig { max_correspondence_distance, max_iterations, ..IcpConfig::default() };
-    let source = &source.inner;
-    let target = &target.inner;
-    let result = py.allow_threads(|| {
-        for (name, cloud) in [("source", source), ("target", target)] {
-            let (x, y, z) = cloud.positions3().map_err(to_py_err)?;
-            if cloud.len() < 3 || x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
-                return Err(PyValueError::new_err(format!("{name} requires at least 3 finite XYZ points")));
-            }
+    Ok(IcpConfig { max_correspondence_distance, max_iterations, ..IcpConfig::default() })
+}
+
+fn validate_icp_inputs(source: &PointCloud, target: &PointCloud) -> PyResult<()> {
+    for (name, cloud) in [("source", source), ("target", target)] {
+        let (x, y, z) = cloud.positions3().map_err(to_py_err)?;
+        if cloud.len() < 3 || x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+            return Err(PyValueError::new_err(format!("{name} requires at least 3 finite XYZ points")));
         }
-        IcpRegistration::new(config).align(source, target).map_err(to_py_err)
+    }
+    Ok(())
+}
+
+/// Point-to-point ICP with opt-in owned update history, outside the GIL.
+#[pyfunction]
+#[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50))]
+fn register_icp_diagnostics(
+    py: Python<'_>, source: &PyPointCloud, target: &PyPointCloud,
+    max_correspondence_distance: f32, max_iterations: usize,
+) -> PyResult<PyIcpDiagnostics> {
+    let config = python_icp_config(max_correspondence_distance, max_iterations)?;
+    let inner = py.allow_threads(|| {
+        validate_icp_inputs(&source.inner, &target.inner)?;
+        IcpRegistration::new(config).align_with_trace(&source.inner, &target.inner).map_err(to_py_err)
     })?;
-    Ok(PyRegistrationResult::from_result(&result))
+    Ok(PyIcpDiagnostics { inner })
 }
 
 /// Point-to-plane ICP. Normals are estimated on `target` from k-nearest neighbors.
@@ -4824,6 +4905,8 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySphereResult>()?;
     m.add_class::<PyCylinderResult>()?;
     m.add_class::<PyRegistrationResult>()?;
+    m.add_class::<PyIcpIteration>()?;
+    m.add_class::<PyIcpDiagnostics>()?;
     m.add_class::<PyDistanceSupportIndex>()?;
     m.add_class::<PyViewerState>()?;
     m.add_class::<PyViewerPointSource>()?;
@@ -4923,6 +5006,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(knn_graph, m)?)?;
     m.add_function(wrap_pyfunction!(radius_graph, m)?)?;
     m.add_function(wrap_pyfunction!(register_icp, m)?)?;
+    m.add_function(wrap_pyfunction!(register_icp_diagnostics, m)?)?;
     m.add_function(wrap_pyfunction!(distance_gated_support, m)?)?;
     m.add_function(wrap_pyfunction!(register_point_to_plane, m)?)?;
     m.add_function(wrap_pyfunction!(register_gicp, m)?)?;

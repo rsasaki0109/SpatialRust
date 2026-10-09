@@ -184,6 +184,7 @@ reloaded = sr.read("labeled.las")
 | `ransac_sphere(cloud, distance_threshold=0.02, ...)` | Fit the dominant sphere (center, radius, inliers/outliers) |
 | `ransac_cylinder(cloud, distance_threshold=0.02, ...)` | Fit the dominant cylinder (axis, radius, inliers/outliers) |
 | `register_icp(source, target, max_correspondence_distance=1.0, max_iterations=50)` | Point-to-point ICP |
+| `register_icp_diagnostics(source, target, max_correspondence_distance=1.0, max_iterations=50)` | Same ICP updates with owned iteration history and stop reason |
 | `register_point_to_plane(source, target, ..., k_neighbors=20)` | Point-to-plane ICP (normals estimated on target) |
 | `register_gicp(source, target, ..., k_neighbors=20)` | Generalized ICP (plane-to-plane) |
 | `register_ndt(source, target, resolution=1.0, max_iterations=35)` | NDT (Normal Distributions Transform) |
@@ -195,9 +196,20 @@ reloaded = sr.read("labeled.las")
 | `merge(clouds)` | Concatenate same-schema clouds |
 | `centroid(cloud)` / `bounding_box(cloud)` / `oriented_bounding_box(cloud)` | Centroid and AABB / PCA-OBB |
 
-`register_*` return a `RegistrationResult` with `.transform()` (4x4 NumPy
+Registration functions return a `RegistrationResult` with `.transform()` (4x4 NumPy
 matrix mapping source into the target frame), `.fitness`, `.iterations`, and
 `.converged`.
+
+`register_icp_diagnostics` instead returns `IcpDiagnostics`: `.result` contains
+the ordinary result, `.history` returns a list of immutable `IcpIteration` rows,
+and `.stop_reason` is `fitness_threshold`, `transform_threshold`, or
+`iteration_limit`. Native work runs outside the GIL. Rows measure update
+translation in coordinate units, rotation in radians, and post-update fitness
+as mean squared distance. They distinguish correspondences used for estimation
+from correspondences after rematching. `fitness_change` is previous minus current
+post-update fitness (`None` for the first row); changing membership prevents
+interpreting it as improvement on a fixed set. These measurements do not certify
+pose accuracy. Ordinary `register_icp` does not retain a history.
 
 ## Example
 
