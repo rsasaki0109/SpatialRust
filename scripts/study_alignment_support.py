@@ -26,7 +26,7 @@ def run_case(name, seed, source, target, truth):
     cosine = np.clip((np.trace(measured_rotation @ truth[:3,:3].T)-1)/2, -1, 1)
     result = dict(case=name, seed=seed, translation_error_metres=float(np.linalg.norm(pose[:3,3]-truth[:3,3])),
                   rotation_error_degrees=float(np.degrees(np.arccos(cosine))), diagnostics=report)
-    (folder / 'result.json').write_text(json.dumps(result, indent=2, allow_nan=False))
+    (folder / 'result.json').write_text(json.dumps(result, indent=2, allow_nan=False), encoding='utf-8')
     return result
 
 results = []
@@ -49,7 +49,7 @@ for seed in range(5):
 summary = dict(schema='spatialrust.synthetic-alignment-study.v1',
     scope='Synthetic fixed-seed diagnostic study; no external library comparison or real sensor data. Ring pose is intrinsically ambiguous from geometry alone.',
     seeds=list(range(5)), results=results)
-(OUT / 'study.json').write_text(json.dumps(summary, indent=2, allow_nan=False))
+(OUT / 'study.json').write_text(json.dumps(summary, indent=2, allow_nan=False), encoding='utf-8')
 for case in sorted(set(r['case'] for r in results)):
     rows = [r for r in results if r['case']==case]
     print(case, json.dumps(dict(translation_error_max=max(r['translation_error_metres'] for r in rows),

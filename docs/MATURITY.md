@@ -30,6 +30,13 @@ skips as a newly installed wheel, with exact archive/native/type/runtime checks.
 Remote runtime jobs still have no assigned runners; this local evidence does
 not close the Windows/macOS/ARM or GPU gates.
 
+Locale hardening keeps the estimate at 80%: two reference/report CLIs had confirmed
+ASCII-locale failures on Japanese provenance and mathematical symbols. All study
+tools and alignment examples now use explicit UTF-8 text IO. The two failing CLI
+regressions pass, and all 504 ONNX-enabled Python tests pass. Cross-platform runtime
+CI still needs assigned runners; fixing a local encoding defect does not certify
+those platform gates or justify claiming 90%.
+
 The 78% estimate adds actual official 3DMatch fragments across three scenes,
 12 pairs fixed before fitting, 72 native/Open3D registrations, and publisher
 information-score evaluation. Native succeeds on 23/36 planned rows and Open3D

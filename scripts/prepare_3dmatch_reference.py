@@ -48,7 +48,7 @@ def main():
     serialized = json.dumps(reference, indent=2, allow_nan=False) + '\n'
     args.output_dir.mkdir()
     try:
-        (args.output_dir / 'reference.json').write_text(serialized)
+        (args.output_dir / 'reference.json').write_text(serialized, encoding='utf-8')
     except Exception:
         shutil.rmtree(args.output_dir)
         raise

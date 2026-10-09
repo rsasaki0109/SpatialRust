@@ -124,7 +124,7 @@ def main():
         correctness='SO(3) rotation error < 1 degree and translation error < 0.01 m',
         alignment_runs=sum(len(row['candidates']) for row in trials),
         limitations=limitations, summary=summaries, trials=trials)
-    (root / 'results.json').write_text(json.dumps(result, indent=2, allow_nan=False) + '\n')
+    (root / 'results.json').write_text(json.dumps(result, indent=2, allow_nan=False) + '\n', encoding='utf-8')
     summary_rows = ''.join(f'<tr><td>{item["filter"]}</td><td>{item["gate_metres"]}</td>'
         f'<td>{item["baseline_successes"]}/5</td><td>{item["selected_successes"]}/5</td>'
         f'<td>{item["candidate_errors"]}</td><td>{item["selected_angles"]}</td></tr>' for item in summaries)
@@ -150,7 +150,7 @@ def main():
         '<h2>All candidates, including failures</h2><table><tr><th>Seed</th><th>Filter</th><th>Gate (m)</th>'
         '<th>Additional angle (°)</th><th>Role</th><th>Supported count</th><th>Gated RMSE (m)</th>'
         '<th>Truth rotation error (°)</th><th>Truth translation error (m)</th><th>Correct / error</th></tr>'
-        + ''.join(details) + '</table></html>')
+        + ''.join(details) + '</table></html>', encoding='utf-8')
     print(json.dumps(summaries, indent=2))
 
 

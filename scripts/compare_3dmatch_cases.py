@@ -200,8 +200,8 @@ def main():
                 'Proximity support does not certify reference correctness.</p>'
                 '<table><tr><th>Case</th><th>Method</th><th>Seed</th><th>Squared score</th><th>Correct</th><th>Translation error (m)</th></tr>'
                 + ''.join(table) + '</table></html>')
-    (args.output_dir / 'study.json').write_text(json.dumps(receipt, indent=2, allow_nan=False))
-    (args.output_dir / 'report.html').write_text(rendered)
+    (args.output_dir / 'study.json').write_text(json.dumps(receipt, indent=2, allow_nan=False), encoding='utf-8')
+    (args.output_dir / 'report.html').write_text(rendered, encoding='utf-8')
     print(json.dumps(summary), flush=True)
 
 

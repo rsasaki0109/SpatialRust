@@ -96,8 +96,8 @@ def main():
     reloaded = sr.read(str(args.output_dir / 'aligned.pcd'))
     np.testing.assert_array_equal(reloaded.xyz(), aligned.xyz())
     assert len(aligned) == report['source_points']
-    (args.output_dir / 'alignment.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')
-    (args.output_dir / 'report.html').write_text(render_report(report))
+    (args.output_dir / 'alignment.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n', encoding='utf-8')
+    (args.output_dir / 'report.html').write_text(render_report(report), encoding='utf-8')
     native = Path(sr.__file__)
     if native.suffix != '.so':
         binaries = sorted(native.parent.glob('*.so'))
@@ -116,7 +116,7 @@ def main():
             for p in (Path(__file__), ROOT / 'crates/spatialrust-py/examples/align_point_clouds.py',
                       ROOT / 'crates/spatialrust-py/examples/align_pose_candidates.py')},
         limits='One public pair, supplied initial poses, no ground-truth transform. Sequential single-run times are illustrative, not a comparative benchmark.')
-    (args.output_dir / 'receipt.json').write_text(json.dumps(receipt, indent=2, allow_nan=False)+'\n')
+    (args.output_dir / 'receipt.json').write_text(json.dumps(receipt, indent=2, allow_nan=False)+'\n', encoding='utf-8')
     print(json.dumps(receipt, indent=2))
 
 

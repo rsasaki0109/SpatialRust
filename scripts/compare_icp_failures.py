@@ -151,8 +151,8 @@ def main():
     serialized=json.dumps(receipt,indent=2,allow_nan=False)
     rendered=render(rows)
     args.output_dir.mkdir()
-    (args.output_dir/'study.json').write_text(serialized)
-    (args.output_dir/'report.html').write_text(rendered)
+    (args.output_dir/'study.json').write_text(serialized, encoding='utf-8')
+    (args.output_dir/'report.html').write_text(rendered, encoding='utf-8')
     print(f'{len(rows)} runs; '+', '.join(f'{b}: {sum(r["recovered"] for r in rows if r["backend"] == b)} recoveries' for b in dict.fromkeys(r['backend'] for r in rows)))
 
 

@@ -83,7 +83,7 @@ def main():
                              original_file_sha256={name: pair[1] for name, pair in loaded.items()},
                              f32_conversion_max_abs_error=dict(source=source_error, target=target_error),
                              reference_rotation_correction=correction))
-        (args.output_dir / 'reference.json').write_text(json.dumps(reference, indent=2, allow_nan=False) + '\n')
+        (args.output_dir / 'reference.json').write_text(json.dumps(reference, indent=2, allow_nan=False) + '\n', encoding='utf-8')
     except Exception:
         shutil.rmtree(args.output_dir)
         raise

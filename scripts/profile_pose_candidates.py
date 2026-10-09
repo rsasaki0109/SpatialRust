@@ -115,7 +115,7 @@ def main():
         source_sha256={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in (Path(__file__), ROOT / 'scripts/benchmark_pose_candidates.py',
                       ROOT / 'crates/spatialrust-py/examples/align_point_clouds.py')})
-    (args.output_dir / 'profile.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n')
+    (args.output_dir / 'profile.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n', encoding='utf-8')
     colors = ['#475569', '#0284c7', '#7c3aed', '#059669', '#ca8a04', '#dc2626',
               '#db2777', '#0891b2', '#ea580c', '#64748b']
     parts = ['<!doctype html><meta charset="utf-8"><title>Candidate component profile</title>',
@@ -135,7 +135,7 @@ def main():
             parts.append(f'<tr><td>{name}</td><td>{seconds*1000:.2f} ms</td>'
                 f'<td>{100*seconds/sample["total_seconds"]:.1f}%</td><td>{sample["calls"].get(name, "—")}</td></tr>')
         parts.append(f'</table><p>Total: {sample["total_seconds"]*1000:.2f} ms</p>')
-    (args.output_dir / 'report.html').write_text(''.join(parts))
+    (args.output_dir / 'report.html').write_text(''.join(parts), encoding='utf-8')
     print(json.dumps([{k:v for k,v in row.items() if k != 'samples'} for row in rows], indent=2))
 
 

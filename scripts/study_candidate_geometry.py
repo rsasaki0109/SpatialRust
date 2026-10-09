@@ -92,7 +92,7 @@ def main():
             for p in (Path(__file__), ROOT / 'crates/spatialrust-py/examples/align_point_clouds.py',
                       ROOT / 'crates/spatialrust-py/examples/align_pose_candidates.py')},
         limits='Synthetic geometry; truth-informed candidate grid for controlled diagnosis. Ring cases are deterministic single fixtures.')
-    (root / 'study.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n')
+    (root / 'study.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n', encoding='utf-8')
     cells = []
     for trial in trials:
         for candidate in trial['candidates']:
@@ -113,7 +113,7 @@ def main():
         'Generating-pose errors are assessed afterward. Red rotation errors fail the study criterion.</p>'
         '<p>'+html.escape(result['limits'])+'</p><table><tr><th>Condition</th><th>Selection</th>'
         '<th>Forward support</th><th>Gated RMSE (m)</th><th>Rotation error</th><th>Translation error</th></tr>'
-        +''.join(cells)+'</table>')
+        +''.join(cells)+'</table>', encoding='utf-8')
     print(json.dumps(summary, indent=2))
 
 

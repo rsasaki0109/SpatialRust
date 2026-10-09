@@ -13,8 +13,8 @@ def main():
     args = parser.parse_args()
     trials, control = [], None
     for root in args.runs:
-        receipt = json.loads((root / 'receipt.json').read_text())
-        alignment = json.loads((root / 'alignment.json').read_text())
+        receipt = json.loads((root / 'receipt.json').read_text(encoding='utf-8'))
+        alignment = json.loads((root / 'alignment.json').read_text(encoding='utf-8'))
         settings = dict(receipt['settings'])
         cap = settings['iterations']
         fine = settings.get('fine_distance')
@@ -53,14 +53,14 @@ def main():
     timing = ''.join(f'<li>Cap {html.escape(str(trial["iteration_cap_per_stage"]))}, fine gate {trial["fine_distance_metres"]:.6g} m, retain {trial["trim_fraction"]:.1%}: {trial["elapsed_seconds"]:.2f} seconds</li>' for trial in trials)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / 'comparison.json').write_text(json.dumps(dict(trials=trials,
-        controlled_inputs_and_settings=True, varying_setting=args.vary, ground_truth_pose_available=False), indent=2, allow_nan=False)+'\n')
+        controlled_inputs_and_settings=True, varying_setting=args.vary, ground_truth_pose_available=False), indent=2, allow_nan=False)+'\n', encoding='utf-8')
     (args.output_dir / 'report.html').write_text('<!doctype html><meta charset="utf-8">'
         '<title>Public ICP parameter study</title><style>body{font:16px system-ui;margin:2rem}'
         'td,th{padding:.5rem;text-align:left}meter{width:140px}</style><h1>Public ICP parameter study</h1>'
         '<p>Same public pair and supplied poses; only the selected setting varies. Iteration cap applies separately to each ICP stage. '
         'Convergence and proximity support do not certify true pose. Times are single observations, not repeated benchmarks.</p>'
         '<ul>'+timing+'</ul><table><tr><th>Cap / stage</th><th>Fine gate</th><th>Retained fraction</th><th>Candidate</th><th>Forward support</th>'
-        '<th>Reverse support</th><th>Forward gated RMSE</th><th>Converged</th></tr>'+''.join(rows)+'</table>')
+        '<th>Reverse support</th><th>Forward gated RMSE</th><th>Converged</th></tr>'+''.join(rows)+'</table>', encoding='utf-8')
     print(json.dumps([dict(cap=trial['iteration_cap_per_stage'], selected=trial['selected_index'],
         fine_distance=trial['fine_distance_metres'], trim_fraction=trial['trim_fraction'],
         seconds=trial['elapsed_seconds'], converged=sum(c.get('converged', False) for c in trial['candidates'])) for trial in trials]))
