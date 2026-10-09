@@ -232,6 +232,13 @@ Trimming assumes larger residuals are less useful; a poor prior can make correct
 points have large residuals, so trimming can worsen recovery. It does not resolve
 repeated geometry, and a low trimmed estimation residual would not certify a pose.
 
+Both file alignment examples accept `--trim-fraction .8` to select pairs in both
+coarse and full-resolution stages. Python example functions use `trim_fraction=.8`.
+The option is validated before reading files; non-default values are recorded
+per stage and shown in HTML with or without iteration history. Default 1.0 keeps
+existing ordinary report fields unchanged. Pair selection does not reduce the
+full-source support denominator or the points saved to aligned.pcd.
+
 Run `python scripts/study_trimmed_icp.py --output-dir target/trim-study` from the
 repository root to compare all pairs against 80%/50% retention on identical
 synthetic priors and gates. The standalone report shows both gained and lost

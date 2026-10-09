@@ -91,6 +91,32 @@ def test_stopping_controls_are_validated_before_io_and_saved(tmp_path):
     assert 'Stopping thresholds:' in (output / 'report.html').read_text()
 
 
+def test_trim_fraction_validation_before_io_and_two_stage_cli(tmp_path):
+    for fraction in (0, -1, 1.1, True, float('nan'), float('inf')):
+        with patch.object(sr, 'read', side_effect=AssertionError('IO before validation')):
+            try:
+                example.align_files('missing', 'missing', trim_fraction=fraction)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('invalid trim fraction accepted')
+    paths, _, _ = fixture_files(tmp_path)
+    plain, ordinary = example.align_files(*paths)
+    explicit, report = example.align_files(*paths, trim_fraction=1.)
+    assert report == ordinary
+    np.testing.assert_array_equal(plain.xyz(), explicit.xyz())
+    with patch.object(sr, 'register_icp_diagnostics', wraps=sr.register_icp_diagnostics) as register:
+        _, report = example.align_files(*paths, trim_fraction=.8, trace=True, convergence={'fitness_epsilon': 0})
+    assert [c.kwargs['trim_fraction'] for c in register.call_args_list] == [.8, .8]
+    assert all(s['trim_fraction'] == .8 for s in report['stages'])
+    assert all(set(s['convergence_criteria']) == {'translation_epsilon','rotation_epsilon','fitness_epsilon'} for s in report['stages'])
+    output = tmp_path/'trimmed-cli'
+    result = subprocess.run([sys.executable, str(EXAMPLE), *map(str,paths), '--output-dir', str(output),
+                             '--trim-fraction', '.8', '--trace', '--html-report'], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    assert 'retain 80.0%' in (output/'report.html').read_text()
+
+
 def test_invalid_fine_gate_is_rejected_before_file_io():
     for gate in (0, -1, True, float('nan'), float('inf'), 1e30, 1e-30):
         with patch.object(sr, 'read', side_effect=AssertionError('IO before validation')):

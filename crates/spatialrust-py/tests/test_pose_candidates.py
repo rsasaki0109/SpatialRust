@@ -42,6 +42,18 @@ def test_selected_candidate_trace_matches_independent_run(tmp_path, example):
     assert render_report(traced).count('class="trace-chart"') == 8
 
 
+def test_trimmed_candidates_match_independent_workflow(tmp_path, example):
+    paths, _, _ = fixture_files(tmp_path)
+    from align_point_clouds import align_files
+    _, report = example.evaluate_candidates(*paths, poses(), trace=True, trim_fraction=.8)
+    _, independent = align_files(*paths, initial_transform=poses()[1], trace=True, trim_fraction=.8)
+    assert {k:v for k,v in report.items() if k != 'candidate_selection'} == independent
+    assert report['candidate_selection']['selected_index'] == 1
+    with patch.object(sr, 'read', side_effect=AssertionError('IO before validation')):
+        with pytest.raises(ValueError, match='trim_fraction'):
+            example.evaluate_candidates('missing','missing',poses(),trim_fraction=0)
+
+
 def test_real_candidates_keep_failures_and_stable_ties(tmp_path, example):
     paths, source, target = fixture_files(tmp_path)
     with patch.object(sr, 'read', wraps=sr.read) as reader:

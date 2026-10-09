@@ -107,6 +107,18 @@ def test_trace_reason_is_checked_against_explicit_criteria():
         module.render_report(report)
 
 
+def test_trim_summary_works_without_history_and_escapes_stage_name():
+    report = fixture()
+    report['stages'] = [dict(name='<stage>', trim_fraction=.8)]
+    rendered = module.render_report(report)
+    assert '&lt;stage&gt;: retain 80.0%' in rendered
+    assert 'all rematched gated points' in rendered
+    for invalid in (0, -1, 1.1, True, float('nan')):
+        report['stages'][0]['trim_fraction'] = invalid
+        with pytest.raises(ValueError, match='trim_fraction'):
+            module.render_report(report)
+
+
 def candidate_fixture():
     report = fixture()
     identity = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]

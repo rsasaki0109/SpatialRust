@@ -258,6 +258,30 @@ def _trace_sections(report):
             'An iteration-limit exit differs from a met stopping threshold; neither certifies accuracy.</p>')
 
 
+def _trim_summary(report):
+    entries = []
+    stages = report.get('stages', [])
+    if not isinstance(stages, list):
+        raise ValueError('stages must be a list')
+    for stage in stages:
+        if not isinstance(stage, dict):
+            raise ValueError('stage must be an object')
+        if 'trim_fraction' not in stage:
+            continue
+        fraction = _number(stage['trim_fraction'], 'trim_fraction', maximum=1)
+        if fraction == 0:
+            raise ValueError('trim_fraction must be positive')
+        if not isinstance(stage.get('name'), str):
+            raise ValueError('trimming stage name must be text')
+        entries.append(f'<li>{html.escape(stage["name"])}: retain {fraction:.1%} of gated pairs.</li>')
+    if not entries:
+        return ''
+    return ('<section><h2>ICP pair selection</h2><ul>' + ''.join(entries)
+            + '</ul><p>Updates use the lowest-distance pairs; ties follow source order. '
+            'Fitness evaluates all rematched gated points, and support evaluates the full query cloud. '
+            'A poor prior can cause trimming to discard useful correct points.</p></section>')
+
+
 def render_report(report):
     """Validate diagnostic fields and return HTML; no network or scripts required."""
     if not isinstance(report, dict) or report.get('schema_version') != 'spatialrust.python-alignment.v1':
@@ -337,7 +361,7 @@ def render_report(report):
             f'ICP fine correspondence gate: {fine_gate:.6g} m. '
             f'ICP converged: {str(report["converged"]).lower()}.</p>'
             f'<p>Initial pose: {prior_label}. A supplied prior is not independently verified.</p>'
-            + ''.join(rows) + candidates_html + _trace_sections(report) +
+            + ''.join(rows) + candidates_html + _trim_summary(report) + _trace_sections(report) +
             '<p>Each direction uses its own query point count. High forward support with lower reverse support '
             'can indicate partial overlap or different sampling densities; it does not identify the cause.</p>'
             '<p>RMSE includes only points within the distance gate. Low RMSE and convergence do not certify '

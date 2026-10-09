@@ -57,6 +57,11 @@ def validate_convergence(convergence):
     return dict(convergence)
 
 
+def validate_trim_fraction(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 < value <= 1:
+        raise ValueError("trim_fraction must be finite and in (0, 1]")
+
+
 def convergence_arguments(parser):
     parser.add_argument('--translation-epsilon', type=float, help='update translation threshold in metres')
     parser.add_argument('--rotation-epsilon', type=float, help='update rotation threshold in radians')
@@ -68,30 +73,31 @@ def convergence_from_args(args):
     return values or None
 
 
-def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False, convergence=None):
+def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False, convergence=None, trim_fraction=1.0):
     """Read files and return the full-resolution aligned source and diagnostics."""
     evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
     validate_convergence(convergence)
+    validate_trim_fraction(trim_fraction)
     if initial_transform is not None:
         initial_transform = rigid_matrix(initial_transform)
     source, target = sr.read(str(source_path)), sr.read(str(target_path))
     return align_clouds(source, target, source_name=str(source_path), target_name=str(target_path),
                         leaf=leaf, max_distance=max_distance, iterations=iterations,
-                        initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace, convergence=convergence)
+                        initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace, convergence=convergence, trim_fraction=trim_fraction)
 
 
 def align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
-                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False, convergence=None):
+                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False, convergence=None, trim_fraction=1.0):
     """Align read-only clouds and return a new full source and diagnostics."""
     return _align_clouds(source, target, source_name=source_name, target_name=target_name,
                          leaf=leaf, max_distance=max_distance, iterations=iterations,
-                         initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace, convergence=convergence)
+                         initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace, convergence=convergence, trim_fraction=trim_fraction)
 
 
 def _align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
                   max_distance=.1, iterations=50, initial_transform=None,
                   evaluation_distance=None, target_voxel_cache=None, before_support_cache=None,
-                  target_support_index_cache=None, fine_distance=None, trace=False, convergence=None):
+                  target_support_index_cache=None, fine_distance=None, trace=False, convergence=None, trim_fraction=1.0):
     """Align existing read-only clouds, returning a new full source and diagnostics.
 
     XYZ validation explicitly copies positions to NumPy. Convergence and support
@@ -99,6 +105,9 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
     """
     evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
     convergence_options = validate_convergence(convergence)
+    validate_trim_fraction(trim_fraction)
+    if trim_fraction != 1.0:
+        convergence_options["trim_fraction"] = trim_fraction
     fine_distance = max_distance if fine_distance is None else fine_distance
     initial = rigid_matrix(np.eye(4) if initial_transform is None else initial_transform)
     for name, cloud in (('source', source), ('target', target)):
@@ -146,9 +155,11 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
               stage('full_resolution', result, transform, len(source), len(target))]
     for row, distance in zip(stages, (max_distance, fine_distance)):
         row['max_correspondence_distance_metres'] = distance
+        if trim_fraction != 1.0:
+            row['trim_fraction'] = trim_fraction
         if convergence is not None:
             row['convergence_criteria'] = dict(translation_epsilon=1e-8, rotation_epsilon=1e-8, fitness_epsilon=1e-6)
-            row['convergence_criteria'].update(convergence_options)
+            row['convergence_criteria'].update(validate_convergence(convergence))
     for row, diagnostics in zip(stages, (coarse_trace, fine_trace)):
         if diagnostics is not None:
             row['stop_reason'] = diagnostics.stop_reason
@@ -212,12 +223,13 @@ def main():
     parser.add_argument('--html-report', action='store_true', help='also save standalone report.html with support diagnostics')
     parser.add_argument('--trace', action='store_true', help='record ICP update history and render convergence charts')
     convergence_arguments(parser)
+    parser.add_argument("--trim-fraction", type=float, default=1.0, help="retain this fraction of lowest-distance gated pairs in both ICP stages")
     args = parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory already exists; choose a new path')
     initial = json.loads(args.initial_transform.read_text(encoding='utf-8')) if args.initial_transform else None
     aligned, diagnostics = align_files(args.source, args.target, leaf=args.leaf,
-                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance, fine_distance=args.fine_distance, trace=args.trace, convergence=convergence_from_args(args))
+                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance, fine_distance=args.fine_distance, trace=args.trace, convergence=convergence_from_args(args), trim_fraction=args.trim_fraction)
     rendered = None
     if args.html_report:
         from render_alignment_report import render_report

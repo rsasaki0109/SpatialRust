@@ -1,16 +1,23 @@
 # Maturity assessment
 
-Current assessment (2026-10-09): **55%, provisional**. This is a subjective
+Current assessment (2026-10-10): **56%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
-2026-10-10 update: assessment remains 55%. Optional ICP trimming and a 702-run
+Earlier 2026-10-10 update at 55%: optional ICP trimming and a 702-run
 paired synthetic study are now available, with both improvements and regressions
 documented. Local verification is 290 Python tests and 25 CPU-registration tests,
-plus strict Clippy and stubtest. Trimming still needs public real-pair validation
-and integration into the file alignment workflows; this addition alone does not
-establish greater overall deployment readiness.
+plus strict Clippy and stubtest. This native addition alone did not establish
+greater overall deployment readiness.
+
+The subsequent file-workflow integration and controlled public-pair validation
+support the current 56% estimate: both CLIs propagate trimming, record/display
+settings, validate before IO, and preserve full-source output/support. Public
+candidate runs match independent runs and exact XYZ roundtrips. Comparison checks
+input, prior, parameter, native-extension and pipeline-source fingerprints. All
+298 Python tests pass. On this one public pair, retaining 80% slightly worsens
+proximity metrics, so it remains opt-in; no true-pose improvement is claimed.
 
 The recent assessment moved from 50% to 55% after these completed and merged
 capabilities, rather than changing the score merely to meet a requested target:

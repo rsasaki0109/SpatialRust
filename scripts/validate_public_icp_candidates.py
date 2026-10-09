@@ -17,7 +17,7 @@ import spatialrust as sr
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'crates/spatialrust-py/examples'))
-from align_point_clouds import align_files, validate_settings, validate_convergence, convergence_arguments, convergence_from_args
+from align_point_clouds import align_files, validate_settings, validate_convergence, convergence_arguments, convergence_from_args, validate_trim_fraction
 from align_pose_candidates import evaluate_candidates
 from render_alignment_report import render_report
 
@@ -32,12 +32,14 @@ def main():
     parser.add_argument('--fine-distance', type=float, help='full-resolution ICP gate; defaults to .1 m')
     parser.add_argument('--trace', action='store_true', help='record per-update ICP diagnostics')
     convergence_arguments(parser)
+    parser.add_argument("--trim-fraction", type=float, default=1.0)
     args = parser.parse_args()
     if args.iterations < 1:
         parser.error('iterations must be positive')
     try:
         validate_settings(.05, .1, args.iterations, .02, args.fine_distance)
         validate_convergence(convergence_from_args(args))
+        validate_trim_fraction(args.trim_fraction)
     except ValueError as error:
         parser.error(str(error))
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -61,6 +63,8 @@ def main():
     perturbed[:3, 3] = extra @ prior[:3, 3] + [.03, -.02, .01]
     poses = [np.eye(4).tolist(), prior.tolist(), perturbed.tolist()]
     settings = dict(leaf=.05, max_distance=.1, evaluation_distance=.02, iterations=args.iterations, fine_distance=args.fine_distance)
+    if args.trim_fraction != 1.0:
+        settings['trim_fraction'] = args.trim_fraction
     if args.trace:
         settings['trace'] = True
     if convergence_from_args(args) is not None:
@@ -94,7 +98,13 @@ def main():
     assert len(aligned) == report['source_points']
     (args.output_dir / 'alignment.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')
     (args.output_dir / 'report.html').write_text(render_report(report))
-    receipt = dict(dataset_url=URL, archive_sha256=hashlib.sha256(args.archive.read_bytes()).hexdigest(),
+    native = Path(sr.__file__)
+    if native.suffix != '.so':
+        binaries = sorted(native.parent.glob('*.so'))
+        if len(binaries) != 1:
+            raise RuntimeError('cannot identify native extension')
+        native = binaries[0]
+    receipt = dict(native_sha256=hashlib.sha256(native.read_bytes()).hexdigest(), dataset_url=URL, archive_sha256=hashlib.sha256(args.archive.read_bytes()).hexdigest(),
         files_sha256={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},
         source_points=report['source_points'], target_points=report['target_points'],
         settings=settings, rounded_tutorial_prior=rounded.tolist(), initial_transforms=poses,
