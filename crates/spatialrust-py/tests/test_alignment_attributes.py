@@ -59,3 +59,29 @@ def test_file_pipeline_preserves_attributes_and_rotates_normals(tmp_path):
     np.testing.assert_array_equal(original.xyz(), source)
     assert columns.type.field('label').type == pa.int32()
     assert columns.type.field('timestamp').type == pa.float64()
+
+
+@pytest.mark.parametrize('value', ['-1', '4294967296', '1.5', 'NaN', 'inf'])
+def test_pcd_invalid_integer_is_a_python_value_error(tmp_path, value):
+    path = tmp_path / 'invalid.pcd'
+    path.write_text('FIELDS x y z label\nSIZE 4 4 4 4\nTYPE F F F U\n'
+                    'COUNT 1 1 1 1\nWIDTH 1\nHEIGHT 1\nPOINTS 1\n'
+                    f'DATA ascii\n0 0 0 {value}\n')
+    with pytest.raises(ValueError, match='invalid integer value'):
+        sr.read(str(path))
+
+
+def test_pcd_rgb_survives_python_save_and_arrow_export(tmp_path):
+    pa = pytest.importorskip('pyarrow')
+    path = tmp_path / 'colors.pcd'
+    path.write_text('FIELDS x y z rgb\nSIZE 4 4 4 4\nTYPE F F F U\n'
+                    'COUNT 1 1 1 1\nWIDTH 3\nHEIGHT 1\nPOINTS 3\n'
+                    'DATA ascii\n0 0 0 16711680\n1 0 0 65280\n2 0 0 255\n')
+    cloud = sr.read(str(path))
+    output = tmp_path / 'saved.pcd'
+    sr.write(str(output), cloud)
+    saved = sr.read(str(output))
+    columns = pa.array(saved)
+    for channel, expected in [('r', [255, 0, 0]), ('g', [0, 255, 0]), ('b', [0, 0, 255])]:
+        assert columns.type.field(channel).type == pa.uint8()
+        np.testing.assert_array_equal(columns.field(channel).to_numpy(), expected)
