@@ -27,8 +27,26 @@ jobs:
         with:
           target: ${{ matrix.target }}
           # abi3-py38: one wheel covers CPython 3.8+.
-          args: --release --manifest-path ${{ env.MANIFEST }} --out dist
+          args: --release --locked --manifest-path ${{ env.MANIFEST }} --out dist
           manylinux: auto
+      - uses: actions/setup-python@v5
+        if: matrix.target == 'x86_64'
+        with:
+          python-version: '3.12'
+      - name: Install wheel in isolated environment and validate runtime
+        if: matrix.target == 'x86_64'
+        run: |
+          python -m venv wheel-venv
+          wheel-venv/bin/python -m pip install dist/*.whl numpy pytest pyarrow
+          wheel-venv/bin/python -m pytest crates/spatialrust-py/tests -o addopts='' -q --junitxml=wheel-tests.xml
+          wheel-venv/bin/python crates/spatialrust-py/tools/verify_installed_wheel.py dist/*.whl --junit wheel-tests.xml --receipt wheel-validation.json
+      - uses: actions/upload-artifact@v4
+        if: matrix.target == 'x86_64' && always()
+        with:
+          name: wheel-runtime-validation
+          path: |
+            wheel-tests.xml
+            wheel-validation.json
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.target }}
@@ -39,11 +57,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
           args: --manifest-path ${{ env.MANIFEST }} --out dist
+      - name: Rebuild source distribution and validate installed type information
+        run: |
+          python -m venv sdist-venv
+          sdist-venv/bin/python -m pip install "maturin[patchelf]>=1.7,<2" numpy pytest pyarrow
+          sdist-venv/bin/python - <<'PY'
+          import pathlib, tarfile
+          archives = list(pathlib.Path('dist').glob('*.tar.gz'))
+          assert len(archives) == 1
+          with tarfile.open(archives[0]) as archive:
+              archive.extractall('sdist-source', filter='data')
+          PY
+          sdist-venv/bin/maturin build --release --locked --manifest-path sdist-source/*/spatialrust-py/Cargo.toml --out sdist-wheel
+          sdist-venv/bin/python -m pip install sdist-wheel/*.whl
+          sdist-venv/bin/python -m pytest crates/spatialrust-py/tests -o addopts='' -q --junitxml=sdist-tests.xml
+          sdist-venv/bin/python crates/spatialrust-py/tools/verify_installed_wheel.py sdist-wheel/*.whl --junit sdist-tests.xml --receipt sdist-validation.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sdist-runtime-validation
+          path: |
+            sdist-tests.xml
+            sdist-validation.json
       - uses: actions/upload-artifact@v4
         with:
           name: sdist
