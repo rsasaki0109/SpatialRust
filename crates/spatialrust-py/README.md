@@ -290,3 +290,19 @@ not guarantee fine-stage success, and precision refinement does not infer global
 pose. A controlled rotated fixture with voxel bias tests error reduction after
 full-resolution refinement. Additional full-resolution copies and ICP increase
 CPU time and memory compared with coarse-only estimation.
+
+The public `distance_gated_support(source, target, max_distance)` function uses
+Rust KD-tree nearest-neighbor queries and returns `(accepted_count, query_fraction,
+gated_rmse_or_none)`. Nonempty finite XYZ and a positive distance with finite
+nonzero f32 square are required; invalid input raises ValueError. Zero accepted
+points yields fraction 0 and RMSE None. Direction matters: a small exact subset
+can have full forward support but partial reverse support. This diagnostic is
+not physical overlap or proof of pose correctness. Like other current point-cloud
+bindings, this call executes synchronously while holding the Python GIL.
+
+The file alignment report now includes `before_support`, `aligned_support` and
+`aligned_reverse_support`, recomputed on the full-resolution final coordinates.
+Each records gate, query count, accepted count, query fraction and gated RMSE.
+Reverse support's denominator is the target count. Kernel fitness remains separate.
+These additional queries/copies add diagnostic work; no full pairwise distance
+matrix is allocated.

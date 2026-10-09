@@ -43,7 +43,7 @@ __all__: list[str] = [
     "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
     "find_mask_contours",
     "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
-    "radius_graph", "register_icp", "register_point_to_plane", "register_gicp",
+    "radius_graph", "distance_gated_support", "register_icp", "register_point_to_plane", "register_gicp",
     "register_ndt", "register_fpfh_ransac", "register_fpfh_keypoints",
 ]
 
@@ -1017,3 +1017,12 @@ class DLPackTensorView:
     def copy(self) -> Tensor: ...
 
 def tensor_view_from_dlpack(producer: object) -> DLPackTensorView: ...
+
+
+def distance_gated_support(source: PointCloud, target: PointCloud, max_distance: float) -> tuple[int, float, Optional[float]]:
+    """Forward (accepted count, query fraction, gated RMSE or None).
+
+    Requires nonempty finite XYZ and positive distance with finite nonzero f32
+    square. This is nearest-neighbor distance support, not physical overlap.
+    """
+    ...
