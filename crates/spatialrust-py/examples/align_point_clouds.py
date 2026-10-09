@@ -29,10 +29,11 @@ def rigid_matrix(value):
     return matrix.astype(np.float32)
 
 
-def validate_settings(leaf, max_distance, iterations, evaluation_distance):
+def validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance=None):
     """Validate numeric settings before IO and return the evaluation distance."""
     evaluation_distance = max_distance if evaluation_distance is None else evaluation_distance
-    for name, value in (('leaf', leaf), ('max_distance', max_distance), ('evaluation_distance', evaluation_distance)):
+    fine_distance = max_distance if fine_distance is None else fine_distance
+    for name, value in (('leaf', leaf), ('max_distance', max_distance), ('evaluation_distance', evaluation_distance), ('fine_distance', fine_distance)):
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= 0:
             raise ValueError(f'{name} must be finite and positive')
         with np.errstate(over='ignore', under='ignore'):
@@ -45,35 +46,36 @@ def validate_settings(leaf, max_distance, iterations, evaluation_distance):
     return evaluation_distance
 
 
-def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None):
+def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None):
     """Read files and return the full-resolution aligned source and diagnostics."""
-    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance)
+    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
     if initial_transform is not None:
         initial_transform = rigid_matrix(initial_transform)
     source, target = sr.read(str(source_path)), sr.read(str(target_path))
     return align_clouds(source, target, source_name=str(source_path), target_name=str(target_path),
                         leaf=leaf, max_distance=max_distance, iterations=iterations,
-                        initial_transform=initial_transform, evaluation_distance=evaluation_distance)
+                        initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance)
 
 
 def align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
-                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None):
+                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None):
     """Align read-only clouds and return a new full source and diagnostics."""
     return _align_clouds(source, target, source_name=source_name, target_name=target_name,
                          leaf=leaf, max_distance=max_distance, iterations=iterations,
-                         initial_transform=initial_transform, evaluation_distance=evaluation_distance)
+                         initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance)
 
 
 def _align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
                   max_distance=.1, iterations=50, initial_transform=None,
                   evaluation_distance=None, target_voxel_cache=None, before_support_cache=None,
-                  target_support_index_cache=None):
+                  target_support_index_cache=None, fine_distance=None):
     """Align existing read-only clouds, returning a new full source and diagnostics.
 
     XYZ validation explicitly copies positions to NumPy. Convergence and support
     do not certify pose accuracy; input clouds and their attributes stay intact.
     """
-    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance)
+    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
+    fine_distance = max_distance if fine_distance is None else fine_distance
     initial = rigid_matrix(np.eye(4) if initial_transform is None else initial_transform)
     for name, cloud in (('source', source), ('target', target)):
         if len(cloud) < 3 or not np.isfinite(cloud.xyz()).all():
@@ -99,7 +101,7 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
     coarse_full = sr.apply_transform(source, coarse_transform)
     if not np.isfinite(coarse_full.xyz()).all():
         raise ValueError('coarse transform overflowed source coordinates')
-    result = sr.register_icp(coarse_full, target, max_distance, iterations)
+    result = sr.register_icp(coarse_full, target, fine_distance, iterations)
     transform = (result.transform().astype(np.float64) @ coarse_transform.astype(np.float64)).astype(np.float32)
     if transform.shape != (4, 4) or not np.isfinite(transform).all():
         raise ValueError('registration returned an invalid transform')
@@ -113,6 +115,8 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
                     kernel_fitness_metres_squared=registration.fitness if math.isfinite(registration.fitness) and registration.fitness < np.finfo(np.float64).max else None)
     stages = [stage('voxel', coarse_result, coarse_transform, len(coarse_source), len(coarse_target)),
               stage('full_resolution', result, transform, len(source), len(target))]
+    for row, distance in zip(stages, (max_distance, fine_distance)):
+        row['max_correspondence_distance_metres'] = distance
     def support(query, reference):
         if target_support_index_cache is not None and reference is target:
             if not target_support_index_cache:
@@ -135,6 +139,7 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
                        source_points=len(source), target_points=len(target),
                        registration_source_points=len(coarse_source), registration_target_points=len(coarse_target),
                        leaf_metres=leaf, max_distance_metres=max_distance,
+                       fine_distance_metres=fine_distance,
                        evaluation_distance_metres=evaluation_distance,
                        iterations=result.iterations, converged=result.converged,
                        max_iterations_per_stage=iterations, stages=stages,
@@ -157,6 +162,7 @@ def main():
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--leaf', type=float, default=.05)
     parser.add_argument('--max-distance', type=float, default=.1)
+    parser.add_argument('--fine-distance', type=float, help='full-resolution ICP gate in metres; defaults to max-distance')
     parser.add_argument('--evaluation-distance', type=float, help='support evaluation distance in metres; defaults to max-distance')
     parser.add_argument('--initial-transform', type=Path, help='JSON 4x4 source-to-target rigid matrix')
     parser.add_argument('--iterations', type=int, default=50)
@@ -166,7 +172,7 @@ def main():
         parser.error('output directory already exists; choose a new path')
     initial = json.loads(args.initial_transform.read_text(encoding='utf-8')) if args.initial_transform else None
     aligned, diagnostics = align_files(args.source, args.target, leaf=args.leaf,
-                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance)
+                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance, fine_distance=args.fine_distance)
     rendered = None
     if args.html_report:
         from render_alignment_report import render_report

@@ -68,10 +68,11 @@ def test_candidate_cli_outputs_and_refuses_overwrite(tmp_path):
     pose_path.write_text(json.dumps(poses()))
     output = tmp_path / 'selected'
     command = [sys.executable, str(EXAMPLE), *map(str, paths), '--initial-transforms',
-               str(pose_path), '--output-dir', str(output), '--html-report']
+               str(pose_path), '--output-dir', str(output), '--html-report', '--fine-distance', '.02']
     result = subprocess.run(command, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
     report = json.loads((output / 'alignment.json').read_text())
+    assert report['fine_distance_metres'] == .02
     assert report['candidate_selection']['selected_index'] == 1
     assert (output / 'report.html').exists()
     assert '1 (selected)' in (output / 'report.html').read_text()
@@ -109,6 +110,8 @@ def test_invalid_settings_precede_shared_reads(example):
     with patch.object(sr, 'read', side_effect=AssertionError('IO before settings validation')):
         with pytest.raises(ValueError, match='evaluation_distance'):
             example.evaluate_candidates('missing', 'missing', poses(), evaluation_distance=0)
+        with pytest.raises(ValueError, match='fine_distance'):
+            example.evaluate_candidates('missing', 'missing', poses(), fine_distance=0)
 
 
 def test_shared_target_voxels_match_independent_candidates(tmp_path, example):

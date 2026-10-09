@@ -37,6 +37,16 @@ def test_partial_overlap_and_escaped_content():
     assert '<script' not in rendered and 'src=' not in rendered
 
 
+def test_report_displays_distinct_fine_gate_and_rejects_invalid_value():
+    report = fixture()
+    report['fine_distance_metres'] = .02
+    assert 'ICP fine correspondence gate: 0.02 m' in module.render_report(report)
+    assert 'Evaluation distance gate: 0.1 m' in module.render_report(report)
+    report['fine_distance_metres'] = 0
+    with pytest.raises(ValueError, match='fine distance'):
+        module.render_report(report)
+
+
 def candidate_fixture():
     report = fixture()
     identity = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]
