@@ -40,11 +40,14 @@ def render_report(report):
         if not isinstance(report.get(name), str):
             raise ValueError(f'{name} must be text')
     rows = []
-    for key, label, expected in (
+    support_rows = [
         ('before_support', 'Before: source → target', source),
         ('aligned_support', 'After: source → target', source),
         ('aligned_reverse_support', 'After: target → source', target),
-    ):
+    ]
+    if 'initial_support' in report:
+        support_rows.insert(1, ('initial_support', 'Initial pose: source → target', source))
+    for key, label, expected in support_rows:
         support = report.get(key)
         if not isinstance(support, dict):
             raise ValueError(f'{key} must be an object')

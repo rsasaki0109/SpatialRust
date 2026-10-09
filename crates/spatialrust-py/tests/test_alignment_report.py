@@ -97,6 +97,17 @@ def test_low_rmse_does_not_hide_excluded_source_points():
     assert 'gated RMSE: 1e-08 m' in rendered
 
 
+def test_initial_support_is_optional_validated_and_between_before_and_after():
+    report = fixture()
+    assert 'Initial pose: source → target' not in module.render_report(report)
+    report['initial_support'] = copy.deepcopy(report['aligned_support'])
+    rendered = module.render_report(report)
+    assert rendered.index('Before: source') < rendered.index('Initial pose: source') < rendered.index('After: source')
+    report['initial_support']['query_fraction'] = .5
+    with pytest.raises(ValueError, match='fraction does not match'):
+        module.render_report(report)
+
+
 def test_cli_exclusive_output_and_validation_before_write(tmp_path):
     report = tmp_path / 'alignment.json'
     output = tmp_path / 'report.html'

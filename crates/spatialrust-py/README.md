@@ -272,6 +272,8 @@ which fraction does not contribute to RMSE. Low RMSE does not certify the pose.
 It requires a new output file and uses no scripts, network or external viewer.
 The report also identifies a caller-supplied initial pose versus default identity;
 older JSON without this field displays unrecorded provenance.
+New reports also compare support after the initial pose, before ICP refinement.
+This adds one full-resolution distance-support query; older reports remain readable.
 
 Run the file-based integration checks against an installed wheel:
 

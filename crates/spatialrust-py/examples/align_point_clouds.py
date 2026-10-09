@@ -95,6 +95,7 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
                        transform_source_to_target=transform.tolist(),
                        kernel_fitness_metres_squared=result.fitness if math.isfinite(result.fitness) and result.fitness < np.finfo(np.float64).max else None,
                        before_support=support(source, target),
+                       initial_support=support(seeded, target),
                        aligned_support=support(aligned, target),
                        aligned_reverse_support=support(target, aligned),
                        pose_correctness='not_certified_by_convergence_or_residual')

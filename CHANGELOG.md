@@ -44,6 +44,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Alignment reports include full-resolution support immediately after the
+  initial pose, separating initialization effects from subsequent ICP refinement.
 - Alignment diagnostics record whether the initial transform was supplied;
   HTML reports show caller prior, default identity or unrecorded provenance.
 - Alignment HTML reports show excluded point counts and fractions alongside
