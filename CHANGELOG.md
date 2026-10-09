@@ -49,6 +49,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Alignment example exposes `align_clouds` for loaded read-only inputs; bounded
+  candidate evaluation reads each file once rather than once per candidate.
 - Alignment HTML displays candidate scores, both support directions, convergence
   and escaped failure messages; validates selection order and selected summaries.
 - Real-file Python multistart example evaluates 1–16 supplied rigid poses,

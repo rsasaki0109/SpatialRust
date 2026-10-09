@@ -13,7 +13,7 @@ import shutil
 
 import spatialrust as sr
 
-from align_point_clouds import align_files, rigid_matrix
+from align_point_clouds import align_clouds, rigid_matrix, validate_settings
 
 
 def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.05,
@@ -28,14 +28,16 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
     if not isinstance(initial_transforms, list) or not 1 <= len(initial_transforms) <= 16:
         raise ValueError('initial_transforms must be a JSON list of 1 to 16 rigid matrices')
     poses = [rigid_matrix(value) for value in initial_transforms]
+    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance)
+    source, target = sr.read(str(source_path)), sr.read(str(target_path))
     records = []
     selected = None
     selected_key = None
     selected_index = None
     for index, pose in enumerate(poses):
         try:
-            aligned, report = align_files(
-                source_path, target_path, leaf=leaf, max_distance=max_distance,
+            aligned, report = align_clouds(
+                source, target, source_name=str(source_path), target_name=str(target_path), leaf=leaf, max_distance=max_distance,
                 evaluation_distance=evaluation_distance, iterations=iterations,
                 initial_transform=pose)
         except ValueError as error:
