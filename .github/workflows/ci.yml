@@ -316,12 +316,24 @@ jobs:
           maturin develop --release --features onnxruntime --manifest-path crates/spatialrust-py/Cargo.toml
           pytest crates/spatialrust-py/tests --junitxml=target/python-onnx-tests.xml
           python -c "import xml.etree.ElementTree as E; s=E.parse('target/python-onnx-tests.xml').getroot().find('testsuite'); assert s is not None and int(s.attrib['skipped']) == 0, 'ONNX validation must not silently skip'"
+          python scripts/study_icp_convergence.py --output-dir target/icp-convergence-study
       - name: Save ONNX test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: python-onnx-tests
           path: target/python-onnx-tests.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Save controlled ICP study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: icp-convergence-study
+          path: |
+            target/icp-convergence-study/study.json
+            target/icp-convergence-study/report.html
           if-no-files-found: warn
           retention-days: 14
 
