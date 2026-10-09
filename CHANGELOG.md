@@ -357,6 +357,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Python exposes KD-tree distance-gated support and records final full-resolution
+  bidirectional support separately from kernel fitness in the alignment workflow.
+
 - Add a validated Python two-file alignment workflow with optional initial pose,
   voxel/full-resolution ICP stages and full-resolution PCD/JSON export.
   File-based integration tests cover composition, input rejection and output cleanup.

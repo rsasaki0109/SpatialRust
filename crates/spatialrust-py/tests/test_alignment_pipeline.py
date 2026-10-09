@@ -38,6 +38,9 @@ def test_full_resolution_roundtrip_and_transform_direction(tmp_path):
     assert report['registration_source_points'] < len(source)
     assert [s['name'] for s in report['stages']] == ['voxel', 'full_resolution']
     assert report['stages'][1]['source_points'] == len(source)
+    assert report['aligned_support']['distance_gated_points'] == len(source)
+    assert report['aligned_reverse_support']['distance_gated_points'] == len(target)
+    assert report['aligned_support']['gated_rmse_metres'] < 1e-5
     assert report['iterations'] == report['stages'][1]['iterations']
     assert report['converged'] == report['stages'][1]['converged']
     np.testing.assert_allclose(report['stages'][1]['transform_source_to_target'], report['transform_source_to_target'])
@@ -155,13 +158,37 @@ def test_full_resolution_refines_voxel_bias(tmp_path):
     assert after < 1e-5 and after < before / 10
 
 
+def test_native_support_direction_missing_and_invalid():
+    target = sr.PointCloud.from_xyz(np.array([[0,0,0],[1,0,0],[0,1,0],[5,0,0]], dtype=np.float32))
+    source = sr.PointCloud.from_xyz(target.xyz()[:3])
+    assert sr.distance_gated_support(source, target, .1) == (3, 1., 0.)
+    assert sr.distance_gated_support(target, source, .1) == (3, .75, 0.)
+    far = sr.PointCloud.from_xyz(source.xyz()+100)
+    assert sr.distance_gated_support(far, target, .1) == (0, 0., None)
+    for distance in (0, -1, float('nan'), float('inf'), 1e30, 1e-30):
+        try:
+            sr.distance_gated_support(source, target, distance)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('invalid distance accepted')
+    for xyz in (np.empty((0,3), dtype=np.float32), np.array([[np.nan,0,0]], dtype=np.float32)):
+        try:
+            sr.distance_gated_support(sr.PointCloud.from_xyz(xyz), target, .1)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('invalid cloud accepted')
+
+
 if __name__ == '__main__':
     test_invalid_settings_before_io()
     test_invalid_initial_poses_before_io()
+    test_native_support_direction_missing_and_invalid()
     for test in (test_full_resolution_roundtrip_and_transform_direction,
                  test_disjoint_inputs_do_not_publish_results, test_coarse_cloud_too_small_has_actionable_error,
                  test_nonfinite_inputs_rejected, test_write_failure_cleans_reserved_output,
                  test_rotated_initial_pose_cli_and_composition, test_full_resolution_refines_voxel_bias):
         with tempfile.TemporaryDirectory() as directory:
             test(Path(directory))
-    print('Python alignment pipeline: PASS (9 groups, real bindings and subprocess CLI)')
+    print('Python alignment pipeline: PASS (10 groups, real bindings and subprocess CLI)')

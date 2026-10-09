@@ -79,6 +79,10 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
                     kernel_fitness_metres_squared=registration.fitness if math.isfinite(registration.fitness) and registration.fitness < np.finfo(np.float64).max else None)
     stages = [stage('voxel', coarse_result, coarse_transform, len(coarse_source), len(coarse_target)),
               stage('full_resolution', result, transform, len(source), len(target))]
+    def support(query, reference):
+        count, fraction, rmse = sr.distance_gated_support(query, reference, max_distance)
+        return dict(distance_metres=max_distance, query_points=len(query),
+                    distance_gated_points=count, query_fraction=fraction, gated_rmse_metres=rmse)
     diagnostics = dict(schema_version='spatialrust.python-alignment.v1',
                        source_file=str(source_path), target_file=str(target_path),
                        source_points=len(source), target_points=len(target),
@@ -89,6 +93,9 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
                        initial_transform_source_to_target=initial.tolist(),
                        transform_source_to_target=transform.tolist(),
                        kernel_fitness_metres_squared=result.fitness if math.isfinite(result.fitness) and result.fitness < np.finfo(np.float64).max else None,
+                       before_support=support(source, target),
+                       aligned_support=support(aligned, target),
+                       aligned_reverse_support=support(target, aligned),
                        pose_correctness='not_certified_by_convergence_or_residual')
     return aligned, diagnostics
 
