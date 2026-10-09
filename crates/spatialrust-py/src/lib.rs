@@ -2075,50 +2075,80 @@ impl PyRegistrationResult {
     }
 }
 
+/// Owned immutable reference index for repeated distance-support queries.
+#[pyclass(name = "DistanceSupportIndex", frozen)]
+struct PyDistanceSupportIndex {
+    tree: spatialrust::search::KdTree,
+}
+
+fn validate_support_cloud(cloud: &PointCloud) -> PyResult<()> {
+    let (x, y, z) = cloud.positions3().map_err(to_py_err)?;
+    if cloud.is_empty() || x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+        return Err(PyValueError::new_err("support requires nonempty finite XYZ clouds"));
+    }
+    Ok(())
+}
+
+fn support_gate(max_distance: f32) -> PyResult<f32> {
+    let squared = max_distance * max_distance;
+    if max_distance <= 0.0 || !squared.is_finite() || squared == 0.0 {
+        return Err(PyValueError::new_err("distance must be positive with finite nonzero f32 square"));
+    }
+    Ok(squared)
+}
+
+fn support_with_tree(
+    source: &PointCloud,
+    tree: &spatialrust::search::KdTree,
+    squared_gate: f32,
+) -> PyResult<(usize, f64, Option<f64>)> {
+    validate_support_cloud(source)?;
+    let (x, y, z) = source.positions3().map_err(to_py_err)?;
+    let mut count = 0usize;
+    let mut squared = 0.0f64;
+    let mut nearest = Vec::with_capacity(1);
+    for i in 0..source.len() {
+        tree.nearest_k_into(x[i], y[i], z[i], 1, &mut nearest);
+        if let Some(neighbor) = nearest.first() {
+            if neighbor.distance_squared <= squared_gate {
+                count += 1;
+                squared += f64::from(neighbor.distance_squared);
+            }
+        }
+    }
+    Ok((count, count as f64 / source.len() as f64,
+        if count == 0 { None } else { Some((squared / count as f64).sqrt()) }))
+}
+
+#[pymethods]
+impl PyDistanceSupportIndex {
+    /// Explicitly copies reference XYZ into an owned CPU KD-tree.
+    #[new]
+    fn new(py: Python<'_>, target: &PyPointCloud) -> PyResult<Self> {
+        py.allow_threads(|| {
+            validate_support_cloud(&target.inner)?;
+            Ok(Self { tree: spatialrust::search::KdTree::from_point_cloud(&target.inner).map_err(to_py_err)? })
+        })
+    }
+
+    /// Forward support of query points against the owned reference snapshot.
+    fn support(&self, py: Python<'_>, source: &PyPointCloud, max_distance: f32)
+        -> PyResult<(usize, f64, Option<f64>)> {
+        py.allow_threads(|| support_with_tree(&source.inner, &self.tree, support_gate(max_distance)?))
+    }
+}
+
 /// Forward nearest-neighbor support inside a distance gate, not physical overlap.
 /// Returns (accepted_count, query_fraction, gated_rmse_or_none).
 #[pyfunction]
 fn distance_gated_support(
-    py: Python<'_>,
-    source: &PyPointCloud,
-    target: &PyPointCloud,
-    max_distance: f32,
+    py: Python<'_>, source: &PyPointCloud, target: &PyPointCloud, max_distance: f32,
 ) -> PyResult<(usize, f64, Option<f64>)> {
-    let source = &source.inner;
-    let target = &target.inner;
     py.allow_threads(|| {
-        use spatialrust::search::KdTree;
-        let squared_gate = max_distance * max_distance;
-        if max_distance <= 0.0 || !squared_gate.is_finite() || squared_gate == 0.0 {
-            return Err(PyValueError::new_err(
-                "distance must be positive with finite nonzero f32 square",
-            ));
-        }
-        for cloud in [source, target] {
-            let (x, y, z) = cloud.positions3().map_err(to_py_err)?;
-            if cloud.is_empty() || x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
-                return Err(PyValueError::new_err("support requires nonempty finite XYZ clouds"));
-            }
-        }
-        let tree = KdTree::from_point_cloud(target).map_err(to_py_err)?;
-        let (x, y, z) = source.positions3().map_err(to_py_err)?;
-        let mut count = 0usize;
-        let mut squared = 0.0f64;
-        let mut nearest = Vec::with_capacity(1);
-        for i in 0..source.len() {
-            tree.nearest_k_into(x[i], y[i], z[i], 1, &mut nearest);
-            if let Some(neighbor) = nearest.first() {
-                if neighbor.distance_squared <= squared_gate {
-                    count += 1;
-                    squared += f64::from(neighbor.distance_squared);
-                }
-            }
-        }
-        Ok((
-            count,
-            count as f64 / source.len() as f64,
-            if count == 0 { None } else { Some((squared / count as f64).sqrt()) },
-        ))
+        let gate = support_gate(max_distance)?;
+        validate_support_cloud(&target.inner)?;
+        let tree = spatialrust::search::KdTree::from_point_cloud(&target.inner).map_err(to_py_err)?;
+        support_with_tree(&source.inner, &tree, gate)
     })
 }
 
@@ -4798,6 +4828,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySphereResult>()?;
     m.add_class::<PyCylinderResult>()?;
     m.add_class::<PyRegistrationResult>()?;
+    m.add_class::<PyDistanceSupportIndex>()?;
     m.add_class::<PyViewerState>()?;
     m.add_class::<PyViewerPointSource>()?;
     m.add_function(wrap_pyfunction!(read_image, m)?)?;

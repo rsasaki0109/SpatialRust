@@ -353,6 +353,13 @@ KD-tree construction and nearest-neighbor queries. It borrows immutable native
 point storage without an extra whole-cloud copy; concurrent read-only calls may
 share inputs. Other pipeline calls are not covered by this GIL guarantee.
 
+For repeated queries against one reference, `DistanceSupportIndex(target)`
+explicitly copies XYZ into an owned immutable CPU KD-tree. Call
+`index.support(source, max_distance)` for the same support tuple and validation
+rules without rebuilding that tree. Construction and queries release the GIL;
+concurrent queries can share an index, and releasing the original target does
+not invalidate it. Changing the reference requires constructing a new index.
+
 The file alignment report now includes `before_support`, `aligned_support` and
 `aligned_reverse_support`, recomputed on the full-resolution final coordinates.
 Each records gate, query count, accepted count, query fraction and gated RMSE.

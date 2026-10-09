@@ -43,7 +43,7 @@ __all__: list[str] = [
     "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
     "find_mask_contours",
     "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
-    "radius_graph", "distance_gated_support", "register_icp", "register_point_to_plane", "register_gicp",
+    "radius_graph", "distance_gated_support", "DistanceSupportIndex", "register_icp", "register_point_to_plane", "register_gicp",
     "register_ndt", "register_fpfh_ransac", "register_fpfh_keypoints",
 ]
 
@@ -1035,6 +1035,17 @@ class DLPackTensorView:
     def copy(self) -> Tensor: ...
 
 def tensor_view_from_dlpack(producer: object) -> DLPackTensorView: ...
+
+
+@final
+class DistanceSupportIndex:
+    """Owned immutable CPU reference index; construction explicitly copies XYZ.
+
+    Construction and support release the GIL; simultaneous queries are safe.
+    The index remains usable after the original target is released.
+    """
+    def __new__(cls, target: PointCloud) -> DistanceSupportIndex: ...
+    def support(self, source: PointCloud, max_distance: float) -> tuple[int, float, Optional[float]]: ...
 
 
 def distance_gated_support(source: PointCloud, target: PointCloud, max_distance: float) -> tuple[int, float, Optional[float]]:
