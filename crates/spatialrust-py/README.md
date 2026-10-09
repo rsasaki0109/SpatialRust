@@ -375,6 +375,22 @@ stop reason and cumulative pose; evaluation uses all original points in both
 directions. A stopped stage is not proof of a correct pose. Existing output
 directories are refused and a failed write removes only the newly reserved output.
 
+For coarse initialization without a supplied prior, `register_fpfh_ransac`
+estimates normals and runs FPFH feature matching followed by RANSAC. Its existing
+positional arguments remain supported; optional keyword-only `seed=0x5eed`
+makes sampling reproducible. Normal estimation and matching run outside the
+Python GIL. Radius and correspondence distance require finite nonzero f32
+squares, RANSAC iterations must be positive, and `k_neighbors` must be at least
+three. Normal-estimation scratch space caps requested k at each cloud's size.
+Inputs need at least three finite XYZ points; unusable nonunit/zero estimated
+normals are rejected. Native Rust FPFH accepts only finite unit normals and
+checks sample size, edge tolerance and coordinate extent.
+Check the result's `converged` and finite fitness before using it as a prior:
+no accepted hypothesis returns identity with infinite fitness and `converged=False`.
+An accepted feature hypothesis is still not a certificate of the true pose.
+The separate keypoint-based Python entry point has not received the same
+normal-estimation boundary and GIL changes in this slice.
+
 For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
 
 ```bash

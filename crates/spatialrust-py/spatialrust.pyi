@@ -886,6 +886,8 @@ def register_fpfh_ransac(
     max_correspondence_distance: float = ...,
     ransac_iterations: int = ...,
     k_neighbors: int = ...,
+    *,
+    seed: int = ...,
 ) -> RegistrationResult: ...
 def register_fpfh_keypoints(
     source: PointCloud,

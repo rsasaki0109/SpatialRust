@@ -2354,29 +2354,38 @@ fn register_ndt(
 /// initial guess (typically refined afterwards with ICP/GICP). Normals are
 /// estimated on both clouds from k-nearest neighbors.
 #[pyfunction]
-#[pyo3(signature = (source, target, feature_radius=0.25, max_correspondence_distance=0.075, ransac_iterations=4000, k_neighbors=20))]
+#[pyo3(signature = (source, target, feature_radius=0.25, max_correspondence_distance=0.075, ransac_iterations=4000, k_neighbors=20, *, seed=0x5eed))]
 fn register_fpfh_ransac(
+    py: Python<'_>,
     source: &PyPointCloud,
     target: &PyPointCloud,
     feature_radius: f32,
     max_correspondence_distance: f32,
     ransac_iterations: usize,
     k_neighbors: usize,
+    seed: u64,
 ) -> PyResult<PyRegistrationResult> {
-    let normals = NormalEstimationConfig::k_neighbors(k_neighbors);
-    let source_with_normals =
-        NormalEstimator::new(normals).estimate(&source.inner).map_err(to_py_err)?;
-    let target_with_normals =
-        NormalEstimator::new(normals).estimate(&target.inner).map_err(to_py_err)?;
     let config = FpfhRansacConfig {
         feature_radius,
         max_correspondence_distance,
         ransac_iterations,
+        seed,
         ..FpfhRansacConfig::default()
     };
-    let result = FpfhRansacRegistration::new(config)
-        .align(&source_with_normals, &target_with_normals)
-        .map_err(to_py_err)?;
+    config.validate().map_err(to_py_err)?;
+    if k_neighbors < 3 {
+        return Err(PyValueError::new_err("k_neighbors must be at least 3"));
+    }
+    let result = py.allow_threads(|| {
+        validate_icp_inputs(&source.inner, &target.inner)?;
+        // Bound scratch allocation by actual input size, even for huge requested k.
+        let source_normals = NormalEstimationConfig::k_neighbors(k_neighbors.min(source.inner.len()));
+        let target_normals = NormalEstimationConfig::k_neighbors(k_neighbors.min(target.inner.len()));
+        let source_with_normals = NormalEstimator::new(source_normals).estimate(&source.inner).map_err(to_py_err)?;
+        let target_with_normals = NormalEstimator::new(target_normals).estimate(&target.inner).map_err(to_py_err)?;
+        FpfhRansacRegistration::new(config)
+            .align(&source_with_normals, &target_with_normals).map_err(to_py_err)
+    })?;
     Ok(PyRegistrationResult::from_result(&result))
 }
 
