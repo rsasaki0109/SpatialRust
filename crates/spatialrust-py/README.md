@@ -245,6 +245,8 @@ timestamps and signed integer labels.
 For preprocessing, `statistical_outlier_removal` and `radius_outlier_removal`
 reject nonfinite XYZ and release the GIL during native filtering. Concurrent
 calls can share the same read-only cloud; each returns its own filtered cloud.
+Regression tests verify attribute row selection through PCD export/reload for
+intensity, signed labels, float64 timestamps and normals, including empty output.
 An existing output directory is refused; its parent must exist. Normal write
 failures remove the newly created output directory. This is not atomic publication
 or crash-durable storage; forced termination can leave partial output.

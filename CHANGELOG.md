@@ -49,6 +49,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Python outlier-filter attribute regressions verify complete row selection and
+  dtype preservation through Arrow and PCD round trips, including empty results.
 - Python SOR and radius outlier filtering release the GIL during native work;
   concurrent same-cloud calls and Python thread progress have regression coverage.
 - Reproducible SOR/radius-filter plus ICP study tracks retained genuine/outlier
