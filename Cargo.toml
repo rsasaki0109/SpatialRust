@@ -99,7 +99,8 @@ copc-writer = "0.2.0"
 pollster = "0.4"
 ureq = "2.12"
 serde = { version = "1", features = ["derive"] }
-thiserror = "2"
+# Preserve the declared base-crate Rust 1.75 support; newer 2.x raised MSRV.
+thiserror = "=2.0.17"
 wgpu = "24"
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1"

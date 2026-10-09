@@ -1,9 +1,20 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **72%, provisional**. This is a subjective
+Current assessment (2026-10-10): **74%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 74% estimate repairs an observed Rust 1.75 compatibility failure by pinning
+the compatible thiserror release and adding a fresh-resolution CI gate. Rust
+1.75 checks the default meta crate and geometry surface, and passes 36 core/math
+all-feature tests. Current-stable tests pass 174 core/math/full-vision and 29 CPU
+registration tests; the rebuilt extension passes 450 Python tests, 20 optional
+comparison tests, strict Clippy and stubtest. Its new default wheel passes 447
+tests with 3 expected ONNX skips and byte/runtime verification. Full features
+still need newer Rust, and the verified scope is explicit. The 90% evidence gate
+is not met: primary 3DMatch downloads are network-blocked, remote/platform/GPU
+runtime and operational stability evidence remain incomplete.
 
 The 72% estimate adds a public supplied-reference pair, safe NumPy/PCD preparation,
 explicitly recorded near-rotation correction, ten controlled native/Open3D
