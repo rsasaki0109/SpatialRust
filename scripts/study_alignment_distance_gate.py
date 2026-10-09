@@ -11,7 +11,9 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--evaluation-distance', type=float, help='fixed diagnostic distance; defaults to each ICP gate')
 parser.add_argument('--output-dir', type=Path, default=REPO / 'target/gate-study')
 parser.add_argument('--noise-std', type=float, default=0, help='source Gaussian noise standard deviation per axis, metres')
-parser.add_argument('--source-outlier-fraction', type=float, default=0, help='fraction of source points replaced by nearby nonmatching points')
+source_changes = parser.add_mutually_exclusive_group()
+source_changes.add_argument('--source-outlier-fraction', type=float, default=0, help='fraction of source points replaced by nearby nonmatching points')
+source_changes.add_argument('--source-delete-fraction', type=float, default=0, help='fraction of final source points deleted after noise, for paired overlap control')
 args = parser.parse_args()
 if args.evaluation_distance is not None and (not math.isfinite(args.evaluation_distance) or args.evaluation_distance <= 0):
     parser.error('evaluation-distance must be finite and positive')
@@ -19,6 +21,11 @@ if not math.isfinite(args.noise_std) or args.noise_std < 0:
     parser.error('noise-std must be finite and nonnegative')
 if not math.isfinite(args.source_outlier_fraction) or not 0 <= args.source_outlier_fraction < 1:
     parser.error('source-outlier-fraction must be in [0, 1)')
+if not math.isfinite(args.source_delete_fraction) or not 0 <= args.source_delete_fraction < 1:
+    parser.error('source-delete-fraction must be in [0, 1)')
+deleted_count = int(400 * args.source_delete_fraction)
+if 400 - deleted_count < 3:
+    parser.error('deletion must retain at least three source points')
 ROOT = args.output_dir
 ROOT.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(REPO / 'crates/spatialrust-py/examples'))
@@ -63,6 +70,8 @@ for seed in range(5):
         source[-outlier_count:] = outliers @ r.T + t
     if args.noise_std:
         source += disturbance.normal(0, args.noise_std, source.shape)
+    if deleted_count:
+        source = source[:-deleted_count]
     truth = matrix(r.T, -r.T @ t)
     sp, tp = ROOT / f'source-{seed}.pcd', ROOT / f'target-{seed}.pcd'
     write(sp, source)
@@ -104,7 +113,8 @@ for gate in [.05, .15, .3, .6, 1.2]:
                         gated_rmse_metres=[row['rmse_metres'] for row in completed]))
 (ROOT / 'results.json').write_text(json.dumps(dict(evaluation_distance_metres=args.evaluation_distance,
     noise_std_metres=args.noise_std, source_outlier_fraction_requested=args.source_outlier_fraction,
-    source_outlier_count=int(400 * args.source_outlier_fraction), source_points=400,
+    source_outlier_count=int(400 * args.source_outlier_fraction), source_points=400-deleted_count,
+    source_delete_fraction_requested=args.source_delete_fraction, source_deleted_count=deleted_count,
     outlier_generation='target-frame x in [1.2,2], y/z in [-1,1]; replace final source points before noise',
     rows=rows, summary=summary), indent=2, allow_nan=False) + '\n')
 table = []
@@ -121,6 +131,7 @@ evaluation = f'{args.evaluation_distance:g} m (fixed)' if args.evaluation_distan
     '<style>body{font:16px system-ui;max-width:950px;margin:2rem auto}td,th{padding:.6rem;text-align:left}svg{width:150px}</style>'
     f'<h1>ICP gate study</h1><p>Evaluation gate: {evaluation}. Five fixed synthetic seeds per search gate.</p>'
     f'<p>Source noise per axis: {args.noise_std:g} m; replaced outliers: {int(400 * args.source_outlier_fraction)}/400 points.</p>'
+    f'<p>Deleted source points: {deleted_count}/400; retained source points: {400-deleted_count}.</p>'
     '<table><thead><tr><th>ICP gate (m)</th><th>Correct poses</th><th>Converged</th><th>Forward support range</th><th>Correct pose fraction</th></tr></thead><tbody>'
     + ''.join(table) + '</tbody></table><p>Correctness uses known generating poses: rotation error &lt; 1 degree and translation error &lt; 0.01 m. '
     'Convergence and proximity support do not certify pose. Synthetic uniform geometry; this is not a general gate recommendation.</p></html>', encoding='utf-8')

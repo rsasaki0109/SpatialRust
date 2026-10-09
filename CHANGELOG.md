@@ -44,6 +44,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Gate study adds a deletion-only control preserving identical noisy retained
+  points, to distinguish reduced overlap from added nonmatching source points.
 - Gate sensitivity study adds reproducible Gaussian noise and nearby source
   point replacements using independent random streams; HTML records conditions.
 - Distance-gate study supports fixed evaluation distance and standalone HTML
