@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import html
+import importlib
 import json
 from pathlib import Path
 import shutil
@@ -65,13 +66,15 @@ def main():
     if fingerprints != reference['input_file_sha256']:
         parser.error('input hashes differ from reference')
     generated = initializations(comparison, fingerprints)
-    native = list(Path(sr.__file__).parent.glob('*.so'))
-    if len(native) != 1:
-        parser.error('expected one native extension')
-    native_hash = hashlib.sha256(native[0].read_bytes()).hexdigest()
+    native = Path(importlib.import_module('spatialrust.spatialrust').__file__)
+    native_hash = hashlib.sha256(native.read_bytes()).hexdigest()
     if comparison['native_sha256'] != native_hash:
         parser.error('replay must use the same native build as the saved comparison')
     source_bytes = Path(__file__).read_bytes()
+    helper_paths = [Path(__file__).with_name('evaluate_pose_reference.py')] + [
+        Path(__file__).resolve().parents[1] / 'crates/spatialrust-py/examples' / name
+        for name in ('align_multiscale.py', 'align_point_clouds.py')]
+    helper_hashes = {str(path.resolve()): hashlib.sha256(path.read_bytes()).hexdigest() for path in helper_paths}
     rows = []
     for seed, initial in generated:
         for trim in args.trim_fractions:
@@ -85,10 +88,13 @@ def main():
         row['accuracy'] = evaluate(row['report'], reference)
         initial_report = dict(row['report'], transform_source_to_target=row['report']['initial_transform_source_to_target'])
         row['initial_accuracy'] = evaluate(initial_report, reference)
-    if hashlib.sha256(native[0].read_bytes()).hexdigest() != native_hash or Path(__file__).read_bytes() != source_bytes:
+    if hashlib.sha256(native.read_bytes()).hexdigest() != native_hash or Path(__file__).read_bytes() != source_bytes:
         raise ValueError('native or study runner changed during replay')
+    if any(hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest for path, digest in helper_hashes.items()):
+        raise ValueError('algorithm helpers changed during replay')
     result = dict(schema='spatialrust.public-refinement-study.v1', native_sha256=native_hash,
                   source_sha256=hashlib.sha256(source_bytes).hexdigest(),
+                  algorithm_source_sha256=helper_hashes,
                   reference_sha256=hashlib.sha256(reference_bytes).hexdigest(),
                   comparison_sha256=hashlib.sha256(comparison_bytes).hexdigest(),
                   input_file_sha256=fingerprints, reference_provenance=reference['provenance'], rows=rows)
