@@ -35,12 +35,14 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
     selected_key = None
     selected_index = None
     target_voxel_cache = []
+    before_support_cache = []
     for index, pose in enumerate(poses):
         try:
             aligned, report = _align_clouds(
                 source, target, source_name=str(source_path), target_name=str(target_path), leaf=leaf, max_distance=max_distance,
                 evaluation_distance=evaluation_distance, iterations=iterations,
-                initial_transform=pose, target_voxel_cache=target_voxel_cache)
+                initial_transform=pose, target_voxel_cache=target_voxel_cache,
+                before_support_cache=before_support_cache)
         except ValueError as error:
             records.append(dict(index=index, status='error', error=str(error),
                                 initial_transform_source_to_target=pose.tolist()))

@@ -66,7 +66,7 @@ def align_clouds(source, target, *, source_name='source', target_name='target', 
 
 def _align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
                   max_distance=.1, iterations=50, initial_transform=None,
-                  evaluation_distance=None, target_voxel_cache=None):
+                  evaluation_distance=None, target_voxel_cache=None, before_support_cache=None):
     """Align existing read-only clouds, returning a new full source and diagnostics.
 
     XYZ validation explicitly copies positions to NumPy. Convergence and support
@@ -116,6 +116,14 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
         count, fraction, rmse = sr.distance_gated_support(query, reference, evaluation_distance)
         return dict(distance_metres=evaluation_distance, query_points=len(query),
                     distance_gated_points=count, query_fraction=fraction, gated_rmse_metres=rmse)
+    # Private, per-search cache: source, target and evaluation gate are fixed.
+    # Copy the result so separate reports never share a mutable support dict.
+    if before_support_cache is None:
+        before_support = support(source, target)
+    else:
+        if not before_support_cache:
+            before_support_cache.append(support(source, target))
+        before_support = dict(before_support_cache[0])
     diagnostics = dict(schema_version='spatialrust.python-alignment.v1',
                        source_file=str(source_name), target_file=str(target_name),
                        source_points=len(source), target_points=len(target),
@@ -128,7 +136,7 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
                        initial_transform_source_to_target=initial.tolist(),
                        transform_source_to_target=transform.tolist(),
                        kernel_fitness_metres_squared=result.fitness if math.isfinite(result.fitness) and result.fitness < np.finfo(np.float64).max else None,
-                       before_support=support(source, target),
+                       before_support=before_support,
                        initial_support=support(seeded, target),
                        aligned_support=support(aligned, target),
                        aligned_reverse_support=support(target, aligned),

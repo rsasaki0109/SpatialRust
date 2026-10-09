@@ -126,11 +126,13 @@ def test_shared_target_voxels_match_independent_candidates(tmp_path, example):
         return result
 
     with patch.object(sr, 'voxel_downsample', wraps=voxel) as downsample, \
-            patch.object(sr, 'register_icp', side_effect=check_readonly_target):
+            patch.object(sr, 'register_icp', side_effect=check_readonly_target), \
+            patch.object(sr, 'distance_gated_support', wraps=sr.distance_gated_support) as support:
         _, report = example.evaluate_candidates(*paths, poses())
     # Three source voxelizations, one shared target voxelization, including the
     # candidate that fails during registration.
     assert downsample.call_count == 4
+    assert support.call_count == 7  # One before query plus three per success.
     assert coarse_targets[0] is coarse_targets[1] is coarse_targets[3]
     selection = report.pop('candidate_selection')
     assert report == independent[0]
@@ -138,3 +140,18 @@ def test_shared_target_voxels_match_independent_candidates(tmp_path, example):
         for field in ('transform_source_to_target', 'aligned_support',
                       'aligned_reverse_support', 'converged'):
             assert actual[field] == expected[field]
+
+
+def test_before_support_cache_is_local_and_reports_are_independent(tmp_path, example):
+    paths, _, _ = fixture_files(tmp_path)
+    from align_point_clouds import _align_clouds, align_files
+    source, target = [sr.read(str(path)) for path in paths]
+    cache = []
+    first = _align_clouds(source, target, before_support_cache=cache)[1]
+    first['before_support']['distance_gated_points'] = -1
+    second = _align_clouds(source, target, before_support_cache=cache)[1]
+    assert second['before_support'] == align_files(*paths)[1]['before_support']
+    # Separate searches must not retain an old evaluation gate or old support.
+    for gate in (.1, .001):
+        _, report = example.evaluate_candidates(*paths, poses()[1:], evaluation_distance=gate)
+        assert report['before_support'] == align_files(*paths, evaluation_distance=gate)[1]['before_support']
