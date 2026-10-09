@@ -16,6 +16,34 @@ with matching parameters.
 
 ## Running
 
+For local ICP failure analysis, build the additional `pcl_icp_bench` CMake target
+and run it through the common SpatialRust/Open3D comparison:
+
+```bash
+cmake -S bench/pcl_comparison -B target/pcl-comparison -DCMAKE_BUILD_TYPE=Release
+cmake --build target/pcl-comparison --target pcl_icp_bench
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/compare_icp_failures.py \
+  --pcl-binary target/pcl-comparison/pcl_icp_bench --output-dir target/three-library-icp
+SPATIALRUST_PCL_ICP_BINARY=target/pcl-comparison/pcl_icp_bench \
+  OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python -m pytest \
+  bench/pcl_comparison/test_pcl_icp_failures.py -o addopts='' -q
+```
+
+The comparator explicitly instantiates PCL's header implementations of ICP and
+SVD, linking its common/search dependencies. It consumes identical seeded f32
+points through a persistent process. Native timing excludes ASCII input and
+process startup. Zero thresholds and a shared update cap are configured, but
+PCL can stop on exactly zero transform changes; actual update counts are saved.
+This stopping difference and f32/f64 update precision preclude a literal claim
+of identical numerical work. JSON hashes the native comparator and runner code;
+HTML compares recovery by condition using common full-source SciPy evaluation.
+
+In the 2026-10-10 controlled study, PCL 1.15.0, Open3D 0.19.0 and SpatialRust
+all recovered 138/234 synthetic conditions, with no disagreement on any paired
+condition. Nearby outliers under broad distance gates defeated all three.
+This is shared failure evidence, not a real-sensor accuracy or speed ranking.
+PCL executed 15–100 updates in the run, while SpatialRust used all 100.
+
 ```bash
 # needs: libpcl-dev, g++, eigen3, Python, and a Rust toolchain
 bench/pcl_comparison/run.sh

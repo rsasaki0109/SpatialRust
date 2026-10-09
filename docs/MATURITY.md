@@ -1,9 +1,17 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **63%, provisional**. This is a subjective
+Current assessment (2026-10-10): **64%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 64% estimate adds PCL 1.15.0 to the controlled external ICP study: 702
+registrations, 234 paired conditions, all three libraries recover 138 poses
+with no classification disagreement. Native comparator and runner hashes,
+actual PCL update counts and common full-source evaluation are recorded; 5
+optional comparison tests pass. Inclusive zero-delta stopping and numerical
+precision differ, and this remains synthetic local ICP rather than real-sensor
+or global-registration parity.
 
 The 63% estimate adds isolated wheel and source-distribution runtime validation
 and fixes a confirmed release defect: source-rebuilt wheels omitted the type
