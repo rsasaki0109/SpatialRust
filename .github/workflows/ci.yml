@@ -291,6 +291,39 @@ jobs:
           retention-days: 14
 
 
+  python-onnx-bindings:
+    name: Python ONNX real-model verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build ONNX extension and require real-model tests
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install "maturin[patchelf]" pytest numpy pyarrow onnxruntime==1.24.2
+          python crates/spatialrust-py/tools/prepare_onnxruntime.py target/onnxruntime
+          export ORT_LIB_LOCATION="$PWD/target/onnxruntime"
+          export ORT_PREFER_DYNAMIC_LINK=1
+          export ORT_SKIP_DOWNLOAD=1
+          export LD_LIBRARY_PATH="$ORT_LIB_LOCATION${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          maturin develop --release --features onnxruntime --manifest-path crates/spatialrust-py/Cargo.toml
+          pytest crates/spatialrust-py/tests --junitxml=target/python-onnx-tests.xml
+          python -c "import xml.etree.ElementTree as E; s=E.parse('target/python-onnx-tests.xml').getroot().find('testsuite'); assert s is not None and int(s.attrib['skipped']) == 0, 'ONNX validation must not silently skip'"
+      - name: Save ONNX test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-onnx-tests
+          path: target/python-onnx-tests.xml
+          if-no-files-found: warn
+          retention-days: 14
+
   vision-platform-conformance:
     name: Vision conformance (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
