@@ -293,7 +293,8 @@ python crates/spatialrust-py/examples/align_pose_candidates.py source.pcd target
 The example evaluates each pose, chooses the highest forward supported-point
 count then lowest gated RMSE, and preserves input order for ties. It records
 candidate failures and scores in `alignment.json` and exports all original
-source points using the selected transform. HTML shows the selected result.
+source points using the selected transform. HTML shows the selected result and
+candidate table with both support directions, forward RMSE, convergence and failures.
 It rereads inputs per candidate and adds compute; it neither generates poses
 nor guarantees a correct selection. All poses are validated before input reads,
 and the same exclusive-output and failed-write cleanup rules apply.
