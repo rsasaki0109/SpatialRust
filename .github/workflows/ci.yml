@@ -10,6 +10,20 @@ env:
   RUSTFLAGS: "-D warnings"
 
 jobs:
+  msrv-base:
+    name: Rust 1.75 base and geometry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.75.0
+      - uses: Swatinem/rust-cache@v2
+      # Library lockfiles are not tracked. Generate with this Cargo version,
+      # then freeze resolution for the advertised minimal library surface.
+      # Full-feature/dev dependencies have a higher toolchain requirement.
+      - run: cargo generate-lockfile
+      - run: cargo check --locked -p spatialrust -p spatialrust-core -p spatialrust-vision --features spatialrust-vision/geometry
+      - run: cargo test --locked -p spatialrust-core -p spatialrust-math --all-features --lib
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest

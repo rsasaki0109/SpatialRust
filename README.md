@@ -14,7 +14,7 @@
   <a href="https://rsasaki0109.github.io/SpatialRust/spatialrust/"><img src="https://img.shields.io/badge/docs-rustdoc-blue.svg" alt="Docs"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-md-green.svg" alt="Changelog"></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/rust-1.75+-orange.svg" alt="Rust 1.75+">
+  <a href="docs/TOOLCHAIN_SUPPORT.md"><img src="https://img.shields.io/badge/rust-1.75%20base-orange.svg" alt="Rust 1.75 base libraries; see feature-specific toolchain support"></a>
   <img src="https://img.shields.io/badge/GPU-wgpu-38bdf8.svg" alt="wgpu">
 </p>
 
