@@ -12,9 +12,10 @@ pub struct IcpConfig {
     pub max_iterations: usize,
     /// Maximum correspondence distance.
     pub max_correspondence_distance: f32,
-    /// Stop when the transform update is smaller than this threshold.
+    /// Stop when both translation length (coordinate units) and rotation angle
+    /// (radians) of the transform update are smaller than this threshold.
     pub transformation_epsilon: f64,
-    /// Stop when fitness improvement is smaller than this threshold.
+    /// Stop when the mean squared correspondence distance is below this threshold.
     pub fitness_epsilon: f64,
     /// Minimum number of correspondences required per iteration.
     pub min_correspondences: usize,
@@ -229,22 +230,44 @@ fn final_fitness(
 
 fn transform_delta_below_epsilon(delta: Isometry3<f32>, epsilon: f64) -> bool {
     let translation = delta.translation();
-    let translation_norm = f64::from(
-        (translation.x * translation.x
-            + translation.y * translation.y
-            + translation.z * translation.z)
-            .sqrt(),
-    );
-    translation_norm < epsilon
+    let translation_norm =
+        f64::from(translation.x).hypot(f64::from(translation.y)).hypot(f64::from(translation.z));
+    let rotation = delta.rotation();
+    let vector_norm =
+        f64::from(rotation.x).hypot(f64::from(rotation.y)).hypot(f64::from(rotation.z));
+    // atan2 retains small angles when the f32 scalar component rounds to one.
+    // abs(w) gives the same shortest angle for equivalent q and -q rotations.
+    let rotation_angle = 2.0 * vector_norm.atan2(f64::from(rotation.w).abs());
+    translation_norm < epsilon && rotation_angle < epsilon
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{IcpConfig, IcpRegistration};
+    use super::{transform_delta_below_epsilon, IcpConfig, IcpRegistration};
     use crate::registration::PointCloudRegistration;
     use crate::transform::transform_point_cloud;
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};
     use spatialrust_math::{Isometry3, Quat, TransformPoint, Vec3};
+
+    #[test]
+    fn convergence_requires_small_translation_and_rotation() {
+        let zero = Vec3::new(0.0, 0.0, 0.0);
+        let rotation = Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 1e-4);
+        assert_eq!(rotation.w, 1.0); // acos(w) would incorrectly report zero.
+        assert!(!transform_delta_below_epsilon(Isometry3::new(rotation, zero), 1e-6));
+        let opposite = Quat::new(-rotation.x, -rotation.y, -rotation.z, -rotation.w);
+        assert!(!transform_delta_below_epsilon(Isometry3::new(opposite, zero), 1e-6));
+        let tiny = Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), 1e-8);
+        assert!(transform_delta_below_epsilon(
+            Isometry3::new(tiny, Vec3::new(1e-8, 0.0, 0.0)),
+            1e-6
+        ));
+        assert!(!transform_delta_below_epsilon(
+            Isometry3::new(tiny, Vec3::new(1e-4, 0.0, 0.0)),
+            1e-6
+        ));
+        assert!(!transform_delta_below_epsilon(Isometry3::identity(), 0.0));
+    }
 
     fn plane_cloud() -> spatialrust_core::PointCloud {
         let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
@@ -258,6 +281,45 @@ mod tests {
             }
         }
         builder.build().unwrap()
+    }
+
+    #[test]
+    fn pure_rotation_does_not_report_convergence_after_one_update() {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for point in [
+            [1.0, 0.0, 0.0],
+            [-1.0, 0.0, 0.0],
+            [0.0, 2.0, 0.0],
+            [0.0, -2.0, 0.0],
+            [0.0, 0.0, 3.0],
+            [0.0, 0.0, -3.0],
+        ] {
+            builder.push_point(point).unwrap();
+        }
+        let target = builder.build().unwrap();
+        let source = transform_point_cloud(
+            &target,
+            Isometry3::new(
+                Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), 0.05),
+                Vec3::new(0.0, 0.0, 0.0),
+            ),
+        )
+        .unwrap();
+        let config = IcpConfig {
+            max_iterations: 1,
+            max_correspondence_distance: 0.2,
+            transformation_epsilon: 1e-5,
+            fitness_epsilon: 0.0,
+            ..IcpConfig::default()
+        };
+        let first = IcpRegistration::new(config).align(&source, &target).unwrap();
+        assert!(first.fitness < 1e-10);
+        assert!(!first.converged);
+        let settled = IcpRegistration::new(IcpConfig { max_iterations: 3, ..config })
+            .align(&source, &target)
+            .unwrap();
+        assert!(settled.converged);
+        assert!(settled.iterations > 1);
     }
 
     #[test]
