@@ -357,6 +357,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Python distance-gated support releases the GIL during native computation,
+  allowing other Python threads and concurrent read-only diagnostic calls.
+
 - Python exposes KD-tree distance-gated support and records final full-resolution
   bidirectional support separately from kernel fitness in the alignment workflow.
 
