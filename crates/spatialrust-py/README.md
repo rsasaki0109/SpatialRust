@@ -257,6 +257,10 @@ function returns the aligned cloud and diagnostics without writing output.
 
 Render its diagnostics as a standalone HTML/SVG report without extra dependencies:
 
+Add `--html-report` to the alignment command to save `report.html` alongside
+the point cloud and JSON in its new output directory. A report write failure
+also removes that newly created directory. To render an existing JSON separately:
+
 ```bash
 python crates/spatialrust-py/examples/render_alignment_report.py aligned-run/alignment.json aligned-run/report.html
 ```

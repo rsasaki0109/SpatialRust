@@ -55,6 +55,34 @@ def test_full_resolution_roundtrip_and_transform_direction(tmp_path):
     assert (output / 'aligned.pcd').read_bytes() == original
 
 
+def test_cli_html_report_and_failed_html_write_cleanup(tmp_path, monkeypatch):
+    paths, _, _ = fixture_files(tmp_path)
+    output = tmp_path / 'with-html'
+    result = subprocess.run([sys.executable, str(EXAMPLE), *map(str, paths),
+                             '--output-dir', str(output), '--html-report'],
+                            capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    rendered = (output / 'report.html').read_text()
+    assert 'Alignment support report' in rendered
+    assert 'After: target → source' in rendered
+    assert (output / 'aligned.pcd').exists() and (output / 'alignment.json').exists()
+    monkeypatch.syspath_prepend(str(EXAMPLE.parent))
+    write_text = Path.write_text
+    failed = tmp_path / 'failed-html'
+    def fail_html(path, *args, **kwargs):
+        if path.name == 'report.html':
+            raise OSError('injected HTML write failure')
+        return write_text(path, *args, **kwargs)
+    with patch.object(sys, 'argv', [str(EXAMPLE), *map(str, paths), '--output-dir', str(failed), '--html-report']), patch.object(Path, 'write_text', fail_html):
+        try:
+            example.main()
+        except OSError as error:
+            assert 'injected HTML' in str(error)
+        else:
+            raise AssertionError('expected HTML write failure')
+    assert not failed.exists()
+
+
 def test_invalid_settings_before_io():
     for settings in ({'leaf': 0}, {'max_distance': float('nan')}, {'iterations': 0}, {'iterations': True}, {'max_distance': 1e30}):
         try:

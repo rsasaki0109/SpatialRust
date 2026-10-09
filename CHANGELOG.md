@@ -44,6 +44,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Python alignment CLI accepts `--html-report` to save its support diagnostic
+  visualization alongside the aligned cloud and JSON, with failed-write cleanup.
 - Standalone Python alignment HTML/SVG diagnostic report compares forward and
   reverse distance-gated support, counts and RMSE to reveal overlap asymmetry.
   It validates the report contract, escapes filenames and refuses overwrites.

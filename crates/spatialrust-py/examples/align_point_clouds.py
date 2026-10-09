@@ -109,16 +109,23 @@ def main():
     parser.add_argument('--max-distance', type=float, default=.1)
     parser.add_argument('--initial-transform', type=Path, help='JSON 4x4 source-to-target rigid matrix')
     parser.add_argument('--iterations', type=int, default=50)
+    parser.add_argument('--html-report', action='store_true', help='also save standalone report.html with support diagnostics')
     args = parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory already exists; choose a new path')
     initial = json.loads(args.initial_transform.read_text(encoding='utf-8')) if args.initial_transform else None
     aligned, diagnostics = align_files(args.source, args.target, leaf=args.leaf,
                                        max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial)
+    rendered = None
+    if args.html_report:
+        from render_alignment_report import render_report
+        rendered = render_report(diagnostics)
     args.output_dir.mkdir()  # Exclusive reservation; never reuse an existing directory.
     try:
         sr.write(str(args.output_dir / 'aligned.pcd'), aligned)
         (args.output_dir / 'alignment.json').write_text(json.dumps(diagnostics, indent=2, allow_nan=False)+'\n', encoding='utf-8')
+        if rendered is not None:
+            (args.output_dir / 'report.html').write_text(rendered, encoding='utf-8')
     except Exception:
         shutil.rmtree(args.output_dir)
         raise
