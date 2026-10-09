@@ -608,6 +608,89 @@ mod tests {
         }
     }
 
+    #[test]
+    fn compressed_field_major_attributes_preserve_precision_and_order() {
+        use spatialrust_core::PointBuffer;
+        let mut bytes = b"VERSION .7\nFIELDS x y z timestamp label id\nSIZE 4 4 4 8 4 4\nTYPE F F F F I U\nCOUNT 1 1 1 1 1 1\nWIDTH 2\nHEIGHT 1\nPOINTS 2\nDATA binary_compressed\n".to_vec();
+        let mut payload = Vec::new();
+        for value in [1_f32, 2., 3., 4., 5., 6.] {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        for value in [1_000_000_000_000.125_f64, 1_000_000_000_000.25] {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        for value in [i32::MIN + 1, i32::MAX] {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        for value in [u32::MAX, u32::MAX - 1] {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        // Literal-only LZF, split at its maximum literal run length.
+        let mut compressed = Vec::new();
+        for run in payload.chunks(32) {
+            compressed.push((run.len() - 1) as u8);
+            compressed.extend_from_slice(run);
+        }
+        bytes.extend_from_slice(&(compressed.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&compressed);
+        let cloud = read_pcd(&mut Cursor::new(bytes)).unwrap();
+        assert_eq!(cloud.positions3().unwrap(), (&[1., 2.][..], &[3., 4.][..], &[5., 6.][..]));
+        assert!(
+            matches!(cloud.field("timestamp").unwrap(), PointBuffer::F64(v) if v == &[1_000_000_000_000.125, 1_000_000_000_000.25])
+        );
+        assert!(
+            matches!(cloud.field("label").unwrap(), PointBuffer::I32(v) if v == &[i32::MIN + 1, i32::MAX])
+        );
+        assert!(
+            matches!(cloud.field("id").unwrap(), PointBuffer::U32(v) if v == &[u32::MAX, u32::MAX - 1])
+        );
+    }
+
+    #[cfg(feature = "streaming")]
+    #[test]
+    fn bounded_chunks_preserve_attributes_at_point_boundaries() {
+        use spatialrust_core::PointBuffer;
+        use spatialrust_records::{
+            BoundedSpatialRecordSource, CancellationToken, MemoryBudget, StreamOptions,
+        };
+        let input = b"VERSION .7\nFIELDS x y z timestamp label id\nSIZE 4 4 4 8 4 4\nTYPE F F F F I U\nCOUNT 1 1 1 1 1 1\nWIDTH 3\nHEIGHT 1\nPOINTS 3\nDATA ascii\n0 0 0 1000000000000.125 -2147483647 4294967295\n1 0 0 1000000000000.25 2147483647 4294967294\n2 0 0 1000000000000.375 -2147483648 4294967293\n";
+        let original = read_pcd(&mut Cursor::new(input)).unwrap();
+        for format in [PcdWriteFormat::Ascii, PcdWriteFormat::Binary] {
+            let mut bytes = Vec::new();
+            write_pcd(&mut bytes, &original, format).unwrap();
+            let options = StreamOptions::new(1, MemoryBudget::new(56).unwrap()).unwrap();
+            let mut source = super::PcdChunkSource::new(
+                Cursor::new(bytes),
+                options,
+                CancellationToken::default(),
+            )
+            .unwrap();
+            for index in 0..3 {
+                let chunk = source.next_chunk().unwrap().unwrap();
+                assert_eq!(chunk.identity().point_offset, index as u64);
+                let cloud = chunk.record().cloud();
+                assert_eq!(cloud.len(), 1);
+                for name in ["timestamp", "label", "id"] {
+                    match (cloud.field(name).unwrap(), original.field(name).unwrap()) {
+                        (PointBuffer::F64(actual), PointBuffer::F64(expected)) => {
+                            assert_eq!(actual, &expected[index..index + 1])
+                        }
+                        (PointBuffer::I32(actual), PointBuffer::I32(expected)) => {
+                            assert_eq!(actual, &expected[index..index + 1])
+                        }
+                        (PointBuffer::U32(actual), PointBuffer::U32(expected)) => {
+                            assert_eq!(actual, &expected[index..index + 1])
+                        }
+                        _ => panic!("attribute dtype changed"),
+                    }
+                }
+            }
+            assert!(source.next_chunk().is_none());
+            assert!(source.memory_tracker().snapshot().peak_bytes <= 56);
+        }
+    }
+
     const SAMPLE_XYZ_ASCII: &str = "\
 # .PCD v0.7 - Point Cloud Data file format
 VERSION 0.7
