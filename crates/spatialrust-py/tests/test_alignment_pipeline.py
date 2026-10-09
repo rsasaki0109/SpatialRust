@@ -104,6 +104,18 @@ def test_independent_evaluation_distance_does_not_change_estimated_pose(tmp_path
             raise AssertionError('invalid evaluation distance accepted')
 
 
+def test_loaded_cloud_alignment_matches_files_and_preserves_inputs(tmp_path):
+    paths, source_xyz, target_xyz = fixture_files(tmp_path)
+    source, target = [sr.read(str(path)) for path in paths]
+    expected, file_report = example.align_files(*paths)
+    with patch.object(sr, 'read', side_effect=AssertionError('loaded alignment must not read files')):
+        actual, loaded_report = example.align_clouds(source, target, source_name=str(paths[0]), target_name=str(paths[1]))
+    np.testing.assert_array_equal(actual.xyz(), expected.xyz())
+    assert loaded_report == file_report
+    np.testing.assert_array_equal(source.xyz(), source_xyz)
+    np.testing.assert_array_equal(target.xyz(), target_xyz)
+
+
 def test_invalid_settings_before_io():
     for settings in ({'leaf': 0}, {'max_distance': float('nan')}, {'iterations': 0}, {'iterations': True}, {'max_distance': 1e30}):
         try:

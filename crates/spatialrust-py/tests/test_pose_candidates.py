@@ -31,7 +31,10 @@ def poses():
 
 def test_real_candidates_keep_failures_and_stable_ties(tmp_path, example):
     paths, source, target = fixture_files(tmp_path)
-    cloud, report = example.evaluate_candidates(*paths, poses())
+    with patch.object(sr, 'read', wraps=sr.read) as reader:
+        cloud, report = example.evaluate_candidates(*paths, poses())
+    assert reader.call_count == 2
+    assert [call.args[0] for call in reader.call_args_list] == list(map(str, paths))
     selection = report['candidate_selection']
     assert selection['selected_index'] == 1
     assert [c['status'] for c in selection['candidates']] == ['error', 'success', 'success']
@@ -99,3 +102,9 @@ def test_write_failure_cleans_new_output(tmp_path, example):
         with pytest.raises(OSError, match='injected'):
             example.main()
     assert not output.exists()
+
+
+def test_invalid_settings_precede_shared_reads(example):
+    with patch.object(sr, 'read', side_effect=AssertionError('IO before settings validation')):
+        with pytest.raises(ValueError, match='evaluation_distance'):
+            example.evaluate_candidates('missing', 'missing', poses(), evaluation_distance=0)

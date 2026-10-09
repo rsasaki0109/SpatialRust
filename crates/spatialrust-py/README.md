@@ -295,9 +295,12 @@ count then lowest gated RMSE, and preserves input order for ties. It records
 candidate failures and scores in `alignment.json` and exports all original
 source points using the selected transform. HTML shows the selected result and
 candidate table with both support directions, forward RMSE, convergence and failures.
-It rereads inputs per candidate and adds compute; it neither generates poses
+It reads each input once and shares read-only clouds across candidates;
+candidate registration still adds compute. It neither generates poses
 nor guarantees a correct selection. All poses are validated before input reads,
 and the same exclusive-output and failed-write cleanup rules apply.
+The single-pose example also exposes `align_clouds(source, target, ...)` for
+already loaded clouds, with the same validation and full-resolution output.
 
 Run the file-based integration checks against an installed wheel:
 

@@ -29,13 +29,8 @@ def rigid_matrix(value):
     return matrix.astype(np.float32)
 
 
-def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None):
-    """Return (full-resolution aligned source, JSON-compatible diagnostics).
-
-    Raises ValueError for invalid settings/input; native IO/registration errors
-    propagate. ICP defaults to identity; convergence does not certify pose accuracy.
-    XYZ transfer to NumPy for validation copies data explicitly.
-    """
+def validate_settings(leaf, max_distance, iterations, evaluation_distance):
+    """Validate numeric settings before IO and return the evaluation distance."""
     evaluation_distance = max_distance if evaluation_distance is None else evaluation_distance
     for name, value in (('leaf', leaf), ('max_distance', max_distance), ('evaluation_distance', evaluation_distance)):
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= 0:
@@ -47,8 +42,29 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
             raise ValueError(f'{name} must have a finite nonzero f32 square')
     if type(iterations) is not int or iterations < 1:
         raise ValueError('iterations must be a positive integer')
-    initial = rigid_matrix(np.eye(4) if initial_transform is None else initial_transform)
+    return evaluation_distance
+
+
+def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None):
+    """Read files and return the full-resolution aligned source and diagnostics."""
+    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance)
+    if initial_transform is not None:
+        initial_transform = rigid_matrix(initial_transform)
     source, target = sr.read(str(source_path)), sr.read(str(target_path))
+    return align_clouds(source, target, source_name=str(source_path), target_name=str(target_path),
+                        leaf=leaf, max_distance=max_distance, iterations=iterations,
+                        initial_transform=initial_transform, evaluation_distance=evaluation_distance)
+
+
+def align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
+                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None):
+    """Align existing read-only clouds, returning a new full source and diagnostics.
+
+    XYZ validation explicitly copies positions to NumPy. Convergence and support
+    do not certify pose accuracy; input clouds and their attributes stay intact.
+    """
+    evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance)
+    initial = rigid_matrix(np.eye(4) if initial_transform is None else initial_transform)
     for name, cloud in (('source', source), ('target', target)):
         if len(cloud) < 3 or not np.isfinite(cloud.xyz()).all():
             raise ValueError(f'{name} must contain at least three finite XYZ points')
@@ -85,7 +101,7 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
         return dict(distance_metres=evaluation_distance, query_points=len(query),
                     distance_gated_points=count, query_fraction=fraction, gated_rmse_metres=rmse)
     diagnostics = dict(schema_version='spatialrust.python-alignment.v1',
-                       source_file=str(source_path), target_file=str(target_path),
+                       source_file=str(source_name), target_file=str(target_name),
                        source_points=len(source), target_points=len(target),
                        registration_source_points=len(coarse_source), registration_target_points=len(coarse_target),
                        leaf_metres=leaf, max_distance_metres=max_distance,
