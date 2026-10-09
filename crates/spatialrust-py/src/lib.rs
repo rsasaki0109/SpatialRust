@@ -1843,13 +1843,15 @@ fn iss_keypoints(
 #[pyfunction]
 #[pyo3(signature = (cloud, k_neighbors=16, std_mul=1.0))]
 fn statistical_outlier_removal(
+    py: Python<'_>,
     cloud: &PyPointCloud,
     k_neighbors: usize,
     std_mul: f32,
 ) -> PyResult<PyPointCloud> {
     let filter =
         StatisticalOutlierRemoval::new(StatisticalOutlierConfig::new(k_neighbors, std_mul));
-    let inner = filter.filter(&cloud.inner).map_err(to_py_err)?;
+    let cloud = &cloud.inner;
+    let inner = py.allow_threads(|| filter.filter(cloud).map_err(to_py_err))?;
     Ok(PyPointCloud { inner })
 }
 
@@ -1858,12 +1860,14 @@ fn statistical_outlier_removal(
 #[pyfunction]
 #[pyo3(signature = (cloud, radius=0.5, min_neighbors=4))]
 fn radius_outlier_removal(
+    py: Python<'_>,
     cloud: &PyPointCloud,
     radius: f32,
     min_neighbors: usize,
 ) -> PyResult<PyPointCloud> {
     let filter = RadiusOutlierRemoval::new(RadiusOutlierConfig::new(radius, min_neighbors));
-    let inner = filter.filter(&cloud.inner).map_err(to_py_err)?;
+    let cloud = &cloud.inner;
+    let inner = py.allow_threads(|| filter.filter(cloud).map_err(to_py_err))?;
     Ok(PyPointCloud { inner })
 }
 

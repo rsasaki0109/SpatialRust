@@ -21,6 +21,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Outlier filters reject nonfinite XYZ before neighborhood search, including
+  impossible radius-neighbor requests, instead of processing invalid geometry.
 - Neighborhood outlier filters reject invalid floating settings, bound SOR
   neighbor requests by available points and handle impossible radius neighbor
   counts without overflow. Rust and Python regressions cover extreme settings.
@@ -47,6 +49,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Python SOR and radius outlier filtering release the GIL during native work;
+  concurrent same-cloud calls and Python thread progress have regression coverage.
 - Reproducible SOR/radius-filter plus ICP study tracks retained genuine/outlier
   points and evaluates final poses on the original source, with JSON/HTML output.
 - Gate study adds a deletion-only control preserving identical noisy retained
