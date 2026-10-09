@@ -212,15 +212,47 @@ def test_support_releases_gil_and_shared_queries_are_consistent():
         assert all(future.result(timeout=30) == result for future in futures)
 
 
+def test_icp_releases_gil_and_shared_inputs_are_consistent():
+    xyz = np.random.default_rng(18).uniform(-1, 1, (20000, 3)).astype(np.float32)
+    cloud = sr.PointCloud.from_xyz(xyz)
+    ready, start = threading.Event(), threading.Event()
+    progress = []
+    def observer():
+        ready.set()
+        start.wait()
+        progress.append(True)
+    worker = threading.Thread(target=observer)
+    worker.start()
+    assert ready.wait(timeout=5)
+    previous = sys.getswitchinterval()
+    try:
+        sys.setswitchinterval(60)
+        start.set()
+        result = sr.register_icp(cloud, cloud, .1, 2)
+        progressed_during_call = bool(progress)
+    finally:
+        sys.setswitchinterval(previous)
+        worker.join(timeout=5)
+    assert progressed_during_call
+    np.testing.assert_allclose(result.transform(), np.eye(4), atol=1e-6)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(sr.register_icp, cloud, cloud, .1, 2) for _ in range(2)]
+        for future in futures:
+            other = future.result(timeout=30)
+            np.testing.assert_array_equal(other.transform(), result.transform())
+            assert (other.iterations, other.converged, other.fitness) == (result.iterations, result.converged, result.fitness)
+
+
 if __name__ == '__main__':
     test_invalid_settings_before_io()
     test_invalid_initial_poses_before_io()
     test_native_support_direction_missing_and_invalid()
     test_support_releases_gil_and_shared_queries_are_consistent()
+    test_icp_releases_gil_and_shared_inputs_are_consistent()
     for test in (test_full_resolution_roundtrip_and_transform_direction,
                  test_disjoint_inputs_do_not_publish_results, test_coarse_cloud_too_small_has_actionable_error,
                  test_nonfinite_inputs_rejected, test_write_failure_cleans_reserved_output,
                  test_rotated_initial_pose_cli_and_composition, test_full_resolution_refines_voxel_bias):
         with tempfile.TemporaryDirectory() as directory:
             test(Path(directory))
-    print('Python alignment pipeline: PASS (11 groups, real bindings and subprocess CLI)')
+    print('Python alignment pipeline: PASS (12 groups, real bindings and subprocess CLI)')

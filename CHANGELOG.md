@@ -357,6 +357,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Python point-to-point ICP releases the GIL during native registration, with
+  concurrent shared-input and Python-thread progress integration checks.
+
 - Python distance-gated support releases the GIL during native computation,
   allowing other Python threads and concurrent read-only diagnostic calls.
 

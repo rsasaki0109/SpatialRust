@@ -2108,14 +2108,17 @@ fn distance_gated_support(
 #[pyfunction]
 #[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50))]
 fn register_icp(
+    py: Python<'_>,
     source: &PyPointCloud,
     target: &PyPointCloud,
     max_correspondence_distance: f32,
     max_iterations: usize,
 ) -> PyResult<PyRegistrationResult> {
     let config = IcpConfig { max_correspondence_distance, max_iterations, ..IcpConfig::default() };
-    let result =
-        IcpRegistration::new(config).align(&source.inner, &target.inner).map_err(to_py_err)?;
+    let source = &source.inner;
+    let target = &target.inner;
+    let result = py.allow_threads(|| IcpRegistration::new(config).align(source, target))
+        .map_err(to_py_err)?;
     Ok(PyRegistrationResult::from_result(&result))
 }
 

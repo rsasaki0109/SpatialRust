@@ -308,3 +308,23 @@ Each records gate, query count, accepted count, query fraction and gated RMSE.
 Reverse support's denominator is the target count. Kernel fitness remains separate.
 These additional queries/copies add diagnostic work; no full pairwise distance
 matrix is allocated.
+
+`register_icp` also releases the GIL during its native point-to-point computation.
+It remains synchronous, and its Python signature/result are unchanged. Shared
+cloud inputs are borrowed read-only; independent calls can run concurrently.
+This is not a guarantee for point-to-plane/GICP/NDT or the other pipeline steps.
+Use a worker to keep the calling UI thread responsive:
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+with ThreadPoolExecutor(max_workers=1) as pool:
+    pending = pool.submit(sr.register_icp, source, target, 0.1, 50)
+    # Other Python work can run here while native ICP computes.
+    result = pending.result()
+```
+
+Waiting on `result()` still blocks that caller. This adds neither cancellation
+nor guaranteed speedup, and simultaneous calls increase CPU/memory demand.
+Integration checks prevent interpreter time-slicing from masking the GIL release
+and compare poses/diagnostics from concurrent calls on the same input clouds.
