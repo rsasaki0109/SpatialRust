@@ -43,7 +43,7 @@ def matrix(r, t):
 
 def write(path, xyz):
     header = f'VERSION .7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 1 1\nWIDTH {len(xyz)}\nHEIGHT 1\nPOINTS {len(xyz)}\nDATA ascii\n'
-    path.write_text(header + '\n'.join(' '.join(format(float(x), '.9g') for x in p) for p in xyz) + '\n')
+    path.write_text(header + '\n'.join(' '.join(format(float(x), '.9g') for x in p) for p in xyz) + '\n', encoding='utf-8')
 
 def errors(estimated, truth):
     u, _, vh = np.linalg.svd(estimated[:3, :3])
@@ -116,7 +116,7 @@ for gate in [.05, .15, .3, .6, 1.2]:
     source_outlier_count=int(400 * args.source_outlier_fraction), source_points=400-deleted_count,
     source_delete_fraction_requested=args.source_delete_fraction, source_deleted_count=deleted_count,
     outlier_generation='target-frame x in [1.2,2], y/z in [-1,1]; replace final source points before noise',
-    rows=rows, summary=summary), indent=2, allow_nan=False) + '\n')
+    rows=rows, summary=summary), indent=2, allow_nan=False) + '\n', encoding='utf-8')
 table = []
 for item in summary:
     support = item['forward_support']

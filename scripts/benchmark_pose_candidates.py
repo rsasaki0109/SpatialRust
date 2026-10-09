@@ -86,7 +86,7 @@ def main():
         source_sha256={str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in (Path(__file__), ROOT / 'crates/spatialrust-py/examples/align_point_clouds.py')},
         limits='Synthetic dense uniform clouds; warm filesystem cache; no output writes; local timing only.')
-    (args.output_dir / 'timings.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n')
+    (args.output_dir / 'timings.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n', encoding='utf-8')
     cells = []
     for row in rows:
         base = row['medians']['read_each']
@@ -103,7 +103,7 @@ def main():
         '<h1>Candidate workflow timings</h1><p>Median seconds; shorter bars are faster. '
         'All candidate diagnostics match exactly.</p><p>'+html.escape(result['limits'])+'</p>'
         '<table><tr><th>Points</th><th>Candidates</th><th>Mode</th><th>Median</th>'
-        '<th>Relative to repeated reads</th><th>Elapsed time</th></tr>'+''.join(cells)+'</table>')
+        '<th>Relative to repeated reads</th><th>Elapsed time</th></tr>'+''.join(cells)+'</table>', encoding='utf-8')
     print(json.dumps(rows, indent=2))
 
 

@@ -135,8 +135,8 @@ def main():
     serialized = json.dumps(receipt, indent=2, allow_nan=False)
     args.output_dir.mkdir()
     try:
-        (args.output_dir / 'evaluation.json').write_text(serialized)
-        (args.output_dir / 'report.html').write_text(rendered)
+        (args.output_dir / 'evaluation.json').write_text(serialized, encoding='utf-8')
+        (args.output_dir / 'report.html').write_text(rendered, encoding='utf-8')
     except Exception:
         shutil.rmtree(args.output_dir)
         raise

@@ -45,7 +45,7 @@ def main():
         native_sha256={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in native},
         limits='Synthetic XYZ, warm execution, sequential before/after builds; includes tree construction.')
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2, allow_nan=False)+'\n')
+    args.output.write_text(json.dumps(result, indent=2, allow_nan=False)+'\n', encoding='utf-8')
     print(json.dumps([{k:v for k,v in row.items() if k != 'seconds_per_query'} for row in rows]))
 
 

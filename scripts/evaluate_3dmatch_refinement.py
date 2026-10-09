@@ -103,8 +103,8 @@ def main():
                 'experiment does not establish a default trim or benchmark recall/precision.</p><pre>'
                 + html.escape(serialized) + '</pre></html>')
     args.output_dir.mkdir()
-    (args.output_dir / 'evaluation.json').write_text(serialized)
-    (args.output_dir / 'report.html').write_text(rendered)
+    (args.output_dir / 'evaluation.json').write_text(serialized, encoding='utf-8')
+    (args.output_dir / 'report.html').write_text(rendered, encoding='utf-8')
     print(json.dumps(result['summary']))
 
 

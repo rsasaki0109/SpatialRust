@@ -146,8 +146,8 @@ def main():
     args = parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory exists; choose a new path')
-    schedule = json.loads(args.schedule.read_text())
-    prior = json.loads(args.initial_transform.read_text()) if args.initial_transform else None
+    schedule = json.loads(args.schedule.read_text(encoding='utf-8'))
+    prior = json.loads(args.initial_transform.read_text(encoding='utf-8')) if args.initial_transform else None
     aligned,report = align_multiscale_files(args.source,args.target,schedule,
                                           initial_transform=prior,evaluation_distance=args.evaluation_distance)
     serialized = json.dumps(report,indent=2,allow_nan=False)+'\n'
@@ -158,9 +158,9 @@ def main():
     args.output_dir.mkdir()
     try:
         sr.write(str(args.output_dir/'aligned.pcd'),aligned)
-        (args.output_dir/'alignment.json').write_text(serialized)
+        (args.output_dir/'alignment.json').write_text(serialized, encoding='utf-8')
         if rendered is not None:
-            (args.output_dir/'report.html').write_text(rendered)
+            (args.output_dir/'report.html').write_text(rendered, encoding='utf-8')
     except Exception:
         shutil.rmtree(args.output_dir)
         raise

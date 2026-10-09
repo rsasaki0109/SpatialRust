@@ -148,8 +148,8 @@ def main():
         native_sha256=native_hash,source_sha256=hashlib.sha256(source_snapshot).hexdigest(),calculation_sha256=calculation_fingerprint(source_snapshot),rows=rows)
     serialized=json.dumps(receipt,indent=2,allow_nan=False);rendered=render(rows)
     args.output_dir.mkdir()
-    (args.output_dir/'study.json').write_text(serialized)
-    (args.output_dir/'report.html').write_text(rendered)
+    (args.output_dir/'study.json').write_text(serialized, encoding='utf-8')
+    (args.output_dir/'report.html').write_text(rendered, encoding='utf-8')
     print(f'{len(rows)} runs; '+', '.join(f'{m}: {sum(r["recovered"] for r in rows if r["method"]==m)} recoveries' for m in METHODS))
 
 

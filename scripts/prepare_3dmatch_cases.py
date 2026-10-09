@@ -104,7 +104,7 @@ def main():
                         metadata_repository_matches_exact_values=checked,
                         reference_rotation_correction=poses[(target_id, source_id)]['rotation_correction']))
                 path = directory / (case_id + '-reference.json')
-                path.write_text(json.dumps(reference, indent=2, allow_nan=False))
+                path.write_text(json.dumps(reference, indent=2, allow_nan=False), encoding='utf-8')
                 cases.append(dict(case_id=case_id, scene=scene, source=source['path'], target=target['path'],
                                   source_points=source['points'], target_points=target['points'],
                                   reference_file=str(path.resolve()), pair=[target_id, source_id]))
@@ -115,7 +115,7 @@ def main():
         manifest = dict(schema='spatialrust.3dmatch-cases.v1', cases=cases, scenes=scenes,
                         selection_rule='integer_quantiles_of_sorted_nonconsecutive_gt_headers_before_fitting',
                         source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
-        (args.output_dir / 'cases.json').write_text(json.dumps(manifest, indent=2, allow_nan=False))
+        (args.output_dir / 'cases.json').write_text(json.dumps(manifest, indent=2, allow_nan=False), encoding='utf-8')
     except Exception:
         shutil.rmtree(args.output_dir)
         raise

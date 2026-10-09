@@ -14,7 +14,7 @@ def matrix(r,t):
 
 def write(path, xyz):
     header=f'VERSION .7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 1 1\nWIDTH {len(xyz)}\nHEIGHT 1\nPOINTS {len(xyz)}\nDATA ascii\n'
-    path.write_text(header+'\n'.join(' '.join(format(float(x),'.9g') for x in p) for p in xyz)+'\n')
+    path.write_text(header+'\n'.join(' '.join(format(float(x),'.9g') for x in p) for p in xyz)+'\n', encoding='utf-8')
 
 def error(estimated, truth):
     u,_,v=np.linalg.svd(estimated[:3,:3]); r=u@v
@@ -37,5 +37,5 @@ for geometry in ['ring','random']:
         row.update(error(np.array(d['transform_source_to_target']),truth));row.update(converged=d['converged'],forward_fraction=d['aligned_support']['query_fraction'],reverse_fraction=d['aligned_reverse_support']['query_fraction'],rmse_metres=d['aligned_support']['gated_rmse_metres']);row['diagnostics']=d
       except Exception as e:row.update(error_type=type(e).__name__,error=str(e))
       rows.append(row)
-(ROOT/'results.json').write_text(json.dumps(rows,indent=2,allow_nan=False)+'\n')
+(ROOT/'results.json').write_text(json.dumps(rows,indent=2,allow_nan=False)+'\n', encoding='utf-8')
 for row in rows:print({k:v for k,v in row.items() if k!='diagnostics'})

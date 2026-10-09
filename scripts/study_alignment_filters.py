@@ -130,7 +130,7 @@ def main():
                      'Density-based filters may remove legitimate sparse points and retain clustered outliers.',
                      'Support is evaluated on all original 400 source points; proximity is not pose correctness.'],
         rows=rows, summary=summaries)
-    (root/'results.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n')
+    (root/'results.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n', encoding='utf-8')
     table = []
     for item in summaries:
         keep = lambda key: ', '.join(str(x) for x in item[key])
@@ -161,7 +161,7 @@ def main():
         'A low orange bar can still accompany loss of genuine points. The same filtering result is reused across search gates.</p>'
         '<p>Correct poses require rotation error &lt;1 degree and translation error &lt;0.01 m. '
         'JSON includes support on every original point, including removed points. Five synthetic seeds do not establish '
-        'a general filter recommendation; clustered outliers can survive density filters while valid sparse points are lost.</p></html>')
+        'a general filter recommendation; clustered outliers can survive density filters while valid sparse points are lost.</p></html>', encoding='utf-8')
     print(json.dumps(summaries, indent=2))
 
 

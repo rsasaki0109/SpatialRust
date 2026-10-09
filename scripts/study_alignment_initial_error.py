@@ -22,7 +22,7 @@ def matrix(r, t):
 
 def write(path, xyz):
     header = f'VERSION .7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 1 1\nWIDTH {len(xyz)}\nHEIGHT 1\nPOINTS {len(xyz)}\nDATA ascii\n'
-    path.write_text(header + '\n'.join(' '.join(format(float(x), '.9g') for x in p) for p in xyz) + '\n')
+    path.write_text(header + '\n'.join(' '.join(format(float(x), '.9g') for x in p) for p in xyz) + '\n', encoding='utf-8')
 
 def errors(estimated, truth):
     u, _, vh = np.linalg.svd(estimated[:3, :3])
@@ -74,5 +74,5 @@ for degrees in [0, 3, 10, 20, 40]:
                         rotation_errors=[row['rotation_error_degrees'] for row in completed],
                         translation_errors=[row['translation_error_metres'] for row in completed],
                         forward_support=[row['forward_fraction'] for row in completed]))
-(ROOT / 'results.json').write_text(json.dumps(dict(rows=rows, summary=summary), indent=2, allow_nan=False) + '\n')
+(ROOT / 'results.json').write_text(json.dumps(dict(rows=rows, summary=summary), indent=2, allow_nan=False) + '\n', encoding='utf-8')
 print(json.dumps(summary, indent=2))

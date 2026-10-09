@@ -162,8 +162,8 @@ def main():
                   native_sha256=hashlib.sha256(native.read_bytes()).hexdigest(),
                   source_sha256={str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
                   limitations='Synthetic SpatialRust-only paired fraction study; ring one fixture; no universal or real-sensor accuracy claim.')
-    (args.output_dir/'study.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')
-    (args.output_dir/'report.html').write_text(render(rows))
+    (args.output_dir/'study.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n', encoding='utf-8')
+    (args.output_dir/'report.html').write_text(render(rows), encoding='utf-8')
     print(json.dumps(dict(runs=len(rows), recovered=sum(r['recovered'] for r in rows),
                          failures=sum(r['status']=='error' for r in rows)), indent=2))
 

@@ -66,7 +66,7 @@ def main():
     parser.add_argument('--output-dir',type=Path,required=True)
     args=parser.parse_args()
     if args.output_dir.exists():parser.error('output directory exists')
-    result=compare(json.loads(args.before.read_text()),json.loads(args.after.read_text()))
+    result=compare(json.loads(args.before.read_text(encoding='utf-8')),json.loads(args.after.read_text(encoding='utf-8')))
     result['receipt_sha256']={name:hashlib.sha256(path.read_bytes()).hexdigest() for name,path in [('before',args.before),('after',args.after)]}
     rows=[]
     for method,summary in result['methods'].items():
@@ -78,8 +78,8 @@ def main():
         '<th>Gained recoveries</th><th>Regressions</th></tr>'+''.join(rows)+'</table><p>Synthetic local evidence, '
         'not universal superiority. No truth-based pose selection. Collinear generating poses remain ambiguous.</p></html>')
     args.output_dir.mkdir()
-    (args.output_dir/'comparison.json').write_text(json.dumps(result,indent=2,allow_nan=False))
-    (args.output_dir/'report.html').write_text(rendered)
+    (args.output_dir/'comparison.json').write_text(json.dumps(result,indent=2,allow_nan=False), encoding='utf-8')
+    (args.output_dir/'report.html').write_text(rendered, encoding='utf-8')
     print(json.dumps(result['methods']))
 
 

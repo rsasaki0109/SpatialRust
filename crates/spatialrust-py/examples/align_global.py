@@ -143,7 +143,7 @@ def main():
     args=parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory exists')
-    aligned,report=align_global_files(args.source,args.target,json.loads(args.schedule.read_text()),
+    aligned,report=align_global_files(args.source,args.target,json.loads(args.schedule.read_text(encoding='utf-8')),
         global_leaf=args.global_leaf,feature_radius=args.feature_radius,global_distance=args.global_distance,
         ransac_iterations=args.ransac_iterations,normal_neighbors=args.normal_neighbors,seeds=args.seeds,
         max_coarse_points=args.max_coarse_points,minimum_support=args.minimum_support,evaluation_distance=args.evaluation_distance,
@@ -156,9 +156,9 @@ def main():
     args.output_dir.mkdir()
     try:
         sr.write(str(args.output_dir/'aligned.pcd'),aligned)
-        (args.output_dir/'alignment.json').write_text(serialized)
+        (args.output_dir/'alignment.json').write_text(serialized, encoding='utf-8')
         if rendered is not None:
-            (args.output_dir/'report.html').write_text(rendered)
+            (args.output_dir/'report.html').write_text(rendered, encoding='utf-8')
     except Exception:
         shutil.rmtree(args.output_dir)
         raise

@@ -195,8 +195,8 @@ def main():
                    native_sha256=hashlib.sha256(native.read_bytes()).hexdigest(),
                    source_sha256={str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs},
                    numpy_version=np.__version__, limits='Synthetic SpatialRust-only controlled prior study; ring one fixture; no universal ranking or accuracy claim.')
-    (args.output_dir/'study.json').write_text(json.dumps(receipt, indent=2, allow_nan=False)+'\n')
-    (args.output_dir/'report.html').write_text(render(results))
+    (args.output_dir/'study.json').write_text(json.dumps(receipt, indent=2, allow_nan=False)+'\n', encoding='utf-8')
+    (args.output_dir/'report.html').write_text(render(results), encoding='utf-8')
     print(json.dumps(dict(cases=len(results), recovered=sum(r['recovered_generating_pose'] for r in results),
                          false_convergence=sum(r['false_convergence'] for r in results)), indent=2))
 

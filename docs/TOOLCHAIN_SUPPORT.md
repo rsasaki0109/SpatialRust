@@ -71,6 +71,17 @@ it does not establish manylinux portability. Artifacts and receipt are under
 `/workspace/SpatialRust-python-delivery/target/frozen-source-wheel-locked-dist/`
 and `/workspace/SpatialRust-python-delivery/target/frozen-source-wheel-validation/`.
 
+## Locale-independent report files
+
+Report/configuration text IO explicitly uses UTF-8 across the Python alignment
+examples and study tools. Previously both reference-pose and publisher-score
+CLIs failed with `UnicodeEncodeError` when Python UTF-8 mode and locale coercion
+were disabled under `LC_ALL=C`: Japanese provenance and the ≤ symbol could not
+be written, despite the HTML declaring UTF-8. Two CLI regressions reproduce both
+failures before the fix and now verify valid UTF-8 artifacts under those settings.
+The change only specifies text encodings; registration calculations are unchanged.
+This locally verified locale fix does not establish Windows/macOS runtime success.
+
 ## Current stable toolchain
 
 Full CPU vision and Python/native integration are locally tested using Rust 1.99,
