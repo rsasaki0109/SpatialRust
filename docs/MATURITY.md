@@ -17,6 +17,16 @@ improvements and regressions. Local verification is 515 ONNX-enabled Python
 tests and 11 focused batch/plot tests on the Python 3.8 default wheel. The
 assessment remains 80%; broader initialization and platform gates remain open.
 
+Reference-free selection over the 72 saved poses succeeds on 9/12 pairs with
+three native seeds, 10/12 with three Open3D seeds and 11/12 with all six poses.
+Forward and balanced proximity rules reach the same correctness counts. All
+selections precede publisher evaluation; post-fit labels are excluded from the
+ranking function. This identifies complementary global candidates and the one
+pair with no correct final candidate, rather than proving an independent
+production selector. The exploratory evidence leaves maturity at 80%.
+Local verification is 526 ONNX-enabled Python tests and 11 additional selection
+checks on the default CPython 3.8 wheel. Broader platform and dataset gates remain.
+
 The 80% estimate adds hash-bound post-fit stage attribution: among 36 native
 outputs, refinement retains 18 correct initial poses, recovers 5, loses 3 and
 leaves 10 incorrect. All losses occur on one hotel pair, separating refinement

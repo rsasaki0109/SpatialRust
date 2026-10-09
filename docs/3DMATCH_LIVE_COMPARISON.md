@@ -178,3 +178,56 @@ Current-machine artifacts:
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-other-pairs-refinement-plot/paired_scores.png`
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-other-pairs-refinement-plot/paired_scores.svg`
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-other-pairs-refinement-plot/report.html`
+
+## Reference-free multi-candidate selection
+
+`scripts/study_global_candidate_selection.py` rescored all 72 saved poses on the
+same 12 pairs without executing registration. Source and target are independently
+voxelized at 0.05 m once per pair, with 0.05 m forward/reverse distance gates.
+The rules are fixed: maximum forward supported fraction then minimum forward
+RMSE, or maximum harmonic mean of both fractions then minimum worst-direction
+RMSE. Exact ties retain saved candidate order. Neither rule takes reference
+poses, publisher labels or errors as inputs. All selections finish before
+publisher evaluation; reference bytes are hashed beforehand for integrity only.
+
+| Candidate pool | Candidates per pair | Forward selected correct | Balanced selected correct | Post-fit available correct pose |
+| --- | --- | --- | --- | --- |
+| SpatialRust | 3 seeds | 9/12 | 9/12 | 9/12 |
+| Open3D | 3 seeds | 10/12 | 10/12 | 10/12 |
+| Both methods | 6 poses | 11/12 | 11/12 | 11/12 |
+
+These denominators count pairs, unlike the original per-seed 23/36 and 27/36.
+The method pool and three-start compute budget differ, so this is not a claim
+of improved single-run recall or speed. This is exploratory analysis of previously
+examined selected positive pairs, not an independent benchmark or a validated
+production confidence threshold. Downsampling changes the original full-cloud
+support objective. Matching the post-fit available-pose count on these 12 pairs
+does not establish universal optimal selection; balanced scoring adds no
+observed correctness gain here.
+
+The complementarity is concrete: Open3D supplies correct poses for redkitchen
+source 58 to target 7 and source 53 to target 17 where all native poses fail.
+SpatialRust supplies the correct pose for hotel source 27 to target 25 where
+all Open3D poses fail. Both ranking rules recover those available alternatives.
+The remaining pooled failure is hotel source 12 to target 0, where all six final
+poses fail: selection cannot recover an absent correct candidate. Earlier stage
+attribution and fixed-prior trimming identify refinement drift on that pair.
+This distinguishes expanding global candidate coverage from protecting a good
+initializer during refinement. No ground-truth-informed trim/method switch is
+installed in the ordinary API, and Open3D remains outside the native core.
+
+The CLI binds manifest, input clouds, comparisons, references, metadata, native
+extension and helpers by SHA-256 and rejects changes. Error candidates stay in
+the planned pool and an unavailable selection stays in the pair denominator.
+It writes JSON, an exact HTML table, and a standalone SVG for both fixed rules.
+
+```bash
+python scripts/study_global_candidate_selection.py --cases CASES/cases.json \
+  --comparisons COMPARISONS --output-dir SELECTION
+```
+
+Current-machine artifacts:
+
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-global-candidate-selection-delivered/study.json`
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-global-candidate-selection-delivered/report.html`
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-global-candidate-selection-delivered/selection.svg`
