@@ -49,6 +49,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Bounded multistart alignment study compares candidate search with SOR, selects
+  by original-source support without ground-truth labels, and records compute
+  cost, failures and known-pose assessment in JSON/HTML.
 - Filter study HTML compares genuine and nonmatching point retention with
   mean/range bars and denominators, alongside registration success counts.
 - Python outlier-filter attribute regressions verify complete row selection and
