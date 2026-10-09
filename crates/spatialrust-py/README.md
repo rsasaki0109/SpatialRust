@@ -376,3 +376,10 @@ The output is a separate cloud; inputs are unchanged. Policy parsing and Python
 result construction remain under the GIL. Concurrency tests cover explicit CPU
 policy, not GPU execution or cross-policy deterministic ordering. This does not
 provide cancellation or guarantee parallel speedup.
+
+Python wheel CI checks the extension crate itself with
+`cargo clippy --manifest-path crates/spatialrust-py/Cargo.toml -- -D warnings`
+before building the wheel. This is necessary because the extension has its own
+Cargo workspace. Type signatures are also checked against the runtime using
+mypy.stubtest and the existing explicit allowlist. These checks do not claim
+complete semantic type validation or cover optional-feature builds.

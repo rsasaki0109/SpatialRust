@@ -2617,7 +2617,7 @@ fn filter2d_image<'py>(
 thread_local! {
     /// Reused by convenience calls that omit an explicit Gaussian workspace.
     static POOLED_GAUSSIAN_BLUR_WORKSPACE: std::cell::RefCell<GaussianBlurU8Workspace> =
-        std::cell::RefCell::new(GaussianBlurU8Workspace::new());
+        const { std::cell::RefCell::new(GaussianBlurU8Workspace::new()) };
 }
 
 /// Explicit reusable host scratch storage for RGB uint8 Gaussian blur.
@@ -3164,7 +3164,7 @@ thread_local! {
     /// Reused across `morphology_image` calls that omit an explicit workspace, so the
     /// convenience Python entry point does not re-allocate every scratch buffer on each call.
     static POOLED_RECT_MORPHOLOGY_WORKSPACE: std::cell::RefCell<RectMorphologyWorkspace> =
-        std::cell::RefCell::new(RectMorphologyWorkspace::new());
+        const { std::cell::RefCell::new(RectMorphologyWorkspace::new()) };
 }
 
 fn morphology_rect_dispatch_into(
@@ -3289,6 +3289,8 @@ fn morphology_rect_python<'py>(
 
 #[pyfunction]
 #[pyo3(signature = (image, operation, kernel_width, kernel_height, shape="rect", iterations=1, out=None, workspace=None))]
+// Keep the existing Python keyword API; grouping arguments would break callers.
+#[allow(clippy::too_many_arguments)]
 fn morphology_image<'py>(
     py: Python<'py>,
     image: PyReadonlyArray2<'_, u8>,
@@ -3582,7 +3584,7 @@ thread_local! {
     /// Reused across `canny_image` calls that omit an explicit workspace, so the
     /// convenience Python entry point does not re-allocate every scratch buffer on each call.
     static POOLED_CANNY_WORKSPACE: std::cell::RefCell<CannyWorkspace> =
-        std::cell::RefCell::new(CannyWorkspace::new());
+        const { std::cell::RefCell::new(CannyWorkspace::new()) };
 }
 
 /// Detects edges in a grayscale uint8 image with Canny hysteresis.
@@ -4542,7 +4544,7 @@ thread_local! {
     /// Reused across `distance_transform_edt` calls that omit an explicit workspace, so the
     /// convenience Python entry point does not re-allocate every scratch buffer on each call.
     static POOLED_EDT_WORKSPACE: std::cell::RefCell<DistanceTransformWorkspace> =
-        std::cell::RefCell::new(DistanceTransformWorkspace::new());
+        const { std::cell::RefCell::new(DistanceTransformWorkspace::new()) };
 }
 
 /// Computes the exact Euclidean distance to the nearest zero-valued mask pixel.

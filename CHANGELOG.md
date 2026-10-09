@@ -668,6 +668,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Python workspace caches use const thread-local initialization, and Python
+  wheel CI checks the extension crate with warning-strict Clippy.
+
 - Streaming memory reservations use an overflow-checked compare/exchange loop,
   removing a Rust 1.99 deprecation while preserving budget and release semantics.
 
