@@ -795,7 +795,14 @@ def register_icp(
     target: PointCloud,
     max_correspondence_distance: float = ...,
     max_iterations: int = ...,
-) -> RegistrationResult: ...
+) -> RegistrationResult:
+    """Point-to-point source-to-target ICP, with native work outside the GIL.
+
+    Raises ValueError for zero iterations, an invalid distance gate, fewer than
+    three points, or nonfinite XYZ in either input. Native registration failures
+    propagate as RuntimeError. Convergence does not certify pose correctness.
+    """
+    ...
 def register_point_to_plane(
     source: PointCloud,
     target: PointCloud,

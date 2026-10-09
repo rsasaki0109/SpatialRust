@@ -2114,11 +2114,25 @@ fn register_icp(
     max_correspondence_distance: f32,
     max_iterations: usize,
 ) -> PyResult<PyRegistrationResult> {
+    let squared_gate = max_correspondence_distance * max_correspondence_distance;
+    if max_correspondence_distance <= 0.0 || !squared_gate.is_finite() || squared_gate == 0.0 {
+        return Err(PyValueError::new_err("max_correspondence_distance must be positive with finite nonzero f32 square"));
+    }
+    if max_iterations == 0 {
+        return Err(PyValueError::new_err("max_iterations must be at least 1"));
+    }
     let config = IcpConfig { max_correspondence_distance, max_iterations, ..IcpConfig::default() };
     let source = &source.inner;
     let target = &target.inner;
-    let result = py.allow_threads(|| IcpRegistration::new(config).align(source, target))
-        .map_err(to_py_err)?;
+    let result = py.allow_threads(|| {
+        for (name, cloud) in [("source", source), ("target", target)] {
+            let (x, y, z) = cloud.positions3().map_err(to_py_err)?;
+            if cloud.len() < 3 || x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+                return Err(PyValueError::new_err(format!("{name} requires at least 3 finite XYZ points")));
+            }
+        }
+        IcpRegistration::new(config).align(source, target).map_err(to_py_err)
+    })?;
     Ok(PyRegistrationResult::from_result(&result))
 }
 

@@ -243,16 +243,47 @@ def test_icp_releases_gil_and_shared_inputs_are_consistent():
             assert (other.iterations, other.converged, other.fitness) == (result.iterations, result.converged, result.fitness)
 
 
+def test_public_icp_invalid_parameters_and_clouds():
+    valid = sr.PointCloud.from_xyz(np.array([[0,0,0],[1,0,0],[0,1,0]], dtype=np.float32))
+    for distance in (0, -1, float('nan'), float('inf'), 1e30, 1e-30):
+        try:
+            sr.register_icp(valid, valid, distance, 10)
+        except ValueError as error:
+            assert 'max_correspondence_distance' in str(error)
+        else:
+            raise AssertionError('invalid distance accepted')
+    try:
+        sr.register_icp(valid, valid, .1, 0)
+    except ValueError as error:
+        assert 'max_iterations' in str(error)
+    else:
+        raise AssertionError('zero iterations accepted')
+    for xyz in (np.empty((0,3), dtype=np.float32), np.zeros((2,3), dtype=np.float32),
+                np.array([[0,0,0],[1,0,0],[0,np.nan,0]], dtype=np.float32)):
+        invalid = sr.PointCloud.from_xyz(xyz)
+        for source, target, name in ((invalid,valid,'source'), (valid,invalid,'target')):
+            try:
+                sr.register_icp(source, target, .1, 10)
+            except ValueError as error:
+                assert name in str(error)
+            else:
+                raise AssertionError('invalid cloud accepted')
+    # Rejection must not damage later valid calls or input ownership.
+    result = sr.register_icp(valid, valid, .1, 10)
+    np.testing.assert_allclose(result.transform(), np.eye(4), atol=1e-6)
+
+
 if __name__ == '__main__':
     test_invalid_settings_before_io()
     test_invalid_initial_poses_before_io()
     test_native_support_direction_missing_and_invalid()
     test_support_releases_gil_and_shared_queries_are_consistent()
     test_icp_releases_gil_and_shared_inputs_are_consistent()
+    test_public_icp_invalid_parameters_and_clouds()
     for test in (test_full_resolution_roundtrip_and_transform_direction,
                  test_disjoint_inputs_do_not_publish_results, test_coarse_cloud_too_small_has_actionable_error,
                  test_nonfinite_inputs_rejected, test_write_failure_cleans_reserved_output,
                  test_rotated_initial_pose_cli_and_composition, test_full_resolution_refines_voxel_bias):
         with tempfile.TemporaryDirectory() as directory:
             test(Path(directory))
-    print('Python alignment pipeline: PASS (12 groups, real bindings and subprocess CLI)')
+    print('Python alignment pipeline: PASS (13 groups, real bindings and subprocess CLI)')

@@ -328,3 +328,15 @@ Waiting on `result()` still blocks that caller. This adds neither cancellation
 nor guaranteed speedup, and simultaneous calls increase CPU/memory demand.
 Integration checks prevent interpreter time-slicing from masking the GIL release
 and compare poses/diagnostics from concurrent calls on the same input clouds.
+
+Direct `register_icp` calls validate both clouds before registration: each must
+contain at least three finite XYZ points. `max_iterations` must be at least one,
+and correspondence distance must be positive with finite nonzero f32 square.
+These violations raise `ValueError` with the parameter or input name. Python
+argument extraction can independently raise `TypeError`/`OverflowError` (for
+example, negative values for an unsigned iteration count). Other native alignment
+failures retain `RuntimeError`; a nonconverged result is still returned when the
+kernel completes its budget. Input validation runs outside the GIL without
+whole-cloud copies. Tests cover both source and target rejection and valid
+reuse after errors. This clarifies provisional API behavior, not a new stable
+API declaration or a degeneracy/pose correctness guarantee.
