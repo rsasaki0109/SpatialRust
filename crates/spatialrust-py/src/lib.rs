@@ -114,7 +114,8 @@ use spatialrust::vision::{
     sobel_l1_magnitude_u8_into as sobel_l1_magnitude_u8_into_op,
     sobel_threshold_3x3_u8 as sobel_threshold_3x3_u8_op,
     sobel_threshold_3x3_u8_into as sobel_threshold_3x3_u8_into_op, soft_nms as soft_nms_op,
-    solve_pnp as solve_pnp_op, spatial_gradient_u8 as spatial_gradient_u8_op,
+    solve_pnp as solve_pnp_op, solve_pnp_ransac as solve_pnp_ransac_op,
+    spatial_gradient_u8 as spatial_gradient_u8_op,
     spatial_gradient_u8_into as spatial_gradient_u8_into_op,
     stereo_block_match as stereo_block_match_op, stitch_panorama_pair as stitch_panorama_pair_op,
     threshold as threshold_op, AbsolutePose, AdaptiveThresholdMethod, BilinearResizeU8Plan,
@@ -4044,6 +4045,46 @@ fn solve_pnp<'py>(
     Ok((mat3_to_numpy(py, pose.rotation()), translation))
 }
 
+type PnpRansacOutput<'py> = (
+    Bound<'py, PyArray2<f64>>, Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray1<bool>>, Bound<'py, PyArray1<f64>>,
+);
+
+/// Deterministic six-point RANSAC PnP, returning R, t, inlier mask and pixel residuals.
+/// Owns correspondence scalars before releasing the GIL; no caller pose is used.
+#[pyfunction]
+#[pyo3(signature = (object_points, image_points, fx, fy, cx, cy, width=640, height=480, *, threshold=3.0, confidence=0.99, max_iterations=2000, seed=0))]
+#[allow(clippy::too_many_arguments)] // Explicit calibrated camera and robust-estimation controls.
+fn solve_pnp_ransac<'py>(
+    py: Python<'py>, object_points: PyReadonlyArray2<'_, f64>,
+    image_points: PyReadonlyArray2<'_, f64>, fx: f64, fy: f64, cx: f64, cy: f64,
+    width: usize, height: usize, threshold: f64, confidence: f64, max_iterations: usize, seed: u64,
+) -> PyResult<PnpRansacOutput<'py>> {
+    let options = RobustEstimationOptions { threshold, confidence, max_iterations, seed }
+        .validate().map_err(to_py_err)?;
+    if width == 0 || height == 0 {
+        return Err(PyValueError::new_err("camera width and height must be positive"));
+    }
+    let camera = CameraMatrix3::from_intrinsics(
+        CameraIntrinsics::try_new(fx, fy, cx, cy, width, height).map_err(to_py_err)?,
+    );
+    let objects = object_points.as_array();
+    let images = image_points.as_array();
+    if objects.shape()[1] != 3 || images.shape()[1] != 2 || objects.shape()[0] != images.shape()[0] || objects.shape()[0] < 6 {
+        return Err(PyValueError::new_err("robust PnP requires matching Nx3/Nx2 arrays with at least 6 rows"));
+    }
+    let pairs = objects.outer_iter().zip(images.outer_iter()).map(|(object, image)| {
+        ObjectImageCorrespondence::try_new(Vec3::new(object[0], object[1], object[2]),
+            Vec2 { x: image[0], y: image[1] }).map_err(to_py_err)
+    }).collect::<PyResult<Vec<_>>>()?;
+    let estimate = py.allow_threads(|| solve_pnp_ransac_op(&pairs, camera, options).map_err(to_py_err))?;
+    let pose = estimate.model();
+    Ok((mat3_to_numpy(py, pose.rotation()),
+        numpy::PyArray1::from_vec_bound(py, vec![pose.translation().x, pose.translation().y, pose.translation().z]),
+        numpy::PyArray1::from_vec_bound(py, estimate.inliers().to_vec()),
+        numpy::PyArray1::from_vec_bound(py, estimate.residuals().to_vec())))
+}
+
 /// Estimates metric RGB-D odometry from source depth and pixel tracks.
 #[pyfunction]
 #[pyo3(signature = (depth, source, target, fx, fy, cx, cy, depth_scale=1.0, threshold=1.0))]
@@ -4955,6 +4996,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(orb_features, m)?)?;
     m.add_function(wrap_pyfunction!(estimate_homography_ransac, m)?)?;
     m.add_function(wrap_pyfunction!(solve_pnp, m)?)?;
+    m.add_function(wrap_pyfunction!(solve_pnp_ransac, m)?)?;
     m.add_function(wrap_pyfunction!(estimate_rgbd_odometry, m)?)?;
     m.add_function(wrap_pyfunction!(gray_world_white_balance_image, m)?)?;
     m.add_function(wrap_pyfunction!(stitch_panorama_pair, m)?)?;

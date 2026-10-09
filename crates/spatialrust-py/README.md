@@ -459,6 +459,38 @@ have rank six, whereas uniform planar normal constraints have rank three.
 A symmetric ring can still have full local rank and multiple global poses.
 These are conditional local geometry diagnostics, not noise covariance or confidence.
 
+For calibrated 3D-to-2D pose with incorrect correspondences, use
+`solve_pnp_ransac` instead of fitting every pair with `solve_pnp`:
+
+```python
+rotation, translation, inliers, residual_pixels = sr.solve_pnp_ransac(
+    object_points, image_points, fx, fy, cx, cy,
+    threshold=3.0, confidence=.99, max_iterations=2000, seed=7)
+```
+
+Inputs are float64 Nx3/Nx2 arrays with at least six matching rows. The returned
+pose maps object coordinates to camera coordinates; translation uses the input
+object's units. It is a pinhole model: distortion must be handled before solving.
+Correspondence scalars are owned before native six-point RANSAC runs outside the
+GIL. The returned bool mask and pixel residuals cover every original row, and
+are independent owned arrays. Unprojectable rows have the maximum finite float64
+residual. Threshold/confidence/budget and finite inputs are checked; width and
+height must be positive. A model accepted by RANSAC is not a pose certificate.
+
+Optional direct OpenCV failure study:
+
+```bash
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/compare_pnp_failures.py \
+  --output-dir target/opencv-pnp-study
+```
+
+The study compares plain/robust methods on volume, thin, plane and line geometry,
+with image noise and 30% wrong correspondences. Initializers and minimal sample
+sizes differ. Current evidence shows RANSAC helps volumetric outliers, while the
+SpatialRust DLT initializer remains weak for planar/near-planar geometry. JSON
+and HTML retain failures, input/native hashes and full-row independent metrics;
+neither a universal speed advantage nor OpenCV accuracy parity is claimed.
+
 For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
 
 ```bash
