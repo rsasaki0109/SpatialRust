@@ -24,12 +24,22 @@ pub const FPFH_DESCRIPTOR_LEN: usize = FPFH_DIM;
 /// A single FPFH descriptor.
 pub type FpfhDescriptor = [f32; FPFH_DIM];
 
+fn validate_distance(distance: f32, name: &str) -> SpatialResult<()> {
+    let squared = distance * distance;
+    if !distance.is_finite() || distance <= 0.0 || !squared.is_finite() || squared == 0.0 {
+        return Err(SpatialError::InvalidArgument(format!(
+            "{name} must be positive with finite nonzero f32 square"
+        )));
+    }
+    Ok(())
+}
+
 /// Internal shorthand kept for the existing call sites.
 type Descriptor = FpfhDescriptor;
 
 /// Computes an FPFH descriptor for every point in `cloud`.
 ///
-/// The cloud must carry normals. `feature_radius` is the neighborhood radius
+/// The cloud must carry finite unit normals and finite positions. `feature_radius` is the neighborhood radius
 /// used to build each descriptor (≈5× the point spacing is a good start). This
 /// is the reusable building block behind [`FpfhRansacRegistration`]; compute it
 /// once on a keypoint cloud to drive descriptor-based matching cheaply.
@@ -37,9 +47,7 @@ pub fn fpfh_descriptors(
     cloud: &PointCloud,
     feature_radius: f32,
 ) -> SpatialResult<Vec<FpfhDescriptor>> {
-    if feature_radius <= 0.0 || feature_radius.is_nan() {
-        return Err(SpatialError::InvalidArgument("feature_radius must be positive".to_owned()));
-    }
+    validate_distance(feature_radius, "feature_radius")?;
     let set = PointSet::from_cloud(cloud)?;
     Ok(compute_fpfh(&set, feature_radius))
 }
@@ -77,6 +85,31 @@ impl Default for FpfhRansacConfig {
 }
 
 impl FpfhRansacConfig {
+    /// Validates numerical and sampling settings before computing descriptors.
+    pub fn validate(&self) -> SpatialResult<()> {
+        validate_distance(self.feature_radius, "feature_radius")?;
+        validate_distance(self.max_correspondence_distance, "max_correspondence_distance")?;
+        if self.ransac_iterations == 0 {
+            return Err(SpatialError::InvalidArgument(
+                "ransac_iterations must be positive".to_owned(),
+            ));
+        }
+        if self.sample_size < 3 || self.sample_size.checked_mul(8).is_none() {
+            return Err(SpatialError::InvalidArgument(
+                "sample_size must be at least 3 without overflow".to_owned(),
+            ));
+        }
+        if !self.edge_length_tolerance.is_finite()
+            || self.edge_length_tolerance <= 0.0
+            || self.edge_length_tolerance > 1.0
+        {
+            return Err(SpatialError::InvalidArgument(
+                "edge_length_tolerance must be finite in (0, 1]".to_owned(),
+            ));
+        }
+        Ok(())
+    }
+
     /// Creates a config from the feature radius and inlier distance.
     #[must_use]
     pub fn with_radius(feature_radius: f32, max_correspondence_distance: f32) -> Self {
@@ -88,7 +121,7 @@ impl FpfhRansacConfig {
 ///
 /// Both `source` and `target` must carry normals (e.g. from normal estimation);
 /// FPFH is built from the angular relationships between a point's normal and its
-/// neighbors' normals, so normals are mandatory.
+/// neighbors' normals, so finite unit normals are mandatory.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FpfhRansacRegistration {
     config: FpfhRansacConfig,
@@ -114,17 +147,10 @@ impl PointCloudRegistration for FpfhRansacRegistration {
     }
 
     fn align(&self, source: &PointCloud, target: &PointCloud) -> SpatialResult<RegistrationResult> {
-        if self.config.feature_radius <= 0.0 || self.config.feature_radius.is_nan() {
+        self.config.validate()?;
+        if source.len() < self.config.sample_size || target.len() < self.config.sample_size {
             return Err(SpatialError::InvalidArgument(
-                "feature_radius must be positive".to_owned(),
-            ));
-        }
-        if self.config.sample_size < 3 {
-            return Err(SpatialError::InvalidArgument("sample_size must be at least 3".to_owned()));
-        }
-        if source.is_empty() || target.is_empty() {
-            return Err(SpatialError::InvalidArgument(
-                "source and target must be non-empty".to_owned(),
+                "source and target must contain at least sample_size points".to_owned(),
             ));
         }
 
@@ -229,6 +255,35 @@ impl PointSet {
         let points: Vec<Vec3<f32>> = (0..x.len()).map(|i| Vec3::new(x[i], y[i], z[i])).collect();
         let normals: Vec<Vec3<f32>> =
             (0..nx.len()).map(|i| Vec3::new(nx[i], ny[i], nz[i])).collect();
+        if points.iter().any(|p| !p.x.is_finite() || !p.y.is_finite() || !p.z.is_finite()) {
+            return Err(SpatialError::InvalidArgument("FPFH positions must be finite".to_owned()));
+        }
+        if !points.is_empty() {
+            let extent_squared: f64 = [x, y, z]
+                .iter()
+                .map(|axis| {
+                    let lo = axis.iter().copied().fold(f32::INFINITY, f32::min);
+                    let hi = axis.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+                    (f64::from(hi) - f64::from(lo)).powi(2)
+                })
+                .sum();
+            if !(extent_squared as f32).is_finite() {
+                return Err(SpatialError::InvalidArgument(
+                    "FPFH coordinate extent overflows f32 squared distances".to_owned(),
+                ));
+            }
+        }
+        if normals.iter().any(|n| {
+            !n.x.is_finite()
+                || !n.y.is_finite()
+                || !n.z.is_finite()
+                || !n.length_squared().is_finite()
+                || (n.length_squared() - 1.0).abs() > 1e-3
+        }) {
+            return Err(SpatialError::InvalidArgument(
+                "FPFH normals must be finite unit vectors".to_owned(),
+            ));
+        }
         let tree = KdTree::from_slices(x, y, z);
         Ok(Self { points, normals, tree })
     }
@@ -381,7 +436,8 @@ struct Lcg {
 impl Lcg {
     fn new(seed: u64) -> Self {
         // Avoid a zero state, which xorshift cannot escape.
-        Self { state: seed ^ 0x9e37_79b9_7f4a_7c15 }
+        let state = seed ^ 0x9e37_79b9_7f4a_7c15;
+        Self { state: if state == 0 { 1 } else { state } }
     }
 
     fn next_u32(&mut self) -> u32 {
@@ -494,5 +550,73 @@ mod tests {
         // so a non-degenerate point's bins should sum to a positive value.
         let total: f32 = descriptors[descriptors.len() / 2].iter().sum();
         assert!(total > 0.0);
+    }
+
+    #[test]
+    fn validates_configuration_before_descriptor_work() {
+        for value in [0.0, -1.0, f32::NAN, f32::INFINITY, f32::MAX, f32::MIN_POSITIVE] {
+            assert!(FpfhRansacConfig { feature_radius: value, ..FpfhRansacConfig::default() }
+                .validate()
+                .is_err());
+            assert!(FpfhRansacConfig {
+                max_correspondence_distance: value,
+                ..FpfhRansacConfig::default()
+            }
+            .validate()
+            .is_err());
+        }
+        for value in [0.0, -1.0, 1.1, f32::NAN, f32::INFINITY] {
+            assert!(FpfhRansacConfig {
+                edge_length_tolerance: value,
+                ..FpfhRansacConfig::default()
+            }
+            .validate()
+            .is_err());
+        }
+        for value in [0, 2, usize::MAX] {
+            assert!(FpfhRansacConfig { sample_size: value, ..FpfhRansacConfig::default() }
+                .validate()
+                .is_err());
+        }
+        assert!(FpfhRansacConfig { ransac_iterations: 0, ..FpfhRansacConfig::default() }
+            .validate()
+            .is_err());
+        assert!(FpfhRansacConfig::default().validate().is_ok());
+    }
+
+    #[test]
+    fn rejects_nonfinite_positions_and_nonunit_normals() {
+        let (mut points, mut normals) = corner_cloud();
+        points[0].x = f32::NAN;
+        assert!(super::fpfh_descriptors(&build_cloud(&points, &normals), 0.2).is_err());
+        points[0].x = 0.0;
+        for normal in
+            [Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 2.0), Vec3::new(f32::INFINITY, 0.0, 1.0)]
+        {
+            normals[0] = normal;
+            assert!(super::fpfh_descriptors(&build_cloud(&points, &normals), 0.2).is_err());
+        }
+        assert!(FpfhRansacRegistration::new(FpfhRansacConfig::default())
+            .align(&build_cloud(&points[..2], &normals[..2]), &build_cloud(&points, &normals))
+            .is_err());
+    }
+
+    #[test]
+    fn all_seeds_produce_a_nonzero_rng_state() {
+        let mut rng = super::Lcg::new(0x9e37_79b9_7f4a_7c15);
+        assert!((0..8).any(|_| rng.next_u32() != 0));
+    }
+
+    #[test]
+    fn rejects_overflowing_extent_and_oversized_samples() {
+        let (mut points, normals) = corner_cloud();
+        let ordinary = build_cloud(&points, &normals);
+        let config =
+            FpfhRansacConfig { sample_size: ordinary.len() + 1, ..FpfhRansacConfig::default() };
+        assert!(FpfhRansacRegistration::new(config).align(&ordinary, &ordinary).is_err());
+        points[0].x = f32::MAX;
+        points[1].x = -f32::MAX;
+        let error = super::fpfh_descriptors(&build_cloud(&points, &normals), 0.2).unwrap_err();
+        assert!(error.to_string().contains("extent"));
     }
 }

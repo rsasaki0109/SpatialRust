@@ -1,9 +1,16 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **58%, provisional**. This is a subjective
+Current assessment (2026-10-10): **59%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 59% estimate adds validated native FPFH/RANSAC configuration, finite/unit
+input checks, rejection of overflowing geometry, a corrected zero RNG state,
+Python reproducible seeds, bounded normal-estimation scratch, and GIL release.
+Validation includes 29 CPU-registration tests, 334 Python tests, strict Clippy
+and stubtest. Global hypothesis quality and the separate keypoint Python path
+remain limitations; boundary correctness is not evidence of better accuracy.
 
 The 58% assessment adds a direct controlled Open3D 0.19.0 comparison: 468 runs,
 234 paired conditions, shared original-source evaluation and source/native
