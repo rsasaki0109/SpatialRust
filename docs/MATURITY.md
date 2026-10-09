@@ -1,9 +1,19 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **74%, provisional**. This is a subjective
+Current assessment (2026-10-10): **75%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 75% estimate adds strict Redwood/3DMatch reference binding with verified
+source/target convention, pair-ID matching, original file hashes, and saved-log
+evaluation using the publisher information metric. 2,563 GT/information records
+across 12 official metadata scenes validate. Historical log analysis demonstrates
+complementary correct-pair sets without claiming a deployable oracle selector.
+470 Python tests pass; 20 new checks pass with the isolated default wheel too.
+The actual fragment download host is 3dvision.princeton.edu and remains blocked;
+metadata validation and historical logs do not establish current native accuracy
+on those scenes. The 90% runtime/data/operational evidence gates remain open.
 
 The 74% estimate repairs an observed Rust 1.75 compatibility failure by pinning
 the compatible thiserror release and adding a fresh-resolution CI gate. Rust
