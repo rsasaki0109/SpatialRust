@@ -248,6 +248,27 @@ def test_native_support_direction_missing_and_invalid():
             raise AssertionError('invalid cloud accepted')
 
 
+def test_support_matches_brute_force_including_gate_boundary():
+    rng = np.random.default_rng(43)
+    target = rng.uniform(-1, 1, (77, 3)).astype(np.float32)
+    query = rng.uniform(-1, 1, (91, 3)).astype(np.float32)
+    delta = query[:, None, :] - target[None, :, :]
+    nearest = (delta[..., 0]**2 + delta[..., 1]**2 + delta[..., 2]**2).min(axis=1)
+    gate = np.float32(.25)
+    accepted = nearest[nearest <= gate*gate]
+    result = sr.distance_gated_support(sr.PointCloud.from_xyz(query), sr.PointCloud.from_xyz(target), float(gate))
+    assert result[0] == len(accepted)
+    assert result[1] == len(accepted) / len(query)
+    np.testing.assert_allclose(result[2], np.sqrt(accepted.astype(np.float64).mean()), rtol=1e-7)
+    # Exact gate, tied/duplicate references, outside gate, then an exact match:
+    # every query must clear the reusable neighbor buffer.
+    references = sr.PointCloud.from_xyz(np.array([[0, 0, 0], [0, 0, 0]], np.float32))
+    queries = sr.PointCloud.from_xyz(np.array([[.25, 0, 0], [2, 0, 0], [0, 0, 0]], np.float32))
+    count, fraction, rmse = sr.distance_gated_support(queries, references, .25)
+    assert (count, fraction) == (2, 2 / 3)
+    assert rmse == np.sqrt(.25**2 / 2)
+
+
 def test_support_releases_gil_and_shared_queries_are_consistent():
     xyz = np.random.default_rng(7).uniform(-1, 1, (120000, 3)).astype(np.float32)
     cloud = sr.PointCloud.from_xyz(xyz)
