@@ -398,19 +398,35 @@ fn push_to_field(
         .get_mut(name)
         .ok_or_else(|| pcd_format(format!("buffer missing for field `{name}`")))?;
 
+    let integer_bounds = match field.dtype {
+        DType::U8 => Some((0.0, f64::from(u8::MAX))),
+        DType::U16 => Some((0.0, f64::from(u16::MAX))),
+        DType::I32 => Some((f64::from(i32::MIN), f64::from(i32::MAX))),
+        DType::U32 => Some((0.0, f64::from(u32::MAX))),
+        _ => None,
+    };
+    if let Some((min, max)) = integer_bounds {
+        if !value.is_finite() || value.fract() != 0.0 || value < min || value > max {
+            return Err(pcd_parse(format!(
+                "invalid integer value `{value}` for field `{name}` ({:?})",
+                field.dtype
+            )));
+        }
+    }
+
     match field.dtype {
         DType::F32 | DType::F16 => buffer.push_f32(value as f32).map_err(IoError::from),
         DType::F64 => buffer.push_f64(value).map_err(IoError::from),
-        DType::U8 => buffer.push_u8(value.round() as u8).map_err(IoError::from),
-        DType::U16 => buffer.push_u16(value.round() as u16).map_err(IoError::from),
-        DType::I32 => buffer.push_i32(value.round() as i32).map_err(IoError::from),
+        DType::U8 => buffer.push_u8(value as u8).map_err(IoError::from),
+        DType::U16 => buffer.push_u16(value as u16).map_err(IoError::from),
+        DType::I32 => buffer.push_i32(value as i32).map_err(IoError::from),
         DType::U32 => {
             let PointBuffer::U32(values) = buffer else {
                 return Err(IoError::Core(spatialrust_core::SpatialError::UnsupportedDType(
                     field.dtype,
                 )));
             };
-            values.push(value.round() as u32);
+            values.push(value as u32);
             Ok(())
         }
     }
@@ -802,6 +818,37 @@ mod tests {
             let input = format!("FIELDS x y z rgb\nSIZE 4 4 4 {size}\nTYPE F F F {kind}\nCOUNT 1 1 1 {count}\nPOINTS 1\nDATA ascii\n");
             let error = read_pcd(&mut Cursor::new(input)).unwrap_err();
             assert!(error.to_string().contains("packed rgb requires"));
+        }
+    }
+
+    #[test]
+    fn ascii_integer_attributes_reject_fractional_nonfinite_and_out_of_range_values() {
+        for (kind, size, invalid, valid) in [
+            ("U", 1, vec!["-1", "256", "0.5", "NaN", "inf"], "255"),
+            ("U", 2, vec!["-1", "65536", "1.5", "NaN", "-inf"], "65535"),
+            ("U", 4, vec!["-1", "4294967296", "1.5", "NaN", "inf"], "4294967295"),
+            ("I", 4, vec!["-2147483649", "2147483648", "-1.5", "NaN", "inf"], "-2147483648"),
+        ] {
+            let header = format!("FIELDS x y z label\nSIZE 4 4 4 {size}\nTYPE F F F {kind}\nCOUNT 1 1 1 1\nPOINTS 1\nDATA ascii\n");
+            for value in invalid {
+                let input = format!("{header}0 0 0 {value}\n");
+                let error = read_pcd(&mut Cursor::new(&input)).unwrap_err();
+                assert!(error.to_string().contains("invalid integer value"), "{error}");
+                #[cfg(feature = "streaming")]
+                {
+                    use spatialrust_records::{
+                        BoundedSpatialRecordSource, CancellationToken, MemoryBudget, StreamOptions,
+                    };
+                    let mut source = super::PcdChunkSource::new(
+                        Cursor::new(input),
+                        StreamOptions::new(1, MemoryBudget::new(32).unwrap()).unwrap(),
+                        CancellationToken::default(),
+                    )
+                    .unwrap();
+                    assert!(source.next_chunk().unwrap().is_err());
+                }
+            }
+            assert!(read_pcd(&mut Cursor::new(format!("{header}0 0 0 {valid}\n"))).is_ok());
         }
     }
 
