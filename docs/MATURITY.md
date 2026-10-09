@@ -5,6 +5,18 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
+The fixed other-pair trim validation adds 66 actual refinements on the other
+11 official pairs, excluding the exploratory hotel pair. With the same 33
+generated priors, retaining 0.8 improves publisher correctness from 23/33 to
+24/33: one gain, zero losses, eight failures in both settings. Some scores worsen
+without crossing the correctness threshold. This is conditional evidence on
+previously examined pairs, not an independent blind benchmark or a reason to
+change the default. Hash-bound per-case checkpoints resume the complete real
+study without fitting again; standalone PNG/SVG and exact tables expose both
+improvements and regressions. Local verification is 515 ONNX-enabled Python
+tests and 11 focused batch/plot tests on the Python 3.8 default wheel. The
+assessment remains 80%; broader initialization and platform gates remain open.
+
 The 80% estimate adds hash-bound post-fit stage attribution: among 36 native
 outputs, refinement retains 18 correct initial poses, recovers 5, loses 3 and
 leaves 10 incorrect. All losses occur on one hotel pair, separating refinement

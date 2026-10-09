@@ -87,7 +87,8 @@ support also decreases from a median 0.514 to approximately 0.467–0.473. Thus
 neither larger proximity support nor a single rotation threshold describes this
 result adequately. The intervention supports sensitivity to retained residuals;
 it does not isolate physical outliers, prove a universal best fraction, or justify
-changing default trimming. Other cases still require prospective paired replay.
+changing default trimming. Other cases require paired replay; the fixed other-pair study below supplies
+conditional validation rather than independent blind evidence.
 
 `scripts/evaluate_3dmatch_refinement.py` checks the replay/comparison/reference
 hash bindings, identical native build and initial matrices, complete unique
@@ -127,3 +128,53 @@ Current-machine artifacts:
 
 The data and large generated results remain outside Git. The aggregate records
 that registration was not re-executed and retains hashes of original child receipts.
+
+## Fixed other-pair validation
+
+After selecting 0.8 in the exploratory hotel replay, all other 11 pairs of the
+original manifest are compared against 1.0. The pilot pair
+`sun3d-hotel_umd-maryland_hotel3-12-to-0` is excluded. Original baseline outcomes
+were already examined: this is conditional validation, not an unseen benchmark.
+Three saved generated priors per pair yield 66 refinements without new RANSAC.
+
+| Retained fraction | Evaluated/planned | Publisher correct | Gains | Losses |
+| --- | --- | --- | --- | --- |
+| 1.0 | 33/33 | 23 | 0 | 0 |
+| 0.8 | 33/33 | 24 | 1 | 0 |
+
+All 33 controls reproduce original final matrices exactly. The single recovery
+is hotel source 27 to target 25, seed 8: squared publisher score drops from
+0.09821798 to 0.02204845 (threshold 0.04). Eight outputs remain incorrect.
+Trimming does not repair the large-error redkitchen initializations. No success
+becomes incorrect, but error can increase: hotel source 36 to target 34, seed 8,
+rises from 0.00060383 to 0.01152939 while remaining correct. Counts alone hide
+regressions; default trimming remains unchanged.
+
+`scripts/study_3dmatch_refinement_cases.py` freezes input, native, helper,
+reference and parameter hashes before fitting. Per-case checkpoints retain
+errors in planned denominators; `--resume` rejects incompatible plans or changed
+artifacts. A complete real-study resume succeeds without fitting again. Each
+child uses one numerical-library thread; concurrent times are not speed rankings.
+
+```bash
+python scripts/study_3dmatch_refinement_cases.py --cases CASES/cases.json \
+  --comparisons COMPARISONS \
+  --exclude-case-id sun3d-hotel_umd-maryland_hotel3-12-to-0 \
+  --trim-fractions 1 .8 --workers 3 --output-dir REFINEMENT
+# Add --resume to the identical command to recover checkpoints.
+python scripts/render_refinement_batch.py --study REFINEMENT/study.json \
+  --fraction .8 --output-dir PLOT
+```
+
+The optional Matplotlib reporting CLI produces PNG/SVG, a log-scale paired
+scatter plot, exact HTML table and input/renderer hashes without registration.
+Undefined scores and failed cases remain recorded. Ground truth is used only
+after fitting; repeated seeds are not independent dataset samples.
+
+Current-machine artifacts:
+
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-other-pairs-refinement/study.json`
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-other-pairs-refinement/report.html`
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-other-pairs-refinement-plot/paired_scores.png`
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-other-pairs-refinement-plot/paired_scores.svg`
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-other-pairs-refinement-plot/report.html`
