@@ -77,6 +77,11 @@ impl StatisticalOutlierRemoval {
         }
 
         let (x, y, z) = input.positions3()?;
+        if x.iter().chain(y).chain(z).any(|value| !value.is_finite()) {
+            return Err(SpatialError::InvalidArgument(
+                "outlier removal requires finite XYZ points".to_owned(),
+            ));
+        }
         let tree = KdTree::from_slices(x, y, z);
 
         // Mean distance to the k nearest neighbors (excluding the point itself).
@@ -231,11 +236,16 @@ impl RadiusOutlierRemoval {
             return Ok(Vec::new());
         }
 
+        let (x, y, z) = input.positions3()?;
+        if x.iter().chain(y).chain(z).any(|value| !value.is_finite()) {
+            return Err(SpatialError::InvalidArgument(
+                "outlier removal requires finite XYZ points".to_owned(),
+            ));
+        }
         if self.config.min_neighbors >= len {
             return Ok(vec![false; len]);
         }
 
-        let (x, y, z) = input.positions3()?;
         let tree = KdTree::from_slices(x, y, z);
 
         // The query point itself is in the tree, so requiring `min_neighbors`
@@ -476,5 +486,20 @@ mod tests {
                 .unwrap(),
             vec![false; 3]
         );
+    }
+
+    #[test]
+    fn nonfinite_positions_are_rejected_even_with_impossible_neighbor_counts() {
+        for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let cloud = cloud_from_xyz(&[[0., value, 0.], [1., 0., 0.]]);
+            assert!(StatisticalOutlierRemoval::new(StatisticalOutlierConfig::default())
+                .keep_mask(&cloud)
+                .is_err());
+            for count in [1, usize::MAX] {
+                assert!(RadiusOutlierRemoval::new(RadiusOutlierConfig::new(1., count))
+                    .keep_mask(&cloud)
+                    .is_err());
+            }
+        }
     }
 }

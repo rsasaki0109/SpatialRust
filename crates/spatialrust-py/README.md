@@ -242,6 +242,9 @@ Source attributes are retained: normals rotate with the pose, while intensity,
 labels and timestamps keep their values. Regression tests cover these fields
 through PCD loading, alignment, saving and Arrow export, including float64
 timestamps and signed integer labels.
+For preprocessing, `statistical_outlier_removal` and `radius_outlier_removal`
+reject nonfinite XYZ and release the GIL during native filtering. Concurrent
+calls can share the same read-only cloud; each returns its own filtered cloud.
 An existing output directory is refused; its parent must exist. Normal write
 failures remove the newly created output directory. This is not atomic publication
 or crash-durable storage; forced termination can leave partial output.
