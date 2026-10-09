@@ -383,3 +383,31 @@ before building the wheel. This is necessary because the extension has its own
 Cargo workspace. Type signatures are also checked against the runtime using
 mypy.stubtest and the existing explicit allowlist. These checks do not claim
 complete semantic type validation or cover optional-feature builds.
+
+### ONNX-enabled validation on Linux
+
+The separate `Python ONNX real-model verification` CI job enables the optional
+`onnxruntime` feature, runs the full Python suite and rejects skipped tests.
+It uses official `onnxruntime==1.24.2` wheel libraries via ort-sys's supported
+existing-library configuration, avoiding the default binary CDN dependency.
+The runtime staging helper is for Linux tests only; it is not a production
+packaging or redistribution solution. Keep shared libraries available when
+loading the extension:
+
+```bash
+pip install "maturin[patchelf]" pytest numpy pyarrow onnxruntime==1.24.2
+python crates/spatialrust-py/tools/prepare_onnxruntime.py target/onnxruntime
+export ORT_LIB_LOCATION="$PWD/target/onnxruntime"
+export ORT_PREFER_DYNAMIC_LINK=1
+export ORT_SKIP_DOWNLOAD=1
+export LD_LIBRARY_PATH="$ORT_LIB_LOCATION${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+maturin develop --release --features onnxruntime --manifest-path crates/spatialrust-py/Cargo.toml
+pytest crates/spatialrust-py/tests --junitxml=target/python-onnx-tests.xml
+```
+
+On 2026-10-09 this ONNX-enabled CPython 3.12 build passed all 115 tests locally,
+with no skips. Dynamic named binding and entity embedding execute the small
+actual ONNX model; named binding also matches the official Python runtime's
+output. This validates the CPU model path, not CUDA/TensorRT, model breadth or
+performance. The baseline wheel still excludes ONNX; ONNX remains optional.
+Remote CI and standalone wheel redistribution are not verified by this run.

@@ -357,6 +357,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add ONNX-enabled Python CPU CI with pinned official runtime libraries,
+  real-model/reference checks and a gate rejecting skipped tests.
+
 - Python voxel downsampling validates finite XYZ/positive leaf size and releases
   the GIL during native filtering; CPU concurrency and boundary tests are added.
 
