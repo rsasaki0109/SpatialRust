@@ -312,6 +312,7 @@ jobs:
           export ORT_PREFER_DYNAMIC_LINK=1
           export ORT_SKIP_DOWNLOAD=1
           export LD_LIBRARY_PATH="$ORT_LIB_LOCATION${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          cargo clippy --manifest-path crates/spatialrust-py/Cargo.toml --features onnxruntime -- -D warnings
           maturin develop --release --features onnxruntime --manifest-path crates/spatialrust-py/Cargo.toml
           pytest crates/spatialrust-py/tests --junitxml=target/python-onnx-tests.xml
           python -c "import xml.etree.ElementTree as E; s=E.parse('target/python-onnx-tests.xml').getroot().find('testsuite'); assert s is not None and int(s.attrib['skipped']) == 0, 'ONNX validation must not silently skip'"

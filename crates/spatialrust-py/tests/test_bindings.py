@@ -12,6 +12,8 @@ import math
 import gc
 import json
 import weakref
+import threading
+import sys
 
 import numpy as np
 import pytest
@@ -1164,6 +1166,33 @@ def test_onnxruntime_dynamic_named_binding_matches_reference(tmp_path, copy):
         with pytest.raises(TypeError):
             session.run(invalid, copy=copy)
         np.testing.assert_array_equal(np.from_dlpack(session.run(inputs, copy=copy)["output"]), expected)
+    # Native inference must release the GIL; prepare tensors before scheduling.
+    large = sr.tensor_copy_from_numpy(np.ones((500000,3), dtype=np.float32))
+    ready, start = threading.Event(), threading.Event()
+    progress = []
+    def observer():
+        ready.set()
+        start.wait()
+        progress.append(True)
+    worker = threading.Thread(target=observer)
+    worker.start()
+    assert ready.wait(5)
+    previous = sys.getswitchinterval()
+    try:
+        sys.setswitchinterval(60)
+        start.set()
+        # A tiny model may finish before the OS schedules the observer.
+        # Bound retries without releasing the GIL from Python or sleeping.
+        for _ in range(32):
+            large_output = session.run({"input": large}, copy=copy)["output"]
+            if progress:
+                break
+        progressed = bool(progress)
+    finally:
+        sys.setswitchinterval(previous)
+        worker.join(timeout=5)
+    assert progressed
+    np.testing.assert_array_equal(np.from_dlpack(large_output), np.full((500000,3), 2, dtype=np.float32))
     retained = []
     for batch in (1, 7, 2):
         values = np.arange(batch*3, dtype=np.float32).reshape(batch,3)
