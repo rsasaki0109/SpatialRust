@@ -296,7 +296,11 @@ candidate failures and scores in `alignment.json` and exports all original
 source points using the selected transform. HTML shows the selected result and
 candidate table with both support directions, forward RMSE, convergence and failures.
 It reads each input once and shares read-only clouds across candidates;
-candidate registration still adds compute. It neither generates poses
+it also shares target voxelization, the original before-support result and an
+owned target XYZ support index within the search. The support index explicitly
+copies target coordinates; reverse support still builds a separate index for
+each aligned source because that reference changes with the candidate.
+Candidate registration still adds compute. It neither generates poses
 nor guarantees a correct selection. All poses are validated before input reads,
 and the same exclusive-output and failed-write cleanup rules apply.
 The single-pose example also exposes `align_clouds(source, target, ...)` for
