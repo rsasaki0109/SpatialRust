@@ -1,9 +1,21 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **75%, provisional**. This is a subjective
+Current assessment (2026-10-10): **78%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 78% estimate adds actual official 3DMatch fragments across three scenes,
+12 pairs fixed before fitting, 72 native/Open3D registrations, and publisher
+information-score evaluation. Native succeeds on 23/36 planned rows and Open3D
+on 27/36; these selected positive pairs are not full benchmark recall/precision.
+Shared failures and complementary outputs are recorded without an oracle selector
+claim. Complete per-case receipts can be validated and aggregated after an
+interruption without rerunning fitting. The separately distributed Python build
+now tracks its frozen dependency graph and verifies identical sdist lock bytes;
+Windows/macOS installed-wheel runtime gates are configured. Remote runtime
+success, additional datasets, throughput/memory and operational evidence still
+require verification before 90%. See `docs/3DMATCH_LIVE_COMPARISON.md`.
 
 The 75% estimate adds strict Redwood/3DMatch reference binding with verified
 source/target convention, pair-ID matching, original file hashes, and saved-log
@@ -11,9 +23,9 @@ evaluation using the publisher information metric. 2,563 GT/information records
 across 12 official metadata scenes validate. Historical log analysis demonstrates
 complementary correct-pair sets without claiming a deployable oracle selector.
 470 Python tests pass; 20 new checks pass with the isolated default wheel too.
-The actual fragment download host is 3dvision.princeton.edu and remains blocked;
-metadata validation and historical logs do not establish current native accuracy
-on those scenes. The 90% runtime/data/operational evidence gates remain open.
+At that checkpoint the actual fragment download host, 3dvision.princeton.edu,
+was blocked; the later 78% checkpoint successfully acquired and evaluated three
+official fragment scenes. The 90% runtime/data/operational evidence gates remain open.
 
 The 74% estimate repairs an observed Rust 1.75 compatibility failure by pinning
 the compatible thiserror release and adding a fresh-resolution CI gate. Rust
