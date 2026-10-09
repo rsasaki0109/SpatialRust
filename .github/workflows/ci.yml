@@ -317,6 +317,7 @@ jobs:
           pytest crates/spatialrust-py/tests --junitxml=target/python-onnx-tests.xml
           python -c "import xml.etree.ElementTree as E; s=E.parse('target/python-onnx-tests.xml').getroot().find('testsuite'); assert s is not None and int(s.attrib['skipped']) == 0, 'ONNX validation must not silently skip'"
           python scripts/study_icp_convergence.py --output-dir target/icp-convergence-study
+          python scripts/study_trimmed_icp.py --output-dir target/trimmed-icp-study
       - name: Save ONNX test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -334,6 +335,17 @@ jobs:
           path: |
             target/icp-convergence-study/study.json
             target/icp-convergence-study/report.html
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Save paired trimming study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trimmed-icp-study
+          path: |
+            target/trimmed-icp-study/study.json
+            target/trimmed-icp-study/report.html
           if-no-files-found: warn
           retention-days: 14
 

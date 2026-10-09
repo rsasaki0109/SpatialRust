@@ -221,6 +221,24 @@ them is a stopping decision, not evidence of a correct pose. Rust callers can
 override these values with `IcpConvergenceCriteria` and
 `IcpRegistration::with_convergence_criteria` without changing `IcpConfig` literals.
 
+Both ICP functions also accept keyword-only `trim_fraction=1.0`. Values in `(0, 1]`
+retain `floor(fraction * gated matches)` pairs with smallest pre-update distance;
+equal distances follow source order. Fewer than three retained pairs raise
+`ValueError`. Rust uses `IcpRegistration::with_trim_fraction`. Default 1.0 keeps
+the original update path. History `.correspondences` counts retained estimator
+pairs, while `.evaluated_correspondences` and `.fitness` still cover all rematched
+points inside the distance gate. Fitness stopping also uses that full gated set.
+Trimming assumes larger residuals are less useful; a poor prior can make correct
+points have large residuals, so trimming can worsen recovery. It does not resolve
+repeated geometry, and a low trimmed estimation residual would not certify a pose.
+
+Run `python scripts/study_trimmed_icp.py --output-dir target/trim-study` from the
+repository root to compare all pairs against 80%/50% retention on identical
+synthetic priors and gates. The standalone report shows both gained and lost
+recoveries and initially retained true/false source members. study.json records
+full-source support, native/source hashes and fixture hashes. It executes
+SpatialRust only; it is not an Open3D/PCL/OpenCV ranking or real-sensor guarantee.
+
 Pass `--trace --html-report` to `examples/align_point_clouds.py` or
 `examples/align_pose_candidates.py` to save per-stage ICP history in alignment.json
 and standalone SVG charts in report.html. The candidate report retains the
