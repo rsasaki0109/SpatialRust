@@ -1698,11 +1698,20 @@ fn write(
 /// Voxel-grid downsamples a cloud. `policy` is one of "auto", "cpu", "cpu-single".
 #[pyfunction]
 #[pyo3(signature = (cloud, leaf_size, policy="auto"))]
-fn voxel_downsample(cloud: &PyPointCloud, leaf_size: f32, policy: &str) -> PyResult<PyPointCloud> {
-    let config = VoxelGridDownsampleConfig::centroid(leaf_size);
-    let filter = VoxelGridDownsample::new(config);
-    let inner =
-        filter.filter_with_policy(&cloud.inner, parse_policy(policy)?).map_err(to_py_err)?;
+fn voxel_downsample(py: Python<'_>, cloud: &PyPointCloud, leaf_size: f32, policy: &str) -> PyResult<PyPointCloud> {
+    if !leaf_size.is_finite() || leaf_size <= 0.0 {
+        return Err(PyValueError::new_err("leaf_size must be finite and positive"));
+    }
+    let policy = parse_policy(policy)?;
+    let cloud = &cloud.inner;
+    let inner = py.allow_threads(|| {
+        let (x, y, z) = cloud.positions3().map_err(to_py_err)?;
+        if x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+            return Err(PyValueError::new_err("voxel_downsample requires finite XYZ points"));
+        }
+        VoxelGridDownsample::new(VoxelGridDownsampleConfig::centroid(leaf_size))
+            .filter_with_policy(cloud, policy).map_err(to_py_err)
+    })?;
     Ok(PyPointCloud { inner })
 }
 
