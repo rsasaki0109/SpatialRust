@@ -671,6 +671,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Python exception documentation matches ValueError from native input failures;
+  ONNX tests cover invalid inputs, reuse, dynamic batches and output lifetimes.
+
 - Python workspace caches use const thread-local initialization, and Python
   wheel CI checks the extension crate with warning-strict Clippy.
 

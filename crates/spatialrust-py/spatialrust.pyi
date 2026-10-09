@@ -805,7 +805,7 @@ def register_icp(
 
     Raises ValueError for zero iterations, an invalid distance gate, fewer than
     three points, or nonfinite XYZ in either input. Native registration failures
-    propagate as RuntimeError. Convergence does not certify pose correctness.
+    propagate as ValueError. Convergence does not certify pose correctness.
     """
     ...
 def register_point_to_plane(
@@ -996,7 +996,13 @@ class OnnxRuntimeSession:
     def inputs(self) -> list[tuple[str, str, list[str]]]: ...
     @property
     def outputs(self) -> list[tuple[str, str, list[str]]]: ...
-    def run(self, inputs: dict[str, Tensor], *, copy: bool = ...) -> dict[str, Tensor]: ...
+    def run(self, inputs: dict[str, Tensor], *, copy: bool = ...) -> dict[str, Tensor]:
+        """Named inference; invalid model inputs raise ValueError.
+
+        Wrong Python key/value types raise TypeError. Rejected inputs do not
+        prevent reuse, and returned tensors retain storage after session release.
+        """
+        ...
 
 @final
 class OnnxEntityEmbedder:
