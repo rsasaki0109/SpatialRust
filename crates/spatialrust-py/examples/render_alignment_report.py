@@ -20,6 +20,30 @@ def _count(value, name):
     return value
 
 
+def _candidate_rotation(candidate):
+    matrix = candidate.get('transform_source_to_target')
+    if matrix is None:
+        return None  # Older support-only reports can still be rendered.
+    if not isinstance(matrix, list) or len(matrix) != 4 or any(not isinstance(row, list) or len(row) != 4 for row in matrix):
+        raise ValueError('candidate transform must be a rigid 4x4 matrix')
+    for row in matrix:
+        for value in row:
+            _number(value, 'candidate transform', minimum=-math.inf)
+    if any(abs(matrix[3][j] - (1 if j == 3 else 0)) > 1e-5 for j in range(4)):
+        raise ValueError('candidate transform must be rigid')
+    r = [row[:3] for row in matrix[:3]]
+    for i in range(3):
+        for j in range(3):
+            if abs(sum(r[k][i]*r[k][j] for k in range(3)) - (1 if i == j else 0)) > 1e-4:
+                raise ValueError('candidate rotation must be orthogonal')
+    determinant = (r[0][0]*(r[1][1]*r[2][2]-r[1][2]*r[2][1])
+                   - r[0][1]*(r[1][0]*r[2][2]-r[1][2]*r[2][0])
+                   + r[0][2]*(r[1][0]*r[2][1]-r[1][1]*r[2][0]))
+    if abs(determinant - 1) > 1e-4:
+        raise ValueError('candidate rotation must be proper')
+    return r
+
+
 def _candidate_table(selection, source, target, gate):
     if not isinstance(selection, dict):
         raise ValueError('candidate_selection must be an object')
@@ -31,6 +55,8 @@ def _candidate_table(selection, source, target, gate):
     selected = selection.get('selected_index')
     if type(selected) is not int or not 0 <= selected < len(candidates):
         raise ValueError('invalid selected candidate index')
+    selected_rotation = (_candidate_rotation(candidates[selected])
+                         if isinstance(candidates[selected], dict) else None)
     rows, scores = [], []
     for index, candidate in enumerate(candidates):
         if not isinstance(candidate, dict) or type(candidate.get('index')) is not int or candidate['index'] != index:
@@ -38,7 +64,7 @@ def _candidate_table(selection, source, target, gate):
         if candidate.get('status') == 'error':
             if not isinstance(candidate.get('error'), str) or index == selected:
                 raise ValueError('invalid candidate failure')
-            rows.append(f'<tr><td>{index}</td><td colspan="4">Failed: {html.escape(candidate["error"])}</td></tr>')
+            rows.append(f'<tr><td>{index}</td><td colspan="5">Failed: {html.escape(candidate["error"])}</td></tr>')
             continue
         if candidate.get('status') != 'success' or type(candidate.get('converged')) is not bool:
             raise ValueError('invalid candidate status or convergence')
@@ -66,8 +92,14 @@ def _candidate_table(selection, source, target, gate):
                 scores.append((index, -count, math.inf if rmse is None else rmse))
                 residual = 'None' if rmse is None else f'{rmse:.6g} m'
         label = f'{index} (selected)' if index == selected else str(index)
+        rotation = _candidate_rotation(candidate)
+        difference = 'Unavailable'
+        if rotation is not None and selected_rotation is not None:
+            cosine = (sum(rotation[i][j]*selected_rotation[i][j] for i in range(3) for j in range(3)) - 1) / 2
+            angle = 0. if rotation == selected_rotation else math.degrees(math.acos(max(-1., min(1., cosine))))
+            difference = f'<meter min="0" max="180" value="{angle:.6g}"></meter> {angle:.2f}°'
         rows.append(f'<tr><td>{label}</td><td>{displays[0]}</td><td>{displays[1]}</td>'
-                    f'<td>{residual}</td><td>{str(candidate["converged"]).lower()}</td></tr>')
+                    f'<td>{residual}</td><td>{str(candidate["converged"]).lower()}</td><td>{difference}</td></tr>')
     if not scores or type(selection.get('successful_candidates')) is not int or selection['successful_candidates'] != len(scores):
         raise ValueError('candidate success count mismatch')
     if min(scores, key=lambda score: (score[1], score[2]))[0] != selected:
@@ -76,10 +108,12 @@ def _candidate_table(selection, source, target, gate):
     if selection.get('rule') != rule:
         raise ValueError('unsupported candidate selection rule')
     return ('<section><h2>Pose candidates</h2><table><tr><th>Index</th><th>Forward support</th>'
-            '<th>Reverse support</th><th>Forward gated RMSE</th><th>Converged</th></tr>'
+            '<th>Reverse support</th><th>Forward gated RMSE</th><th>Converged</th><th>Rotation from selected</th></tr>'
             + ''.join(rows) + '</table><p>Selection maximizes forward supported points, then minimizes gated RMSE; '
             'input order breaks ties. Reverse support and convergence are shown for inspection. '
-            'Selection does not certify pose correctness.</p></section>')
+            'Selection does not certify pose correctness. Rotation from selected measures candidate disagreement, '
+            'not ground-truth error or a confidence probability. Similar scores with different poses can indicate '
+            'geometric ambiguity; translation disagreement is not measured here.</p></section>')
 
 
 def render_report(report):
