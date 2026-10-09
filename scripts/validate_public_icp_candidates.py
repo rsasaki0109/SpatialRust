@@ -28,7 +28,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', type=Path, default=ROOT / 'target/public-icp-data/DemoICPPointClouds.zip')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'target/public-icp-candidate-validation')
+    parser.add_argument('--iterations', type=int, default=5, help='positive maximum iterations per ICP stage')
     args = parser.parse_args()
+    if args.iterations < 1:
+        parser.error('iterations must be positive')
     args.output_dir.mkdir(parents=True, exist_ok=True)
     paths = [args.output_dir / name for name in ('cloud_bin_0.pcd', 'cloud_bin_1.pcd')]
     with zipfile.ZipFile(args.archive) as archive:
@@ -49,14 +52,17 @@ def main():
     perturbed[:3, :3] = extra @ prior[:3, :3]
     perturbed[:3, 3] = extra @ prior[:3, 3] + [.03, -.02, .01]
     poses = [np.eye(4).tolist(), prior.tolist(), perturbed.tolist()]
-    settings = dict(leaf=.05, max_distance=.1, evaluation_distance=.02, iterations=5)
+    settings = dict(leaf=.05, max_distance=.1, evaluation_distance=.02, iterations=args.iterations)
+    print(f'Evaluating three candidates, at most {args.iterations} iterations per stage', file=sys.stderr, flush=True)
     started = time.perf_counter()
     aligned, report = evaluate_candidates(*paths, poses, **settings)
     optimized_seconds = time.perf_counter() - started
+    print(f'Candidate search completed in {optimized_seconds:.2f}s; checking independent runs', file=sys.stderr, flush=True)
     selection = report['candidate_selection']
     started = time.perf_counter()
     independent = []
-    for pose in poses:
+    for index, pose in enumerate(poses):
+        print(f'Independent candidate {index}', file=sys.stderr, flush=True)
         try:
             independent.append(align_files(*paths, initial_transform=pose, **settings)[1])
         except ValueError as error:
