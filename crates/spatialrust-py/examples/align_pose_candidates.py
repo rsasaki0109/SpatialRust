@@ -11,6 +11,7 @@ import math
 from pathlib import Path
 import shutil
 
+import numpy as np
 import spatialrust as sr
 
 from align_point_clouds import _align_clouds, rigid_matrix, validate_settings
@@ -70,7 +71,8 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
     diagnostics['candidate_selection'] = dict(
         rule='maximum_forward_supported_points_then_minimum_gated_rmse_then_input_order',
         candidate_count=len(poses), successful_candidates=sum(record['error'] is None for record in records),
-        selected_index=selected_index, candidates=records)
+        selected_index=selected_index, candidates=records,
+        source_centroid_xyz_metres=source.xyz().mean(axis=0, dtype=np.float64).tolist())
     return aligned, diagnostics
 
 
