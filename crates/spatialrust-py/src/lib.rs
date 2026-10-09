@@ -2087,7 +2087,7 @@ fn distance_gated_support(
     let source = &source.inner;
     let target = &target.inner;
     py.allow_threads(|| {
-        use spatialrust::search::{KdTree, NearestNeighborIndex};
+        use spatialrust::search::KdTree;
         let squared_gate = max_distance * max_distance;
         if max_distance <= 0.0 || !squared_gate.is_finite() || squared_gate == 0.0 {
             return Err(PyValueError::new_err(
@@ -2104,8 +2104,10 @@ fn distance_gated_support(
         let (x, y, z) = source.positions3().map_err(to_py_err)?;
         let mut count = 0usize;
         let mut squared = 0.0f64;
+        let mut nearest = Vec::with_capacity(1);
         for i in 0..source.len() {
-            if let Some(neighbor) = tree.nearest_one(x[i], y[i], z[i]) {
+            tree.nearest_k_into(x[i], y[i], z[i], 1, &mut nearest);
+            if let Some(neighbor) = nearest.first() {
                 if neighbor.distance_squared <= squared_gate {
                     count += 1;
                     squared += f64::from(neighbor.distance_squared);
