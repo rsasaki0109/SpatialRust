@@ -73,6 +73,24 @@ def convergence_from_args(args):
     return values or None
 
 
+def file_sha256(path):
+    """Stream input bytes rather than copying an entire sensor file into memory."""
+    import hashlib
+    digest = hashlib.sha256()
+    with Path(path).open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def read_bound_cloud(path):
+    before = file_sha256(path)
+    cloud = sr.read(str(path))
+    if file_sha256(path) != before:
+        raise ValueError('input file changed while reading')
+    return cloud, before
+
+
 def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False, convergence=None, trim_fraction=1.0):
     """Read files and return the full-resolution aligned source and diagnostics."""
     evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
@@ -80,10 +98,13 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
     validate_trim_fraction(trim_fraction)
     if initial_transform is not None:
         initial_transform = rigid_matrix(initial_transform)
-    source, target = sr.read(str(source_path)), sr.read(str(target_path))
-    return align_clouds(source, target, source_name=str(source_path), target_name=str(target_path),
+    source, source_hash = read_bound_cloud(source_path)
+    target, target_hash = read_bound_cloud(target_path)
+    aligned, report = align_clouds(source, target, source_name=str(source_path), target_name=str(target_path),
                         leaf=leaf, max_distance=max_distance, iterations=iterations,
                         initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace, convergence=convergence, trim_fraction=trim_fraction)
+    report['input_file_sha256'] = dict(source=source_hash, target=target_hash)
+    return aligned, report
 
 
 def align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,

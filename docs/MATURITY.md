@@ -5,6 +5,14 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
+The subsequent reference-pose evaluation slice leaves this assessment at 70%:
+all four file alignment workflows bind reports to source/target byte hashes,
+and an independent post-fit evaluator records declared reference provenance,
+rotation/translation errors and an HTML comparison. 440 ONNX-enabled Python
+tests pass. The reference fixture is synthetic; no public sensor ground truth
+has yet been independently verified. Evaluation infrastructure alone does not
+close that evidence gap or justify a higher score.
+
 The 70% estimate closes a failure discovered by the external comparison:
 planar/near-planar PnP now uses scale-normalized geometry detection and homography
 initialization, then refines against the actual 3D points. On unchanged inputs

@@ -115,7 +115,12 @@ def align_global_files(source_path,target_path,schedule,**settings):
         gate=options['evaluation_distance']
         validate_settings(gate,gate,1,gate)
     settings.update(source_name=str(source_path),target_name=str(target_path))
-    return align_global_clouds(sr.read(str(source_path)),sr.read(str(target_path)),schedule,**settings)
+    from align_point_clouds import read_bound_cloud
+    source, source_hash = read_bound_cloud(source_path)
+    target, target_hash = read_bound_cloud(target_path)
+    aligned, report = align_global_clouds(source,target,schedule,**settings)
+    report['input_file_sha256'] = dict(source=source_hash, target=target_hash)
+    return aligned, report
 
 
 def main():
