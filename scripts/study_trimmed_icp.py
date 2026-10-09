@@ -6,6 +6,7 @@ membership; it never participates in nearest-pair ranking or pose selection.
 import argparse
 import hashlib
 import html
+import importlib
 import itertools
 import json
 import math
@@ -148,12 +149,7 @@ def main():
                     row.update(case=case, seed=seed, initial_error_degrees=angle, gate=gate, trim_fraction=fraction)
                     rows.append(row)
         print(f'{case}: {len(rows)} cumulative runs', file=sys.stderr, flush=True)
-    native = Path(sr.__file__)
-    if native.suffix != '.so':
-        binaries = sorted(native.parent.glob('*.so'))
-        if len(binaries) != 1:
-            raise RuntimeError('cannot identify native extension')
-        native = binaries[0]
+    native = Path(importlib.import_module('spatialrust.spatialrust').__file__)
     sources = [Path(__file__), ROOT/'scripts/study_icp_convergence.py', ROOT/'crates/spatialrust-registration/src/icp.rs',
                ROOT/'crates/spatialrust-registration/src/kabsch.rs', ROOT/'crates/spatialrust-py/examples/align_point_clouds.py',
                ROOT/'crates/spatialrust-py/src/lib.rs']
