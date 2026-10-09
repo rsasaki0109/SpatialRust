@@ -16,6 +16,15 @@ tests with 3 expected ONNX skips on CPython 3.8/NumPy 1.24 and CPython 3.14/NumP
 These are Linux x86_64 checks. Remote jobs remain queued without assigned runners;
 cross-platform/GPU and broader accuracy/performance evidence are still open.
 
+The subsequent exploratory hotel replay holds all three generated initializations
+fixed. All-pair ICP reproduces the three original failing poses exactly; retaining
+0.8, 0.6 or 0.4 recovers 3/3 under the publisher criterion in each setting.
+Translation improves while median rotation error increases. The hash-bound
+post-fit evaluator rejects changed priors, gates, iteration caps, stopping rules,
+trim settings and missing/duplicated rows. All 502 ONNX-enabled Python tests pass.
+This selected failure case supports a retained-residual intervention, not a
+default trim change or general accuracy claim, so the assessment stays at 80%.
+
 The 78% estimate adds actual official 3DMatch fragments across three scenes,
 12 pairs fixed before fitting, 72 native/Open3D registrations, and publisher
 information-score evaluation. Native succeeds on 23/36 planned rows and Open3D
