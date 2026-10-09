@@ -76,3 +76,30 @@ it from loss of true correspondences. Five synthetic seeds cannot establish a
 general best gate, filtering policy or noise tolerance. Convergence also remains
 distinct from correctness: the replacement condition reports convergence in
 3, 1, 3, 1, 0 cases across these gates despite only one correct pose.
+
+## Deletion-only control
+
+Add `--source-delete-fraction .2` instead of replacement to keep the first
+320 source points, applying noise before deletion. Reproduce with fixed
+evaluation distance .05 m, noise standard deviation .005 m and output directory
+`target/gate-deletion-study`. All retained coordinates exactly match the first
+320 points in the replacement condition for all five seeds.
+
+| Search gate (m) | Noise only (400 points) | Delete 80 (320 points) | Replace 80 (400 points) |
+| --- | --- | --- | --- |
+| 0.05 | 0/5 | 0/5 | 0/5 |
+| 0.15 | 0/5 | 0/5 | 0/5 |
+| 0.3 | 3/5 | 1/5 | 1/5 |
+| 0.6 | 4/5 | 4/5 | 0/5 |
+| 1.2 | 4/5 | 4/5 | 0/5 |
+
+For broad gates, reduced overlap alone does not explain the replacement result:
+adding the specified 80 nonmatching points to the same retained set changes
+four successful runs to failures. This supports an effect of nonmatching source
+points under the study's optimizer, without directly tracing correspondences.
+Deletion successes are seeds 0, 1, 3, 4, while noise-only successes are 0, 1, 2, 3;
+equal aggregate counts do not mean the same cases succeeded. At gate .3,
+deletion succeeds on seed 0 and replacement on seed 4, so a monotonic effect
+cannot be claimed. Forward support denominators also differ (320 versus 400).
+The paired control narrows the explanation for these synthetic inputs; it does
+not establish a general filtering algorithm or real-sensor performance claim.
