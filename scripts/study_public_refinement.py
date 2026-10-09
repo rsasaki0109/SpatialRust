@@ -55,6 +55,8 @@ def main():
     reference_bytes, comparison_bytes = args.reference.read_bytes(), args.comparison.read_bytes()
     reference, comparison = json.loads(reference_bytes), json.loads(comparison_bytes)
     validate_reference(reference)
+    if comparison.get('reference_sha256') != hashlib.sha256(reference_bytes).hexdigest():
+        parser.error('replay reference differs from the saved comparison')
     if reference['length_unit'] != 'm':
         parser.error('replay gates use metres')
     source, source_hash = read_bound_cloud(args.source)
@@ -109,7 +111,9 @@ def main():
                 '<svg viewBox="0 0 580 290" width="580"><path d="M40 40 V240 H540" fill="none" stroke="black"/>'
                 '<text x="150" y="275">Proximity fraction (0..1)</text><text x="45" y="25">Translation error (0..' + f'{maximum:.4g} m)</text>'
                 + ''.join(dots) + '</svg><table><tr><th>Seed</th><th>Trim</th><th>Rotation error</th><th>Translation error</th><th>Proximity fraction</th></tr>'
-                + ''.join(table) + '</table><p>Declared public demo reference; independent sensor lineage remains unverified.</p></html>')
+                + ''.join(table) + '</table><p>Reference provenance: '
+                + html.escape(json.dumps(reference['provenance'], sort_keys=True))
+                + '. This experiment does not independently certify sensor ground truth.</p></html>')
     serialized = json.dumps(result, indent=2, allow_nan=False)
     args.output_dir.mkdir()
     try:

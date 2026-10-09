@@ -1,9 +1,20 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **78%, provisional**. This is a subjective
+Current assessment (2026-10-10): **80%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 80% estimate adds hash-bound post-fit stage attribution: among 36 native
+outputs, refinement retains 18 correct initial poses, recovers 5, loses 3 and
+leaves 10 incorrect. All losses occur on one hotel pair, separating refinement
+drift from initializer failures without claiming a physical cause. Reference
+binding is also enforced before fixed-initialization replay. All 494 Python tests
+pass with the ONNX-enabled extension. The same default abi3 wheel passes 491
+tests with 3 expected ONNX skips on CPython 3.8/NumPy 1.24 and CPython 3.14/NumPy
+2.5; archive/native/type bytes and runtime checks match in both isolated environments.
+These are Linux x86_64 checks. Remote jobs remain queued without assigned runners;
+cross-platform/GPU and broader accuracy/performance evidence are still open.
 
 The 78% estimate adds actual official 3DMatch fragments across three scenes,
 12 pairs fixed before fitting, 72 native/Open3D registrations, and publisher

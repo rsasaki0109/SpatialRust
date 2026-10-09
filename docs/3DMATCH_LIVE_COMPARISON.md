@@ -50,6 +50,22 @@ SpatialRust and 6 only in Open3D. Their oracle union is 29/36. This demonstrates
 complementary outputs; reference labels cannot be used by a deployed selector.
 No default algorithm or acceptance threshold was changed from these observations.
 
+## Post-fit stage attribution
+
+`scripts/diagnose_3dmatch_stages.py` verifies the saved study/manifest/child/reference
+bindings and evaluates the native initial pose and each saved refinement stage.
+Among 36 native rows, 18 retain an initially correct pose, 5 recover an initially
+incorrect pose, 3 lose an initially correct pose, and 10 remain incorrect.
+All three losses occur on hotel source 12 → target 0: initial scores
+0.00698/0.00170/0.01284 become 0.06137/0.04224/0.05004 after the coarse ICP
+stage and 0.07003/0.05192/0.06059 after the full-resolution stage. This locates
+the loss in refinement rather than initial global sampling for these outputs.
+It does not establish the physical cause or justify skipping ICP universally:
+five other outputs need refinement to satisfy the criterion.
+
+The bound post-fit diagnosis and standalone HTML are saved at
+`/workspace/SpatialRust-python-delivery/target/3dmatch-stage-diagnosis-final/`.
+
 ## Reproduction and interruption recovery
 
 Preparation and bounded isolated execution:
