@@ -96,3 +96,26 @@ def test_ransac_native_work_releases_gil():
     finally:
         sys.setswitchinterval(previous);gate.set();thread.join(timeout=2)
     assert not thread.is_alive()
+
+
+@pytest.mark.parametrize('scale',[1e-4,1.,1e4])
+@pytest.mark.parametrize('thickness',[0.,1e-4])
+@pytest.mark.parametrize('tilted',[False,True])
+@pytest.mark.parametrize('robust',[False,True])
+def test_planar_and_thin_initialization_recovers_pose_across_frames(scale,thickness,tilted,robust):
+    xyz,_,rotation,translation=fixture(False)
+    xyz[:,2]*=thickness
+    if tilted:
+        u=np.array([.8,.6,0]);v=np.array([0,0,1.]);n=np.cross(u,v)
+        xyz=xyz[:,0,None]*u+xyz[:,1,None]*v+xyz[:,2,None]*n+[.3,-.2,.1]
+    objects=xyz*scale;expected_translation=translation*scale
+    camera=objects@rotation.T+expected_translation
+    images=camera[:,:2]/camera[:,2,None]*[700.,710.]+[320.,240.]
+    if robust:
+        images[-20:]+=[200.,-150.]
+        actual_rotation,actual_translation,mask,_=sr.solve_pnp_ransac(objects,images,700,710,320,240,max_iterations=300,seed=7)
+        assert mask[:80].all() and not mask[80:].any()
+    else:
+        actual_rotation,actual_translation=sr.solve_pnp(objects,images,700,710,320,240)
+    np.testing.assert_allclose(actual_rotation,rotation,atol=1e-5)
+    assert np.linalg.norm(actual_translation-expected_translation)/scale < 2e-5

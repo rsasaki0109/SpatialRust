@@ -1,9 +1,22 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **68%, provisional**. This is a subjective
+Current assessment (2026-10-10): **70%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 70% estimate closes a failure discovered by the external comparison:
+planar/near-planar PnP now uses scale-normalized geometry detection and homography
+initialization, then refines against the actual 3D points. On unchanged inputs
+and controls, plain recovery improves from 15/60 to 28/60 and robust recovery
+from 20/60 to 39/60, with zero recovery regressions and exactly unchanged OpenCV
+rows. Archived baseline hashes and calculation fingerprints validate the pairing.
+Verification passes 421 ONNX-enabled Python tests, 142 full-feature Rust vision
+tests, 18 optional comparison/report tests, strict extension Clippy and stubtest.
+A fresh default wheel passes 418 tests with exactly 3 expected ONNX skips;
+installed native/type bytes and ICP/support/PCD checks match the wheel. Noisy
+planar failures, collinear ambiguity, real ground-truth datasets and platform
+coverage remain gaps. Reaching this checkpoint does not establish library parity.
 
 The 68% estimate adds owned, validated, GIL-releasing Python robust PnP and a
 240-run OpenCV 4.12.0 failure comparison. All 397 Python tests, 11 Rust geometry

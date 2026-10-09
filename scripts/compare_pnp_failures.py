@@ -1,10 +1,11 @@
 """Controlled PnP failures across geometry, image noise and wrong correspondences.
 
-Compares SpatialRust DLT/refinement and six-point RANSAC against OpenCV
+Compares SpatialRust calibrated initialization/refinement and six-point RANSAC against OpenCV
 ITERATIVE PnP and its RANSAC path. Initializers/minimal sample sizes differ;
 this is an outcome comparison, not matched numerical work or a speed ranking.
 """
 import argparse
+import ast
 import hashlib
 import html
 import json
@@ -20,6 +21,14 @@ GEOMETRIES=('volume','thin','plane','line')
 CONDITIONS=('clean','noise','outliers')
 METHODS=('spatialrust_plain','spatialrust_ransac','opencv_plain','opencv_ransac')
 CAMERA=np.array([[700.,0,320.],[0,710.,240.],[0,0,1.]])
+
+
+def calculation_fingerprint(source):
+    tree=ast.parse(source)
+    selected=[node for node in tree.body if (isinstance(node,ast.FunctionDef) and node.name in ('fixture','run'))
+        or (isinstance(node,ast.Assign) and any(isinstance(target,ast.Name) and target.id in ('GEOMETRIES','CONDITIONS','METHODS','CAMERA') for target in node.targets))]
+    if len(selected)!=6:raise ValueError('calculation source layout changed')
+    return hashlib.sha256(ast.dump(ast.Module(body=selected,type_ignores=[]),include_attributes=False).encode()).hexdigest()
 
 
 def fixture(geometry,condition,seed):
@@ -105,7 +114,8 @@ def render(rows):
     return ('<!doctype html><html lang="en"><meta charset="utf-8"><title>Controlled PnP failures</title>'
         '<style>body{font:15px system-ui;margin:2rem}td,th{padding:.5rem}tr:nth-child(even){background:#eee}</style>'
         '<h1>PnP assumptions and failures</h1><p>Same calibrated correspondences; plain fitting versus '
-        'RANSAC with 3 pixel threshold and .99 confidence. SpatialRust uses DLT initialization and six-point '
+        'RANSAC with 3 pixel threshold and .99 confidence. SpatialRust uses calibrated DLT or its build-specific '
+        'plane-aware homography initializer and six-point '
         'samples. OpenCV ITERATIVE has a planar initialization path and a different RANSAC sampler. '
         'No caller pose or truth-based selection. Recovery means less than 1 degree and .05 m from the '
         'generating pose, with all points in front of the camera.</p>'
@@ -128,12 +138,14 @@ def main():
     if any(os.environ.get(name)!='1' for name in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS')):parser.error('set OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1')
     native=list(Path(sr.__file__).parent.glob('*.so'));assert len(native)==1
     native_hash=hashlib.sha256(native[0].read_bytes()).hexdigest()
+    source_snapshot=Path(__file__).read_bytes()
     rows=run(args.seeds,args.iterations)
     if hashlib.sha256(native[0].read_bytes()).hexdigest()!=native_hash:raise ValueError('native module changed during study')
+    if Path(__file__).read_bytes()!=source_snapshot:raise ValueError('runner source changed during study')
     receipt=dict(schema='spatialrust.opencv-pnp-study.v1',versions=dict(opencv=cv2.__version__,numpy=np.__version__,python=platform.python_version(),spatialrust=sr.__version__),
         seeds=args.seeds,max_iterations=args.iterations,threshold_pixels=3,confidence=.99,
         camera_intrinsics=CAMERA.tolist(),thread_environment={name:os.environ[name] for name in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS')},opencv_threads=cv2.getNumThreads(),
-        native_sha256=native_hash,source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),rows=rows)
+        native_sha256=native_hash,source_sha256=hashlib.sha256(source_snapshot).hexdigest(),calculation_sha256=calculation_fingerprint(source_snapshot),rows=rows)
     serialized=json.dumps(receipt,indent=2,allow_nan=False);rendered=render(rows)
     args.output_dir.mkdir()
     (args.output_dir/'study.json').write_text(serialized)
