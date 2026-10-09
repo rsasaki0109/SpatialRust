@@ -238,6 +238,10 @@ to NumPy for finite-value validation, downsamples both for point-to-point ICP,
 and applies the source-to-target transform to the original source. It saves
 `aligned.pcd` (all source points) and `alignment.json` (counts, settings, transform,
 iterations, convergence and kernel fitness). Coordinates are interpreted as metres.
+Source attributes are retained: normals rotate with the pose, while intensity,
+labels and timestamps keep their values. Regression tests cover these fields
+through PCD loading, alignment, saving and Arrow export, including float64
+timestamps and signed integer labels.
 An existing output directory is refused; its parent must exist. Normal write
 failures remove the newly created output directory. This is not atomic publication
 or crash-durable storage; forced termination can leave partial output.
