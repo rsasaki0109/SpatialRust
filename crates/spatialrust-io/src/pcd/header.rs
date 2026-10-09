@@ -52,6 +52,9 @@ impl PcdHeader {
         let mut height = 0usize;
         let mut viewpoint = [0.0_f32; 7];
         let mut points = 0usize;
+        let mut points_declared = false;
+        let mut width_declared = false;
+        let mut height_declared = false;
         let mut data: Option<PcdDataKind> = None;
         let mut header_bytes = 0usize;
 
@@ -89,6 +92,7 @@ impl PcdHeader {
                 continue;
             }
             if let Some(rest) = trimmed.strip_prefix("WIDTH ") {
+                width_declared = true;
                 width = rest
                     .trim()
                     .parse()
@@ -96,6 +100,7 @@ impl PcdHeader {
                 continue;
             }
             if let Some(rest) = trimmed.strip_prefix("HEIGHT ") {
+                height_declared = true;
                 height = rest
                     .trim()
                     .parse()
@@ -111,6 +116,7 @@ impl PcdHeader {
                 continue;
             }
             if let Some(rest) = trimmed.strip_prefix("POINTS ") {
+                points_declared = true;
                 points = rest
                     .trim()
                     .parse()
@@ -152,10 +158,17 @@ impl PcdHeader {
             .collect();
 
         let data_kind = data.ok_or_else(|| pcd_parse("PCD header missing DATA"))?;
-        if points == 0 && width > 0 && height > 0 {
-            points = width
-                .checked_mul(height)
-                .ok_or_else(|| pcd_format("PCD WIDTH * HEIGHT overflow"))?;
+        let dimension_points = if width_declared && height_declared {
+            Some(
+                width
+                    .checked_mul(height)
+                    .ok_or_else(|| pcd_format("PCD WIDTH * HEIGHT overflow"))?,
+            )
+        } else {
+            None
+        };
+        if !points_declared {
+            points = dimension_points.unwrap_or(0);
         }
         let point_step = fields.iter().try_fold(0_usize, |total, field| {
             if field.size == 0 || field.count == 0 {
@@ -172,6 +185,13 @@ impl PcdHeader {
             .ok_or_else(|| pcd_format("PCD payload byte size overflow"))?;
         if payload_size > isize::MAX as usize {
             return Err(pcd_format("PCD payload exceeds addressable allocation size"));
+        }
+        if let Some(dimension_points) = dimension_points {
+            if points_declared && points != dimension_points {
+                return Err(pcd_format(format!(
+                    "PCD POINTS {points} does not match WIDTH * HEIGHT {dimension_points}"
+                )));
+            }
         }
 
         Ok((
@@ -290,5 +310,26 @@ DATA ascii
         let input =
             SAMPLE_ASCII_HEADER.replace("WIDTH 2", "WIDTH 0").replace("POINTS 2", "POINTS 0");
         assert_eq!(PcdHeader::parse(&mut Cursor::new(input)).unwrap().0.points, 0);
+    }
+
+    #[test]
+    fn rejects_explicit_point_count_inconsistent_with_dimensions() {
+        for points in [0, 1, 3] {
+            let input = SAMPLE_ASCII_HEADER.replace("POINTS 2", &format!("POINTS {points}"));
+            let error = PcdHeader::parse(&mut Cursor::new(&input)).unwrap_err();
+            assert!(error.to_string().contains("does not match WIDTH * HEIGHT"));
+            assert!(crate::pcd::reader::read_pcd(&mut Cursor::new(input)).is_err());
+        }
+        let input = SAMPLE_ASCII_HEADER.replace("WIDTH 2", "WIDTH 0");
+        assert!(PcdHeader::parse(&mut Cursor::new(input)).is_err());
+    }
+
+    #[test]
+    fn accepts_organized_and_point_count_only_headers() {
+        let input =
+            SAMPLE_ASCII_HEADER.replace("HEIGHT 1", "HEIGHT 3").replace("POINTS 2", "POINTS 6");
+        assert_eq!(PcdHeader::parse(&mut Cursor::new(input)).unwrap().0.points, 6);
+        let input = SAMPLE_ASCII_HEADER.replace("WIDTH 2\n", "").replace("HEIGHT 1\n", "");
+        assert_eq!(PcdHeader::parse(&mut Cursor::new(input)).unwrap().0.points, 2);
     }
 }

@@ -21,6 +21,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- PCD rejects explicit POINTS values inconsistent with declared WIDTH * HEIGHT,
+  including explicit zero counts. Missing POINTS is still inferred from the
+  dimensions, and point-count-only headers remain accepted.
 - PCD header parsing rejects overflowing dimension, field and payload sizes,
   zero-sized fields and payloads exceeding addressable allocation size before
   whole-cloud or streaming readers allocate point buffers.
