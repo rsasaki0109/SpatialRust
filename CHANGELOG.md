@@ -44,6 +44,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Gate sensitivity study adds reproducible Gaussian noise and nearby source
+  point replacements using independent random streams; HTML records conditions.
 - Distance-gate study supports fixed evaluation distance and standalone HTML
   summaries. Paired synthetic runs separate optimizer recovery from relaxed
   support evaluation while verifying unchanged estimated transforms.
