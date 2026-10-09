@@ -149,3 +149,14 @@ def test_renderer_rejects_inconsistent_global_metadata(module,field,value):
     from render_alignment_report import render_report
     with pytest.raises(ValueError):
         render_report(report)
+
+
+def test_optional_geometry_diagnostics_share_full_source_counts(module):
+    source,target,schedule=fixture()
+    _,report=module.align_global_clouds(sr.PointCloud.from_xyz(source),sr.PointCloud.from_xyz(target),schedule,include_geometry=True)
+    assert report['geometry_diagnostics']['source']['points']==len(source)
+    assert report['geometry_diagnostics']['target']['rank']==6
+    from render_alignment_report import render_report
+    assert 'local information rank 6/6' in render_report(report)
+    report['geometry_diagnostics']['source']['points']-=1
+    with pytest.raises(ValueError,match='point count'):render_report(report)

@@ -1,9 +1,18 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **64%, provisional**. This is a subjective
+Current assessment (2026-10-10): **66%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 66% estimate adds geometry-conditioned failure diagnostics and visualization:
+point-to-point and point-to-plane information spectra, weak directions, and
+origin/scale normalization. Analytical line/plane/coincident ranks and independent
+finite-difference Jacobians verify the math; 380 Python tests pass. Optional
+global reports preserve poses/support while adding full-cloud spectra. Public
+source/target and target-normal analysis run successfully. Local fixed-pair
+information does not establish global identifiability, actual retained-pair
+observability, noise covariance or confidence; those limits are explicit.
 
 The 64% estimate adds PCL 1.15.0 to the controlled external ICP study: 702
 registrations, 234 paired conditions, all three libraries recover 138 poses
