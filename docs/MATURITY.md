@@ -24,6 +24,11 @@ post-fit evaluator rejects changed priors, gates, iteration caps, stopping rules
 trim settings and missing/duplicated rows. All 502 ONNX-enabled Python tests pass.
 This selected failure case supports a retained-residual intervention, not a
 default trim change or general accuracy claim, so the assessment stays at 80%.
+The frozen source archive additionally rebuilds with `--locked` under Python
+3.14 in a separate Cargo target and passes 499 tests plus three expected ONNX
+skips as a newly installed wheel, with exact archive/native/type/runtime checks.
+Remote runtime jobs still have no assigned runners; this local evidence does
+not close the Windows/macOS/ARM or GPU gates.
 
 The 78% estimate adds actual official 3DMatch fragments across three scenes,
 12 pairs fixed before fitting, 72 native/Open3D registrations, and publisher
