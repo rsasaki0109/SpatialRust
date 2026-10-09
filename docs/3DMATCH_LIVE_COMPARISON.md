@@ -66,6 +66,37 @@ five other outputs need refinement to satisfy the criterion.
 The bound post-fit diagnosis and standalone HTML are saved at
 `/workspace/SpatialRust-python-delivery/target/3dmatch-stage-diagnosis-final/`.
 
+## Controlled replay of the hotel drift
+
+The hotel 12 → 0 case was selected after observing its refinement failures, so
+this is an exploratory intervention, not an independent validation set. Its
+three saved FPFH initializations were held fixed and each replayed with retained
+fractions 1.0, 0.8, 0.6 and 0.4. No reference enters the fitting or trim choice.
+All three 1.0 controls reproduce the original final matrices exactly.
+
+| Retained fraction | Publisher correct/planned | Median translation error (m) | Median rotation error (degrees) |
+| --- | --- | --- | --- |
+| 1.0 | 0/3 | 0.28843 | 2.39744 |
+| 0.8 | 3/3 | 0.07987 | 3.11321 |
+| 0.6 | 3/3 | 0.08217 | 3.17598 |
+| 0.4 | 3/3 | 0.07381 | 2.68489 |
+
+The controlled change suppresses translation drift and satisfies the publisher
+criterion in this case, while median rotation error increases. Forward proximity
+support also decreases from a median 0.514 to approximately 0.467–0.473. Thus
+neither larger proximity support nor a single rotation threshold describes this
+result adequately. The intervention supports sensitivity to retained residuals;
+it does not isolate physical outliers, prove a universal best fraction, or justify
+changing default trimming. Other cases still require prospective paired replay.
+
+`scripts/evaluate_3dmatch_refinement.py` checks the replay/comparison/reference
+hash bindings, identical native build and initial matrices, complete unique
+seed/fraction slots, unchanged stage gates/iteration caps/stopping criteria,
+actual trim settings and exact untrimmed controls before scoring original GT.
+The twelve refinements and their post-fit evaluation are under
+`/workspace/SpatialRust-python-delivery/target/3dmatch-hotel-drift-replay/` and
+`/workspace/SpatialRust-python-delivery/target/3dmatch-hotel-drift-evaluation-delivered/`.
+
 ## Reproduction and interruption recovery
 
 Preparation and bounded isolated execution:
