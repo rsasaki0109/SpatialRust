@@ -1,6 +1,6 @@
 use spatialrust_core::{HasPositions3, PointCloud, SpatialError, SpatialResult};
 use spatialrust_math::{Isometry3, TransformPoint, Vec3};
-use spatialrust_search::{KdTree, NearestNeighborIndex};
+use spatialrust_search::KdTree;
 
 use crate::kabsch::estimate_rigid_transform;
 use crate::registration::{PointCloudRegistration, RegistrationResult};
@@ -96,7 +96,9 @@ impl IcpRegistration {
             let mut pairs_target = Vec::new();
 
             for point in &transformed {
-                let Some(neighbor) = tree.nearest_one(point.x, point.y, point.z) else {
+                let Some(neighbor) =
+                    tree.nearest_one_within(point.x, point.y, point.z, max_distance_squared)
+                else {
                     continue;
                 };
                 if neighbor.distance_squared <= max_distance_squared {
@@ -205,7 +207,9 @@ fn final_fitness(
     let mut pairs_source = Vec::new();
     let mut pairs_target = Vec::new();
     for point in transformed {
-        let Some(neighbor) = tree.nearest_one(point.x, point.y, point.z) else {
+        let Some(neighbor) =
+            tree.nearest_one_within(point.x, point.y, point.z, max_distance_squared)
+        else {
             continue;
         };
         if neighbor.distance_squared <= max_distance_squared {
