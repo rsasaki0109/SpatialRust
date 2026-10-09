@@ -49,6 +49,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Alignment HTML displays candidate scores, both support directions, convergence
+  and escaped failure messages; validates selection order and selected summaries.
 - Real-file Python multistart example evaluates 1–16 supplied rigid poses,
   records failures and support scores, exports the selected full source, and
   optionally renders HTML with overwrite protection and failed-write cleanup.

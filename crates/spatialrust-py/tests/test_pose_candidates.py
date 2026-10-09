@@ -39,6 +39,15 @@ def test_real_candidates_keep_failures_and_stable_ties(tmp_path, example):
     assert len(cloud) == len(source)
     np.testing.assert_allclose(cloud.xyz(), target, atol=3e-5)
     json.dumps(report, allow_nan=False)
+    from render_alignment_report import render_report
+    rendered = render_report(report)
+    assert 'Pose candidates' in rendered and '1 (selected)' in rendered
+    assert 'Failed:' in rendered
+    report['candidate_selection']['candidates'][0]['error'] = '<script>bad</script>'
+    assert '&lt;script&gt;bad&lt;/script&gt;' in render_report(report)
+    report['candidate_selection']['selected_index'] = 2
+    with pytest.raises(ValueError, match='ordering'):
+        render_report(report)
 
 
 @pytest.mark.parametrize('values', [[], [np.eye(4).tolist()] * 17, [np.eye(3).tolist()],
@@ -61,6 +70,7 @@ def test_candidate_cli_outputs_and_refuses_overwrite(tmp_path):
     report = json.loads((output / 'alignment.json').read_text())
     assert report['candidate_selection']['selected_index'] == 1
     assert (output / 'report.html').exists()
+    assert '1 (selected)' in (output / 'report.html').read_text()
     np.testing.assert_allclose(sr.read(str(output / 'aligned.pcd')).xyz(), target, atol=3e-5)
     original = {p.name: p.read_bytes() for p in output.iterdir()}
     assert subprocess.run(command, capture_output=True, timeout=60).returncode != 0

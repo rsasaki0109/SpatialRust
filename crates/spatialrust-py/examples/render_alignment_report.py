@@ -20,6 +20,68 @@ def _count(value, name):
     return value
 
 
+def _candidate_table(selection, source, target, gate):
+    if not isinstance(selection, dict):
+        raise ValueError('candidate_selection must be an object')
+    candidates = selection.get('candidates')
+    if not isinstance(candidates, list) or not 1 <= len(candidates) <= 16:
+        raise ValueError('candidate_selection requires 1 to 16 candidates')
+    if type(selection.get('candidate_count')) is not int or selection['candidate_count'] != len(candidates):
+        raise ValueError('candidate count mismatch')
+    selected = selection.get('selected_index')
+    if type(selected) is not int or not 0 <= selected < len(candidates):
+        raise ValueError('invalid selected candidate index')
+    rows, scores = [], []
+    for index, candidate in enumerate(candidates):
+        if not isinstance(candidate, dict) or type(candidate.get('index')) is not int or candidate['index'] != index:
+            raise ValueError('candidate indices must match input order')
+        if candidate.get('status') == 'error':
+            if not isinstance(candidate.get('error'), str) or index == selected:
+                raise ValueError('invalid candidate failure')
+            rows.append(f'<tr><td>{index}</td><td colspan="4">Failed: {html.escape(candidate["error"])}</td></tr>')
+            continue
+        if candidate.get('status') != 'success' or type(candidate.get('converged')) is not bool:
+            raise ValueError('invalid candidate status or convergence')
+        displays = []
+        for key, denominator in [('aligned_support', source), ('aligned_reverse_support', target)]:
+            support = candidate.get(key)
+            if not isinstance(support, dict) or _count(support.get('query_points'), 'candidate query_points') != denominator:
+                raise ValueError('candidate support denominator mismatch')
+            count = support.get('distance_gated_points')
+            fraction = _number(support.get('query_fraction'), 'candidate fraction', maximum=1)
+            if type(count) is not int or not 0 <= count <= denominator or not math.isclose(fraction, count / denominator, rel_tol=1e-12, abs_tol=1e-12):
+                raise ValueError('candidate support count/fraction mismatch')
+            if _number(support.get('distance_metres'), 'candidate distance_metres') != gate:
+                raise ValueError('candidate evaluation gate mismatch')
+            rmse = support.get('gated_rmse_metres')
+            if count == 0:
+                if rmse is not None:
+                    raise ValueError('empty candidate support must have null RMSE')
+            else:
+                _number(rmse, 'candidate RMSE')
+                if rmse > gate and not math.isclose(rmse, gate, rel_tol=1e-6):
+                    raise ValueError('candidate RMSE exceeds gate')
+            displays.append(f'{count}/{denominator} ({fraction:.1%})')
+            if key == 'aligned_support':
+                scores.append((index, -count, math.inf if rmse is None else rmse))
+                residual = 'None' if rmse is None else f'{rmse:.6g} m'
+        label = f'{index} (selected)' if index == selected else str(index)
+        rows.append(f'<tr><td>{label}</td><td>{displays[0]}</td><td>{displays[1]}</td>'
+                    f'<td>{residual}</td><td>{str(candidate["converged"]).lower()}</td></tr>')
+    if not scores or type(selection.get('successful_candidates')) is not int or selection['successful_candidates'] != len(scores):
+        raise ValueError('candidate success count mismatch')
+    if min(scores, key=lambda score: (score[1], score[2]))[0] != selected:
+        raise ValueError('selected candidate does not match support/RMSE ordering')
+    rule = 'maximum_forward_supported_points_then_minimum_gated_rmse_then_input_order'
+    if selection.get('rule') != rule:
+        raise ValueError('unsupported candidate selection rule')
+    return ('<section><h2>Pose candidates</h2><table><tr><th>Index</th><th>Forward support</th>'
+            '<th>Reverse support</th><th>Forward gated RMSE</th><th>Converged</th></tr>'
+            + ''.join(rows) + '</table><p>Selection maximizes forward supported points, then minimizes gated RMSE; '
+            'input order breaks ties. Reverse support and convergence are shown for inspection. '
+            'Selection does not certify pose correctness.</p></section>')
+
+
 def render_report(report):
     """Validate diagnostic fields and return HTML; no network or scripts required."""
     if not isinstance(report, dict) or report.get('schema_version') != 'spatialrust.python-alignment.v1':
@@ -78,16 +140,24 @@ def render_report(report):
                     f'<rect width="{fraction * 100:.12g}" height="8" fill="#0369a1"/></svg>'
                     f'<p>{count} / {expected} points ({fraction:.1%}); gated RMSE: {residual}</p>'
                     f'<p>{expected - count} / {expected} points excluded from RMSE ({1 - fraction:.1%}).</p></section>')
+    candidates_html = (_candidate_table(report['candidate_selection'], source, target, gate)
+                       if 'candidate_selection' in report else '')
+    if candidates_html:
+        selection = report['candidate_selection']
+        selected = selection['candidates'][selection['selected_index']]
+        for key in ['aligned_support', 'aligned_reverse_support']:
+            if selected[key] != report[key]:
+                raise ValueError('selected candidate support differs from main report')
     return ('<!doctype html><html lang="en"><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<title>Alignment support report</title><style>body{font:16px system-ui;max-width:850px;margin:2rem auto;padding:1rem}'
-            'svg{width:100%;max-height:55px}h2{font-size:1.1rem}section{margin:2rem 0}</style>'
+            'svg{width:100%;max-height:55px}h2{font-size:1.1rem}section{margin:2rem 0}td,th{padding:.5rem;text-align:left}</style>'
             '<main><h1>Alignment support report</h1>'
             f'<p>Source: {html.escape(report["source_file"])}<br>Target: {html.escape(report["target_file"])}</p>'
             f'<p>Evaluation distance gate: {gate:.6g} m. ICP correspondence gate: {optimization_gate:.6g} m. '
             f'ICP converged: {str(report["converged"]).lower()}.</p>'
             f'<p>Initial pose: {prior_label}. A supplied prior is not independently verified.</p>'
-            + ''.join(rows) +
+            + ''.join(rows) + candidates_html +
             '<p>Each direction uses its own query point count. High forward support with lower reverse support '
             'can indicate partial overlap or different sampling densities; it does not identify the cause.</p>'
             '<p>RMSE includes only points within the distance gate. Low RMSE and convergence do not certify '
