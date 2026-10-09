@@ -5,6 +5,16 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
+The latest Linux runtime checkpoint runs the entire current suite on the default
+abi3 wheel at both supported endpoints: CPython 3.8 and 3.14 each pass 537 tests
+with three expected ONNX skips; the ONNX-enabled 3.12 suite passes all 540.
+This strengthens local regression coverage but leaves maturity at 80%. At
+2026-10-09 22:48 UTC, all 37 jobs in the latest wheel/CI workflows lack assigned
+runners. Main CI now cancels superseded runs by workflow/ref, preserving tags;
+this does not solve external runner allocation. Reaching 90% still requires
+successful external platform gates, independent accuracy validation and broader
+operational evidence; none is inferred from a configured job or a queue status.
+
 The fixed other-pair trim validation adds 66 actual refinements on the other
 11 official pairs, excluding the exploratory hotel pair. With the same 33
 generated priors, retaining 0.8 improves publisher correctness from 23/33 to
