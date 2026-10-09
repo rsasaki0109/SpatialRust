@@ -1,9 +1,18 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **59%, provisional**. This is a subjective
+Current assessment (2026-10-10): **61%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 61% estimate adds a complete no-caller-pose FPFH/RANSAC → multiscale ICP
+file workflow: bounded coarse descriptor matching, deterministic multi-seed
+generation, failed-hypothesis isolation, optional minimum proximity support,
+full-source candidate selection and visualization of initialization provenance.
+All 359 Python tests pass. It recovers a large known synthetic pose without
+truth entering initialization, and runs on the public cloud_bin_0/1 pair while
+preserving 198,835 points, field schema and exact saved XYZ. Real-pair ground
+truth remains unavailable; successful output and support do not certify accuracy.
 
 The 59% estimate adds validated native FPFH/RANSAC configuration, finite/unit
 input checks, rejection of overflowing geometry, a corrected zero RNG state,

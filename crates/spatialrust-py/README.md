@@ -391,6 +391,29 @@ An accepted feature hypothesis is still not a certificate of the true pose.
 The separate keypoint-based Python entry point has not received the same
 normal-estimation boundary and GIL changes in this slice.
 
+To generate the initial pose and refine it without a caller pose:
+
+```bash
+python crates/spatialrust-py/examples/align_global.py source.pcd target.pcd \
+  --schedule schedule.json --seeds 7 8 9 --minimum-support .2 \
+  --output-dir global-run --html-report
+```
+
+FPFH/RANSAC works on separate coarse voxel clouds (`--global-leaf .1`,
+`--feature-radius .5`, `--global-distance .2`, `--ransac-iterations 10000`).
+The workflow rejects either coarse cloud above `--max-coarse-points 5000`,
+bounding quadratic descriptor matching; increase voxel size if necessary.
+It evaluates 1–16 distinct unsigned-64-bit seeds, rejects unaccepted/nonfinite
+global hypotheses, refines accepted ones using the explicit schedule, and
+selects maximum full-source supported points then minimum gated RMSE, breaking
+ties by seed order. No ground truth enters generation or selection. The optional
+minimum-support gate is a proximity requirement, not an accuracy certificate.
+Normals are re-estimated per seed and oriented towards the default viewpoint;
+that orientation and geometric symmetry can limit matching. HTML distinguishes
+generated initialization from caller poses and shows parameters, candidate
+disagreement, full-source support and selected stage traces. Output attributes,
+exclusive-directory and write-cleanup contracts match the multiscale example.
+
 For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
 
 ```bash
