@@ -140,7 +140,7 @@ fn read_ascii_payload<R: BufRead>(
             if field.name.eq_ignore_ascii_case("rgb") {
                 let token =
                     tokens.next().ok_or_else(|| pcd_parse("missing rgb token in ASCII PCD"))?;
-                let packed = parse_packed_rgb(token)?;
+                let packed = parse_packed_rgb(token, field.kind)?;
                 push_to_field(buffers, schema, "r", f64::from(packed.0))?;
                 push_to_field(buffers, schema, "g", f64::from(packed.1))?;
                 push_to_field(buffers, schema, "b", f64::from(packed.2))?;
@@ -162,10 +162,20 @@ fn read_ascii_payload<R: BufRead>(
     Ok(())
 }
 
-fn parse_packed_rgb(token: &str) -> Result<(f32, f32, f32), IoError> {
-    let float_value: f32 =
-        token.parse().map_err(|_| pcd_parse(format!("invalid rgb value `{token}`")))?;
-    let bits = float_value.to_bits();
+fn parse_packed_rgb(
+    token: &str,
+    kind: crate::pcd::schema::PcdType,
+) -> Result<(f32, f32, f32), IoError> {
+    let bits = match kind {
+        crate::pcd::schema::PcdType::F => token
+            .parse::<f32>()
+            .map_err(|_| pcd_parse(format!("invalid rgb value `{token}`")))?
+            .to_bits(),
+        crate::pcd::schema::PcdType::U => {
+            token.parse::<u32>().map_err(|_| pcd_parse(format!("invalid rgb value `{token}`")))?
+        }
+        _ => return Err(pcd_format("unsupported packed rgb TYPE")),
+    };
     Ok((((bits >> 16) & 0xFF) as f32, ((bits >> 8) & 0xFF) as f32, (bits & 0xFF) as f32))
 }
 
@@ -577,6 +587,7 @@ fn read_ascii_chunk<R: BufRead>(
             if field.name.eq_ignore_ascii_case("rgb") {
                 let packed = parse_packed_rgb(
                     tokens.next().ok_or_else(|| pcd_parse("missing rgb token in ASCII PCD"))?,
+                    field.kind,
                 )?;
                 push_to_field(buffers, schema, "r", f64::from(packed.0))?;
                 push_to_field(buffers, schema, "g", f64::from(packed.1))?;
@@ -738,6 +749,59 @@ mod tests {
             }
             assert!(source.next_chunk().is_none());
             assert!(source.memory_tracker().snapshot().peak_bytes <= 56);
+        }
+    }
+
+    #[test]
+    fn packed_rgb_ascii_and_binary_roundtrip_preserves_channels() {
+        use spatialrust_core::PointBuffer;
+        #[cfg(feature = "streaming")]
+        use spatialrust_records::{BoundedSpatialRecordSource, CancellationToken, StreamOptions};
+        let input = b"FIELDS x y z rgb\nSIZE 4 4 4 4\nTYPE F F F U\nCOUNT 1 1 1 1\nWIDTH 3\nHEIGHT 1\nPOINTS 3\nDATA ascii\n0 0 0 16711680\n1 0 0 65280\n2 0 0 255\n";
+        let original = read_pcd(&mut Cursor::new(input)).unwrap();
+        for format in [PcdWriteFormat::Ascii, PcdWriteFormat::Binary] {
+            let mut bytes = Vec::new();
+            write_pcd(&mut bytes, &original, format).unwrap();
+            let decoded = read_pcd(&mut Cursor::new(&bytes)).unwrap();
+            for (name, expected) in [("r", [255, 0, 0]), ("g", [0, 255, 0]), ("b", [0, 0, 255])] {
+                assert!(
+                    matches!(decoded.field(name).unwrap(), PointBuffer::U8(v) if v == &expected)
+                );
+            }
+            #[cfg(feature = "streaming")]
+            {
+                let options =
+                    StreamOptions::new(1, spatialrust_records::MemoryBudget::new(64).unwrap())
+                        .unwrap();
+                let mut source = super::PcdChunkSource::new(
+                    Cursor::new(bytes),
+                    options,
+                    CancellationToken::default(),
+                )
+                .unwrap();
+                for index in 0..3 {
+                    let chunk = source.next_chunk().unwrap().unwrap();
+                    let cloud = chunk.record().cloud();
+                    for name in ["r", "g", "b"] {
+                        match (cloud.field(name).unwrap(), decoded.field(name).unwrap()) {
+                            (PointBuffer::U8(actual), PointBuffer::U8(expected)) => {
+                                assert_eq!(actual, &expected[index..index + 1])
+                            }
+                            _ => panic!("color dtype changed"),
+                        }
+                    }
+                }
+                assert!(source.next_chunk().is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn rejects_malformed_packed_rgb_schema() {
+        for (size, kind, count) in [(8, "F", 1), (4, "I", 1), (4, "F", 2), (1, "U", 1)] {
+            let input = format!("FIELDS x y z rgb\nSIZE 4 4 4 {size}\nTYPE F F F {kind}\nCOUNT 1 1 1 {count}\nPOINTS 1\nDATA ascii\n");
+            let error = read_pcd(&mut Cursor::new(input)).unwrap_err();
+            assert!(error.to_string().contains("packed rgb requires"));
         }
     }
 

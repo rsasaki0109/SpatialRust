@@ -276,7 +276,7 @@ fn write_ascii_payload<W: Write>(
                 let g = read_scalar(cloud, "g", point_index)? as u32;
                 let b = read_scalar(cloud, "b", point_index)? as u32;
                 let packed = (r << 16) | (g << 8) | b;
-                write!(writer, "{packed}")?;
+                write!(writer, "{}", f32::from_bits(packed))?;
                 continue;
             }
             write!(writer, "{}", read_scalar(cloud, &spec.name, point_index)?)?;
