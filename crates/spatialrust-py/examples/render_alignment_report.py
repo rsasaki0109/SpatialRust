@@ -31,6 +31,11 @@ def render_report(report):
         raise ValueError('max_distance_metres must be positive')
     if type(report.get('converged')) is not bool:
         raise ValueError('converged must be boolean')
+    prior = report.get('initial_transform_supplied', 'unknown')
+    if 'initial_transform_supplied' in report and type(prior) is not bool:
+        raise ValueError('initial_transform_supplied must be boolean')
+    prior_label = ('supplied by caller' if prior is True else
+                   'default identity' if prior is False else 'not recorded in this report')
     for name in ('source_file', 'target_file'):
         if not isinstance(report.get(name), str):
             raise ValueError(f'{name} must be text')
@@ -76,6 +81,7 @@ def render_report(report):
             '<main><h1>Alignment support report</h1>'
             f'<p>Source: {html.escape(report["source_file"])}<br>Target: {html.escape(report["target_file"])}</p>'
             f'<p>Distance gate: {gate:.6g} m. ICP converged: {str(report["converged"]).lower()}.</p>'
+            f'<p>Initial pose: {prior_label}. A supplied prior is not independently verified.</p>'
             + ''.join(rows) +
             '<p>Each direction uses its own query point count. High forward support with lower reverse support '
             'can indicate partial overlap or different sampling densities; it does not identify the cause.</p>'

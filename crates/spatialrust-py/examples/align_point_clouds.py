@@ -90,6 +90,7 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
                        leaf_metres=leaf, max_distance_metres=max_distance,
                        iterations=result.iterations, converged=result.converged,
                        max_iterations_per_stage=iterations, stages=stages,
+                       initial_transform_supplied=initial_transform is not None,
                        initial_transform_source_to_target=initial.tolist(),
                        transform_source_to_target=transform.tolist(),
                        kernel_fitness_metres_squared=result.fitness if math.isfinite(result.fitness) and result.fitness < np.finfo(np.float64).max else None,

@@ -45,6 +45,7 @@ def test_full_resolution_roundtrip_and_transform_direction(tmp_path):
     assert report['aligned_support']['gated_rmse_metres'] < 1e-5
     assert report['iterations'] == report['stages'][1]['iterations']
     assert report['converged'] == report['stages'][1]['converged']
+    assert report['initial_transform_supplied'] is False
     np.testing.assert_allclose(report['stages'][1]['transform_source_to_target'], report['transform_source_to_target'])
     expected = source @ transform[:3, :3].T + transform[:3, 3]
     np.testing.assert_allclose(saved, expected, atol=2e-6)
@@ -158,6 +159,7 @@ def test_rotated_initial_pose_cli_and_composition(tmp_path):
     np.testing.assert_allclose(report['transform_source_to_target'], initial, atol=3e-5)
     np.testing.assert_allclose(sr.read(str(output / 'aligned.pcd')).xyz(), target, atol=3e-5)
     np.testing.assert_allclose(report['initial_transform_source_to_target'], initial, atol=1e-6)
+    assert report['initial_transform_supplied'] is True
 
 
 def test_invalid_initial_poses_before_io():
