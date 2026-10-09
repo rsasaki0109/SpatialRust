@@ -1,11 +1,19 @@
 """Fixed-seed ICP initialization experiment; regenerates synthetic artifacts."""
 import json
+import argparse
+import math
 import sys
 from pathlib import Path
 import numpy as np
 
 REPO = Path(__file__).resolve().parents[1]
-ROOT = REPO / 'target/gate-study'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--evaluation-distance', type=float, help='fixed diagnostic distance; defaults to each ICP gate')
+parser.add_argument('--output-dir', type=Path, default=REPO / 'target/gate-study')
+args = parser.parse_args()
+if args.evaluation_distance is not None and (not math.isfinite(args.evaluation_distance) or args.evaluation_distance <= 0):
+    parser.error('evaluation-distance must be finite and positive')
+ROOT = args.output_dir
 ROOT.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(REPO / 'crates/spatialrust-py/examples'))
 from align_point_clouds import align_files
@@ -53,7 +61,8 @@ for seed in range(5):
                    perturbation_convention='target-frame perturbation @ correct inverse')
         try:
             _, d = align_files(sp, tp, leaf=.025, max_distance=gate,
-                               iterations=100, initial_transform=prior)
+                               iterations=100, initial_transform=prior,
+                               evaluation_distance=args.evaluation_distance)
             angle, translation = errors(np.asarray(d['transform_source_to_target']), truth)
             row.update(rotation_error_degrees=angle, translation_error_metres=translation,
                        success=angle < 1 and translation < .01,
@@ -74,6 +83,24 @@ for gate in [.05, .15, .3, .6, 1.2]:
                         error_count=len(group)-len(completed),
                         rotation_errors=[row['rotation_error_degrees'] for row in completed],
                         translation_errors=[row['translation_error_metres'] for row in completed],
-                        forward_support=[row['forward_fraction'] for row in completed]))
-(ROOT / 'results.json').write_text(json.dumps(dict(rows=rows, summary=summary), indent=2, allow_nan=False) + '\n')
+                        forward_support=[row['forward_fraction'] for row in completed],
+                        reverse_support=[row['reverse_fraction'] for row in completed],
+                        gated_rmse_metres=[row['rmse_metres'] for row in completed]))
+(ROOT / 'results.json').write_text(json.dumps(dict(evaluation_distance_metres=args.evaluation_distance, rows=rows, summary=summary), indent=2, allow_nan=False) + '\n')
+table = []
+for item in summary:
+    support = item['forward_support']
+    span = f'{min(support):.1%}–{max(support):.1%}' if support else 'No completed runs'
+    success = item['successes'] / item['trials']
+    table.append(f'<tr><td>{item["gate_metres"]:g}</td><td>{item["successes"]}/{item["trials"]}</td>'
+                 f'<td>{item["converged"]}/{item["trials"]}</td><td>{span}</td>'
+                 f'<td><svg viewBox="0 0 100 10" role="img" aria-label="Correct poses {success:.0%}">'
+                 f'<rect width="100" height="10" fill="#eee"/><rect width="{100*success:g}" height="10" fill="#0369a1"/></svg></td></tr>')
+evaluation = f'{args.evaluation_distance:g} m (fixed)' if args.evaluation_distance is not None else 'matches each ICP gate'
+(ROOT / 'report.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8"><title>ICP gate study</title>'
+    '<style>body{font:16px system-ui;max-width:950px;margin:2rem auto}td,th{padding:.6rem;text-align:left}svg{width:150px}</style>'
+    f'<h1>ICP gate study</h1><p>Evaluation gate: {evaluation}. Five fixed synthetic seeds per search gate.</p>'
+    '<table><thead><tr><th>ICP gate (m)</th><th>Correct poses</th><th>Converged</th><th>Forward support range</th><th>Correct pose fraction</th></tr></thead><tbody>'
+    + ''.join(table) + '</tbody></table><p>Correctness uses known generating poses: rotation error &lt; 1 degree and translation error &lt; 0.01 m. '
+    'Convergence and proximity support do not certify pose. Clean fully overlapping data, no outliers; this is not a general gate recommendation.</p></html>', encoding='utf-8')
 print(json.dumps(summary, indent=2))
