@@ -1,9 +1,17 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **56%, provisional**. This is a subjective
+Current assessment (2026-10-10): **57%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The explicit multiscale file workflow adds independently configurable stage
+resolution, gates, trimming and stopping, with target-frame composition,
+original-source attribute preservation and per-stage visualization. All 314
+Python tests pass. A three-stage run on the public cloud_bin_0/1 pair preserves
+198,835 source points and exact XYZ after PCD roundtrip. This supports the 57%
+assessment; one public pair without verified ground truth does not establish
+accuracy superiority, external-library parity or broad performance gains.
 
 Earlier 2026-10-10 update at 55%: optional ICP trimming and a 702-run
 paired synthetic study are now available, with both improvements and regressions

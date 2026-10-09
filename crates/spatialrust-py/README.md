@@ -344,6 +344,37 @@ ICP while keeping `--max-distance .1` for the coarse voxel stage. Without this
 option both stages use max-distance. The evaluation gate stays independent and
 defaults to max-distance; stage gates are recorded in JSON and HTML.
 
+For an explicit 1–16 stage CPU schedule, use `align_multiscale.py`:
+
+```json
+[
+  {"leaf": 0.1, "max_distance": 0.2, "iterations": 30},
+  {"leaf": 0.05, "max_distance": 0.1, "iterations": 30},
+  {"leaf": null, "max_distance": 0.02, "iterations": 30,
+   "convergence": {"translation_epsilon": 0.0001, "rotation_epsilon": 0.0001, "fitness_epsilon": 0}}
+]
+```
+
+Save this as `schedule.json`, then run:
+
+```bash
+python crates/spatialrust-py/examples/align_multiscale.py source.pcd target.pcd \
+  --schedule schedule.json --output-dir multiscale-run --html-report
+```
+
+Voxel sizes and correspondence gates must not increase; the final stage must
+use `leaf: null` for full resolution. Each stage optionally accepts its own
+`trim_fraction` and convergence thresholds. Translation and distance use metres;
+rotation uses radians and fitness uses squared metres. Evaluation defaults to
+the final gate, or can be fixed with `--evaluation-distance`. A supplied
+`--initial-transform` maps the source into the target frame.
+Every correction is composed in the target frame and applied to the original
+source, preserving scalar attributes and rotating normals. Repeated voxel sizes
+reuse target downsampling. JSON and standalone HTML include each stage's trace,
+stop reason and cumulative pose; evaluation uses all original points in both
+directions. A stopped stage is not proof of a correct pose. Existing output
+directories are refused and a failed write removes only the newly reserved output.
+
 For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
 
 ```bash
