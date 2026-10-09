@@ -357,6 +357,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add a validated Python two-file alignment workflow with optional initial pose,
+  voxel/full-resolution ICP stages and full-resolution PCD/JSON export.
+  File-based integration tests cover composition, input rejection and output cleanup.
+
 - **Prefetch admission under load**: the bounded prefetch preflight now
   accounts for the producer lease held while a full queue blocks in addition
   to queued and consumer leases. This removes a scheduler-dependent

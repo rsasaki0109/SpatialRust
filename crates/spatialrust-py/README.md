@@ -225,3 +225,68 @@ takes `--input scan.pcd` to run on a real scan (PCD/PLY/LAS/COPC), falling back
 to a generated multi-object fixture:
 
 ![end-to-end pipeline](../../docs/assets/python_end_to_end.png)
+
+### Two-file alignment and full-resolution export
+
+```bash
+python crates/spatialrust-py/examples/align_point_clouds.py source.pcd target.pcd \
+  --leaf 0.05 --max-distance 0.1 --iterations 50 --output-dir aligned-run
+```
+
+This CPU workflow reads independent source/target files, explicitly copies XYZ
+to NumPy for finite-value validation, downsamples both for point-to-point ICP,
+and applies the source-to-target transform to the original source. It saves
+`aligned.pcd` (all source points) and `alignment.json` (counts, settings, transform,
+iterations, convergence and kernel fitness). Coordinates are interpreted as metres.
+An existing output directory is refused; its parent must exist. Normal write
+failures remove the newly created output directory. This is not atomic publication
+or crash-durable storage; forced termination can leave partial output.
+
+ICP defaults to identity and requires sufficiently close inputs and overlap.
+A completed result can be nonconverged; convergence and gated kernel fitness
+are not certificates of correct pose. The fitness is the kernel's residual,
+not a recomputed final full-resolution distance. A rejected voxel cloud prompts
+a smaller leaf. This example uses the existing public functions `read`,
+`voxel_downsample`, `register_icp`, `apply_transform` and `write`; it does not add
+a new stability guarantee to provisional APIs. The example's `align_files`
+function returns the aligned cloud and diagnostics without writing output.
+
+Run the file-based integration checks against an installed wheel:
+
+```bash
+python crates/spatialrust-py/tests/test_alignment_pipeline.py
+```
+
+The Python wheel CI also discovers these checks with pytest. They cover
+full-resolution export, transform direction, overwrite protection, invalid
+settings, insufficient coarse points, nonfinite input, disjoint-cloud failure and injected partial-write cleanup.
+
+To start from a known source-to-target pose, supply a JSON array containing its
+4x4 matrix (row-major, translation in the last column, metres):
+
+```bash
+python crates/spatialrust-py/examples/align_point_clouds.py source.pcd target.pcd \
+  --initial-transform pose.json --output-dir seeded-run
+```
+
+`align_files(..., initial_transform=matrix)` accepts the same matrix. Inputs
+must be finite and f32-representable; the bottom row must match [0,0,0,1] within
+1e-6, and rotation orthogonality/determinant +1 within 1e-5. Reflections, scale
+and projective transforms are rejected. The initial pose is applied before voxel
+sampling; ICP estimates a correction in target coordinates. The final transform
+is correction × initial and is applied once to the original source. JSON stores
+both initial and final matrices. Seeded voxel membership can differ from identity
+runs. This is local registration using caller-provided pose, not global pose
+estimation. Tests include a 60-degree rotation plus 10 m translation and invalid
+matrix rejection; they do not establish robustness on arbitrary field scans.
+
+The workflow now runs two stages: voxel ICP followed by full-resolution ICP.
+`--iterations` is the maximum for each stage. Top-level iterations, convergence
+and fitness describe the final stage; `stages` records each stage's counts,
+iterations, convergence, fitness and cumulative source-to-target transform.
+The final correction is composed with the coarse pose and applied once to the
+original source. Both stages use `--max-distance`. A coarse-stage success does
+not guarantee fine-stage success, and precision refinement does not infer global
+pose. A controlled rotated fixture with voxel bias tests error reduction after
+full-resolution refinement. Additional full-resolution copies and ICP increase
+CPU time and memory compared with coarse-only estimation.
