@@ -44,6 +44,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Distance-gate study supports fixed evaluation distance and standalone HTML
+  summaries. Paired synthetic runs separate optimizer recovery from relaxed
+  support evaluation while verifying unchanged estimated transforms.
 - Python alignment accepts an independent `evaluation_distance` and CLI
   `--evaluation-distance`, separating support diagnostics from ICP correspondence
   search. HTML reports display both distances and accept older report files.

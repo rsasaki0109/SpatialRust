@@ -29,3 +29,18 @@ support. Thus gated RMSE cannot be compared across gates without checking the
 accepted populations. The broad gates recovered all seeds here, but this clean,
 fully overlapping, outlier-free example does not establish a generally best gate.
 Noise, partial overlap and outliers can change this tradeoff.
+
+## Paired fixed-evaluation experiment
+
+Run `python scripts/study_alignment_distance_gate.py --evaluation-distance 0.05
+--output-dir target/fixed-gate-study` on one line. The script also writes a
+standalone `report.html` with success/convergence counts and support ranges.
+An omitted evaluation distance retains the original per-search-gate evaluation.
+
+All 25 estimated transforms exactly matched their paired runs with variable
+evaluation distance. Correct-pose counts therefore remain 0, 0, 1, 5, 5.
+However, the four wrong poses at search gate 0.3 m have only 2–3% forward
+support at fixed evaluation gate 0.05 m, versus 90.5–92.75% when evaluated at
+0.3 m. The successful broad-gate runs still have 100% fixed-distance support.
+This separates optimizer recovery from relaxed proximity evaluation in this
+specific study; it does not make proximity support a correctness certificate.
