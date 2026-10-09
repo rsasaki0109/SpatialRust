@@ -41,6 +41,16 @@ Python wheel CI also runs on relevant main-branch changes and builds and tests
 installed default wheels on Windows and macOS. These jobs gate tag publication;
 their configuration is not evidence of remote runtime success until CI completes.
 
+The same Linux x86_64 `cp38-abi3` default wheel was installed into an isolated
+CPython 3.8.20 environment with NumPy 1.24.4, PyArrow 17.0.0 and pytest 8.3.5.
+All 491 current applicable tests pass with exactly three expected ONNX skips;
+installed native/stub/marker bytes and conversion/ICP/support/PCD checks match
+the wheel. This verifies the advertised Python floor and NumPy 1.x compatibility
+on this Linux host. Native runtime CI now includes Ubuntu/Python 3.8 alongside
+Windows/macOS Python 3.12. Python 3.8 is end-of-life; support here describes
+compatibility, not upstream maintenance. Local receipts are under
+`/workspace/SpatialRust-python-delivery/target/python38-wheel-validation/`.
+
 ## Current stable toolchain
 
 Full CPU vision and Python/native integration are locally tested using Rust 1.99,
