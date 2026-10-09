@@ -1,9 +1,16 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **57%, provisional**. This is a subjective
+Current assessment (2026-10-10): **58%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 58% assessment adds a direct controlled Open3D 0.19.0 comparison: 468 runs,
+234 paired conditions, shared original-source evaluation and source/native
+fingerprints, with 3 optional comparison tests passing. All paired recovery
+decisions matched (138 recovered per library), exposing shared gate/outlier/
+initialization tradeoffs. This establishes an external comparison method and
+failure evidence, not superiority or broad real-sensor parity.
 
 The explicit multiscale file workflow adds independently configurable stage
 resolution, gates, trimming and stopping, with target-frame composition,
