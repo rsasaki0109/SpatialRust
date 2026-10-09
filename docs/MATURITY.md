@@ -27,6 +27,15 @@ production selector. The exploratory evidence leaves maturity at 80%.
 Local verification is 526 ONNX-enabled Python tests and 11 additional selection
 checks on the default CPython 3.8 wheel. Broader platform and dataset gates remain.
 
+Reference-free stage protection exposes a limit rather than closing an accuracy
+gate: on 36 native outputs, forward and bidirectional proximity still lose the
+three good hotel initializations. A fixed 0.2 m source-centroid motion guard
+saves those three but suppresses two legitimate recoveries (24/36 versus 23/36).
+Smaller limits score 22/36. All alternatives are exploratory on previously
+examined data, with no default change. Local verification is 540 ONNX-enabled
+Python tests and 14 stage/motion tests on the default Python 3.8 wheel. Maturity
+remains 80%; a validated drift guard and independent datasets are still needed.
+
 The 80% estimate adds hash-bound post-fit stage attribution: among 36 native
 outputs, refinement retains 18 correct initial poses, recovers 5, loses 3 and
 leaves 10 incorrect. All losses occur on one hotel pair, separating refinement

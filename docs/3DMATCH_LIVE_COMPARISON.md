@@ -231,3 +231,67 @@ Current-machine artifacts:
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-global-candidate-selection-delivered/study.json`
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-global-candidate-selection-delivered/report.html`
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-global-candidate-selection-delivered/selection.svg`
+
+## Can reference-free metrics protect an initializer?
+
+`scripts/study_stage_selection.py` evaluates initial, coarse and fine poses for
+all 36 saved native outputs: 108 poses, with no registration. It uses the same
+0.05 m voxel geometry and 0.05 m bidirectional gates as the candidate study.
+Forward or harmonic balanced support, with gated-RMSE tie breaking, selects a
+stage before publisher evaluation. Exact ties preserve the earlier stage.
+
+Both proximity rules score 23/36 correct, with zero gains and zero losses versus
+final outputs. They do not prevent any of the three hotel source 12 to target 0
+losses. In those losses, forward and reverse support rise and gated RMSE falls
+as publisher pose accuracy worsens. For seed 7, forward fraction rises
+0.40358 to 0.49340 and reverse fraction 0.43278 to 0.54770; forward RMSE falls
+0.02950 to 0.02745 m while publisher squared score rises 0.00698 to 0.07003.
+Thus bidirectional proximity alone does not repair this failure. This establishes
+proxy failure on the selected case, not the physical cause of the mismatch.
+
+The tool also measures source-centroid displacement and rotation from the
+initializer. Centroid displacement uses the full source centroid transformed
+by each pose; translation-vector differences alone depend on the coordinate
+origin and can misdescribe rotation about an off-origin object.
+
+Motion guards keep the initializer if final centroid displacement exceeds a
+fixed limit, otherwise keep the final pose. The limits 0.05, 0.1, 0.2 and 0.4 m
+are fine/coarse correspondence-gate multiples, not fitted optimizer parameters.
+They are exploratory diagnostic alternatives, evaluated together; no best
+threshold is independently validated.
+
+| Rule | Correct/planned | Gains versus final | Losses versus final |
+| --- | --- | --- | --- |
+| Always initializer | 21/36 | 3 | 5 |
+| Always final | 23/36 | 0 | 0 |
+| Forward proximity | 23/36 | 0 | 0 |
+| Balanced proximity | 23/36 | 0 | 0 |
+| Motion limit 0.05 m | 22/36 | 3 | 4 |
+| Motion limit 0.1 m | 22/36 | 3 | 4 |
+| Motion limit 0.2 m | 24/36 | 3 | 2 |
+| Motion limit 0.4 m | 23/36 | 0 | 0 |
+
+The 0.2 m guard saves the hotel losses but suppresses two legitimate recoveries
+on home source 50 to target 27 (seeds 7 and 9). The three hotel losses move the
+source centroid approximately 0.255–0.295 m with only 2.01–4.60 degrees of
+rotation. Legitimate recoveries can require greater rotation and substantial
+motion. These descriptive differences motivate independent validation, not a
+new truth-informed threshold or a production confidence guarantee. All prior
+baseline outcomes were known; no default refinement or selection changes.
+
+Input/reference/comparison/native/helper hashes are checked; saved final-stage
+poses must match outputs and stage names must be unique. Selections finish before
+reference metadata is parsed. Solver failures remain in the planned denominator;
+undefined publisher scores remain explicit. The CLI exports exact per-stage
+metrics, motion, selections and post-fit scores, HTML, and standalone SVG.
+
+```bash
+python scripts/study_stage_selection.py --cases CASES/cases.json \
+  --comparisons COMPARISONS --output-dir STAGE_SELECTION
+```
+
+Current-machine artifacts:
+
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-stage-selection-final/study.json`
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-stage-selection-final/report.html`
+- `/workspace/SpatialRust-python-delivery/target/3dmatch-stage-selection-final/selection.svg`
