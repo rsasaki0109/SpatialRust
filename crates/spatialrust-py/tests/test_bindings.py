@@ -1113,7 +1113,8 @@ def test_tensor_dlpack_copy_and_device_requests_are_explicit():
         tensor.__dlpack__(dl_device=(2, 0))
 
 
-def test_onnxruntime_dynamic_named_binding_matches_reference(tmp_path):
+@pytest.mark.parametrize("copy", [False, True])
+def test_onnxruntime_dynamic_named_binding_matches_reference(tmp_path, copy):
     model = bytes(
         [
             8, 8, 18, 16, 115, 112, 97, 116, 105, 97, 108, 114, 117, 115, 116, 45, 116,
@@ -1143,6 +1144,38 @@ def test_onnxruntime_dynamic_named_binding_matches_reference(tmp_path):
     expected = source * 2.0
     np.testing.assert_array_equal(bound, expected)
     np.testing.assert_array_equal(copied, expected)
+
+    # Input failures must not poison the session or later output bindings.
+    invalid_inputs = [
+        {},
+        {"wrong_name": inputs["input"]},
+        dict(inputs, extra=inputs["input"]),
+        {"input": sr.tensor_copy_from_numpy(np.ones((4,3), dtype=np.uint8))},
+        {"input": sr.tensor_copy_from_numpy(np.ones((4,2), dtype=np.float32))},
+        {"input": sr.tensor_copy_from_numpy(np.ones((3,), dtype=np.float32))},
+    ]
+    for invalid in invalid_inputs:
+        with pytest.raises(ValueError) as error:
+            session.run(invalid, copy=copy)
+        assert str(error.value)
+        recovered = np.from_dlpack(session.run(inputs, copy=copy)["output"])
+        np.testing.assert_array_equal(recovered, expected)
+    for invalid in ({1: inputs["input"]}, {"input": source}):
+        with pytest.raises(TypeError):
+            session.run(invalid, copy=copy)
+        np.testing.assert_array_equal(np.from_dlpack(session.run(inputs, copy=copy)["output"]), expected)
+    retained = []
+    for batch in (1, 7, 2):
+        values = np.arange(batch*3, dtype=np.float32).reshape(batch,3)
+        output = session.run({"input": sr.tensor_copy_from_numpy(values)}, copy=copy)["output"]
+        retained.append((output, values*2))
+    for output, values in retained:
+        np.testing.assert_array_equal(np.from_dlpack(output), values)
+
+    del session
+    gc.collect()
+    for output, values in retained:
+        np.testing.assert_array_equal(np.from_dlpack(output), values)
 
     try:
         import onnxruntime as reference_runtime

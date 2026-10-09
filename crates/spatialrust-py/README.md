@@ -335,7 +335,7 @@ and correspondence distance must be positive with finite nonzero f32 square.
 These violations raise `ValueError` with the parameter or input name. Python
 argument extraction can independently raise `TypeError`/`OverflowError` (for
 example, negative values for an unsigned iteration count). Other native alignment
-failures retain `RuntimeError`; a nonconverged result is still returned when the
+failures retain `ValueError`; a nonconverged result is still returned when the
 kernel completes its budget. Input validation runs outside the GIL without
 whole-cloud copies. Tests cover both source and target rejection and valid
 reuse after errors. This clarifies provisional API behavior, not a new stable
@@ -411,3 +411,11 @@ actual ONNX model; named binding also matches the official Python runtime's
 output. This validates the CPU model path, not CUDA/TensorRT, model breadth or
 performance. The baseline wheel still excludes ONNX; ONNX remains optional.
 Remote CI and standalone wheel redistribution are not verified by this run.
+
+ONNX `session.run` rejects missing/unknown input names, incorrect tensor dtype,
+rank and fixed dimensions with `ValueError`. Incorrect Python key/value types
+raise `TypeError`. The same session remains usable after these input errors in
+both bound and copied modes. The dynamic-model regression test varies batches
+1/7/2, retains outputs across later runs, releases the session, then verifies
+previous outputs still hold their values. This documents the tested CPU path;
+it does not guarantee recovery from arbitrary runtime/device failures.
