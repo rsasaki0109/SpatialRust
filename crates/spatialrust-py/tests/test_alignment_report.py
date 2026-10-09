@@ -108,6 +108,18 @@ def test_initial_support_is_optional_validated_and_between_before_and_after():
         module.render_report(report)
 
 
+def test_distinct_optimization_and_evaluation_gates():
+    report = fixture()
+    report['evaluation_distance_metres'] = .1
+    report['max_distance_metres'] = .6
+    rendered = module.render_report(report)
+    assert 'Evaluation distance gate: 0.1 m' in rendered
+    assert 'ICP correspondence gate: 0.6 m' in rendered
+    report['evaluation_distance_metres'] = 0
+    with pytest.raises(ValueError):
+        module.render_report(report)
+
+
 def test_cli_exclusive_output_and_validation_before_write(tmp_path):
     report = tmp_path / 'alignment.json'
     output = tmp_path / 'report.html'
