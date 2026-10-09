@@ -102,6 +102,7 @@ pub struct IcpConvergenceCriteria {
 pub struct IcpRegistration {
     config: IcpConfig,
     criteria: IcpConvergenceCriteria,
+    trim_fraction: f64,
 }
 
 impl IcpRegistration {
@@ -115,6 +116,7 @@ impl IcpRegistration {
                 rotation_epsilon: config.transformation_epsilon,
                 fitness_epsilon: config.fitness_epsilon,
             },
+            trim_fraction: 1.0,
         }
     }
 
@@ -136,6 +138,27 @@ impl IcpRegistration {
     #[must_use]
     pub const fn convergence_criteria(&self) -> IcpConvergenceCriteria {
         self.criteria
+    }
+
+    /// Retains floor(fraction * gated correspondences) lowest-distance pairs
+    /// for each update. Equal distances keep source input order. The default 1.0
+    /// preserves ordinary ICP. Invalid fractions and fewer than the configured
+    /// minimum retained pairs are rejected during alignment.
+    ///
+    /// Fitness and fitness stopping still evaluate every post-update gated pair;
+    /// they do not silently use a smaller trimmed denominator. Trimming assumes
+    /// larger residuals are less useful; it can discard informative correct pairs
+    /// when the initial pose is poor, and it does not resolve repeated geometry.
+    #[must_use]
+    pub const fn with_trim_fraction(mut self, fraction: f64) -> Self {
+        self.trim_fraction = fraction;
+        self
+    }
+
+    /// Returns the fraction of gated pairs retained for transform estimation.
+    #[must_use]
+    pub const fn trim_fraction(&self) -> f64 {
+        self.trim_fraction
     }
 
     /// Aligns `source` to `target` using iterative closest point.
@@ -164,6 +187,12 @@ impl IcpRegistration {
         target: &PointCloud,
         mut observe: impl FnMut(IcpIteration),
     ) -> SpatialResult<(RegistrationResult, IcpStopReason)> {
+        if !self.trim_fraction.is_finite() || self.trim_fraction <= 0.0 || self.trim_fraction > 1.0
+        {
+            return Err(SpatialError::InvalidArgument(
+                "trim_fraction must be finite and in (0, 1]".to_owned(),
+            ));
+        }
         let max_distance_squared =
             self.config.max_correspondence_distance * self.config.max_correspondence_distance;
         if self.config.max_correspondence_distance <= 0.0
@@ -228,6 +257,7 @@ impl IcpRegistration {
             iterations += 1;
             let mut pairs_source = Vec::new();
             let mut pairs_target = Vec::new();
+            let mut ranked_pairs = Vec::new();
 
             for point in &transformed {
                 let Some(neighbor) =
@@ -242,6 +272,9 @@ impl IcpRegistration {
                         target_y[neighbor.index],
                         target_z[neighbor.index],
                     ));
+                    if self.trim_fraction < 1.0 {
+                        ranked_pairs.push((neighbor.distance_squared, pairs_source.len() - 1));
+                    }
                 }
             }
 
@@ -251,6 +284,25 @@ impl IcpRegistration {
                     pairs_source.len(),
                     self.config.min_correspondences
                 )));
+            }
+
+            if self.trim_fraction < 1.0 {
+                let retained = (pairs_source.len() as f64 * self.trim_fraction).floor() as usize;
+                if retained < self.config.min_correspondences {
+                    return Err(SpatialError::InvalidArgument(format!(
+                        "trim_fraction retains only {retained} of {} correspondences, minimum is {}",
+                        pairs_source.len(), self.config.min_correspondences
+                    )));
+                }
+                ranked_pairs.sort_unstable_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+                pairs_source = ranked_pairs[..retained]
+                    .iter()
+                    .map(|(_, index)| pairs_source[*index])
+                    .collect();
+                pairs_target = ranked_pairs[..retained]
+                    .iter()
+                    .map(|(_, index)| pairs_target[*index])
+                    .collect();
             }
 
             let Some(delta) = estimate_rigid_transform(&pairs_source, &pairs_target) else {
@@ -421,7 +473,7 @@ mod tests {
     };
     use crate::registration::PointCloudRegistration;
     use crate::transform::transform_point_cloud;
-    use spatialrust_core::{PointCloudBuilder, StandardSchemas};
+    use spatialrust_core::{HasPositions3, PointCloudBuilder, StandardSchemas};
     use spatialrust_math::{Isometry3, Quat, TransformPoint, Vec3};
 
     #[test]
@@ -456,6 +508,65 @@ mod tests {
             }
         }
         builder.build().unwrap()
+    }
+
+    #[test]
+    fn trimming_rejects_invalid_fractions_and_insufficient_retained_pairs() {
+        let cloud = plane_cloud();
+        for fraction in [0.0, -0.1, 1.1, f64::NAN, f64::INFINITY, 1e-300] {
+            let registration =
+                IcpRegistration::new(IcpConfig::default()).with_trim_fraction(fraction);
+            assert_eq!(registration.trim_fraction().is_nan(), fraction.is_nan());
+            assert!(registration
+                .align_with_trace(&cloud, &cloud)
+                .unwrap_err()
+                .to_string()
+                .contains("trim_fraction"));
+        }
+        let registration = IcpRegistration::new(IcpConfig::default());
+        assert_eq!(registration.trim_fraction(), 1.0);
+        assert_eq!(
+            registration.align(&cloud, &cloud).unwrap(),
+            registration.with_trim_fraction(1.0).align(&cloud, &cloud).unwrap()
+        );
+    }
+
+    #[test]
+    fn trimming_uses_clean_pairs_but_fitness_keeps_all_gated_pairs() {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for x in 0..4 {
+            for y in 0..4 {
+                for z in 0..4 {
+                    builder.push_point([x as f32, y as f32, z as f32]).unwrap();
+                }
+            }
+        }
+        let target = builder.build().unwrap();
+        let (x, y, z) = target.positions3().unwrap();
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for i in 0..64 {
+            builder.push_point([x[i], y[i], z[i]]).unwrap();
+        }
+        for i in 0..16 {
+            builder.push_point([x[i] + 0.125, y[i], z[i]]).unwrap();
+        }
+        let source = builder.build().unwrap();
+        let config = IcpConfig {
+            max_iterations: 1,
+            max_correspondence_distance: 0.3,
+            ..IcpConfig::default()
+        };
+        let plain = IcpRegistration::new(config).align(&source, &target).unwrap();
+        let trimmed = IcpRegistration::new(config)
+            .with_trim_fraction(0.8)
+            .align_with_trace(&source, &target)
+            .unwrap();
+        assert_eq!(trimmed.history[0].correspondences, 64);
+        assert_eq!(trimmed.history[0].evaluated_correspondences, 80);
+        assert_eq!(trimmed.result.transform, Isometry3::identity());
+        assert!((trimmed.result.fitness - 0.003125).abs() < 1e-12);
+        assert!(plain.fitness < trimmed.result.fitness);
+        assert!(plain.transform.translation().x.abs() > 0.01);
     }
 
     #[test]

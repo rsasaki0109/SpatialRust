@@ -2208,8 +2208,9 @@ fn distance_gated_support(
 }
 
 /// Point-to-point ICP aligning `source` onto `target`.
+#[allow(clippy::too_many_arguments)] // Preserve positional API plus explicit Python keyword options.
 #[pyfunction]
-#[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50, *, translation_epsilon=None, rotation_epsilon=None, fitness_epsilon=None))]
+#[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50, *, translation_epsilon=None, rotation_epsilon=None, fitness_epsilon=None, trim_fraction=1.0))]
 fn register_icp(
     py: Python<'_>,
     source: &PyPointCloud,
@@ -2217,9 +2218,10 @@ fn register_icp(
     max_correspondence_distance: f32,
     max_iterations: usize,
     translation_epsilon: Option<f64>, rotation_epsilon: Option<f64>, fitness_epsilon: Option<f64>,
+    trim_fraction: f64,
 ) -> PyResult<PyRegistrationResult> {
     let registration = python_icp_registration(max_correspondence_distance, max_iterations,
-        translation_epsilon, rotation_epsilon, fitness_epsilon)?;
+        translation_epsilon, rotation_epsilon, fitness_epsilon, trim_fraction)?;
     let result = py.allow_threads(|| {
         validate_icp_inputs(&source.inner, &target.inner)?;
         registration.align(&source.inner, &target.inner).map_err(to_py_err)
@@ -2229,7 +2231,11 @@ fn register_icp(
 
 fn python_icp_registration(max_correspondence_distance: f32, max_iterations: usize,
     translation_epsilon: Option<f64>, rotation_epsilon: Option<f64>, fitness_epsilon: Option<f64>,
+    trim_fraction: f64,
 ) -> PyResult<IcpRegistration> {
+    if !trim_fraction.is_finite() || trim_fraction <= 0.0 || trim_fraction > 1.0 {
+        return Err(PyValueError::new_err("trim_fraction must be finite and in (0, 1]"));
+    }
     let squared_gate = max_correspondence_distance * max_correspondence_distance;
     if max_correspondence_distance <= 0.0 || !squared_gate.is_finite() || squared_gate == 0.0 {
         return Err(PyValueError::new_err("max_correspondence_distance must be positive with finite nonzero f32 square"));
@@ -2250,7 +2256,7 @@ fn python_icp_registration(max_correspondence_distance: f32, max_iterations: usi
             return Err(PyValueError::new_err(format!("{name} must be finite and nonnegative")));
         }
     }
-    Ok(registration.with_convergence_criteria(criteria))
+    Ok(registration.with_convergence_criteria(criteria).with_trim_fraction(trim_fraction))
 }
 
 fn validate_icp_inputs(source: &PointCloud, target: &PointCloud) -> PyResult<()> {
@@ -2264,15 +2270,17 @@ fn validate_icp_inputs(source: &PointCloud, target: &PointCloud) -> PyResult<()>
 }
 
 /// Point-to-point ICP with opt-in owned update history, outside the GIL.
+#[allow(clippy::too_many_arguments)] // Same backward-compatible keyword options as register_icp.
 #[pyfunction]
-#[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50, *, translation_epsilon=None, rotation_epsilon=None, fitness_epsilon=None))]
+#[pyo3(signature = (source, target, max_correspondence_distance=1.0, max_iterations=50, *, translation_epsilon=None, rotation_epsilon=None, fitness_epsilon=None, trim_fraction=1.0))]
 fn register_icp_diagnostics(
     py: Python<'_>, source: &PyPointCloud, target: &PyPointCloud,
     max_correspondence_distance: f32, max_iterations: usize,
     translation_epsilon: Option<f64>, rotation_epsilon: Option<f64>, fitness_epsilon: Option<f64>,
+    trim_fraction: f64,
 ) -> PyResult<PyIcpDiagnostics> {
     let registration = python_icp_registration(max_correspondence_distance, max_iterations,
-        translation_epsilon, rotation_epsilon, fitness_epsilon)?;
+        translation_epsilon, rotation_epsilon, fitness_epsilon, trim_fraction)?;
     let inner = py.allow_threads(|| {
         validate_icp_inputs(&source.inner, &target.inner)?;
         registration.align_with_trace(&source.inner, &target.inner).map_err(to_py_err)

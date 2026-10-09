@@ -5,6 +5,13 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
+2026-10-10 update: assessment remains 55%. Optional ICP trimming and a 702-run
+paired synthetic study are now available, with both improvements and regressions
+documented. Local verification is 290 Python tests and 25 CPU-registration tests,
+plus strict Clippy and stubtest. Trimming still needs public real-pair validation
+and integration into the file alignment workflows; this addition alone does not
+establish greater overall deployment readiness.
+
 The recent assessment moved from 50% to 55% after these completed and merged
 capabilities, rather than changing the score merely to meet a requested target:
 

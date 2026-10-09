@@ -804,6 +804,7 @@ def register_icp(
     translation_epsilon: Optional[float] = ...,
     rotation_epsilon: Optional[float] = ...,
     fitness_epsilon: Optional[float] = ...,
+    trim_fraction: float = ...,
 ) -> RegistrationResult:
     """Point-to-point source-to-target ICP, with native work outside the GIL.
 
@@ -849,6 +850,7 @@ def register_icp_diagnostics(
     translation_epsilon: Optional[float] = ...,
     rotation_epsilon: Optional[float] = ...,
     fitness_epsilon: Optional[float] = ...,
+    trim_fraction: float = ...,
 ) -> IcpDiagnostics:
     """Same updates and validation as register_icp, with opt-in history.
 
