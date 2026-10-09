@@ -29,6 +29,19 @@ def poses():
     return [wrong.tolist(), np.eye(4).tolist(), np.eye(4).tolist()]
 
 
+def test_selected_candidate_trace_matches_independent_run(tmp_path, example):
+    paths, _, _ = fixture_files(tmp_path)
+    from align_point_clouds import align_files
+    plain_cloud, plain = example.evaluate_candidates(*paths, poses())
+    traced_cloud, traced = example.evaluate_candidates(*paths, poses(), trace=True)
+    np.testing.assert_array_equal(plain_cloud.xyz(), traced_cloud.xyz())
+    assert traced['candidate_selection'] == plain['candidate_selection']
+    _, independent = align_files(*paths, initial_transform=poses()[1], trace=True)
+    assert {k: v for k, v in traced.items() if k != 'candidate_selection'} == independent
+    from render_alignment_report import render_report
+    assert render_report(traced).count('class="trace-chart"') == 8
+
+
 def test_real_candidates_keep_failures_and_stable_ties(tmp_path, example):
     paths, source, target = fixture_files(tmp_path)
     with patch.object(sr, 'read', wraps=sr.read) as reader:

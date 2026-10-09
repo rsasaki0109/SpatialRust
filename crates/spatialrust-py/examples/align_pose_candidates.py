@@ -18,7 +18,7 @@ from align_point_clouds import _align_clouds, rigid_matrix, validate_settings
 
 
 def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.05,
-                        max_distance=.1, evaluation_distance=None, iterations=50, fine_distance=None):
+                        max_distance=.1, evaluation_distance=None, iterations=50, fine_distance=None, trace=False):
     """Return the selected full source and diagnostics without saving files.
 
     Validate every candidate before reading either cloud. A ValueError from an
@@ -45,7 +45,7 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
                 evaluation_distance=evaluation_distance, iterations=iterations,
                 initial_transform=pose, target_voxel_cache=target_voxel_cache,
                 before_support_cache=before_support_cache,
-                target_support_index_cache=target_support_index_cache, fine_distance=fine_distance)
+                target_support_index_cache=target_support_index_cache, fine_distance=fine_distance, trace=trace)
         except ValueError as error:
             records.append(dict(index=index, status='error', error=str(error),
                                 initial_transform_source_to_target=pose.tolist()))
@@ -90,6 +90,7 @@ def main():
                         help='shared support evaluation distance; defaults to max-distance')
     parser.add_argument('--iterations', type=int, default=50)
     parser.add_argument('--html-report', action='store_true')
+    parser.add_argument('--trace', action='store_true', help='record selected candidate ICP history')
     args = parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory already exists; choose a new path')
@@ -97,7 +98,7 @@ def main():
     aligned, diagnostics = evaluate_candidates(
         args.source, args.target, poses, leaf=args.leaf,
         max_distance=args.max_distance, evaluation_distance=args.evaluation_distance,
-        iterations=args.iterations, fine_distance=args.fine_distance)
+        iterations=args.iterations, fine_distance=args.fine_distance, trace=args.trace)
     serialized = json.dumps(diagnostics, indent=2, allow_nan=False) + '\n'
     rendered = None
     if args.html_report:

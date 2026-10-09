@@ -211,6 +211,13 @@ post-update fitness (`None` for the first row); changing membership prevents
 interpreting it as improvement on a fixed set. These measurements do not certify
 pose accuracy. Ordinary `register_icp` does not retain a history.
 
+Pass `--trace --html-report` to `examples/align_point_clouds.py` or
+`examples/align_pose_candidates.py` to save per-stage ICP history in alignment.json
+and standalone SVG charts in report.html. The candidate report retains the
+selected candidate's history. Charts show both estimator/rematched correspondence
+counts, gated RMSE, translation update, and rotation update on labeled linear
+axes; exact measurements are also available in an expandable table.
+
 ## Example
 
 ```bash

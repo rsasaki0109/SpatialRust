@@ -47,6 +47,53 @@ def test_report_displays_distinct_fine_gate_and_rejects_invalid_value():
         module.render_report(report)
 
 
+def trace_fixture():
+    report = fixture()
+    history = [dict(iteration=i, correspondences=3, evaluated_correspondences=3,
+                    fitness_metres_squared=f, fitness_change_metres_squared=change,
+                    translation_delta_metres=0, rotation_delta_radians=0)
+               for i, f, change in [(1, .001, None), (2, .0005, .0005)]]
+    report['stages'] = [dict(name='<trace>', source_points=3, iterations=2,
+                            converged=False, stop_reason='iteration_limit',
+                            kernel_fitness_metres_squared=.0005, icp_history=history)]
+    return report
+
+
+def test_trace_charts_are_escaped_standalone_and_preserve_input():
+    report = trace_fixture()
+    original = copy.deepcopy(report)
+    rendered = module.render_report(report)
+    assert rendered.count('class="trace-chart"') == 4
+    assert 'ICP iteration history: &lt;trace&gt;' in rendered
+    assert 'Horizontal axis: iteration' in rendered
+    assert 'membership changes' in rendered
+    assert '<script' not in rendered and 'src=' not in rendered
+    assert report == original
+
+
+@pytest.mark.parametrize('field,value', [
+    ('iteration', 4), ('correspondences', True), ('evaluated_correspondences', 4),
+    ('fitness_metres_squared', float('nan')), ('fitness_change_metres_squared', 7),
+    ('translation_delta_metres', -1), ('rotation_delta_radians', 4),
+])
+def test_malformed_trace_row_is_rejected(field, value):
+    report = trace_fixture()
+    report['stages'][0]['icp_history'][1][field] = value
+    with pytest.raises(ValueError):
+        module.render_report(report)
+
+
+@pytest.mark.parametrize('field,value', [
+    ('stop_reason', 'unknown'), ('converged', True), ('iterations', 3),
+    ('kernel_fitness_metres_squared', .002),
+])
+def test_inconsistent_trace_stage_is_rejected(field, value):
+    report = trace_fixture()
+    report['stages'][0][field] = value
+    with pytest.raises(ValueError):
+        module.render_report(report)
+
+
 def candidate_fixture():
     report = fixture()
     identity = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]

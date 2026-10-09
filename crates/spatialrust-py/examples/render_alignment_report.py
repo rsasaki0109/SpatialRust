@@ -134,6 +134,113 @@ def _candidate_table(selection, source, target, gate):
             'centroid can have zero centroid distance.</p></section>')
 
 
+def _trace_chart(title, series, labels):
+    """Linear axes with gaps for unavailable measurements; no external assets."""
+    colors = ('#0369a1', '#c2410c')
+    maximum = max((v for values in series for v in values if v is not None), default=0)
+    scale = maximum if maximum > 0 else 1
+    count = len(series[0])
+    elements = []
+    for values, color in zip(series, colors):
+        segment = []
+        def flush():
+            if segment:
+                elements.append(f'<polyline points="{" ".join(segment)}" fill="none" stroke="{color}" stroke-width="2"/>')
+                segment.clear()
+        for i, value in enumerate(values):
+            if value is None:
+                flush()
+                continue
+            x, y = 65 + 420 * i / max(1, count - 1), 145 - 110 * value / scale
+            segment.append(f'{x:.4f},{y:.4f}')
+            elements.append(f'<circle cx="{x:.4f}" cy="{y:.4f}" r="2" fill="{color}"/>')
+        flush()
+    legend = ', '.join(html.escape(label) for label in labels)
+    return (f'<figure><figcaption>{html.escape(title)} — {legend}</figcaption>'
+            f'<svg class="trace-chart" viewBox="0 0 520 180" role="img" aria-label="{html.escape(title, quote=True)} by iteration">'
+            '<path d="M65 35V145H485" stroke="#64748b" fill="none"/>'
+            f'<text x="2" y="40">{maximum:.4g}</text><text x="40" y="150">0</text>'
+            f'<text x="65" y="170">1</text><text x="440" y="170">{count}</text>'
+            + ''.join(elements) + '</svg><p>Horizontal axis: iteration; vertical axis: linear, zero to '
+            f'{maximum:.6g}. Blue: {html.escape(labels[0])}'
+            + (f'; orange: {html.escape(labels[1])}' if len(labels) > 1 else '') + '.</p></figure>')
+
+
+def _trace_sections(report):
+    sections = []
+    stages = report.get('stages', [])
+    if not isinstance(stages, list):
+        raise ValueError('stages must be a list')
+    for stage in stages:
+        if not isinstance(stage, dict):
+            raise ValueError('stage must be an object')
+        if 'icp_history' not in stage:
+            continue  # Older and ordinary reports remain readable.
+        history = stage['icp_history']
+        iterations = _count(stage.get('iterations'), 'trace iterations')
+        source = _count(stage.get('source_points'), 'trace source_points')
+        if not isinstance(history, list) or len(history) != iterations:
+            raise ValueError('trace history length must match iterations')
+        reason = stage.get('stop_reason')
+        if reason not in ('fitness_threshold', 'transform_threshold', 'iteration_limit'):
+            raise ValueError('unsupported trace stop_reason')
+        if type(stage.get('converged')) is not bool or stage['converged'] != (reason != 'iteration_limit'):
+            raise ValueError('trace stop_reason and convergence disagree')
+        name = stage.get('name')
+        if not isinstance(name, str):
+            raise ValueError('trace stage name must be text')
+        previous = None
+        rows = []
+        for i, row in enumerate(history, 1):
+            if not isinstance(row, dict) or type(row.get('iteration')) is not int or row['iteration'] != i:
+                raise ValueError('trace iteration numbers must be contiguous')
+            for key in ('correspondences', 'evaluated_correspondences'):
+                if type(row.get(key)) is not int or not 0 <= row[key] <= source:
+                    raise ValueError('trace correspondence count is invalid')
+            fitness = row.get('fitness_metres_squared')
+            if row['evaluated_correspondences'] == 0:
+                if fitness is not None:
+                    raise ValueError('empty trace correspondence set must have null fitness')
+            else:
+                _number(fitness, 'trace fitness')
+            change = row.get('fitness_change_metres_squared')
+            if i == 1:
+                if change is not None:
+                    raise ValueError('first trace fitness change must be null')
+            elif previous is not None and fitness is not None:
+                _number(change, 'trace fitness change', minimum=-math.inf)
+                if not math.isclose(change, previous - fitness, rel_tol=1e-12, abs_tol=1e-18):
+                    raise ValueError('trace fitness change disagrees with history')
+            elif change is not None:
+                _number(change, 'trace fitness change', minimum=-math.inf)
+            previous = fitness
+            _number(row.get('translation_delta_metres'), 'trace translation delta')
+            _number(row.get('rotation_delta_radians'), 'trace rotation delta', maximum=math.pi)
+            residual = 'Unavailable' if fitness is None else f'{math.sqrt(fitness):.6g}'
+            rows.append(f'<tr><td>{i}</td><td>{row["correspondences"]}</td><td>{row["evaluated_correspondences"]}</td>'
+                        f'<td>{residual}</td><td>{row["translation_delta_metres"]:.6g}</td>'
+                        f'<td>{math.degrees(row["rotation_delta_radians"]):.6g}</td></tr>')
+        if stage.get('kernel_fitness_metres_squared') != previous:
+            raise ValueError('trace final fitness differs from stage result')
+        charts = [
+            _trace_chart('Gated correspondence count',
+                         [[r[k] for r in history] for k in ('correspondences', 'evaluated_correspondences')],
+                         ['used for update', 'after rematching']),
+            _trace_chart('Gated RMSE (m)', [[None if r['fitness_metres_squared'] is None else math.sqrt(r['fitness_metres_squared']) for r in history]], ['after rematching']),
+            _trace_chart('Translation update (m)', [[r['translation_delta_metres'] for r in history]], ['update length']),
+            _trace_chart('Rotation update (degrees)', [[math.degrees(r['rotation_delta_radians']) for r in history]], ['shortest angle']),
+        ]
+        sections.append(f'<section><h2>ICP iteration history: {html.escape(name)}</h2><p>Stop reason: {reason}.</p>'
+                        + ''.join(charts) + '<details><summary>All update measurements</summary><table><tr>'
+                        '<th>Iteration</th><th>Used matches</th><th>Rematched</th><th>RMSE (m)</th>'
+                        '<th>Translation (m)</th><th>Rotation (degrees)</th></tr>' + ''.join(rows) + '</table></details></section>')
+    if not sections:
+        return ''
+    return (''.join(sections) + '<p>Correspondence membership changes after each update. '
+            'Lower gated RMSE may reflect excluded points rather than a better pose. '
+            'An iteration-limit exit differs from a met stopping threshold; neither certifies accuracy.</p>')
+
+
 def render_report(report):
     """Validate diagnostic fields and return HTML; no network or scripts required."""
     if not isinstance(report, dict) or report.get('schema_version') != 'spatialrust.python-alignment.v1':
@@ -206,14 +313,14 @@ def render_report(report):
     return ('<!doctype html><html lang="en"><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<title>Alignment support report</title><style>body{font:16px system-ui;max-width:850px;margin:2rem auto;padding:1rem}'
-            'svg{width:100%;max-height:55px}h2{font-size:1.1rem}section{margin:2rem 0}td,th{padding:.5rem;text-align:left}</style>'
+            'svg{width:100%;max-height:55px}.trace-chart{max-height:250px}figure{margin:1rem 0}h2{font-size:1.1rem}section{margin:2rem 0}td,th{padding:.5rem;text-align:left}</style>'
             '<main><h1>Alignment support report</h1>'
             f'<p>Source: {html.escape(report["source_file"])}<br>Target: {html.escape(report["target_file"])}</p>'
             f'<p>Evaluation distance gate: {gate:.6g} m. ICP correspondence gate: {optimization_gate:.6g} m. '
             f'ICP fine correspondence gate: {fine_gate:.6g} m. '
             f'ICP converged: {str(report["converged"]).lower()}.</p>'
             f'<p>Initial pose: {prior_label}. A supplied prior is not independently verified.</p>'
-            + ''.join(rows) + candidates_html +
+            + ''.join(rows) + candidates_html + _trace_sections(report) +
             '<p>Each direction uses its own query point count. High forward support with lower reverse support '
             'can indicate partial overlap or different sampling densities; it does not identify the cause.</p>'
             '<p>RMSE includes only points within the distance gate. Low RMSE and convergence do not certify '
