@@ -21,6 +21,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- PCD header parsing rejects overflowing dimension, field and payload sizes,
+  zero-sized fields and payloads exceeding addressable allocation size before
+  whole-cloud or streaming readers allocate point buffers.
 - Compressed PCD validates declared decoded size against its header and rejects
   impossible LZF encoded lengths before allocating payload buffers. Tests cover
   truncated data, invalid references and valid overlapping LZF references.
