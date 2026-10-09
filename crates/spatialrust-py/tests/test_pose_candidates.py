@@ -108,3 +108,33 @@ def test_invalid_settings_precede_shared_reads(example):
     with patch.object(sr, 'read', side_effect=AssertionError('IO before settings validation')):
         with pytest.raises(ValueError, match='evaluation_distance'):
             example.evaluate_candidates('missing', 'missing', poses(), evaluation_distance=0)
+
+
+def test_shared_target_voxels_match_independent_candidates(tmp_path, example):
+    paths, _, _ = fixture_files(tmp_path)
+    from align_point_clouds import align_files
+    independent = [align_files(*paths, initial_transform=pose)[1] for pose in poses()[1:]]
+    voxel = sr.voxel_downsample
+    registration = sr.register_icp
+    coarse_targets = []
+
+    def check_readonly_target(source, target, *args):
+        before = target.xyz().copy()
+        coarse_targets.append(target)
+        result = registration(source, target, *args)
+        np.testing.assert_array_equal(target.xyz(), before)
+        return result
+
+    with patch.object(sr, 'voxel_downsample', wraps=voxel) as downsample, \
+            patch.object(sr, 'register_icp', side_effect=check_readonly_target):
+        _, report = example.evaluate_candidates(*paths, poses())
+    # Three source voxelizations, one shared target voxelization, including the
+    # candidate that fails during registration.
+    assert downsample.call_count == 4
+    assert coarse_targets[0] is coarse_targets[1] is coarse_targets[3]
+    selection = report.pop('candidate_selection')
+    assert report == independent[0]
+    for actual, expected in zip(selection['candidates'][1:], independent):
+        for field in ('transform_source_to_target', 'aligned_support',
+                      'aligned_reverse_support', 'converged'):
+            assert actual[field] == expected[field]

@@ -58,6 +58,15 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
 
 def align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
                  max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None):
+    """Align read-only clouds and return a new full source and diagnostics."""
+    return _align_clouds(source, target, source_name=source_name, target_name=target_name,
+                         leaf=leaf, max_distance=max_distance, iterations=iterations,
+                         initial_transform=initial_transform, evaluation_distance=evaluation_distance)
+
+
+def _align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
+                  max_distance=.1, iterations=50, initial_transform=None,
+                  evaluation_distance=None, target_voxel_cache=None):
     """Align existing read-only clouds, returning a new full source and diagnostics.
 
     XYZ validation explicitly copies positions to NumPy. Convergence and support
@@ -72,7 +81,14 @@ def align_clouds(source, target, *, source_name='source', target_name='target', 
     if not np.isfinite(seeded.xyz()).all():
         raise ValueError('initial transform overflowed source coordinates')
     coarse_source = sr.voxel_downsample(seeded, leaf, 'cpu')
-    coarse_target = sr.voxel_downsample(target, leaf, 'cpu')
+    # The cache belongs to one candidate search with one target and leaf size.
+    # Populate lazily so invalid inputs retain the normal alignment error path.
+    if target_voxel_cache is None:
+        coarse_target = sr.voxel_downsample(target, leaf, 'cpu')
+    else:
+        if not target_voxel_cache:
+            target_voxel_cache.append(sr.voxel_downsample(target, leaf, 'cpu'))
+        coarse_target = target_voxel_cache[0]
     if min(len(coarse_source), len(coarse_target)) < 3:
         raise ValueError('voxel clouds require at least three points; reduce leaf')
     coarse_result = sr.register_icp(coarse_source, coarse_target, max_distance, iterations)
