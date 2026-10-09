@@ -25,8 +25,9 @@ def run(paths, poses, mode):
     """Include reads, validation, ICP and diagnostics; exclude output writes."""
     kwargs = dict(leaf=.08, max_distance=.15, evaluation_distance=.05, iterations=30)
     clouds = None if mode == 'read_each' else [sr.read(str(path)) for path in paths]
-    cache = [] if mode in ('shared_target_voxel', 'shared_before_support') else None
-    before_cache = [] if mode == 'shared_before_support' else None
+    cache = [] if mode in ('shared_target_voxel', 'shared_before_support', 'shared_support_index') else None
+    before_cache = [] if mode in ('shared_before_support', 'shared_support_index') else None
+    index_cache = [] if mode == 'shared_support_index' else None
     records = []
     for pose in poses:
         if clouds is None:
@@ -34,7 +35,8 @@ def run(paths, poses, mode):
         else:
             _, report = _align_clouds(*clouds, source_name=str(paths[0]),
                 target_name=str(paths[1]), initial_transform=pose,
-                target_voxel_cache=cache, before_support_cache=before_cache, **kwargs)
+                target_voxel_cache=cache, before_support_cache=before_cache,
+                target_support_index_cache=index_cache, **kwargs)
         records.append(report)
     return records
 
@@ -49,7 +51,7 @@ def main():
     if args.repeats < 3 or any(n < 3 for n in args.sizes) or any(not 1 <= n <= 16 for n in args.candidates):
         parser.error('sizes must be >=3, candidates 1–16, repeats >=3')
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    modes = ['read_each', 'read_once', 'shared_target_voxel', 'shared_before_support']
+    modes = ['read_each', 'read_once', 'shared_target_voxel', 'shared_before_support', 'shared_support_index']
     rows = []
     for size in args.sizes:
         xyz = np.random.default_rng(42).uniform(-1, 1, (size, 3)).astype(np.float32)

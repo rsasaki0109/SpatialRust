@@ -127,12 +127,14 @@ def test_shared_target_voxels_match_independent_candidates(tmp_path, example):
 
     with patch.object(sr, 'voxel_downsample', wraps=voxel) as downsample, \
             patch.object(sr, 'register_icp', side_effect=check_readonly_target), \
-            patch.object(sr, 'distance_gated_support', wraps=sr.distance_gated_support) as support:
+            patch.object(sr, 'distance_gated_support', wraps=sr.distance_gated_support) as support, \
+            patch.object(sr, 'DistanceSupportIndex', wraps=sr.DistanceSupportIndex) as index:
         _, report = example.evaluate_candidates(*paths, poses())
     # Three source voxelizations, one shared target voxelization, including the
     # candidate that fails during registration.
     assert downsample.call_count == 4
-    assert support.call_count == 7  # One before query plus three per success.
+    assert support.call_count == 2  # Only reverse support rebuilds its index.
+    assert index.call_count == 1  # One target index for all successful candidates.
     assert coarse_targets[0] is coarse_targets[1] is coarse_targets[3]
     selection = report.pop('candidate_selection')
     assert report == independent[0]
@@ -155,3 +157,21 @@ def test_before_support_cache_is_local_and_reports_are_independent(tmp_path, exa
     for gate in (.1, .001):
         _, report = example.evaluate_candidates(*paths, poses()[1:], evaluation_distance=gate)
         assert report['before_support'] == align_files(*paths, evaluation_distance=gate)[1]['before_support']
+
+
+def test_target_index_is_reused_across_a_failed_middle_candidate(tmp_path, example):
+    paths, _, _ = fixture_files(tmp_path)
+    from align_point_clouds import align_files
+    identity, wrong = poses()[1], poses()[0]
+    shifted = np.eye(4)
+    shifted[0, 3] = .003
+    values = [identity, wrong, shifted.tolist()]
+    expected = [align_files(*paths, initial_transform=value)[1] for value in (identity, shifted)]
+    with patch.object(sr, 'DistanceSupportIndex', wraps=sr.DistanceSupportIndex) as index:
+        _, report = example.evaluate_candidates(*paths, values)
+    assert index.call_count == 1
+    candidates = report['candidate_selection']['candidates']
+    assert [row['status'] for row in candidates] == ['success', 'error', 'success']
+    for actual, independent in zip((candidates[0], candidates[2]), expected):
+        for field in ('transform_source_to_target', 'aligned_support', 'aligned_reverse_support', 'converged'):
+            assert actual[field] == independent[field]

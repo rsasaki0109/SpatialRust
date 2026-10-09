@@ -66,7 +66,8 @@ def align_clouds(source, target, *, source_name='source', target_name='target', 
 
 def _align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
                   max_distance=.1, iterations=50, initial_transform=None,
-                  evaluation_distance=None, target_voxel_cache=None, before_support_cache=None):
+                  evaluation_distance=None, target_voxel_cache=None, before_support_cache=None,
+                  target_support_index_cache=None):
     """Align existing read-only clouds, returning a new full source and diagnostics.
 
     XYZ validation explicitly copies positions to NumPy. Convergence and support
@@ -113,7 +114,12 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
     stages = [stage('voxel', coarse_result, coarse_transform, len(coarse_source), len(coarse_target)),
               stage('full_resolution', result, transform, len(source), len(target))]
     def support(query, reference):
-        count, fraction, rmse = sr.distance_gated_support(query, reference, evaluation_distance)
+        if target_support_index_cache is not None and reference is target:
+            if not target_support_index_cache:
+                target_support_index_cache.append(sr.DistanceSupportIndex(target))
+            count, fraction, rmse = target_support_index_cache[0].support(query, evaluation_distance)
+        else:
+            count, fraction, rmse = sr.distance_gated_support(query, reference, evaluation_distance)
         return dict(distance_metres=evaluation_distance, query_points=len(query),
                     distance_gated_points=count, query_fraction=fraction, gated_rmse_metres=rmse)
     # Private, per-search cache: source, target and evaluation gate are fixed.

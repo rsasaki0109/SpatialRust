@@ -29,10 +29,14 @@ def profile(paths, poses, mode):
             if name == 'icp':
                 label += ('_coarse', '_full')[index % 2]
             elif name == 'support':
-                if mode == 'shared_before_support':
+                if mode == 'shared_support_index':
+                    label += '_reverse'
+                elif mode == 'shared_before_support':
                     label += '_before' if index == 0 else ('_initial', '_final', '_reverse')[(index - 1) % 3]
                 else:
                     label += ('_before', '_initial', '_final', '_reverse')[index % 4]
+            elif name == 'indexed_support':
+                label = 'support_before' if index == 0 else ('support_initial', 'support_final')[(index - 1) % 2]
             index += 1
             started = time.perf_counter()
             try:
@@ -42,6 +46,13 @@ def profile(paths, poses, mode):
                 calls[label] = calls.get(label, 0) + 1
         return measured
     with ExitStack() as stack:
+        original_index = sr.DistanceSupportIndex
+        timed_build = wrapper('index_build', original_index)
+        class TimedIndex:
+            def __init__(self, target):
+                self.inner = timed_build(target)
+                self.support = wrapper('indexed_support', self.inner.support)
+        stack.enter_context(patch.object(sr, 'DistanceSupportIndex', TimedIndex))
         for attribute, name in [('read', 'read'), ('voxel_downsample', 'voxel'),
                                 ('apply_transform', 'transform'), ('register_icp', 'icp'),
                                 ('distance_gated_support', 'support')]:
@@ -53,9 +64,10 @@ def profile(paths, poses, mode):
     assert seconds['remainder'] >= 0
     count = len(poses)
     assert calls['read'] == (count * 2 if mode == 'read_each' else 2)
-    assert calls['voxel'] == (count + 1 if mode in ('shared_target_voxel', 'shared_before_support') else count * 2)
+    assert calls['voxel'] == (count + 1 if mode in ('shared_target_voxel', 'shared_before_support', 'shared_support_index') else count * 2)
     assert calls['icp_coarse'] == calls['icp_full'] == count
-    assert calls['support_before'] == (1 if mode == 'shared_before_support' else count)
+    assert calls['support_before'] == (1 if mode in ('shared_before_support', 'shared_support_index') else count)
+    assert calls.get('index_build', 0) == (1 if mode == 'shared_support_index' else 0)
     assert all(calls['support_' + phase] == count for phase in ('initial', 'final', 'reverse'))
     return reports, dict(total_seconds=total, component_seconds=seconds, calls=calls)
 
@@ -70,7 +82,7 @@ def main():
     if args.repeats < 3 or any(n < 3 for n in args.sizes) or not 1 <= args.candidates <= 16:
         parser.error('sizes >=3, candidates 1–16 and repeats >=3 required')
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    modes = ['read_each', 'read_once', 'shared_target_voxel', 'shared_before_support']
+    modes = ['read_each', 'read_once', 'shared_target_voxel', 'shared_before_support', 'shared_support_index']
     rows = []
     for size in args.sizes:
         xyz = np.random.default_rng(42).uniform(-1, 1, (size, 3)).astype(np.float32)
@@ -116,7 +128,7 @@ def main():
         sample = row['representative']
         parts.append(f'<h2>{row["points"]:,} points · {row["mode"]}</h2><div class="bar">')
         for index, (name, seconds) in enumerate(sample['component_seconds'].items()):
-            parts.append(f'<span style="background:{colors[index]};width:{100*seconds/sample["total_seconds"]:.4f}%" '
+            parts.append(f'<span style="background:{colors[index % len(colors)]};width:{100*seconds/sample["total_seconds"]:.4f}%" '
                          f'title="{name}: {seconds*1000:.2f} ms"></span>')
         parts.append('</div><table><tr><th>Component</th><th>Time</th><th>Share</th><th>Calls</th></tr>')
         for name, seconds in sample['component_seconds'].items():
