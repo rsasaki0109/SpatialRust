@@ -6,6 +6,7 @@ stopping policies on identical pairs/priors; it is not an external-library ranki
 import argparse
 import hashlib
 import html
+import importlib
 import itertools
 import json
 import math
@@ -183,12 +184,7 @@ def main():
             results.append(run_case(case, seed, scale, angle, policy, args.iterations))
         print(f'{case}: {len(results)} total cases completed', file=sys.stderr, flush=True)
     inputs = [Path(__file__), ROOT/'crates/spatialrust-registration/src/icp.rs', ROOT/'crates/spatialrust-registration/src/kabsch.rs']
-    native = Path(sr.__file__)
-    if native.suffix != '.so':
-        binaries = sorted(native.parent.glob('*.so'))
-        if len(binaries) != 1:
-            raise RuntimeError('cannot identify the loaded native extension')
-        native = binaries[0]
+    native = Path(importlib.import_module('spatialrust.spatialrust').__file__)
     receipt = dict(schema='spatialrust.icp-convergence-study.v1', seeds=args.seeds,
                    scales=args.scales, initial_errors=args.angles, max_iterations=args.iterations,
                    policies=list(POLICIES), case_count=len(results), results=results,

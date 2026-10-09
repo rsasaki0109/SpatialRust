@@ -24,8 +24,8 @@ A previous Linux runtime checkpoint runs the entire current suite on the default
 abi3 wheel at both supported endpoints: CPython 3.8 and 3.14 each pass 537 tests
 with three expected ONNX skips; the ONNX-enabled 3.12 suite passes all 540.
 This strengthens local regression coverage but leaves maturity at 80%. At
-2026-10-09 22:48 UTC, all 37 jobs in the latest wheel/CI workflows lack assigned
-runners. Main CI now cancels superseded runs by workflow/ref, preserving tags;
+2026-10-09 22:48 UTC, the seven wheel jobs and first 30 returned CI jobs lacked assigned
+runners; this first-page observation did not cover the complete CI job set. Main CI now cancels superseded runs by workflow/ref, preserving tags;
 this does not solve external runner allocation. Reaching 90% still requires
 successful external platform gates, independent accuracy validation and broader
 operational evidence; none is inferred from a configured job or a queue status.
@@ -267,3 +267,14 @@ Important remaining gaps toward 90%:
 See the dated notes for limits of individual experiments. Reported geometric
 support is distance-gated proximity, not measured physical overlap. A met
 convergence criterion does not establish the correct pose.
+
+Remote evidence update (2026-10-10): main `767f128` has successful macOS vision,
+visual, streaming and installed-wheel runtime gates, plus Linux Python 3.12
+bindings. Full pagination observes 103 CI jobs; earlier blanket queue claims
+from the first 30 jobs are corrected. Windows wheel construction succeeds but
+runtime validation exposes Linux-only native fingerprint discovery in two study
+CLIs. The reader is repaired and locally regression-tested, with remote Windows
+verification still required. The assessment stays at 82% until that repair is
+confirmed and broader dataset/operational gates are verified. The next synthetic
+Redwood/ICL-NUIM dataset is externally blocked by its denied official domain;
+the additive network draft is saved but not applied or published.

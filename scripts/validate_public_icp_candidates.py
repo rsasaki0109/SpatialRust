@@ -5,6 +5,7 @@ This validates SpatialRust, without executing Open3D or asserting true pose erro
 """
 import argparse
 import hashlib
+import importlib
 import json
 import shutil
 import sys
@@ -98,12 +99,7 @@ def main():
     assert len(aligned) == report['source_points']
     (args.output_dir / 'alignment.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n', encoding='utf-8')
     (args.output_dir / 'report.html').write_text(render_report(report), encoding='utf-8')
-    native = Path(sr.__file__)
-    if native.suffix != '.so':
-        binaries = sorted(native.parent.glob('*.so'))
-        if len(binaries) != 1:
-            raise RuntimeError('cannot identify native extension')
-        native = binaries[0]
+    native = Path(importlib.import_module('spatialrust.spatialrust').__file__)
     receipt = dict(native_sha256=hashlib.sha256(native.read_bytes()).hexdigest(), dataset_url=URL, archive_sha256=hashlib.sha256(args.archive.read_bytes()).hexdigest(),
         files_sha256={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},
         source_points=report['source_points'], target_points=report['target_points'],

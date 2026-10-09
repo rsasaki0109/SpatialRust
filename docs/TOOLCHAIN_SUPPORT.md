@@ -50,7 +50,9 @@ tests. These counts supersede the earlier default-wheel suite counts below;
 the source-archive rebuild remains a separately verified historical checkpoint.
 
 At 2026-10-09 22:48 UTC, GitHub API job metadata for main `def46e3` shows all
-seven Python-wheel jobs and all 30 CI jobs queued without an assigned runner.
+seven Python-wheel jobs and the first 30 returned CI jobs queued without an
+assigned runner. The CI request used the API default page size; it did not
+establish the status of the remaining jobs.
 The configured labels include `ubuntu-latest`, `windows-latest` and `macos-14`;
 the workflows do not require self-hosted runners. No execution failure is
 available to diagnose, and queue metadata alone does not establish an account,
@@ -120,3 +122,38 @@ toolchain is not established by the base gate. Use current stable for full build
 
 Do not interpret a library compilation as a runtime GPU, browser, macOS, Windows,
 ARM or Python 3.8 conformance result. Those runtimes still require separate checks.
+
+## Remote runtime evidence and Windows receipt repair
+
+Complete pagination for main `767f128` observes 103 CI jobs and seven wheel
+jobs. The earlier statements about every CI job lacking a runner were not
+established by the first-page observations. `scripts/inspect_github_ci.py` now
+fetches all pages, checks complete unique job membership against `total_count`,
+and separates queued, active, successful, failed and skipped outcomes. A queued
+workflow status does not imply that every job is queued. Metadata is sampled
+across requests rather than as an atomic snapshot.
+
+On that commit, macOS vision, visual and streaming conformance jobs and Linux
+Python 3.12 binding checks complete successfully. The macOS 14/Python 3.12
+installed-wheel runtime job also succeeds, including exact installed-byte,
+archive/native/type and ICP/support/PCD verification. This is one hosted macOS
+configuration; its hardware architecture is not inferred from the label.
+
+Windows builds the wheel successfully but its installed-runtime step fails.
+Public check annotations identify `cannot identify native extension` and
+`cannot identify the loaded native extension`. The trimming and convergence
+study CLIs searched package siblings for `*.so`; Windows loads a `.pyd` binary.
+Those two scripts and the equivalent public-candidate validator now fingerprint
+`importlib.import_module('spatialrust.spatialrust').__file__`, which identifies
+the actual loaded binary without scanning siblings. Regression tests execute
+real native studies with a controlled `.pyd`-only wrapper directory and verify
+the imported binary hash rather than the non-loaded sibling. Linux passing
+checks do not establish that the repaired Windows remote gate has passed.
+
+Remote logs redirect to `productionresultssa3.blob.core.windows.net`, which the
+current proxy denies. Only public check metadata/annotations were read; no
+credentials were requested or extracted. The synthetic Redwood/ICL-NUIM
+fragment source also requires `redwood-data.org`, currently denied by the proxy.
+An additive environment draft preserves the existing three custom domains and
+adds only that official dataset domain. Saving the draft does not activate it;
+review/save and Publish are required before retrying that dataset operation.
