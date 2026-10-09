@@ -367,3 +367,12 @@ and returned record batches survive reader closure/deletion. Batch export also
 uses owned buffers. Tests verify these lifetimes with PyArrow 26.0.0 locally;
 this does not claim support for every PyArrow version or unrestricted schemas.
 The existing CI installs PyArrow and discovers these lifetime tests.
+
+`voxel_downsample` releases the GIL during native validation and filtering. It
+borrows immutable point storage without an extra input-cloud copy; independent
+calls may share a cloud. Leaf size must be finite and positive, and XYZ must be
+finite, otherwise ValueError is raised. Empty XYZ clouds produce empty results.
+The output is a separate cloud; inputs are unchanged. Policy parsing and Python
+result construction remain under the GIL. Concurrency tests cover explicit CPU
+policy, not GPU execution or cross-policy deterministic ordering. This does not
+provide cancellation or guarantee parallel speedup.
