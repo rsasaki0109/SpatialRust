@@ -2063,40 +2063,45 @@ impl PyRegistrationResult {
 /// Returns (accepted_count, query_fraction, gated_rmse_or_none).
 #[pyfunction]
 fn distance_gated_support(
+    py: Python<'_>,
     source: &PyPointCloud,
     target: &PyPointCloud,
     max_distance: f32,
 ) -> PyResult<(usize, f64, Option<f64>)> {
-    use spatialrust::search::{KdTree, NearestNeighborIndex};
-    let squared_gate = max_distance * max_distance;
-    if max_distance <= 0.0 || !squared_gate.is_finite() || squared_gate == 0.0 {
-        return Err(PyValueError::new_err(
-            "distance must be positive with finite nonzero f32 square",
-        ));
-    }
-    for cloud in [&source.inner, &target.inner] {
-        let (x, y, z) = cloud.positions3().map_err(to_py_err)?;
-        if cloud.is_empty() || x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
-            return Err(PyValueError::new_err("support requires nonempty finite XYZ clouds"));
+    let source = &source.inner;
+    let target = &target.inner;
+    py.allow_threads(|| {
+        use spatialrust::search::{KdTree, NearestNeighborIndex};
+        let squared_gate = max_distance * max_distance;
+        if max_distance <= 0.0 || !squared_gate.is_finite() || squared_gate == 0.0 {
+            return Err(PyValueError::new_err(
+                "distance must be positive with finite nonzero f32 square",
+            ));
         }
-    }
-    let tree = KdTree::from_point_cloud(&target.inner).map_err(to_py_err)?;
-    let (x, y, z) = source.inner.positions3().map_err(to_py_err)?;
-    let mut count = 0usize;
-    let mut squared = 0.0f64;
-    for i in 0..source.inner.len() {
-        if let Some(neighbor) = tree.nearest_one(x[i], y[i], z[i]) {
-            if neighbor.distance_squared <= squared_gate {
-                count += 1;
-                squared += f64::from(neighbor.distance_squared);
+        for cloud in [source, target] {
+            let (x, y, z) = cloud.positions3().map_err(to_py_err)?;
+            if cloud.is_empty() || x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+                return Err(PyValueError::new_err("support requires nonempty finite XYZ clouds"));
             }
         }
-    }
-    Ok((
-        count,
-        count as f64 / source.inner.len() as f64,
-        if count == 0 { None } else { Some((squared / count as f64).sqrt()) },
-    ))
+        let tree = KdTree::from_point_cloud(target).map_err(to_py_err)?;
+        let (x, y, z) = source.positions3().map_err(to_py_err)?;
+        let mut count = 0usize;
+        let mut squared = 0.0f64;
+        for i in 0..source.len() {
+            if let Some(neighbor) = tree.nearest_one(x[i], y[i], z[i]) {
+                if neighbor.distance_squared <= squared_gate {
+                    count += 1;
+                    squared += f64::from(neighbor.distance_squared);
+                }
+            }
+        }
+        Ok((
+            count,
+            count as f64 / source.len() as f64,
+            if count == 0 { None } else { Some((squared / count as f64).sqrt()) },
+        ))
+    })
 }
 
 /// Point-to-point ICP aligning `source` onto `target`.

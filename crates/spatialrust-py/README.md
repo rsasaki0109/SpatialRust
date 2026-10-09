@@ -297,8 +297,10 @@ gated_rmse_or_none)`. Nonempty finite XYZ and a positive distance with finite
 nonzero f32 square are required; invalid input raises ValueError. Zero accepted
 points yields fraction 0 and RMSE None. Direction matters: a small exact subset
 can have full forward support but partial reverse support. This diagnostic is
-not physical overlap or proof of pose correctness. Like other current point-cloud
-bindings, this call executes synchronously while holding the Python GIL.
+not physical overlap or proof of pose correctness. The call remains synchronous but releases the Python GIL during input validation,
+KD-tree construction and nearest-neighbor queries. It borrows immutable native
+point storage without an extra whole-cloud copy; concurrent read-only calls may
+share inputs. Other pipeline calls are not covered by this GIL guarantee.
 
 The file alignment report now includes `before_support`, `aligned_support` and
 `aligned_reverse_support`, recomputed on the full-resolution final coordinates.
