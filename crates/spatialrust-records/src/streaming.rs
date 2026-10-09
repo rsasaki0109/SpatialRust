@@ -164,18 +164,26 @@ impl MemoryTracker {
     /// Atomically reserves bytes or fails without changing the current count.
     pub fn try_reserve(&self, bytes: u64) -> RecordsResult<MemoryReservation> {
         let limit = self.inner.limit_bytes;
-        let result =
-            self.inner.current_bytes.fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
-                current.checked_add(bytes).filter(|next| *next <= limit)
-            });
-        match result {
-            Ok(previous) => {
-                let current = previous + bytes;
-                self.inner.peak_bytes.fetch_max(current, Ordering::AcqRel);
-                Ok(MemoryReservation { tracker: self.clone(), bytes })
-            }
-            Err(current) => {
-                Err(RecordsError::MemoryBudgetExceeded { requested: bytes, current, limit })
+        let mut current = self.inner.current_bytes.load(Ordering::Acquire);
+        loop {
+            let Some(next) = current.checked_add(bytes).filter(|next| *next <= limit) else {
+                return Err(RecordsError::MemoryBudgetExceeded {
+                    requested: bytes,
+                    current,
+                    limit,
+                });
+            };
+            match self.inner.current_bytes.compare_exchange_weak(
+                current,
+                next,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => {
+                    self.inner.peak_bytes.fetch_max(next, Ordering::AcqRel);
+                    return Ok(MemoryReservation { tracker: self.clone(), bytes });
+                }
+                Err(observed) => current = observed,
             }
         }
     }
@@ -593,6 +601,27 @@ mod tests {
         drop(first);
         assert_eq!(tracker.snapshot().current_bytes, 0);
         assert_eq!(tracker.snapshot().peak_bytes, 60);
+    }
+
+    #[test]
+    fn reservation_overflow_preserves_current_and_peak_counts() {
+        let tracker = MemoryTracker::new(MemoryBudget::new(u64::MAX).unwrap());
+        let reservation = tracker.try_reserve(u64::MAX).unwrap();
+        assert!(matches!(
+            tracker.try_reserve(1),
+            Err(RecordsError::MemoryBudgetExceeded {
+                requested: 1,
+                current: u64::MAX,
+                limit: u64::MAX
+            })
+        ));
+        let zero = tracker.try_reserve(0).unwrap();
+        assert_eq!(tracker.snapshot().current_bytes, u64::MAX);
+        assert_eq!(tracker.snapshot().peak_bytes, u64::MAX);
+        drop(zero);
+        drop(reservation);
+        assert_eq!(tracker.snapshot().current_bytes, 0);
+        assert_eq!(tracker.snapshot().peak_bytes, u64::MAX);
     }
 
     #[test]
