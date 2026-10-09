@@ -44,6 +44,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Standalone Python alignment HTML/SVG diagnostic report compares forward and
+  reverse distance-gated support, counts and RMSE to reveal overlap asymmetry.
+  It validates the report contract, escapes filenames and refuses overwrites.
 - **Epic 150C Python entity embedder**: `OnnxEntityEmbedder` in the Python
   extension embeds point-entity feature vectors through an existing
   `OnnxRuntimeSession` and returns a NumPy embedding vector with its dimension,

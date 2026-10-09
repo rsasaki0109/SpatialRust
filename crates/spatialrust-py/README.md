@@ -255,6 +255,17 @@ a smaller leaf. This example uses the existing public functions `read`,
 a new stability guarantee to provisional APIs. The example's `align_files`
 function returns the aligned cloud and diagnostics without writing output.
 
+Render its diagnostics as a standalone HTML/SVG report without extra dependencies:
+
+```bash
+python crates/spatialrust-py/examples/render_alignment_report.py aligned-run/alignment.json aligned-run/report.html
+```
+
+The report compares before/after source-to-target support and after target-to-source
+support, with point counts and gated RMSE. Asymmetric support can indicate partial
+overlap or different sampling densities; low RMSE does not certify the pose.
+It requires a new output file and uses no scripts, network or external viewer.
+
 Run the file-based integration checks against an installed wheel:
 
 ```bash
