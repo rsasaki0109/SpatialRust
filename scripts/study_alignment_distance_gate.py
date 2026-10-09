@@ -10,9 +10,15 @@ REPO = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--evaluation-distance', type=float, help='fixed diagnostic distance; defaults to each ICP gate')
 parser.add_argument('--output-dir', type=Path, default=REPO / 'target/gate-study')
+parser.add_argument('--noise-std', type=float, default=0, help='source Gaussian noise standard deviation per axis, metres')
+parser.add_argument('--source-outlier-fraction', type=float, default=0, help='fraction of source points replaced by nearby nonmatching points')
 args = parser.parse_args()
 if args.evaluation_distance is not None and (not math.isfinite(args.evaluation_distance) or args.evaluation_distance <= 0):
     parser.error('evaluation-distance must be finite and positive')
+if not math.isfinite(args.noise_std) or args.noise_std < 0:
+    parser.error('noise-std must be finite and nonnegative')
+if not math.isfinite(args.source_outlier_fraction) or not 0 <= args.source_outlier_fraction < 1:
+    parser.error('source-outlier-fraction must be in [0, 1)')
 ROOT = args.output_dir
 ROOT.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(REPO / 'crates/spatialrust-py/examples'))
@@ -47,6 +53,16 @@ for seed in range(5):
     target = np.random.default_rng(seed).uniform(-1, 1, (400, 3))
     r, t = rotation(60), np.array([5., -2., .5])
     source = target @ r.T + t
+    # Separate perturbation RNG keeps target geometry identical across conditions.
+    disturbance = np.random.default_rng(10000 + seed)
+    outlier_rng = np.random.default_rng(20000 + seed)
+    outlier_count = int(len(source) * args.source_outlier_fraction)
+    if outlier_count:
+        outliers = outlier_rng.uniform(-1, 1, (outlier_count, 3))
+        outliers[:, 0] = outlier_rng.uniform(1.2, 2, outlier_count)
+        source[-outlier_count:] = outliers @ r.T + t
+    if args.noise_std:
+        source += disturbance.normal(0, args.noise_std, source.shape)
     truth = matrix(r.T, -r.T @ t)
     sp, tp = ROOT / f'source-{seed}.pcd', ROOT / f'target-{seed}.pcd'
     write(sp, source)
@@ -86,7 +102,11 @@ for gate in [.05, .15, .3, .6, 1.2]:
                         forward_support=[row['forward_fraction'] for row in completed],
                         reverse_support=[row['reverse_fraction'] for row in completed],
                         gated_rmse_metres=[row['rmse_metres'] for row in completed]))
-(ROOT / 'results.json').write_text(json.dumps(dict(evaluation_distance_metres=args.evaluation_distance, rows=rows, summary=summary), indent=2, allow_nan=False) + '\n')
+(ROOT / 'results.json').write_text(json.dumps(dict(evaluation_distance_metres=args.evaluation_distance,
+    noise_std_metres=args.noise_std, source_outlier_fraction_requested=args.source_outlier_fraction,
+    source_outlier_count=int(400 * args.source_outlier_fraction), source_points=400,
+    outlier_generation='target-frame x in [1.2,2], y/z in [-1,1]; replace final source points before noise',
+    rows=rows, summary=summary), indent=2, allow_nan=False) + '\n')
 table = []
 for item in summary:
     support = item['forward_support']
@@ -100,7 +120,8 @@ evaluation = f'{args.evaluation_distance:g} m (fixed)' if args.evaluation_distan
 (ROOT / 'report.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8"><title>ICP gate study</title>'
     '<style>body{font:16px system-ui;max-width:950px;margin:2rem auto}td,th{padding:.6rem;text-align:left}svg{width:150px}</style>'
     f'<h1>ICP gate study</h1><p>Evaluation gate: {evaluation}. Five fixed synthetic seeds per search gate.</p>'
+    f'<p>Source noise per axis: {args.noise_std:g} m; replaced outliers: {int(400 * args.source_outlier_fraction)}/400 points.</p>'
     '<table><thead><tr><th>ICP gate (m)</th><th>Correct poses</th><th>Converged</th><th>Forward support range</th><th>Correct pose fraction</th></tr></thead><tbody>'
     + ''.join(table) + '</tbody></table><p>Correctness uses known generating poses: rotation error &lt; 1 degree and translation error &lt; 0.01 m. '
-    'Convergence and proximity support do not certify pose. Clean fully overlapping data, no outliers; this is not a general gate recommendation.</p></html>', encoding='utf-8')
+    'Convergence and proximity support do not certify pose. Synthetic uniform geometry; this is not a general gate recommendation.</p></html>', encoding='utf-8')
 print(json.dumps(summary, indent=2))

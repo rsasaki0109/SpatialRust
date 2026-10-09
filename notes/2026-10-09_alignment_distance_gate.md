@@ -44,3 +44,35 @@ support at fixed evaluation gate 0.05 m, versus 90.5–92.75% when evaluated at
 0.3 m. The successful broad-gate runs still have 100% fixed-distance support.
 This separates optimizer recovery from relaxed proximity evaluation in this
 specific study; it does not make proximity support a correctness certificate.
+
+## Noise and nearby nonmatching points
+
+The script now accepts `--noise-std` (per-axis source Gaussian noise, metres)
+and `--source-outlier-fraction`. Replaced points are generated in target frame
+with x in [1.2, 2] and y/z in [-1, 1], then transformed into source frame.
+Independent random streams keep target geometry and the Gaussian noise draws
+identical across conditions. The last 80 of 400 points are replaced at fraction
+0.2; this removes true correspondences as well as adding nonmatching points.
+
+At fixed evaluation distance 0.05 m, correct-pose counts across five seeds were:
+
+| Search gate (m) | Clean | 5 mm noise per axis | Same noise + 20% replacement |
+| --- | --- | --- | --- |
+| 0.05 | 0/5 | 0/5 | 0/5 |
+| 0.15 | 0/5 | 0/5 | 0/5 |
+| 0.3 | 1/5 | 3/5 | 1/5 |
+| 0.6 | 5/5 | 4/5 | 0/5 |
+| 1.2 | 5/5 | 4/5 | 0/5 |
+
+Reproduce noise-only with `--evaluation-distance .05 --noise-std .005
+--output-dir target/gate-noise-study`; add `--source-outlier-fraction .2` and
+use `target/gate-outlier-study` for the replacement condition. Generated HTML
+records the condition. Default clean runs reproduce all 25 prior transforms.
+
+Large search gates lose their clean-data advantage here. Incorrect nearby
+correspondences are a plausible explanation, but correspondence histories are
+not instrumented, so these results do not prove that mechanism or distinguish
+it from loss of true correspondences. Five synthetic seeds cannot establish a
+general best gate, filtering policy or noise tolerance. Convergence also remains
+distinct from correctness: the replacement condition reports convergence in
+3, 1, 3, 1, 0 cases across these gates despite only one correct pose.
