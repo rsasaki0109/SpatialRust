@@ -25,9 +25,21 @@ selected 2.0.21, which requires Rust 1.77. That produced a confirmed build failu
 on Rust 1.75 even for core. The compatible release declares Rust 1.61 and passes
 the actual Rust 1.75 checks. Future upgrades require repeating the MSRV gate.
 
-Library lockfiles are intentionally untracked in this repository. Generating
+The root library lockfile is intentionally untracked in this repository. Generating
 with Cargo 1.75 avoids a newer Cargo lockfile format and checks fresh dependency
 resolution; subsequent checks use `--locked` to freeze that run's graph.
+
+The separately distributed Python extension tracks
+`/workspace/SpatialRust-python-delivery/crates/spatialrust-py/Cargo.lock`.
+Previously the blanket ignore rule omitted it from fresh Git checkouts, so an
+actual dependency-resolving `cargo metadata --locked` failed before wheel builds.
+The frozen graph now resolves offline in a fresh source tree (342 packages), and
+the generated source distribution contains exactly the tracked lockfile bytes.
+This graph targets current stable, independently of the Rust 1.75 library gate.
+
+Python wheel CI also runs on relevant main-branch changes and builds and tests
+installed default wheels on Windows and macOS. These jobs gate tag publication;
+their configuration is not evidence of remote runtime success until CI completes.
 
 ## Current stable toolchain
 

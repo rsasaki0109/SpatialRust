@@ -2,6 +2,8 @@
 **/target/
 **/*.rs.bk
 Cargo.lock
+# Freeze the separately built distributable Python extension's dependency graph.
+!/crates/spatialrust-py/Cargo.lock
 .idea/
 .vscode/
 *.pdb

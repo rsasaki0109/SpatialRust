@@ -3,9 +3,17 @@ name: Python wheels
 on:
   push:
     tags: ["v*", "py-v*"]
+    branches: [main]
+    paths:
+      - "crates/**"
+      - "scripts/*.py"
+      - "Cargo.toml"
+      - ".github/workflows/python-wheels.yml"
   pull_request:
     paths:
-      - "crates/spatialrust-py/**"
+      - "crates/**"
+      - "scripts/*.py"
+      - "Cargo.toml"
       - ".github/workflows/python-wheels.yml"
   workflow_dispatch:
 
@@ -13,6 +21,51 @@ env:
   MANIFEST: crates/spatialrust-py/Cargo.toml
 
 jobs:
+  native-runtime:
+    name: Native wheel runtime (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            python: '3.12'
+          - os: macos-14
+            python: '3.12'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/spatialrust-py
+      - name: Build frozen default wheel
+        run: |
+          python -m pip install "maturin>=1.7,<2"
+          python -m maturin build --release --locked --manifest-path crates/spatialrust-py/Cargo.toml --out native-dist
+      - name: Install exact wheel and validate runtime
+        shell: bash
+        run: |
+          python -m venv native-venv
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            wheel_python=native-venv/Scripts/python.exe
+          else
+            wheel_python=native-venv/bin/python
+          fi
+          "$wheel_python" -m pip install native-dist/*.whl numpy pytest pyarrow
+          "$wheel_python" -m pytest crates/spatialrust-py/tests -o addopts='' -q --junitxml=native-tests.xml
+          "$wheel_python" crates/spatialrust-py/tools/verify_installed_wheel.py native-dist/*.whl --junit native-tests.xml --receipt native-validation.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-runtime-${{ matrix.os }}-py${{ matrix.python }}
+          path: |
+            native-tests.xml
+            native-validation.json
+            native-dist/*.whl
+
   wheels:
     name: Build wheels (${{ matrix.target }})
     runs-on: ubuntu-latest
@@ -99,7 +152,7 @@ jobs:
   publish:
     name: Publish to PyPI
     runs-on: ubuntu-latest
-    needs: [wheels, sdist]
+    needs: [wheels, sdist, native-runtime]
     if: startsWith(github.ref, 'refs/tags/')
     environment: pypi
     steps:
