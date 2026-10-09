@@ -67,6 +67,30 @@ def test_opt_in_history_preserves_alignment_and_reaches_cli_html(tmp_path):
     assert 'Stop reason:' in rendered
 
 
+def test_stopping_controls_are_validated_before_io_and_saved(tmp_path):
+    for convergence in ({'rotation_epsilon': -1}, {'fitness_epsilon': float('nan')},
+                        {'translation_epsilon': True}, {'unknown': 1}, 7):
+        with patch.object(sr, 'read', side_effect=AssertionError('IO before validation')):
+            try:
+                example.align_files('missing', 'missing', convergence=convergence)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('invalid convergence accepted')
+    paths, _, _ = fixture_files(tmp_path)
+    output = tmp_path / 'criteria'
+    result = subprocess.run([sys.executable, str(EXAMPLE), *map(str, paths),
+        '--output-dir', str(output), '--trace', '--html-report', '--fitness-epsilon', '0',
+        '--translation-epsilon', '.001', '--rotation-epsilon', '.0001'],
+        capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    report = json.loads((output / 'alignment.json').read_text())
+    for stage in report['stages']:
+        assert stage['stop_reason'] == 'transform_threshold'
+        assert stage['convergence_criteria'] == dict(translation_epsilon=.001, rotation_epsilon=.0001, fitness_epsilon=0)
+    assert 'Stopping thresholds:' in (output / 'report.html').read_text()
+
+
 def test_invalid_fine_gate_is_rejected_before_file_io():
     for gate in (0, -1, True, float('nan'), float('inf'), 1e30, 1e-30):
         with patch.object(sr, 'read', side_effect=AssertionError('IO before validation')):

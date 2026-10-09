@@ -211,12 +211,24 @@ post-update fitness (`None` for the first row); changing membership prevents
 interpreting it as improvement on a fixed set. These measurements do not certify
 pose accuracy. Ordinary `register_icp` does not retain a history.
 
+Both ICP functions accept keyword-only `translation_epsilon`, `rotation_epsilon`,
+and `fitness_epsilon`. Defaults remain 1e-8 coordinate units, 1e-8 radians, and
+1e-6 squared coordinate units. The transform test requires both translation and
+rotation updates below their own thresholds; the fitness test is an alternative
+absolute mean squared distance test. Zero disables a test, and negative/nonfinite
+thresholds are rejected. Use tolerances appropriate to sensor precision; meeting
+them is a stopping decision, not evidence of a correct pose. Rust callers can
+override these values with `IcpConvergenceCriteria` and
+`IcpRegistration::with_convergence_criteria` without changing `IcpConfig` literals.
+
 Pass `--trace --html-report` to `examples/align_point_clouds.py` or
 `examples/align_pose_candidates.py` to save per-stage ICP history in alignment.json
 and standalone SVG charts in report.html. The candidate report retains the
 selected candidate's history. Charts show both estimator/rematched correspondence
 counts, gated RMSE, translation update, and rotation update on labeled linear
 axes; exact measurements are also available in an expandable table.
+The file examples also accept `--translation-epsilon`, `--rotation-epsilon`,
+and `--fitness-epsilon`; explicitly supplied thresholds are recorded per stage.
 
 ## Example
 

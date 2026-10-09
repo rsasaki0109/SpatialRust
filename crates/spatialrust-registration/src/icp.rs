@@ -86,23 +86,56 @@ impl IcpConfig {
     }
 }
 
+/// Explicit unit-aware stopping thresholds; zero disables the corresponding test.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct IcpConvergenceCriteria {
+    /// Translation update length threshold in input coordinate units.
+    pub translation_epsilon: f64,
+    /// Shortest rotation update threshold in radians.
+    pub rotation_epsilon: f64,
+    /// Absolute mean squared correspondence distance threshold.
+    pub fitness_epsilon: f64,
+}
+
 /// Point-to-point ICP registration.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct IcpRegistration {
     config: IcpConfig,
+    criteria: IcpConvergenceCriteria,
 }
 
 impl IcpRegistration {
     /// Creates an ICP registration algorithm from config.
     #[must_use]
     pub const fn new(config: IcpConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            criteria: IcpConvergenceCriteria {
+                translation_epsilon: config.transformation_epsilon,
+                rotation_epsilon: config.transformation_epsilon,
+                fitness_epsilon: config.fitness_epsilon,
+            },
+        }
     }
 
-    /// Returns the ICP config.
+    /// Returns the base ICP config; explicit convergence overrides are separate.
     #[must_use]
     pub const fn config(&self) -> IcpConfig {
         self.config
+    }
+
+    /// Overrides stopping thresholds without changing the base config or defaults.
+    /// Invalid thresholds are rejected when alignment is called.
+    #[must_use]
+    pub const fn with_convergence_criteria(mut self, criteria: IcpConvergenceCriteria) -> Self {
+        self.criteria = criteria;
+        self
+    }
+
+    /// Returns the effective stopping thresholds, including overrides.
+    #[must_use]
+    pub const fn convergence_criteria(&self) -> IcpConvergenceCriteria {
+        self.criteria
     }
 
     /// Aligns `source` to `target` using iterative closest point.
@@ -131,6 +164,33 @@ impl IcpRegistration {
         target: &PointCloud,
         mut observe: impl FnMut(IcpIteration),
     ) -> SpatialResult<(RegistrationResult, IcpStopReason)> {
+        let max_distance_squared =
+            self.config.max_correspondence_distance * self.config.max_correspondence_distance;
+        if self.config.max_correspondence_distance <= 0.0
+            || !max_distance_squared.is_finite()
+            || max_distance_squared == 0.0
+        {
+            return Err(SpatialError::InvalidArgument(
+                "max_correspondence_distance must be positive with finite nonzero f32 square"
+                    .to_owned(),
+            ));
+        }
+        if self.config.max_iterations == 0 || self.config.min_correspondences < 3 {
+            return Err(SpatialError::InvalidArgument(
+                "ICP requires max_iterations >= 1 and min_correspondences >= 3".to_owned(),
+            ));
+        }
+        for (name, value) in [
+            ("translation_epsilon", self.criteria.translation_epsilon),
+            ("rotation_epsilon", self.criteria.rotation_epsilon),
+            ("fitness_epsilon", self.criteria.fitness_epsilon),
+        ] {
+            if !value.is_finite() || value < 0.0 {
+                return Err(SpatialError::InvalidArgument(format!(
+                    "{name} must be finite and nonnegative"
+                )));
+            }
+        }
         if source.is_empty() || target.is_empty() {
             return Err(SpatialError::InvalidArgument(
                 "ICP requires non-empty source and target point clouds".to_owned(),
@@ -139,9 +199,17 @@ impl IcpRegistration {
 
         let (source_x, source_y, source_z) = source.positions3()?;
         let (target_x, target_y, target_z) = target.positions3()?;
+        for (name, x, y, z) in
+            [("source", source_x, source_y, source_z), ("target", target_x, target_y, target_z)]
+        {
+            if x.len() < 3 || x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+                return Err(SpatialError::InvalidArgument(format!(
+                    "{name} requires at least 3 finite XYZ points"
+                )));
+            }
+        }
+        validate_icp_transform(self.config.initial_guess)?;
         let tree = KdTree::from_slices(target_x, target_y, target_z);
-        let max_distance_squared =
-            self.config.max_correspondence_distance * self.config.max_correspondence_distance;
 
         let mut transform = self.config.initial_guess;
         let mut transformed = Vec::with_capacity(source.len());
@@ -149,6 +217,7 @@ impl IcpRegistration {
             transformed.push(Vec3::new(source_x[index], source_y[index], source_z[index]));
         }
         apply_transform_in_place(&mut transformed, source_x, source_y, source_z, transform);
+        validate_transformed_points(&transformed)?;
 
         let mut iterations = 0usize;
         let mut converged = false;
@@ -190,8 +259,11 @@ impl IcpRegistration {
                 ));
             };
 
+            validate_icp_transform(delta)?;
             transform = delta.compose(transform);
+            validate_icp_transform(transform)?;
             apply_transform_in_place(&mut transformed, source_x, source_y, source_z, transform);
+            validate_transformed_points(&transformed)?;
 
             let (fitness, evaluated_correspondences) = evaluate_fitness(
                 &transformed,
@@ -212,12 +284,14 @@ impl IcpRegistration {
                 rotation_delta_radians,
             });
             previous_fitness = Some(fitness);
-            if fitness < self.config.fitness_epsilon {
+            if fitness < self.criteria.fitness_epsilon {
                 converged = true;
                 stop_reason = IcpStopReason::FitnessThreshold;
                 break;
             }
-            if transform_delta_below_epsilon(delta, self.config.transformation_epsilon) {
+            if translation_delta < self.criteria.translation_epsilon
+                && rotation_delta_radians < self.criteria.rotation_epsilon
+            {
                 converged = true;
                 stop_reason = IcpStopReason::TransformThreshold;
                 break;
@@ -294,9 +368,36 @@ fn evaluate_fitness(
     (if count == 0 { f64::MAX } else { sum / count as f64 }, count)
 }
 
+#[cfg(test)]
 fn transform_delta_below_epsilon(delta: Isometry3<f32>, epsilon: f64) -> bool {
     let (translation_norm, rotation_angle) = transform_delta_magnitudes(delta);
     translation_norm < epsilon && rotation_angle < epsilon
+}
+
+fn validate_transformed_points(points: &[Vec3<f32>]) -> SpatialResult<()> {
+    if points.iter().any(|p| !p.x.is_finite() || !p.y.is_finite() || !p.z.is_finite()) {
+        return Err(SpatialError::InvalidArgument(
+            "ICP transform overflowed coordinates".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_icp_transform(transform: Isometry3<f32>) -> SpatialResult<()> {
+    let t = transform.translation();
+    let r = transform.rotation();
+    let norm = f64::from(r.x).hypot(f64::from(r.y)).hypot(f64::from(r.z)).hypot(f64::from(r.w));
+    if !t.x.is_finite()
+        || !t.y.is_finite()
+        || !t.z.is_finite()
+        || !norm.is_finite()
+        || (norm - 1.0).abs() > 1e-4
+    {
+        return Err(SpatialError::InvalidArgument(
+            "ICP requires a finite transform with unit quaternion".to_owned(),
+        ));
+    }
+    Ok(())
 }
 
 fn transform_delta_magnitudes(delta: Isometry3<f32>) -> (f64, f64) {
@@ -314,7 +415,10 @@ fn transform_delta_magnitudes(delta: Isometry3<f32>) -> (f64, f64) {
 
 #[cfg(test)]
 mod tests {
-    use super::{transform_delta_below_epsilon, IcpConfig, IcpRegistration, IcpStopReason};
+    use super::{
+        transform_delta_below_epsilon, IcpConfig, IcpConvergenceCriteria, IcpRegistration,
+        IcpStopReason,
+    };
     use crate::registration::PointCloudRegistration;
     use crate::transform::transform_point_cloud;
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};
@@ -352,6 +456,95 @@ mod tests {
             }
         }
         builder.build().unwrap()
+    }
+
+    #[test]
+    fn rejects_invalid_rust_configuration_and_xyz() {
+        let cloud = plane_cloud();
+        for gate in [0.0, -1.0, f32::NAN, f32::INFINITY, 1e30, 1e-30] {
+            assert!(IcpRegistration::new(IcpConfig {
+                max_correspondence_distance: gate,
+                ..IcpConfig::default()
+            })
+            .align(&cloud, &cloud)
+            .is_err());
+        }
+        for config in [
+            IcpConfig { max_iterations: 0, ..IcpConfig::default() },
+            IcpConfig { min_correspondences: 2, ..IcpConfig::default() },
+            IcpConfig { transformation_epsilon: f64::NAN, ..IcpConfig::default() },
+            IcpConfig { fitness_epsilon: -1.0, ..IcpConfig::default() },
+            IcpConfig {
+                initial_guess: Isometry3::new(
+                    Quat::new(0.0, 0.0, 0.0, 0.0),
+                    Vec3::new(0.0, 0.0, 0.0),
+                ),
+                ..IcpConfig::default()
+            },
+        ] {
+            assert!(IcpRegistration::new(config).align_with_trace(&cloud, &cloud).is_err());
+        }
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for p in [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, f32::NAN, 1.0]] {
+            builder.push_point(p).unwrap();
+        }
+        let invalid = builder.build().unwrap();
+        assert!(IcpRegistration::new(IcpConfig::default()).align(&invalid, &cloud).is_err());
+        assert!(IcpRegistration::new(IcpConfig::default()).align(&cloud, &invalid).is_err());
+    }
+
+    #[test]
+    fn rejects_transformed_coordinate_overflow() {
+        let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
+        for y in [0.0, 1.0, 2.0] {
+            builder.push_point([f32::MAX, y, 0.0]).unwrap();
+        }
+        let source = builder.build().unwrap();
+        let registration = IcpRegistration::new(IcpConfig {
+            initial_guess: Isometry3::new(Quat::<f32>::identity(), Vec3::new(f32::MAX, 0.0, 0.0)),
+            ..IcpConfig::default()
+        });
+        assert!(registration
+            .align(&source, &plane_cloud())
+            .unwrap_err()
+            .to_string()
+            .contains("overflowed"));
+    }
+
+    #[test]
+    fn separate_thresholds_and_zero_disabled_tests_are_honored() {
+        let cloud = plane_cloud();
+        let base = IcpConfig { max_iterations: 2, ..IcpConfig::default() };
+        let disabled = IcpConvergenceCriteria {
+            translation_epsilon: 0.0,
+            rotation_epsilon: 0.0,
+            fitness_epsilon: 0.0,
+        };
+        let registration = IcpRegistration::new(base).with_convergence_criteria(disabled);
+        assert_eq!(registration.config(), base);
+        assert_eq!(registration.convergence_criteria(), disabled);
+        let trace = registration.align_with_trace(&cloud, &cloud).unwrap();
+        assert_eq!(trace.stop_reason, IcpStopReason::IterationLimit);
+        assert_eq!(trace.result.iterations, 2);
+        let criteria = IcpConvergenceCriteria {
+            translation_epsilon: 1e-3,
+            rotation_epsilon: 1e-4,
+            ..disabled
+        };
+        let trace = registration
+            .with_convergence_criteria(criteria)
+            .align_with_trace(&cloud, &cloud)
+            .unwrap();
+        assert_eq!(trace.stop_reason, IcpStopReason::TransformThreshold);
+        for invalid in [f64::NAN, f64::INFINITY, -1.0] {
+            assert!(registration
+                .with_convergence_criteria(IcpConvergenceCriteria {
+                    rotation_epsilon: invalid,
+                    ..criteria
+                })
+                .align(&cloud, &cloud)
+                .is_err());
+        }
     }
 
     #[test]

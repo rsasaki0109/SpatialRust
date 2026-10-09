@@ -46,35 +46,59 @@ def validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_
     return evaluation_distance
 
 
-def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False):
+def validate_convergence(convergence):
+    if convergence is None:
+        return {}
+    if not isinstance(convergence, dict) or set(convergence) - {'translation_epsilon', 'rotation_epsilon', 'fitness_epsilon'}:
+        raise ValueError('convergence must contain only translation_epsilon, rotation_epsilon, fitness_epsilon')
+    for name, value in convergence.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+            raise ValueError(f'{name} must be finite and nonnegative')
+    return dict(convergence)
+
+
+def convergence_arguments(parser):
+    parser.add_argument('--translation-epsilon', type=float, help='update translation threshold in metres')
+    parser.add_argument('--rotation-epsilon', type=float, help='update rotation threshold in radians')
+    parser.add_argument('--fitness-epsilon', type=float, help='absolute MSE threshold in squared metres; zero disables')
+
+
+def convergence_from_args(args):
+    values = {key: getattr(args, key) for key in ('translation_epsilon', 'rotation_epsilon', 'fitness_epsilon') if getattr(args, key) is not None}
+    return values or None
+
+
+def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False, convergence=None):
     """Read files and return the full-resolution aligned source and diagnostics."""
     evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
+    validate_convergence(convergence)
     if initial_transform is not None:
         initial_transform = rigid_matrix(initial_transform)
     source, target = sr.read(str(source_path)), sr.read(str(target_path))
     return align_clouds(source, target, source_name=str(source_path), target_name=str(target_path),
                         leaf=leaf, max_distance=max_distance, iterations=iterations,
-                        initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace)
+                        initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace, convergence=convergence)
 
 
 def align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
-                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False):
+                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False, convergence=None):
     """Align read-only clouds and return a new full source and diagnostics."""
     return _align_clouds(source, target, source_name=source_name, target_name=target_name,
                          leaf=leaf, max_distance=max_distance, iterations=iterations,
-                         initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace)
+                         initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace, convergence=convergence)
 
 
 def _align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
                   max_distance=.1, iterations=50, initial_transform=None,
                   evaluation_distance=None, target_voxel_cache=None, before_support_cache=None,
-                  target_support_index_cache=None, fine_distance=None, trace=False):
+                  target_support_index_cache=None, fine_distance=None, trace=False, convergence=None):
     """Align existing read-only clouds, returning a new full source and diagnostics.
 
     XYZ validation explicitly copies positions to NumPy. Convergence and support
     do not certify pose accuracy; input clouds and their attributes stay intact.
     """
     evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
+    convergence_options = validate_convergence(convergence)
     fine_distance = max_distance if fine_distance is None else fine_distance
     initial = rigid_matrix(np.eye(4) if initial_transform is None else initial_transform)
     for name, cloud in (('source', source), ('target', target)):
@@ -96,9 +120,9 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
         raise ValueError('voxel clouds require at least three points; reduce leaf')
     def register(query, reference, gate):
         if trace:
-            diagnostics = sr.register_icp_diagnostics(query, reference, gate, iterations)
+            diagnostics = sr.register_icp_diagnostics(query, reference, gate, iterations, **convergence_options)
             return diagnostics.result, diagnostics
-        return sr.register_icp(query, reference, gate, iterations), None
+        return sr.register_icp(query, reference, gate, iterations, **convergence_options), None
     coarse_result, coarse_trace = register(coarse_source, coarse_target, max_distance)
     coarse_transform = (coarse_result.transform().astype(np.float64) @ initial.astype(np.float64)).astype(np.float32)
     if not np.isfinite(coarse_transform).all():
@@ -122,6 +146,9 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
               stage('full_resolution', result, transform, len(source), len(target))]
     for row, distance in zip(stages, (max_distance, fine_distance)):
         row['max_correspondence_distance_metres'] = distance
+        if convergence is not None:
+            row['convergence_criteria'] = dict(translation_epsilon=1e-8, rotation_epsilon=1e-8, fitness_epsilon=1e-6)
+            row['convergence_criteria'].update(convergence_options)
     for row, diagnostics in zip(stages, (coarse_trace, fine_trace)):
         if diagnostics is not None:
             row['stop_reason'] = diagnostics.stop_reason
@@ -184,12 +211,13 @@ def main():
     parser.add_argument('--iterations', type=int, default=50)
     parser.add_argument('--html-report', action='store_true', help='also save standalone report.html with support diagnostics')
     parser.add_argument('--trace', action='store_true', help='record ICP update history and render convergence charts')
+    convergence_arguments(parser)
     args = parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory already exists; choose a new path')
     initial = json.loads(args.initial_transform.read_text(encoding='utf-8')) if args.initial_transform else None
     aligned, diagnostics = align_files(args.source, args.target, leaf=args.leaf,
-                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance, fine_distance=args.fine_distance, trace=args.trace)
+                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance, fine_distance=args.fine_distance, trace=args.trace, convergence=convergence_from_args(args))
     rendered = None
     if args.html_report:
         from render_alignment_report import render_report

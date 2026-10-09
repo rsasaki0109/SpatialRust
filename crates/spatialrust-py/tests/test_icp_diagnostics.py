@@ -73,3 +73,28 @@ def test_trace_input_validation_and_concurrent_shared_reads():
     for trace in traces[1:]:
         np.testing.assert_array_equal(trace.result.transform(), traces[0].result.transform())
         assert trace.history[-1].fitness == traces[0].history[-1].fitness
+
+
+@pytest.mark.parametrize('name', ['translation_epsilon', 'rotation_epsilon', 'fitness_epsilon'])
+@pytest.mark.parametrize('value', [-1, np.nan, np.inf])
+def test_invalid_stopping_thresholds_are_named_errors(name, value):
+    source, target = clouds()
+    for function in (sr.register_icp, sr.register_icp_diagnostics):
+        with pytest.raises(ValueError, match=name):
+            function(source, target, **{name: value})
+
+
+def test_explicit_default_and_zero_disabled_stopping_criteria():
+    source, target = clouds()
+    plain = sr.register_icp(source, target, .15, 3)
+    explicit = sr.register_icp(source, target, .15, 3,
+                               translation_epsilon=1e-8, rotation_epsilon=1e-8, fitness_epsilon=1e-6)
+    np.testing.assert_array_equal(plain.transform(), explicit.transform())
+    assert plain.fitness == explicit.fitness and plain.iterations == explicit.iterations
+    disabled = sr.register_icp_diagnostics(target, target, .15, 3,
+        translation_epsilon=0, rotation_epsilon=0, fitness_epsilon=0)
+    assert disabled.stop_reason == 'iteration_limit' and len(disabled.history) == 3
+    by_transform = sr.register_icp_diagnostics(target, target, .15, 3,
+        translation_epsilon=1e-3, rotation_epsilon=1e-4, fitness_epsilon=0)
+    assert by_transform.stop_reason == 'transform_threshold'
+    assert by_transform.result.converged
