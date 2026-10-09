@@ -61,12 +61,13 @@ def test_cli_html_report_and_failed_html_write_cleanup(tmp_path, monkeypatch):
     paths, _, _ = fixture_files(tmp_path)
     output = tmp_path / 'with-html'
     result = subprocess.run([sys.executable, str(EXAMPLE), *map(str, paths),
-                             '--output-dir', str(output), '--html-report'],
+                             '--output-dir', str(output), '--html-report', '--evaluation-distance', '.001'],
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
     rendered = (output / 'report.html').read_text()
     assert 'Alignment support report' in rendered
     assert 'After: target → source' in rendered
+    assert 'Evaluation distance gate: 0.001 m' in rendered
     assert (output / 'aligned.pcd').exists() and (output / 'alignment.json').exists()
     monkeypatch.syspath_prepend(str(EXAMPLE.parent))
     write_text = Path.write_text
@@ -83,6 +84,24 @@ def test_cli_html_report_and_failed_html_write_cleanup(tmp_path, monkeypatch):
         else:
             raise AssertionError('expected HTML write failure')
     assert not failed.exists()
+
+
+def test_independent_evaluation_distance_does_not_change_estimated_pose(tmp_path):
+    paths, _, _ = fixture_files(tmp_path)
+    _, baseline = example.align_files(*paths, max_distance=.1)
+    _, evaluated = example.align_files(*paths, max_distance=.1, evaluation_distance=.001)
+    np.testing.assert_array_equal(baseline['transform_source_to_target'], evaluated['transform_source_to_target'])
+    assert evaluated['max_distance_metres'] == .1
+    assert evaluated['evaluation_distance_metres'] == .001
+    assert evaluated['before_support']['query_fraction'] == 0
+    assert evaluated['aligned_support']['query_fraction'] == 1
+    for value in [0, -1, float('nan'), float('inf'), True, 1e-30, 1e30]:
+        try:
+            example.align_files('missing', 'missing', evaluation_distance=value)
+        except ValueError as error:
+            assert 'evaluation_distance' in str(error)
+        else:
+            raise AssertionError('invalid evaluation distance accepted')
 
 
 def test_invalid_settings_before_io():

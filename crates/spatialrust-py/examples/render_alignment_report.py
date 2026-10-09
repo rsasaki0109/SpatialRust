@@ -26,8 +26,9 @@ def render_report(report):
         raise ValueError('unsupported alignment report schema')
     source = _count(report.get('source_points'), 'source_points')
     target = _count(report.get('target_points'), 'target_points')
-    gate = _number(report.get('max_distance_metres'), 'max_distance_metres')
-    if gate == 0:
+    optimization_gate = _number(report.get('max_distance_metres'), 'max_distance_metres')
+    gate = _number(report.get('evaluation_distance_metres', optimization_gate), 'evaluation_distance_metres')
+    if gate == 0 or optimization_gate == 0:
         raise ValueError('max_distance_metres must be positive')
     if type(report.get('converged')) is not bool:
         raise ValueError('converged must be boolean')
@@ -83,7 +84,8 @@ def render_report(report):
             'svg{width:100%;max-height:55px}h2{font-size:1.1rem}section{margin:2rem 0}</style>'
             '<main><h1>Alignment support report</h1>'
             f'<p>Source: {html.escape(report["source_file"])}<br>Target: {html.escape(report["target_file"])}</p>'
-            f'<p>Distance gate: {gate:.6g} m. ICP converged: {str(report["converged"]).lower()}.</p>'
+            f'<p>Evaluation distance gate: {gate:.6g} m. ICP correspondence gate: {optimization_gate:.6g} m. '
+            f'ICP converged: {str(report["converged"]).lower()}.</p>'
             f'<p>Initial pose: {prior_label}. A supplied prior is not independently verified.</p>'
             + ''.join(rows) +
             '<p>Each direction uses its own query point count. High forward support with lower reverse support '

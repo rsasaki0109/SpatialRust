@@ -274,6 +274,9 @@ The report also identifies a caller-supplied initial pose versus default identit
 older JSON without this field displays unrecorded provenance.
 New reports also compare support after the initial pose, before ICP refinement.
 This adds one full-resolution distance-support query; older reports remain readable.
+Use `--evaluation-distance 0.1` to hold the support evaluation gate fixed while
+varying `--max-distance` for ICP. By default the two distances match. Both are
+recorded and displayed; changing evaluation distance does not change the pose.
 
 Run the file-based integration checks against an installed wheel:
 

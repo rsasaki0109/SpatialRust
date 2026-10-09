@@ -44,6 +44,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Python alignment accepts an independent `evaluation_distance` and CLI
+  `--evaluation-distance`, separating support diagnostics from ICP correspondence
+  search. HTML reports display both distances and accept older report files.
 - Alignment reports include full-resolution support immediately after the
   initial pose, separating initialization effects from subsequent ICP refinement.
 - Alignment diagnostics record whether the initial transform was supplied;

@@ -29,14 +29,15 @@ def rigid_matrix(value):
     return matrix.astype(np.float32)
 
 
-def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None):
+def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None):
     """Return (full-resolution aligned source, JSON-compatible diagnostics).
 
     Raises ValueError for invalid settings/input; native IO/registration errors
     propagate. ICP defaults to identity; convergence does not certify pose accuracy.
     XYZ transfer to NumPy for validation copies data explicitly.
     """
-    for name, value in (('leaf', leaf), ('max_distance', max_distance)):
+    evaluation_distance = max_distance if evaluation_distance is None else evaluation_distance
+    for name, value in (('leaf', leaf), ('max_distance', max_distance), ('evaluation_distance', evaluation_distance)):
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= 0:
             raise ValueError(f'{name} must be finite and positive')
         with np.errstate(over='ignore', under='ignore'):
@@ -80,14 +81,15 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
     stages = [stage('voxel', coarse_result, coarse_transform, len(coarse_source), len(coarse_target)),
               stage('full_resolution', result, transform, len(source), len(target))]
     def support(query, reference):
-        count, fraction, rmse = sr.distance_gated_support(query, reference, max_distance)
-        return dict(distance_metres=max_distance, query_points=len(query),
+        count, fraction, rmse = sr.distance_gated_support(query, reference, evaluation_distance)
+        return dict(distance_metres=evaluation_distance, query_points=len(query),
                     distance_gated_points=count, query_fraction=fraction, gated_rmse_metres=rmse)
     diagnostics = dict(schema_version='spatialrust.python-alignment.v1',
                        source_file=str(source_path), target_file=str(target_path),
                        source_points=len(source), target_points=len(target),
                        registration_source_points=len(coarse_source), registration_target_points=len(coarse_target),
                        leaf_metres=leaf, max_distance_metres=max_distance,
+                       evaluation_distance_metres=evaluation_distance,
                        iterations=result.iterations, converged=result.converged,
                        max_iterations_per_stage=iterations, stages=stages,
                        initial_transform_supplied=initial_transform is not None,
@@ -109,6 +111,7 @@ def main():
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--leaf', type=float, default=.05)
     parser.add_argument('--max-distance', type=float, default=.1)
+    parser.add_argument('--evaluation-distance', type=float, help='support evaluation distance in metres; defaults to max-distance')
     parser.add_argument('--initial-transform', type=Path, help='JSON 4x4 source-to-target rigid matrix')
     parser.add_argument('--iterations', type=int, default=50)
     parser.add_argument('--html-report', action='store_true', help='also save standalone report.html with support diagnostics')
@@ -117,7 +120,7 @@ def main():
         parser.error('output directory already exists; choose a new path')
     initial = json.loads(args.initial_transform.read_text(encoding='utf-8')) if args.initial_transform else None
     aligned, diagnostics = align_files(args.source, args.target, leaf=args.leaf,
-                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial)
+                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance)
     rendered = None
     if args.html_report:
         from render_alignment_report import render_report
