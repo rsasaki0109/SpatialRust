@@ -51,6 +51,14 @@ Windows/macOS Python 3.12. Python 3.8 is end-of-life; support here describes
 compatibility, not upstream maintenance. Local receipts are under
 `/workspace/SpatialRust-python-delivery/target/python38-wheel-validation/`.
 
+The identical wheel also passes 491 tests with the same three ONNX skips on
+CPython 3.14.7, NumPy 2.5.3 and PyArrow 26.0.0, with archive/native/type/runtime
+verification, under `target/python314-wheel-validation/`. These two endpoints
+plus the existing Python 3.12 checks are specific verified configurations;
+intermediate versions and free-threaded interpreters are not separately verified.
+Ubuntu/Python 3.14 is included in native runtime CI. Superseded branch CI runs
+are canceled by ref-based concurrency; tag publication runs are preserved.
+
 ## Current stable toolchain
 
 Full CPU vision and Python/native integration are locally tested using Rust 1.99,

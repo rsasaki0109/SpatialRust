@@ -17,6 +17,10 @@ on:
       - ".github/workflows/python-wheels.yml"
   workflow_dispatch:
 
+concurrency:
+  group: python-wheels-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 env:
   MANIFEST: crates/spatialrust-py/Cargo.toml
 
@@ -30,6 +34,8 @@ jobs:
         include:
           - os: ubuntu-latest
             python: '3.8'
+          - os: ubuntu-latest
+            python: '3.14'
           - os: windows-latest
             python: '3.12'
           - os: macos-14
