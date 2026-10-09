@@ -662,6 +662,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Direct Python ICP rejects invalid gates, zero iteration budgets and insufficient
+  or nonfinite input clouds with named ValueErrors before native alignment.
+
 - GPU uniform-grid stages (Euclidean cluster, MVP normal radius) fall back to CPU when
   the spatial extent would exceed the wgpu cell cap.
 - MVP integration tests: `EuclideanClusterConfig` partial initializers include
