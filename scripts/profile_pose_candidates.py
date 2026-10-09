@@ -29,7 +29,10 @@ def profile(paths, poses, mode):
             if name == 'icp':
                 label += ('_coarse', '_full')[index % 2]
             elif name == 'support':
-                label += ('_before', '_initial', '_final', '_reverse')[index % 4]
+                if mode == 'shared_before_support':
+                    label += '_before' if index == 0 else ('_initial', '_final', '_reverse')[(index - 1) % 3]
+                else:
+                    label += ('_before', '_initial', '_final', '_reverse')[index % 4]
             index += 1
             started = time.perf_counter()
             try:
@@ -50,9 +53,10 @@ def profile(paths, poses, mode):
     assert seconds['remainder'] >= 0
     count = len(poses)
     assert calls['read'] == (count * 2 if mode == 'read_each' else 2)
-    assert calls['voxel'] == (count + 1 if mode == 'shared_target_voxel' else count * 2)
+    assert calls['voxel'] == (count + 1 if mode in ('shared_target_voxel', 'shared_before_support') else count * 2)
     assert calls['icp_coarse'] == calls['icp_full'] == count
-    assert all(calls['support_' + phase] == count for phase in ('before', 'initial', 'final', 'reverse'))
+    assert calls['support_before'] == (1 if mode == 'shared_before_support' else count)
+    assert all(calls['support_' + phase] == count for phase in ('initial', 'final', 'reverse'))
     return reports, dict(total_seconds=total, component_seconds=seconds, calls=calls)
 
 
@@ -66,7 +70,7 @@ def main():
     if args.repeats < 3 or any(n < 3 for n in args.sizes) or not 1 <= args.candidates <= 16:
         parser.error('sizes >=3, candidates 1–16 and repeats >=3 required')
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    modes = ['read_each', 'read_once', 'shared_target_voxel']
+    modes = ['read_each', 'read_once', 'shared_target_voxel', 'shared_before_support']
     rows = []
     for size in args.sizes:
         xyz = np.random.default_rng(42).uniform(-1, 1, (size, 3)).astype(np.float32)
@@ -83,7 +87,7 @@ def main():
             assert profile(paths, poses, mode)[0] == reference
         samples = {mode: [] for mode in modes}
         for repeat in range(args.repeats):
-            for mode in modes[repeat % 3:] + modes[:repeat % 3]:
+            for mode in modes[repeat % len(modes):] + modes[:repeat % len(modes)]:
                 reports, sample = profile(paths, poses, mode)
                 assert reports == reference
                 samples[mode].append(sample)
