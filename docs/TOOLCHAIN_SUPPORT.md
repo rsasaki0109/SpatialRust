@@ -41,7 +41,7 @@ Python wheel CI also runs on relevant main-branch changes and builds and tests
 installed default wheels on Windows and macOS. These jobs gate tag publication;
 their configuration is not evidence of remote runtime success until CI completes.
 
-Latest complete-suite checkpoint (2026-10-09, main `def46e3`): the existing
+Earlier complete-suite checkpoint (2026-10-09, main `def46e3`): the existing
 identical Linux abi3 wheel passes 537 tests with exactly three expected ONNX
 skips in both isolated CPython 3.8/NumPy 1.24 and CPython 3.14/NumPy 2.5
 environments. The ONNX-enabled CPython 3.12 installation passes all 540 tests.
@@ -59,6 +59,15 @@ these platform runtime gates. Main CI now uses the same workflow/ref concurrency
 policy as wheel CI to cancel superseded branch runs while preserving tags.
 This limits future obsolete work; it does not assign runners or retroactively
 cancel old runs that had no concurrency group.
+
+Post-holdout complete-suite checkpoint (2026-10-10, client timezone Asia/Tokyo):
+all 561 tests pass with the ONNX-enabled CPython 3.12 installation. The existing
+identical default abi3 wheel passes 558 tests with exactly three expected ONNX
+skips in both isolated CPython 3.8/NumPy 1.24 and CPython 3.14/NumPy 2.5
+installations. No native code changes or wheel rebuild were needed for the new
+plan, summary and display tools. Their default-wheel tests do not require Open3D
+or Matplotlib; actual holdout fitting and optional plots use the comparison
+virtual environment. Remote Windows/macOS runtime verification remains open.
 
 The same Linux x86_64 `cp38-abi3` default wheel was installed into an isolated
 CPython 3.8.20 environment with NumPy 1.24.4, PyArrow 17.0.0 and pytest 8.3.5.
