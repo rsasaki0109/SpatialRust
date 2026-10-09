@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Packed RGB PCD ASCII output now writes the float bit representation declared
+  by TYPE F instead of an integer token, preserving colors on reload. ASCII
+  TYPE U RGB is decoded as integer bits; malformed RGB layouts are rejected.
+  Primary-color regressions cover ASCII, binary and bounded streaming reads.
 - PCD rejects explicit POINTS values inconsistent with declared WIDTH * HEIGHT,
   including explicit zero counts. Missing POINTS is still inferred from the
   dimensions, and point-count-only headers remain accepted.

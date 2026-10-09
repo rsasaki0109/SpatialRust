@@ -83,6 +83,10 @@ pub fn schema_from_pcd_fields(fields: &[PcdFieldSpec]) -> Result<PointSchema, Io
     let mut schema = PointSchema::new();
     for field in fields {
         if field.name.eq_ignore_ascii_case("rgb") {
+            if field.size != 4 || field.count != 1 || !matches!(field.kind, PcdType::F | PcdType::U)
+            {
+                return Err(pcd_format("packed rgb requires SIZE 4, COUNT 1 and TYPE F or U"));
+            }
             schema = schema
                 .with_field(PointField::scalar("r", FieldSemantic::ColorR, DType::U8))
                 .with_field(PointField::scalar("g", FieldSemantic::ColorG, DType::U8))
