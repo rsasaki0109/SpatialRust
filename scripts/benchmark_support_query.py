@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--repeats', type=int, default=15)
     parser.add_argument('--queries', type=int, default=10)
+    parser.add_argument('--reuse-index', action='store_true', help='build one owned index per timed batch and reuse it')
     args = parser.parse_args()
     if args.repeats < 3 or args.queries < 1:
         parser.error('repeats >=3 and queries >=1 required')
@@ -28,14 +29,18 @@ def main():
         samples = []
         for _ in range(args.repeats):
             start = time.perf_counter()
-            results = [sr.distance_gated_support(source, target, .05) for _ in range(args.queries)]
+            if args.reuse_index:
+                index = sr.DistanceSupportIndex(target)
+                results = [index.support(source, .05) for _ in range(args.queries)]
+            else:
+                results = [sr.distance_gated_support(source, target, .05) for _ in range(args.queries)]
             samples.append((time.perf_counter() - start) / args.queries)
             assert all(value == expected for value in results)
         rows.append(dict(points=size, result=expected, seconds_per_query=samples,
                          median_seconds=statistics.median(samples)))
     # Identify the loaded extension, not just the Python package initializer.
     native = sorted(Path(sr.__file__).parent.glob('*.so'))
-    result = dict(rows=rows, repeats=args.repeats, queries=args.queries, seed=42,
+    result = dict(rows=rows, repeats=args.repeats, queries=args.queries, reuse_index=args.reuse_index, seed=42,
         python=platform.python_version(), platform=platform.platform(),
         native_sha256={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in native},
         limits='Synthetic XYZ, warm execution, sequential before/after builds; includes tree construction.')
