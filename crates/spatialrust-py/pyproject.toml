@@ -30,3 +30,6 @@ addopts = "-q"
 [tool.maturin]
 features = ["pyo3/extension-module"]
 module-name = "spatialrust"
+# Workspace path dependencies relocate this pyproject to the sdist root.
+# Keep a root-level stub there so maturin also discovers it when rebuilding.
+include = [{ path = "spatialrust.pyi", format = "sdist" }]

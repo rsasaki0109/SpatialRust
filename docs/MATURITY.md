@@ -1,9 +1,17 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **61%, provisional**. This is a subjective
+Current assessment (2026-10-10): **63%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The 63% estimate adds isolated wheel and source-distribution runtime validation
+and fixes a confirmed release defect: source-rebuilt wheels omitted the type
+stub and PEP 561 marker. Both normal and repaired source-rebuilt wheels pass
+356 tests with exactly 3 expected ONNX skips; native/type archive bytes match
+installed imports, and conversion/ICP/support/PCD checks pass. CI now repeats
+the two release paths before publishing. Local evidence is Linux x86_64,
+CPython 3.12, NumPy 2.2.6; remote CI and other platform runtimes remain unverified.
 
 The 61% estimate adds a complete no-caller-pose FPFH/RANSAC → multiscale ICP
 file workflow: bounded coarse descriptor matching, deterministic multi-seed

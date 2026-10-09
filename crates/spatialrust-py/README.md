@@ -91,6 +91,29 @@ editors and type checkers (mypy, pyright) get full autocomplete and signature
 checking for the compiled extension. CI runs `mypy.stubtest` on every push to
 keep the stubs in sync with the runtime API.
 
+Release validation also installs the built x86_64 wheel in an isolated Python
+3.12 environment, runs the binding suite, and verifies the imported native
+module and type files byte-for-byte against the wheel archive. The source
+distribution is rebuilt and tested separately to catch packaging differences.
+`tools/verify_installed_wheel.py` records artifact/native hashes and exercises
+NumPy conversion, ICP, indexed support and PCD roundtrip. Example after a clean
+wheel install, using that environment's Python:
+
+```bash
+python -m pytest crates/spatialrust-py/tests -o addopts='' --junitxml=wheel-tests.xml
+python crates/spatialrust-py/tools/verify_installed_wheel.py dist/spatialrust-*.whl \
+  --junit wheel-tests.xml --receipt wheel-validation.json
+```
+
+The default wheel omits ONNX Runtime: exactly three ONNX tests are expected to
+skip. Pass `--expected-skips 0` when validating an ONNX-enabled wheel. Editable
+installs and mismatched native/type bytes fail verification. Source packaging
+explicitly includes a root-level stub because maturin relocates the pyproject
+when bundling workspace dependencies; this preserves PEP 561 files on rebuild.
+These checks establish the tested runtime/platform only. Cross-built aarch64
+wheels are not runtime-tested by the x86_64 job, and local wheel platform tags
+may require a newer glibc than the release manylinux build.
+
 ## Bounded point-cloud streaming
 
 `open_point_cloud_stream()` reads local PCD/PLY/LAS/LAZ/COPC files through the
