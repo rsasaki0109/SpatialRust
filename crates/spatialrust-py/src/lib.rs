@@ -1134,8 +1134,8 @@ impl PyPointCloud {
         self.inner.schema().fields().iter().map(|f| f.name.clone()).collect()
     }
 
-    /// Returns `(array, schema)` Arrow C Data capsules for zero-copy interop
-    /// with PyArrow (`pyarrow.array(cloud)` / `pyarrow.Table.from_arrays`).
+    /// Returns `(schema, array)` Arrow C Data capsules backed by an owned copy
+    /// for PyArrow (`pyarrow.array(cloud)` / `pyarrow.Table.from_arrays`).
     #[pyo3(name = "__arrow_c_array__", signature = (_requested_schema = None))]
     fn arrow_c_array<'py>(
         &self,
