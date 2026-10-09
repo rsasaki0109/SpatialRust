@@ -668,6 +668,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Streaming memory reservations use an overflow-checked compare/exchange loop,
+  removing a Rust 1.99 deprecation while preserving budget and release semantics.
+
 - Python Arrow documentation now describes owned buffer copies rather than
   zero-copy point-cloud exports; PyArrow lifetime tests cover arrays and streams.
 
