@@ -65,9 +65,10 @@ def render_report(report):
                 raise ValueError(f'{key} RMSE exceeds the distance gate')
             residual = f'{rmse:.6g} m'
         rows.append(f'<section><h2>{label}</h2><svg viewBox="0 0 100 8" role="img" '
-                    f'aria-label="Supported fraction {fraction:.1%}"><rect width="100" height="8" fill="#e2e8f0"/>'
+                    f'aria-label="Supported fraction {fraction:.1%}; {expected - count} points excluded from RMSE"><rect width="100" height="8" fill="#e2e8f0"/>'
                     f'<rect width="{fraction * 100:.12g}" height="8" fill="#0369a1"/></svg>'
-                    f'<p>{count} / {expected} points ({fraction:.1%}); gated RMSE: {residual}</p></section>')
+                    f'<p>{count} / {expected} points ({fraction:.1%}); gated RMSE: {residual}</p>'
+                    f'<p>{expected - count} / {expected} points excluded from RMSE ({1 - fraction:.1%}).</p></section>')
     return ('<!doctype html><html lang="en"><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<title>Alignment support report</title><style>body{font:16px system-ui;max-width:850px;margin:2rem auto;padding:1rem}'
