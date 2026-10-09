@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+### Fixed
+
+- PCD scalar decoding and ASCII writing preserve float64 attributes and the
+  full precision of signed/unsigned 32-bit integer fields instead of rounding
+  them through float32. Regression tests cover ASCII/binary round trips and
+  Python file alignment with intensity, labels, timestamps and rotated normals.
+
 ### Added
 
 - **Epic 150C Python entity embedder**: `OnnxEntityEmbedder` in the Python

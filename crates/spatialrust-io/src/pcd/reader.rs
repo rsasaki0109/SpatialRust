@@ -137,9 +137,9 @@ fn read_ascii_payload<R: BufRead>(
                 let token =
                     tokens.next().ok_or_else(|| pcd_parse("missing rgb token in ASCII PCD"))?;
                 let packed = parse_packed_rgb(token)?;
-                push_to_field(buffers, schema, "r", packed.0)?;
-                push_to_field(buffers, schema, "g", packed.1)?;
-                push_to_field(buffers, schema, "b", packed.2)?;
+                push_to_field(buffers, schema, "r", f64::from(packed.0))?;
+                push_to_field(buffers, schema, "g", f64::from(packed.1))?;
+                push_to_field(buffers, schema, "b", f64::from(packed.2))?;
                 continue;
             }
 
@@ -148,7 +148,7 @@ fn read_ascii_payload<R: BufRead>(
                     pcd_parse(format!("missing token for field `{}`", field.name))
                 })?;
                 let value = token
-                    .parse::<f32>()
+                    .parse::<f64>()
                     .map_err(|_| pcd_parse(format!("invalid ASCII value `{token}`")))?;
                 push_to_field(buffers, schema, &field.name, value)?;
             }
@@ -277,9 +277,9 @@ fn decode_binary_compressed_payload(
             if field.name.eq_ignore_ascii_case("rgb") && field.count == 1 && field.size == 4 {
                 let chunk = &payload[point_base..point_base + 4];
                 let bits = u32::from_le_bytes(chunk.try_into().expect("rgb chunk"));
-                push_to_field(buffers, schema, "r", ((bits >> 16) & 0xFF) as f32)?;
-                push_to_field(buffers, schema, "g", ((bits >> 8) & 0xFF) as f32)?;
-                push_to_field(buffers, schema, "b", (bits & 0xFF) as f32)?;
+                push_to_field(buffers, schema, "r", ((bits >> 16) & 0xFF) as f64)?;
+                push_to_field(buffers, schema, "g", ((bits >> 8) & 0xFF) as f64)?;
+                push_to_field(buffers, schema, "b", (bits & 0xFF) as f64)?;
                 continue;
             }
 
@@ -313,9 +313,9 @@ fn decode_binary_point(
         if field.name.eq_ignore_ascii_case("rgb") && field.count == 1 && field.size == 4 {
             let chunk = &bytes[field_start..field_start + 4];
             let bits = u32::from_le_bytes(chunk.try_into().expect("rgb chunk"));
-            push_to_field(buffers, schema, "r", ((bits >> 16) & 0xFF) as f32)?;
-            push_to_field(buffers, schema, "g", ((bits >> 8) & 0xFF) as f32)?;
-            push_to_field(buffers, schema, "b", (bits & 0xFF) as f32)?;
+            push_to_field(buffers, schema, "r", ((bits >> 16) & 0xFF) as f64)?;
+            push_to_field(buffers, schema, "g", ((bits >> 8) & 0xFF) as f64)?;
+            push_to_field(buffers, schema, "b", (bits & 0xFF) as f64)?;
             continue;
         }
 
@@ -332,21 +332,21 @@ fn decode_binary_point(
 fn read_binary_scalar(
     field: &crate::pcd::schema::PcdFieldSpec,
     chunk: &[u8],
-) -> Result<f32, IoError> {
+) -> Result<f64, IoError> {
     let value = match (field.kind, field.size) {
-        (crate::pcd::schema::PcdType::F, 4) => f32::from_le_bytes(chunk.try_into().expect("f32")),
-        (crate::pcd::schema::PcdType::F, 8) => {
-            f64::from_le_bytes(chunk.try_into().expect("f64")) as f32
+        (crate::pcd::schema::PcdType::F, 4) => {
+            f64::from(f32::from_le_bytes(chunk.try_into().expect("f32")))
         }
+        (crate::pcd::schema::PcdType::F, 8) => f64::from_le_bytes(chunk.try_into().expect("f64")),
         (crate::pcd::schema::PcdType::I, 4) => {
-            i32::from_le_bytes(chunk.try_into().expect("i32")) as f32
+            f64::from(i32::from_le_bytes(chunk.try_into().expect("i32")))
         }
-        (crate::pcd::schema::PcdType::U, 1) => f32::from(chunk[0]),
+        (crate::pcd::schema::PcdType::U, 1) => f64::from(chunk[0]),
         (crate::pcd::schema::PcdType::U, 2) => {
-            f32::from(u16::from_le_bytes(chunk.try_into().expect("u16")))
+            f64::from(u16::from_le_bytes(chunk.try_into().expect("u16")))
         }
         (crate::pcd::schema::PcdType::U, 4) => {
-            u32::from_le_bytes(chunk.try_into().expect("u32")) as f32
+            f64::from(u32::from_le_bytes(chunk.try_into().expect("u32")))
         }
         _ => return Err(pcd_format(format!("unsupported binary field `{}`", field.name))),
     };
@@ -357,7 +357,7 @@ fn push_to_field(
     buffers: &mut PointBufferSet,
     schema: &PointSchema,
     name: &str,
-    value: f32,
+    value: f64,
 ) -> Result<(), IoError> {
     let field = schema
         .fields()
@@ -370,8 +370,8 @@ fn push_to_field(
         .ok_or_else(|| pcd_format(format!("buffer missing for field `{name}`")))?;
 
     match field.dtype {
-        DType::F32 | DType::F16 => buffer.push_f32(value).map_err(IoError::from),
-        DType::F64 => buffer.push_f64(f64::from(value)).map_err(IoError::from),
+        DType::F32 | DType::F16 => buffer.push_f32(value as f32).map_err(IoError::from),
+        DType::F64 => buffer.push_f64(value).map_err(IoError::from),
         DType::U8 => buffer.push_u8(value.round() as u8).map_err(IoError::from),
         DType::U16 => buffer.push_u16(value.round() as u16).map_err(IoError::from),
         DType::I32 => buffer.push_i32(value.round() as i32).map_err(IoError::from),
@@ -559,16 +559,16 @@ fn read_ascii_chunk<R: BufRead>(
                 let packed = parse_packed_rgb(
                     tokens.next().ok_or_else(|| pcd_parse("missing rgb token in ASCII PCD"))?,
                 )?;
-                push_to_field(buffers, schema, "r", packed.0)?;
-                push_to_field(buffers, schema, "g", packed.1)?;
-                push_to_field(buffers, schema, "b", packed.2)?;
+                push_to_field(buffers, schema, "r", f64::from(packed.0))?;
+                push_to_field(buffers, schema, "g", f64::from(packed.1))?;
+                push_to_field(buffers, schema, "b", f64::from(packed.2))?;
             } else {
                 for _ in 0..field.count {
                     let token = tokens
                         .next()
                         .ok_or_else(|| pcd_parse(format!("missing field `{}`", field.name)))?;
                     let value = token
-                        .parse::<f32>()
+                        .parse::<f64>()
                         .map_err(|_| pcd_parse(format!("invalid ASCII value `{token}`")))?;
                     push_to_field(buffers, schema, &field.name, value)?;
                 }
@@ -585,6 +585,28 @@ mod tests {
     use crate::pcd::writer::{write_pcd, PcdWriteFormat};
     use spatialrust_core::{HasIntensity, HasPositions3, PointCloudBuilder, StandardSchemas};
     use std::io::Cursor;
+
+    #[test]
+    fn preserves_f64_and_large_integer_attributes_in_ascii_and_binary() {
+        use crate::pcd::writer::{write_pcd, PcdWriteFormat};
+        use spatialrust_core::PointBuffer;
+        let input = b"VERSION .7\nFIELDS x y z timestamp label id\nSIZE 4 4 4 8 4 4\nTYPE F F F F I U\nCOUNT 1 1 1 1 1 1\nWIDTH 1\nHEIGHT 1\nPOINTS 1\nDATA ascii\n0 0 0 1000000000000.125 -2147483647 4294967295\n";
+        let cloud = super::read_pcd(&mut Cursor::new(input)).unwrap();
+        for format in [PcdWriteFormat::Ascii, PcdWriteFormat::Binary] {
+            let mut bytes = Vec::new();
+            write_pcd(&mut bytes, &cloud, format).unwrap();
+            let decoded = super::read_pcd(&mut Cursor::new(bytes)).unwrap();
+            assert!(
+                matches!(decoded.field("timestamp").unwrap(), PointBuffer::F64(v) if v == &[1000000000000.125])
+            );
+            assert!(
+                matches!(decoded.field("label").unwrap(), PointBuffer::I32(v) if v == &[-2147483647])
+            );
+            assert!(
+                matches!(decoded.field("id").unwrap(), PointBuffer::U32(v) if v == &[u32::MAX])
+            );
+        }
+    }
 
     const SAMPLE_XYZ_ASCII: &str = "\
 # .PCD v0.7 - Point Cloud Data file format

@@ -373,7 +373,7 @@ fn write_binary_scalar<W: Write>(
 
 use spatialrust_core::PointBuffer;
 
-fn read_scalar(cloud: &PointCloud, name: &str, point_index: usize) -> Result<f32, IoError> {
+fn read_scalar(cloud: &PointCloud, name: &str, point_index: usize) -> Result<f64, IoError> {
     let field = cloud
         .schema()
         .fields()
@@ -382,14 +382,14 @@ fn read_scalar(cloud: &PointCloud, name: &str, point_index: usize) -> Result<f32
         .ok_or_else(|| pcd_format(format!("missing field `{name}`")))?;
     let buffer = cloud.field(name).map_err(IoError::from)?;
     let value = match field.dtype {
-        DType::F32 | DType::F16 => buffer.as_f32().map_err(IoError::from)?[point_index],
+        DType::F32 | DType::F16 => f64::from(buffer.as_f32().map_err(IoError::from)?[point_index]),
         DType::F64 => {
             let PointBuffer::F64(values) = buffer else {
                 return Err(IoError::Core(spatialrust_core::SpatialError::UnsupportedDType(
                     field.dtype,
                 )));
             };
-            values[point_index] as f32
+            values[point_index]
         }
         DType::U8 => {
             let PointBuffer::U8(values) = buffer else {
@@ -397,7 +397,7 @@ fn read_scalar(cloud: &PointCloud, name: &str, point_index: usize) -> Result<f32
                     field.dtype,
                 )));
             };
-            f32::from(values[point_index])
+            f64::from(values[point_index])
         }
         DType::U16 => {
             let PointBuffer::U16(values) = buffer else {
@@ -405,7 +405,7 @@ fn read_scalar(cloud: &PointCloud, name: &str, point_index: usize) -> Result<f32
                     field.dtype,
                 )));
             };
-            f32::from(values[point_index])
+            f64::from(values[point_index])
         }
         DType::I32 => {
             let PointBuffer::I32(values) = buffer else {
@@ -413,7 +413,7 @@ fn read_scalar(cloud: &PointCloud, name: &str, point_index: usize) -> Result<f32
                     field.dtype,
                 )));
             };
-            values[point_index] as f32
+            values[point_index] as f64
         }
         DType::U32 => {
             let PointBuffer::U32(values) = buffer else {
@@ -421,7 +421,7 @@ fn read_scalar(cloud: &PointCloud, name: &str, point_index: usize) -> Result<f32
                     field.dtype,
                 )));
             };
-            values[point_index] as f32
+            values[point_index] as f64
         }
     };
     Ok(value)
