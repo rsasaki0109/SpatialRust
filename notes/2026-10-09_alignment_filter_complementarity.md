@@ -32,3 +32,10 @@ estimated pose to the original 400-point source. Removed points remain in the
 original evaluation denominator. This prevents removal alone from inflating
 reported source support. Results are limited to five synthetic uniform seeds;
 no real-sensor accuracy or external-library advantage has been established.
+
+The generated HTML now shows paired retention bars: genuine points retained
+out of 320 and nonmatching points retained out of 80. Each displays the mean,
+seed range and number of completed filtering runs, alongside raw counts and
+registration results. These bars use known synthetic membership, not predicted
+inlier labels. Filter retention is repeated across search-gate rows because
+the same filtered cloud is reused; those rows are not independent filter trials.

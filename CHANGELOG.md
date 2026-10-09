@@ -49,6 +49,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Filter study HTML compares genuine and nonmatching point retention with
+  mean/range bars and denominators, alongside registration success counts.
 - Python outlier-filter attribute regressions verify complete row selection and
   dtype preservation through Arrow and PCD round trips, including empty results.
 - Python SOR and radius outlier filtering release the GIL during native work;

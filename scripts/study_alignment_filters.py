@@ -134,16 +134,31 @@ def main():
     table = []
     for item in summaries:
         keep = lambda key: ', '.join(str(x) for x in item[key])
+        def retention_bar(key, denominator, label, color):
+            values = [v for v in item[key] if v is not None]
+            if not values:
+                return 'Unavailable: filter did not complete'
+            mean = sum(values) / len(values) / denominator
+            low, high = min(values) / denominator, max(values) / denominator
+            return (f'<svg viewBox="0 0 100 10" role="img" aria-label="{label}: mean {mean:.1%}">'
+                    f'<rect width="100" height="10" fill="#eee"/><rect width="{mean*100:.9g}" height="10" fill="{color}"/></svg>'
+                    f'<br>Mean {mean:.1%}; seed range {low:.1%}–{high:.1%}; {len(values)}/5 filter runs')
         table.append(f'<tr><td>{html.escape(item["filter"])}</td><td>{item["gate_metres"]}</td>'
                      f'<td>{item["successes"]}/5</td><td>{item["errors"]}</td>'
-                     f'<td>{keep("retained_inliers")}</td><td>{keep("retained_outliers")}</td></tr>')
+                     f'<td>{keep("retained_inliers")}</td><td>{keep("retained_outliers")}</td>'
+                     f'<td>{retention_bar("retained_inliers", 320, "Genuine points retained", "#0369a1")}</td>'
+                     f'<td>{retention_bar("retained_outliers", 80, "Nonmatching points retained", "#b45309")}</td></tr>')
     (root/'report.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8">'
         '<title>Outlier filters before ICP</title><style>body{font:16px system-ui;max-width:1200px;margin:2rem auto}'
-        'td,th{padding:.5rem;text-align:left}tr:nth-child(even){background:#eee}</style>'
+        'td,th{padding:.5rem;text-align:left}tr:nth-child(even){background:#eee}svg{width:150px}</style>'
         '<h1>Outlier filters before ICP</h1><p>Five seeds; 320 original inliers and 80 replacement outliers; '
         '5 mm per-axis noise; 40 degree initial error. Fixed evaluation gate: 0.05 m.</p>'
         '<table><tr><th>Filter</th><th>Search gate (m)</th><th>Correct poses</th><th>Errors</th>'
-        '<th>Retained inliers by seed</th><th>Retained outliers by seed</th></tr>' + ''.join(table) + '</table>'
+        '<th>Retained inliers by seed</th><th>Retained outliers by seed</th>'
+        '<th>Genuine points retained / 320</th><th>Nonmatching points retained / 80</th></tr>' + ''.join(table) + '</table>'
+        '<p>Blue bars show genuine point retention; orange bars show nonmatching point retention. '
+        'Bars are mean fractions across completed filter runs; ranges expose variation across seeds. '
+        'A low orange bar can still accompany loss of genuine points. The same filtering result is reused across search gates.</p>'
         '<p>Correct poses require rotation error &lt;1 degree and translation error &lt;0.01 m. '
         'JSON includes support on every original point, including removed points. Five synthetic seeds do not establish '
         'a general filter recommendation; clustered outliers can survive density filters while valid sparse points are lost.</p></html>')
