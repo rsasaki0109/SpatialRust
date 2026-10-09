@@ -357,6 +357,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Python ONNX session inference releases the GIL during both bound and copied
+  native CPU runs; Python-thread progress and output correctness are tested.
+
 - Add ONNX-enabled Python CPU CI with pinned official runtime libraries,
   real-model/reference checks and a gate rejecting skipped tests.
 

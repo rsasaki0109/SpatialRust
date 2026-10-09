@@ -419,3 +419,13 @@ both bound and copied modes. The dynamic-model regression test varies batches
 1/7/2, retains outputs across later runs, releases the session, then verifies
 previous outputs still hold their values. This documents the tested CPU path;
 it does not guarantee recovery from arbitrary runtime/device failures.
+
+`OnnxRuntimeSession.run` releases the GIL during native inference in both bound
+and copied CPU modes. Python input extraction and output dictionary construction
+remain under the GIL. The call remains synchronous and exclusively borrows that
+session for its duration. Concurrent calls on the same session are not supported;
+use independent sessions or serialize access. This does not add cancellation,
+async execution or a parallel speedup guarantee. CPU regression tests use a
+500,000-row dynamic input and disable interpreter time-slicing to verify another
+Python thread progresses during each inference mode, while checking output values
+and the existing error/lifetime contracts.

@@ -298,33 +298,36 @@ impl PyOnnxRuntimeSession {
                 let tensor = value.extract::<PyRef<'_, PyTensor>>()?;
                 named.insert(name, tensor.inner.clone()).map_err(to_py_err)?;
             }
-            let outputs = if copy {
-                self.inner
-                    .run_with_options(
-                        named,
-                        AiRunOptions {
-                            input_copy: AiCopyPolicy::Allow,
-                            output_copy: AiCopyPolicy::Allow,
-                        },
-                    )
-                    .map_err(to_py_err)?
-            } else {
-                let destinations = self
-                    .inner
-                    .model_info()
-                    .outputs
-                    .iter()
-                    .map(|spec| OutputBinding::Allocate {
-                        name: spec.name.clone(),
-                        device: TensorDevice::CPU,
+            let session = &mut self.inner;
+            let outputs = py.allow_threads(move || {
+                if copy {
+                    session
+                        .run_with_options(
+                            named,
+                            AiRunOptions {
+                                input_copy: AiCopyPolicy::Allow,
+                                output_copy: AiCopyPolicy::Allow,
+                            },
+                        )
+                        .map_err(to_py_err)
+                } else {
+                    let destinations = session
+                        .model_info()
+                        .outputs
+                        .iter()
+                        .map(|spec| OutputBinding::Allocate {
+                            name: spec.name.clone(),
+                            device: TensorDevice::CPU,
+                        })
+                        .collect();
+                    let mut binding =
+                        AiIoBinding::try_new(named, destinations).map_err(to_py_err)?;
+                    session.run_with_binding(&mut binding).map_err(to_py_err)?;
+                    binding.into_results().ok_or_else(|| {
+                        PyRuntimeError::new_err("ONNX Runtime completed without bound results")
                     })
-                    .collect();
-                let mut binding = AiIoBinding::try_new(named, destinations).map_err(to_py_err)?;
-                self.inner.run_with_binding(&mut binding).map_err(to_py_err)?;
-                binding.into_results().ok_or_else(|| {
-                    PyRuntimeError::new_err("ONNX Runtime completed without bound results")
-                })?
-            };
+                }
+            })?;
             let result = PyDict::new_bound(py);
             for (name, tensor) in outputs.into_values() {
                 result.set_item(name, Py::new(py, PyTensor { inner: tensor })?)?;
