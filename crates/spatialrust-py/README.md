@@ -295,6 +295,10 @@ count then lowest gated RMSE, and preserves input order for ties. It records
 candidate failures and scores in `alignment.json` and exports all original
 source points using the selected transform. HTML shows the selected result and
 candidate table with both support directions, forward RMSE, convergence and failures.
+The table also shows each successful candidate's rotation difference from the
+selected pose, with a 0–180 degree bar. This measures disagreement, not true
+pose error or a calibrated confidence. Translation disagreement is not shown.
+Older candidate reports without pose matrices display an unavailable value.
 It reads each input once and shares read-only clouds across candidates;
 it also shares target voxelization, the original before-support result and an
 owned target XYZ support index within the search. The support index explicitly

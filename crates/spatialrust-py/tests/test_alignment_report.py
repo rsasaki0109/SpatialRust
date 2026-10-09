@@ -37,6 +37,52 @@ def test_partial_overlap_and_escaped_content():
     assert '<script' not in rendered and 'src=' not in rendered
 
 
+def candidate_fixture():
+    report = fixture()
+    identity = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]
+    quarter = [[0,-1,0,0], [1,0,0,0], [0,0,1,0], [0,0,0,1]]
+    half = [[-1,0,0,0], [0,-1,0,0], [0,0,1,0], [0,0,0,1]]
+    report['candidate_selection'] = dict(
+        rule='maximum_forward_supported_points_then_minimum_gated_rmse_then_input_order',
+        candidate_count=3, successful_candidates=3, selected_index=0,
+        candidates=[dict(index=i, status='success', converged=True,
+            aligned_support=copy.deepcopy(report['aligned_support']),
+            aligned_reverse_support=copy.deepcopy(report['aligned_reverse_support']),
+            transform_source_to_target=pose) for i, pose in enumerate((identity, quarter, half))])
+    return report
+
+
+def test_candidate_rotation_disagreement_without_numpy():
+    report = candidate_fixture()
+    unchanged = copy.deepcopy(report)
+    rendered = module.render_report(report)
+    for angle in ('0.00°', '90.00°', '180.00°'):
+        assert angle in rendered
+    assert 'Rotation from selected' in rendered
+    assert 'not ground-truth error' in rendered
+    assert report == unchanged
+
+
+def test_older_candidate_report_without_poses_stays_readable():
+    report = candidate_fixture()
+    for candidate in report['candidate_selection']['candidates']:
+        candidate.pop('transform_source_to_target')
+    assert module.render_report(report).count('Unavailable') == 3
+
+
+@pytest.mark.parametrize('pose', [[], [[1]*4]*3,
+    [[2,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
+    [[-1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
+    [[1,0,0,float('nan')], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
+    [[True,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
+    [[1,0,0,0], [0,1,0,0], [0,0,1,0], [1,0,0,1]]])
+def test_invalid_candidate_pose_rejected(pose):
+    report = candidate_fixture()
+    report['candidate_selection']['candidates'][1]['transform_source_to_target'] = pose
+    with pytest.raises(ValueError, match='candidate'):
+        module.render_report(report)
+
+
 @pytest.mark.parametrize('key,value', [
     ('schema_version', 'unknown'), ('source_points', True), ('target_points', 0),
     ('max_distance_metres', float('inf')), ('max_distance_metres', 0),
