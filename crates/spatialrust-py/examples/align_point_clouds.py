@@ -46,7 +46,7 @@ def validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_
     return evaluation_distance
 
 
-def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None):
+def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False):
     """Read files and return the full-resolution aligned source and diagnostics."""
     evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
     if initial_transform is not None:
@@ -54,21 +54,21 @@ def align_files(source_path, target_path, *, leaf=.05, max_distance=.1, iteratio
     source, target = sr.read(str(source_path)), sr.read(str(target_path))
     return align_clouds(source, target, source_name=str(source_path), target_name=str(target_path),
                         leaf=leaf, max_distance=max_distance, iterations=iterations,
-                        initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance)
+                        initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace)
 
 
 def align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
-                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None):
+                 max_distance=.1, iterations=50, initial_transform=None, evaluation_distance=None, fine_distance=None, trace=False):
     """Align read-only clouds and return a new full source and diagnostics."""
     return _align_clouds(source, target, source_name=source_name, target_name=target_name,
                          leaf=leaf, max_distance=max_distance, iterations=iterations,
-                         initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance)
+                         initial_transform=initial_transform, evaluation_distance=evaluation_distance, fine_distance=fine_distance, trace=trace)
 
 
 def _align_clouds(source, target, *, source_name='source', target_name='target', leaf=.05,
                   max_distance=.1, iterations=50, initial_transform=None,
                   evaluation_distance=None, target_voxel_cache=None, before_support_cache=None,
-                  target_support_index_cache=None, fine_distance=None):
+                  target_support_index_cache=None, fine_distance=None, trace=False):
     """Align existing read-only clouds, returning a new full source and diagnostics.
 
     XYZ validation explicitly copies positions to NumPy. Convergence and support
@@ -94,14 +94,19 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
         coarse_target = target_voxel_cache[0]
     if min(len(coarse_source), len(coarse_target)) < 3:
         raise ValueError('voxel clouds require at least three points; reduce leaf')
-    coarse_result = sr.register_icp(coarse_source, coarse_target, max_distance, iterations)
+    def register(query, reference, gate):
+        if trace:
+            diagnostics = sr.register_icp_diagnostics(query, reference, gate, iterations)
+            return diagnostics.result, diagnostics
+        return sr.register_icp(query, reference, gate, iterations), None
+    coarse_result, coarse_trace = register(coarse_source, coarse_target, max_distance)
     coarse_transform = (coarse_result.transform().astype(np.float64) @ initial.astype(np.float64)).astype(np.float32)
     if not np.isfinite(coarse_transform).all():
         raise ValueError('coarse registration returned an invalid transform')
     coarse_full = sr.apply_transform(source, coarse_transform)
     if not np.isfinite(coarse_full.xyz()).all():
         raise ValueError('coarse transform overflowed source coordinates')
-    result = sr.register_icp(coarse_full, target, fine_distance, iterations)
+    result, fine_trace = register(coarse_full, target, fine_distance)
     transform = (result.transform().astype(np.float64) @ coarse_transform.astype(np.float64)).astype(np.float32)
     if transform.shape != (4, 4) or not np.isfinite(transform).all():
         raise ValueError('registration returned an invalid transform')
@@ -117,6 +122,17 @@ def _align_clouds(source, target, *, source_name='source', target_name='target',
               stage('full_resolution', result, transform, len(source), len(target))]
     for row, distance in zip(stages, (max_distance, fine_distance)):
         row['max_correspondence_distance_metres'] = distance
+    for row, diagnostics in zip(stages, (coarse_trace, fine_trace)):
+        if diagnostics is not None:
+            row['stop_reason'] = diagnostics.stop_reason
+            row['icp_history'] = [dict(
+                iteration=entry.iteration, correspondences=entry.correspondences,
+                evaluated_correspondences=entry.evaluated_correspondences,
+                fitness_metres_squared=entry.fitness if entry.evaluated_correspondences else None,
+                fitness_change_metres_squared=entry.fitness_change,
+                translation_delta_metres=entry.translation_delta,
+                rotation_delta_radians=entry.rotation_delta_radians,
+            ) for entry in diagnostics.history]
     def support(query, reference):
         if target_support_index_cache is not None and reference is target:
             if not target_support_index_cache:
@@ -167,12 +183,13 @@ def main():
     parser.add_argument('--initial-transform', type=Path, help='JSON 4x4 source-to-target rigid matrix')
     parser.add_argument('--iterations', type=int, default=50)
     parser.add_argument('--html-report', action='store_true', help='also save standalone report.html with support diagnostics')
+    parser.add_argument('--trace', action='store_true', help='record ICP update history and render convergence charts')
     args = parser.parse_args()
     if args.output_dir.exists():
         parser.error('output directory already exists; choose a new path')
     initial = json.loads(args.initial_transform.read_text(encoding='utf-8')) if args.initial_transform else None
     aligned, diagnostics = align_files(args.source, args.target, leaf=args.leaf,
-                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance, fine_distance=args.fine_distance)
+                                       max_distance=args.max_distance, iterations=args.iterations, initial_transform=initial, evaluation_distance=args.evaluation_distance, fine_distance=args.fine_distance, trace=args.trace)
     rendered = None
     if args.html_report:
         from render_alignment_report import render_report

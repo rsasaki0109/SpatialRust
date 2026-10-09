@@ -42,6 +42,31 @@ def test_distinct_coarse_and_fine_gates_reach_correct_stages(tmp_path):
     np.testing.assert_array_equal(default_cloud.xyz(), explicit_cloud.xyz())
 
 
+def test_opt_in_history_preserves_alignment_and_reaches_cli_html(tmp_path):
+    paths, _, _ = fixture_files(tmp_path)
+    plain_cloud, plain = example.align_files(*paths, fine_distance=.02)
+    traced_cloud, traced = example.align_files(*paths, fine_distance=.02, trace=True)
+    np.testing.assert_array_equal(plain_cloud.xyz(), traced_cloud.xyz())
+    for stage in traced['stages']:
+        history = stage.pop('icp_history')
+        reason = stage.pop('stop_reason')
+        assert len(history) == stage['iterations']
+        assert history[-1]['fitness_metres_squared'] == stage['kernel_fitness_metres_squared']
+        assert (reason != 'iteration_limit') == stage['converged']
+    assert traced == plain
+    output = tmp_path / 'traced'
+    result = subprocess.run([sys.executable, str(EXAMPLE), *map(str, paths),
+                             '--output-dir', str(output), '--trace', '--html-report'],
+                            capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    report = json.loads((output / 'alignment.json').read_text())
+    assert all('icp_history' in stage for stage in report['stages'])
+    rendered = (output / 'report.html').read_text()
+    assert rendered.count('class="trace-chart"') == 8
+    assert 'Rotation update (degrees)' in rendered
+    assert 'Stop reason:' in rendered
+
+
 def test_invalid_fine_gate_is_rejected_before_file_io():
     for gate in (0, -1, True, float('nan'), float('inf'), 1e30, 1e-30):
         with patch.object(sr, 'read', side_effect=AssertionError('IO before validation')):
