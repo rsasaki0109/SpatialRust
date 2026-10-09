@@ -502,6 +502,43 @@ validated with `scripts/report_pnp_repair.py BEFORE.json AFTER.json --output-dir
 matching input hashes, calculation fingerprints and OpenCV results are required.
 Neither universal speed superiority nor OpenCV accuracy parity is claimed.
 
+To measure accuracy against a separately obtained reference pose, first run a
+file workflow and then evaluate its saved report:
+
+```bash
+python scripts/evaluate_pose_reference.py --reference reference.json \
+  --reports run/alignment.json --output-dir accuracy
+```
+
+File workflows now record SHA-256 fingerprints of source and target bytes,
+checking for changes during reading. In-memory workflows do not have file hashes.
+The reference JSON format is:
+
+```json
+{
+  "schema": "spatialrust.pose-reference.v1",
+  "length_unit": "m",
+  "input_file_sha256": {"source": "64 lowercase hex characters", "target": "64 lowercase hex characters"},
+  "provenance": {
+    "kind": "dataset_reference",
+    "description": "Dataset, pair IDs and how the reference was obtained",
+    "url": "https://dataset-provider.example/reference"
+  },
+  "transform_source_to_target": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]
+}
+```
+
+Replace the illustrative hashes, URL and pose with the actual pair's reference.
+For generated fixtures, use provenance kind `synthetic`; do not label a fitted
+pose as dataset ground truth. Both matrices map source to target, and translation
+units must match the point coordinates (`m`, `cm` or `mm`). Rotation error is in
+degrees; translation error is the distance between translations in the target
+frame. JSON and HTML retain reference/report hashes, declared provenance and
+individual errors. Old reports without input hashes are rejected; rerun the file
+workflow rather than adding hashes retrospectively. The evaluator does not run
+registration or choose candidates. It cannot independently certify reference
+authenticity, units or whether a caller previously used that pose to initialize.
+
 For 1–16 caller-supplied initial poses, use a JSON list of rigid 4×4 matrices:
 
 ```bash

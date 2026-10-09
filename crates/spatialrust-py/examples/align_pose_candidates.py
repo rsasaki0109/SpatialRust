@@ -32,7 +32,9 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
     evaluation_distance = validate_settings(leaf, max_distance, iterations, evaluation_distance, fine_distance)
     validate_convergence(convergence)
     validate_trim_fraction(trim_fraction)
-    source, target = sr.read(str(source_path)), sr.read(str(target_path))
+    from align_point_clouds import read_bound_cloud
+    source, source_hash = read_bound_cloud(source_path)
+    target, target_hash = read_bound_cloud(target_path)
     records = []
     selected = None
     selected_key = None
@@ -70,6 +72,7 @@ def evaluate_candidates(source_path, target_path, initial_transforms, *, leaf=.0
         raise ValueError(f'no candidate alignment succeeded ({failures})')
     aligned, report = selected
     diagnostics = dict(report)
+    diagnostics['input_file_sha256'] = dict(source=source_hash, target=target_hash)
     diagnostics['candidate_selection'] = dict(
         rule='maximum_forward_supported_points_then_minimum_gated_rmse_then_input_order',
         candidate_count=len(poses), successful_candidates=sum(record['error'] is None for record in records),

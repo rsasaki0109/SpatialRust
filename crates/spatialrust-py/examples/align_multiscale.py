@@ -124,9 +124,14 @@ def align_multiscale_files(source_path,target_path,schedule,*,initial_transform=
         initial_transform = rigid_matrix(initial_transform)
     if evaluation_distance is not None:
         validate_settings(evaluation_distance,evaluation_distance,1,evaluation_distance)
-    return align_multiscale_clouds(sr.read(str(source_path)),sr.read(str(target_path)),schedule,
+    from align_point_clouds import read_bound_cloud
+    source, source_hash = read_bound_cloud(source_path)
+    target, target_hash = read_bound_cloud(target_path)
+    aligned, report = align_multiscale_clouds(source,target,schedule,
         source_name=str(source_path),target_name=str(target_path),initial_transform=initial_transform,
         evaluation_distance=evaluation_distance)
+    report['input_file_sha256'] = dict(source=source_hash, target=target_hash)
+    return aligned, report
 
 
 def main():

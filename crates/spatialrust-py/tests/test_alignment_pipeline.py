@@ -211,7 +211,9 @@ def test_loaded_cloud_alignment_matches_files_and_preserves_inputs(tmp_path):
     with patch.object(sr, 'read', side_effect=AssertionError('loaded alignment must not read files')):
         actual, loaded_report = example.align_clouds(source, target, source_name=str(paths[0]), target_name=str(paths[1]))
     np.testing.assert_array_equal(actual.xyz(), expected.xyz())
-    assert loaded_report == file_report
+    assert 'input_file_sha256' not in loaded_report
+    assert set(file_report['input_file_sha256']) == {'source', 'target'}
+    assert loaded_report == {key: value for key, value in file_report.items() if key != 'input_file_sha256'}
     np.testing.assert_array_equal(source.xyz(), source_xyz)
     np.testing.assert_array_equal(target.xyz(), target_xyz)
 
