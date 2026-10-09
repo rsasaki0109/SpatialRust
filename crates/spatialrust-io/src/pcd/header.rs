@@ -143,7 +143,7 @@ impl PcdHeader {
             return Err(pcd_parse("FIELDS/SIZE/TYPE/COUNT length mismatch in PCD header"));
         }
 
-        let fields = field_names
+        let fields: Vec<PcdFieldSpec> = field_names
             .into_iter()
             .zip(sizes)
             .zip(kinds)
@@ -153,7 +153,25 @@ impl PcdHeader {
 
         let data_kind = data.ok_or_else(|| pcd_parse("PCD header missing DATA"))?;
         if points == 0 && width > 0 && height > 0 {
-            points = width * height;
+            points = width
+                .checked_mul(height)
+                .ok_or_else(|| pcd_format("PCD WIDTH * HEIGHT overflow"))?;
+        }
+        let point_step = fields.iter().try_fold(0_usize, |total, field| {
+            if field.size == 0 || field.count == 0 {
+                return Err(pcd_format("PCD SIZE and COUNT must be positive"));
+            }
+            let bytes = field
+                .size
+                .checked_mul(field.count)
+                .ok_or_else(|| pcd_format("PCD field byte size overflow"))?;
+            total.checked_add(bytes).ok_or_else(|| pcd_format("PCD point byte size overflow"))
+        })?;
+        let payload_size = point_step
+            .checked_mul(points)
+            .ok_or_else(|| pcd_format("PCD payload byte size overflow"))?;
+        if payload_size > isize::MAX as usize {
+            return Err(pcd_format("PCD payload exceeds addressable allocation size"));
         }
 
         Ok((
@@ -226,5 +244,51 @@ DATA ascii
         assert_eq!(header.points, 2);
         assert_eq!(header.data, PcdDataKind::Ascii);
         assert_eq!(header.fields.len(), 3);
+    }
+
+    #[test]
+    fn rejects_overflowing_and_zero_sized_headers() {
+        for (sizes, counts, width, height, points, message) in [
+            ("4 4 4".to_owned(), "1 1 1".to_owned(), usize::MAX, 2, 0, "WIDTH * HEIGHT"),
+            (format!("{} 4 4", usize::MAX), "2 1 1".to_owned(), 1, 1, 1, "field byte size"),
+            (format!("{} 4 4", usize::MAX), "1 1 1".to_owned(), 1, 1, 1, "point byte size"),
+            ("4 4 4".to_owned(), "1 1 1".to_owned(), 1, 1, usize::MAX, "payload byte size"),
+            (
+                "4 4 4".to_owned(),
+                "1 1 1".to_owned(),
+                1,
+                1,
+                isize::MAX as usize / 12 + 1,
+                "addressable",
+            ),
+            ("0 4 4".to_owned(), "1 1 1".to_owned(), 1, 1, 1, "positive"),
+            ("4 4 4".to_owned(), "0 1 1".to_owned(), 1, 1, 1, "positive"),
+        ] {
+            let input = format!("FIELDS x y z\nSIZE {sizes}\nTYPE F F F\nCOUNT {counts}\nWIDTH {width}\nHEIGHT {height}\nPOINTS {points}\nDATA binary\n");
+            let error = PcdHeader::parse(&mut Cursor::new(&input)).unwrap_err();
+            assert!(error.to_string().contains(message), "{error}");
+            // Public whole-cloud and streaming entry points reject before allocation.
+            assert!(crate::pcd::reader::read_pcd(&mut Cursor::new(&input)).is_err());
+            #[cfg(feature = "streaming")]
+            assert!(crate::pcd::reader::PcdChunkSource::new(
+                Cursor::new(&input),
+                spatialrust_records::StreamOptions::new(
+                    1,
+                    spatialrust_records::MemoryBudget::new(24).unwrap()
+                )
+                .unwrap(),
+                spatialrust_records::CancellationToken::default(),
+            )
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn infers_missing_point_count_and_accepts_empty_clouds() {
+        let input = SAMPLE_ASCII_HEADER.replace("POINTS 2\n", "");
+        assert_eq!(PcdHeader::parse(&mut Cursor::new(input)).unwrap().0.points, 2);
+        let input =
+            SAMPLE_ASCII_HEADER.replace("WIDTH 2", "WIDTH 0").replace("POINTS 2", "POINTS 0");
+        assert_eq!(PcdHeader::parse(&mut Cursor::new(input)).unwrap().0.points, 0);
     }
 }
