@@ -66,6 +66,11 @@ impl StatisticalOutlierRemoval {
                 "k_neighbors must be greater than zero".to_owned(),
             ));
         }
+        if !self.config.std_mul.is_finite() || self.config.std_mul < 0.0 {
+            return Err(SpatialError::InvalidArgument(
+                "std_mul must be finite and nonnegative".to_owned(),
+            ));
+        }
         let len = input.len();
         if len == 0 {
             return Ok(Vec::new());
@@ -76,7 +81,14 @@ impl StatisticalOutlierRemoval {
 
         // Mean distance to the k nearest neighbors (excluding the point itself).
         let mut mean_dist = vec![0.0_f32; len];
-        fill_mean_neighbor_distances(self.config.k_neighbors, &tree, x, y, z, &mut mean_dist);
+        fill_mean_neighbor_distances(
+            self.config.k_neighbors.min(len.saturating_sub(1)),
+            &tree,
+            x,
+            y,
+            z,
+            &mut mean_dist,
+        );
 
         let n = len as f64;
         let mean: f64 = mean_dist.iter().map(|&d| d as f64).sum::<f64>() / n;
@@ -204,12 +216,23 @@ impl RadiusOutlierRemoval {
 
     /// Computes the keep mask without materializing the filtered cloud.
     pub fn keep_mask(&self, input: &PointCloud) -> SpatialResult<Vec<bool>> {
-        if self.config.radius <= 0.0 || self.config.radius.is_nan() {
-            return Err(SpatialError::InvalidArgument("radius must be positive".to_owned()));
+        let squared_radius = self.config.radius * self.config.radius;
+        if !self.config.radius.is_finite()
+            || self.config.radius <= 0.0
+            || !squared_radius.is_finite()
+            || squared_radius == 0.0
+        {
+            return Err(SpatialError::InvalidArgument(
+                "radius must be finite and positive with a finite nonzero square".to_owned(),
+            ));
         }
         let len = input.len();
         if len == 0 {
             return Ok(Vec::new());
+        }
+
+        if self.config.min_neighbors >= len {
+            return Ok(vec![false; len]);
         }
 
         let (x, y, z) = input.positions3()?;
@@ -420,5 +443,38 @@ mod tests {
         assert!(RadiusOutlierRemoval::new(RadiusOutlierConfig::new(0.0, 1))
             .keep_mask(&cloud)
             .is_err());
+    }
+
+    #[test]
+    fn invalid_floating_settings_do_not_silently_filter_points() {
+        let cloud = cloud_from_xyz(&[[0., 0., 0.], [1., 0., 0.]]);
+        for std_mul in [f32::NAN, f32::INFINITY, -1.] {
+            assert!(StatisticalOutlierRemoval::new(StatisticalOutlierConfig::new(1, std_mul))
+                .keep_mask(&cloud)
+                .is_err());
+        }
+        for radius in [f32::NAN, f32::INFINITY, f32::MAX, f32::MIN_POSITIVE] {
+            assert!(RadiusOutlierRemoval::new(RadiusOutlierConfig::new(radius, 1))
+                .keep_mask(&cloud)
+                .is_err());
+        }
+    }
+
+    #[test]
+    fn extreme_neighbor_counts_are_bounded_by_available_points() {
+        let cloud = cloud_from_xyz(&[[0., 0., 0.], [1., 0., 0.], [2., 0., 0.]]);
+        let huge = StatisticalOutlierRemoval::new(StatisticalOutlierConfig::new(usize::MAX, 1.))
+            .keep_mask(&cloud)
+            .unwrap();
+        let available = StatisticalOutlierRemoval::new(StatisticalOutlierConfig::new(2, 1.))
+            .keep_mask(&cloud)
+            .unwrap();
+        assert_eq!(huge, available);
+        assert_eq!(
+            RadiusOutlierRemoval::new(RadiusOutlierConfig::new(1., usize::MAX))
+                .keep_mask(&cloud)
+                .unwrap(),
+            vec![false; 3]
+        );
     }
 }

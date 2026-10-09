@@ -21,6 +21,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Neighborhood outlier filters reject invalid floating settings, bound SOR
+  neighbor requests by available points and handle impossible radius neighbor
+  counts without overflow. Rust and Python regressions cover extreme settings.
 - ASCII PCD integer fields reject fractional, nonfinite and out-of-range values
   instead of silently rounding or saturating labels and IDs. Tests exercise
   U8/U16/U32/I32 validation in full and bounded streaming readers.
@@ -44,6 +47,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Reproducible SOR/radius-filter plus ICP study tracks retained genuine/outlier
+  points and evaluates final poses on the original source, with JSON/HTML output.
 - Gate study adds a deletion-only control preserving identical noisy retained
   points, to distinguish reduced overlap from added nonmatching source points.
 - Gate sensitivity study adds reproducible Gaussian noise and nearby source
