@@ -295,3 +295,13 @@ Current-machine artifacts:
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-stage-selection-final/study.json`
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-stage-selection-final/report.html`
 - `/workspace/SpatialRust-python-delivery/target/3dmatch-stage-selection-final/selection.svg`
+
+## New fitting scenes
+
+The precommitted three-scene holdout is documented in
+`/workspace/SpatialRust-python-delivery/docs/3DMATCH_SCENE_HOLDOUT.md` and
+`/workspace/SpatialRust-python-delivery/docs/3DMATCH_HOLDOUT_PLAN.json`.
+Its 108 actual registrations/replays validate the frozen 0.8 trim on new fitting
+scenes (17/27 to 22/27, five gains and zero correctness losses), while exposing
+failure to generalize the 0.2 m guard and pooled proximity selection. These
+primary and secondary results are kept separate from exploratory discovery.

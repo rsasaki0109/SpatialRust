@@ -1,11 +1,26 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **80%, provisional**. This is a subjective
+Current assessment (2026-10-10): **82%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
-The latest Linux runtime checkpoint runs the entire current suite on the default
+The 82% estimate adds a precommitted fitting-scene holdout: nine pairs in three
+new scenes, 54 baseline registrations plus 54 fixed-prior replays. The previously
+chosen 0.8 trim improves 17/27 to 22/27 with five gains on two pairs and zero
+correctness losses; all untrimmed controls exactly reproduce original poses.
+The frozen 0.2 m guard provides no correctness gain, and pooled proximity
+selection loses one available correct candidate. These negative findings limit
+policy claims rather than being hidden by aggregate rankings. Input/helper/native
+bindings, independent saved-pose score recomputation, checkpoint resume and
+common-axis geometric visualization make the evidence reviewable. This remains
+one benchmark with selected positive pairs and repeated seeds, not general
+library parity or a validated universal default. All 561 ONNX-enabled Python
+tests pass; the default wheel passes 558 tests with three expected ONNX skips
+on both CPython 3.8 and 3.14. See
+`/workspace/SpatialRust-python-delivery/docs/3DMATCH_SCENE_HOLDOUT.md`.
+
+A previous Linux runtime checkpoint runs the entire current suite on the default
 abi3 wheel at both supported endpoints: CPython 3.8 and 3.14 each pass 537 tests
 with three expected ONNX skips; the ONNX-enabled 3.12 suite passes all 540.
 This strengthens local regression coverage but leaves maturity at 80%. At
