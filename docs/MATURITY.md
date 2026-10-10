@@ -5,6 +5,18 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
+Environment/data recovery leaves the estimate at **82%**. Rust 1.99 is restored
+from the existing local installation; network-authorized GitHub downloads work.
+A fresh frozen default wheel passes 565 tests with three expected ONNX skips,
+exact installed-byte/runtime checks, and six actual native/Open3D registrations
+on a freshly downloaded hash-bound publisher demo. This restores prior comparison
+data, not a second independent benchmark. Operational source-bound clock and
+front/rear LiDAR calibration remain unavailable. The final prior CI head verifies
+Windows/macOS/Linux wheel runtimes and strict browser output, but the full matrix
+has a macOS HTTP fixture failure. Its HEAD-body bug is now reproduced and repaired
+locally; hosted verification of the repaired head remains necessary. See
+`notes/2026-10-10_environment_data_recovery.md`.
+
 The 82% estimate adds a precommitted fitting-scene holdout: nine pairs in three
 new scenes, 54 baseline registrations plus 54 fixed-prior replays. The previously
 chosen 0.8 trim improves 17/27 to 22/27 with five gains on two pairs and zero
@@ -290,3 +302,41 @@ JUnit failures now become check annotations so the next run can expose test name
 and tracebacks without accessing the denied log host. Focused diagnostic and
 fingerprint tests pass locally (7 tests). These diagnostics add observability;
 they do not establish that Windows is repaired. Maturity remains 82%.
+
+Runtime repair follow-up (2026-10-10): logs from main `b1a9acb` identify the
+remaining Windows failure as an implicit cp1252 read of UTF-8 alignment HTML
+(564 passes, one failure, three expected ONNX skips). The report annotation
+CLI also fails when printing a Unicode arrow through redirected cp1252 stdout.
+The Web/WASM gate stops before browser execution because the compiled schema
+is wasm-bindgen 0.2.129 while the installed CLI is 0.2.126. Tests now read
+alignment artifacts explicitly as UTF-8, annotations emit UTF-8, and Web CI
+selects its CLI from the generated workspace lockfile, rejecting missing or
+ambiguous versions. Two stdlib regression checks pass locally, and a real
+native alignment CLI reproduces the cp1252 mismatch and passes the UTF-8 read.
+The local native wheel is a previous frozen Linux build; this check does not
+verify the latest Windows wheel. Remote Windows and Web/WASM results remain
+required before counting either gate as repaired. Maturity remains **82%**.
+
+Future progress reports include this provisional engineering percentage relative
+to PCL, Open3D, and OpenCV evidence at the end, together with the main remaining
+gaps. It is not a measured percentage of those projects' functionality.
+
+Verified PR #112 runtime checkpoint, commit `21333bc` (2026-10-10): the
+Windows CPython 3.12 installed-wheel gate passes 565 tests with three expected
+ONNX skips; exact installed native bytes and the wheel runtime receipt match.
+Both Linux endpoint gates, macOS, x86_64/aarch64 wheel builds, and the frozen
+sdist rebuild/runtime gate succeed. Publication is intentionally skipped on a
+PR. Web/WASM installs the resolved 0.2.129 CLI, passes the two regressions,
+generates bindings, and completes real Chrome smoke with the rendered status
+element showing PASS. Evidence: Python wheels run `38009690111`, Windows job
+`114086565729`, and Web job `114086565967` in CI run `38009690109`.
+
+The browser gate previously searched the entire DOM for a PASS string also
+present in its script source. Its follow-up assertion requires the exact
+rendered status element; failed and running fixtures containing the script's
+PASS literal are rejected, while a successful status is accepted. That stricter
+assertion still requires CI on the new PR head. The full 103-job CI run was not
+yet complete at this checkpoint, so no aggregate green claim is made. Broader
+dataset, performance, and operational evidence remains open; the provisional
+assessment stays at **82%**, rather than treating two repaired gates as 90%.
+

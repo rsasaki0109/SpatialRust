@@ -453,7 +453,9 @@ jobs:
         run: |
           cargo check -p spatialrust-web --target wasm32-unknown-unknown --features wasm,webgpu
           cargo build -p spatialrust-web --target wasm32-unknown-unknown --features wasm
-          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          python -m unittest discover -s scripts/tests -p test_runtime_ci.py
+          wasm_bindgen_version=$(python scripts/wasm_bindgen_version.py Cargo.lock)
+          cargo install wasm-bindgen-cli --version "$wasm_bindgen_version" --locked --force
           wasm-bindgen \
             --target web \
             --out-dir crates/spatialrust-web/web/pkg \
@@ -479,7 +481,7 @@ jobs:
             --virtual-time-budget=15000 \
             --dump-dom \
             http://127.0.0.1:8765/browser_smoke.html >browser-smoke-dom.txt
-          grep -F "SpatialRust Web viewer smoke: PASS" browser-smoke-dom.txt
+          grep -F '<pre id="status">SpatialRust Web viewer smoke: PASS</pre>' browser-smoke-dom.txt
 
   bench:
     name: Benchmark compile
@@ -520,3 +522,4 @@ jobs:
             exit 1
           fi
           echo "Unsafe audit passed"
+

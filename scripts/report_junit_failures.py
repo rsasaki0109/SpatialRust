@@ -1,6 +1,7 @@
 """Expose pytest failures in Actions annotations without downloading job logs."""
 import argparse
 from pathlib import Path
+import sys
 import xml.etree.ElementTree as ET
 
 
@@ -20,6 +21,8 @@ def annotations(path):
 
 
 def main():
+    # Actions consumes UTF-8 commands even when Windows redirects cp1252 stdout.
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('junit', type=Path)
     args = parser.parse_args()
@@ -32,3 +35,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

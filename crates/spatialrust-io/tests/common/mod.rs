@@ -55,7 +55,7 @@ fn serve_http_file_request(mut stream: TcpStream, payload: &[u8]) {
     let request_line = request.lines().next().unwrap_or_default();
 
     if request_line.starts_with("HEAD ") {
-        write_response(&mut stream, 200, payload, None);
+        write_response(&mut stream, 200, payload, None, false);
         return;
     }
 
@@ -66,11 +66,11 @@ fn serve_http_file_request(mut stream: TcpStream, payload: &[u8]) {
     let range = request.lines().find_map(|line| line.strip_prefix("Range: bytes="));
     if let Some(range) = range {
         let (start, end) = parse_byte_range(range).unwrap_or((0, payload.len().saturating_sub(1)));
-        write_response(&mut stream, 206, payload, Some((start, end)));
+        write_response(&mut stream, 206, payload, Some((start, end)), true);
         return;
     }
 
-    write_response(&mut stream, 200, payload, Some((0, payload.len().saturating_sub(1))));
+    write_response(&mut stream, 200, payload, Some((0, payload.len().saturating_sub(1))), true);
 }
 
 fn parse_byte_range(value: &str) -> Option<(usize, usize)> {
@@ -85,6 +85,7 @@ fn write_response(
     status: u16,
     payload: &[u8],
     range: Option<(usize, usize)>,
+    send_body: bool,
 ) {
     let (body, content_range) = match range {
         Some((start, end)) if start < payload.len() => {
@@ -97,7 +98,7 @@ fn write_response(
 
     let status_text = if status == 206 { "Partial Content" } else { "OK" };
     let mut headers = format!(
-        "HTTP/1.1 {status} {status_text}\r\nContent-Length: {}\r\nAccept-Ranges: bytes\r\n",
+        "HTTP/1.1 {status} {status_text}\r\nContent-Length: {}\r\nAccept-Ranges: bytes\r\nConnection: close\r\n",
         body.len()
     );
     if let Some(content_range) = content_range {
@@ -105,5 +106,9 @@ fn write_response(
     }
     headers.push_str("\r\n");
     let _ = stream.write_all(headers.as_bytes());
-    let _ = stream.write_all(&body);
+    // HEAD advertises the GET length but sends no body. Otherwise pooled clients
+    // can interpret leftover binary bytes as the next response's status line.
+    if send_body {
+        let _ = stream.write_all(&body);
+    }
 }

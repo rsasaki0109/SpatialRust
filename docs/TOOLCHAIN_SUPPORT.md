@@ -157,3 +157,20 @@ fragment source also requires `redwood-data.org`, currently denied by the proxy.
 An additive environment draft preserves the existing three custom domains and
 adds only that official dataset domain. Saving the draft does not activate it;
 review/save and Publish are required before retrying that dataset operation.
+
+## Managed environment recovery (2026-10-10)
+
+The current cloud snapshot has Rust 1.99 under `/workspace/.spatialrust-env`;
+its existing activation script restores PATH. Network-enabled executor calls
+successfully fetch GitHub and the allowed 3DMatch project host. Earlier failures
+from executor calls without network permission do not establish a dead proxy.
+The Redwood, official fragment-archive and canonical Autoware S3 hosts remain
+explicitly denied; a saved historical environment draft is not an active change.
+
+A fresh frozen default wheel passes 565 tests with three expected ONNX skips and
+exact installed-byte/runtime verification. Its six-row native/Open3D replay uses
+freshly acquired publisher demo files with reference/input hashes. The prior
+comparison installation's missing ONNX loader path is also identified and repaired
+locally. These results do not supply independent sensor ground truth or measured
+operational calibration. See `notes/2026-10-10_environment_data_recovery.md` for
+activation, data hashes, remaining gates and the HEAD-response fixture regression.

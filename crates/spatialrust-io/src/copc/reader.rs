@@ -643,10 +643,10 @@ mod tests {
         );
 
         let mut total = 0u64;
-        for index in 0..nodes.len() {
+        for (index, node) in nodes.iter().enumerate() {
             let cloud = reader.read_node(index).unwrap();
-            assert_eq!(cloud.len() as u64, nodes[index].point_count);
-            total += nodes[index].point_count;
+            assert_eq!(cloud.len() as u64, node.point_count);
+            total += node.point_count;
         }
         assert_eq!(total, cloud.len() as u64, "per-node reads must reconstruct the cloud");
         let _ = std::fs::remove_file(path);

@@ -59,9 +59,9 @@ def test_opt_in_history_preserves_alignment_and_reaches_cli_html(tmp_path):
                              '--output-dir', str(output), '--trace', '--html-report'],
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
-    report = json.loads((output / 'alignment.json').read_text())
+    report = json.loads((output / 'alignment.json').read_text(encoding="utf-8"))
     assert all('icp_history' in stage for stage in report['stages'])
-    rendered = (output / 'report.html').read_text()
+    rendered = (output / 'report.html').read_text(encoding="utf-8")
     assert rendered.count('class="trace-chart"') == 8
     assert 'Rotation update (degrees)' in rendered
     assert 'Stop reason:' in rendered
@@ -84,11 +84,11 @@ def test_stopping_controls_are_validated_before_io_and_saved(tmp_path):
         '--translation-epsilon', '.001', '--rotation-epsilon', '.0001'],
         capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
-    report = json.loads((output / 'alignment.json').read_text())
+    report = json.loads((output / 'alignment.json').read_text(encoding="utf-8"))
     for stage in report['stages']:
         assert stage['stop_reason'] == 'transform_threshold'
         assert stage['convergence_criteria'] == dict(translation_epsilon=.001, rotation_epsilon=.0001, fitness_epsilon=0)
-    assert 'Stopping thresholds:' in (output / 'report.html').read_text()
+    assert 'Stopping thresholds:' in (output / 'report.html').read_text(encoding="utf-8")
 
 
 def test_trim_fraction_validation_before_io_and_two_stage_cli(tmp_path):
@@ -114,7 +114,7 @@ def test_trim_fraction_validation_before_io_and_two_stage_cli(tmp_path):
     result = subprocess.run([sys.executable, str(EXAMPLE), *map(str,paths), '--output-dir', str(output),
                              '--trim-fraction', '.8', '--trace', '--html-report'], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
-    assert 'retain 80.0%' in (output/'report.html').read_text()
+    assert 'retain 80.0%' in (output/'report.html').read_text(encoding="utf-8")
 
 
 def test_invalid_fine_gate_is_rejected_before_file_io():
@@ -133,7 +133,7 @@ def test_full_resolution_roundtrip_and_transform_direction(tmp_path):
     output = tmp_path / 'run'
     result = subprocess.run([sys.executable, str(EXAMPLE), *map(str, paths), '--output-dir', str(output), '--leaf', '.2'], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
-    report = json.loads((output / 'alignment.json').read_text())
+    report = json.loads((output / 'alignment.json').read_text(encoding="utf-8"))
     saved = sr.read(str(output / 'aligned.pcd')).xyz()
     transform = np.asarray(report['transform_source_to_target'])
     assert len(saved) == len(source)
@@ -164,7 +164,7 @@ def test_cli_html_report_and_failed_html_write_cleanup(tmp_path, monkeypatch):
                              '--output-dir', str(output), '--html-report', '--evaluation-distance', '.001'],
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
-    rendered = (output / 'report.html').read_text()
+    rendered = (output / 'report.html').read_text(encoding="utf-8")
     assert 'Alignment support report' in rendered
     assert 'After: target → source' in rendered
     assert 'Evaluation distance gate: 0.001 m' in rendered
@@ -289,7 +289,7 @@ def test_rotated_initial_pose_cli_and_composition(tmp_path):
     output = tmp_path / 'seeded'
     result = subprocess.run([sys.executable, str(EXAMPLE), *map(str, paths), '--initial-transform', str(pose), '--leaf', '.01', '--output-dir', str(output)], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
-    report = json.loads((output / 'alignment.json').read_text())
+    report = json.loads((output / 'alignment.json').read_text(encoding="utf-8"))
     np.testing.assert_allclose(report['transform_source_to_target'], initial, atol=3e-5)
     np.testing.assert_allclose(sr.read(str(output / 'aligned.pcd')).xyz(), target, atol=3e-5)
     np.testing.assert_allclose(report['initial_transform_source_to_target'], initial, atol=1e-6)
@@ -475,3 +475,4 @@ if __name__ == '__main__':
         with tempfile.TemporaryDirectory() as directory:
             test(Path(directory))
     print('Python alignment pipeline: PASS (13 groups, real bindings and subprocess CLI)')
+
