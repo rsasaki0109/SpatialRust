@@ -12,6 +12,8 @@ pub struct ComputePipelineCache {
     pub voxel_reduce_attributes_aoso: VoxelReduceAttributesAoSoPipelines,
     /// Bitonic sort pipelines.
     pub voxel_sort: VoxelSortPipelines,
+    /// Stable signed-key radix sort pipelines.
+    pub voxel_radix: VoxelRadixPipelines,
     /// Sort-entry construction pipelines.
     pub voxel_sort_build: VoxelSortBuildPipelines,
     /// Post-sort valid-entry gather pipelines.
@@ -188,6 +190,7 @@ impl ComputePipelineCache {
             voxel_reduce_aoso: VoxelReduceAoSoPipelines::new(device),
             voxel_reduce_attributes_aoso: VoxelReduceAttributesAoSoPipelines::new(device),
             voxel_sort: VoxelSortPipelines::new(device),
+            voxel_radix: VoxelRadixPipelines::new(device),
             voxel_sort_build: VoxelSortBuildPipelines::new(device),
             voxel_sort_filter: VoxelSortFilterPipelines::new(device),
             voxel_compact: VoxelCompactPipelines::new(device),
@@ -336,6 +339,69 @@ impl VoxelSortPipelines {
             "main",
         );
         Self { bind_group_layout, pipeline, _pipeline_layout: pipeline_layout, _shader: shader }
+    }
+}
+
+/// Cached pipelines for stable four-bit voxel radix sorting.
+pub struct VoxelRadixPipelines {
+    /// Bind group layout shared by radix dispatches.
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    /// Counts digits and computes stable workgroup-local ranks.
+    pub histogram: wgpu::ComputePipeline,
+    /// Computes exclusive digit/workgroup offsets.
+    pub prefix: wgpu::ComputePipeline,
+    /// Scatters entries to their stable sorted positions.
+    pub scatter: wgpu::ComputePipeline,
+    _pipeline_layout: wgpu::PipelineLayout,
+    _shader: wgpu::ShaderModule,
+}
+
+impl VoxelRadixPipelines {
+    fn new(device: &wgpu::Device) -> Self {
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("voxel-radix-layout"),
+            entries: &[
+                uniform_entry(0),
+                storage_entry(1, true),
+                storage_entry(2, false),
+                storage_entry(3, false),
+                storage_entry(4, false),
+                storage_entry(5, false),
+            ],
+        });
+        let shader =
+            load_shader(device, "voxel-radix-shader", include_str!("shaders/voxel_radix.wgsl"));
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("voxel-radix-pipeline-layout"),
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[],
+        });
+        Self {
+            histogram: build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-radix-histogram",
+                "histogram",
+            ),
+            prefix: build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-radix-prefix",
+                "prefix",
+            ),
+            scatter: build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-radix-scatter",
+                "scatter",
+            ),
+            bind_group_layout,
+            _pipeline_layout: pipeline_layout,
+            _shader: shader,
+        }
     }
 }
 

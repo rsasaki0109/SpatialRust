@@ -32,12 +32,11 @@ pub fn downsample_voxel_centroid_gpu(
 ) -> SpatialResult<VoxelCentroidGpuResult> {
     let positions = compute_voxel_keys_gpu_buffers(runtime, x, y, z, origin, inv_leaf)?;
     let point_count = positions.point_count();
-    let padded_count = point_count.next_power_of_two();
     let segments = build_voxel_segments_gpu_from_keys_buffer(
         runtime,
         positions.keys_buffer(),
         point_count,
-        padded_count,
+        point_count,
     )?;
     let (out_x, out_y, out_z) = reduce_voxel_centroids_xyz_gpu_buffers(
         runtime,
@@ -75,12 +74,11 @@ pub fn downsample_voxel_approximate_first_gpu(
 ) -> SpatialResult<VoxelApproximateFirstGpuResult> {
     let positions = compute_voxel_keys_gpu_buffers(runtime, x, y, z, origin, inv_leaf)?;
     let point_count = positions.point_count();
-    let padded_count = point_count.next_power_of_two();
     let segments = build_voxel_segments_gpu_from_keys_buffer(
         runtime,
         positions.keys_buffer(),
         point_count,
-        padded_count,
+        point_count,
     )?;
     let (out_x, out_y, out_z) = gather_voxel_first_xyz_gpu_buffers(
         runtime,

@@ -31,11 +31,10 @@ pub fn build_voxel_segments_from_positions_gpu_buffers(
 ) -> SpatialResult<GpuVoxelSegments> {
     let positions = compute_voxel_keys_gpu_buffers(runtime, x, y, z, origin, inv_leaf)?;
     let point_count = positions.point_count();
-    let padded_count = point_count.next_power_of_two();
     build_voxel_segments_gpu_from_keys_buffer(
         runtime,
         positions.keys_buffer(),
         point_count,
-        padded_count,
+        point_count,
     )
 }
