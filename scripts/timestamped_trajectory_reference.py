@@ -79,11 +79,13 @@ def associate(records, timestamps, ns, max_gap_ns):
     if dot < 0:
         q1,dot = -q1,-dot
     dot = min(1.,dot)
-    if dot > .9995:
-        q = (1-alpha)*q0+alpha*q1
-    else:
-        angle = math.acos(dot)
-        q = (math.sin((1-alpha)*angle)*q0+math.sin(alpha*angle)*q1)/math.sin(angle)
+    # Normalized linear interpolation is not constant-speed SLERP, even for
+    # small angles. sinc weights retain SLERP without a division by tiny sin.
+    angle = math.acos(dot)
+    def sinc(value):
+        return math.sin(value)/value if value else 1.
+    denominator = sinc(angle)
+    q = ((1-alpha)*sinc((1-alpha)*angle)*q0 + alpha*sinc(alpha*angle)*q1)/denominator
     pose,_ = quaternion_matrix(q)
     pose[:3,3] = (1-alpha)*before['world_from_sensor'][:3,3]+alpha*after['world_from_sensor'][:3,3]
     return rigid(pose)

@@ -36,6 +36,19 @@ def test_shortest_path_slerp_bounded_bracket_and_no_extrapolation():
     np.testing.assert_array_equal(associate(sign,[0,2000000000],1000000000,1000000000)[:3,:3],np.eye(3))
 
 
+@pytest.mark.parametrize('degrees', [0., 1e-7, 3.])
+@pytest.mark.parametrize('sign', [1., -1.])
+def test_small_angle_quarter_interval_has_constant_angular_speed(degrees, sign):
+    angle = np.radians(degrees)
+    reference = ('0 0 0 0 0 0 0 1\n1 0 0 0 0 0 {:.17g} {:.17g}\n'.format(
+        sign*np.sin(angle/2), sign*np.cos(angle/2))).encode('ascii')
+    pose = associate(read_tum(reference), [0, 1000000000], 250000000, 1000000000)
+    quarter = angle/4
+    expected = [[np.cos(quarter), -np.sin(quarter), 0],
+                [np.sin(quarter), np.cos(quarter), 0], [0, 0, 1]]
+    np.testing.assert_allclose(pose[:3, :3], expected, atol=4e-16, rtol=0)
+
+
 @pytest.mark.parametrize('data',[b'',b'0 0 0 0 0 0 0 0\n',b'0 nan 0 0 0 0 0 1\n',
                                b'0 0 0 0 0 0 0 1\n0 0 0 0 0 0 0 1\n',b'0 0 0 0 0 0 1\n'])
 def test_bad_reference_rows_are_rejected(data):
