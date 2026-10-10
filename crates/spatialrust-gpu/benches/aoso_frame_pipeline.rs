@@ -16,6 +16,10 @@ fn synthetic_cloud(point_count: usize) -> spatialrust_core::PointCloud {
 
 fn bench_aoso_frame_pipeline(c: &mut Criterion) {
     let runtime = WgpuRuntime::shared().expect("shared wgpu runtime");
+    eprintln!("AoSoA frame benchmark adapter: {:?}", runtime.adapter_info());
+    // Exclude lazy shared-pipeline initialization and measure completed frames,
+    // including the final asynchronous normal dispatch.
+    let _ = runtime.pipelines();
     let mut group = c.benchmark_group("aoso_frame/upload_voxel_radius_normals");
 
     for point_count in [10_000_usize, 65_536] {
@@ -35,6 +39,7 @@ fn bench_aoso_frame_pipeline(c: &mut Criterion) {
                         0.08,
                     )
                     .expect("AoSoA frame pipeline");
+                    runtime.wait_idle();
                     black_box(frame.receipt());
                     frame.recycle(&runtime).expect("frame recycle");
                 });
