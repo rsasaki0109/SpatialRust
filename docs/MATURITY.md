@@ -5,7 +5,19 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
-The SR2 handoff restores a clean Python comparison environment and the exact
+Open3D's official verified-HTTPS distribution now supplies a separate noisy
+synthetic Redwood/augmented ICL-NUIM dataset, despite the original Redwood
+service's unresolved certificate error. A precommitted four-pair protocol
+runs 24 registrations with no reference initialization; both SpatialRust and
+Open3D pass 12/12 fixed accuracy checks. All inputs, frozen estimates and scoring
+are hash-bound; independent backprojection and pose-score audits agree. The
+default Python suite passes 583 tests with three expected ONNX skips. This is
+one synthetic scene with nearby frames, not real-sensor calibration or broad
+library parity. Complete hosted CI and source-bound operational calibration
+remain open, so maturity stays **82%**. See
+[the fixed protocol and evidence](REDWOOD_FRAME_VALIDATION.md).
+
+The earlier SR2 handoff restored a clean Python comparison environment and the exact
 canonical rosbag bytes in a new task. All 565 applicable Python tests pass,
 with three expected ONNX skips; the same public demo comparison replays without
 adding an independent dataset. Exact-head CI observation covers all 103 main
@@ -13,7 +25,7 @@ jobs (24 successful, 79 queued) and all eight wheel jobs (seven successful,
 publication intentionally skipped) on `ce1fcd8`. The macOS streaming regression
 is repaired, but the incomplete matrix prevents merge. The recovered bag still
 lacks measured clock and front/rear frame evidence; its registration gate stays
-blocked. Redwood HTTPS fails upstream certificate verification. These outcomes
+blocked. Original Redwood HTTPS failed upstream certificate verification. These outcomes
 leave the assessment at **82%**; see
 [the handoff evidence](../notes/2026-10-10_sr2_handoff_validation.md).
 

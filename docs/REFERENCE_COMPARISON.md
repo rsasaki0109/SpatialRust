@@ -2,6 +2,8 @@
 
 For original 3DMatch fragment/reference binding and the publisher's saved-log
 recall/precision metric, see [Redwood/3DMatch reference](3DMATCH_REFERENCE.md).
+For precommitted noisy synthetic depth-frame validation on a separate dataset,
+see [fixed Redwood frame validation](REDWOOD_FRAME_VALIDATION.md).
 
 The comparison tools separate declared reference pose accuracy from distance-gated
 proximity. They never pass the reference pose to a registration algorithm or use
