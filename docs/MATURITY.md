@@ -5,6 +5,18 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
+The SR2 handoff restores a clean Python comparison environment and the exact
+canonical rosbag bytes in a new task. All 565 applicable Python tests pass,
+with three expected ONNX skips; the same public demo comparison replays without
+adding an independent dataset. Exact-head CI observation covers all 103 main
+jobs (24 successful, 79 queued) and all eight wheel jobs (seven successful,
+publication intentionally skipped) on `ce1fcd8`. The macOS streaming regression
+is repaired, but the incomplete matrix prevents merge. The recovered bag still
+lacks measured clock and front/rear frame evidence; its registration gate stays
+blocked. Redwood HTTPS fails upstream certificate verification. These outcomes
+leave the assessment at **82%**; see
+[the handoff evidence](../notes/2026-10-10_sr2_handoff_validation.md).
+
 Environment/data recovery leaves the estimate at **82%**. Rust 1.99 is restored
 from the existing local installation; network-authorized GitHub downloads work.
 A fresh frozen default wheel passes 565 tests with three expected ONNX skips,
