@@ -481,7 +481,7 @@ jobs:
             --virtual-time-budget=15000 \
             --dump-dom \
             http://127.0.0.1:8765/browser_smoke.html >browser-smoke-dom.txt
-          grep -F "SpatialRust Web viewer smoke: PASS" browser-smoke-dom.txt
+          grep -F '<pre id="status">SpatialRust Web viewer smoke: PASS</pre>' browser-smoke-dom.txt
 
   bench:
     name: Benchmark compile

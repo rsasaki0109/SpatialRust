@@ -309,3 +309,22 @@ Future progress reports include this provisional engineering percentage relative
 to PCL, Open3D, and OpenCV evidence at the end, together with the main remaining
 gaps. It is not a measured percentage of those projects' functionality.
 
+Verified PR #112 runtime checkpoint, commit `21333bc` (2026-10-10): the
+Windows CPython 3.12 installed-wheel gate passes 565 tests with three expected
+ONNX skips; exact installed native bytes and the wheel runtime receipt match.
+Both Linux endpoint gates, macOS, x86_64/aarch64 wheel builds, and the frozen
+sdist rebuild/runtime gate succeed. Publication is intentionally skipped on a
+PR. Web/WASM installs the resolved 0.2.129 CLI, passes the two regressions,
+generates bindings, and completes real Chrome smoke with the rendered status
+element showing PASS. Evidence: Python wheels run `38009690111`, Windows job
+`114086565729`, and Web job `114086565967` in CI run `38009690109`.
+
+The browser gate previously searched the entire DOM for a PASS string also
+present in its script source. Its follow-up assertion requires the exact
+rendered status element; failed and running fixtures containing the script's
+PASS literal are rejected, while a successful status is accepted. That stricter
+assertion still requires CI on the new PR head. The full 103-job CI run was not
+yet complete at this checkpoint, so no aggregate green claim is made. Broader
+dataset, performance, and operational evidence remains open; the provisional
+assessment stays at **82%**, rather than treating two repaired gates as 90%.
+
