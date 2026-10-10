@@ -8,9 +8,11 @@ Autoware bag's mounting calibration.
 
 ## Fixed source and protocol
 
-The protocol is `benchmarks/realsense-l515-plan.json`, committed as `4ce5a76`
-before processing. The tested runner/helper is committed as `136ddd1` before the
-real execution. Publisher descriptors come from Open3D commit
+The protocol is `benchmarks/realsense-l515-plan.json`. Geometric and frame
+controls were committed as `4ce5a76` before first processing. Explicit CPU
+execution was added as `35af742` before the final run; geometric controls and
+frame selection were unchanged. The final runner/helper is committed as
+`581bd90` before execution. Publisher descriptors come from Open3D commit
 `1e7b17438687a0b0c1e5a7187321ac7044afe275`; their source hashes are in the receipt.
 HTTPS certificate verification and both official MD5 and frozen SHA-256 checks
 remain enabled. No input archive, bag, generated point cloud or native binary is
@@ -46,7 +48,9 @@ native write and native reread must preserve all types and values exactly.
 Every 120th frame runs the existing CPU MVP pipeline with 0.05 m voxels,
 0.02 m plane gate, 0.1 m cluster tolerance and minimum cluster size 10. That
 pipeline receives xyz only; the separate IO audit is the attribute-preservation
-claim. Pipeline completion is not a scene-label accuracy result.
+claim. All four resolved stage policies must be `CpuSingle` or `CpuParallel`,
+with zero recorded host/device transfers. Pipeline completion is not a
+scene-label accuracy result.
 
 Bag timestamps and header timestamps are retained as separate integer
 nanoseconds. All raw per-frame depth metadata strings are kept, including the
@@ -71,16 +75,24 @@ unlimited ROS recording ingestion service or a native ROS1 API.
 The long recording's sensor timestamps span 29,306,871,000 ns; its depth bag
 timestamps span 29,408,950,688 ns. These are distinct clocks. Both recordings
 have zero skipped sequence counters. No frame is selected by a reference pose
-or a favorable score. The recorded process peak is 172,268 KiB (about 168 MiB).
-The long bag's processing loop takes 24.765 s on this machine, excluding initial
+or a favorable score. The recorded process peak is 175,056 KiB (about 171 MiB).
+The long bag's processing loop takes 24.193 s on this machine, excluding initial
 inventory, source verification and startup. No real-time or cross-library speed
 claim follows from that local interval.
 
 Raw results are retained at
-`/workspace/SpatialRust/target/real-sensor-reference/run-v1` with all frame
+`/workspace/SpatialRust/target/real-sensor-reference/run-v3` with all frame
 outcomes, calibration inventory, 18 input/restored PCD pairs and source bindings.
 The compact reviewable record is
 [`receipts/2026-10-10_realsense_operation.json`](receipts/2026-10-10_realsense_operation.json).
+
+The initial `run-v1` used the existing automatic backend choice; all coordinate,
+IO and pipeline values exactly reproduce in final explicit-CPU `run-v3`.
+Intermediate `run-v2` is retained with nine failed outcomes: an audit assertion
+mistakenly expected `Cpu` instead of the native `CpuSingle`/`CpuParallel` names.
+The actual processing was CPU with zero transfers. The assertion was corrected,
+device/unresolved-backend rejection tests added, and the complete protocol
+rerun. Failed receipts are not replaced or counted as successful operation.
 
 Reproduce in a new output directory:
 
@@ -140,12 +152,13 @@ persistence does not apply/publish the settings or verify the connection.
 
 ## Validation and maturity
 
-The complete installed default-wheel Python suite passes **639 tests**, with
-**three expected ONNX skips**, zero failures and zero errors (642 planned).
-The 56 new tests cover exact epochs, endian/padded rows, unsupported calibration,
+The complete installed default-wheel Python suite passes **646 tests**, with
+**three expected ONNX skips**, zero failures and zero errors (649 planned).
+The 63 new tests cover exact epochs, endian/padded rows, unsupported calibration,
 late/missing source evidence, typed native IO, bounded archives, noncommuting
 pose gauge, retained tracking failures, missed reference coverage, scale drift,
-and frozen CLI hashes. The 12 standard-library CI helper tests also pass.
+frozen CLI hashes and native CPU/device transfer classification. The 12
+standard-library CI helper tests also pass.
 
 The provisional estimate is **86%**, from 85%, on the limited real-sensor
 ingestion/geometry/IO evidence. It is not measured PCL/Open3D/OpenCV parity.

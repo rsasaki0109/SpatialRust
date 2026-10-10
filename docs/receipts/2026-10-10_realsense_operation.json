@@ -1,11 +1,12 @@
 {
   "schema": "spatialrust.realsense-operation-summary.v1",
-  "plan_sha256": "be74e6281c39e69a8425e65da1b8ef7fe030f049d625f47185dcb36aeef1e834",
-  "frozen_run_source_commit": "136ddd102f9c45f3b030e5b6df4d10d659e42429",
-  "plan_preregistration_commit": "4ce5a7650ca350fe2e23084031c5ad8563bc6f53",
-  "raw_receipt_sha256": "52a195833693011b174809cb731c08d4368a1aded11140eb629740e5fd993e1a",
+  "plan_sha256": "d64e2f8acaa86fe2050d5d0059faa2bf8154d8f4ac5f24b2cdaa4a3146b47c63",
+  "frozen_run_source_commit": "581bd90cb50d0e37cbddae326b04673a8817e76a",
+  "initial_geometric_plan_commit": "4ce5a7650ca350fe2e23084031c5ad8563bc6f53",
+  "explicit_cpu_plan_commit": "35af7427542f7702dfa077fbeab0cdbfa03de228",
+  "raw_receipt_sha256": "fe4e2fec23e6a7c072df43f07216af15fc94d457e3425ba4f130dd4dbc248eee",
   "bindings": {
-    "/workspace/SpatialRust/scripts/run_realsense_reference.py": "989c625a2d895161084f15e887e8a453dd2ea38bc8c06f737ec8d28c8047d1de",
+    "/workspace/SpatialRust/scripts/run_realsense_reference.py": "fc63dae9c47d7875aca535c3204c318346845fe83ac86183e26627204a4baad2",
     "/workspace/SpatialRust/scripts/realsense_reference.py": "d7f21b9002e06980e2ba9cac7ccc8a0376e2b2ad1f695b934511f252d55aa4fa",
     "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87"
   },
@@ -18,7 +19,7 @@
     "SampleL515Bag.cpp": "a4a6503219abe1f562a9bd97cef01394a2b3014839ab147dece668feb8c78d1c",
     "JackJackL515Bag.cpp": "f5b9adfd97a8b9d5a48ea846b3342d749c9430fb33a6ea5a014415bcaa6463a0"
   },
-  "peak_process_rss_kib": 172268,
+  "peak_process_rss_kib": 175056,
   "sources": {
     "L515_test_s.bag": {
       "source_sha256": "38365d600d0d4f1ae9e76d435571a4d6fa20d1ccf0db8e3eac18440d27709f63",
@@ -28,7 +29,7 @@
       "io_verified_frames": 2,
       "pipeline_frames": 1,
       "max_projection_error_m": 1.9678975715642366e-07,
-      "elapsed_seconds": 0.36653423700045096,
+      "elapsed_seconds": 0.4034813119942555,
       "clock": {
         "declared_domains": [
           "Hardware Clock"
@@ -159,7 +160,16 @@
           "index": 0,
           "output_points": 1936,
           "plane_inliers": 876,
-          "clusters": 1
+          "clusters": 1,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         }
       ]
     },
@@ -171,7 +181,7 @@
       "io_verified_frames": 16,
       "pipeline_frames": 8,
       "max_projection_error_m": 2.8330184664859814e-07,
-      "elapsed_seconds": 24.76480817499396,
+      "elapsed_seconds": 24.193339819998073,
       "clock": {
         "declared_domains": [
           "Hardware Clock"
@@ -498,59 +508,146 @@
           "index": 0,
           "output_points": 208,
           "plane_inliers": 1014,
-          "clusters": 3
+          "clusters": 3,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         },
         {
           "index": 120,
           "output_points": 427,
           "plane_inliers": 919,
-          "clusters": 2
+          "clusters": 2,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         },
         {
           "index": 240,
           "output_points": 518,
           "plane_inliers": 1402,
-          "clusters": 5
+          "clusters": 5,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         },
         {
           "index": 360,
           "output_points": 60,
           "plane_inliers": 1127,
-          "clusters": 1
+          "clusters": 1,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         },
         {
           "index": 480,
           "output_points": 57,
           "plane_inliers": 636,
-          "clusters": 1
+          "clusters": 1,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         },
         {
           "index": 600,
           "output_points": 51,
           "plane_inliers": 979,
-          "clusters": 1
+          "clusters": 1,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         },
         {
           "index": 720,
           "output_points": 396,
           "plane_inliers": 1210,
-          "clusters": 3
+          "clusters": 3,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         },
         {
           "index": 840,
           "output_points": 475,
           "plane_inliers": 879,
-          "clusters": 3
+          "clusters": 3,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
         }
       ]
     }
   },
   "python_junit": {
-    "tests": 642,
+    "tests": 649,
     "failures": 0,
     "errors": 0,
     "skipped": 3
   },
+  "preceding_runs": [
+    {
+      "directory": "run-v1",
+      "receipt_sha256": "52a195833693011b174809cb731c08d4368a1aded11140eb629740e5fd993e1a",
+      "successful_frames": 890,
+      "scope": "Initial auto-backend run; coordinates, IO and pipeline results exactly reproduce in final CPU run"
+    },
+    {
+      "directory": "run-v2",
+      "receipt_sha256": "8ef3027bbdf5c1ea2602a978c3661bc0f36ef3985ee0b8c1794754b439967f65",
+      "successful_frames": 881,
+      "failed_frames": 9,
+      "reason": "Audit incorrectly expected Cpu instead of valid CpuSingle/CpuParallel; all outcomes retained, assertion corrected before run-v3"
+    }
+  ],
   "trajectory_evaluation_scope": "Analytic unit/CLI regressions only; no acquired TUM sequence or real ATE claim",
   "maturity_percent": 86,
   "maturity_kind": "provisional engineering estimate; not measured feature parity",

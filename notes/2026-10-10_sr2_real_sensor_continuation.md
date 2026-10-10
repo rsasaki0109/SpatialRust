@@ -3,7 +3,8 @@
 The user authorized continuing toward 90%. The latest concrete evidence is
 official RealSense L515 data, not a renamed synthetic benchmark. Fixed plan
 `4ce5a76` precedes full processing; native projection and attribute IO runner
-`136ddd1` is committed before execution. All 890 depth frames and 264,115,152
+`581bd90` is committed before final explicit-CPU execution, following backend
+control `35af742`. All 890 depth frames and 264,115,152
 points pass an independent geometry audit. Eighteen exact typed IO roundtrips
 and nine fixed MVP executions pass. Source hashes, calibration, raw time domains,
 recorded/unapplied transforms and all per-frame outcomes are retained.
@@ -11,8 +12,11 @@ recorded/unapplied transforms and all per-frame outcomes are retained.
 See `/workspace/SpatialRust/docs/REALSENSE_OPERATION_VALIDATION.md` and the
 committed compact receipt. Raw inputs and runs are kept below
 `/workspace/SpatialRust/target/real-sensor-reference`, never staged for Git.
-The full default-wheel suite passes 639 tests with exactly three ONNX skips;
-12 CI helper tests pass. There are no Rust/native API or dependency changes.
+The full default-wheel suite passes 646 tests with exactly three ONNX skips;
+12 CI helper tests pass. All four stage backends are CPU with zero transfers.
+Intermediate run-v2's nine incorrect backend-name assertion failures remain
+recorded; the corrected final run exactly reproduces initial geometry, IO and
+pipeline metrics. There are no Rust/native API or dependency changes.
 
 A separate hash-frozen timestamped trajectory evaluator is implemented and
 tested on analytic cases. It preserves integer nanoseconds, failures, unmatched
