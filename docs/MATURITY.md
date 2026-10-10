@@ -1,11 +1,35 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **85%, provisional**. This is a subjective
+Current assessment (2026-10-10): **86%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
-The complete hosted integration gate is now verified and delivered. PRs #112,
+A committed protocol now validates every recorded depth frame in two official
+RealSense L515 recordings: 890/890 successful frames and 264,115,152 projected
+points. Native optical projection agrees with an independent f64 formula within
+2.834e-7 m; all 18 selected native IO roundtrips retain exact typed xyz, original
+depth counts and pixel indices, and nine fixed MVP runs complete. Camera
+intrinsics, depth units, recorded stream transforms, integer bag/sensor times,
+metadata and hashes are retained; transforms are not applied twice. The larger
+recording covers 29.4 seconds, with no missing sequence counters. The observed
+process peak is 175,056 KiB; this is one local run, not a throughput ranking or
+unlimited-memory guarantee. All 647 applicable Python tests pass, with three
+expected ONNX skips. This closes a limited real-sensor ingestion/geometry/IO
+validation gap and moves the estimate from 85% to **86%**.
+
+The new hash-frozen TUM trajectory evaluator has analytic coordinate, time,
+coverage, drift and CLI regressions. It retains failed/unmatched poses, reports
+raw and first-pose-aligned ATE separately, never fits scale, and records RPE
+coverage. The actual TUM sequence is still unacquired: the official host is
+denied by the current proxy, and required domains are saved for environment
+review. Unit tests do not establish real ATE. The L515 recording has no
+independent trajectory truth or measured clock synchronization, and its embedded
+factory calibration cannot certify the original Autoware bag. Those operational
+and independent accuracy gates remain open, so **90% is not supported**. See
+[the protocol and results](REALSENSE_OPERATION_VALIDATION.md).
+
+The preceding complete hosted integration gate is verified and delivered. PRs #112,
 #113 and #114 are merged into main after all 103 main CI jobs passed on each
 tested head. The Redwood head's initially failed COPC job stopped during Rust
 toolchain setup; targeted rerun attempt 2 completes successfully, and its full

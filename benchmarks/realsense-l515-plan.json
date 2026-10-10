@@ -1,0 +1,36 @@
+{
+  "schema": "spatialrust.realsense-operation-plan.v1",
+  "publisher_source_commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+  "inputs": [
+    {
+      "name": "L515_test_s.bag",
+      "archive": "SampleL515Bag.zip",
+      "url": "https://github.com/isl-org/open3d_downloads/releases/download/20220301-data/SampleL515Bag.zip",
+      "md5": "9770eeb194c78103037dbdbec78b9c8c",
+      "sha256": "3b8c34c7f4e22a7817b3e9cc513f6d894943645f23dafbc2f5a013d4dd06a32a"
+    },
+    {
+      "name": "JackJackL515Bag.bag",
+      "archive": "JackJackL515Bag.bag",
+      "url": "https://github.com/isl-org/open3d_downloads/releases/download/20220301-data/JackJackL515Bag.bag",
+      "md5": "9f670dc92569b986b739c4179a659176",
+      "sha256": "7e75130b2375bccbc633adcab65c24273a83fc2b1f94d06183e2239071527f5e"
+    }
+  ],
+  "depth_stream": "/device_0/sensor_0/Depth_0",
+  "controls": {
+    "min_depth_m": 0.1,
+    "max_depth_m": 3.0,
+    "projection_tolerance_m": 0.000001,
+    "save_stride": 60,
+    "pipeline_stride": 120,
+    "pipeline_policy": "cpu",
+    "leaf_size_m": 0.05,
+    "plane_distance_m": 0.02,
+    "cluster_tolerance_m": 0.1,
+    "min_cluster_size": 10,
+    "max_pixels": 2073600,
+    "max_frames": 10000
+  },
+  "scope": "All recorded depth frames; actual L515 depth and publisher intrinsics/units. Selected clouds retain raw depth and pixel indices through native IO. No color alignment, motion fitting, independent trajectory truth, or measured clock synchronization is claimed. The original Autoware bag remains uncalibrated."
+}

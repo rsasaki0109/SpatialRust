@@ -1,0 +1,659 @@
+{
+  "schema": "spatialrust.realsense-operation-summary.v1",
+  "plan_sha256": "d64e2f8acaa86fe2050d5d0059faa2bf8154d8f4ac5f24b2cdaa4a3146b47c63",
+  "frozen_run_source_commit": "581bd90cb50d0e37cbddae326b04673a8817e76a",
+  "initial_geometric_plan_commit": "4ce5a7650ca350fe2e23084031c5ad8563bc6f53",
+  "explicit_cpu_plan_commit": "35af7427542f7702dfa077fbeab0cdbfa03de228",
+  "raw_receipt_sha256": "fe4e2fec23e6a7c072df43f07216af15fc94d457e3425ba4f130dd4dbc248eee",
+  "bindings": {
+    "/workspace/SpatialRust/scripts/run_realsense_reference.py": "fc63dae9c47d7875aca535c3204c318346845fe83ac86183e26627204a4baad2",
+    "/workspace/SpatialRust/scripts/realsense_reference.py": "d7f21b9002e06980e2ba9cac7ccc8a0376e2b2ad1f695b934511f252d55aa4fa",
+    "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87"
+  },
+  "versions": {
+    "spatialrust": "1.2.0",
+    "numpy": "2.5.3",
+    "rosbags": "0.11.6"
+  },
+  "publisher_descriptors": {
+    "SampleL515Bag.cpp": "a4a6503219abe1f562a9bd97cef01394a2b3014839ab147dece668feb8c78d1c",
+    "JackJackL515Bag.cpp": "f5b9adfd97a8b9d5a48ea846b3342d749c9430fb33a6ea5a014415bcaa6463a0"
+  },
+  "peak_process_rss_kib": 175056,
+  "sources": {
+    "L515_test_s.bag": {
+      "source_sha256": "38365d600d0d4f1ae9e76d435571a4d6fa20d1ccf0db8e3eac18440d27709f63",
+      "frame_count": 6,
+      "successful_frames": 6,
+      "total_projected_points": 442633,
+      "io_verified_frames": 2,
+      "pipeline_frames": 1,
+      "max_projection_error_m": 1.9678975715642366e-07,
+      "elapsed_seconds": 0.4034813119942555,
+      "clock": {
+        "declared_domains": [
+          "Hardware Clock"
+        ],
+        "measured_synchronization_available": false
+      },
+      "ground_truth_available": false,
+      "inventory_sha256": "af18abf0b6e821cc2ba427e8edbe4b0a4373352e50f4854c5c934ebfa56e9244",
+      "camera": {
+        "width": 320,
+        "height": 240,
+        "fx": 233.2109375,
+        "fy": 233.650390625,
+        "cx": 180.07421875,
+        "cy": 125.6396484375,
+        "distortion_model": "None",
+        "coefficients": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "intrinsic_matrix": [
+          233.2109375,
+          0.0,
+          180.07421875,
+          0.0,
+          233.650390625,
+          125.6396484375,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "depth_units": {
+        "bag_timestamp_ns": 1,
+        "meters_per_unit": 0.0002500000118743628,
+        "serialized_sha256": "6f5ccf38c3b1baa621d8d8a3f823e978ddfb06e3a0c14cf8951ceb38e688cbbc"
+      },
+      "recorded_transforms": {
+        "/device_0/sensor_0/Infrared_0/tf/0": {
+          "bag_timestamp_ns": 1,
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "serialized_sha256": "d460036865a64603adfb91cfc28c775449c643e32878343f57d37ee12f0e22f8",
+          "applied": false
+        },
+        "/device_0/sensor_0/Depth_0/tf/0": {
+          "bag_timestamp_ns": 1,
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "serialized_sha256": "d460036865a64603adfb91cfc28c775449c643e32878343f57d37ee12f0e22f8",
+          "applied": false
+        },
+        "/device_0/sensor_1/Color_0/tf/0": {
+          "bag_timestamp_ns": 1,
+          "translation_m": [
+            0.00022256649390328676,
+            0.013951673172414303,
+            -0.004522217437624931
+          ],
+          "quaternion_xyzw": [
+            0.017879346385598183,
+            0.0006950286915525794,
+            0.009582731872797012,
+            -0.9997940063476562
+          ],
+          "serialized_sha256": "6116778b54a5a839c6838d93b22cd12f41bd77086ff85c9cefef3a16adf52a89",
+          "applied": false
+        }
+      },
+      "first_sensor_timestamp_ns": 1929449412000,
+      "last_sensor_timestamp_ns": 1929615349000,
+      "first_bag_timestamp_ns": 434971,
+      "last_bag_timestamp_ns": 166976920,
+      "skipped_sequence_counters": 0,
+      "saved_io": [
+        {
+          "index": 0,
+          "input_sha256": "6a1419e05797fccfd0da712727e6b45764bbd98bd10f6400876920c1e3eb2b07",
+          "restored_sha256": "4bfc52a245cdd9430f5f4ef196bdb04a946284e3c80eed1522ad21727400b30f",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 5,
+          "input_sha256": "469986bd51dc4f31cda5f511329ccbcc27e158b03091546e1a0e36f2cd006b90",
+          "restored_sha256": "85819cacdb2e5c1a31fa6b36af059b5d29b19fbc21515f31158bd6a0b45cfd28",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        }
+      ],
+      "pipelines": [
+        {
+          "index": 0,
+          "output_points": 1936,
+          "plane_inliers": 876,
+          "clusters": 1,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        }
+      ]
+    },
+    "JackJackL515Bag.bag": {
+      "source_sha256": "7e75130b2375bccbc633adcab65c24273a83fc2b1f94d06183e2239071527f5e",
+      "frame_count": 884,
+      "successful_frames": 884,
+      "total_projected_points": 263672519,
+      "io_verified_frames": 16,
+      "pipeline_frames": 8,
+      "max_projection_error_m": 2.8330184664859814e-07,
+      "elapsed_seconds": 24.193339819998073,
+      "clock": {
+        "declared_domains": [
+          "Hardware Clock"
+        ],
+        "measured_synchronization_available": false
+      },
+      "ground_truth_available": false,
+      "inventory_sha256": "2bf03b643b17e34fc21d9b23f168b8a50e434f8cf98ce1dcb1475d5a06ad0eb3",
+      "camera": {
+        "width": 640,
+        "height": 480,
+        "fx": 466.421875,
+        "fy": 466.50390625,
+        "cx": 360.6484375,
+        "cy": 251.251953125,
+        "distortion_model": "None",
+        "coefficients": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "intrinsic_matrix": [
+          466.421875,
+          0.0,
+          360.6484375,
+          0.0,
+          466.50390625,
+          251.251953125,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "depth_units": {
+        "bag_timestamp_ns": 1,
+        "meters_per_unit": 0.0002500000118743628,
+        "serialized_sha256": "6f5ccf38c3b1baa621d8d8a3f823e978ddfb06e3a0c14cf8951ceb38e688cbbc"
+      },
+      "recorded_transforms": {
+        "/device_0/sensor_0/Infrared_0/tf/0": {
+          "bag_timestamp_ns": 1,
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "serialized_sha256": "d460036865a64603adfb91cfc28c775449c643e32878343f57d37ee12f0e22f8",
+          "applied": false
+        },
+        "/device_0/sensor_1/Color_0/tf/0": {
+          "bag_timestamp_ns": 1,
+          "translation_m": [
+            0.00022256649390328676,
+            0.013951673172414303,
+            -0.004522217437624931
+          ],
+          "quaternion_xyzw": [
+            0.017879346385598183,
+            0.0006950286915525794,
+            0.009582731872797012,
+            -0.9997940063476562
+          ],
+          "serialized_sha256": "6116778b54a5a839c6838d93b22cd12f41bd77086ff85c9cefef3a16adf52a89",
+          "applied": false
+        },
+        "/device_0/sensor_0/Depth_0/tf/0": {
+          "bag_timestamp_ns": 1,
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "quaternion_xyzw": [
+            0.0,
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "serialized_sha256": "d460036865a64603adfb91cfc28c775449c643e32878343f57d37ee12f0e22f8",
+          "applied": false
+        }
+      },
+      "first_sensor_timestamp_ns": 707538995000,
+      "last_sensor_timestamp_ns": 736845866000,
+      "first_bag_timestamp_ns": 16261171,
+      "last_bag_timestamp_ns": 29425211859,
+      "skipped_sequence_counters": 0,
+      "saved_io": [
+        {
+          "index": 0,
+          "input_sha256": "560d10a5656d31a36571171fa2831550c2ec2c1d258f8f76c4eefc796d135063",
+          "restored_sha256": "dba8123aa14edfdbc8ae09bd3a88250c6698ce55977f702663cda80d68b84317",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 60,
+          "input_sha256": "42ce59cc6fcd8b5fa2160b22e16e16ec695de589c9407cbea73a28005b38df49",
+          "restored_sha256": "90640d46dd364292b0c4f4c6ed8ccddc6c8bb98297d3844af40cc11088b3e725",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 120,
+          "input_sha256": "7c2123d0da2dda9f30f80d145cabd1c2899595cd370a98a6899d67b6e4bcb2b6",
+          "restored_sha256": "25280bcdfd7c08b77545dae3ac0a690e8624852bd3ec268ad2bbc2d90fa96b98",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 180,
+          "input_sha256": "3c7f60caef500a94066a8a901035ba19801e04fb677181342fea5ca32a4643e3",
+          "restored_sha256": "2e1d8a0260d3cd7e97a35c9578664d589ac41b7e8380cbac4148dad79810c19a",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 240,
+          "input_sha256": "c336dc09b4077df8ae862433117676935aa12bb6dcd2568e2c480b5f6b50e01d",
+          "restored_sha256": "ebc134b19e4839dc5053e0453a0861fd793bcbd5920015f11c1c2f48a6b259b6",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 300,
+          "input_sha256": "adcdab2a6481884030b47392b3c6fb1675a5f4538f14d1e5e2a50f295b4baaae",
+          "restored_sha256": "df8e309338c69907392d1e3c6954c8e546521d32c96341237af56d2e3d9292e2",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 360,
+          "input_sha256": "316e9979e8a3aa86ba0f1fb47769d6c0b4d69d499625bba22b30ad3c1cd80a61",
+          "restored_sha256": "7f31f0ea18b7fbe27f9ccd3bc6241b837c295d4bf1f826cb729cd45a3241a805",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 420,
+          "input_sha256": "6c179d6a56d367540a5b9e92041a61ed51cc65a5cf8d4b52f93f0e94fbd81fec",
+          "restored_sha256": "7fc8c67fcd3e514a7c174158463a652a74e25a517c7c6bf3c50f7137b148268f",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 480,
+          "input_sha256": "a7a07ec712da44fd43549a578cba7e1c28736e1a1ee142d215bb1a917499d49d",
+          "restored_sha256": "1164cefd1bd5fa818394c9d666fccc2ea9b5209764fe0515cfa0e420b574beac",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 540,
+          "input_sha256": "ae2ac202a992a1917e76a6c9f1038f16bac687e1fb7b79ff5ad61436dde8f307",
+          "restored_sha256": "93050ebe25eb01a20def56210b56295b8ab60a140ddece8cf880842568aafaa9",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 600,
+          "input_sha256": "dafb6ce415042547b64efc3ae91ed5c0a198b7107ec8da2d631b8f8981d1042c",
+          "restored_sha256": "aae26479f3faf7a6ad45bde54c2936d589fa965ca14e8323a27bd1c0a1185882",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 660,
+          "input_sha256": "91576dc91d9a5775392dfea3eb163fdf57c9906a0f68f09bf66e71628859cb73",
+          "restored_sha256": "24a0be247b16cf9251d05bfc0c53aa47e4c9f4aaff76ee2f45314b813ddd9b76",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 720,
+          "input_sha256": "e6716a68203f4319ff77f0780674ddf2a668f3d358e433907b0ad766831face2",
+          "restored_sha256": "3675adfd452eac89302e6bd74781ad236ef50f4d00c15800b2922ae31574f3f7",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 780,
+          "input_sha256": "8803c186d30998ea04f399aa43a2e5a5ac8ac7d9baac4935d2f5a7d8908fcf10",
+          "restored_sha256": "a648e57bf88a9823cda5e13dd1910502bd5d2763407b739f8826f6d602b61048",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 840,
+          "input_sha256": "a7fbab12a0877d1fc8c3b4946f62301cc46e9e91e6e78129ef0f39282b1abb3d",
+          "restored_sha256": "87a0b5869d69d2a1ab84c287d8fc98d0a48d519603bd89164dad43177635e3d5",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        },
+        {
+          "index": 883,
+          "input_sha256": "2cbac588400894c16b34e34ded243d01a840cc807a045f34f5b6ce6ed0eab963",
+          "restored_sha256": "be72568ae1df7a33d2a3f4ecd50cbd4a20db599a8baf140a499674d706da9035",
+          "fields": [
+            "x",
+            "y",
+            "z",
+            "raw_depth",
+            "pixel_u",
+            "pixel_v"
+          ],
+          "exact_typed_roundtrip": true
+        }
+      ],
+      "pipelines": [
+        {
+          "index": 0,
+          "output_points": 208,
+          "plane_inliers": 1014,
+          "clusters": 3,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        },
+        {
+          "index": 120,
+          "output_points": 427,
+          "plane_inliers": 919,
+          "clusters": 2,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        },
+        {
+          "index": 240,
+          "output_points": 518,
+          "plane_inliers": 1402,
+          "clusters": 5,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        },
+        {
+          "index": 360,
+          "output_points": 60,
+          "plane_inliers": 1127,
+          "clusters": 1,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        },
+        {
+          "index": 480,
+          "output_points": 57,
+          "plane_inliers": 636,
+          "clusters": 1,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        },
+        {
+          "index": 600,
+          "output_points": 51,
+          "plane_inliers": 979,
+          "clusters": 1,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        },
+        {
+          "index": 720,
+          "output_points": 396,
+          "plane_inliers": 1210,
+          "clusters": 3,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        },
+        {
+          "index": 840,
+          "output_points": 475,
+          "plane_inliers": 879,
+          "clusters": 3,
+          "resolved_policies": [
+            "CpuParallel",
+            "CpuSingle",
+            "CpuSingle",
+            "CpuSingle"
+          ],
+          "host_to_device_bytes": 0,
+          "device_to_device_bytes": 0,
+          "device_to_host_bytes": 0
+        }
+      ]
+    }
+  },
+  "python_junit": {
+    "tests": 650,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 3
+  },
+  "preceding_runs": [
+    {
+      "directory": "run-v1",
+      "receipt_sha256": "52a195833693011b174809cb731c08d4368a1aded11140eb629740e5fd993e1a",
+      "successful_frames": 890,
+      "scope": "Initial auto-backend run; coordinates, IO and pipeline results exactly reproduce in final CPU run"
+    },
+    {
+      "directory": "run-v2",
+      "receipt_sha256": "8ef3027bbdf5c1ea2602a978c3661bc0f36ef3985ee0b8c1794754b439967f65",
+      "successful_frames": 881,
+      "failed_frames": 9,
+      "reason": "Audit incorrectly expected Cpu instead of valid CpuSingle/CpuParallel; all outcomes retained, assertion corrected before run-v3"
+    }
+  ],
+  "trajectory_evaluation_scope": "Analytic unit/CLI regressions only; no acquired TUM sequence or real ATE claim",
+  "maturity_percent": 86,
+  "maturity_kind": "provisional engineering estimate; not measured feature parity",
+  "remaining": [
+    "Original Autoware source clock and mounting calibration",
+    "Independent real trajectory accuracy",
+    "Longer and broader operating conditions"
+  ]
+}
