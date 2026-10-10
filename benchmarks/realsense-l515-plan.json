@@ -24,6 +24,7 @@
     "projection_tolerance_m": 0.000001,
     "save_stride": 60,
     "pipeline_stride": 120,
+    "pipeline_policy": "cpu",
     "leaf_size_m": 0.05,
     "plane_distance_m": 0.02,
     "cluster_tolerance_m": 0.1,

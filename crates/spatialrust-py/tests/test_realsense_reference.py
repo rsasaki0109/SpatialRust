@@ -101,11 +101,12 @@ def test_plan_rejects_unbounded_controls_and_path_traversal():
     path=Path(__file__).resolve().parents[3]/'benchmarks/realsense-l515-plan.json'
     plan=json.loads(path.read_bytes())
     validate_plan(plan)
-    for kind in ('stride','depth','path'):
+    for kind in ('stride','depth','path','backend'):
         modified=copy.deepcopy(plan)
         if kind=='stride':modified['controls']['save_stride']=False
         if kind=='depth':modified['controls']['max_depth_m']=-1
         if kind=='path':modified['inputs'][0]['name']='../outside.bag'
+        if kind=='backend':modified['controls']['pipeline_policy']='auto'
         with pytest.raises(ValueError):validate_plan(modified)
 
 

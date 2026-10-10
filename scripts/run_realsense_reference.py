@@ -28,6 +28,8 @@ def validate_plan(plan):
     if plan.get('schema') != 'spatialrust.realsense-operation-plan.v1':
         raise ValueError('unsupported operation plan')
     c = plan['controls']
+    if c.get('pipeline_policy') != 'cpu':
+        raise ValueError('this operation plan requires explicit CPU execution')
     if not 0 < c['min_depth_m'] < c['max_depth_m'] or any(not np.isfinite(c[k]) or c[k] <= 0 for k in
             ('projection_tolerance_m', 'leaf_size_m', 'plane_distance_m', 'cluster_tolerance_m')):
         raise ValueError('invalid geometric controls')
@@ -113,9 +115,14 @@ def run_source(path, plan, output_dir):
                 if index % controls['pipeline_stride'] == 0:
                     pipeline = sr.run_pipeline(sr.PointCloud.from_xyz(xyz), leaf_size=controls['leaf_size_m'],
                         plane_distance=controls['plane_distance_m'], cluster_tolerance=controls['cluster_tolerance_m'],
-                        min_cluster_size=controls['min_cluster_size'])
+                        min_cluster_size=controls['min_cluster_size'], policy=controls['pipeline_policy'])
+                    if pipeline.resolved_policies != ['Cpu']*4 or any((pipeline.host_to_device_bytes,
+                            pipeline.device_to_device_bytes,pipeline.device_to_host_bytes)):
+                        raise ValueError('pipeline did not resolve to the declared CPU/no-transfer execution')
                     row['pipeline'] = dict(output_points=len(pipeline.output), plane_inliers=pipeline.plane_inliers,
-                                           clusters=pipeline.cluster_count)
+                        clusters=pipeline.cluster_count,resolved_policies=pipeline.resolved_policies,
+                        host_to_device_bytes=pipeline.host_to_device_bytes,device_to_device_bytes=pipeline.device_to_device_bytes,
+                        device_to_host_bytes=pipeline.device_to_host_bytes)
                 row['status'] = 'success'
             except (ValueError, RuntimeError, AssertionError) as error:
                 row['error'] = str(error)
