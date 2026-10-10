@@ -1,0 +1,493 @@
+{
+  "schema": "spatialrust.redwood-summary.v1",
+  "plan_commit": "d7e4c78",
+  "runner_commit": "b2b592a",
+  "dataset": "Open3D RedwoodIndoorLivingRoom1 / augmented ICL-NUIM, noisy synthetic depth",
+  "scope": "One synthetic scene, four frame pairs, three repeated seeds per method. It is separate from the previous GeoTransformer/3DMatch data but does not certify real-sensor calibration, cross-scene robustness, speed superiority, or general library parity. No color, clean depth, ONI or reference surface is used.",
+  "plan_sha256": "40e8cce5d52f516cffcbf47aa49d1fd77a9b225d31e4478e952e985495fc0584",
+  "trajectory_sha256": "81148ea03d897a30034a634c08b55264dabff8185f2fc98880fc96b4aa227a51",
+  "registrations_sha256": "7962eb3daf0bca234089d2b0ac380ec734dded99704a232eeb2d5e334dcb916b",
+  "accuracy_sha256": "1c359d25ff8689fbdd5ba7b921760d63d8b3dfcced30c5bb5c32a97f7d3192a3",
+  "versions": {
+    "spatialrust": "1.2.0",
+    "open3d": "0.19.0",
+    "numpy": "2.5.3",
+    "python": "3.12.14"
+  },
+  "totals": {
+    "spatialrust": {
+      "denominator": 12,
+      "generated": 12,
+      "accurate": 12
+    },
+    "open3d": {
+      "denominator": 12,
+      "generated": 12,
+      "accurate": 12
+    }
+  },
+  "summary": {
+    "spatialrust": {
+      "translation_error_m": [
+        0.01299527004252465,
+        0.0470193051956458
+      ],
+      "rotation_error_degrees": [
+        0.11052839046615569,
+        1.1722852227965455
+      ]
+    },
+    "open3d": {
+      "translation_error_m": [
+        0.014619233332353694,
+        0.04279058715461321
+      ],
+      "rotation_error_degrees": [
+        0.11020595071395146,
+        0.9280841912242387
+      ]
+    }
+  },
+  "preparation": {
+    "schema": "spatialrust.redwood-preparation.v1",
+    "archive_sha256": "e5f0497abdd77bf8ca16d3216ef3642f1041e743a31519a071562597fcb65acd",
+    "camera": {
+      "width": 640,
+      "height": 480,
+      "fx": 525.0,
+      "fy": 525.0,
+      "cx": 319.5,
+      "cy": 239.5,
+      "depth_scale": 1000.0,
+      "depth_trunc_m": 3.0
+    },
+    "frames": {
+      "0": {
+        "member": "00000.png",
+        "png_sha256": "3eff7854dd5f056fe6f67ce68999a632fbc1fe6f3555cc00f83528312d6cb186",
+        "pcd_sha256": "a8d50929a54e1cbbb86e271c753be717a04398f027c00797446756b0c5345399",
+        "points": 267129
+      },
+      "30": {
+        "member": "00030.png",
+        "png_sha256": "69783cea4b89d7a2e55d2cfa99e4641105f7e847c3d2d5dc701ab69f91c3c1e1",
+        "pcd_sha256": "c1687e16fa6ad21e9663adfbde6fc3d76328aa8ff4f6438dcf2039e2ad7f9c1d",
+        "points": 272612
+      },
+      "900": {
+        "member": "00900.png",
+        "png_sha256": "797a6bc58f917b996e62d00d2b858e5740350167f813a0847d684b9962ae5f3a",
+        "pcd_sha256": "f17d770168554e02baa17352a9dcb1bbac0430d8c4fc867c9e03a2265ba6e739",
+        "points": 272568
+      },
+      "930": {
+        "member": "00930.png",
+        "png_sha256": "69921f0aa9648542adbc6c6bb781d7e4bafca6b8156e2cfe2774d20b2bab6431",
+        "pcd_sha256": "f2e7e42bfb5fdd8c958b3562d5bb44176822589062603321552ef82bfd3ccdd0",
+        "points": 272577
+      },
+      "1800": {
+        "member": "01800.png",
+        "png_sha256": "003dd528571edd8646ea9dd1dc0690f647c79c219bcd472ce1f8927eee117a65",
+        "pcd_sha256": "0ffe52c99d9f53548cbfafc8c348f94f3f102e8e165ba1b6d0428ab11a1f0974",
+        "points": 231684
+      },
+      "1830": {
+        "member": "01830.png",
+        "png_sha256": "0ff38bd4e2a4135ca497f0464a25a4ebfec5423f608e9f15bac3581bf2caf598",
+        "pcd_sha256": "b191ba1dcf130b05938b6272c3bf5e0234391d11a732505558c0bcef500a3ae3",
+        "points": 152676
+      },
+      "2700": {
+        "member": "02700.png",
+        "png_sha256": "fc9dd1583fb711566059bd01c01cf485528afbe3520f5bf9866271786b09b25d",
+        "pcd_sha256": "f9d264b090aa36134f6f2f7c9fbc419e43d6f4139ded39b2aaba196a29c5568d",
+        "points": 213770
+      },
+      "2730": {
+        "member": "02730.png",
+        "png_sha256": "b38a39e8da3169eabf0cda211932a7607be08e0c68bac78af9393d132280dd79",
+        "pcd_sha256": "c368f1e01f4b5329020de54983b5c8f3c86e052448ec2d39280ecc580207ed1d",
+        "points": 215516
+      }
+    }
+  },
+  "bindings": {
+    "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+    "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-x86_64-linux-gnu.so": "e99d5acb1ad93e609e83864ec69553a08b2a486e5d639241cc51e3c795e0f0d7",
+    "/workspace/SpatialRust/scripts/run_redwood_reference.py": "119a62dfba7b60ac9331f6146e4dc24136268ad0a44e65c70003bd1f4c775efc",
+    "/workspace/SpatialRust/scripts/redwood_frame_reference.py": "53fe29d5871cf334058a7963ce5848e0e9a7e1857ca0a3eeefaa43a971a1bb4b",
+    "/workspace/SpatialRust/scripts/compare_public_global.py": "491eb829670cc355e7eababdd7e2d3e003a4668c2bdf295eba66a76e875d5d6b",
+    "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+    "/workspace/SpatialRust/crates/spatialrust-py/examples/align_global.py": "996c7f62860b427d6447c5e8b7bba7ec34d28f363f0082c457f9a8acb7acd60f",
+    "/workspace/SpatialRust/crates/spatialrust-py/examples/align_multiscale.py": "a36a399b7d3628fe25b5faf35374143f42cf5b6e8f77f5e3c3152f9bc467b06b",
+    "/workspace/SpatialRust/crates/spatialrust-py/examples/align_point_clouds.py": "74aaf8518b64efa34aafd78b7f236751aae94368df67a49fb294398c61dc0d46"
+  },
+  "rows": [
+    {
+      "pair": [
+        0,
+        30
+      ],
+      "seed": 7,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.041528855318194856,
+      "rotation_error_degrees": 0.9255275987707084
+    },
+    {
+      "pair": [
+        0,
+        30
+      ],
+      "seed": 7,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.041489502875582486,
+      "rotation_error_degrees": 0.9280841912242387
+    },
+    {
+      "pair": [
+        0,
+        30
+      ],
+      "seed": 8,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.041536059030928,
+      "rotation_error_degrees": 0.9290057207786299
+    },
+    {
+      "pair": [
+        0,
+        30
+      ],
+      "seed": 8,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.04148072060621577,
+      "rotation_error_degrees": 0.9277751495201645
+    },
+    {
+      "pair": [
+        0,
+        30
+      ],
+      "seed": 9,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.041462633014723214,
+      "rotation_error_degrees": 0.9268977344741262
+    },
+    {
+      "pair": [
+        0,
+        30
+      ],
+      "seed": 9,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.04148072060621728,
+      "rotation_error_degrees": 0.9277751495201964
+    },
+    {
+      "pair": [
+        900,
+        930
+      ],
+      "seed": 7,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.01299527004252465,
+      "rotation_error_degrees": 0.11323042208935749
+    },
+    {
+      "pair": [
+        900,
+        930
+      ],
+      "seed": 7,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.014626020162559613,
+      "rotation_error_degrees": 0.11020595071395146
+    },
+    {
+      "pair": [
+        900,
+        930
+      ],
+      "seed": 8,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.014454356016876993,
+      "rotation_error_degrees": 0.1105695526722746
+    },
+    {
+      "pair": [
+        900,
+        930
+      ],
+      "seed": 8,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.014626020162560578,
+      "rotation_error_degrees": 0.11020595071400194
+    },
+    {
+      "pair": [
+        900,
+        930
+      ],
+      "seed": 9,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.013873751418928756,
+      "rotation_error_degrees": 0.11052839046615569
+    },
+    {
+      "pair": [
+        900,
+        930
+      ],
+      "seed": 9,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.014619233332353694,
+      "rotation_error_degrees": 0.11021908448258859
+    },
+    {
+      "pair": [
+        1800,
+        1830
+      ],
+      "seed": 7,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.027806435514385705,
+      "rotation_error_degrees": 0.9000656820251536
+    },
+    {
+      "pair": [
+        1800,
+        1830
+      ],
+      "seed": 7,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.017675045537790993,
+      "rotation_error_degrees": 0.67365599907599
+    },
+    {
+      "pair": [
+        1800,
+        1830
+      ],
+      "seed": 8,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.022079702887876664,
+      "rotation_error_degrees": 0.7630741624153659
+    },
+    {
+      "pair": [
+        1800,
+        1830
+      ],
+      "seed": 8,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.026338509854208797,
+      "rotation_error_degrees": 0.8645167594755313
+    },
+    {
+      "pair": [
+        1800,
+        1830
+      ],
+      "seed": 9,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.01872600246088572,
+      "rotation_error_degrees": 0.694318707956486
+    },
+    {
+      "pair": [
+        1800,
+        1830
+      ],
+      "seed": 9,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.024916883786010535,
+      "rotation_error_degrees": 0.8285240692320865
+    },
+    {
+      "pair": [
+        2700,
+        2730
+      ],
+      "seed": 7,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.0470193051956458,
+      "rotation_error_degrees": 1.1722852227965455
+    },
+    {
+      "pair": [
+        2700,
+        2730
+      ],
+      "seed": 7,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.04279058715461321,
+      "rotation_error_degrees": 0.5156258164090534
+    },
+    {
+      "pair": [
+        2700,
+        2730
+      ],
+      "seed": 8,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.03816821491815119,
+      "rotation_error_degrees": 0.821026465153249
+    },
+    {
+      "pair": [
+        2700,
+        2730
+      ],
+      "seed": 8,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.042015770274023395,
+      "rotation_error_degrees": 0.5116254530740895
+    },
+    {
+      "pair": [
+        2700,
+        2730
+      ],
+      "seed": 9,
+      "method": "spatialrust",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.03474584110361914,
+      "rotation_error_degrees": 0.6778171355896578
+    },
+    {
+      "pair": [
+        2700,
+        2730
+      ],
+      "seed": 9,
+      "method": "open3d",
+      "status": "success",
+      "accurate": true,
+      "translation_error_m": 0.042330070990268975,
+      "rotation_error_degrees": 0.5137302080012665
+    }
+  ],
+  "audit": {
+    "schema": "spatialrust.redwood-independent-audit.v1",
+    "audit_source_sha256": "0988e27240bc2e29e216ee1850619f49c0407e5ef7227db046845384606db5c7",
+    "registrations_sha256": "7962eb3daf0bca234089d2b0ac380ec734dded99704a232eeb2d5e334dcb916b",
+    "accuracy_sha256": "1c359d25ff8689fbdd5ba7b921760d63d8b3dfcced30c5bb5c32a97f7d3192a3",
+    "plan_sha256": "40e8cce5d52f516cffcbf47aa49d1fd77a9b225d31e4478e952e985495fc0584",
+    "trajectory_sha256": "81148ea03d897a30034a634c08b55264dabff8185f2fc98880fc96b4aa227a51",
+    "open3d": "0.19.0",
+    "log_frames": 2870,
+    "frames": [
+      {
+        "frame": 0,
+        "points": 267129,
+        "max_abs_error_m": 1.1920928955078125e-07
+      },
+      {
+        "frame": 30,
+        "points": 272612,
+        "max_abs_error_m": 1.1920928955078125e-07
+      },
+      {
+        "frame": 900,
+        "points": 272568,
+        "max_abs_error_m": 8.832840703298928e-08
+      },
+      {
+        "frame": 930,
+        "points": 272577,
+        "max_abs_error_m": 1.1830102830678868e-07
+      },
+      {
+        "frame": 1800,
+        "points": 231684,
+        "max_abs_error_m": 1.2170700802727197e-07
+      },
+      {
+        "frame": 1830,
+        "points": 152676,
+        "max_abs_error_m": 1.2170700802727197e-07
+      },
+      {
+        "frame": 2700,
+        "points": 213770,
+        "max_abs_error_m": 1.2170700802727197e-07
+      },
+      {
+        "frame": 2730,
+        "points": 215516,
+        "max_abs_error_m": 1.2170700802727197e-07
+      }
+    ],
+    "evaluated_poses": 24,
+    "rotation_audit_projection": "nearest_SO3_svd_for_trace_acos_only",
+    "max_rotation_audit_correction_frobenius": 1.0594128672620723e-07,
+    "max_rotation_audit_difference_degrees": 2.7290527393475372e-08,
+    "totals": {
+      "spatialrust": {
+        "denominator": 12,
+        "generated": 12,
+        "accurate": 12
+      },
+      "open3d": {
+        "denominator": 12,
+        "generated": 12,
+        "accurate": 12
+      }
+    }
+  },
+  "official_source_commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+  "official_sources": {
+    "RedwoodIndoorLivingRoom1.cpp": "97e309d624ec7af445737a0998cf789f69b7f5b444fa69445bbca8c29c359e21",
+    "FileLOG.cpp": "580cecad7b18cda87fa7fe6e2c91cddcb3b0c9e16159cc07605201ce4a24482d",
+    "PinholeCameraIntrinsic.cpp": "978a313bbd57a2711652b110981c7c1e866b545e45045b0d499c515301ce26c2",
+    "dataset.cpp": "7fa57bc005f163b1411a3044888d1e24de22da96af731d972efa782b9c83ac83",
+    "RGBDImage.h": "1a35f4370aaae08d693a2efd5913266f85dc71879c5e09c538429a2446760d57",
+    "Image.h": "6a9f19f66a891e1b8278554e070bd67bc7de6e50e1e421a0082ddd4c54ec48d3"
+  }
+}
