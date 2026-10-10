@@ -278,3 +278,15 @@ verification still required. The assessment stays at 82% until that repair is
 confirmed and broader dataset/operational gates are verified. The next synthetic
 Redwood/ICL-NUIM dataset is externally blocked by its denied official domain;
 the additive network draft is saved but not applied or published.
+
+Follow-up on main `a2fc890` (2026-10-10): installed default wheels pass actual
+runtime validation on Linux Python 3.8 and 3.14 and macOS Python 3.12. Windows
+runtime still fails after the fingerprint repair; public annotations do not yet
+identify the remaining failing test, and the job-log host is proxy-denied even
+after an approved retry. The wheel workflow has eight observed jobs (six success,
+one Windows failure, one skipped publication), including the conditional publish
+job. CI has 103 jobs and includes a failed Web/WASM browser gate; it is not green.
+JUnit failures now become check annotations so the next run can expose test names
+and tracebacks without accessing the denied log host. Focused diagnostic and
+fingerprint tests pass locally (7 tests). These diagnostics add observability;
+they do not establish that Windows is repaired. Maturity remains 82%.

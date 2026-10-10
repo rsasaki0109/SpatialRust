@@ -65,6 +65,9 @@ jobs:
           "$wheel_python" -m pip install native-dist/*.whl numpy pytest pyarrow
           "$wheel_python" -m pytest crates/spatialrust-py/tests -o addopts='' -q --junitxml=native-tests.xml
           "$wheel_python" crates/spatialrust-py/tools/verify_installed_wheel.py native-dist/*.whl --junit native-tests.xml --receipt native-validation.json
+      - name: Report native test failures in check annotations
+        if: always()
+        run: python scripts/report_junit_failures.py native-tests.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
