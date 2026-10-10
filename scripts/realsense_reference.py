@@ -88,7 +88,9 @@ def check_attributes(cloud, expected):
     import pyarrow as pa
     # C Data export checks the native schema and typed attribute values, not only xyz.
     actual = pa.array(cloud)
-    if set(actual.type.names) != set(expected.dtype.names):
+    # StructType.names was added after PyArrow 17 (the Python 3.8 endpoint).
+    # Iterating Fields works across all supported Arrow versions.
+    if {field.name for field in actual.type} != set(expected.dtype.names):
         raise ValueError('cloud attribute schema changed')
     for name in expected.dtype.names:
         values = actual.field(name).to_numpy()

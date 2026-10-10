@@ -6,6 +6,19 @@ depth ingestion and geometry/IO execution on actual sensor data. It does not
 measure motion accuracy, clock synchronization, color alignment or the original
 Autoware bag's mounting calibration.
 
+## Supported Python endpoint correction
+
+Hosted validation exposed an attribute-audit compatibility defect on Python 3.8:
+PyArrow 17 does not provide `StructType.names`. The audit now iterates Arrow
+Fields to check the same complete schema and typed values. The corrected helper
+passes all 647 applicable tests on both Python 3.8.20 / NumPy 1.24.4 / PyArrow
+17.0.0 and Python 3.12.14 / NumPy 2.5.3 / PyArrow 26.0.0; each has three expected
+ONNX skips. The original frozen run-v3 helper hash is historical evidence and is
+not rewritten. Receipts are retained under
+`/workspace/SpatialRust/target/real-sensor-reference/python38-arrow17-junit.xml`
+and `python-arrow-compat-full-junit.xml`. Remote verification of the corrected
+PR head is required before its merge.
+
 ## Fixed source and protocol
 
 The protocol is `benchmarks/realsense-l515-plan.json`. Geometric and frame
