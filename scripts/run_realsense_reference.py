@@ -64,6 +64,16 @@ def verified_source(data_dir, source):
     return bag_path
 
 
+def cpu_execution_receipt(pipeline):
+    receipt = dict(resolved_policies=pipeline.resolved_policies,
+        host_to_device_bytes=pipeline.host_to_device_bytes,device_to_device_bytes=pipeline.device_to_device_bytes,
+        device_to_host_bytes=pipeline.device_to_host_bytes)
+    if len(receipt['resolved_policies']) != 4 or any(p not in ('CpuSingle','CpuParallel') for p in receipt['resolved_policies']) or any(
+            receipt[k] for k in ('host_to_device_bytes','device_to_device_bytes','device_to_host_bytes')):
+        raise ValueError(f'pipeline did not resolve to declared CPU/no-transfer execution: {receipt}')
+    return receipt
+
+
 def run_source(path, plan, output_dir):
     from rosbags.highlevel import AnyReader
     controls = plan['controls']
@@ -116,13 +126,8 @@ def run_source(path, plan, output_dir):
                     pipeline = sr.run_pipeline(sr.PointCloud.from_xyz(xyz), leaf_size=controls['leaf_size_m'],
                         plane_distance=controls['plane_distance_m'], cluster_tolerance=controls['cluster_tolerance_m'],
                         min_cluster_size=controls['min_cluster_size'], policy=controls['pipeline_policy'])
-                    if pipeline.resolved_policies != ['Cpu']*4 or any((pipeline.host_to_device_bytes,
-                            pipeline.device_to_device_bytes,pipeline.device_to_host_bytes)):
-                        raise ValueError('pipeline did not resolve to the declared CPU/no-transfer execution')
                     row['pipeline'] = dict(output_points=len(pipeline.output), plane_inliers=pipeline.plane_inliers,
-                        clusters=pipeline.cluster_count,resolved_policies=pipeline.resolved_policies,
-                        host_to_device_bytes=pipeline.host_to_device_bytes,device_to_device_bytes=pipeline.device_to_device_bytes,
-                        device_to_host_bytes=pipeline.device_to_host_bytes)
+                        clusters=pipeline.cluster_count,**cpu_execution_receipt(pipeline))
                 row['status'] = 'success'
             except (ValueError, RuntimeError, AssertionError) as error:
                 row['error'] = str(error)

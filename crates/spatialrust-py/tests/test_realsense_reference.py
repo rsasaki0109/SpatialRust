@@ -14,7 +14,7 @@ import spatialrust as sr
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]/'scripts'))
 from realsense_reference import (camera_parameters, check_attributes, decode_depth, inventory,
                                 reference_geometry, save_attribute_input, timestamp_ns)
-from run_realsense_reference import validate_plan, verified_source
+from run_realsense_reference import cpu_execution_receipt,validate_plan, verified_source
 
 
 def camera_message():
@@ -108,6 +108,25 @@ def test_plan_rejects_unbounded_controls_and_path_traversal():
         if kind=='path':modified['inputs'][0]['name']='../outside.bag'
         if kind=='backend':modified['controls']['pipeline_policy']='auto'
         with pytest.raises(ValueError):validate_plan(modified)
+
+
+def test_cpu_execution_accepts_both_documented_cpu_policies():
+    pipeline=NS(resolved_policies=['CpuParallel','CpuSingle','CpuSingle','CpuSingle'],
+                host_to_device_bytes=0,device_to_device_bytes=0,device_to_host_bytes=0)
+    assert cpu_execution_receipt(pipeline)['resolved_policies']==pipeline.resolved_policies
+
+
+@pytest.mark.parametrize('kind',['gpu','auto','incomplete','h2d','d2d','d2h'])
+def test_cpu_execution_rejects_device_work_or_unresolved_backend(kind):
+    pipeline=NS(resolved_policies=['CpuSingle']*4,
+                host_to_device_bytes=0,device_to_device_bytes=0,device_to_host_bytes=0)
+    if kind=='gpu':pipeline.resolved_policies[0]='Gpu'
+    if kind=='auto':pipeline.resolved_policies[0]='Auto'
+    if kind=='incomplete':pipeline.resolved_policies.pop()
+    if kind=='h2d':pipeline.host_to_device_bytes=1
+    if kind=='d2d':pipeline.device_to_device_bytes=1
+    if kind=='d2h':pipeline.device_to_host_bytes=1
+    with pytest.raises(ValueError):cpu_execution_receipt(pipeline)
 
 
 def fake_inventory(monkeypatch,tmp_path,mode='valid'):
