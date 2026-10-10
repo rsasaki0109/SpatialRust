@@ -12,7 +12,7 @@ recorded/unapplied transforms and all per-frame outcomes are retained.
 See `/workspace/SpatialRust/docs/REALSENSE_OPERATION_VALIDATION.md` and the
 committed compact receipt. Raw inputs and runs are kept below
 `/workspace/SpatialRust/target/real-sensor-reference`, never staged for Git.
-The full default-wheel suite passes 646 tests with exactly three ONNX skips;
+The full default-wheel suite passes 647 tests with exactly three ONNX skips;
 12 CI helper tests pass. All four stage backends are CPU with zero transfers.
 Intermediate run-v2's nine incorrect backend-name assertion failures remain
 recorded; the corrected final run exactly reproduces initial geometry, IO and

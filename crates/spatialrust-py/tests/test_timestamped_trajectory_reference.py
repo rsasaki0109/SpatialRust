@@ -18,7 +18,7 @@ def test_decimal_epoch_and_one_nanosecond_are_exact():
 
 
 @pytest.mark.parametrize('value',['nan','inf','-1','0.0000000001','1607987782.12345678900000000000001',
-                                '9223372036.854775808','x',True,1.0])
+                                '9223372036.854775808','x',True,1.0,'1e-10000000000'])
 def test_inexact_nonfinite_or_out_of_range_timestamps_rejected(value):
     with pytest.raises(ValueError):decimal_timestamp_ns(value)
 

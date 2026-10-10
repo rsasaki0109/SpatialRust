@@ -152,9 +152,9 @@ persistence does not apply/publish the settings or verify the connection.
 
 ## Validation and maturity
 
-The complete installed default-wheel Python suite passes **646 tests**, with
-**three expected ONNX skips**, zero failures and zero errors (649 planned).
-The 63 new tests cover exact epochs, endian/padded rows, unsupported calibration,
+The complete installed default-wheel Python suite passes **647 tests**, with
+**three expected ONNX skips**, zero failures and zero errors (650 planned).
+The 64 new tests cover exact epochs, endian/padded rows, unsupported calibration,
 late/missing source evidence, typed native IO, bounded archives, noncommuting
 pose gauge, retained tracking failures, missed reference coverage, scale drift,
 frozen CLI hashes and native CPU/device transfer classification. The 12

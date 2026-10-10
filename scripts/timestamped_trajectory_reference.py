@@ -14,8 +14,8 @@ from evaluate_pose_reference import rigid
 
 
 def decimal_timestamp_ns(token):
-    if not isinstance(token,str) or not 0 < len(token) <= 64:
-        raise ValueError('timestamp requires a bounded decimal string')
+    if not isinstance(token,str) or not 0 < len(token) <= 64 or not re.fullmatch(r'[0-9]+(?:\.[0-9]+)?',token):
+        raise ValueError('timestamp requires a bounded canonical decimal string')
     try:
         with localcontext() as context:
             context.prec = 90

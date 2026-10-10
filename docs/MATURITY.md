@@ -14,7 +14,7 @@ intrinsics, depth units, recorded stream transforms, integer bag/sensor times,
 metadata and hashes are retained; transforms are not applied twice. The larger
 recording covers 29.4 seconds, with no missing sequence counters. The observed
 process peak is 175,056 KiB; this is one local run, not a throughput ranking or
-unlimited-memory guarantee. All 646 applicable Python tests pass, with three
+unlimited-memory guarantee. All 647 applicable Python tests pass, with three
 expected ONNX skips. This closes a limited real-sensor ingestion/geometry/IO
 validation gap and moves the estimate from 85% to **86%**.
 
