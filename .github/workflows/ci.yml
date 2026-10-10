@@ -284,7 +284,7 @@ jobs:
         run: |
           python -m venv .venv
           . .venv/bin/activate
-          pip install maturin pytest numpy mypy "anywidget>=0.9,<0.10" nbclient nbformat ipykernel hatchling pyarrow
+          pip install maturin pytest numpy mypy "anywidget>=0.9,<0.10" nbclient nbformat ipykernel hatchling pyarrow Pillow
           cargo clippy --manifest-path crates/spatialrust-py/Cargo.toml -- -D warnings
           maturin develop --release --manifest-path crates/spatialrust-py/Cargo.toml
           pip install --no-deps -e python/spatialrust-jupyter
@@ -324,7 +324,7 @@ jobs:
         run: |
           python -m venv .venv
           . .venv/bin/activate
-          pip install "maturin[patchelf]" pytest numpy pyarrow onnxruntime==1.24.2
+          pip install "maturin[patchelf]" pytest numpy pyarrow Pillow onnxruntime==1.24.2
           python crates/spatialrust-py/tools/prepare_onnxruntime.py target/onnxruntime
           export ORT_LIB_LOCATION="$PWD/target/onnxruntime"
           export ORT_PREFER_DYNAMIC_LINK=1
