@@ -1,0 +1,66 @@
+{
+  "schema": "spatialrust.tum-preparation-validation.v1",
+  "observed_at": "2026-10-10T15:06:34.502259+00:00",
+  "source_commit": "b2506d4f1ae92f3bd89ac88f5b4b5dbbd0dff6af",
+  "maturity_percent": 86,
+  "real_tum_sequence_acquired": false,
+  "real_tum_trajectory_accuracy_evaluated": false,
+  "network": {
+    "published_runtime_revision": 7,
+    "official_document_https": "success",
+    "official_archive_response": 302,
+    "redirect_host": "webshare.cvg.cit.tum.de",
+    "redirect_proxy_connect_http_status": 403,
+    "custom_host_addition_saved": true,
+    "requires_publish": true
+  },
+  "tests": [
+    {
+      "path": "/workspace/SpatialRust/target/goal-continuation/python-tum-ready-junit.xml",
+      "sha256": "74efe18f3a82055d7c5a7014cda495b61292e1090c6ef1b18608237bb49ed193",
+      "tests": 682,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 3
+    },
+    {
+      "path": "/workspace/SpatialRust/target/goal-continuation/python38-tum-ready-junit.xml",
+      "sha256": "2c30bb0c36c68e14eda211c429194dff793fd5b852168b20dcab4c1b9c899cbb",
+      "tests": 682,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 3
+    }
+  ],
+  "bindings": {
+    "/workspace/SpatialRust/benchmarks/tum-fr1-xyz-plan.json": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+    "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "e12e55b83fc8760be113f3980ace065dde777c6096bc6118051279a111386a51",
+    "/workspace/SpatialRust/scripts/prepare_tum_sequence.py": "ed010df027d493d8af2fed398c7f118fd846c380e56c8675719877699fd81fa8",
+    "/workspace/SpatialRust/scripts/run_tum_sequence.py": "5b3d8b2f2a0974829cea99a27b7099602de1ab961424d00a80352b2885b3ed9e",
+    "/workspace/SpatialRust/scripts/evaluate_tum_sequence.py": "a8c0ddc62e2580ad9c90b6b66a066cce5a79a865b6024d77fe48a64273647b3f",
+    "/workspace/SpatialRust/crates/spatialrust-py/tests/test_tum_sequence_reference.py": "077566f01251e0c4c9e0f5394a2f7261bb23e2f58d9ebea1d7d24848303f1788"
+  },
+  "real_io_compatibility_audit": {
+    "frames": 18,
+    "python": "3.8.20",
+    "pyarrow": "17.0.0",
+    "receipt_sha256": "1c95fb170e5a12bd8d97d6a613cf2deac8f9a380829b970d1de15279ce947e09"
+  },
+  "hosted_parent_pr": 116,
+  "hosted_parent_head": "3f0d8e685f8216745e4d5d6c972c375ddcdc1dfd",
+  "hosted_parent_verification_pending": true,
+  "synthetic_cli_fixture": {
+    "kind": "static synthetic; not real trajectory accuracy",
+    "planned_poses": 40,
+    "generated_poses": 40,
+    "evaluated_poses": 40,
+    "projected_points": 12288000,
+    "rpe_planned_pairs": 0,
+    "artefacts": {
+      "/workspace/SpatialRust/target/goal-continuation/tum-cli-fixture-40/source.tgz": "b824ad55015f1e11810053d6fae9cfef3214ef64bda9df9a95c5a0ba19f6c5c5",
+      "/workspace/SpatialRust/target/goal-continuation/tum-cli-fixture-40/generated/estimates.json": "d0e7d1eb1756b857450eb85fe7e03c51794c6b93b8b0c8b97e5d2179a40c87a0",
+      "/workspace/SpatialRust/target/goal-continuation/tum-cli-fixture-40/generated/receipt.json": "a18b2b96638d726f2d83eacfb0a9f0dd85e33a9d046d796287923b835d0368f8",
+      "/workspace/SpatialRust/target/goal-continuation/tum-cli-fixture-40/evaluation/accuracy.json": "1cca3f5c266404670d80025a10bb1d67c0b58db8dad98062d28af6a020a1b98e"
+    }
+  }
+}

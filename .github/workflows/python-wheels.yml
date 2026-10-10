@@ -62,7 +62,7 @@ jobs:
           else
             wheel_python=native-venv/bin/python
           fi
-          "$wheel_python" -m pip install native-dist/*.whl numpy pytest pyarrow
+          "$wheel_python" -m pip install native-dist/*.whl numpy pytest pyarrow Pillow
           "$wheel_python" -m pytest crates/spatialrust-py/tests -o addopts='' -q --junitxml=native-tests.xml
           "$wheel_python" crates/spatialrust-py/tools/verify_installed_wheel.py native-dist/*.whl --junit native-tests.xml --receipt native-validation.json
       - name: Report native test failures in check annotations
@@ -101,7 +101,7 @@ jobs:
         if: matrix.target == 'x86_64'
         run: |
           python -m venv wheel-venv
-          wheel-venv/bin/python -m pip install dist/*.whl numpy pytest pyarrow
+          wheel-venv/bin/python -m pip install dist/*.whl numpy pytest pyarrow Pillow
           wheel-venv/bin/python -m pytest crates/spatialrust-py/tests -o addopts='' -q --junitxml=wheel-tests.xml
           wheel-venv/bin/python crates/spatialrust-py/tools/verify_installed_wheel.py dist/*.whl --junit wheel-tests.xml --receipt wheel-validation.json
       - uses: actions/upload-artifact@v4
@@ -134,7 +134,7 @@ jobs:
       - name: Rebuild source distribution and validate installed type information
         run: |
           python -m venv sdist-venv
-          sdist-venv/bin/python -m pip install "maturin[patchelf]>=1.7,<2" numpy pytest pyarrow
+          sdist-venv/bin/python -m pip install "maturin[patchelf]>=1.7,<2" numpy pytest pyarrow Pillow
           sdist-venv/bin/python - <<'PY'
           import pathlib, tarfile
           archives = list(pathlib.Path('dist').glob('*.tar.gz'))
