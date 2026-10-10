@@ -8,10 +8,15 @@ import re
 import urllib.request
 
 
-def all_jobs(fetch, run_id):
+def all_jobs(fetch, run_id, run_attempt=None):
+    if run_attempt is not None and (type(run_attempt) is not int or run_attempt <= 0):
+        raise ValueError('run attempt must be a positive integer')
+    endpoint = f'/actions/runs/{run_id}'
+    if run_attempt is not None:
+        endpoint += f'/attempts/{run_attempt}'
     jobs, total = {}, None
     for page in range(1, 21):
-        data = fetch(f'/actions/runs/{run_id}/jobs?per_page=100&page={page}')
+        data = fetch(f'{endpoint}/jobs?per_page=100&page={page}')
         reported_total = data['total_count']
         if type(reported_total) is not int or not 0 <= reported_total <= 2000:
             raise ValueError('unsupported job count')
@@ -43,7 +48,7 @@ def observe_run(fetch, run_id, expected_head_sha=None):
         raise ValueError('run ID does not match request')
     if expected_head_sha is not None and run['head_sha'] != expected_head_sha:
         raise ValueError('run does not belong to the expected head SHA')
-    jobs = all_jobs(fetch, run_id)
+    jobs = all_jobs(fetch, run_id, run['run_attempt'])
     for job in jobs:
         if (job['run_id'], job['head_sha'], job['run_attempt']) != (run_id, run['head_sha'], run['run_attempt']):
             raise ValueError('job belongs to a different run, head SHA or attempt')

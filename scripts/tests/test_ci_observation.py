@@ -20,6 +20,36 @@ def job(number):
 
 
 class CiObservationTests(unittest.TestCase):
+    def test_rerun_uses_only_the_explicit_attempt_endpoint(self):
+        requests = []
+        record = run()
+        record['run_attempt'] = 2
+        retried = job(1)
+        retried['run_attempt'] = 2
+        def fetch(path):
+            requests.append(path)
+            if '/jobs?' in path:
+                self.assertEqual(path, '/actions/runs/42/attempts/2/jobs?per_page=100&page=1')
+                return dict(total_count=1, jobs=[retried])
+            return record
+        result = ci.observe_run(fetch, 42, HEAD)
+        self.assertEqual(result['run_attempt'], 2)
+        self.assertTrue(result['summary']['all_success'])
+        self.assertNotIn('/actions/runs/42/jobs?per_page=100&page=1', requests)
+
+    def test_explicit_attempt_rejects_stale_jobs(self):
+        record = run()
+        record['run_attempt'] = 2
+        def fetch(path):
+            return dict(total_count=1, jobs=[job(1)]) if '/jobs?' in path else record
+        with self.assertRaisesRegex(ValueError, 'different run'):
+            ci.observe_run(fetch, 42, HEAD)
+
+    def test_invalid_explicit_attempt_rejected_before_fetch(self):
+        for attempt in (0, -1, True, '2'):
+            with self.subTest(attempt=attempt), self.assertRaisesRegex(ValueError, 'positive integer'):
+                ci.all_jobs(lambda path: self.fail('invalid attempt must not fetch'), 42, attempt)
+
     def test_all_103_jobs_are_required(self):
         requests = []
         def fetch(path):
