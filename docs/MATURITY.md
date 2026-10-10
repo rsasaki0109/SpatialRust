@@ -290,3 +290,22 @@ JUnit failures now become check annotations so the next run can expose test name
 and tracebacks without accessing the denied log host. Focused diagnostic and
 fingerprint tests pass locally (7 tests). These diagnostics add observability;
 they do not establish that Windows is repaired. Maturity remains 82%.
+
+Runtime repair follow-up (2026-10-10): logs from main `b1a9acb` identify the
+remaining Windows failure as an implicit cp1252 read of UTF-8 alignment HTML
+(564 passes, one failure, three expected ONNX skips). The report annotation
+CLI also fails when printing a Unicode arrow through redirected cp1252 stdout.
+The Web/WASM gate stops before browser execution because the compiled schema
+is wasm-bindgen 0.2.129 while the installed CLI is 0.2.126. Tests now read
+alignment artifacts explicitly as UTF-8, annotations emit UTF-8, and Web CI
+selects its CLI from the generated workspace lockfile, rejecting missing or
+ambiguous versions. Two stdlib regression checks pass locally, and a real
+native alignment CLI reproduces the cp1252 mismatch and passes the UTF-8 read.
+The local native wheel is a previous frozen Linux build; this check does not
+verify the latest Windows wheel. Remote Windows and Web/WASM results remain
+required before counting either gate as repaired. Maturity remains **82%**.
+
+Future progress reports include this provisional engineering percentage relative
+to PCL, Open3D, and OpenCV evidence at the end, together with the main remaining
+gaps. It is not a measured percentage of those projects' functionality.
+
