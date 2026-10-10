@@ -1,0 +1,20 @@
+{
+  "schema": "spatialrust.redwood-frame-plan.v1",
+  "dataset": "Open3D RedwoodIndoorLivingRoom1 / augmented ICL-NUIM, noisy synthetic depth",
+  "official_source_commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+  "download_prefix": "https://github.com/isl-org/open3d_downloads/releases/download/augmented-icl-nuim/",
+  "depth_archive": {"name": "livingroom1-depth-simulated.zip", "md5": "2fec03a29258a29b9ffedde88fddd676"},
+  "trajectory": {"name": "livingroom1-traj.txt", "md5": "601ac4b51aba2455a90aed8aa1158c6a"},
+  "frame_count": 2870,
+  "pairs": [[0, 30], [900, 930], [1800, 1830], [2700, 2730]],
+  "selection": "Four fixed start indices spaced by 900 frames, each followed by 30 frames. No geometry, overlap, reference motion, or fitted accuracy used for selection. Every pair and seed stays in the denominator.",
+  "camera": {"width": 640, "height": 480, "fx": 525.0, "fy": 525.0, "cx": 319.5, "cy": 239.5, "depth_scale": 1000.0, "depth_trunc_m": 3.0},
+  "coordinate_convention": "Optical camera coordinates: x right, y down, z forward; depth millimetres converted to metres. LOG matrices are world_from_camera, as confirmed by the pinned Open3D LOG reader's inverse extrinsic.",
+  "seeds": [7, 8, 9],
+  "ransac_iterations": 10000,
+  "controls": {"coarse_leaf_m": 0.1, "coarse_size_limit": 5000, "normal_neighbors": 20, "feature_radius_m": 0.5, "global_gate_m": 0.2, "icp_stages": [{"leaf_m": 0.05, "gate_m": 0.2, "iterations": 50}, {"leaf_m": null, "gate_m": 0.05, "iterations": 50}], "evaluation_gate_m": 0.05, "threads": 1},
+  "accuracy_limits": {"translation_m": 0.05, "rotation_degrees": 5.0},
+  "accuracy_definition": "Both limits must pass. Relative reference = inverse(world_from_target) @ world_from_source. This is a preregistered frame-relative pose criterion, not the publisher's fragment-registration recall metric.",
+  "reference_policy": "Run existing compare_public_global.run without reference poses or initialization. Save and hash all raw registration rows before reading the trajectory for evaluation. Do not tune parameters, retry seeds, change pairs, or discard failures after viewing accuracy.",
+  "scope": "One synthetic scene, four frame pairs, three repeated seeds per method. It is separate from the previous GeoTransformer/3DMatch data but does not certify real-sensor calibration, cross-scene robustness, speed superiority, or general library parity. No color, clean depth, ONI or reference surface is used."
+}
