@@ -70,6 +70,14 @@ builds, sorts, and compacts the sparse grid on wgpu and performs deterministic
 component union on the host. This split is visible in receipts and is not an
 implicit CPU fallback.
 
+Voxel key sorting uses stable four-bit GPU radix passes over signed i32 XYZ
+coordinates, preserving increasing source indices inside each cell. Sorting
+allocates exact-sized entries, stays on the device, and no longer needs padded
+entry filtering or its scalar readback. Segment compaction still synchronizes
+the existing four-byte cell count; GPU segment metadata remains resident until
+an explicit metadata readback. See the
+[radix validation receipt](../notes/2026-10-11_gpu_voxel_radix_sort.md).
+
 ## Verification commands
 
 ```bash

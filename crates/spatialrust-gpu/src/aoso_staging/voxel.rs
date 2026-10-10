@@ -66,12 +66,8 @@ pub fn downsample_voxel_centroid_aoso_chunks(
     let positions = combine_aoso_chunks(runtime, chunks, total_points);
     let keys =
         dispatch_voxel_keys_aoso(runtime, positions.buffer(), point_count, origin, inv_leaf)?;
-    let segments = build_voxel_segments_gpu_from_keys_buffer(
-        runtime,
-        &keys,
-        point_count,
-        point_count.next_power_of_two(),
-    )?;
+    let segments =
+        build_voxel_segments_gpu_from_keys_buffer(runtime, &keys, point_count, point_count)?;
     let (out_x, out_y, out_z) =
         reduce_voxel_centroids_aoso(runtime, positions.buffer(), &segments)?;
     Ok(AoSoAVoxelCentroidResult { out_x, out_y, out_z, segments, positions })
