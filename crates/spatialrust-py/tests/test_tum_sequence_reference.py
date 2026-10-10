@@ -175,6 +175,13 @@ def test_changed_depth_cannot_satisfy_frozen_input_hash(tmp_path):
     with pytest.raises(ValueError): checked_depth(out, entry, 16777216)
 
 
+@pytest.mark.parametrize('method,adapter', [('unknown',None),('open3d_cpu',None),('spatialrust_cpu',lambda: None)])
+def test_generation_method_cannot_silently_substitute_an_adapter(tmp_path,method,adapter):
+    with pytest.raises(ValueError):
+        generate(tmp_path/'missing-input','a'*64,tmp_path/'output',method=method,pair_aligner=adapter)
+    assert not (tmp_path/'output').exists()
+
+
 def test_depth_decoder_preserves_original_counts_and_rejects_color_or_broken_png():
     camera = json.loads(PLAN.read_bytes())['calibration']
     depth = decode_depth(png(count=65535), camera)
@@ -191,6 +198,7 @@ def test_native_fixture_freezes_every_pose_retains_loss_then_scores_separately(t
     assert not (prepared/'groundtruth.txt').exists()
     output = tmp_path/'generated'
     receipt = generate(prepared, file_sha256(prepared/'manifest.json'), output)
+    assert receipt['method'] == 'spatialrust_cpu'
     expected_count = 3 if failure_index is None else 1
     assert receipt['planned_poses'] == 3 and receipt['generated_poses'] == expected_count
     assert receipt['tracking_lost'] is (failure_index is not None)
