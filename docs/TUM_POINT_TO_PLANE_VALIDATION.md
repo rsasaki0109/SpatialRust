@@ -114,6 +114,12 @@ projection and exact typed xyz/raw-depth/pixel-index IO checks.
 
 Reviewable data is in
 [`receipts/2026-10-10_tum_point_to_plane.json`](receipts/2026-10-10_tum_point_to_plane.json).
+The first hosted Windows wheel run rejected the original-plan hash because
+Git's CRLF checkout conversion changed its raw bytes. Repository attributes
+now require LF checkout for benchmark JSON protocols. A simulated
+`core.autocrlf=true` checkout retains the exact precommitted SHA-256; input hash
+checks are not normalized or relaxed. The repaired head requires its own full
+hosted checks before merge.
 The provisional maturity remains **87%**: the bounded improvement and numerical
 scoring repair do not close accurate real motion or canonical calibration gates.
 
