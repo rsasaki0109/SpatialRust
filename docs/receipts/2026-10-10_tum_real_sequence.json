@@ -1,0 +1,276 @@
+{
+  "schema": "spatialrust.tum-real-sequence-evidence.v1",
+  "maturity_percent": 87,
+  "target_maturity_percent": 90,
+  "maturity_basis": "Broader actual sensor ingestion/full-sequence processing and independent post-fit scoring are verified; measured trajectory accuracy remains inadequate. This is not an accuracy improvement or library parity score.",
+  "source": {
+    "name": "TUM RGB-D freiburg1_xyz",
+    "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+    "sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+    "bytes": 448204271,
+    "publisher_checksum_supplied": false,
+    "license": "CC BY 4.0",
+    "publisher_overview": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset",
+    "publisher_overview_sha256": "364a04c0489b5ec268a68b6be4d6eea0292d0f70d89af97b41db0a59fac87e67",
+    "acquisition_receipt_sha256": "b847c01a9e3a9b2e1295a16c166503f1ac0a9fdc24566d84d53542c08a4deaa8",
+    "runtime_revision": 9
+  },
+  "native_protocol_commit": "b2506d4f1ae92f3bd89ac88f5b4b5dbbd0dff6af",
+  "baseline_code_commit": "82a3e950cace9f1cbcea472d999a5a4870e3e115",
+  "reference_used_for_generation": false,
+  "reference_alignment": "first jointly valid pose SE3 only; no scale or best-fit trajectory alignment",
+  "reference_gap": {
+    "before_ns": 1305031108835700000,
+    "after_ns": 1305031108945800000,
+    "interval_ns": 110100000,
+    "unevaluated_indices": [
+      201,
+      202,
+      203
+    ],
+    "association_limit_to_each_bracket_ns": 20000000
+  },
+  "results": {
+    "spatialrust": {
+      "method": "spatialrust",
+      "planned_poses": 798,
+      "generated_poses": 798,
+      "evaluated_poses": 795,
+      "duration_ns": 26594239000,
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+      "estimates_sha256": "ba322b06c684a6631226875b6f2ea4b7e56745bd9fd014b2bb8b911821e524f0",
+      "evaluation_sha256": "771bea97ed4f333d152163bf927c5c846d847ff656d95fd05bb6d15969bbabb5",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "projected_points": 185553749,
+      "exact_typed_io_frames": 15,
+      "projection_max_coordinate_difference_m": 2.709699358227624e-07,
+      "ate_raw_rmse_m": 2.4539870531209695,
+      "ate_first_pose_aligned_rmse_m": 0.6580326015441981,
+      "ate_median_m": 0.6102987521734389,
+      "ate_p95_m": 0.9679702132682115,
+      "ate_max_m": 1.0148259863880684,
+      "rpe_planned_pairs": 768,
+      "rpe_evaluated_pairs": 762,
+      "rpe_translation_rmse_m": 0.17594528480385638,
+      "rpe_rotation_rmse_degrees": 3.977720113107019,
+      "unmatched_reference_frames": [
+        {
+          "index": 201,
+          "timestamp_ns": 1305031108867534000
+        },
+        {
+          "index": 202,
+          "timestamp_ns": 1305031108903540000
+        },
+        {
+          "index": 203,
+          "timestamp_ns": 1305031108935116000
+        }
+      ],
+      "unevaluated_rpe_pairs": [
+        {
+          "delta_ns": 1004029000,
+          "evaluated": false,
+          "source_index": 171,
+          "target_index": 201
+        },
+        {
+          "delta_ns": 1004318000,
+          "evaluated": false,
+          "source_index": 172,
+          "target_index": 202
+        },
+        {
+          "delta_ns": 1001507000,
+          "evaluated": false,
+          "source_index": 173,
+          "target_index": 203
+        },
+        {
+          "delta_ns": 1003737000,
+          "evaluated": false,
+          "source_index": 201,
+          "target_index": 231
+        },
+        {
+          "delta_ns": 996995000,
+          "evaluated": false,
+          "source_index": 202,
+          "target_index": 232
+        },
+        {
+          "delta_ns": 999844000,
+          "evaluated": false,
+          "source_index": 203,
+          "target_index": 233
+        }
+      ],
+      "resource_measurement": {
+        "exit_code": 0,
+        "whole_process_wall_seconds": 127.73441397199997,
+        "peak_child_process_rss_kib": 150272,
+        "user_cpu_seconds": 125.817805,
+        "system_cpu_seconds": 1.866253,
+        "scope": "single complete Python generator process, including input/code verification and all selected IO; no throughput ranking"
+      },
+      "independent_score_audit": {
+        "sha256": "ee24a33456993d7f0a41464d88afcae87356a283966f9d81fb04d14701fd64c2",
+        "counts": {
+          "planned_poses": 798,
+          "generated_poses": 798,
+          "evaluated_poses": 795,
+          "unmatched_reference_poses": 3,
+          "rpe_planned_pairs": 768,
+          "rpe_evaluated_pairs": 762
+        },
+        "max_translation_score_difference_m": 7.009391955747901e-10,
+        "max_rotation_score_difference_degrees": 1.9801338435598836e-07
+      },
+      "native_stage_stop_reasons": {
+        "(0, 'iteration_limit')": 480,
+        "(1, 'iteration_limit')": 515,
+        "(0, 'transform_threshold')": 317,
+        "(1, 'transform_threshold')": 282
+      }
+    },
+    "open3d": {
+      "method": "open3d",
+      "planned_poses": 798,
+      "generated_poses": 798,
+      "evaluated_poses": 795,
+      "duration_ns": 26594239000,
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "plan_sha256": "5ea366f93608743cc482c103ca2d41788d9a5906a2ec16b8cf9d2006c8052d1b",
+      "estimates_sha256": "ca6c8ebca3196320c2aa0180edbebcb34f083728befaf5c616364f1dde9d02fe",
+      "evaluation_sha256": "94c07d3c665d1a7c147f7e00cddbe40d2505c5fd74f6fe14ed8f341bc21a8697",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "projected_points": 185553749,
+      "exact_typed_io_frames": 15,
+      "projection_max_coordinate_difference_m": 2.709699358227624e-07,
+      "ate_raw_rmse_m": 2.4539149034254883,
+      "ate_first_pose_aligned_rmse_m": 0.6579665241700459,
+      "ate_median_m": 0.6101750794608304,
+      "ate_p95_m": 0.9679474554769814,
+      "ate_max_m": 1.0148091774244505,
+      "rpe_planned_pairs": 768,
+      "rpe_evaluated_pairs": 762,
+      "rpe_translation_rmse_m": 0.175941804718804,
+      "rpe_rotation_rmse_degrees": 3.9774897848246487,
+      "unmatched_reference_frames": [
+        {
+          "index": 201,
+          "timestamp_ns": 1305031108867534000
+        },
+        {
+          "index": 202,
+          "timestamp_ns": 1305031108903540000
+        },
+        {
+          "index": 203,
+          "timestamp_ns": 1305031108935116000
+        }
+      ],
+      "unevaluated_rpe_pairs": [
+        {
+          "delta_ns": 1004029000,
+          "evaluated": false,
+          "source_index": 171,
+          "target_index": 201
+        },
+        {
+          "delta_ns": 1004318000,
+          "evaluated": false,
+          "source_index": 172,
+          "target_index": 202
+        },
+        {
+          "delta_ns": 1001507000,
+          "evaluated": false,
+          "source_index": 173,
+          "target_index": 203
+        },
+        {
+          "delta_ns": 1003737000,
+          "evaluated": false,
+          "source_index": 201,
+          "target_index": 231
+        },
+        {
+          "delta_ns": 996995000,
+          "evaluated": false,
+          "source_index": 202,
+          "target_index": 232
+        },
+        {
+          "delta_ns": 999844000,
+          "evaluated": false,
+          "source_index": 203,
+          "target_index": 233
+        }
+      ],
+      "resource_measurement": {
+        "exit_code": 0,
+        "whole_process_wall_seconds": 128.98314280400018,
+        "peak_child_process_rss_kib": 348004,
+        "user_cpu_seconds": 126.578935,
+        "system_cpu_seconds": 3.12195,
+        "scope": "single complete Open3D-baseline process including input/code/library checks and selected native IO; algorithm/stopping/import overhead differs, no speed ranking"
+      },
+      "independent_score_audit": {
+        "sha256": "0ec7bc7e58561fc2be85fae70b1d0d77bd35d48744fd24e46e97a6aeaa17bcc6",
+        "counts": {
+          "planned_poses": 798,
+          "generated_poses": 798,
+          "evaluated_poses": 795,
+          "unmatched_reference_poses": 3,
+          "rpe_planned_pairs": 768,
+          "rpe_evaluated_pairs": 762
+        },
+        "max_translation_score_difference_m": 7.011689839853119e-10,
+        "max_rotation_score_difference_degrees": 1.9804254325350712e-07
+      },
+      "native_stage_stop_reasons": {}
+    }
+  },
+  "tests": [
+    {
+      "path": "/workspace/SpatialRust/target/tum-reference/python-adapter-ready-junit.xml",
+      "sha256": "d5c11301ee6f68597c0711d06b4b98061aeb2efa49a91043b1ae29b55ab9606b",
+      "tests": 685,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 3
+    },
+    {
+      "path": "/workspace/SpatialRust/target/tum-reference/python38-adapter-ready-junit.xml",
+      "sha256": "b1429d6ff94a72701f862a98056cfd2f68297e47483ec94750cc80e8832d2420",
+      "tests": 685,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 3
+    }
+  ],
+  "plot_receipt_sha256": "a11987336dae868044bb4c37f769076343278bd07ea289167f68117474a1aedb",
+  "plot_path": "/workspace/SpatialRust/target/tum-reference/report-v2/report.html",
+  "limitations": [
+    "Same-sequence baseline follows native scoring, with fixed pre-existing geometry/budget controls; no new blind holdout claim.",
+    "Native absolute and Open3D zero-relative stopping semantics differ; no speed ranking.",
+    "0.658 m ATE and 0.176 m RPE expose drift despite successful geometric support/processing.",
+    "No measured clock synchronization or original Autoware source-bound extrinsic evidence is supplied."
+  ],
+  "native_adapter_replay": {
+    "schema": "spatialrust.tum-native-adapter-replay.v1",
+    "poses_bit_identical": true,
+    "planned": 798,
+    "generated": 798,
+    "whole_process_wall_seconds": 128.42762305399992,
+    "peak_child_process_rss_kib": 154444,
+    "original_estimates_sha256": "ba322b06c684a6631226875b6f2ea4b7e56745bd9fd014b2bb8b911821e524f0",
+    "replayed_estimates_sha256": "1518d2e04f7462a8b1d561eb4ec238192e73322404f5be912f73ff49537fbd7b",
+    "scope": "Native default regression after explicit adapter addition; same real input/controls, not a new blind accuracy study",
+    "audit_sha256": "337b08872e50bd10642fda12392092997688b8b90be92145ec2ba0d3d379fb00"
+  }
+}

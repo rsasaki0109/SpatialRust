@@ -125,6 +125,10 @@ Core correctness tests use bounded fixtures and run without rosbags installed.
 
 ## Independent trajectory evaluation preparation
 
+This section records the original preparation checkpoint. Subsequent publication
+unblocks the official TUM archive, and complete actual results with substantial
+drift are in [TUM_REAL_SEQUENCE_RESULTS.md](TUM_REAL_SEQUENCE_RESULTS.md).
+
 `evaluate_timestamped_trajectory.py` scores already frozen estimates against a
 separate TUM-format trajectory. It requires both complete file hashes, matching
 explicit sensor frames, metre units, source/calibration/plan hashes and a
@@ -164,6 +168,9 @@ saved in the environment draft, preserving the existing destinations. Draft
 persistence does not apply/publish the settings or verify the connection.
 
 ## Validation and maturity
+
+The following 86% assessment is historical; the current evidence-based
+assessment is maintained in [MATURITY.md](MATURITY.md).
 
 The complete installed default-wheel Python suite passes **647 tests**, with
 **three expected ONNX skips**, zero failures and zero errors (650 planned).
