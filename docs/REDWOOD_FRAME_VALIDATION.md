@@ -71,7 +71,9 @@ official distribution. It does not prove broad robustness: four nearby frame
 pairs in one synthetic scene are the independent cases; repeated seeds are
 not extra scenes. Both methods pass the declared criterion, without an accuracy
 or speed superiority claim. Calibration, complete hosted CI, and broader
-operational evidence remain necessary for the 90% target. Maturity stays 82%.
+operational evidence remain necessary for the 90% target. This data-only
+checkpoint kept maturity at 82%; the subsequent complete hosted CI checkpoint
+is recorded in [the current assessment](MATURITY.md).
 
 Local validation: 18 new correctness tests; the full default-wheel Python suite
 has **583 passed, three expected ONNX skips**; nine CI-helper tests pass. Existing

@@ -1,9 +1,24 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **82%, provisional**. This is a subjective
+Current assessment (2026-10-10): **85%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+The complete hosted integration gate is now verified and delivered. PRs #112,
+#113 and #114 are merged into main after all 103 main CI jobs passed on each
+tested head. The Redwood head's initially failed COPC job stopped during Rust
+toolchain setup; targeted rerun attempt 2 completes successfully, and its full
+103-job receipt is checked through the explicit attempt API. All seven wheel
+build/runtime jobs pass, including Linux Python 3.8/3.14, Windows and macOS;
+PyPI publication is intentionally skipped for pull requests. The merge trees
+match the tested trees, and no pending or skipped mandatory job is counted as
+success. Together with the separate fixed synthetic dataset, this moves the
+provisional estimate from 82% to **85%** by closing the previously unresolved
+hosted runtime/integration gate. It does not close source-bound measured clock
+and front/rear extrinsic calibration or demonstrate broad real-sensor operation,
+so 90% is not supported. See
+[the completed-gate evidence](../notes/2026-10-10_sr2_runtime_gates_complete.md).
 
 Open3D's official verified-HTTPS distribution now supplies a separate noisy
 synthetic Redwood/augmented ICL-NUIM dataset, despite the original Redwood
@@ -14,7 +29,7 @@ are hash-bound; independent backprojection and pose-score audits agree. The
 default Python suite passes 583 tests with three expected ONNX skips. This is
 one synthetic scene with nearby frames, not real-sensor calibration or broad
 library parity. Complete hosted CI and source-bound operational calibration
-remain open, so maturity stays **82%**. See
+remained open at that checkpoint, so its maturity stayed **82%**. See
 [the fixed protocol and evidence](REDWOOD_FRAME_VALIDATION.md).
 
 The earlier SR2 handoff restored a clean Python comparison environment and the exact
