@@ -5,6 +5,20 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
+A separately committed native point-to-plane protocol now tests the already
+examined xyz sequence and an untouched rpy sequence fixed before acquisition.
+XYZ ATE improves from 0.658033 to 0.125197 m; held-out rpy improves from 0.726446
+to 0.529330 m, with 722/722 generations and 716 reference matches. **Both plane
+sequences fail the fixed 0.10 m ATE limit**; rpy also fails the 0.05 m RPE limit
+(0.138976 m). Independent rpy auditing exposes a small-angle quaternion
+interpolation shortcut; stable exact SLERP repairs it without changing frozen
+estimates or loosening numerical tolerances. All five corrected scoring audits
+pass, and both local Python endpoints pass 696 tests with three expected ONNX
+skips each. The observed lower errors, additional real sequence and scoring
+repair are recorded, but accurate motion and source-bound measured Autoware
+calibration remain unresolved. The estimate stays **87%**, and 90% remains
+unsupported. See [the fixed protocol and full outcomes](TUM_POINT_TO_PLANE_VALIDATION.md).
+
 The fixed official TUM `freiburg1_xyz` sequence now completes 798/798 native
 generations over 26.594 seconds, with 185,553,749 projected points and 15 exact
 typed IO audits. Frozen estimates evaluate 795 poses against the independently

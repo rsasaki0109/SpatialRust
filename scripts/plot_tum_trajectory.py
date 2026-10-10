@@ -39,6 +39,15 @@ def plot(manifest_path, output):
         if cases and (est['source_sha256'], est['calibration_sha256']) != (cases[0]['est']['source_sha256'], cases[0]['est']['calibration_sha256']):
             raise ValueError('comparison requires the same source/calibration')
         cases.append(dict(item=item, est=est, score=score, est_raw=est_raw, score_raw=score_raw))
+    sequences = {c['score'].get('reference_member', '').split('/')[0] for c in cases}
+    if len(sequences) != 1 or not sequences <= {'rgbd_dataset_freiburg1_xyz', 'rgbd_dataset_freiburg1_rpy'}:
+        raise ValueError('plot requires one declared sequence bound by every reference score')
+    sequence = sequences.pop()[len('rgbd_dataset_'):]
+    scope = manifest.get('study_scope', 'Same source, calibration and geometric budgets. Native and Open3D '
+                         'stopping semantics differ; this same-sequence diagnostic does not support a '
+                         'speed ranking or a new blind holdout claim.')
+    if not isinstance(scope, str):
+        raise ValueError('study scope must be text')
     origin = min(c['est']['poses'][0]['timestamp_ns'] for c in cases)
     last = max(c['est']['poses'][-1]['timestamp_ns'] for c in cases)
     ref_xyz = np.array([r['world_from_sensor'][:3,3] for r in reference if origin <= r['timestamp_ns'] <= last])
@@ -85,7 +94,7 @@ def plot(manifest_path, output):
     for axis in (spatial,planar,ate,rpe):
         axis.legend(fontsize=8)
         axis.grid(alpha=.25)
-    fig.suptitle('TUM freiburg1_xyz — frozen estimates, no scale or best-fit trajectory alignment',fontsize=12)
+    fig.suptitle('TUM '+sequence+' — frozen estimates, no scale or best-fit trajectory alignment',fontsize=12)
     # Verify plotted bytes before producing artifacts.
     read_bound(manifest['reference'],manifest['reference_sha256'])
     for c in cases:
@@ -107,9 +116,8 @@ def plot(manifest_path, output):
     svg=(output/'trajectory.svg').read_text(encoding='utf-8');svg=svg[svg.index('<svg'):]
     document=('<!doctype html><html lang="en"><meta charset="utf-8"><title>TUM trajectory evidence</title>'
               '<style>body{font:15px system-ui;margin:2rem}td,th{padding:.5rem;text-align:left}svg{width:100%;height:auto}</style>'
-              '<h1>TUM freiburg1_xyz: frozen trajectory evidence</h1>'
-              '<p>Same source, calibration and geometric budgets. Native and Open3D stopping semantics differ; '
-              'this same-sequence diagnostic does not support a speed ranking or a new blind holdout claim.</p>'
+              '<h1>TUM '+html.escape(sequence)+': frozen trajectory evidence</h1>'
+              '<p>'+html.escape(scope)+'</p>'
               '<table><tr><th>Method</th><th>Planned / generated / evaluated</th><th>First-pose ATE RMSE (m)</th>'
               '<th>Evaluated / planned RPE pairs</th><th>RPE RMSE (m)</th></tr>'+''.join(rows)+'</table>'+svg+
               '<p>All planned failures and unmatched poses remain in the denominators. Geometric support and '
