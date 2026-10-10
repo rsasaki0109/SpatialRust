@@ -19,6 +19,9 @@ fn synthetic_point_cloud(point_count: usize) -> spatialrust_core::PointCloud {
 }
 
 fn bench_voxel_downsample(c: &mut Criterion) {
+    let runtime = spatialrust_gpu::WgpuRuntime::shared().expect("wgpu runtime");
+    eprintln!("GPU adapter: {:?}", runtime.adapter_info());
+    let _ = runtime.pipelines();
     let centroid =
         VoxelGridDownsample::new(VoxelGridDownsampleConfig::centroid(4.0).without_gpu_min_points());
     let approximate = VoxelGridDownsample::new(

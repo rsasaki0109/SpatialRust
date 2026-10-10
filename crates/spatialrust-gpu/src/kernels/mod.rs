@@ -25,6 +25,9 @@ mod voxel_segments;
 mod voxel_sort;
 
 #[cfg(feature = "gpu-wgpu")]
+mod voxel_radix;
+
+#[cfg(feature = "gpu-wgpu")]
 mod voxel_compact;
 
 #[cfg(feature = "gpu-wgpu")]

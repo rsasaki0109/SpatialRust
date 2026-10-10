@@ -63,8 +63,8 @@ cargo run -p spatialrust --features mvp --bin spatialrust-mvp -- \
 
 ## Performance
 
-The voxel downsampler runs on CPU or GPU (wgpu). The current end-to-end
-`point_xyzi` centroid rebaseline finds no GPU crossover through 2M points, so
+The voxel downsampler runs on CPU or GPU (wgpu). The July 2026 end-to-end
+`point_xyzi` centroid rebaseline found no GPU crossover through 2M points, so
 `ExecutionPolicy::Auto` stays on CPU for this mode. Explicit GPU execution is
 available for profiling and GPU-resident workflows; callers opt into it with
 `without_gpu_min_points()`.
@@ -73,7 +73,7 @@ available for profiling and GPU-resident workflows; callers opt into it with
   <img src="docs/assets/benchmark_voxel.svg" alt="2026-07-16 end-to-end centroid voxel latency: CPU remains faster through 2M points, while GPU submit batching reduces the GPU path latency" width="960">
 </p>
 
-End-to-end centroid filter latency (`point_xyzi`, leaf=4.0, release build):
+July 16 end-to-end centroid filter latency (`point_xyzi`, leaf=4.0, release build):
 
 | Points | CPU | GPU | Winner |
 | ---: | ---: | ---: | :--- |
@@ -92,6 +92,11 @@ identity is intentionally omitted; the run used a high-performance discrete
 adapter with the Vulkan backend. See the dated
 [CPU receipt](notes/2026-07-16_cpu_voxel_rebaseline.md) and
 [GPU receipt](notes/2026-07-16_gpu_voxel_acceleration.md).
+
+GPU voxel sorting now uses stable radix passes without power-of-two padding or
+post-sort filtering. The July table and plot above predate this change; updated
+same-device measurements and correctness checks are recorded in the
+[October radix receipt](notes/2026-10-11_gpu_voxel_radix_sort.md).
 
 Reproduce:
 `cargo bench -p spatialrust-filtering --features filter-voxel-gpu --bench voxel_downsample`.

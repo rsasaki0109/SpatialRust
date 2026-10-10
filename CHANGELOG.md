@@ -49,6 +49,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- GPU voxel segmentation uses stable four-bit radix sorting of signed XYZ keys,
+  preserving input order within a cell. Exact-sized entries remove power-of-two
+  padding, post-sort filtering and its scalar readback. GPU buffer/count limits
+  are validated before dispatch; voxel, AoSoA frame and sparse-grid callers share
+  this path. The voxel benchmark now records adapter/backend identity.
+
 - Alignment example exposes `align_clouds` for loaded read-only inputs; bounded
   candidate evaluation reads each file once rather than once per candidate.
 - Alignment HTML displays candidate scores, both support directions, convergence
