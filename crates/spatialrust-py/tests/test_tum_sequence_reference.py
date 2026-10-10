@@ -16,10 +16,12 @@ import spatialrust as sr
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]/'scripts'))
 from evaluate_tum_sequence import score
 from run_tum_sequence import TrackingChain, align_pair, checked_depth, compose_camera_pose, decode_depth, generate, project
+from run_tum_point_to_plane import align_point_to_plane, validate_plane_plan
 from tum_sequence_reference import (associate_rgb, file_sha256, json_bytes, prepare,
                                     read_image_index, safe_relative, validate_plan)
 
 PLAN = Path(__file__).resolve().parents[3]/'benchmarks/tum-fr1-xyz-plan.json'
+PLANE_PLAN = PLAN.with_name('tum-fr1-xyz-plane-plan.json')
 ROOT = 'rgbd_dataset_freiburg1_xyz'
 
 
@@ -175,7 +177,7 @@ def test_changed_depth_cannot_satisfy_frozen_input_hash(tmp_path):
     with pytest.raises(ValueError): checked_depth(out, entry, 16777216)
 
 
-@pytest.mark.parametrize('method,adapter', [('unknown',None),('open3d_cpu',None),('spatialrust_cpu',lambda: None)])
+@pytest.mark.parametrize('method,adapter', [('unknown',None),('open3d_cpu',None),('spatialrust_point_to_plane_cpu',None),('spatialrust_cpu',lambda: None)])
 def test_generation_method_cannot_silently_substitute_an_adapter(tmp_path,method,adapter):
     with pytest.raises(ValueError):
         generate(tmp_path/'missing-input','a'*64,tmp_path/'output',method=method,pair_aligner=adapter)
@@ -218,3 +220,49 @@ def test_native_fixture_freezes_every_pose_retains_loss_then_scores_separately(t
     estimates.write_bytes(frozen+b' ')
     with pytest.raises(ValueError): score(archive, estimates, receipt['estimates_sha256'], PLAN, tmp_path/'changed')
     assert not (tmp_path/'changed').exists()
+
+
+def test_point_to_plane_recovers_known_current_to_previous_motion():
+    axis = np.linspace(.3, 1.5, 18)
+    u, v = np.meshgrid(axis, axis)
+    target = np.vstack((np.column_stack((u.ravel(), v.ravel(), np.full(u.size, 2.))),
+                        np.column_stack((np.full(u.size, -.8), u.ravel(), v.ravel()+.7)),
+                        np.column_stack((u.ravel(), np.full(u.size, -.8), v.ravel()+.7)))).astype(np.float32)
+    angle = .015
+    rotation = np.array([[np.cos(angle), 0, np.sin(angle)], [0, 1, 0],
+                         [-np.sin(angle), 0, np.cos(angle)]])
+    translation = np.array([.022, -.016, .024])
+    current = ((target-translation) @ rotation).astype(np.float32)
+    controls = json.loads(PLANE_PLAN.read_bytes())['controls']
+    pose, report = align_point_to_plane(sr.PointCloud.from_xyz(current), sr.PointCloud.from_xyz(target), controls)
+    np.testing.assert_allclose(pose[:3, 3], translation, atol=.002, rtol=0)
+    np.testing.assert_allclose(pose[:3, :3], rotation, atol=.002, rtol=0)
+    assert report['support_fraction'] >= controls['min_support_fraction']
+    assert all(0 < s['iterations'] <= 20 and s['normal_neighbors'] == 20 for s in report['stages'])
+
+
+def test_point_to_plane_does_not_hide_unobservable_plane_motion():
+    u, v = np.meshgrid(np.linspace(0, 2, 20), np.linspace(0, 2, 20))
+    plane = sr.PointCloud.from_xyz(np.column_stack((u.ravel(), v.ravel(), np.full(u.size, 2.))).astype(np.float32))
+    with pytest.raises(ValueError, match='singular'):
+        align_point_to_plane(plane, plane, json.loads(PLANE_PLAN.read_bytes())['controls'])
+
+
+@pytest.mark.parametrize('change', ['normal', 'calibration', 'controls', 'source_plan'])
+def test_point_to_plane_rejects_unfrozen_settings(change):
+    plan = json.loads(PLANE_PLAN.read_bytes())
+    if change == 'normal': plan['estimator']['normal_neighbors'] = 30
+    elif change == 'calibration': plan['calibration']['fx'] = 530.
+    elif change == 'controls': plan['controls']['stages'][0]['iterations'] = 40
+    else: plan['prior_native_plan_sha256'] = 'a'*64
+    with pytest.raises(ValueError): validate_plane_plan(plan, PLAN)
+
+
+def test_second_sequence_has_same_fixed_geometry_and_archive_isolation(tmp_path):
+    holdout = json.loads(PLAN.with_name('tum-fr1-rpy-plane-plan.json').read_bytes())
+    assert validate_plane_plan(holdout, PLAN)['sequence'] == 'rgbd_dataset_freiburg1_rpy'
+    archive, sha = fixture(tmp_path, count=1)
+    with pytest.raises(ValueError, match='wrong-root'):
+        prepare(archive, sha, PLAN.with_name('tum-fr1-rpy-plane-plan.json'), tmp_path/'wrong-sequence')
+    holdout['sequence'] = 'rgbd_dataset_freiburg3_xyz'
+    with pytest.raises(ValueError): validate_plan(holdout)

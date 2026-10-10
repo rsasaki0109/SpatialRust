@@ -122,8 +122,8 @@ def checked_depth(prepared, entry, limit):
 def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
              method='spatialrust_cpu', additional_bindings=()):
     """Run native ICP by default; explicit adapters serve separate baseline studies."""
-    if method not in ('spatialrust_cpu', 'open3d_cpu') or (pair_aligner is None) != (method == 'spatialrust_cpu'):
-        raise ValueError('method must match an explicit baseline adapter or the native default')
+    if method not in ('spatialrust_cpu', 'open3d_cpu', 'spatialrust_point_to_plane_cpu') or (pair_aligner is None) != (method == 'spatialrust_cpu'):
+        raise ValueError('method must match an explicit adapter or the native default')
     prepared, output = Path(prepared), Path(output)
     raw = (prepared/'manifest.json').read_bytes()
     if hashlib.sha256(raw).hexdigest() != require_sha256(manifest_sha256):
