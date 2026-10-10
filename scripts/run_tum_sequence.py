@@ -119,7 +119,11 @@ def checked_depth(prepared, entry, limit):
     return raw
 
 
-def generate(prepared, manifest_sha256, output):
+def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
+             method='spatialrust_cpu', additional_bindings=()):
+    """Run native ICP by default; explicit adapters serve separate baseline studies."""
+    if method not in ('spatialrust_cpu', 'open3d_cpu') or (pair_aligner is None) != (method == 'spatialrust_cpu'):
+        raise ValueError('method must match an explicit baseline adapter or the native default')
     prepared, output = Path(prepared), Path(output)
     raw = (prepared/'manifest.json').read_bytes()
     if hashlib.sha256(raw).hexdigest() != require_sha256(manifest_sha256):
@@ -150,6 +154,13 @@ def generate(prepared, manifest_sha256, output):
             Path(__file__).with_name('realsense_reference.py'),
             Path(__file__).with_name('timestamped_trajectory_reference.py'),
             Path(__file__).with_name('evaluate_pose_reference.py')]
+    if pair_aligner is not None:
+        import inspect
+        adapter_source = inspect.getsourcefile(pair_aligner)
+        if adapter_source is None or not additional_bindings:
+            raise ValueError('baseline adapter requires source and native-library bindings')
+        code += [Path(adapter_source)] + [Path(p) for p in additional_bindings]
+    pair_aligner = align_pair if pair_aligner is None else pair_aligner
     native = list(Path(sr.__file__).parent.glob('*.so')) + list(Path(sr.__file__).parent.glob('*.pyd'))
     if len(native) != 1:
         raise ValueError('require one installed native extension')
@@ -174,7 +185,7 @@ def generate(prepared, manifest_sha256, output):
                 else:
                     if frame['timestamp_ns']-previous_ns > controls['max_tracking_gap_ns']:
                         raise ValueError('depth interval exceeds preregistered tracking gap')
-                    transform, report = align_pair(cloud, previous, controls)
+                    transform, report = pair_aligner(cloud, previous, controls)
                     world = chain.accept(transform)
                     row['registration'] = report
                 if i % controls['io_stride'] == 0 or i == len(frames)-1:
@@ -208,14 +219,14 @@ def generate(prepared, manifest_sha256, output):
                   sensor_frame=camera['sensor_frame'], reference_used_for_generation=False,
                   source_sha256=manifest['source_sha256'], plan_sha256=manifest['plan_sha256'],
                   calibration_sha256=manifest['calibration_sha256'], manifest_sha256=manifest_sha256,
-                  bindings=bindings, poses=poses)
+                  method=method, bindings=bindings, poses=poses)
     with (output/'estimates.json').open('xb') as stream:
         stream.write(json_bytes(frozen))
     receipt = dict(schema='spatialrust.tum-generation.v1', planned_poses=len(poses),
                    generated_poses=sum(p['status'] == 'success' for p in poses), projected_points=points,
                    tracking_lost=chain.lost, reference_used_for_generation=False,
                    estimates_sha256=file_sha256(output/'estimates.json'), bindings=bindings,
-                   python=sys.version.split()[0], numpy=np.__version__)
+                   method=method, python=sys.version.split()[0], numpy=np.__version__)
     with (output/'receipt.json').open('xb') as stream:
         stream.write(json_bytes(receipt))
     return receipt

@@ -3,14 +3,17 @@
 Preparation, CPU motion generation and evaluation now have separate commands for
 the single fixed official sequence `rgbd_dataset_freiburg1_xyz`. The implementation
 and plan are committed as `b2506d4f1ae92f3bd89ac88f5b4b5dbbd0dff6af` before any
-real TUM data is acquired or evaluated. **No real TUM trajectory accuracy has
-been measured.** The maturity estimate remains 86%, provisional.
+real TUM data is acquired or evaluated. The actual sequence has now been
+acquired and evaluated: 798/798 generated poses, 795 evaluated poses and
+0.658 m first-pose-aligned ATE expose substantial drift. The current estimate
+is 87%, provisional, on broader verified processing/scoring evidence; the
+motion accuracy gap remains open. See [the actual results](TUM_REAL_SEQUENCE_RESULTS.md).
 
 ## Verified work and remaining acquisition
 
 Both Python 3.8.20 / NumPy 1.24.4 / PyArrow 17.0.0 / Pillow 10.4.0 and Python
-3.12.14 / NumPy 2.5.3 / PyArrow 26.0.0 / Pillow 12.3.0 pass 679 applicable tests,
-with three expected ONNX skips. The 32 new TUM regressions check complete
+3.12.14 / NumPy 2.5.3 / PyArrow 26.0.0 / Pillow 12.3.0 pass 682 applicable tests,
+with three expected ONNX skips. The 35 new TUM regressions check complete
 40-frame preparation, integer times beyond f64 epoch precision, missing images,
 archive boundaries/links/budgets, hash changes, native projection, native ICP
 direction, noncommuting camera composition, tracking loss, typed IO and post-fit
@@ -32,7 +35,8 @@ checks. The full endpoint suite passes, and all 18 retained real L515 input and
 restored point-cloud pairs pass the corrected audit on Python 3.8 / PyArrow 17.
 Historical run-v3 hashes are preserved; the new audit is
 `/workspace/SpatialRust/target/real-sensor-reference/arrow17-saved-cloud-audit.json`.
-PR #116's corrected head still requires its complete hosted CI gate before merge.
+PR #116's corrected head passes all 103 hosted main jobs and seven required
+wheel/runtime jobs, and is merged as `c2587a51a1ef85d281c7ad654d7ca72339387134`.
 
 Publication applied the two previously requested TUM domains to runtime revision
 7. Verified HTTPS fetches of the official format/download pages now succeed.
@@ -40,8 +44,10 @@ The official archive URL returns HTTP 302 to
 `https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz`;
 the proxy rejects that destination's CONNECT with HTTP 403. The exact redirect
 hostname was added to the saved custom allowlist, preserving the prior six
-entries and all presets. The save result requires publication; it is not proof
-of running-instance access. Proxy and TLS verification remain enabled. The
+entries and all presets. Subsequent publication applies it in runtime revision
+9, and verified HTTPS acquisition of the 448,204,271-byte archive succeeds.
+The historical 403 observation remains in the preparation receipt. Proxy and
+TLS verification remain enabled. The
 download page advertises 0.47 GB for this sequence; its retrieved page does not
 provide an archive checksum. After official HTTPS acquisition, record the full
 SHA-256 before preparation; do not describe a locally recorded hash as a

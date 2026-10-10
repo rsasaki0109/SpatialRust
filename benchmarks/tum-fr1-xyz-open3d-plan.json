@@ -1,0 +1,55 @@
+{
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "sequence": "rgbd_dataset_freiburg1_xyz",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+  "observed_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "calibration": {
+    "sensor_frame": "tum_rgb_optical",
+    "axes": "x right, y down, z forward",
+    "width": 640,
+    "height": 480,
+    "fx": 525.0,
+    "fy": 525.0,
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration."
+  },
+  "limits": {
+    "max_frames": 10000,
+    "max_members": 30000,
+    "max_member_bytes": 16777216,
+    "max_total_bytes": 8589934592
+  },
+  "controls": {
+    "rgb_max_gap_ns": 20000000,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "max_depth_m": 5.0,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "projection_tolerance_m": 1e-06,
+    "io_stride": 60,
+    "stages": [
+      {
+        "leaf_m": 0.1,
+        "gate_m": 0.2,
+        "iterations": 20
+      },
+      {
+        "leaf_m": 0.05,
+        "gate_m": 0.1,
+        "iterations": 20
+      }
+    ],
+    "evaluation_max_gap_ns": 20000000,
+    "rpe_delta_ns": 1000000000
+  },
+  "generation": "Separate Open3D CPU baseline, every indexed depth frame. Same native backprojection, common native CPU voxel points, identity pair initialization, current-to-previous composition and frozen voxel/gate/iteration budgets as the original native plan. Open3D relative fitness/RMSE stopping thresholds are zero; no equivalent stopping or speed ranking claim. Keep failure/reset policy and geometric support acceptance unchanged. Never use groundtruth for initialization, fitting or selection.",
+  "scope": "After seeing the native result, this baseline is fixed to the pre-existing geometry/budget controls; it is a diagnostic comparison on the same sequence, not a new blind holdout or a tuned native improvement.",
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b"
+}

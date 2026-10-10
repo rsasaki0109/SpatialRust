@@ -1,11 +1,26 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **86%, provisional**. This is a subjective
+Current assessment (2026-10-10): **87%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
-A committed protocol now validates every recorded depth frame in two official
+The fixed official TUM `freiburg1_xyz` sequence now completes 798/798 native
+generations over 26.594 seconds, with 185,553,749 projected points and 15 exact
+typed IO audits. Frozen estimates evaluate 795 poses against the independently
+distributed mocap reference; three unmatched poses at a 0.1101-second reference
+gap and six unevaluated RPE pairs remain visible. First-pose-aligned ATE is
+0.658033 m and one-second RPE is 0.175945 m, exposing substantial drift. A separate
+Open3D run with the same input/calibration/geometric budgets also gives 0.657967 m
+ATE; stopping semantics differ. Independent SciPy recomputation verifies both
+complete scoring/coverage records. Both supported local Python endpoints pass
+682 tests with three expected ONNX skips each. The estimate moves from 86% to
+**87%** on broadened real-sensor processing and actual independently audited
+scoring, not an accuracy improvement. Accurate motion, measured synchronization
+and source-bound Autoware calibration remain unresolved, so 90% is not supported.
+See [the actual results and limits](TUM_REAL_SEQUENCE_RESULTS.md).
+
+The preceding committed protocol validates every recorded depth frame in two official
 RealSense L515 recordings: 890/890 successful frames and 264,115,152 projected
 points. Native optical projection agrees with an independent f64 formula within
 2.834e-7 m; all 18 selected native IO roundtrips retain exact typed xyz, original
@@ -14,8 +29,8 @@ intrinsics, depth units, recorded stream transforms, integer bag/sensor times,
 metadata and hashes are retained; transforms are not applied twice. The larger
 recording covers 29.4 seconds, with no missing sequence counters. The observed
 process peak is 175,056 KiB; this is one local run, not a throughput ranking or
-unlimited-memory guarantee. The current suite passes 679 applicable Python tests
-on both Python 3.8 and 3.12, with three expected ONNX skips on each. This closes a limited real-sensor ingestion/geometry/IO
+unlimited-memory guarantee. That checkpoint passed 679 applicable Python tests
+on both Python 3.8 and 3.12, with three expected ONNX skips on each. It closed a limited real-sensor ingestion/geometry/IO
 validation gap and moves the estimate from 85% to **86%**.
 
 The hash-frozen TUM trajectory evaluator has analytic coordinate, time,
@@ -25,10 +40,10 @@ coverage. Complete-sequence preparation and native CPU generation now retain all
 frames, source/calibration hashes, typed depth/pixel attributes and tracking
 failures; 32 new regressions and a real execution of all three CLIs on a static
 40-frame synthetic fixture pass. This is preparation evidence, not real motion
-accuracy. Official format/download pages are reachable after publication, but
-the archive redirects to `webshare.cvg.cit.tum.de`, which still receives a proxy
-403. The redirect host is saved for publication; the actual sequence remains
-unacquired. Unit tests and artificial zero-error fixtures do not establish real
+accuracy. At that preparation checkpoint the archive redirected to
+`webshare.cvg.cit.tum.de`, which received a proxy 403. Subsequent publication
+resolved that exact host and the actual sequence is evaluated above. Unit tests
+and artificial zero-error fixtures do not establish real
 ATE or justify a score increase. See [the full-sequence protocol](TUM_SEQUENCE_VALIDATION.md).
 The L515 recording has no
 independent trajectory truth or measured clock synchronization, and its embedded
