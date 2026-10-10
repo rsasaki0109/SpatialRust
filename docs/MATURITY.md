@@ -14,16 +14,23 @@ intrinsics, depth units, recorded stream transforms, integer bag/sensor times,
 metadata and hashes are retained; transforms are not applied twice. The larger
 recording covers 29.4 seconds, with no missing sequence counters. The observed
 process peak is 175,056 KiB; this is one local run, not a throughput ranking or
-unlimited-memory guarantee. All 647 applicable Python tests pass, with three
-expected ONNX skips. This closes a limited real-sensor ingestion/geometry/IO
+unlimited-memory guarantee. The current suite passes 679 applicable Python tests
+on both Python 3.8 and 3.12, with three expected ONNX skips on each. This closes a limited real-sensor ingestion/geometry/IO
 validation gap and moves the estimate from 85% to **86%**.
 
-The new hash-frozen TUM trajectory evaluator has analytic coordinate, time,
+The hash-frozen TUM trajectory evaluator has analytic coordinate, time,
 coverage, drift and CLI regressions. It retains failed/unmatched poses, reports
 raw and first-pose-aligned ATE separately, never fits scale, and records RPE
-coverage. The actual TUM sequence is still unacquired: the official host is
-denied by the current proxy, and required domains are saved for environment
-review. Unit tests do not establish real ATE. The L515 recording has no
+coverage. Complete-sequence preparation and native CPU generation now retain all
+frames, source/calibration hashes, typed depth/pixel attributes and tracking
+failures; 32 new regressions and a real execution of all three CLIs on a static
+40-frame synthetic fixture pass. This is preparation evidence, not real motion
+accuracy. Official format/download pages are reachable after publication, but
+the archive redirects to `webshare.cvg.cit.tum.de`, which still receives a proxy
+403. The redirect host is saved for publication; the actual sequence remains
+unacquired. Unit tests and artificial zero-error fixtures do not establish real
+ATE or justify a score increase. See [the full-sequence protocol](TUM_SEQUENCE_VALIDATION.md).
+The L515 recording has no
 independent trajectory truth or measured clock synchronization, and its embedded
 factory calibration cannot certify the original Autoware bag. Those operational
 and independent accuracy gates remain open, so **90% is not supported**. See
