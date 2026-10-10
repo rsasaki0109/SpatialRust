@@ -22,6 +22,7 @@ pub struct WgpuRuntime {
     max_gather_channels: u32,
     upload_pool: GpuBufferPool,
     adapter_info: WgpuAdapterInfo,
+    #[cfg(any(not(target_arch = "wasm32"), feature = "gpu-image", feature = "gpu-aoso-staging"))]
     profiling_identity: std::sync::Arc<()>,
     #[cfg(feature = "gpu-image")]
     image_texture_pool: Mutex<HashMap<(u32, u32), Vec<wgpu::Texture>>>,
@@ -100,6 +101,7 @@ impl WgpuRuntime {
         self.device.features().contains(wgpu::Features::TIMESTAMP_QUERY)
     }
 
+    #[cfg(any(not(target_arch = "wasm32"), feature = "gpu-image", feature = "gpu-aoso-staging"))]
     pub(crate) fn profiling_identity(&self) -> std::sync::Arc<()> {
         std::sync::Arc::clone(&self.profiling_identity)
     }
@@ -328,6 +330,11 @@ impl WgpuRuntime {
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
             adapter_info,
+            #[cfg(any(
+                not(target_arch = "wasm32"),
+                feature = "gpu-image",
+                feature = "gpu-aoso-staging"
+            ))]
             profiling_identity: std::sync::Arc::new(()),
             #[cfg(feature = "gpu-image")]
             image_texture_pool: Mutex::new(HashMap::new()),

@@ -67,6 +67,13 @@ Hardware-dependent profiling integration tests skip when timestamp queries are
 unavailable. Unsupported selection and tick conversion also have pure tests.
 The GTX 1660 Ti example confirms the hardware timestamp path ran locally.
 
+CI additionally exposed a wgpu-only WebAssembly configuration where neither
+native collection nor the optional image/point profiled entry points existed.
+The unused runtime identity and validation helpers are now gated to the
+configurations that use them. Reproduced and verified with `RUSTFLAGS=-D warnings`
+for `spatialrust-web --target wasm32-unknown-unknown --features wasm,webgpu` and
+the image/AoSoA GPU WASM configuration. The browser CI now builds both surfaces.
+
 ## Reproduction and observations
 
 The runnable example is

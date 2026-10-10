@@ -30,6 +30,7 @@ pub struct GpuTimingReport {
 /// gaps between passes, and must not be interpreted as total frame latency.
 /// Timestamp precision is backend-dependent and samples may be zero.
 pub struct GpuStageProfiler {
+    #[cfg(any(not(target_arch = "wasm32"), feature = "gpu-image", feature = "gpu-aoso-staging"))]
     runtime_identity: std::sync::Arc<()>,
     queries: wgpu::QuerySet,
     max_stages: u32,
@@ -47,6 +48,11 @@ impl GpuStageProfiler {
             return Err(invalid("GPU profiling capacity must be in 1..=2048 stages"));
         }
         Ok(Self {
+            #[cfg(any(
+                not(target_arch = "wasm32"),
+                feature = "gpu-image",
+                feature = "gpu-aoso-staging"
+            ))]
             runtime_identity: runtime.profiling_identity(),
             queries: runtime.device().create_query_set(&wgpu::QuerySetDescriptor {
                 label: Some("spatialrust-stage-timestamps"),
@@ -59,6 +65,7 @@ impl GpuStageProfiler {
         })
     }
 
+    #[cfg(any(not(target_arch = "wasm32"), feature = "gpu-image", feature = "gpu-aoso-staging"))]
     pub(crate) fn validate(&self, runtime: &WgpuRuntime, required: u32) -> SpatialResult<()> {
         // wgpu handle equality can collide across separately created Instances.
         // Retain a runtime identity so moving the runtime cannot invalidate it.
