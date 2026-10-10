@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- GPU AoSoA frame construction no longer computes and reads back unused voxel
+  centroids; all source points and per-point normals remain device-resident.
+  Frame receipts include scalar cell-count readbacks on construction/grid
+  rebuild and device copies during attribute reduction. Empty frames report no
+  transfers, and the frame benchmark waits for completed normal computation.
+
 - Outlier filters reject nonfinite XYZ before neighborhood search, including
   impossible radius-neighbor requests, instead of processing invalid geometry.
 - Neighborhood outlier filters reject invalid floating settings, bound SOR

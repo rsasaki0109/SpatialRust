@@ -28,14 +28,31 @@ pub fn compute_voxel_keys_aoso_chunks(
 ///
 /// Chunk buffers are concatenated with GPU-to-GPU copies. Key generation,
 /// sorting, segmentation, and centroid reduction then operate on that combined
-/// GPU buffer, so voxels spanning chunk boundaries are merged correctly. Only
-/// the final centroids are read back.
+/// GPU buffer, so voxels spanning chunk boundaries are merged correctly. The
+/// scalar cell count and final centroids are read back.
 pub fn downsample_voxel_centroid_aoso_chunks(
     runtime: &WgpuRuntime,
     chunks: &[GpuAoSoXyzChunk],
     origin: [f32; 3],
     inv_leaf: f32,
 ) -> SpatialResult<AoSoAVoxelCentroidResult> {
+    let (positions, segments) =
+        build_voxel_segments_aoso_chunks(runtime, chunks, origin, inv_leaf)?;
+    let (out_x, out_y, out_z) =
+        reduce_voxel_centroids_aoso(runtime, positions.buffer(), &segments)?;
+    Ok(AoSoAVoxelCentroidResult { out_x, out_y, out_z, segments, positions })
+}
+
+/// Combines source positions and partitions them without reducing centroids.
+///
+/// Only the scalar cell count is read back; point and segment arrays stay on
+/// the device. The returned positions still represent every source point.
+pub(crate) fn build_voxel_segments_aoso_chunks(
+    runtime: &WgpuRuntime,
+    chunks: &[GpuAoSoXyzChunk],
+    origin: [f32; 3],
+    inv_leaf: f32,
+) -> SpatialResult<(GpuAoSoXyzBuffer, GpuVoxelSegments)> {
     if !inv_leaf.is_finite() || inv_leaf <= 0.0 {
         return Err(SpatialError::InvalidArgument(
             "inverse voxel leaf size must be finite and positive".to_owned(),
@@ -47,18 +64,15 @@ pub fn downsample_voxel_centroid_aoso_chunks(
             .ok_or_else(|| SpatialError::InvalidArgument("AoSoA point count overflow".to_owned()))
     })?;
     if total_points == 0 {
-        return Ok(AoSoAVoxelCentroidResult {
-            out_x: Vec::new(),
-            out_y: Vec::new(),
-            out_z: Vec::new(),
-            segments: build_voxel_segments_gpu_from_keys_buffer(
+        return Ok((
+            empty_aoso_buffer(runtime),
+            build_voxel_segments_gpu_from_keys_buffer(
                 runtime,
                 &empty_storage_buffer(runtime),
                 0,
                 1,
             )?,
-            positions: empty_aoso_buffer(runtime),
-        });
+        ));
     }
     let point_count = u32::try_from(total_points).map_err(|_| {
         SpatialError::InvalidArgument("AoSoA chunks exceed the GPU point limit".to_owned())
@@ -68,9 +82,7 @@ pub fn downsample_voxel_centroid_aoso_chunks(
         dispatch_voxel_keys_aoso(runtime, positions.buffer(), point_count, origin, inv_leaf)?;
     let segments =
         build_voxel_segments_gpu_from_keys_buffer(runtime, &keys, point_count, point_count)?;
-    let (out_x, out_y, out_z) =
-        reduce_voxel_centroids_aoso(runtime, positions.buffer(), &segments)?;
-    Ok(AoSoAVoxelCentroidResult { out_x, out_y, out_z, segments, positions })
+    Ok((positions, segments))
 }
 
 fn empty_aoso_buffer(runtime: &WgpuRuntime) -> GpuAoSoXyzBuffer {

@@ -56,9 +56,16 @@ workspace because its build requires a Python toolchain.
   aggregate transfer view; a GPU stage may still report a documented host-side
   refinement stage.
 - `GpuSpatialFrame` is the explicit GPU-resident path. Host positions are
-  uploaded at the frame boundary, GPU stages remain resident, and readback is
-  performed only through an explicit readback method. The frame receipt records
-  transfer accounting.
+  uploaded at the frame boundary; position, normal, and segment arrays remain
+  resident until explicitly read back. Frame construction partitions source
+  points without computing unused centroids. Nonempty construction synchronizes
+  two four-byte cell counts (voxel partition and radius grid), reported in the
+  frame receipt. Rebuilding a nonempty radius grid adds four bytes; reusing a
+  matching grid adds none. Empty construction reports zero transfer bytes.
+  Receipts count payload copies and scalar metadata moved by frame methods,
+  including attribute concatenation, but exclude kernel parameter uniforms,
+  shader storage accesses, and transfers made outside frame methods. See the
+  [frame transfer receipt](../notes/2026-10-11_gpu_frame_transfer_accounting.md).
 - `SpatialRuntime` contains only backend identity and policy compatibility;
   backend-specific queues, buffers, and transfers stay in the implementing
   crate.
