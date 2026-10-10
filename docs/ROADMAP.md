@@ -1072,6 +1072,6 @@ not change automatic backend placement or the operational v1.3 admission gates.
 | Slice | Status | Deliverable | Acceptance |
 | --- | --- | --- | --- |
 | Frame transfers | Complete | Partition source points without unused centroid reduction/readback; account for cell-count synchronization and attribute copies | source-point/CPU partition parity across chunk sizes, planar normals, empty frames, rebuild/reuse receipts, and GPU image-chain regressions; `notes/2026-10-11_gpu_frame_transfer_accounting.md` |
-| Shared GPU timing | Planned | Optional timestamp measurements usable by image and point-cloud stages | supported/unsupported adapter paths, named stage timings, completed-work wall time, and explicit profiling readback |
+| Shared GPU timing | Complete | Optional bounded pass timestamps shared by image chains and point-cloud frames, with explicit native collection | output/receipt parity, feature fallback, runtime ownership, capacity/failure checks, completed-work comparison; `notes/2026-10-11_gpu_stage_timing.md` |
 | Point-cloud compaction | Planned | Hierarchical work-efficient prefix scan | CPU parity for empty/singleton/workgroup boundaries and repeated keys; isolated large-cloud comparison |
 | Temporary storage | Planned | Reuse scratch buffers with bounded retained memory | repeat-frame allocation/retained-byte measurements and pool budget enforcement for image and point-cloud workloads |

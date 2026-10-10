@@ -1,4 +1,4 @@
-use super::voxel::{dispatch_voxel_keys_aoso, empty_storage_buffer};
+use super::voxel::empty_storage_buffer;
 use super::*;
 
 /// Estimates normals directly from a retained interleaved XYZ GPU buffer.
@@ -109,6 +109,15 @@ pub fn build_radius_grid_aoso_gpu(
     positions: &GpuAoSoXyzBuffer,
     radius: f32,
 ) -> SpatialResult<GpuAoSoRadiusGrid> {
+    build_radius_grid_aoso_gpu_with_profiler(runtime, positions, radius, None)
+}
+
+pub(crate) fn build_radius_grid_aoso_gpu_with_profiler(
+    runtime: &WgpuRuntime,
+    positions: &GpuAoSoXyzBuffer,
+    radius: f32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuAoSoRadiusGrid> {
     if !radius.is_finite() || radius <= 0.0 {
         return Err(SpatialError::InvalidArgument(
             "grid radius must be finite and positive".to_owned(),
@@ -121,18 +130,20 @@ pub fn build_radius_grid_aoso_gpu(
     let segments = if point_count == 0 {
         build_voxel_segments_gpu_from_keys_buffer(runtime, &empty, 0, 1)?
     } else {
-        let keys = dispatch_voxel_keys_aoso(
+        let keys = super::voxel::dispatch_voxel_keys_aoso_with_profiler(
             runtime,
             positions.buffer(),
             point_count,
             [0.0; 3],
             1.0 / radius,
+            profiler.as_deref_mut(),
         )?;
-        build_voxel_segments_gpu_from_keys_buffer(
+        crate::kernels::build_voxel_segments_with_profiler(
             runtime,
             &keys,
             point_count,
             point_count.next_power_of_two(),
+            profiler,
         )?
     };
     Ok(GpuAoSoRadiusGrid { radius, segments })
@@ -143,6 +154,15 @@ pub fn estimate_normals_radius_grid_aoso_gpu(
     runtime: &WgpuRuntime,
     positions: &GpuAoSoXyzBuffer,
     grid: &GpuAoSoRadiusGrid,
+) -> SpatialResult<GpuAoSoNormals> {
+    estimate_normals_radius_grid_aoso_gpu_with_profiler(runtime, positions, grid, None)
+}
+
+pub(crate) fn estimate_normals_radius_grid_aoso_gpu_with_profiler(
+    runtime: &WgpuRuntime,
+    positions: &GpuAoSoXyzBuffer,
+    grid: &GpuAoSoRadiusGrid,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuAoSoNormals> {
     let point_count = u32::try_from(positions.point_count).map_err(|_| {
         SpatialError::InvalidArgument("AoSoA positions exceed the GPU point limit".to_owned())
@@ -217,7 +237,7 @@ pub fn estimate_normals_radius_grid_aoso_gpu(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("normals-radius-aoso-pass"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "radius-normals"),
         });
         pass.set_pipeline(&pipeline);
         pass.set_bind_group(0, &bind_group, &[]);

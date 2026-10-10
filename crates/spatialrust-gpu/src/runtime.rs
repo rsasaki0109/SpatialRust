@@ -22,6 +22,7 @@ pub struct WgpuRuntime {
     max_gather_channels: u32,
     upload_pool: GpuBufferPool,
     adapter_info: WgpuAdapterInfo,
+    profiling_identity: std::sync::Arc<()>,
     #[cfg(feature = "gpu-image")]
     image_texture_pool: Mutex<HashMap<(u32, u32), Vec<wgpu::Texture>>>,
     #[cfg(feature = "gpu-image")]
@@ -83,6 +84,24 @@ impl WgpuRuntime {
     /// Creates a headless wgpu runtime with an explicit adapter power preference.
     pub fn new_headless_with_preference(preference: WgpuPowerPreference) -> SpatialResult<Self> {
         pollster::block_on(Self::new_headless_async(preference))
+    }
+
+    /// Creates a runtime enabling pass timestamps when supported by the adapter.
+    ///
+    /// Unsupported adapters still initialize; check [`Self::timestamp_queries_enabled`]
+    /// before constructing a profiler. The default constructors request no timestamps.
+    pub fn new_headless_with_timestamps(preference: WgpuPowerPreference) -> SpatialResult<Self> {
+        pollster::block_on(Self::new_headless_with_timestamps_async(preference))
+    }
+
+    /// Returns whether this device has optional pass timestamp queries enabled.
+    #[must_use]
+    pub fn timestamp_queries_enabled(&self) -> bool {
+        self.device.features().contains(wgpu::Features::TIMESTAMP_QUERY)
+    }
+
+    pub(crate) fn profiling_identity(&self) -> std::sync::Arc<()> {
+        std::sync::Arc::clone(&self.profiling_identity)
     }
 
     /// Returns a process-wide shared headless runtime, initializing it on first use.
@@ -240,6 +259,20 @@ impl WgpuRuntime {
     /// main thread is not supported. Native callers may also use it from their
     /// async executor.
     pub async fn new_headless_async(preference: WgpuPowerPreference) -> SpatialResult<Self> {
+        Self::new_headless_impl(preference, false).await
+    }
+
+    /// Async counterpart of [`Self::new_headless_with_timestamps`].
+    pub async fn new_headless_with_timestamps_async(
+        preference: WgpuPowerPreference,
+    ) -> SpatialResult<Self> {
+        Self::new_headless_impl(preference, true).await
+    }
+
+    async fn new_headless_impl(
+        preference: WgpuPowerPreference,
+        timestamps: bool,
+    ) -> SpatialResult<Self> {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -273,7 +306,7 @@ impl WgpuRuntime {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: Some("spatialrust-wgpu"),
-                    required_features: wgpu::Features::empty(),
+                    required_features: timestamp_features(timestamps, adapter.features()),
                     required_limits: adapter.limits(),
                     memory_hints: wgpu::MemoryHints::Performance,
                 },
@@ -295,6 +328,7 @@ impl WgpuRuntime {
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
             adapter_info,
+            profiling_identity: std::sync::Arc::new(()),
             #[cfg(feature = "gpu-image")]
             image_texture_pool: Mutex::new(HashMap::new()),
             #[cfg(feature = "gpu-image")]
@@ -327,6 +361,14 @@ fn max_gather_channels_for_limit(storage_buffers_per_stage: u32) -> u32 {
     }
 }
 
+fn timestamp_features(requested: bool, available: wgpu::Features) -> wgpu::Features {
+    if requested {
+        available & wgpu::Features::TIMESTAMP_QUERY
+    } else {
+        wgpu::Features::empty()
+    }
+}
+
 #[cfg(feature = "gpu-wgpu")]
 #[cfg(not(target_arch = "wasm32"))]
 fn init_shared_runtime() -> Result<Arc<WgpuRuntime>, String> {
@@ -338,6 +380,15 @@ mod tests {
     use super::WgpuRuntime;
     use crate::pipeline_cache::ComputePipelineCache;
     use std::sync::Arc;
+
+    #[test]
+    fn optional_timestamp_features_handle_unsupported_adapters() {
+        let unrelated = wgpu::Features::INDIRECT_FIRST_INSTANCE;
+        let supported = unrelated | wgpu::Features::TIMESTAMP_QUERY;
+        assert_eq!(super::timestamp_features(false, supported), wgpu::Features::empty());
+        assert_eq!(super::timestamp_features(true, unrelated), wgpu::Features::empty());
+        assert_eq!(super::timestamp_features(true, supported), wgpu::Features::TIMESTAMP_QUERY);
+    }
 
     #[test]
     fn shared_runtime_is_singleton() {

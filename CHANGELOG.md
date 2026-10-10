@@ -55,6 +55,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Optional shared GPU compute-pass timestamps for resident image chains and
+  AoSoA voxel/radius-normal frames. Timestamp-enabled runtimes check adapter
+  support, bounded profilers validate capacity/runtime ownership before work,
+  and explicit native collection reports named timings and query readback bytes
+  separately from payload receipts. Default execution enables no timestamp
+  features. A runnable example compares GPU pass time with completed wall time.
+
 - GPU voxel segmentation uses stable four-bit radix sorting of signed XYZ keys,
   preserving input order within a cell. Exact-sized entries remove power-of-two
   padding, post-sort filtering and its scalar readback. GPU buffer/count limits

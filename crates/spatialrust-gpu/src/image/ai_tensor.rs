@@ -188,6 +188,17 @@ pub fn pack_ai_chw_gpu(
     mean: [f32; 4],
     std: [f32; 4],
 ) -> SpatialResult<GpuAiTensor> {
+    pack_ai_chw_gpu_with_profiler(runtime, source, scale, mean, std, None)
+}
+
+pub(crate) fn pack_ai_chw_gpu_with_profiler(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    scale: f32,
+    mean: [f32; 4],
+    std: [f32; 4],
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuAiTensor> {
     source.validate_runtime(runtime)?;
     if !scale.is_finite()
         || mean.iter().any(|value| !value.is_finite())
@@ -239,7 +250,7 @@ pub fn pack_ai_chw_gpu(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("pack_ai_chw_gpu"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "pack_ai_chw_gpu"),
         });
         pass.set_pipeline(&pipeline.pipeline);
         pass.set_bind_group(0, &bind_group, &[]);
