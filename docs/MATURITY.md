@@ -5,6 +5,18 @@ engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
 
+Environment/data recovery leaves the estimate at **82%**. Rust 1.99 is restored
+from the existing local installation; network-authorized GitHub downloads work.
+A fresh frozen default wheel passes 565 tests with three expected ONNX skips,
+exact installed-byte/runtime checks, and six actual native/Open3D registrations
+on a freshly downloaded hash-bound publisher demo. This restores prior comparison
+data, not a second independent benchmark. Operational source-bound clock and
+front/rear LiDAR calibration remain unavailable. The final prior CI head verifies
+Windows/macOS/Linux wheel runtimes and strict browser output, but the full matrix
+has a macOS HTTP fixture failure. Its HEAD-body bug is now reproduced and repaired
+locally; hosted verification of the repaired head remains necessary. See
+`notes/2026-10-10_environment_data_recovery.md`.
+
 The 82% estimate adds a precommitted fitting-scene holdout: nine pairs in three
 new scenes, 54 baseline registrations plus 54 fixed-prior replays. The previously
 chosen 0.8 trim improves 17/27 to 22/27 with five gains on two pairs and zero

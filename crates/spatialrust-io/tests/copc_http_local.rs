@@ -5,6 +5,24 @@
 mod common;
 
 #[test]
+fn local_http_head_has_no_body() {
+    use std::io::{Read, Write};
+    use std::net::TcpStream;
+
+    let (_server, url) = common::LocalHttpFileServer::start(vec![0xff; 128]);
+    let address = url.strip_prefix("http://").unwrap().split('/').next().unwrap();
+    let mut stream = TcpStream::connect(address).unwrap();
+    stream.set_read_timeout(Some(std::time::Duration::from_secs(5))).unwrap();
+    write!(stream, "HEAD /fixture.copc.laz HTTP/1.1\r\nHost: {address}\r\n\r\n").unwrap();
+    let mut response = Vec::new();
+    stream.read_to_end(&mut response).unwrap();
+    let response = String::from_utf8(response).expect("HEAD must not send binary payload bytes");
+    assert!(response.contains("Content-Length: 128\r\n"));
+    assert!(response.contains("Connection: close\r\n"));
+    assert!(response.ends_with("\r\n\r\n"));
+}
+
+#[test]
 fn read_copc_url_with_query_matches_local_file() {
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};
     use spatialrust_io::{
