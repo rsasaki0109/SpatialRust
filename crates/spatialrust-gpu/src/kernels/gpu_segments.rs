@@ -10,6 +10,7 @@ use crate::runtime::WgpuRuntime;
 pub struct GpuVoxelSegments {
     cell_count: u32,
     point_count: u32,
+    construction_readback_bytes: u64,
     keys: wgpu::Buffer,
     point_indices: wgpu::Buffer,
     cell_starts: wgpu::Buffer,
@@ -23,8 +24,25 @@ impl GpuVoxelSegments {
         keys: wgpu::Buffer,
         point_indices: wgpu::Buffer,
         cell_starts: wgpu::Buffer,
+        construction_readback_bytes: u64,
     ) -> Self {
-        Self { cell_count, point_count, keys, point_indices, cell_starts }
+        Self {
+            cell_count,
+            point_count,
+            construction_readback_bytes,
+            keys,
+            point_indices,
+            cell_starts,
+        }
+    }
+
+    /// Returns bytes read back while constructing these GPU segments.
+    ///
+    /// Nonempty compaction synchronizes a four-byte cell count. This excludes
+    /// later explicit metadata readbacks and transfers of the caller's inputs.
+    #[must_use]
+    pub const fn construction_readback_bytes(&self) -> u64 {
+        self.construction_readback_bytes
     }
 
     /// Returns the number of occupied voxel cells.

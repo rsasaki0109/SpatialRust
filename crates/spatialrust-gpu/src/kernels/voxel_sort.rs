@@ -172,7 +172,7 @@ fn empty_gpu_segments(runtime: &WgpuRuntime) -> SpatialResult<GpuVoxelSegments> 
             mapped_at_creation: false,
         })
     };
-    Ok(GpuVoxelSegments::new(0, 0, make_empty(), make_empty(), make_empty()))
+    Ok(GpuVoxelSegments::new(0, 0, make_empty(), make_empty(), make_empty(), 0))
 }
 
 #[cfg(test)]
@@ -251,8 +251,10 @@ mod tests {
                     )
                 })
                 .collect();
+            let segments = build_voxel_segments_gpu_from_keys(&runtime, &keys).unwrap();
+            assert_eq!(segments.construction_readback_bytes(), if count == 0 { 0 } else { 4 });
             assert_eq!(
-                build_voxel_segments_gpu(&runtime, &keys).unwrap(),
+                segments.to_voxel_segments(&runtime).unwrap(),
                 build_voxel_segments(&keys),
                 "point count {count}"
             );

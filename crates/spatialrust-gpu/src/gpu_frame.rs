@@ -4,13 +4,12 @@ use spatialrust_core::{
     PointSchema, SpatialError, SpatialResult, SpatialTensor, TransferDirection, TransferStats,
 };
 
-use crate::aoso_staging::runtime_device_key;
+use crate::aoso_staging::{build_voxel_segments_aoso_chunks, runtime_device_key};
 use crate::{
-    build_radius_grid_aoso_gpu, downsample_voxel_centroid_aoso_chunks,
-    estimate_normals_radius_grid_aoso_gpu, reduce_voxel_attributes_aoso_chunks,
-    upload_spatial_tensor_xyz_chunks, AoSoAAttributeAggregation, AoSoAAttributeReduction,
-    AoSoAVoxelCentroidResult, GpuAoSoAttributeChunk, GpuAoSoNormals, GpuAoSoRadiusGrid,
-    GpuAoSoXyzBuffer, GpuVoxelSegments, WgpuRuntime,
+    build_radius_grid_aoso_gpu, estimate_normals_radius_grid_aoso_gpu,
+    reduce_voxel_attributes_aoso_chunks, upload_spatial_tensor_xyz_chunks,
+    AoSoAAttributeAggregation, AoSoAAttributeReduction, GpuAoSoAttributeChunk, GpuAoSoNormals,
+    GpuAoSoRadiusGrid, GpuAoSoXyzBuffer, GpuVoxelSegments, WgpuRuntime,
 };
 
 /// GPU frame capabilities available to downstream algorithms.
@@ -29,6 +28,12 @@ pub enum GpuFrameCapability {
 }
 
 /// Transfer and logical-stage receipt for one GPU frame.
+///
+/// Counts point/attribute payload copies and scalar metadata readbacks performed
+/// by frame methods, including construction. Kernel parameter uniforms and
+/// shader storage accesses are excluded. Transfers performed outside frame
+/// methods (for example, uploads before attaching attributes or direct buffer
+/// readbacks) remain the caller's responsibility.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct GpuExecutionReceipt {
     transfers: TransferStats,
@@ -54,7 +59,7 @@ impl GpuExecutionReceipt {
         self.transfers.device_to_device_bytes()
     }
 
-    /// Returns bytes explicitly read back to host memory.
+    /// Returns payload and scalar metadata bytes read back to host memory.
     #[must_use]
     pub const fn device_to_host_bytes(&self) -> u64 {
         self.transfers.device_to_host_bytes()
@@ -242,6 +247,9 @@ impl GpuSpatialFrame {
     pub fn rebuild_radius_grid(&mut self, runtime: &WgpuRuntime, radius: f32) -> SpatialResult<()> {
         self.validate_runtime(runtime)?;
         let grid = build_radius_grid_aoso_gpu(runtime, &self.positions, radius)?;
+        self.receipt
+            .transfers
+            .record(TransferDirection::DeviceToHost, grid.segments().construction_readback_bytes());
         self.radius_grid = Some(grid);
         self.receipt.stages.push("radius-grid");
         Ok(())
@@ -280,6 +288,12 @@ impl GpuSpatialFrame {
         })?;
         let reduced =
             reduce_voxel_attributes_aoso_chunks(runtime, &self.attributes, segments, aggregation)?;
+        if !reduced.is_empty() {
+            self.receipt.transfers.record(
+                TransferDirection::DeviceToDevice,
+                self.attributes.iter().map(GpuAoSoAttributeChunk::byte_len).sum(),
+            );
+        }
         self.receipt.transfers.record(
             TransferDirection::DeviceToHost,
             (reduced.len() * reduced.layout().stride_f32() * std::mem::size_of::<f32>()) as u64,
@@ -341,6 +355,11 @@ impl GpuSpatialFrame {
 }
 
 /// Uploads a tensor and chains global voxel partitioning and radius normals.
+///
+/// Retains every source point, without computing or reading back voxel centroids.
+/// A nonempty frame synchronizes two four-byte cell counts during partition/grid
+/// construction; these metadata transfers are included in its receipt. Position
+/// and normal arrays remain on the device until explicitly read back.
 pub fn run_aoso_voxel_normal_frame(
     runtime: &WgpuRuntime,
     tensor: &SpatialTensor<'_>,
@@ -349,30 +368,38 @@ pub fn run_aoso_voxel_normal_frame(
     normal_radius: f32,
 ) -> SpatialResult<GpuSpatialFrame> {
     let chunks = upload_spatial_tensor_xyz_chunks(runtime, tensor)?;
-    let upload_bytes = chunks.iter().map(|chunk| chunk.byte_len()).sum();
-    let voxel = downsample_voxel_centroid_aoso_chunks(runtime, &chunks, origin, inv_leaf)?;
+    let upload_bytes = chunks
+        .iter()
+        .map(|chunk| (chunk.point_count() * 3 * std::mem::size_of::<f32>()) as u64)
+        .sum();
+    let partition = build_voxel_segments_aoso_chunks(runtime, &chunks, origin, inv_leaf);
     for chunk in chunks {
         chunk.recycle(runtime);
     }
-    let AoSoAVoxelCentroidResult { segments, positions, .. } = voxel;
-    let grid = build_radius_grid_aoso_gpu(runtime, &positions, normal_radius)?;
-    let normals = estimate_normals_radius_grid_aoso_gpu(runtime, &positions, &grid)?;
+    let (positions, segments) = partition?;
     let mut frame = GpuSpatialFrame::new(runtime, tensor.schema().clone(), positions)?;
+    frame
+        .receipt
+        .transfers
+        .record(TransferDirection::DeviceToHost, segments.construction_readback_bytes());
     frame.attach_voxel_segments(segments)?;
-    frame.attach_radius_grid(grid)?;
-    frame.attach_normals(runtime, normals)?;
     frame.receipt.transfers.record(TransferDirection::HostToDevice, upload_bytes);
     frame.receipt.transfers.record(TransferDirection::DeviceToDevice, upload_bytes);
-    frame.receipt.stages = vec!["upload", "voxel-segments", "radius-grid", "radius-normals"];
+    frame.receipt.stages = vec!["upload", "voxel-segments"];
+    frame.estimate_normals(runtime, normal_radius)?;
     Ok(frame)
 }
 
 #[cfg(test)]
 mod tests {
     use super::{run_aoso_voxel_normal_frame, GpuFrameCapability};
-    use crate::{upload_spatial_tensor_attribute_chunks, AoSoAAttributeAggregation, WgpuRuntime};
+    use crate::{
+        build_voxel_segments, upload_spatial_tensor_attribute_chunks, AoSoAAttributeAggregation,
+        WgpuRuntime,
+    };
     use spatialrust_core::{
-        AoSoAAttributeLayout, PointCloudBuilder, SpatialTensor, StandardSchemas,
+        AoSoAAttributeLayout, PointBuffer, PointBufferSet, PointCloud, PointCloudBuilder,
+        SpatialTensor, StandardSchemas,
     };
 
     #[test]
@@ -391,7 +418,7 @@ mod tests {
         let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
 
         let mut frame =
-            run_aoso_voxel_normal_frame(&runtime, &tensor, [0.0; 3], 20.0, 0.25).unwrap();
+            run_aoso_voxel_normal_frame(&runtime, &tensor, [0.0; 3], 4.0, 0.25).unwrap();
         assert_eq!(frame.point_count(), expected.len());
         assert!(frame.has_capability(GpuFrameCapability::Positions));
         assert!(frame.has_capability(GpuFrameCapability::Normals));
@@ -404,11 +431,85 @@ mod tests {
             &["upload", "voxel-segments", "radius-grid", "radius-normals"]
         );
         assert_eq!(frame.receipt().host_to_device_bytes(), (expected.len() * 3 * 4) as u64);
+        assert_eq!(frame.receipt().gpu_to_gpu_bytes(), (expected.len() * 3 * 4) as u64);
+        // Only the voxel and radius-grid cell counts cross back during construction.
+        assert_eq!(frame.receipt().device_to_host_bytes(), 8);
+        assert!(frame.voxel_segments().unwrap().cell_count() < expected.len() as u32);
+
+        let normals = frame.normals().unwrap().readback(&runtime).unwrap();
+        for normal in normals {
+            assert!(normal.normal[0].abs() < 1e-5);
+            assert!(normal.normal[1].abs() < 1e-5);
+            assert!((normal.normal[2].abs() - 1.0).abs() < 1e-5);
+            assert!(normal.curvature.abs() < 1e-5);
+        }
 
         let actual = frame.readback_positions(&runtime).unwrap();
         assert_eq!(actual, expected);
-        assert_eq!(frame.receipt().device_to_host_bytes(), (expected.len() * 3 * 4) as u64);
+        assert_eq!(frame.receipt().device_to_host_bytes(), 8 + (expected.len() * 3 * 4) as u64);
         assert!(frame.reduce_attributes(&runtime, AoSoAAttributeAggregation::Average).is_err());
+        frame.recycle(&runtime).unwrap();
+    }
+
+    #[test]
+    fn frame_partition_preserves_source_points_across_chunk_sizes() {
+        let points = [
+            [1.3, 0.0, 0.0],
+            [-0.4, 0.0, 0.0],
+            [1.1, 0.0, 0.0],
+            [-0.2, 0.0, 0.0],
+            [-1.3, 0.0, 0.0],
+            [2.1, 0.0, 0.0],
+            [1.4, 0.0, 0.0],
+        ];
+        let origin = [-0.5, 0.0, 0.0];
+        let mut builder = PointCloudBuilder::xyz();
+        for point in points {
+            builder.push_point(point).unwrap();
+        }
+        let cloud = builder.build().unwrap();
+        let keys = points.map(|p| ((p[0] - origin[0]).floor() as i64, 0, 0));
+        let expected = build_voxel_segments(&keys);
+        let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
+        for chunk_size in [1, 2, 64] {
+            let tensor = SpatialTensor::new(&cloud, chunk_size).unwrap();
+            let mut frame =
+                run_aoso_voxel_normal_frame(&runtime, &tensor, origin, 1.0, 0.5).unwrap();
+            assert_eq!(frame.point_count(), points.len());
+            assert_eq!(frame.normals().unwrap().point_count(), points.len());
+            assert_eq!(
+                frame.voxel_segments().unwrap().to_voxel_segments(&runtime).unwrap(),
+                expected
+            );
+            assert_eq!(frame.receipt().device_to_host_bytes(), 8);
+            assert_eq!(frame.readback_positions(&runtime).unwrap(), points);
+            assert_eq!(frame.receipt().host_to_device_bytes(), 7 * 12);
+            assert_eq!(frame.receipt().gpu_to_gpu_bytes(), 7 * 12);
+            assert_eq!(frame.receipt().device_to_host_bytes(), 8 + 7 * 12);
+            frame.recycle(&runtime).unwrap();
+        }
+    }
+
+    #[test]
+    fn empty_frame_has_no_payload_or_metadata_transfers() {
+        let mut buffers = PointBufferSet::new();
+        for field in ["x", "y", "z"] {
+            buffers.insert(field, PointBuffer::F32(Vec::new()));
+        }
+        let cloud =
+            PointCloud::try_from_parts(StandardSchemas::point_xyz(), buffers, Default::default())
+                .unwrap();
+        let tensor = SpatialTensor::new(&cloud, 2).unwrap();
+        let runtime = WgpuRuntime::new_headless().expect("wgpu runtime");
+        let mut frame = run_aoso_voxel_normal_frame(&runtime, &tensor, [0.0; 3], 1.0, 0.5).unwrap();
+        assert_eq!(frame.point_count(), 0);
+        assert_eq!(frame.voxel_segments().unwrap().construction_readback_bytes(), 0);
+        assert_eq!(frame.radius_grid().unwrap().segments().construction_readback_bytes(), 0);
+        frame.estimate_normals(&runtime, 1.0).unwrap();
+        assert!(frame.readback_positions(&runtime).unwrap().is_empty());
+        assert_eq!(frame.receipt().host_to_device_bytes(), 0);
+        assert_eq!(frame.receipt().gpu_to_gpu_bytes(), 0);
+        assert_eq!(frame.receipt().device_to_host_bytes(), 0);
         frame.recycle(&runtime).unwrap();
     }
 
@@ -454,12 +555,22 @@ mod tests {
         assert_eq!(reduced.len(), 3);
         assert_eq!(reduced.as_slice()[10], 6.0);
         assert!(frame.has_capability(GpuFrameCapability::Attributes));
+        // Attribute uploads took place outside frame methods; reduction copies
+        // the attached records on-device and reads back the reduced records.
+        assert_eq!(frame.receipt().host_to_device_bytes(), 4 * 3 * 4);
+        assert_eq!(frame.receipt().gpu_to_gpu_bytes(), 4 * 3 * 4 + 4 * 7 * 4);
+        assert_eq!(frame.receipt().device_to_host_bytes(), 8 + 3 * 7 * 4);
 
         frame.estimate_normals(&runtime, 0.5).unwrap();
         assert_eq!(frame.radius_grid().unwrap().radius(), 0.5);
+        assert_eq!(frame.receipt().device_to_host_bytes(), 8 + 3 * 7 * 4);
+        let before_invalid_radius = frame.receipt().clone();
+        assert!(frame.estimate_normals(&runtime, 0.0).is_err());
+        assert_eq!(frame.receipt(), &before_invalid_radius);
         frame.estimate_normals(&runtime, 1.0).unwrap();
         assert_eq!(frame.radius_grid().unwrap().radius(), 1.0);
         assert_eq!(frame.normals().unwrap().point_count(), 4);
+        assert_eq!(frame.receipt().device_to_host_bytes(), 12 + 3 * 7 * 4);
         assert!(frame.receipt().stages().ends_with(&[
             "radius-normals",
             "radius-grid",

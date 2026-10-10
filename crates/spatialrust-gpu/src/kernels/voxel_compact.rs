@@ -50,6 +50,7 @@ pub fn compact_voxel_segments_gpu_buffers(
             empty_storage_buffer(runtime)?,
             empty_storage_buffer(runtime)?,
             empty_storage_buffer(runtime)?,
+            0,
         ));
     }
 
@@ -227,7 +228,8 @@ pub fn compact_voxel_segments_gpu_buffers(
 
     queue.submit(Some(encoder.finish()));
 
-    let num_cells = read_last_inclusive_count(device, queue, prefix_read, point_count)?;
+    let (num_cells, readback_bytes) =
+        read_last_inclusive_count(device, queue, prefix_read, point_count)?;
     if num_cells > point_count as usize {
         return Err(SpatialError::InvalidArgument(format!(
             "GPU compact produced {num_cells} cells for {point_count} points"
@@ -240,6 +242,7 @@ pub fn compact_voxel_segments_gpu_buffers(
         keys_buffer,
         indices_buffer,
         starts_buffer,
+        readback_bytes,
     ))
 }
 
@@ -348,7 +351,7 @@ fn read_last_inclusive_count(
     queue: &wgpu::Queue,
     inclusive_buffer: &wgpu::Buffer,
     point_count: u32,
-) -> SpatialResult<usize> {
+) -> SpatialResult<(usize, u64)> {
     let offset = ((point_count as u64).saturating_sub(1)) * std::mem::size_of::<u32>() as u64;
     let staging = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-compact-inclusive-staging"),
@@ -364,7 +367,7 @@ fn read_last_inclusive_count(
     queue.submit(Some(encoder.finish()));
 
     let values = read_staging_u32(device, &staging, 1)?;
-    Ok(values[0] as usize)
+    Ok((values[0] as usize, staging.size()))
 }
 
 fn read_keys(
