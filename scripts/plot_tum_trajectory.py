@@ -40,7 +40,7 @@ def plot(manifest_path, output):
             raise ValueError('comparison requires the same source/calibration')
         cases.append(dict(item=item, est=est, score=score, est_raw=est_raw, score_raw=score_raw))
     sequences = {c['score'].get('reference_member', '').split('/')[0] for c in cases}
-    if len(sequences) != 1 or not sequences <= {'rgbd_dataset_freiburg1_xyz', 'rgbd_dataset_freiburg1_rpy'}:
+    if len(sequences) != 1 or not sequences <= {'rgbd_dataset_freiburg1_xyz', 'rgbd_dataset_freiburg1_rpy', 'rgbd_dataset_freiburg1_desk'}:
         raise ValueError('plot requires one declared sequence bound by every reference score')
     sequence = sequences.pop()[len('rgbd_dataset_'):]
     scope = manifest.get('study_scope', 'Same source, calibration and geometric budgets. Native and Open3D '

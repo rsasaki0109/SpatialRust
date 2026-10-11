@@ -1,0 +1,57 @@
+# Fixed keyframe trajectory validation
+
+The previous native point-to-plane study lowers error but both xyz and rpy
+fail the fixed 0.10 m first-pose ATE limit. This separate study tests a retained
+keyframe to reduce repeated frame-to-frame chaining error. It does not alter
+the original estimators, frozen trajectories, calibration or score limits.
+
+## Conditions fixed before execution
+
+`run_tum_keyframe.py` uses the previous estimated pose in the active keyframe
+as a zero-displacement initialization. The native point-to-plane solver and
+20-neighbor normals, original 20/20 CPU voxel stages and stopping defaults
+remain fixed. Every 30 successful poses, after registration and geometric
+support validation, the current frame becomes the next keyframe. This is a
+fixed roughly one-second interval at the nominal capture rate, not a
+reference-derived displacement threshold or a tuned pose-graph optimizer.
+
+The adapter returns current-to-previous deltas to the unchanged world chain.
+Promotion never reanchors the world, fits scale, uses future frames or resets
+failed tracking. Keyframe/current ordinals, initial and final keyframe poses,
+relative deltas, native stages and support are retained in each successful row.
+Ordinals count valid poses from the sole identity anchor rather than image
+indices, so initial decoding failures cannot mislabel the first keyframe.
+Only one keyframe is retained; there is no unbounded dense map or hidden GPU
+transfer. Original depth counts, pixel indices and projected xyz retain the
+existing exact typed IO audit.
+
+The acceptance conditions are unchanged: every planned pose generated,
+at least 95% reference-matched, first-pose-only SE(3) ATE RMSE at most 0.10 m,
+and one-second translation RPE RMSE at most 0.05 m. Numerical audit tolerances
+remain 1e-8 m / 1e-6 degrees and are not physical sensor accuracy limits.
+
+The three keyframe plans and the separate desk point-to-plane baseline plan
+are committed before fitting or desk acquisition. XYZ/rpy are already observed
+and are exploratory. The official Freiburg 1 desk sequence is the untouched
+validation sequence for this study, fixed before acquisition, generation or
+reference interpretation. Its baseline uses the previously fixed point-to-plane
+settings, with identity pair initialization and the same geometry/IO budgets.
+Reference and accelerometer contents remain withheld during preparation;
+reference poses are read only after estimates are frozen. Settings and limits
+will not be retuned after inspecting the outcomes. This is one held-out
+sequence for this implementation, not a universal blind benchmark claim.
+
+## Evidence status
+
+Analytic native motion recovery across two keyframe promotions, singular
+geometry/lost-chain retention, exact helper binding, fixed settings and wrong
+archive root regressions pass. Real generation, scoring and independent audits
+are pending at the preregistration commit. These tests alone do not establish
+accurate real motion. The maturity remains 87%, provisional.
+
+The source calibration remains the publisher-recommended approximate ROS
+intrinsics for already registered depth, without extra distortion, rescaling
+or sensor transforms. This cannot certify measured clock synchronization or
+front/rear mounting for the original Autoware bag. Data attribution remains
+the TUM RGB-D Benchmark (Sturm et al., IROS 2012), CC BY 4.0. Archives, images,
+point-cloud dumps and native binaries are local artifacts and are not committed.

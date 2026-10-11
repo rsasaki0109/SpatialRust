@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]/'scripts'))
 from evaluate_tum_sequence import score
 from run_tum_sequence import TrackingChain, align_pair, checked_depth, compose_camera_pose, decode_depth, generate, project
 from run_tum_point_to_plane import align_point_to_plane, validate_plane_plan
+from run_tum_keyframe import ESTIMATOR as KEYFRAME_ESTIMATOR, KeyframeTracker, validate_keyframe_plan
 from tum_sequence_reference import (associate_rgb, file_sha256, json_bytes, prepare,
                                     read_image_index, safe_relative, validate_plan)
 
@@ -177,7 +178,7 @@ def test_changed_depth_cannot_satisfy_frozen_input_hash(tmp_path):
     with pytest.raises(ValueError): checked_depth(out, entry, 16777216)
 
 
-@pytest.mark.parametrize('method,adapter', [('unknown',None),('open3d_cpu',None),('spatialrust_point_to_plane_cpu',None),('spatialrust_cpu',lambda: None)])
+@pytest.mark.parametrize('method,adapter', [('unknown',None),('open3d_cpu',None),('spatialrust_point_to_plane_cpu',None),('spatialrust_keyframe_point_to_plane_cpu',None),('spatialrust_cpu',lambda: None)])
 def test_generation_method_cannot_silently_substitute_an_adapter(tmp_path,method,adapter):
     with pytest.raises(ValueError):
         generate(tmp_path/'missing-input','a'*64,tmp_path/'output',method=method,pair_aligner=adapter)
@@ -266,3 +267,100 @@ def test_second_sequence_has_same_fixed_geometry_and_archive_isolation(tmp_path)
         prepare(archive, sha, PLAN.with_name('tum-fr1-rpy-plane-plan.json'), tmp_path/'wrong-sequence')
     holdout['sequence'] = 'rgbd_dataset_freiburg3_xyz'
     with pytest.raises(ValueError): validate_plan(holdout)
+
+
+def test_keyframe_native_motion_remains_in_one_world_gauge_across_promotions():
+    axis = np.linspace(.3, 1.5, 18)
+    u, v = np.meshgrid(axis, axis)
+    world_points = np.vstack((np.column_stack((u.ravel(), v.ravel(), np.full(u.size, 2.))),
+                              np.column_stack((np.full(u.size, -.8), u.ravel(), v.ravel()+.7)),
+                              np.column_stack((u.ravel(), np.full(u.size, -.8), v.ravel()+.7)))).astype(np.float32)
+    tracker, chain = KeyframeTracker(2), TrackingChain()
+    previous = sr.PointCloud.from_xyz(world_points)
+    chain.accept()
+    controls = json.loads(PLANE_PLAN.read_bytes())['controls']
+    targets = []
+    for i in range(1, 5):
+        angle = i*.012
+        expected = np.eye(4)
+        expected[:3, :3] = [[np.cos(angle), 0, np.sin(angle)], [0, 1, 0],
+                           [-np.sin(angle), 0, np.cos(angle)]]
+        expected[:3, 3] = np.array([.018, -.011, .014])*i
+        current_points = ((world_points-expected[:3, 3]) @ expected[:3, :3]).astype(np.float32)
+        current = sr.PointCloud.from_xyz(current_points)
+        delta, report = tracker.align_pair(current, previous, controls)
+        actual = chain.accept(delta)
+        np.testing.assert_allclose(actual, expected, atol=.005, rtol=0)
+        assert report['current_pose_ordinal'] == i
+        assert report['keyframe_promoted'] is (i % 2 == 0)
+        assert report['support_fraction'] >= controls['min_support_fraction']
+        assert 'keyframe_correction' in report['stages'][0]
+        assert 'previous_from_current' not in report['stages'][0]
+        targets.append(report['keyframe_pose_ordinal'])
+        previous = current
+    assert targets == [0, 0, 2, 2]
+    assert tracker.keyframe is current and tracker.keyframe_ordinal == 4
+
+
+def test_keyframe_failure_cannot_promote_or_restart_tracking(monkeypatch):
+    import run_tum_keyframe as module
+    tracker = KeyframeTracker(1)
+    cloud = sr.PointCloud.from_xyz(np.ones((30, 3), np.float32))
+    def singular(*args):
+        raise ValueError('singular geometry')
+    monkeypatch.setattr(module, 'align_point_to_plane', singular)
+    with pytest.raises(ValueError, match='singular'):
+        tracker.align_pair(cloud, cloud, {})
+    assert tracker.lost and tracker.pose_ordinal == tracker.keyframe_ordinal == 0
+    np.testing.assert_array_equal(tracker.keyframe_from_previous, np.eye(4))
+    with pytest.raises(ValueError, match='resets forbidden'):
+        tracker.align_pair(cloud, cloud, {})
+
+
+@pytest.mark.parametrize('interval', [0, -1, True, 1.5, 1001])
+def test_keyframe_interval_is_a_bounded_integer(interval):
+    with pytest.raises(ValueError): KeyframeTracker(interval)
+
+
+@pytest.mark.parametrize('change', ['interval', 'initialization', 'normal', 'calibration', 'controls', 'source_plan', 'acceptance'])
+def test_keyframe_protocol_refuses_unfrozen_parameters(change):
+    plan = json.loads(PLAN.with_name('tum-fr1-xyz-keyframe-plan.json').read_bytes())
+    if change == 'interval': plan['estimator']['keyframe_interval_frames'] = 20
+    elif change == 'initialization': plan['estimator']['initialization'] = 'reference'
+    elif change == 'normal': plan['estimator']['normal_neighbors'] = 30
+    elif change == 'calibration': plan['calibration']['fx'] = 530.
+    elif change == 'controls': plan['controls']['stages'][0]['iterations'] = 40
+    elif change == 'source_plan': plan['prior_native_plan_sha256'] = 'a'*64
+    else: plan['acceptance']['maximum_first_pose_ate_rmse_m'] = .6
+    with pytest.raises(ValueError): validate_keyframe_plan(plan, PLAN)
+
+
+def test_desk_keyframe_sequence_is_declared_but_wrong_archive_is_rejected(tmp_path):
+    path = PLAN.with_name('tum-fr1-desk-keyframe-plan.json')
+    plan = json.loads(path.read_bytes())
+    assert validate_keyframe_plan(plan, PLAN)['sequence'] == 'rgbd_dataset_freiburg1_desk'
+    assert validate_plane_plan(json.loads(PLAN.with_name('tum-fr1-desk-plane-plan.json').read_bytes()), PLAN)
+    archive, sha = fixture(tmp_path, count=1)
+    with pytest.raises(ValueError, match='wrong-root'):
+        prepare(archive, sha, path, tmp_path/'wrong-sequence')
+
+
+def test_keyframe_frozen_generation_binds_both_helpers_and_keeps_all_lost_rows(tmp_path):
+    archive, sha = fixture(tmp_path, count=3)
+    prepared, output = tmp_path/'prepared', tmp_path/'generated'
+    plan = PLAN.with_name('tum-fr1-xyz-keyframe-plan.json')
+    prepare(archive, sha, plan, prepared)
+    tracker = KeyframeTracker()
+    helper = PLAN.parent.parent/'scripts/run_tum_point_to_plane.py'
+    result = generate(prepared, file_sha256(prepared/'manifest.json'), output,
+                      pair_aligner=tracker.align_pair, method=KEYFRAME_ESTIMATOR['method'],
+                      additional_bindings=(helper,))
+    assert result['method'] == KEYFRAME_ESTIMATOR['method']
+    assert result['planned_poses'] == 3 and result['generated_poses'] == 1 and result['tracking_lost']
+    poses = json.loads((output/'estimates.json').read_bytes())['poses']
+    assert [p['status'] for p in poses] == ['success', 'error', 'error']
+    assert 'singular' in poses[1]['error'] and 'earlier frame' in poses[2]['error']
+    assert poses[0]['io']['exact_typed_attributes']
+    assert result['bindings'][str(helper.resolve())] == file_sha256(helper)
+    assert any(p.endswith('/run_tum_keyframe.py') for p in result['bindings'])
+    assert not (prepared/'groundtruth.txt').exists()
