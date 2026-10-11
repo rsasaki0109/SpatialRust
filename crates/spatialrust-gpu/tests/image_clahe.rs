@@ -10,14 +10,27 @@ fn check(runtime: &WgpuRuntime, view: ImageView<'_, u8, 1>, clip: f64, x: u32, y
     let source = GpuImage::upload_u8(runtime, view).unwrap();
     let mut output = clahe_gpu(runtime, &source, clip, x, y).unwrap();
     output.receipt().validate_resident_chain((view.width() * view.height() * 4) as u64).unwrap();
-    assert_eq!(
-        output.receipt().stages(),
-        ["upload_u8_texture", "clahe_geometry_gpu", "clahe_lookup_gpu", "clahe_apply_gpu"]
-    );
     let geometry = ((view.width() + view.height()) * 16) as u64;
+    let area = view.width().div_ceil(x as usize) * view.height().div_ceil(y as usize);
+    let chunks = area.div_ceil(8192).clamp(2, 32);
+    let partials = u64::from(x) * u64::from(y) * chunks as u64 * 1024;
+    let limits = runtime.device().limits();
+    let split = area >= 65_536
+        && x * y <= 16
+        && partials
+            <= limits.max_buffer_size.min(u64::from(limits.max_storage_buffer_binding_size));
+    let mut stages = vec!["upload_u8_texture", "clahe_geometry_gpu"];
+    if split {
+        stages.push("clahe_histogram_gpu");
+    }
+    stages.extend(["clahe_lookup_gpu", "clahe_apply_gpu"]);
+    assert_eq!(output.receipt().stages(), stages);
     assert_eq!(
         output.receipt().gpu_to_gpu_bytes(),
-        geometry + u64::from(x) * u64::from(y) * 1024 + (view.width() * view.height() * 4) as u64
+        geometry
+            + u64::from(x) * u64::from(y) * 1024
+            + (view.width() * view.height() * 4) as u64
+            + if split { partials } else { 0 }
     );
     source.recycle(runtime);
     let actual = output.readback_u8::<1>(runtime).unwrap();
@@ -247,4 +260,54 @@ fn three_pass_profile_matches_plain_preserves_capacity_and_invalidates_inner_fai
     profiled.recycle(&runtime);
     plain.recycle(&runtime);
     source.recycle(&runtime);
+}
+
+#[test]
+fn split_four_pass_profile_checks_capacity_before_work_and_preserves_prior_stages() {
+    let runtime =
+        WgpuRuntime::new_headless_with_timestamps(WgpuPowerPreference::HighPerformance).unwrap();
+    if !runtime.timestamp_queries_enabled() {
+        return;
+    }
+    let image =
+        Image::<u8, 1>::try_new(257, 259, (0..257 * 259).map(|i| (i * 37 % 256) as u8).collect())
+            .unwrap();
+    let source = GpuImage::upload_u8(&runtime, image.view()).unwrap();
+    let before = runtime.scratch_buffer_pool_stats();
+    let textures = runtime.image_texture_pool_stats();
+    let mut short = GpuStageProfiler::new(&runtime, 3).unwrap();
+    assert!(clahe_gpu_profiled(&runtime, &source, 2., 1, 1, &mut short).is_err());
+    assert_eq!(runtime.scratch_buffer_pool_stats(), before);
+    assert_eq!(runtime.image_texture_pool_stats(), textures);
+    assert_eq!(runtime.initialized_image_pipeline_count(), 0);
+    assert!(short.collect(&runtime).unwrap().stages.is_empty());
+    let small = Image::<u8, 1>::try_new(17, 19, vec![43; 17 * 19]).unwrap();
+    let small_source = GpuImage::upload_u8(&runtime, small.view()).unwrap();
+    let mut prior = GpuStageProfiler::new(&runtime, 4).unwrap();
+    let previous = clahe_gpu_profiled(&runtime, &small_source, 2., 8, 8, &mut prior).unwrap();
+    let before = runtime.scratch_buffer_pool_stats();
+    assert!(clahe_gpu_profiled(&runtime, &source, 2., 1, 1, &mut prior).is_err());
+    assert_eq!(runtime.scratch_buffer_pool_stats(), before);
+    let report = prior.collect(&runtime).unwrap();
+    assert_eq!(report.stages.len(), 3);
+    assert_eq!(report.device_to_host_bytes, 48);
+    let mut profiler = GpuStageProfiler::new(&runtime, 4).unwrap();
+    let mut output = clahe_gpu_profiled(&runtime, &source, 2., 1, 1, &mut profiler).unwrap();
+    let mut plain = clahe_gpu(&runtime, &source, 2., 1, 1).unwrap();
+    assert_eq!(output.receipt(), plain.receipt());
+    assert_eq!(output.receipt().device_to_host_bytes(), 0);
+    let report = profiler.collect(&runtime).unwrap();
+    assert_eq!(report.device_to_host_bytes, 64);
+    assert_eq!(
+        report.stages.iter().map(|s| s.stage).collect::<Vec<_>>(),
+        ["clahe_geometry_gpu", "clahe_histogram_gpu", "clahe_lookup_gpu", "clahe_apply_gpu"]
+    );
+    let expected = spatialrust_vision::clahe(image.view(), 2., 1, 1).unwrap();
+    assert_eq!(output.readback_u8::<1>(&runtime).unwrap().as_slice(), expected.as_slice());
+    assert_eq!(plain.readback_u8::<1>(&runtime).unwrap().as_slice(), expected.as_slice());
+    previous.recycle(&runtime);
+    output.recycle(&runtime);
+    plain.recycle(&runtime);
+    source.recycle(&runtime);
+    small_source.recycle(&runtime);
 }

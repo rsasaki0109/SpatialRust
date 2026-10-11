@@ -65,18 +65,24 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
-- `gpu-image` adds resident grayscale `clahe_gpu` and its three-pass profiled
+- `gpu-image` adds resident grayscale `clahe_gpu` and its three/four-pass profiled
   variant. Reflect101 tile histograms, clip redistribution, lookup rounding and
   bilinear interpolation match CPU CLAHE using u32-word binary64 arithmetic.
   Tile clipping/CDF use a workgroup-wide integer tree scan with analytic residual
   prefixes, replacing serial bin loops within the existing 4 KiB local limit.
   Larger tile histograms use row strips with shape-dependent lane assignment and
-  reflected edge handling, retaining the same scratch and three passes.
+  reflected edge handling on the direct three-pass path. For up to 16 tiles with
+  at least 65,536 padded pixels, a separate histogram pass splits each tile into
+  8–32 chunks, then merges exact integer counts before clipping. Up to 512 KiB
+  of additional submitted scratch is bounded by device binding/buffer limits;
+  insufficient capacity selects direct execution. Split pipelines initialize
+  lazily per runtime, and receipts include partial histogram write bytes.
   Geometry is computed on device, with no image/bin/geometry payload transfer.
   Temporary storage is 1 KiB per tile plus 16 bytes per source row/column,
   checked against binding limits and leased through final submission. Metadata
   is preserved; constant bytes follow CPU CLAHE rather than global equalization.
-  Output download is explicit/full RGBA8; query collection reads 48 bytes.
+  Output download is explicit/full RGBA8; query collection reads 48 direct or
+  64 split bytes, requiring three or four unused profile stages respectively.
   GPU limits and invalid grids/clips/channels reject before work allocation.
   Browser shader execution is not claimed. APIs remain provisional.
 - `gpu-image` also adds `equalize_histogram_gpu` and its five-pass profiled

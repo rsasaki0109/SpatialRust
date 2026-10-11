@@ -185,8 +185,8 @@ explicit timestamp collection returns 80 query bytes separately from payloads.
 Other channel counts and unsupported counters/device limits fail before work
 allocation. Empty GPU images remain unsupported. Normalized public CDFs and
 adaptive tile equalization remain separate future contracts.
-Resident grayscale `clahe_gpu` adds three passes in one submission: axis geometry,
-per-tile histogram/clipping/lookup, then interpolation/application. Lookup storage
+Resident grayscale `clahe_gpu` runs three or four passes in one submission:
+axis geometry, histogram/lookup, then interpolation/application. Lookup storage
 is 1 KiB per tile; axis geometry is 16 bytes per source row/column, both private
 scratch leased through application submission. Reflect101 padding and exact
 clipped-count redistribution match the CPU. Per-tile cumulative counts use a
@@ -194,12 +194,22 @@ workgroup-wide tree scan of bounded counts and clipped excess. The residual
 redistribution prefix is computed analytically from the CPU's bin positions,
 avoiding a second scan and serial 256-bin clipping/CDF loops. Histogram bins and
 scan storage use about 3 KiB of workgroup memory within the existing 4 KiB limit;
-global scratch, dispatch bounds and three-pass submission remain unchanged.
-Tiles with at most 256 padded pixels assign one pixel per lane. Larger tiles
-partition columns/rows with power-of-two strides, avoiding per-pixel flat-index
+the minimum workgroup storage requirement remains 4 KiB. Direct histograms use
+three passes. Tiles with at most 256 padded pixels assign one pixel per lane.
+Larger direct tiles partition columns/rows with power-of-two strides, avoiding per-pixel flat-index
 division. Short tiles use more columns to keep lanes occupied; narrow tiles use
 more rows. Reflect101 computes a remainder only outside the source bounds, and
 subtraction guards keep stride increments within the validated u32 dimensions.
+For at most 16 tiles with at least 65,536 padded pixels each, a separate
+histogram pass partitions each tile into `ceil(area/8192)` contiguous chunks,
+bounded to 8–32 chunks. Up to 512 independent workgroups write 256 integer bins
+per chunk; fewer available groups stride through all chunks. The lookup pass
+merges these exact counts before the same clipping/scan/rounding. This adds at
+most 512 KiB of private scratch and one pass; insufficient buffer/binding limits
+select the original direct path. Both split pipelines initialize lazily in the
+owning runtime. Partial buffers stay exclusively leased through application
+submission and follow the existing byte-bounded scratch retention controls.
+Receipts include `clahe_histogram_gpu` and the partial histogram write bytes.
 Shared integer-word lookup rounding and a finite non-negative binary64 arithmetic
 subset preserve the CPU's division, subtraction, multiplication/addition
 operation order without shader float64.
@@ -207,9 +217,10 @@ Equal integer corners bypass interpolation only when the final byte is invariant
 under CPU rounding. No payload readback, geometry upload or host wait is hidden.
 The clip limit is a scalar host parameter; per-tile counts, padded coordinates,
 buffer bindings and compute limits are checked before allocations. Caller-owned
-output preserves metadata; constant bytes may change as in CPU CLAHE. Three
-profiled passes collect 48 query bytes explicitly. Browser shader execution is
-still unverified; adaptive contrast APIs remain provisional.
+output preserves metadata; constant bytes may change as in CPU CLAHE. Direct
+work requires three free profile stages and collects 48 query bytes; split work
+requires four stages and collects 64 bytes. Capacity is checked before work
+allocation. Browser shader execution is still unverified; adaptive contrast APIs remain provisional.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
 large thresholds, u8 histograms and histogram-equalization lookup application.
 Tasks are bounded by image rows and the current pool; histograms merge exact

@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Resident GPU CLAHE splits histograms for up to 16 tiles of at least 65,536
+  padded pixels, merging bounded integer partials before unchanged clipping and
+  lookup rounding. Partial storage uses submitted scratch leases and falls back
+  to the direct path when device binding limits are insufficient. Selected work
+  records four stages and 64 explicit query bytes; direct work retains three
+  stages and 48 bytes. Transfer receipts include the private histogram writes.
 - Standalone GPU k-NN/radius normals and plane covariance estimators lazily reuse
   per-runtime pipelines and pooled storage buffers, and submit compute plus
   readback copy together. Shader arithmetic and returned float words remain
