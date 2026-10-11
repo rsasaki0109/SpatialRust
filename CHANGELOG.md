@@ -63,6 +63,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- `gpu-image` adds resident grayscale `equalize_histogram_gpu` and a five-pass
+  profiled variant. Histogram/CDF/lookup/application avoid intermediate readback;
+  constant bytes and metadata are preserved. Integer word arithmetic reproduces
+  CPU binary64 half-boundary rounding without shader float64. Device/counter
+  limits, 2,309,120 lookup entries, ROI/byte parity, concurrent live outputs and
+  completed-work/transfer benchmarks cover the provisional API.
+
 - `gpu-image` adds exact inclusive `histogram_cdf_gpu` and its one-pass profiled
   variant, returning independently owned resident `GpuImageCdf`. The 256-bin
   integer scan uses 1 KiB local memory and writes 1 KiB without bin readback,

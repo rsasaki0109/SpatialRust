@@ -41,6 +41,8 @@ pub struct WgpuRuntime {
     pub(crate) image_histogram_pipelines: OnceLock<crate::image::histogram::HistogramPipelines>,
     #[cfg(feature = "gpu-image")]
     pub(crate) image_cdf_pipeline: OnceLock<crate::image::histogram::CdfPipeline>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_equalize_pipelines: OnceLock<crate::image::equalize::EqualizePipelines>,
 }
 
 /// Stable, serializable-friendly identity for the selected wgpu adapter.
@@ -226,6 +228,7 @@ impl WgpuRuntime {
             + usize::from(self.image_ai_pack_pipeline.get().is_some())
             + usize::from(self.image_histogram_pipelines.get().is_some())
             + usize::from(self.image_cdf_pipeline.get().is_some())
+            + usize::from(self.image_equalize_pipelines.get().is_some())
     }
 
     /// Returns cached compute pipelines for this runtime's device.
@@ -398,6 +401,8 @@ impl WgpuRuntime {
             image_histogram_pipelines: OnceLock::new(),
             #[cfg(feature = "gpu-image")]
             image_cdf_pipeline: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_equalize_pipelines: OnceLock::new(),
         })
     }
 }
