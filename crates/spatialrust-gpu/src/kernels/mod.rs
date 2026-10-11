@@ -12,6 +12,8 @@ mod normals_grid;
 #[cfg(feature = "gpu-wgpu")]
 mod covariances_grid;
 
+pub(crate) mod point_estimators;
+
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_keys;
 

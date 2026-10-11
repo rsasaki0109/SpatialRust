@@ -102,6 +102,17 @@ entry points reserve bounded capacity before execution. Query collection is an
 explicit native synchronization/readback boundary with a separate byte receipt.
 GPU pass times exclude CPU setup, transfers and inter-pass gaps; completed wall
 time remains a separate measurement. Failed recordings cannot be collected.
+Standalone host-returning k-NN normals, grid radius normals and plane covariance
+estimators share bounded execution. Each kind lazily initializes its own pipeline
+on its owning runtime; shader math and neighborhood order stay unchanged.
+Storage inputs/output use exclusive submitted scratch leases, with full input
+uploads on every call and no content cache. Compute and result staging copy share
+one submission before scratch is returned. Mapping remains the explicit
+synchronous boundary of these host-returning APIs. Uniform and staging buffers
+are still created per call; the existing scratch pool bounds retained storage.
+Point, index, buffer, uniform and dispatch limits reject before device allocation.
+Grid cell storage is checked before CPU counting-sort allocation. Resident AoSoA
+frame execution and its timing/transfer receipts remain separate.
 Voxel boundary compaction uses a 256-lane shared-memory scan with recursively
 scanned block totals and offset propagation. All levels stay device-resident
 in one submission; the existing four-byte cell-count synchronization remains
