@@ -41,6 +41,26 @@ reference poses are read only after estimates are frozen. Settings and limits
 will not be retuned after inspecting the outcomes. This is one held-out
 sequence for this implementation, not a universal blind benchmark claim.
 
+## Input-only revision fixed before desk preparation or fitting
+
+The first protocol/implementation commit is
+`aff896602f490eb996436417fbef029d3eec535e`, before desk acquisition. The static
+30-frame policy loses rpy at pose 42: support is 0.496512, below the unchanged
+0.5 minimum (previous support 0.538556). XYZ also loses tracking. Their full
+frozen success/error timelines are retained, and no reference scores have been
+read when choosing the next policy.
+
+`run_tum_adaptive_keyframe.py` adds a separately fixed policy: promote after an
+already accepted pose has less than 0.75 support, or after 30 accepted poses,
+whichever happens first. The 0.5 acceptance limit remains fixed. No failed pose
+is promoted, retried, substituted or reset. The overlap margin reserves geometry
+for the next image using only current support; it does not read that next image.
+The original static plans and outputs are retained. This revision is committed
+after desk acquisition but before any desk preparation, fitting or reference
+interpretation. Therefore pre-acquisition fixation applies to the original
+static study; the adaptive desk study has a pre-fitting fixation. Neither is
+claimed to be a universally blind benchmark.
+
 ## Evidence status
 
 Analytic native motion recovery across two keyframe promotions, singular

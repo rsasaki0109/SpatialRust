@@ -123,7 +123,8 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
              method='spatialrust_cpu', additional_bindings=()):
     """Run native ICP by default; explicit adapters serve separate baseline studies."""
     if method not in ('spatialrust_cpu', 'open3d_cpu', 'spatialrust_point_to_plane_cpu',
-                      'spatialrust_keyframe_point_to_plane_cpu') or (pair_aligner is None) != (method == 'spatialrust_cpu'):
+                      'spatialrust_keyframe_point_to_plane_cpu',
+                      'spatialrust_overlap_keyframe_point_to_plane_cpu') or (pair_aligner is None) != (method == 'spatialrust_cpu'):
         raise ValueError('method must match an explicit adapter or the native default')
     prepared, output = Path(prepared), Path(output)
     raw = (prepared/'manifest.json').read_bytes()

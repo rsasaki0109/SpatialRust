@@ -18,6 +18,7 @@ from evaluate_tum_sequence import score
 from run_tum_sequence import TrackingChain, align_pair, checked_depth, compose_camera_pose, decode_depth, generate, project
 from run_tum_point_to_plane import align_point_to_plane, validate_plane_plan
 from run_tum_keyframe import ESTIMATOR as KEYFRAME_ESTIMATOR, KeyframeTracker, validate_keyframe_plan
+from run_tum_adaptive_keyframe import ESTIMATOR as OVERLAP_ESTIMATOR, OverlapKeyframeTracker, validate_overlap_plan
 from tum_sequence_reference import (associate_rgb, file_sha256, json_bytes, prepare,
                                     read_image_index, safe_relative, validate_plan)
 
@@ -178,7 +179,7 @@ def test_changed_depth_cannot_satisfy_frozen_input_hash(tmp_path):
     with pytest.raises(ValueError): checked_depth(out, entry, 16777216)
 
 
-@pytest.mark.parametrize('method,adapter', [('unknown',None),('open3d_cpu',None),('spatialrust_point_to_plane_cpu',None),('spatialrust_keyframe_point_to_plane_cpu',None),('spatialrust_cpu',lambda: None)])
+@pytest.mark.parametrize('method,adapter', [('unknown',None),('open3d_cpu',None),('spatialrust_point_to_plane_cpu',None),('spatialrust_keyframe_point_to_plane_cpu',None),('spatialrust_overlap_keyframe_point_to_plane_cpu',None),('spatialrust_cpu',lambda: None)])
 def test_generation_method_cannot_silently_substitute_an_adapter(tmp_path,method,adapter):
     with pytest.raises(ValueError):
         generate(tmp_path/'missing-input','a'*64,tmp_path/'output',method=method,pair_aligner=adapter)
@@ -363,4 +364,68 @@ def test_keyframe_frozen_generation_binds_both_helpers_and_keeps_all_lost_rows(t
     assert poses[0]['io']['exact_typed_attributes']
     assert result['bindings'][str(helper.resolve())] == file_sha256(helper)
     assert any(p.endswith('/run_tum_keyframe.py') for p in result['bindings'])
+    assert not (prepared/'groundtruth.txt').exists()
+
+
+@pytest.mark.parametrize('support,promoted', [(.749, True), (.75, False), (.751, False)])
+def test_overlap_margin_promotes_only_a_valid_current_frame_without_changing_world(monkeypatch, support, promoted):
+    import run_tum_keyframe as module
+    tracker, chain = OverlapKeyframeTracker(), TrackingChain()
+    chain.accept()
+    def accepted(*args):
+        delta = np.eye(4); delta[0, 3] = .01
+        return delta, dict(stages=[dict(previous_from_current=delta.tolist())],
+                           support_fraction=support, support_count=30, support_rmse_m=.01)
+    monkeypatch.setattr(module, 'align_point_to_plane', accepted)
+    previous = sr.PointCloud.from_xyz(np.ones((30, 3), np.float32))
+    for i in range(1, 4):
+        current = sr.PointCloud.from_xyz(np.ones((30, 3), np.float32))
+        delta, report = tracker.align_pair(current, previous, {})
+        actual = chain.accept(delta)
+        np.testing.assert_allclose(actual[:3, 3], [.01*i, 0, 0], atol=1e-12, rtol=0)
+        assert report['keyframe_promoted'] is promoted
+        assert report['keyframe_promotion_cause'] == ('geometric_overlap_margin' if promoted else 'retained')
+        if promoted:assert tracker.tracker.keyframe is current
+        previous = current
+
+
+def test_overlap_tracker_does_not_retry_a_failed_registration(monkeypatch):
+    import run_tum_keyframe as module
+    calls = []
+    def unsupported(*args):
+        calls.append(args)
+        raise ValueError('support below fixed minimum')
+    monkeypatch.setattr(module, 'align_point_to_plane', unsupported)
+    tracker = OverlapKeyframeTracker()
+    cloud = sr.PointCloud.from_xyz(np.ones((30, 3), np.float32))
+    with pytest.raises(ValueError, match='fixed minimum'):tracker.align_pair(cloud, cloud, {})
+    with pytest.raises(ValueError, match='resets forbidden'):tracker.align_pair(cloud, cloud, {})
+    assert len(calls) == 1 and tracker.tracker.keyframe_ordinal == 0
+
+
+@pytest.mark.parametrize('change', ['margin', 'minimum_support', 'acceptance', 'interval'])
+def test_overlap_plan_cannot_relax_support_accuracy_or_change_promotion(change):
+    p = json.loads(PLAN.with_name('tum-fr1-rpy-overlap-keyframe-plan.json').read_bytes())
+    if change == 'margin':p['estimator']['promotion_support_fraction'] = .6
+    elif change == 'minimum_support':p['controls']['min_support_fraction'] = .4
+    elif change == 'acceptance':p['acceptance']['maximum_first_pose_ate_rmse_m'] = .6
+    else:p['estimator']['keyframe_interval_frames'] = 20
+    with pytest.raises(ValueError):validate_overlap_plan(p, PLAN)
+
+
+def test_overlap_generation_binds_its_policy_and_both_native_helpers(tmp_path):
+    archive, sha = fixture(tmp_path, count=3)
+    prepared, output = tmp_path/'prepared', tmp_path/'generated'
+    plan = PLAN.with_name('tum-fr1-xyz-overlap-keyframe-plan.json')
+    assert validate_overlap_plan(json.loads(plan.read_bytes()), PLAN)
+    prepare(archive, sha, plan, prepared)
+    tracker = OverlapKeyframeTracker()
+    helpers = [PLAN.parent.parent/('scripts/'+name) for name in ('run_tum_keyframe.py','run_tum_point_to_plane.py')]
+    result = generate(prepared, file_sha256(prepared/'manifest.json'), output,
+                      pair_aligner=tracker.align_pair, method=OVERLAP_ESTIMATOR['method'],
+                      additional_bindings=helpers)
+    assert result['method'] == OVERLAP_ESTIMATOR['method'] and result['generated_poses'] == 1
+    assert result['planned_poses'] == 3 and result['tracking_lost']
+    assert all(result['bindings'][str(h.resolve())] == file_sha256(h) for h in helpers)
+    assert any(p.endswith('/run_tum_adaptive_keyframe.py') for p in result['bindings'])
     assert not (prepared/'groundtruth.txt').exists()
