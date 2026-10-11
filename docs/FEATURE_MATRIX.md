@@ -10,9 +10,16 @@ GPU gray box blur under `gpu-image` keeps the previous integer mean and border
 semantics. Positive odd boxes with area at least 81 and at least 65,536 total
 pixel/sample visits use two device passes and a four-byte-per-pixel private
 intermediate; smaller workloads use one pass.
-Host image transfers stay explicit. Profiled resident Vision chains need seven
-unused stages for the separable path and six for small boxes. Unsupported
+Host image transfers stay explicit. Profiled resident Vision chains reserve six
+stages plus one per separable blur/morphology path (up to eight). Unsupported
 pixel/sum/coordinate or device limits return an error before blur allocation.
+
+GPU rectangular erosion/dilation under `gpu-image` retains replicate borders
+and odd kernels in `1..=31`. Boxes with area at least 81 and at least 1,048,576
+pixel/sample visits use exact horizontal/vertical extrema in one submission,
+with four scratch bytes per pixel in the bounded image texture pool. Smaller
+workloads keep the original one-pass shader. Coordinate and device limits fail
+before allocation; no dependency, public signature or image readback is added.
 
 | Profile | Enables | Intended use |
 | --- | --- | --- |

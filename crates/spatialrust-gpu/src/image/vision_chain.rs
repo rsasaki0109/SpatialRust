@@ -53,12 +53,13 @@ pub fn run_gpu_vision_chain(
     run_gpu_vision_chain_with_profiler(runtime, source, options, None)
 }
 
-/// Runs the resident image chain with six or seven compute-pass timing samples.
+/// Runs the resident image chain with six to eight compute-pass timing samples.
 ///
 /// Queries remain on the device until the caller explicitly collects the
-/// profiler. Small blur workloads need six unused stages. Boxes with area at
-/// least 81 and at least 65,536 total pixel/sample visits need seven, including
-/// the unrounded horizontal-sum pass.
+/// profiler. Small blur and morphology workloads need six unused stages. Blur
+/// boxes with area at least 81 and at least 65,536 pixel/sample visits add one
+/// for the unrounded horizontal-sum pass. Morphology with area at least 81
+/// and at least 1,048,576 visits adds a horizontal extrema sample.
 pub fn run_gpu_vision_chain_profiled(
     runtime: &WgpuRuntime,
     source: &GpuImage,
@@ -67,11 +68,16 @@ pub fn run_gpu_vision_chain_profiled(
 ) -> SpatialResult<GpuAiTensor> {
     profiler.validate(
         runtime,
-        5 + super::kernels::box_blur::blur_pass_count(
+        4 + super::kernels::box_blur::blur_pass_count(
             options.width,
             options.height,
             options.blur_kernel,
             options.blur_kernel,
+        ) + super::kernels::spatial::morphology_pass_count(
+            options.width,
+            options.height,
+            options.morphology_kernel,
+            options.morphology_kernel,
         ),
     )?;
     let result = run_gpu_vision_chain_with_profiler(runtime, source, options, Some(profiler));

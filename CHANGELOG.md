@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU rectangular erosion and dilation use exact horizontal/vertical extrema
+  for boxes with area at least 81 and at least 1,048,576 pixel/sample visits.
+  Replicate borders and odd kernels in `1..=31` stay unchanged. Two passes share
+  one submission and a four-byte-per-pixel pooled texture; small workloads keep
+  the original single pass. Unsupported coordinate/device limits reject before
+  allocation. Profiled Vision chains reserve six to eight stages for the selected
+  blur and morphology paths, without image payload readback.
+
 - GPU gray box blur uses unrounded horizontal u32 sums and a vertical pass for
   boxes with area at least 81 and at least 65,536 total pixel/sample visits,
   preserving the integer mean and border
