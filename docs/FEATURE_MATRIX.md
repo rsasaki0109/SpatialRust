@@ -186,6 +186,11 @@ workspace because its build requires a Python toolchain.
   overflow. Valid shader math, metadata, receipts and transfers remain unchanged.
   Shared-input Sobel tiling remains test-only after inconsistent paired results.
   See [spatial dispatch validation and measurements](../notes/2026-10-12_gpu_spatial_dispatch_validation.md).
+- GPU RGB-to-gray distributes large flat workloads across bounded dispatch rows,
+  while single-row workloads retain their original shader. Both pipelines are
+  independently lazy; checked u32 pixel/index math, pre-allocation limits and
+  profiler checks preserve exact BT.601 bytes, receipts and explicit transfers.
+  See [bounded gray dispatch validation](../notes/2026-10-12_bounded_gpu_gray_dispatch.md).
 - `filter-mls` uses bounded scoped CPU workers for independent point fits,
   sharing one KD-tree and preserving coordinate words, field order and metadata.
   Existing small/one-worker point staging remains serial; each concurrent call

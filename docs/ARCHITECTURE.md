@@ -74,6 +74,15 @@ channel count. Kernels return device-resident images and append named receipt
 stages; only `upload_u8` and `readback_u8` cross the host/device boundary.
 Runtime adapter identity and synchronization are explicit (`adapter_info`,
 `wait_idle`), and `recycle` returns textures to the runtime pool.
+RGB-to-gray retains the original 256-lane linear shader when its group count
+fits one dispatch axis. Larger inputs balance those flat groups across bounded
+dispatch rows. Padding groups return before pixel-index multiplication to prevent
+u32 wrap; source dimensions, pixel count, compute/binding limits and one free
+profiler stage are validated before work allocation or pipeline initialization.
+Linear and multi-row pipelines are independently lazy within one runtime-owned
+family and share the existing 16-byte uniform/layout. Integer BT.601 output,
+gray metadata, one pass, four physical write bytes per pixel and 16 query bytes
+on explicit collection remain unchanged. There is no new scratch or payload copy.
 Gray GPU box blur retains the integer full-box mean with one final half-up
 rounding. Boxes with area at least 81 and at least 65,536 total pixel/sample
 visits use horizontal unrounded u32 sums and a vertical reduction in one

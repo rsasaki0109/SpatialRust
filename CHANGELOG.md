@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU RGB-to-gray supports images beyond one dispatch axis by distributing
+  flat 256-lane workgroups across bounded rows. Single-row work retains its
+  original shader; dimensions, counters, device limits and profiler capacity
+  reject before allocation, with unchanged luma bytes and explicit transfers.
 - FPFH point-cloud descriptors share one KD-tree across bounded scoped CPU
   workers for both SPFH construction and neighbor weighting. Small/one-worker
   clouds stay serial; output order and exact descriptor words are preserved
