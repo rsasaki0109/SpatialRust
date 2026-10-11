@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- MLS point-cloud smoothing shares one KD-tree across bounded scoped CPU
+  workers using the existing point-staging policy. Small/one-worker clouds stay
+  serial; neighborhood order, exact coordinate words, schema and attributes
+  remain unchanged under `filter-mls`, without an additional dependency.
 - GPU CLAHE axis geometry bypasses fractional long division for power-of-two
   tile sizes, retaining identical binary64 ratio and interpolation-weight words.
   General ratio arithmetic, scratch retention, pass count, explicit transfers

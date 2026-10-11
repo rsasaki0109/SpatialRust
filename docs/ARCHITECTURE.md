@@ -258,6 +258,17 @@ or distance matrix is staged; per-query neighbors and live local/final edge
 vectors still consume result-dependent memory (radius graphs may be quadratic).
 Existing serial APIs keep serial execution. Graph point counts must fit u32;
 large k requests are capped by cloud size with checked reservation arithmetic.
+MLS smoothing under `spatialrust-filtering/filter-mls` shares one caller-built
+KD-tree and writes independent contiguous output bands with scoped CPU workers.
+It reuses the existing point-staging policy: below 4,096 points, one available
+worker, or fewer than two useful 16,384-point chunks, execution stays serial.
+Worker count is capped by available CPU parallelism and useful chunk count.
+Each point retains unsorted KD-tree radius-neighbor order, leave-one-out
+selection and the original weighted covariance/polynomial arithmetic. The final position
+vector is allocated once; fitting scratch remains local to each active point.
+No all-query neighborhood table, new dependency or implicit device transfer is
+introduced. Filter reconstruction preserves field names, schema, all non-position
+buffers and metadata. Concurrent calls have independent per-call worker budgets.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in
