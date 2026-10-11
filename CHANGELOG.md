@@ -55,6 +55,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Bounded GPU resource retention: point-cloud radix/compaction/scan scratch now
+  returns to a private runtime pool only after its commands and scalar copy are
+  submitted. Upload buffers, scratch buffers, and image textures each default
+  to 64 MiB and eight retained resources per size, with configurable budgets,
+  explicit clearing, and allocation/reuse/retained-byte snapshots. Zero disables
+  retention; active outputs remain caller-owned. GPU image/tensor ownership
+  uses a runtime token that survives moves and rejects foreign recycle targets.
+  `gpu_pool_reuse` and cached/uncached Criterion cases measure completed work.
+
 - Parallel image and point-cloud execution: GPU voxel compaction now uses a
   work-efficient hierarchical prefix scan in one submission, preserving device
   index order and four-byte cell-count readback. CPU image thresholding and u8

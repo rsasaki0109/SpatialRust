@@ -122,7 +122,7 @@ spatialrust-<area> / feature-<name>
 | `spatialrust-features` | Provisional | Normal GPU path still tuning |
 | `spatialrust-segmentation` | Provisional | RANSAC configs may extend; **GPU plane scoring** behind `segment-ransac-plane-gpu` |
 | `spatialrust-registration` | Provisional | New backends (TEASER++, etc.) expected |
-| `spatialrust-gpu` | Provisional | `WgpuRuntime`, `GpuBufferPool`; `GpuImage` / image kernels behind `gpu-image`; voxel/AoSoA kernel APIs still tuning |
+| `spatialrust-gpu` | Provisional | `WgpuRuntime`, `GpuBufferPool`, `GpuResourcePoolStats` and retention controls; `GpuImage` / image kernels behind `gpu-image`; voxel/AoSoA kernel APIs still tuning |
 | `spatialrust-py` | Stable user surface | Stubs enforced by `mypy.stubtest`; new vision functions remain provisional with the Rust APIs |
 
 ## Explicitly out of 1.0 scope

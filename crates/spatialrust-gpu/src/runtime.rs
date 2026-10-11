@@ -3,13 +3,14 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 
 #[cfg(feature = "gpu-image")]
-use std::collections::HashMap;
-#[cfg(feature = "gpu-image")]
 use std::sync::Mutex;
 
 use spatialrust_core::{DeviceKind, SpatialError, SpatialResult, SpatialRuntime};
 
 use crate::pipeline_cache::ComputePipelineCache;
+use crate::resource_cache::GpuResourcePoolStats;
+#[cfg(feature = "gpu-image")]
+use crate::resource_cache::{ResourceCache, DEFAULT_GPU_POOL_BUDGET_BYTES};
 use crate::upload_cache::GpuBufferPool;
 
 /// Headless wgpu runtime for compute-only workloads.
@@ -22,11 +23,12 @@ pub struct WgpuRuntime {
     pub(crate) voxel_scan_pipelines: OnceLock<crate::kernels::PrefixScanPipelines>,
     max_gather_channels: u32,
     upload_pool: GpuBufferPool,
+    pub(crate) scratch_pool: GpuBufferPool,
     adapter_info: WgpuAdapterInfo,
     #[cfg(any(not(target_arch = "wasm32"), feature = "gpu-image", feature = "gpu-aoso-staging"))]
     profiling_identity: std::sync::Arc<()>,
     #[cfg(feature = "gpu-image")]
-    image_texture_pool: Mutex<HashMap<(u32, u32), Vec<wgpu::Texture>>>,
+    image_texture_pool: Mutex<ResourceCache<(u32, u32), wgpu::Texture>>,
     #[cfg(feature = "gpu-image")]
     pub(crate) image_gray_pipeline: OnceLock<crate::image::kernels::gray::GrayPipeline>,
     #[cfg(feature = "gpu-image")]
@@ -149,14 +151,12 @@ impl WgpuRuntime {
         height: u32,
         label: &'static str,
     ) -> wgpu::Texture {
-        if let Some(texture) = self
-            .image_texture_pool
-            .lock()
-            .expect("image texture pool poisoned")
-            .get_mut(&(width, height))
-            .and_then(Vec::pop)
         {
-            return texture;
+            let mut pool = self.image_texture_pool.lock().expect("image texture pool poisoned");
+            if let Some(texture) = pool.take(&(width, height)) {
+                return texture;
+            }
+            pool.record_allocation();
         }
         self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some(label),
@@ -176,19 +176,40 @@ impl WgpuRuntime {
     #[cfg(feature = "gpu-image")]
     pub(crate) fn recycle_image_texture(&self, width: u32, height: u32, texture: wgpu::Texture) {
         let mut pool = self.image_texture_pool.lock().expect("image texture pool poisoned");
-        let textures = pool.entry((width, height)).or_default();
-        if textures.len() < 8 {
-            textures.push(texture);
-        } else {
-            texture.destroy();
-        }
+        pool.put((width, height), u64::from(width) * u64::from(height) * 4, texture);
     }
 
     /// Returns the number of image textures retained for steady-state reuse.
     #[cfg(feature = "gpu-image")]
     #[must_use]
     pub fn cached_image_texture_count(&self) -> usize {
-        self.image_texture_pool.lock().map(|pool| pool.values().map(Vec::len).sum()).unwrap_or(0)
+        self.image_texture_pool_stats().cached_resources
+    }
+
+    /// Returns image-texture retention and lifetime allocation/reuse counters.
+    /// Texel bytes exclude driver overhead and live images; the default is 64 MiB.
+    #[cfg(feature = "gpu-image")]
+    #[must_use]
+    pub fn image_texture_pool_stats(&self) -> GpuResourcePoolStats {
+        self.image_texture_pool.lock().map(|pool| pool.stats()).unwrap_or_default()
+    }
+
+    /// Changes retained RGBA8 texel bytes; zero disables texture retention.
+    /// Shrinking below current retention clears cached textures. Active images
+    /// remain valid and allocations are not capped by the retention budget.
+    #[cfg(feature = "gpu-image")]
+    pub fn set_image_texture_pool_budget(&self, budget_bytes: u64) {
+        if let Ok(mut pool) = self.image_texture_pool.lock() {
+            pool.set_budget(budget_bytes);
+        }
+    }
+
+    /// Drops cached texture handles without affecting live images or counters.
+    #[cfg(feature = "gpu-image")]
+    pub fn clear_image_texture_pool(&self) {
+        if let Ok(mut pool) = self.image_texture_pool.lock() {
+            pool.clear();
+        }
     }
 
     /// Returns the number of initialized GPU image pipeline families.
@@ -217,6 +238,24 @@ impl WgpuRuntime {
     #[must_use]
     pub fn buffer_pool(&self) -> &GpuBufferPool {
         &self.upload_pool
+    }
+
+    /// Returns private point-kernel scratch retention and lifetime counters.
+    /// The default budget is 64 MiB, independent of the public upload pool.
+    #[must_use]
+    pub fn scratch_buffer_pool_stats(&self) -> GpuResourcePoolStats {
+        self.scratch_pool.stats()
+    }
+
+    /// Changes private scratch retention; zero disables reuse. Shrinking below
+    /// current retention clears cached buffers without affecting submitted work.
+    pub fn set_scratch_buffer_pool_budget(&self, budget_bytes: u64) {
+        self.scratch_pool.set_budget(budget_bytes);
+    }
+
+    /// Drops cached scratch handles without changing the budget or counters.
+    pub fn clear_scratch_buffer_pool(&self) {
+        self.scratch_pool.clear();
     }
 
     /// Uploads a POD slice into a reusable pooled storage buffer.
@@ -331,6 +370,7 @@ impl WgpuRuntime {
             voxel_scan_pipelines: OnceLock::new(),
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
+            scratch_pool: GpuBufferPool::default(),
             adapter_info,
             #[cfg(any(
                 not(target_arch = "wasm32"),
@@ -339,7 +379,7 @@ impl WgpuRuntime {
             ))]
             profiling_identity: std::sync::Arc::new(()),
             #[cfg(feature = "gpu-image")]
-            image_texture_pool: Mutex::new(HashMap::new()),
+            image_texture_pool: Mutex::new(ResourceCache::new(DEFAULT_GPU_POOL_BUDGET_BYTES)),
             #[cfg(feature = "gpu-image")]
             image_gray_pipeline: OnceLock::new(),
             #[cfg(feature = "gpu-image")]

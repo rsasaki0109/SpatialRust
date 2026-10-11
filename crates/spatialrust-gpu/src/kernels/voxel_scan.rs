@@ -87,27 +87,20 @@ pub(super) fn encode_inclusive_scan(
     output: &wgpu::Buffer,
     count: u32,
     profiler: &mut Option<&mut GpuStageProfiler>,
+    temporaries: &mut crate::scratch::ScratchBuffers<'_>,
 ) {
     if count == 0 {
         return;
     }
     let pipelines =
         runtime.voxel_scan_pipelines.get_or_init(|| PrefixScanPipelines::new(runtime.device()));
-    let storage = |count| {
-        runtime.device().create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-scan-hierarchy"),
-            size: u64::from(count) * 4,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        })
-    };
     let mut levels = Vec::with_capacity(scan_pass_count(count).div_ceil(2) as usize);
     let mut source = input.clone();
     let mut prefix = output.clone();
     let mut current_count = count;
     loop {
         let groups = current_count.div_ceil(BLOCK_SIZE);
-        let sums = storage(groups);
+        let sums = temporaries.acquire("voxel-scan-hierarchy", u64::from(groups) * 4);
         dispatch(
             runtime,
             encoder,
@@ -125,7 +118,7 @@ pub(super) fn encode_inclusive_scan(
             break;
         }
         source = levels.last().expect("scan level").sums.clone();
-        prefix = storage(groups);
+        prefix = temporaries.acquire("voxel-scan-hierarchy", u64::from(groups) * 4);
         current_count = groups;
     }
     for lower in (0..levels.len() - 1).rev() {
