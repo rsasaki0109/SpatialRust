@@ -83,8 +83,18 @@ scratch leases. Oversized separable kernels scan only valid coordinates and
 weight replicated edge pixels analytically; constant-zero padding retains the
 full kernel divisor. Pixel, coordinate, sum and device limits reject before
 allocation. Both paths use bounded grid strides and independently lazy runtime
-pipelines. The resident Vision chain records six passes for small workloads
-and seven for separable boxes, reserving all timestamp capacity before recording.
+pipelines. GPU rectangular morphology retains odd kernels in `1..=31` and
+replicate borders. With box area at least 81 and at least 1,048,576 pixel/sample
+visits it reduces horizontal then vertical minima/maxima. Clipping valid
+coordinates is exact because repeated edge values do not alter an extremum.
+Both passes share one submission; the exclusive RGBA8 intermediate is four
+bytes per pixel and returns to the bounded image pool only after submission.
+Small workloads keep the original full-box pass. Coordinate, texture, dispatch,
+uniform and workgroup limits reject before output/scratch/cache allocation.
+The separable pair is lazy within the existing spatial pipeline family.
+The resident Vision chain records six passes for small workloads and one extra
+for each separable blur/morphology path (up to eight), reserving all timestamp
+capacity before recording.
 Optional `GpuStageProfiler` instrumentation is shared by image and point-cloud
 chains in `spatialrust-gpu`. Timestamp-enabled runtime construction requests
 only adapter-supported pass queries; default runtimes enable none. Profiled
