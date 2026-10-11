@@ -112,6 +112,15 @@ Optional profiling records exactly two passes; native `readback_u32` explicitly
 transfers 1,024 bytes and timestamp collection separately transfers 32 bytes.
 Histogram construction has no payload readback or implicit host synchronization.
 The public APIs are provisional; CPU references/Rayon are dev-only dependencies.
+Resident histogram consumers include `histogram_cdf_gpu`, a one-workgroup
+inclusive tree scan of the 256 bins. It uses 1 KiB local memory, a separate 1 KiB
+output, and no global temporary buffer or uniform. Integer counts remain exact
+through u32::MAX; the last cumulative count equals source pixels. `GpuImageCdf`
+inherits source transfer history, adds one device-write stage, and requires
+explicit native readback/recycling. The histogram may be recycled immediately
+after the CDF call submits its reads; queue order protects later pool reuse.
+CDF recording adds one profiler stage (16 query bytes upon explicit collection).
+Normalized CDFs and equalization rounding are separate future contracts.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
 large thresholds, u8 histograms and histogram-equalization lookup application.
 Tasks are bounded by image rows and the current pool; histograms merge exact

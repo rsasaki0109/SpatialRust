@@ -94,3 +94,34 @@ integrated head requires **107 main jobs**, seven required wheel jobs and only
 the intentionally skipped PyPI publication. Older 103-job runs cannot certify
 this integrated head. Frozen study inputs, helpers, estimates and scores remain
 unchanged; the historical native SDK stays preserved for exact replay.
+
+## COPC hosted failure and subsequent main integration
+
+The integrated `83e0869` head's complete explicit-attempt snapshot at
+`/workspace/SpatialRust/target/goal-continuation/pr126-ci-main127128-watch-20.json`
+records 86 main successes, one COPC HTTP failure and 20 queued jobs; all seven
+required wheel jobs succeed, with only PyPI publication intentionally skipped.
+The failed job is `114374492305`, during `Build and test`, exit 101. Toolchain
+setup and cache restore succeeded. GitHub annotations expose no underlying
+diagnostic. Log retrieval redirects to `productionresultssa11.blob.core.windows.net`,
+which the session proxy rejects with HTTP 403; TLS and policy are preserved.
+
+The same COPC profile on the integrated local source passes 34 tests, including
+both local HTTP fixtures, with no failures or ignores. The restored local lock
+first needs updating for newer main manifests: the initial `--locked` command
+does not execute tests. Its exact bytes are backed up, and offline resolution
+then executes the profile successfully. This local lock prerequisite does not
+explain the hosted failure, whose command does not pass `--locked`. Neither a
+fixed defect nor a transient failure is inferred from the local pass. Detailed
+receipts are under `/workspace/SpatialRust/target/goal-continuation/`:
+`pr126-copc-failure-annotations.json`, `pr126-copc-log-access.json`,
+`pr126-copc-integrated-local-offline.log`, `pr126-copc-local-diagnosis.json`.
+
+The fresh main revision also contains PR #129 resident GPU histogram CDF.
+All its source, API notes and CI commands are retained; both CHANGELOG entries
+survive the insertion conflict. Required counts remain 107 main and seven wheel
+jobs, but the resulting head needs its own complete matrices. Its 78 relevant
+TUM tests pass; generation/evaluation helpers, Python tests and study metadata
+remain unchanged, as does the SHA-verified historical native SDK. Hosted COPC
+diagnosis remains incomplete while detailed logs are inaccessible. Do not merge
+using the failed/superseded head or call the real-motion/calibration gates closed.

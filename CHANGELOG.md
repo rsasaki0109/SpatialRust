@@ -70,6 +70,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   attributes, frozen hashes and independent audits; none meets all fixed
   accuracy/coverage gates. The default estimator remains unchanged.
 
+- `gpu-image` adds exact inclusive `histogram_cdf_gpu` and its one-pass profiled
+  variant, returning independently owned resident `GpuImageCdf`. The 256-bin
+  integer scan uses 1 KiB local memory and writes 1 KiB without bin readback,
+  normalization or rounding; the final count equals the source pixel count.
+  Source recycling, concurrent results, maximum u32 counts, explicit native
+  readback receipts and completed-work comparisons are covered.
+
 - `gpu-image` adds exact two-pass `histogram_u8_gpu` channel counts and a profiled
   variant, returning resident `GpuImageHistogram`. Private partials are capped
   at 256 KiB; the result is 1 KiB with explicit native readback/recycling and
