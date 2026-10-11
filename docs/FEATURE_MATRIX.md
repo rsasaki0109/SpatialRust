@@ -161,6 +161,14 @@ builds, sorts, and compacts the sparse grid on wgpu and performs deterministic
 component union on the host. This split is visible in receipts and is not an
 implicit CPU fallback.
 
+GPU RANSAC plane scoring additionally parallelizes the point direction from
+1,024 points, reducing exact integer inlier counts within each 256-lane group
+while retaining per-point f32 distance arithmetic. Smaller inputs retain scalar
+point traversal. Both pipelines are lazy/runtime-cached; bounded hypothesis
+strides, checked indices/limits and one compute-plus-score-copy submission keep
+uploads and score readback explicit. See the
+[RANSAC validation receipt](../notes/2026-10-11_parallel_gpu_ransac_plane.md).
+
 Voxel key sorting uses stable four-bit GPU radix passes over signed i32 XYZ
 coordinates, preserving increasing source indices inside each cell. Sorting
 uses the legacy histogram/prefix through 524,288 points. Larger sorts reuse

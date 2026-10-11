@@ -1,10 +1,110 @@
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
+use std::sync::OnceLock;
 use wgpu::util::DeviceExt;
 
 use crate::runtime::WgpuRuntime;
 
 const WORKGROUP_SIZE: u32 = 256;
+const POINT_PARALLEL_MIN: u32 = 1024;
+
+struct Plan {
+    point_count: u32,
+    hypothesis_count: u32,
+    groups: u32,
+    parallel: bool,
+    output_bytes: u64,
+}
+
+fn plan(points: usize, hypotheses: usize, limits: &wgpu::Limits) -> SpatialResult<Plan> {
+    let invalid = || {
+        SpatialError::InvalidArgument("RANSAC scoring requires non-empty u32-sized arrays and supported buffer/compute limits".to_owned())
+    };
+    let point_count = u32::try_from(points).map_err(|_| invalid())?;
+    let hypothesis_count = u32::try_from(hypotheses).map_err(|_| invalid())?;
+    let parallel = point_count >= POINT_PARALLEL_MIN;
+    let bound = limits.max_buffer_size.min(u64::from(limits.max_storage_buffer_binding_size));
+    let output_bytes = u64::from(hypothesis_count) * std::mem::size_of::<GpuPlaneScore>() as u64;
+    if points == 0
+        || hypotheses == 0
+        || u64::from(point_count) * 4 > bound
+        || u64::from(hypothesis_count) * 16 > bound
+        || output_bytes > bound
+        || limits.max_compute_invocations_per_workgroup < WORKGROUP_SIZE
+        || limits.max_compute_workgroup_size_x < WORKGROUP_SIZE
+        || limits.max_compute_workgroups_per_dimension == 0
+        || (parallel && limits.max_compute_workgroup_storage_size < 2048)
+        || limits.max_storage_buffers_per_shader_stage < 5
+        || limits.max_uniform_buffers_per_shader_stage == 0
+        || limits.max_uniform_buffer_binding_size < std::mem::size_of::<RansacPlaneUniform>() as u32
+    {
+        return Err(invalid());
+    }
+    let groups =
+        if parallel { hypothesis_count } else { hypothesis_count.div_ceil(WORKGROUP_SIZE) }
+            .min(256)
+            .min(limits.max_compute_workgroups_per_dimension);
+    Ok(Plan { point_count, hypothesis_count, groups, parallel, output_bytes })
+}
+
+pub(crate) struct RansacPlanePipelines {
+    layout: wgpu::BindGroupLayout,
+    pipelines: [OnceLock<wgpu::ComputePipeline>; 2],
+}
+
+impl RansacPlanePipelines {
+    fn new(device: &wgpu::Device) -> Self {
+        let entries: [wgpu::BindGroupLayoutEntry; 6] =
+            std::array::from_fn(|binding| wgpu::BindGroupLayoutEntry {
+                binding: binding as u32,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: if binding == 0 {
+                        wgpu::BufferBindingType::Uniform
+                    } else {
+                        wgpu::BufferBindingType::Storage { read_only: binding != 5 }
+                    },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            });
+        Self {
+            layout: device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("ransac-plane-layout"),
+                entries: &entries,
+            }),
+            pipelines: std::array::from_fn(|_| OnceLock::new()),
+        }
+    }
+
+    fn pipeline(&self, device: &wgpu::Device, parallel: bool) -> &wgpu::ComputePipeline {
+        self.pipelines[usize::from(parallel)].get_or_init(|| {
+            let source = if parallel {
+                include_str!("../shaders/ransac_plane_parallel.wgsl")
+            } else {
+                include_str!("../shaders/ransac_plane_serial.wgsl")
+            };
+            let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("ransac-plane-shader"),
+                source: wgpu::ShaderSource::Wgsl(source.into()),
+            });
+            let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("ransac-plane-pipeline-layout"),
+                bind_group_layouts: &[&self.layout],
+                push_constant_ranges: &[],
+            });
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("ransac-plane-pipeline"),
+                layout: Some(&layout),
+                module: &module,
+                entry_point: Some("main"),
+                compilation_options: Default::default(),
+                cache: None,
+            })
+        })
+    }
+}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
@@ -12,7 +112,7 @@ struct RansacPlaneUniform {
     point_count: u32,
     hypothesis_count: u32,
     distance_threshold: f32,
-    _pad: u32,
+    groups: u32,
 }
 
 #[repr(C)]
@@ -36,70 +136,12 @@ pub struct GpuPlaneScore {
     pub d: f32,
 }
 
-const RANSAC_PLANE_WGSL: &str = r#"
-struct Params {
-    point_count: u32,
-    hypothesis_count: u32,
-    distance_threshold: f32,
-    pad: f32,
-};
-
-struct Hypothesis {
-    i0: u32,
-    i1: u32,
-    i2: u32,
-    pad: u32,
-};
-
-struct Score {
-    inlier_count: u32,
-    nx: f32,
-    ny: f32,
-    nz: f32,
-    d: f32,
-};
-
-@group(0) @binding(0) var<uniform> params: Params;
-@group(0) @binding(1) var<storage, read> xs: array<f32>;
-@group(0) @binding(2) var<storage, read> ys: array<f32>;
-@group(0) @binding(3) var<storage, read> zs: array<f32>;
-@group(0) @binding(4) var<storage, read> hypotheses: array<Hypothesis>;
-@group(0) @binding(5) var<storage, read_write> scores: array<Score>;
-
-fn plane_from_indices(i0: u32, i1: u32, i2: u32) -> Score {
-    let p0 = vec3<f32>(xs[i0], ys[i0], zs[i0]);
-    let p1 = vec3<f32>(xs[i1], ys[i1], zs[i1]);
-    let p2 = vec3<f32>(xs[i2], ys[i2], zs[i2]);
-    let v1 = p1 - p0;
-    let v2 = p2 - p0;
-    var normal = cross(v1, v2);
-    if (dot(normal, normal) < 1e-12) {
-        return Score(0u, 0.0, 0.0, 0.0, 0.0);
-    }
-    normal = normalize(normal);
-    let d = -dot(normal, p0);
-    var count = 0u;
-    for (var i: u32 = 0u; i < params.point_count; i = i + 1u) {
-        let dist = abs(normal.x * xs[i] + normal.y * ys[i] + normal.z * zs[i] + d);
-        if (dist <= params.distance_threshold) {
-            count = count + 1u;
-        }
-    }
-    return Score(count, normal.x, normal.y, normal.z, d);
-}
-
-@compute @workgroup_size(256)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let h = gid.x;
-    if (h >= params.hypothesis_count) {
-        return;
-    }
-    let hyp = hypotheses[h];
-    scores[h] = plane_from_indices(hyp.i0, hyp.i1, hyp.i2);
-}
-"#;
-
 /// Scores RANSAC plane hypotheses in parallel on the GPU.
+///
+/// Uploads XYZ and hypotheses and explicitly reads back one score per hypothesis.
+/// Large inputs also partition points across workgroup lanes, reducing integer
+/// counts while retaining each point's f32 distance arithmetic. Invalid indices,
+/// empty point arrays and unsupported sizes/compute limits fail before GPU work.
 pub fn score_ransac_plane_hypotheses_gpu(
     runtime: &WgpuRuntime,
     x: &[f32],
@@ -115,9 +157,17 @@ pub fn score_ransac_plane_hypotheses_gpu(
         return Ok(Vec::new());
     }
 
+    let plan = plan(x.len(), hypotheses.len(), &runtime.device().limits())?;
+    if hypotheses.iter().flatten().any(|&index| index >= plan.point_count) {
+        return Err(SpatialError::InvalidArgument(
+            "RANSAC hypothesis index exceeds point array".to_owned(),
+        ));
+    }
     let device = runtime.device();
     let queue = runtime.queue();
-    let point_count = x.len();
+    let pipelines =
+        runtime.ransac_plane_pipelines.get_or_init(|| RansacPlanePipelines::new(device));
+    let pipeline = pipelines.pipeline(device, plan.parallel);
 
     let x_buffer = runtime.upload_f32_storage("ransac-plane-x", x)?;
     let y_buffer = runtime.upload_f32_storage("ransac-plane-y", y)?;
@@ -138,8 +188,7 @@ pub fn score_ransac_plane_hypotheses_gpu(
         usage: wgpu::BufferUsages::STORAGE,
     });
 
-    let hypothesis_count = hypotheses.len();
-    let output_len = (hypothesis_count * std::mem::size_of::<GpuPlaneScore>()) as u64;
+    let output_len = plan.output_bytes;
     let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("ransac-plane-scores"),
         size: output_len,
@@ -148,10 +197,10 @@ pub fn score_ransac_plane_hypotheses_gpu(
     });
 
     let uniform = RansacPlaneUniform {
-        point_count: point_count as u32,
-        hypothesis_count: hypothesis_count as u32,
+        point_count: plan.point_count,
+        hypothesis_count: plan.hypothesis_count,
         distance_threshold,
-        _pad: 0,
+        groups: plan.groups,
     };
     let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("ransac-plane-uniform"),
@@ -159,22 +208,9 @@ pub fn score_ransac_plane_hypotheses_gpu(
         usage: wgpu::BufferUsages::UNIFORM,
     });
 
-    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("ransac-plane-shader"),
-        source: wgpu::ShaderSource::Wgsl(RANSAC_PLANE_WGSL.into()),
-    });
-    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("ransac-plane-pipeline"),
-        layout: None,
-        module: &module,
-        entry_point: Some("main"),
-        compilation_options: wgpu::PipelineCompilationOptions::default(),
-        cache: None,
-    });
-
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("ransac-plane-bind-group"),
-        layout: &pipeline.get_bind_group_layout(0),
+        layout: &pipelines.layout,
         entries: &[
             wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
             wgpu::BindGroupEntry { binding: 1, resource: x_buffer.as_entire_binding() },
@@ -185,6 +221,12 @@ pub fn score_ransac_plane_hypotheses_gpu(
         ],
     });
 
+    let staging = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("ransac-plane-staging"),
+        size: output_len,
+        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
     let mut encoder = device
         .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("ransac-plane") });
     {
@@ -192,21 +234,10 @@ pub fn score_ransac_plane_hypotheses_gpu(
             label: Some("ransac-plane-pass"),
             timestamp_writes: None,
         });
-        pass.set_pipeline(&pipeline);
+        pass.set_pipeline(pipeline);
         pass.set_bind_group(0, &bind_group, &[]);
-        pass.dispatch_workgroups(hypothesis_count.div_ceil(WORKGROUP_SIZE as usize) as u32, 1, 1);
+        pass.dispatch_workgroups(plan.groups, 1, 1);
     }
-    queue.submit(Some(encoder.finish()));
-
-    let staging = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("ransac-plane-staging"),
-        size: output_len,
-        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("ransac-plane-readback"),
-    });
     encoder.copy_buffer_to_buffer(&output_buffer, 0, &staging, 0, output_len);
     queue.submit(Some(encoder.finish()));
 
@@ -228,12 +259,17 @@ pub fn score_ransac_plane_hypotheses_gpu(
     drop(data);
     staging.unmap();
 
+    drop(bind_group);
     runtime.recycle_storage(std::mem::size_of_val(x) as u64, x_buffer);
     runtime.recycle_storage(std::mem::size_of_val(y) as u64, y_buffer);
     runtime.recycle_storage(std::mem::size_of_val(z) as u64, z_buffer);
 
     Ok(scores)
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "ransac_plane_tests.rs"]
+mod regression;
 
 #[cfg(test)]
 mod tests {

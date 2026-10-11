@@ -111,6 +111,9 @@ pub use euclidean_cluster::{
 pub use ransac_plane::{score_ransac_plane_hypotheses_gpu, GpuPlaneScore};
 
 #[cfg(feature = "gpu-wgpu")]
+pub(crate) use ransac_plane::RansacPlanePipelines;
+
+#[cfg(feature = "gpu-wgpu")]
 pub use voxel_pipeline::{
     downsample_voxel_approximate_first_gpu, downsample_voxel_centroid_gpu,
     VoxelApproximateFirstGpuResult, VoxelCentroidGpuResult,
