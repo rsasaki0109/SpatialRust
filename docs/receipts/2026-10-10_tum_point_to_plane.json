@@ -1,0 +1,652 @@
+{
+  "schema": "spatialrust.tum-plane-validation.v1",
+  "current_maturity_percent": 87,
+  "target_percent": 90,
+  "maturity_change": false,
+  "maturity_basis": "Observed lower errors in two fixed sequences, but accuracy acceptance fails; no source-bound canonical clock/mounting evidence. Broader real processing and corrected independent numerical scoring are recorded without claiming90%.",
+  "protocol_commit": "a973dcb3afc811058670b96758328a173213788a",
+  "corrected_evaluator_commit": "7a5751cb275ca323692506fcebb9b71965479703",
+  "reference_used_for_generation": false,
+  "sources": {
+    "xyz": {
+      "requested_url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "archive_bytes": 448204271,
+      "verified_https": true,
+      "publisher_archive_checksum_supplied": false,
+      "license": "CC BY 4.0",
+      "acquisition_receipt_sha256": "b847c01a9e3a9b2e1295a16c166503f1ac0a9fdc24566d84d53542c08a4deaa8"
+    },
+    "rpy": {
+      "requested_url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz",
+      "source_sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1",
+      "archive_bytes": 410268381,
+      "verified_https": true,
+      "publisher_archive_checksum_supplied": false,
+      "license": "CC BY 4.0",
+      "acquisition_receipt_sha256": "659e49aded8d386ea711eb314bc43a319b2db4776add5caeba5031c9dd60389c"
+    }
+  },
+  "cases": [
+    {
+      "sequence": "xyz",
+      "scope": "exploratory",
+      "method": "point-to-point",
+      "generation_commit": "b2506d4f1ae92f3bd89ac88f5b4b5dbbd0dff6af",
+      "plan": "benchmarks/tum-fr1-xyz-plan.json",
+      "plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "planned_poses": 798,
+      "generated_poses": 798,
+      "evaluated_poses": 795,
+      "duration_ns": 26594239000,
+      "projected_points": 185553749,
+      "exact_typed_io_frames": 15,
+      "maximum_numeric_projection_difference_m": 2.709699358227624e-07,
+      "estimates": "target/tum-reference/generated-v1/estimates.json",
+      "estimates_sha256": "ba322b06c684a6631226875b6f2ea4b7e56745bd9fd014b2bb8b911821e524f0",
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "5b3d8b2f2a0974829cea99a27b7099602de1ab961424d00a80352b2885b3ed9e",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "dc54aab88ef6289a196287c4794db2df632f549a12d6b4d1f24ebe6d1604ea0e",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "e12e55b83fc8760be113f3980ace065dde777c6096bc6118051279a111386a51"
+      },
+      "accuracy": "target/tum-reference/evaluation-slerp-v2/accuracy.json",
+      "accuracy_sha256": "805b2450e651f925daa76cca1545057df14812fbadb7dae6036b14d406fda2d5",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "ate_raw_rmse_m": 2.4539870531209695,
+      "ate_first_pose_rmse_m": 0.6580326015428163,
+      "ate_median_m": 0.6102987521729402,
+      "ate_p95_m": 0.9679702132658206,
+      "ate_max_m": 1.0148259863856892,
+      "rpe_translation_rmse_m": 0.17594528480667265,
+      "rpe_rotation_rmse_degrees": 3.9777201129612245,
+      "rpe_planned_pairs": 768,
+      "rpe_evaluated_pairs": 762,
+      "unmatched_pose_indices": [
+        201,
+        202,
+        203
+      ],
+      "unevaluated_rpe_pairs": [
+        [
+          171,
+          201
+        ],
+        [
+          172,
+          202
+        ],
+        [
+          173,
+          203
+        ],
+        [
+          201,
+          231
+        ],
+        [
+          202,
+          232
+        ],
+        [
+          203,
+          233
+        ]
+      ],
+      "independent_audit": "target/tum-reference/independent-audit-slerp-v2/audit.json",
+      "independent_audit_sha256": "0fa73315fa18b3ccce820e5a26991e04f3e6946c6d6086d278b51e3f5286cfec",
+      "audit_max_translation_difference_m": 8.951173136040325e-16,
+      "audit_max_rotation_difference_degrees": 3.694822225952521e-13,
+      "original_accuracy_sha256": "771bea97ed4f333d152163bf927c5c846d847ff656d95fd05bb6d15969bbabb5",
+      "slerp_correction_delta_ate_m": -1.3817835764484698e-12,
+      "slerp_correction_delta_rpe_m": 2.816274990991019e-12
+    },
+    {
+      "sequence": "xyz",
+      "scope": "exploratory",
+      "method": "Open3D point-to-point",
+      "generation_commit": "82a3e950cace9f1cbcea472d999a5a4870e3e115",
+      "plan": "benchmarks/tum-fr1-xyz-open3d-plan.json",
+      "plan_sha256": "5ea366f93608743cc482c103ca2d41788d9a5906a2ec16b8cf9d2006c8052d1b",
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "planned_poses": 798,
+      "generated_poses": 798,
+      "evaluated_poses": 795,
+      "duration_ns": 26594239000,
+      "projected_points": 185553749,
+      "exact_typed_io_frames": 15,
+      "maximum_numeric_projection_difference_m": 2.709699358227624e-07,
+      "estimates": "target/tum-reference/open3d-generated-v1/estimates.json",
+      "estimates_sha256": "ca6c8ebca3196320c2aa0180edbebcb34f083728befaf5c616364f1dde9d02fe",
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-x86_64-linux-gnu.so": "e99d5acb1ad93e609e83864ec69553a08b2a486e5d639241cc51e3c795e0f0d7",
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_open3d.py": "d4a2b0c46bb939edf271f9ffc327af82b52b3ee93e77247844f24cbaf7a403b0",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "dbc36bd31192210727a0e3261c3c6971e74b305e037eb09dc42b27d648c96d9c",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "dc54aab88ef6289a196287c4794db2df632f549a12d6b4d1f24ebe6d1604ea0e",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "e12e55b83fc8760be113f3980ace065dde777c6096bc6118051279a111386a51"
+      },
+      "accuracy": "target/tum-reference/open3d-evaluation-slerp-v2/accuracy.json",
+      "accuracy_sha256": "2330c21fc24b476a654220c0f189b07445cb10f3d832cf4766335441ec4da21b",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "ate_raw_rmse_m": 2.4539149034254883,
+      "ate_first_pose_rmse_m": 0.6579665241686639,
+      "ate_median_m": 0.6101750794603318,
+      "ate_p95_m": 0.9679474554745902,
+      "ate_max_m": 1.0148091774220716,
+      "rpe_translation_rmse_m": 0.17594180472161922,
+      "rpe_rotation_rmse_degrees": 3.977489784680299,
+      "rpe_planned_pairs": 768,
+      "rpe_evaluated_pairs": 762,
+      "unmatched_pose_indices": [
+        201,
+        202,
+        203
+      ],
+      "unevaluated_rpe_pairs": [
+        [
+          171,
+          201
+        ],
+        [
+          172,
+          202
+        ],
+        [
+          173,
+          203
+        ],
+        [
+          201,
+          231
+        ],
+        [
+          202,
+          232
+        ],
+        [
+          203,
+          233
+        ]
+      ],
+      "independent_audit": "target/tum-reference/open3d-independent-audit-slerp-v2/audit.json",
+      "independent_audit_sha256": "df6492b68f0dca4458abe6928d3ca196ea4b8fdba0548920b0f3c6d69bfce481",
+      "audit_max_translation_difference_m": 8.951173136040325e-16,
+      "audit_max_rotation_difference_degrees": 3.410605131648481e-13,
+      "original_accuracy_sha256": "94c07d3c665d1a7c147f7e00cddbe40d2505c5fd74f6fe14ed8f341bc21a8697",
+      "slerp_correction_delta_ate_m": -1.3820056210533949e-12,
+      "slerp_correction_delta_rpe_m": 2.815220279117625e-12
+    },
+    {
+      "sequence": "xyz",
+      "scope": "exploratory",
+      "method": "point-to-plane",
+      "generation_commit": "a973dcb3afc811058670b96758328a173213788a",
+      "plan": "benchmarks/tum-fr1-xyz-plane-plan.json",
+      "plan_sha256": "2a7ff8b28af08d7c73d539ca21e274bfc6d61f9d620650887ecbc34679854d94",
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "planned_poses": 798,
+      "generated_poses": 798,
+      "evaluated_poses": 795,
+      "duration_ns": 26594239000,
+      "projected_points": 185553749,
+      "exact_typed_io_frames": 15,
+      "maximum_numeric_projection_difference_m": 2.709699358227624e-07,
+      "estimates": "target/tum-reference/native-plane-generated-v1/estimates.json",
+      "estimates_sha256": "ab4f906cda9d104153d7659832dd50b5e6f11bc4b540bda69247eb4a6c7435dd",
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "d1a706e70ceaa7b033fae7a2f2063547af949ba3d31f206087579f86ccb51c8f",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "dc54aab88ef6289a196287c4794db2df632f549a12d6b4d1f24ebe6d1604ea0e",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "f2637a9afad2531baa069ec9a3af54d0318adf985dbb977db78fa37eb3eda8eb"
+      },
+      "accuracy": "target/tum-reference/native-plane-evaluation-v2/accuracy.json",
+      "accuracy_sha256": "f1cc01001c083e4cf51d7012db565b044e1758310f7e116edc0a01911714aec9",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "ate_raw_rmse_m": 2.032299344842503,
+      "ate_first_pose_rmse_m": 0.12519718510712866,
+      "ate_median_m": 0.10626816430910782,
+      "ate_p95_m": 0.21748737630265788,
+      "ate_max_m": 0.2512834872150535,
+      "rpe_translation_rmse_m": 0.04370416618742202,
+      "rpe_rotation_rmse_degrees": 2.638582161859042,
+      "rpe_planned_pairs": 768,
+      "rpe_evaluated_pairs": 762,
+      "unmatched_pose_indices": [
+        201,
+        202,
+        203
+      ],
+      "unevaluated_rpe_pairs": [
+        [
+          171,
+          201
+        ],
+        [
+          172,
+          202
+        ],
+        [
+          173,
+          203
+        ],
+        [
+          201,
+          231
+        ],
+        [
+          202,
+          232
+        ],
+        [
+          203,
+          233
+        ]
+      ],
+      "independent_audit": "target/tum-reference/native-plane-independent-audit-v2/audit.json",
+      "independent_audit_sha256": "0ce87a1c704082bd94197759cac4b0a0aaa088cf4a012e56bfe7c7491665c987",
+      "audit_max_translation_difference_m": 9.922618282587337e-16,
+      "audit_max_rotation_difference_degrees": 6.252776074688882e-13,
+      "original_accuracy_sha256": "e2fa103d71a1b64755323457c889b8d11a24c0162bb67ac47fe954d67c992062",
+      "slerp_correction_delta_ate_m": 1.9095836023552692e-14,
+      "slerp_correction_delta_rpe_m": -5.710085182464297e-13,
+      "fixed_acceptance": {
+        "minimum_generated_fraction": 1.0,
+        "minimum_evaluated_fraction": 0.95,
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "basis": "Fixed engineering study thresholds before point-to-plane fitting; not publisher accuracy requirements or general production guarantees."
+      },
+      "acceptance_gates": {
+        "all_generated": true,
+        "reference_coverage": true,
+        "ate": false,
+        "rpe": true
+      },
+      "all_gates_passed": false
+    },
+    {
+      "sequence": "rpy",
+      "scope": "untouched sequence frozen before acquisition/fitting",
+      "method": "point-to-point",
+      "generation_commit": "a973dcb3afc811058670b96758328a173213788a",
+      "plan": "benchmarks/tum-fr1-rpy-plan.json",
+      "plan_sha256": "151ae7e3475b2a5f4b98a9ba750ed7ddb600176e866fe6e2f4703b01571a9e2d",
+      "source_sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1",
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "planned_poses": 722,
+      "generated_poses": 722,
+      "evaluated_poses": 716,
+      "duration_ns": 24061021000,
+      "projected_points": 170661420,
+      "exact_typed_io_frames": 14,
+      "maximum_numeric_projection_difference_m": 3.7286376919354325e-07,
+      "estimates": "target/tum-reference/rpy-native-generated-v1/estimates.json",
+      "estimates_sha256": "0c76733e1745ce210371484c842ede2211a2f4ab280192d7c4349ba16ff37483",
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "d1a706e70ceaa7b033fae7a2f2063547af949ba3d31f206087579f86ccb51c8f",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "dc54aab88ef6289a196287c4794db2df632f549a12d6b4d1f24ebe6d1604ea0e",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "f2637a9afad2531baa069ec9a3af54d0318adf985dbb977db78fa37eb3eda8eb"
+      },
+      "accuracy": "target/tum-reference/rpy-native-evaluation-v2/accuracy.json",
+      "accuracy_sha256": "de9fb040737912b406d2d62d89190710890df2a05820ca550c4c35341e721bed",
+      "reference_sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989",
+      "ate_raw_rmse_m": 2.09714972737496,
+      "ate_first_pose_rmse_m": 0.7264460838919434,
+      "ate_median_m": 0.6062266105463596,
+      "ate_p95_m": 1.1637678490505956,
+      "ate_max_m": 1.2332817180787947,
+      "rpe_translation_rmse_m": 0.2649436906179173,
+      "rpe_rotation_rmse_degrees": 15.655371203498685,
+      "rpe_planned_pairs": 692,
+      "rpe_evaluated_pairs": 680,
+      "unmatched_pose_indices": [
+        458,
+        459,
+        460,
+        461,
+        463,
+        464
+      ],
+      "unevaluated_rpe_pairs": [
+        [
+          428,
+          458
+        ],
+        [
+          429,
+          459
+        ],
+        [
+          430,
+          460
+        ],
+        [
+          431,
+          461
+        ],
+        [
+          433,
+          463
+        ],
+        [
+          434,
+          464
+        ],
+        [
+          458,
+          488
+        ],
+        [
+          459,
+          489
+        ],
+        [
+          460,
+          490
+        ],
+        [
+          461,
+          491
+        ],
+        [
+          463,
+          493
+        ],
+        [
+          464,
+          494
+        ]
+      ],
+      "independent_audit": "target/tum-reference/rpy-native-independent-audit-v2/audit.json",
+      "independent_audit_sha256": "41bda18a8bfcb6ba60315195b98e5d6e740ea53de107b2b56477e3b782f02c7e",
+      "audit_max_translation_difference_m": 1.3322676295501878e-15,
+      "audit_max_rotation_difference_degrees": 1.4210854715202004e-12,
+      "original_accuracy_sha256": "e36f60339247389e72438d3b3b1fbcad9ffaf2ae7e333256511f4fbe712fefd0",
+      "slerp_correction_delta_ate_m": -2.6548807596782353e-10,
+      "slerp_correction_delta_rpe_m": 1.1472489624964055e-12,
+      "fixed_acceptance": {
+        "minimum_generated_fraction": 1.0,
+        "minimum_evaluated_fraction": 0.95,
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "basis": "Fixed engineering study thresholds before point-to-plane fitting; not publisher accuracy requirements or general production guarantees."
+      },
+      "acceptance_gates": {
+        "all_generated": true,
+        "reference_coverage": true,
+        "ate": false,
+        "rpe": false
+      },
+      "all_gates_passed": false
+    },
+    {
+      "sequence": "rpy",
+      "scope": "untouched sequence frozen before acquisition/fitting",
+      "method": "point-to-plane",
+      "generation_commit": "a973dcb3afc811058670b96758328a173213788a",
+      "plan": "benchmarks/tum-fr1-rpy-plane-plan.json",
+      "plan_sha256": "047eeff06ba6d6e2a9deebd101eb41c0263119224d50864c59d5ae0047929739",
+      "source_sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1",
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "planned_poses": 722,
+      "generated_poses": 722,
+      "evaluated_poses": 716,
+      "duration_ns": 24061021000,
+      "projected_points": 170661420,
+      "exact_typed_io_frames": 14,
+      "maximum_numeric_projection_difference_m": 3.7286376919354325e-07,
+      "estimates": "target/tum-reference/rpy-plane-generated-v1/estimates.json",
+      "estimates_sha256": "49cfe2ebc9b44f010db7d84af1ffd8bff6d9c7c301c3d69133432bac08703648",
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "d1a706e70ceaa7b033fae7a2f2063547af949ba3d31f206087579f86ccb51c8f",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "dc54aab88ef6289a196287c4794db2df632f549a12d6b4d1f24ebe6d1604ea0e",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "f2637a9afad2531baa069ec9a3af54d0318adf985dbb977db78fa37eb3eda8eb"
+      },
+      "accuracy": "target/tum-reference/rpy-plane-evaluation-v2/accuracy.json",
+      "accuracy_sha256": "5d2bfb5a4ceeacb3644d022db8fa317a513f95b45cec071e2da042f3237ff627",
+      "reference_sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989",
+      "ate_raw_rmse_m": 2.2897898317326355,
+      "ate_first_pose_rmse_m": 0.5293302331849035,
+      "ate_median_m": 0.4943671437048205,
+      "ate_p95_m": 0.802789384923507,
+      "ate_max_m": 0.8321055244912113,
+      "rpe_translation_rmse_m": 0.1389763230876198,
+      "rpe_rotation_rmse_degrees": 7.329990639050026,
+      "rpe_planned_pairs": 692,
+      "rpe_evaluated_pairs": 680,
+      "unmatched_pose_indices": [
+        458,
+        459,
+        460,
+        461,
+        463,
+        464
+      ],
+      "unevaluated_rpe_pairs": [
+        [
+          428,
+          458
+        ],
+        [
+          429,
+          459
+        ],
+        [
+          430,
+          460
+        ],
+        [
+          431,
+          461
+        ],
+        [
+          433,
+          463
+        ],
+        [
+          434,
+          464
+        ],
+        [
+          458,
+          488
+        ],
+        [
+          459,
+          489
+        ],
+        [
+          460,
+          490
+        ],
+        [
+          461,
+          491
+        ],
+        [
+          463,
+          493
+        ],
+        [
+          464,
+          494
+        ]
+      ],
+      "independent_audit": "target/tum-reference/rpy-plane-independent-audit-v2/audit.json",
+      "independent_audit_sha256": "a20da2baf42a44c5aba1205b065d7a6c5034e50c7f44ae48c72fcc832f151333",
+      "audit_max_translation_difference_m": 1.1102230246251565e-15,
+      "audit_max_rotation_difference_degrees": 1.3073986337985843e-12,
+      "original_accuracy_sha256": "ef7b735820f04f1db0e59e1cc4d9b68157876fe14b4d88c42d4c4cb9fd79b7bf",
+      "slerp_correction_delta_ate_m": -1.9223511671384585e-10,
+      "slerp_correction_delta_rpe_m": -7.875422536329779e-12,
+      "fixed_acceptance": {
+        "minimum_generated_fraction": 1.0,
+        "minimum_evaluated_fraction": 0.95,
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "basis": "Fixed engineering study thresholds before point-to-plane fitting; not publisher accuracy requirements or general production guarantees."
+      },
+      "acceptance_gates": {
+        "all_generated": true,
+        "reference_coverage": true,
+        "ate": false,
+        "rpe": false
+      },
+      "all_gates_passed": false
+    }
+  ],
+  "interpolation_diagnosis": {
+    "scope": "Post-fit numerical diagnosis; frozen trajectories unchanged",
+    "first_pose_difference": {
+      "timestamp_ns": 1305031229528784000,
+      "rotation_difference_degrees": 5.756490469213236e-07,
+      "matrix_max_difference": 7.650311606433036e-09
+    },
+    "maximum_rotation_difference_degrees": 6.135422518951135e-06,
+    "maximum_matrix_element_difference": 8.729979739108273e-08,
+    "original_audit_outcome": "rejected both native and plane rpy first-pose gauges; no audit success claimed",
+    "cause": "associate uses normalized-linear quaternion interpolation for dot>0.9995, which is not constant-speed SLERP away from interval midpoint",
+    "original_score_hashes": {
+      "native": "e36f60339247389e72438d3b3b1fbcad9ffaf2ae7e333256511f4fbe712fefd0",
+      "plane": "ef7b735820f04f1db0e59e1cc4d9b68157876fe14b4d88c42d4c4cb9fd79b7bf"
+    }
+  },
+  "tests": [
+    {
+      "runtime": "Python3.12/Arrow26",
+      "planned": 699,
+      "passed": 696,
+      "skipped": 3,
+      "failed": 0,
+      "errors": 0,
+      "junit": "target/tum-reference/plane-slerp-full-python312-junit.xml",
+      "junit_sha256": "6e4fc4c8583f868640ab3d0b88d8305634b2aca4cbacf367b1a81bcd0267f76b"
+    },
+    {
+      "runtime": "Python3.8/Arrow17",
+      "planned": 699,
+      "passed": 696,
+      "skipped": 3,
+      "failed": 0,
+      "errors": 0,
+      "junit": "target/tum-reference/plane-slerp-full-python38-junit.xml",
+      "junit_sha256": "22df6b697f574fc4da6dc267d526add52945f25de069503943a89984fdf5fb8c"
+    }
+  ],
+  "limitations": [
+    "Both plane sequences fail the fixed0.10m ATE limit; rpy also fails0.05m RPE limit.",
+    "Same-sequence xyz is exploratory; rpy validation was fixed before acquisition.",
+    "Reference interpolation correction changes numerical scoring only, not frozen trajectories or physical tracking.",
+    "Original failed rpy v1 audit and scores are preserved; all five v2 audits pass unchanged tolerances.",
+    "Publisher default intrinsics approximate physical calibration; no measured clock synchronization or canonical Autoware mounting calibration is established.",
+    "No speed ranking; real generation observations may include concurrent workloads."
+  ],
+  "reference_gaps": {
+    "xyz": [
+      {
+        "pose_index": 201,
+        "timestamp_ns": 1305031108867534000,
+        "reference_before_ns": 1305031108835700000,
+        "reference_after_ns": 1305031108945800000,
+        "reference_bracket_duration_ns": 110100000
+      },
+      {
+        "pose_index": 202,
+        "timestamp_ns": 1305031108903540000,
+        "reference_before_ns": 1305031108835700000,
+        "reference_after_ns": 1305031108945800000,
+        "reference_bracket_duration_ns": 110100000
+      },
+      {
+        "pose_index": 203,
+        "timestamp_ns": 1305031108935116000,
+        "reference_before_ns": 1305031108835700000,
+        "reference_after_ns": 1305031108945800000,
+        "reference_bracket_duration_ns": 110100000
+      }
+    ],
+    "rpy": [
+      {
+        "pose_index": 458,
+        "timestamp_ns": 1305031244814094000,
+        "reference_before_ns": 1305031244812900000,
+        "reference_after_ns": 1305031244942900000,
+        "reference_bracket_duration_ns": 130000000
+      },
+      {
+        "pose_index": 459,
+        "timestamp_ns": 1305031244841822000,
+        "reference_before_ns": 1305031244812900000,
+        "reference_after_ns": 1305031244942900000,
+        "reference_bracket_duration_ns": 130000000
+      },
+      {
+        "pose_index": 460,
+        "timestamp_ns": 1305031244881801000,
+        "reference_before_ns": 1305031244812900000,
+        "reference_after_ns": 1305031244942900000,
+        "reference_bracket_duration_ns": 130000000
+      },
+      {
+        "pose_index": 461,
+        "timestamp_ns": 1305031244914908000,
+        "reference_before_ns": 1305031244812900000,
+        "reference_after_ns": 1305031244942900000,
+        "reference_bracket_duration_ns": 130000000
+      },
+      {
+        "pose_index": 463,
+        "timestamp_ns": 1305031244981800000,
+        "reference_before_ns": 1305031244972900000,
+        "reference_after_ns": 1305031245032900000,
+        "reference_bracket_duration_ns": 60000000
+      },
+      {
+        "pose_index": 464,
+        "timestamp_ns": 1305031245014055000,
+        "reference_before_ns": 1305031244972900000,
+        "reference_after_ns": 1305031245032900000,
+        "reference_bracket_duration_ns": 60000000
+      }
+    ]
+  },
+  "plots": {
+    "xyz": {
+      "report": "target/tum-reference/plane-xyz-report-v2/report.html",
+      "receipt_sha256": "5214e304ad3ba91a1f0f8ea24f2c4b925f919c530705453d2c90a4b44193eee1",
+      "artifact_sha256": {
+        "trajectory.png": "f5c2acf8de1f5d69bdadc58015622078368b0ff608fbd010054f6e6fc3aa52d8",
+        "trajectory.svg": "c3ccfcbc18599a72e75aeecf2cf0e3661ff88ec5a3982512c8447983c6fe2798",
+        "report.html": "c19ccc6349c63531fa878c1ea6f7bd66a12f1d3c19e571dbdd6d859b061e35f0"
+      }
+    },
+    "rpy": {
+      "report": "target/tum-reference/plane-rpy-report-v2/report.html",
+      "receipt_sha256": "fea183f633b22a28e40a31047445471d5eb36c142a27386bc7fc78db240442e9",
+      "artifact_sha256": {
+        "trajectory.png": "a6ba0e7b88b31439ed3ba1fce0695e98ee6692d6cf1989453c853fdb21060181",
+        "trajectory.svg": "5aedabc76ffd191ee47c6e161f1225df16ba19174efa91fdc8536f9a69cd8b46",
+        "report.html": "65a531ab035470939105f875fe9f7eb47ae2d0fe1b06af5d5094e363f83328b7"
+      }
+    }
+  }
+}
