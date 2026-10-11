@@ -176,6 +176,11 @@ workspace because its build requires a Python toolchain.
   resident; the four-byte cell-count readback is unchanged. Profiled frames
   reserve the actual hierarchy's pass count, including partial blocks. See
   [parallel execution measurements](../notes/2026-10-11_parallel_image_point_execution.md).
+- GPU CLAHE geometry uses exact exponent scaling for power-of-two tile sizes.
+  General ratios retain binary64 long division; all ratio and axis-weight words
+  are unchanged. Geometry remains regenerated per call, with existing scratch
+  bounds, stages and receipt bytes.
+  See [geometry ratio measurements](../notes/2026-10-12_exact_gpu_clahe_geometry.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
