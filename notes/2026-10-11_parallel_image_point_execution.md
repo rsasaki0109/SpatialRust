@@ -81,7 +81,7 @@ tests finish, with no concurrent agent builds or correctness workloads during
 sampling. Other desktop applications and user Python processes remain active;
 CPU samples showed changing background load. These are observations on a shared
 desktop, not isolated hardware performance guarantees.
-The GPU is NVIDIA GeForce GTX 1660 Ti, Vulkan, driver 596.36; the CPU is Intel
+GPU measurements use Vulkan, driver 596.36; the CPU is Intel
 Core i7-9750H (six physical/twelve logical cores). CPU parallel runs set
 `RAYON_NUM_THREADS=6`; a new one-worker run compares the scalar fallback with
 threading. All benchmark artifacts remain under the ignored target tree.

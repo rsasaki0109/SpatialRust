@@ -99,7 +99,7 @@ Logs under the absolute workspace root:
 
 `C:/Users/rsasa/Workspace/SpatialRust/crates/spatialrust-gpu/src/kernels/ransac_plane_benchmark.rs`
 is an ignored, explicit diagnostic rather than a CI performance assertion.
-Hardware: GTX 1660 Ti/Vulkan, NVIDIA driver 596.36, i7-9750H (6 cores/12 logical
+Hardware: local GPU/Vulkan, NVIDIA driver 596.36, i7-9750H (6 cores/12 logical
 CPUs), Windows, Rust/Cargo 1.98.1, wgpu 24.0.5.
 
 Seventeen fixtures have three warmups and 20 alternating paired rounds on one

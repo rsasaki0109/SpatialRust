@@ -21,6 +21,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Local GPU measurements omit the adapter model name in public documentation;
+  backend, software versions, measurement conditions, and results are retained.
+
 - GPU RANSAC plane scoring parallelizes points within each hypothesis from
   1,024 points and tree-reduces integer inlier counts, retaining f32 plane and
   distance arithmetic. Smaller inputs retain scalar traversal. Lazy per-runtime
