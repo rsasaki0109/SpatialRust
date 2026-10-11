@@ -43,6 +43,15 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
+- GPU storage retention is explicit and bounded under `gpu-wgpu`: upload/CHW
+  and private point scratch pools each default to 64 MiB, with at most eight
+  resources per size. `gpu-image` adds an independent 64 MiB RGBA8 texture pool.
+  `GpuBufferPool::{with_budget,set_budget,stats,clear}` and runtime scratch/image
+  budget, stats and clear methods expose control. Zero disables retention;
+  reducing below retained bytes clears that pool. Budgets cover cached payloads
+  rather than live outputs, uniforms, readback staging, driver overhead or peak
+  memory. Scratch is recycled after submission; images/tensors retain runtime
+  ownership across moves and reject recycling to another device's pools.
 - `spatialrust-vision/imgproc-analysis` enables optional Rayon for bounded CPU
   threshold/histogram row bands. Large thresholds dispatch at 100,000 components
   and u8 histograms at 1,000,000 pixels when at least two rows and pool workers

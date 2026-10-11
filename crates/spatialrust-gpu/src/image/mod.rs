@@ -229,4 +229,83 @@ mod tests {
         assert_eq!(runtime.buffer_pool().cached_buffer_count(), cached_buffers);
         uploaded.recycle(&runtime);
     }
+
+    #[test]
+    fn texture_and_tensor_retention_stays_bounded_across_resolutions() {
+        let runtime = crate::WgpuRuntime::new_headless().unwrap();
+        runtime.set_image_texture_pool_budget(8 * 1024);
+        runtime.buffer_pool().set_budget(4 * 1024);
+        for side in [16, 24, 32, 48, 64, 16] {
+            let image = Image::<u8, 3>::try_new(side, side, vec![91; side * side * 3]).unwrap();
+            let uploaded = GpuImage::upload_u8(&runtime, image.view()).unwrap();
+            let tensor = run_gpu_vision_chain(
+                &runtime,
+                &uploaded,
+                GpuVisionChainOptions {
+                    width: (side / 2) as u32,
+                    height: (side / 2) as u32,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            assert_eq!(tensor.receipt().device_to_host_bytes(), 0);
+            tensor.recycle(&runtime);
+            uploaded.recycle(&runtime);
+            assert!(runtime.image_texture_pool_stats().cached_bytes <= 8 * 1024);
+            assert!(runtime.buffer_pool().stats().cached_bytes <= 4 * 1024);
+        }
+        assert!(runtime.image_texture_pool_stats().discarded_count > 0);
+        let image = Image::<u8, 3>::try_new(8, 8, vec![73; 8 * 8 * 3]).unwrap();
+        let mut live = GpuImage::upload_u8(&runtime, image.view()).unwrap();
+        runtime.set_image_texture_pool_budget(0);
+        runtime.buffer_pool().set_budget(0);
+        assert_eq!(runtime.image_texture_pool_stats().cached_bytes, 0);
+        assert_eq!(runtime.buffer_pool().stats().cached_bytes, 0);
+        assert_eq!(live.readback_u8::<3>(&runtime).unwrap().as_slice(), image.as_slice());
+        live.recycle(&runtime);
+        assert_eq!(runtime.cached_image_texture_count(), 0);
+    }
+
+    #[test]
+    fn repeated_resident_image_chain_reuses_every_pooled_allocation() {
+        let runtime = crate::WgpuRuntime::new_headless().unwrap();
+        let image = Image::<u8, 3>::try_new(32, 24, vec![82; 32 * 24 * 3]).unwrap();
+        let uploaded = GpuImage::upload_u8(&runtime, image.view()).unwrap();
+        let options = GpuVisionChainOptions { width: 16, height: 12, ..Default::default() };
+        run_gpu_vision_chain(&runtime, &uploaded, options).unwrap().recycle(&runtime);
+        let textures = runtime.image_texture_pool_stats();
+        let buffers = runtime.buffer_pool().stats();
+        for _ in 0..8 {
+            let tensor = run_gpu_vision_chain(&runtime, &uploaded, options).unwrap();
+            assert_eq!(tensor.receipt().device_to_host_bytes(), 0);
+            tensor.recycle(&runtime);
+        }
+        let after = runtime.image_texture_pool_stats();
+        assert_eq!(after.allocation_count, textures.allocation_count);
+        assert_eq!(after.cached_bytes, textures.cached_bytes);
+        assert_eq!(after.reuse_count - textures.reuse_count, 5 * 8);
+        assert_eq!(runtime.buffer_pool().stats().allocation_count, buffers.allocation_count);
+        assert_eq!(runtime.buffer_pool().stats().reuse_count - buffers.reuse_count, 8);
+        runtime.clear_image_texture_pool();
+        assert_eq!(runtime.cached_image_texture_count(), 0);
+        uploaded.recycle(&runtime);
+    }
+
+    #[test]
+    fn image_and_tensor_ownership_survives_runtime_moves_and_rejects_other_pools() {
+        let runtime = Box::new(crate::WgpuRuntime::new_headless().unwrap());
+        let image = Image::<u8, 3>::try_new(4, 4, vec![73; 4 * 4 * 3]).unwrap();
+        let mut uploaded = GpuImage::upload_u8(&runtime, image.view()).unwrap();
+        let mut tensor = pack_ai_chw_gpu(&runtime, &uploaded, 1.0, [0.0; 4], [1.0; 4]).unwrap();
+        let moved = *runtime;
+        assert_eq!(uploaded.readback_u8::<3>(&moved).unwrap().as_slice(), image.as_slice());
+        assert_eq!(tensor.readback_f32(&moved).unwrap(), vec![73.0; 4 * 4 * 3]);
+        let other = crate::WgpuRuntime::new_headless().unwrap();
+        assert!(uploaded.readback_u8::<3>(&other).is_err());
+        assert!(tensor.readback_f32(&other).is_err());
+        uploaded.recycle(&other);
+        tensor.recycle(&other);
+        assert_eq!(other.cached_image_texture_count(), 0);
+        assert_eq!(other.buffer_pool().cached_buffer_count(), 0);
+    }
 }

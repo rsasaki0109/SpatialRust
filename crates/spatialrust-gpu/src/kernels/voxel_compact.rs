@@ -64,33 +64,12 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
     }
 
     let device = runtime.device();
-    let queue = runtime.queue();
     let buffer_len = point_count as u64;
 
-    let flags_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-compact-flags"),
-        size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE
-            | wgpu::BufferUsages::COPY_DST
-            | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
-    let inclusive_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-compact-inclusive"),
-        size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE
-            | wgpu::BufferUsages::COPY_SRC
-            | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let scan_scratch_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-compact-unused-scan-output"),
-        size: 4,
-        usage: wgpu::BufferUsages::STORAGE
-            | wgpu::BufferUsages::COPY_DST
-            | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
+    let mut temporaries = crate::scratch::ScratchBuffers::new(runtime);
+    let flags_buffer = temporaries.acquire("voxel-compact-flags", buffer_len * 4);
+    let inclusive_buffer = temporaries.acquire("voxel-compact-inclusive", buffer_len * 4);
+    let scan_scratch_buffer = temporaries.acquire("voxel-compact-unused-scan-output", 4);
     let keys_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-compact-keys"),
         size: buffer_len * std::mem::size_of::<VoxelKeyOutput>() as u64,
@@ -103,14 +82,7 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
-    let counts_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-compact-counts"),
-        size: buffer_len * std::mem::size_of::<u32>() as u64,
-        usage: wgpu::BufferUsages::STORAGE
-            | wgpu::BufferUsages::COPY_SRC
-            | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
+    let counts_buffer = temporaries.acquire("voxel-compact-counts", buffer_len * 4);
     let indices_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-compact-indices"),
         size: buffer_len * std::mem::size_of::<u32>() as u64,
@@ -161,6 +133,7 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
         &inclusive_buffer,
         point_count,
         &mut profiler,
+        &mut temporaries,
     );
 
     let write_params = create_params_buffer(device, point_count, 0);
@@ -189,10 +162,13 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
         pass.dispatch_workgroups(dispatch, 1, 1);
     }
 
-    queue.submit(Some(encoder.finish()));
-
-    let (num_cells, readback_bytes) =
-        read_last_inclusive_count(device, queue, &inclusive_buffer, point_count)?;
+    // Copy the scalar before releasing the prefix lease. Another thread may
+    // immediately acquire it after submission, but queue order protects this copy.
+    let count_staging =
+        encode_last_inclusive_count(device, &mut encoder, &inclusive_buffer, point_count);
+    temporaries.submit_and_recycle(encoder);
+    let num_cells = read_staging_u32(device, &count_staging, 1)?[0] as usize;
+    let readback_bytes = count_staging.size();
     if num_cells > point_count as usize {
         return Err(SpatialError::InvalidArgument(format!(
             "GPU compact produced {num_cells} cells for {point_count} points"
@@ -309,12 +285,12 @@ fn create_params_buffer(device: &wgpu::Device, point_count: u32, scan_stride: u3
     })
 }
 
-fn read_last_inclusive_count(
+fn encode_last_inclusive_count(
     device: &wgpu::Device,
-    queue: &wgpu::Queue,
+    encoder: &mut wgpu::CommandEncoder,
     inclusive_buffer: &wgpu::Buffer,
     point_count: u32,
-) -> SpatialResult<(usize, u64)> {
+) -> wgpu::Buffer {
     let offset = ((point_count as u64).saturating_sub(1)) * std::mem::size_of::<u32>() as u64;
     let staging = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-compact-inclusive-staging"),
@@ -323,14 +299,8 @@ fn read_last_inclusive_count(
         mapped_at_creation: false,
     });
 
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("voxel-compact-inclusive-read-encoder"),
-    });
     encoder.copy_buffer_to_buffer(inclusive_buffer, offset, &staging, 0, staging.size());
-    queue.submit(Some(encoder.finish()));
-
-    let values = read_staging_u32(device, &staging, 1)?;
-    Ok((values[0] as usize, staging.size()))
+    staging
 }
 
 fn read_keys(
@@ -460,6 +430,7 @@ mod tests {
                 mapped_at_creation: false,
             });
             let mut encoder = runtime.device().create_command_encoder(&Default::default());
+            let mut temporaries = crate::scratch::ScratchBuffers::new(&runtime);
             voxel_scan::encode_inclusive_scan(
                 &runtime,
                 &mut encoder,
@@ -467,8 +438,9 @@ mod tests {
                 &output,
                 count as u32,
                 &mut None,
+                &mut temporaries,
             );
-            runtime.queue().submit(Some(encoder.finish()));
+            temporaries.submit_and_recycle(encoder);
             let mut sum = 0;
             let expected: Vec<_> = flags
                 .iter()
@@ -539,5 +511,87 @@ mod tests {
                 assert!(a == b, "{name} mismatch count={count}, run={run}: lengths {} vs {}, first {:?}, values {:?}", a.len(), b.len(), first, first.map(|i| (a[i], b[i])));
             }
         }
+    }
+
+    fn patterned_keys(count: usize, seed: i64) -> Vec<(i64, i64, i64)> {
+        (0..count)
+            .map(|i| {
+                let i = i as i64;
+                ((i * 37 + seed) % 113 - 56, (i * 13 + seed) % 17 - 8, -seed)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn scratch_reuse_overwrites_stale_contents_and_preserves_live_outputs() {
+        let runtime = WgpuRuntime::new_headless().unwrap();
+        let original_keys = patterned_keys(257, 0);
+        let original =
+            super::super::voxel_sort::build_voxel_segments_gpu_from_keys(&runtime, &original_keys)
+                .unwrap();
+        for count in [0, 1, 2, 255, 256, 257, 65_537] {
+            let keys = patterned_keys(count, 1);
+            let actual =
+                super::super::voxel_sort::build_voxel_segments_gpu_from_keys(&runtime, &keys)
+                    .unwrap();
+            assert_eq!(actual.construction_readback_bytes(), if count == 0 { 0 } else { 4 });
+            assert!(actual.to_voxel_segments(&runtime).unwrap() == build_voxel_segments(&keys));
+        }
+        let warmed = runtime.scratch_buffer_pool_stats();
+        for seed in 2..6 {
+            let keys = patterned_keys(65_537, seed);
+            let actual =
+                super::super::voxel_sort::build_voxel_segments_gpu_from_keys(&runtime, &keys)
+                    .unwrap();
+            assert!(actual.to_voxel_segments(&runtime).unwrap() == build_voxel_segments(&keys));
+        }
+        let repeated = runtime.scratch_buffer_pool_stats();
+        assert_eq!(repeated.allocation_count, warmed.allocation_count);
+        assert!(repeated.reuse_count > warmed.reuse_count);
+        assert!(repeated.cached_bytes <= repeated.budget_bytes);
+        for budget in [4, 0] {
+            runtime.set_scratch_buffer_pool_budget(budget);
+            let keys = patterned_keys(257, 7);
+            let actual =
+                super::super::voxel_sort::build_voxel_segments_gpu_from_keys(&runtime, &keys)
+                    .unwrap();
+            assert!(actual.to_voxel_segments(&runtime).unwrap() == build_voxel_segments(&keys));
+            assert!(runtime.scratch_buffer_pool_stats().cached_bytes <= budget);
+        }
+        runtime.clear_scratch_buffer_pool();
+        assert!(
+            original.to_voxel_segments(&runtime).unwrap() == build_voxel_segments(&original_keys)
+        );
+    }
+
+    #[test]
+    fn concurrent_segment_builds_keep_scratch_exclusive_through_submission() {
+        let runtime = WgpuRuntime::new_headless().unwrap();
+        let barrier = std::sync::Barrier::new(4);
+        std::thread::scope(|scope| {
+            for worker in 0..4 {
+                let runtime = &runtime;
+                let barrier = &barrier;
+                scope.spawn(move || {
+                    barrier.wait();
+                    for iteration in 0..3 {
+                        let keys = patterned_keys(513, worker * 10 + iteration);
+                        let segments =
+                            super::super::voxel_sort::build_voxel_segments_gpu_from_keys(
+                                runtime, &keys,
+                            )
+                            .unwrap();
+                        assert_eq!(segments.construction_readback_bytes(), 4);
+                        assert!(
+                            segments.to_voxel_segments(runtime).unwrap()
+                                == build_voxel_segments(&keys)
+                        );
+                    }
+                });
+            }
+        });
+        let stats = runtime.scratch_buffer_pool_stats();
+        assert!(stats.reuse_count > 0);
+        assert!(stats.cached_bytes <= stats.budget_bytes);
     }
 }
