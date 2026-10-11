@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU RANSAC plane scoring parallelizes points within each hypothesis from
+  1,024 points and tree-reduces integer inlier counts, retaining f32 plane and
+  distance arithmetic. Smaller inputs retain scalar traversal. Lazy per-runtime
+  serial/parallel pipelines replace per-call compilation, at most 256 groups
+  stride over hypotheses, and the score copy shares the compute submission.
+  Invalid indices, empty point arrays and unsupported sizes/limits reject before
+  GPU allocation; explicit XYZ/hypothesis uploads and score readback stay the same.
+
 - GPU CLAHE builds larger tile histograms with power-of-two row strips, avoiding
   per-pixel flat-index division and reflecting only padded coordinates. Short and
   narrow tiles adjust lane assignment; tiles of at most 256 pixels keep direct

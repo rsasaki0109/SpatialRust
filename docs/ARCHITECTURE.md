@@ -100,6 +100,15 @@ Up to 2,048 input workgroups (524,288 points), legacy histogram/prefix kernels
 remain specialized without the extra subtotal barrier. Larger inputs lazily cache
 two optimized pipelines using a compile-time override; scatter is shared. This
 internal GPU selection retains small-input work and adds no CPU/GPU placement.
+RANSAC plane scoring retains its explicit XYZ/hypothesis uploads and score
+readback. Below 1,024 points the scalar per-hypothesis loop is retained; larger
+inputs assign a 256-lane workgroup to a hypothesis and tree-reduce integer
+inlier counts. Plane construction and each point's f32 distance expression
+retain their operation order. At most 256 groups stride over hypotheses, with
+subtraction guards preventing u32 wrap and a barrier before model reuse.
+Serial/parallel pipelines are independently lazy and cached per runtime. Input
+indices and buffer/compute limits are checked before allocation. The score copy
+and compute pass share one submission; no global partial-count scratch is added.
 Upload/CHW buffers, point scratch and RGBA8 textures each retain at most 64 MiB
 by default, independently, and at most eight resources per size. Full pools
 reject incoming resources; a budget decrease below retention clears the cache,
