@@ -365,7 +365,8 @@ def test_keyframe_frozen_generation_binds_both_helpers_and_keeps_all_lost_rows(t
     assert 'singular' in poses[1]['error'] and 'earlier frame' in poses[2]['error']
     assert poses[0]['io']['exact_typed_attributes']
     assert result['bindings'][str(helper.resolve())] == file_sha256(helper)
-    assert any(p.endswith('/run_tum_keyframe.py') for p in result['bindings'])
+    adapter = PLAN.parent.parent/'scripts/run_tum_keyframe.py'
+    assert result['bindings'][str(adapter.resolve())] == file_sha256(adapter)
     assert not (prepared/'groundtruth.txt').exists()
 
 
@@ -429,7 +430,8 @@ def test_overlap_generation_binds_its_policy_and_both_native_helpers(tmp_path):
     assert result['method'] == OVERLAP_ESTIMATOR['method'] and result['generated_poses'] == 1
     assert result['planned_poses'] == 3 and result['tracking_lost']
     assert all(result['bindings'][str(h.resolve())] == file_sha256(h) for h in helpers)
-    assert any(p.endswith('/run_tum_adaptive_keyframe.py') for p in result['bindings'])
+    policy = PLAN.parent.parent/'scripts/run_tum_adaptive_keyframe.py'
+    assert result['bindings'][str(policy.resolve())] == file_sha256(policy)
     assert not (prepared/'groundtruth.txt').exists()
 
 
@@ -464,4 +466,5 @@ def test_hybrid_bound_generator_preserves_method_helpers_and_lost_timeline(tmp_p
     assert result['method'] == HYBRID_ESTIMATOR['method'] and result['planned_poses'] == 3
     assert result['generated_poses'] == 1 and result['tracking_lost']
     assert all(result['bindings'][str(h.resolve())] == file_sha256(h) for h in helpers)
-    assert any(p.endswith('/run_tum_adaptive_keyframe.py') for p in result['bindings'])
+    policy = PLAN.parent.parent/'scripts/run_tum_adaptive_keyframe.py'
+    assert result['bindings'][str(policy.resolve())] == file_sha256(policy)
