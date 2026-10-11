@@ -12,6 +12,55 @@ const WORKGROUP_X: u32 = 16;
 const WORKGROUP_Y: u32 = 16;
 const SEPARABLE_MIN_AREA: u64 = 81;
 const SEPARABLE_MIN_SAMPLES: u64 = 1_048_576;
+fn validate_spatial_dispatch(
+    source: [u32; 2],
+    output: [u32; 2],
+    limits: &wgpu::Limits,
+) -> SpatialResult<()> {
+    if source
+        .into_iter()
+        .chain(output)
+        .any(|v| v == 0 || v > limits.max_texture_dimension_2d || v > i32::MAX as u32)
+        || limits.max_compute_invocations_per_workgroup < WORKGROUP_X * WORKGROUP_Y
+        || limits.max_compute_workgroup_size_x < WORKGROUP_X
+        || limits.max_compute_workgroup_size_y < WORKGROUP_Y
+        || limits.max_compute_workgroup_size_z == 0
+        || output[0].div_ceil(WORKGROUP_X) > limits.max_compute_workgroups_per_dimension
+        || output[1].div_ceil(WORKGROUP_Y) > limits.max_compute_workgroups_per_dimension
+        || limits.max_sampled_textures_per_shader_stage == 0
+        || limits.max_storage_textures_per_shader_stage == 0
+        || limits.max_uniform_buffers_per_shader_stage == 0
+        || limits.max_uniform_buffer_binding_size < std::mem::size_of::<SpatialParams>() as u32
+        || limits.max_buffer_size < std::mem::size_of::<SpatialParams>() as u64
+        || limits.max_bind_groups == 0
+        || limits.max_bindings_per_bind_group < 3
+    {
+        return Err(SpatialError::InvalidArgument(
+            "GPU spatial dispatch requires positive dimensions and supported texture/compute/coordinate limits"
+                .to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_resize_dispatch(
+    source: [u32; 2],
+    output: [u32; 2],
+    limits: &wgpu::Limits,
+) -> SpatialResult<()> {
+    validate_spatial_dispatch(source, output, limits)?;
+    // The shader multiplies the output coordinate by the source dimension.
+    if source
+        .into_iter()
+        .zip(output)
+        .any(|(s, o)| u64::from(o - 1) * u64::from(s) > u64::from(u32::MAX))
+    {
+        return Err(SpatialError::InvalidArgument(
+            "GPU nearest resize coordinate product exceeds u32::MAX".to_owned(),
+        ));
+    }
+    Ok(())
+}
 
 pub(crate) fn morphology_pass_count(width: u32, height: u32, kw: u32, kh: u32) -> u32 {
     let area = u64::from(kw) * u64::from(kh);
@@ -274,6 +323,9 @@ pub(crate) fn create_spatial_pipelines(device: &wgpu::Device) -> SpatialPipeline
 }
 
 /// Resizes a device image with nearest-neighbor sampling without host transfer.
+///
+/// Unsupported dimensions, coordinate products and device limits return an
+/// error before output allocation or pipeline initialization.
 pub fn resize_nearest_gpu(
     runtime: &WgpuRuntime,
     source: &GpuImage,
@@ -290,10 +342,14 @@ pub(crate) fn resize_nearest_gpu_with_profiler(
     height: u32,
     profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuImage> {
-    if width == 0 || height == 0 {
-        return Err(SpatialError::InvalidArgument(
-            "GPU resize output dimensions must be positive".to_owned(),
-        ));
+    source.validate_runtime(runtime)?;
+    validate_resize_dispatch(
+        [source.width(), source.height()],
+        [width, height],
+        &runtime.device().limits(),
+    )?;
+    if let Some(profiler) = &profiler {
+        profiler.validate(runtime, 1)?;
     }
     dispatch(
         runtime,
@@ -314,6 +370,9 @@ pub(crate) fn resize_nearest_gpu_with_profiler(
 }
 
 /// Computes clamped L1 Sobel magnitude on a single-channel device image.
+///
+/// Runtime, dimensions and device limits are validated before work allocation
+/// or pipeline initialization. Output bytes and explicit transfers are unchanged.
 pub fn sobel_gpu(runtime: &WgpuRuntime, source: &GpuImage) -> SpatialResult<GpuImage> {
     sobel_gpu_with_profiler(runtime, source, None)
 }
@@ -324,6 +383,17 @@ pub(crate) fn sobel_gpu_with_profiler(
     profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuImage> {
     require_gray(source, "sobel_gpu")?;
+    source.validate_runtime(runtime)?;
+    validate_spatial_dispatch(
+        [source.width(), source.height()],
+        [source.width(), source.height()],
+        &runtime.device().limits(),
+    )?;
+    if let Some(profiler) = &profiler {
+        profiler.validate(runtime, 1)?;
+    }
+    let cache =
+        runtime.image_spatial_pipelines.get_or_init(|| create_spatial_pipelines(runtime.device()));
     dispatch(
         runtime,
         source,
@@ -332,10 +402,7 @@ pub(crate) fn sobel_gpu_with_profiler(
         3,
         3,
         0,
-        &runtime
-            .image_spatial_pipelines
-            .get_or_init(|| create_spatial_pipelines(runtime.device()))
-            .sobel,
+        &cache.sobel,
         "sobel_gpu",
         1,
         profiler,
@@ -566,3 +633,7 @@ fn require_gray(source: &GpuImage, operation: &str) -> SpatialResult<()> {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "morphology_tests.rs"]
 mod morphology_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "sobel_tests.rs"]
+mod sobel_tests;
