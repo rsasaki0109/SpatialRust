@@ -43,6 +43,14 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
+- `gpu-image` also adds `histogram_cdf_gpu`, its one-pass profiled variant and
+  resident `GpuImageCdf`. Each of the 256 u32 entries counts pixels at or below
+  that byte value; the final entry equals source pixel count. A single 256-lane
+  tree scan uses 1 KiB local storage and a separate pooled 1 KiB output, with no
+  implicit download or normalization. Native `readback_u32` transfers 1 KiB per
+  call, while explicit timestamp collection transfers 16 bytes per CDF pass.
+  Source bins remain immutable and can be recycled after the submitted reads;
+  live results retain original runtime ownership. These APIs are provisional.
 - `gpu-image` adds `histogram_u8_gpu`, its two-pass profiled variant and resident
   `GpuImageHistogram` for any logical channel of a 1..=4-channel u8 texture.
   Exact 256-bin u32 counts accept at most u32::MAX pixels; private partials are
