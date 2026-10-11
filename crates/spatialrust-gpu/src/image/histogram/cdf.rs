@@ -113,6 +113,10 @@ pub struct GpuImageCdf {
 }
 
 impl GpuImageCdf {
+    pub(in crate::image) const fn buffer(&self) -> &wgpu::Buffer {
+        &self.buffer
+    }
+
     /// Returns the source pixel count, also the final cumulative count.
     #[must_use]
     pub const fn pixel_count(&self) -> u32 {

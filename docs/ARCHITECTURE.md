@@ -120,7 +120,20 @@ inherits source transfer history, adds one device-write stage, and requires
 explicit native readback/recycling. The histogram may be recycled immediately
 after the CDF call submits its reads; queue order protects later pool reuse.
 CDF recording adds one profiler stage (16 query bytes upon explicit collection).
-Normalized CDFs and equalization rounding are separate future contracts.
+Grayscale `equalize_histogram_gpu` consumes the histogram/CDF inside a five-pass
+resident operation: two histogram passes, one CDF pass, a 256-entry lookup pass
+and bounded grid-stride image application. Lookup scratch is 1 KiB, leased until
+both lookup/application passes are submitted; internal histogram/CDF outputs are
+recycled after their dependent reads. The final texture remains caller-owned.
+A u32-word arithmetic model reproduces the CPU's binary64 reciprocal/multiply
+rounding at exact half-byte boundaries, without requiring float64 shaders or
+changing CPU output. Non-half rational values are rounded exactly; constant
+images retain their byte and all images retain metadata. Construction performs
+no payload readback or host wait. Five profiled passes require five free stages;
+explicit timestamp collection returns 80 query bytes separately from payloads.
+Other channel counts and unsupported counters/device limits fail before work
+allocation. Empty GPU images remain unsupported. Normalized public CDFs and
+adaptive tile equalization remain separate future contracts.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
 large thresholds, u8 histograms and histogram-equalization lookup application.
 Tasks are bounded by image rows and the current pool; histograms merge exact

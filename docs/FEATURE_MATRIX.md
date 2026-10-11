@@ -43,6 +43,15 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
+- `gpu-image` also adds `equalize_histogram_gpu` and its five-pass profiled
+  variant for resident one-channel u8 images. Histogram/CDF/lookup/application
+  have no intermediate payload readback; the owned output preserves metadata
+  and constant-image bytes. GPU integer word arithmetic reproduces CPU binary64
+  half-boundary rounding without shader f64. Inputs accept at most u32::MAX
+  pixels and require supported texture/compute limits. Existing partial/CDF
+  storage is reused; additional lookup scratch is 1 KiB. Native output readback
+  is explicit and copies the physical RGBA8 image; five timestamp stages collect
+  80 query bytes separately. APIs remain provisional; dependencies are unchanged.
 - `gpu-image` also adds `histogram_cdf_gpu`, its one-pass profiled variant and
   resident `GpuImageCdf`. Each of the 256 u32 entries counts pixels at or below
   that byte value; the final entry equals source pixel count. A single 256-lane
