@@ -8,7 +8,7 @@
 
 use spatialrust_core::{HasNormals3, HasPositions3, PointCloud, SpatialError, SpatialResult};
 use spatialrust_math::{Isometry3, TransformPoint, Vec3};
-use spatialrust_search::{KdTree, RadiusSearchIndex};
+use spatialrust_search::{parallel_worker_count, KdTree, RadiusSearchIndex};
 
 use crate::kabsch::estimate_rigid_transform;
 use crate::registration::{PointCloudRegistration, RegistrationResult};
@@ -43,13 +43,24 @@ type Descriptor = FpfhDescriptor;
 /// used to build each descriptor (≈5× the point spacing is a good start). This
 /// is the reusable building block behind [`FpfhRansacRegistration`]; compute it
 /// once on a keypoint cloud to drive descriptor-based matching cheaply.
+/// Independent point descriptors use bounded scoped CPU workers sharing one
+/// KD-tree. Small clouds and one-worker staging remain serial; neighbor order,
+/// floating-point operation order and output point order are preserved.
 pub fn fpfh_descriptors(
     cloud: &PointCloud,
     feature_radius: f32,
 ) -> SpatialResult<Vec<FpfhDescriptor>> {
+    fpfh_descriptors_with_workers(cloud, feature_radius, parallel_worker_count(cloud.len()))
+}
+
+fn fpfh_descriptors_with_workers(
+    cloud: &PointCloud,
+    feature_radius: f32,
+    workers: usize,
+) -> SpatialResult<Vec<FpfhDescriptor>> {
     validate_distance(feature_radius, "feature_radius")?;
     let set = PointSet::from_cloud(cloud)?;
-    Ok(compute_fpfh(&set, feature_radius))
+    Ok(compute_fpfh_with_workers(&set, feature_radius, workers))
 }
 
 /// Configuration for [`FpfhRansacRegistration`].
@@ -320,9 +331,9 @@ fn bin_index(value: f32, lo: f32, hi: f32) -> usize {
 }
 
 /// Builds the per-point Simplified Point Feature Histograms (SPFH).
-fn compute_spfh(set: &PointSet, radius: f32) -> Vec<Descriptor> {
+fn compute_spfh(set: &PointSet, radius: f32, workers: usize) -> Vec<Descriptor> {
     let mut spfh = vec![[0.0_f32; FPFH_DIM]; set.points.len()];
-    for (i, spfh_i) in spfh.iter_mut().enumerate() {
+    fill_descriptor_ranges(&mut spfh, workers, |i, spfh_i| {
         let p = set.points[i];
         let np = set.normals[i];
         let neighbors = set.tree.radius_search(p.x, p.y, p.z, radius);
@@ -352,15 +363,20 @@ fn compute_spfh(set: &PointSet, radius: f32) -> Vec<Descriptor> {
                 }
             }
         }
-    }
+    });
     spfh
 }
 
 /// Builds FPFH descriptors by distance-weighting each point's neighbors' SPFH.
 fn compute_fpfh(set: &PointSet, radius: f32) -> Vec<Descriptor> {
-    let spfh = compute_spfh(set, radius);
+    compute_fpfh_with_workers(set, radius, parallel_worker_count(set.points.len()))
+}
+
+fn compute_fpfh_with_workers(set: &PointSet, radius: f32, workers: usize) -> Vec<Descriptor> {
+    // The first scope joins before the second phase can read any SPFH row.
+    let spfh = compute_spfh(set, radius, workers);
     let mut fpfh = vec![[0.0_f32; FPFH_DIM]; set.points.len()];
-    for (i, fpfh_i) in fpfh.iter_mut().enumerate() {
+    fill_descriptor_ranges(&mut fpfh, workers, |i, fpfh_i| {
         let p = set.points[i];
         let neighbors = set.tree.radius_search(p.x, p.y, p.z, radius);
         let mut sum_weight = 0.0_f32;
@@ -383,8 +399,33 @@ fn compute_fpfh(set: &PointSet, radius: f32) -> Vec<Descriptor> {
         for bin in 0..FPFH_DIM {
             fpfh_i[bin] = spfh[i][bin] + if sum_weight > 0.0 { acc[bin] / sum_weight } else { 0.0 };
         }
-    }
+    });
     fpfh
+}
+
+fn fill_descriptor_ranges<F>(output: &mut [Descriptor], workers: usize, fill: F)
+where
+    F: Fn(usize, &mut Descriptor) + Sync,
+{
+    let workers = workers.max(1).min(output.len().max(1));
+    if workers == 1 {
+        for (i, descriptor) in output.iter_mut().enumerate() {
+            fill(i, descriptor);
+        }
+        return;
+    }
+    let chunk_size = output.len().div_ceil(workers);
+    std::thread::scope(|scope| {
+        for (band, chunk) in output.chunks_mut(chunk_size).enumerate() {
+            let start = band * chunk_size;
+            let fill = &fill;
+            scope.spawn(move || {
+                for (offset, descriptor) in chunk.iter_mut().enumerate() {
+                    fill(start + offset, descriptor);
+                }
+            });
+        }
+    });
 }
 
 /// Brute-force nearest descriptor (squared L2) in feature space.
@@ -449,6 +490,10 @@ impl Lcg {
         (x >> 32) as u32
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "fpfh_parallel_tests.rs"]
+mod parallel_tests;
 
 #[cfg(test)]
 mod tests {
