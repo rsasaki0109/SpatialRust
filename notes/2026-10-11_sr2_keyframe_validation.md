@@ -65,3 +65,23 @@ recording. Accurate broader motion remains a separate open gate.
 No sensor archives, depth/RGB images, point-cloud dumps or native binaries
 are committed. TUM data attribution: Sturm et al., IROS 2012, CC BY 4.0.
 The separate GPU stage-timing changes from main PR #122 are retained.
+
+## Published environment restoration and Windows diagnosis
+
+Runtime revision 16 restores all 12 frozen cases, all four final plot receipts
+and historical helper/native hashes. Its 78 relevant tests pass and a fresh
+desk2 hybrid independent audit re-executes for 639 planned / 624 scored poses.
+These restore existing evidence and do not increase maturity.
+
+The first PR #126 head `69ecb43` has 88 successful main jobs / 15 queued at the
+diagnosis snapshot. Wheels have six successes, one Windows failure and the
+intentionally skipped publication job. All three Windows test failures are
+slash-only adapter/policy presence assertions, confirmed through the normal
+GitHub check-run annotations API. The log-download redirect is HTTP 403;
+annotations provide the exact failure evidence without bypassing network
+policy or adding domains. Repair `4cbf8d8` checks resolved absolute keys and
+source hashes directly, preserving every physical/numerical condition and all
+frozen outputs. Verify the repaired head's own complete matrices before merge.
+
+Subsequent main PR #124 GPU bounded retention and PR #125 parallel contrast
+changes are preserved. CHANGELOG conflicts retain both independent additions.

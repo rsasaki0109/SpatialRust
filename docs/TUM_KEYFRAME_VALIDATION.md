@@ -154,6 +154,16 @@ accuracy is worse than its baseline. Broader processing, test counts and correct
 score recomputation cannot replace accurate motion evidence. The maturity
 remains 87%, provisional; 90% is unsupported.
 
+The first hosted Windows wheel runtime exposes three test assertions that
+assume `/` path separators. GitHub check-run annotations identify those exact
+assertions; the other helper hash and lost-timeline checks already complete.
+Fix commit `4cbf8d8` checks the adapter/policy's resolved absolute path and
+actual source SHA directly, supporting Windows separators while strengthening
+the identity check. Generation code, native settings, frozen estimates, scores,
+hash requirements and numerical tolerances remain unchanged. Remote validation
+of the repaired head remains required before merge; the old failed head's other
+six wheel successes cannot substitute for it.
+
 The source calibration remains the publisher-recommended approximate ROS
 intrinsics for already registered depth, without extra distortion, rescaling
 or sensor transforms. This cannot certify measured clock synchronization or

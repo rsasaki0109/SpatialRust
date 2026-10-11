@@ -1373,5 +1373,30 @@
     }
   },
   "updated_at_utc": "2026-10-11T01:30:51.394462+00:00",
+  "windows_path_repair": {
+    "annotation_receipt": "target/goal-continuation/pr126-windows-path-diagnosis.json",
+    "annotation_receipt_sha256": "5211c0eedcfa8cc25fa21c9cb06272a1653abe52a9108c6112030e2b1a170194",
+    "check_run": 114359975507,
+    "diagnosis": "Slash-only source-path assertions fail on Windows; now check the exact resolved absolute key and actual source SHA.",
+    "failed_head": "69ecb43021daa31660ed81d0393fb350e587c443",
+    "failed_test_assertions": 3,
+    "fix_commit": "4cbf8d88a3b66488db847c5e08e3909bb5639ebf",
+    "generation_or_score_changes": false,
+    "local_endpoint_tests": {
+      "312": {
+        "passed": 731,
+        "path": "target/goal-continuation/pr126-windows-fix-full-python312-junit.xml",
+        "sha256": "316f2e4d41f58915c1cb68b84680eb8e6737f5194e1fbd0142cfb619d21394e4",
+        "skipped": 3
+      },
+      "38": {
+        "passed": 731,
+        "path": "target/goal-continuation/pr126-windows-fix-full-python38-junit.xml",
+        "sha256": "f45c9d89302ead4e4b0d917391ebc6ceaa48912da20be924f38ad6c5f17a662f",
+        "skipped": 3
+      }
+    },
+    "remote_repaired_head_validation": "pending"
+  },
   "world_gauge": "first-pose SE(3) only; no best fit, scale, resets or relocalization"
 }
