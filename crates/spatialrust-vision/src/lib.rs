@@ -12,7 +12,8 @@ mod border;
     feature = "preprocess",
     feature = "imgproc-filter",
     feature = "imgproc-morphology",
-    feature = "imgproc-canny"
+    feature = "imgproc-canny",
+    feature = "imgproc-analysis"
 ))]
 mod dispatch;
 mod error;

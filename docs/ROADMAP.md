@@ -1063,15 +1063,17 @@ evidence, and fail-closed acceptance gates live in
 | 145J-B | Complete | Explicit source-bound clock and front/rear extrinsic evidence manifest, quality/path validation, fail-closed registration receipt, and Mission Cockpit integration; real calibration artifacts remain an external prerequisite | `spatialrust-viewer::CalibrationEvidenceState`, `rosbag2_calibration_evidence`, external `145j-calibration-evidence-v2` JSON/HTML/manifest plus wrong-source validation probe |
 | 145K-A | Complete | Source-bound bounded full-bag PointCloud2 ingest, chunk reassembly, registered clock correction, root-to-front/rear frame application, ICP pose graph, TSDF/glTF receipt, and Mission Cockpit mapping-state gate; canonical admission remains blocked without real calibration artifacts | `spatialrust-viewer::FullBagMappingState`, `rosbag2_full_bag_mapping`, external `145k-full-bag-mapping-v3` JSON/HTML/manifest and `145k-mission-cockpit-v3` integration receipt |
 
-## GPU image and point-cloud execution follow-up
+## Parallel image and point-cloud execution follow-up
 
-Image and point-cloud GPU execution share the goals of retained device data,
-explicit transfer receipts, and measured stage costs. These focused slices do
-not change automatic backend placement or the operational v1.3 admission gates.
+Image and point-cloud execution share the goals of bounded parallel work,
+retained device data, explicit transfer receipts, and measured stage costs.
+These focused slices do not change automatic GPU placement or the operational
+v1.3 admission gates.
 
 | Slice | Status | Deliverable | Acceptance |
 | --- | --- | --- | --- |
 | Frame transfers | Complete | Partition source points without unused centroid reduction/readback; account for cell-count synchronization and attribute copies | source-point/CPU partition parity across chunk sizes, planar normals, empty frames, rebuild/reuse receipts, and GPU image-chain regressions; `notes/2026-10-11_gpu_frame_transfer_accounting.md` |
 | Shared GPU timing | Complete | Optional bounded pass timestamps shared by image chains and point-cloud frames, with explicit native collection | output/receipt parity, feature fallback, runtime ownership, capacity/failure checks, completed-work comparison; `notes/2026-10-11_gpu_stage_timing.md` |
-| Point-cloud compaction | Planned | Hierarchical work-efficient prefix scan | CPU parity for empty/singleton/workgroup boundaries and repeated keys; isolated large-cloud comparison |
+| Point-cloud compaction | Complete | Hierarchical work-efficient prefix scan in one submission | GPU/CPU parity through 1,000,003 elements, repeated keys crossing hierarchy boundaries, device index order, exact query capacity, and isolated completed-work comparison; `notes/2026-10-11_parallel_image_point_execution.md` |
+| CPU image analysis | Complete | Bounded parallel thresholding and local u8 histograms under `imgproc-analysis` | Exact 1/2/6-worker strided/ROI parity, floating bit patterns, padding exclusion, small/empty/single-row fallbacks, and before/after plus one-worker measurements; `notes/2026-10-11_parallel_image_point_execution.md` |
 | Temporary storage | Planned | Reuse scratch buffers with bounded retained memory | repeat-frame allocation/retained-byte measurements and pool budget enforcement for image and point-cloud workloads |

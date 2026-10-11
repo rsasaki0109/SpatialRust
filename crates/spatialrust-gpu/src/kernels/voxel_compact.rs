@@ -84,8 +84,8 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
         mapped_at_creation: false,
     });
     let scan_scratch_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-compact-scan-scratch"),
-        size: buffer_len * std::mem::size_of::<u32>() as u64,
+        label: Some("voxel-compact-unused-scan-output"),
+        size: 4,
         usage: wgpu::BufferUsages::STORAGE
             | wgpu::BufferUsages::COPY_DST
             | wgpu::BufferUsages::COPY_SRC,
@@ -140,9 +140,6 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
         label: Some("voxel-compact-batched-encoder"),
     });
     encoder.clear_buffer(&counts_buffer, 0, None);
-    encoder.clear_buffer(&flags_buffer, 0, None);
-    encoder.clear_buffer(&inclusive_buffer, 0, None);
-    encoder.clear_buffer(&scan_scratch_buffer, 0, None);
 
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -157,9 +154,18 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
         pass.dispatch_workgroups(dispatch, 1, 1);
     }
 
-    let init_params = create_params_buffer(device, point_count, 0);
-    let init_resources = CompactBindResources {
-        params: &init_params,
+    super::voxel_scan::encode_inclusive_scan(
+        runtime,
+        &mut encoder,
+        &flags_buffer,
+        &inclusive_buffer,
+        point_count,
+        &mut profiler,
+    );
+
+    let write_params = create_params_buffer(device, point_count, 0);
+    let write_resources = CompactBindResources {
+        params: &write_params,
         entries: entries_buffer,
         flags: &flags_buffer,
         prefix: &inclusive_buffer,
@@ -169,71 +175,7 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
         indices: &indices_buffer,
         scan_out: &scan_scratch_buffer,
     };
-    let init_bind_group = create_compact_bind_group(device, layout, &init_resources);
-    {
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("voxel-compact-init-pass"),
-            timestamp_writes: crate::profiling::timestamp_writes(
-                &mut profiler,
-                "voxel-compact-init",
-            ),
-        });
-        pass.set_pipeline(&pipelines.voxel_compact.init);
-        pass.set_bind_group(0, &init_bind_group, &[]);
-        pass.dispatch_workgroups(dispatch, 1, 1);
-    }
-
-    let mut prefix_read = &inclusive_buffer;
-    let mut prefix_write = &scan_scratch_buffer;
-    let mut stride = 1u32;
-    while stride < point_count {
-        let scan_params = create_params_buffer(device, point_count, stride);
-        let scan_resources = CompactBindResources {
-            params: &scan_params,
-            entries: entries_buffer,
-            flags: &flags_buffer,
-            prefix: prefix_read,
-            keys: &keys_buffer,
-            starts: &starts_buffer,
-            counts: &counts_buffer,
-            indices: &indices_buffer,
-            scan_out: prefix_write,
-        };
-        let scan_bind_group = create_compact_bind_group(device, layout, &scan_resources);
-        {
-            let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Some("voxel-compact-scan-pass"),
-                timestamp_writes: crate::profiling::timestamp_writes(
-                    &mut profiler,
-                    "voxel-compact-scan",
-                ),
-            });
-            pass.set_pipeline(&pipelines.voxel_compact.scan);
-            pass.set_bind_group(0, &scan_bind_group, &[]);
-            pass.dispatch_workgroups(dispatch, 1, 1);
-        }
-        std::mem::swap(&mut prefix_read, &mut prefix_write);
-        stride *= 2;
-    }
-    queue.submit(Some(encoder.finish()));
-
-    let write_params = create_params_buffer(device, point_count, 0);
-    let write_resources = CompactBindResources {
-        params: &write_params,
-        entries: entries_buffer,
-        flags: &flags_buffer,
-        prefix: prefix_read,
-        keys: &keys_buffer,
-        starts: &starts_buffer,
-        counts: &counts_buffer,
-        indices: &indices_buffer,
-        scan_out: prefix_write,
-    };
     let write_bind_group = create_compact_bind_group(device, layout, &write_resources);
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("voxel-compact-write-encoder"),
-    });
-    encoder.clear_buffer(&counts_buffer, 0, None);
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-compact-write-pass"),
@@ -250,7 +192,7 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
     queue.submit(Some(encoder.finish()));
 
     let (num_cells, readback_bytes) =
-        read_last_inclusive_count(device, queue, prefix_read, point_count)?;
+        read_last_inclusive_count(device, queue, &inclusive_buffer, point_count)?;
     if num_cells > point_count as usize {
         return Err(SpatialError::InvalidArgument(format!(
             "GPU compact produced {num_cells} cells for {point_count} points"
@@ -489,19 +431,113 @@ fn read_staging_struct<T: Pod>(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::kernels::{voxel_scan, voxel_segments::build_voxel_segments};
+
+    #[repr(C)]
+    #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+    struct TestEntry {
+        ix: i32,
+        iy: i32,
+        iz: i32,
+        point_index: u32,
+    }
+
     #[test]
-    fn inclusive_scan_reference_matches_gpu_algorithm() {
-        let flags = vec![1_u32, 0, 1, 0, 1];
-        let mut inclusive = flags;
-        let point_count = inclusive.len() as u32;
-        let mut stride = 1_u32;
-        while stride < point_count {
-            let source = inclusive.clone();
-            for i in stride..point_count {
-                inclusive[i as usize] = source[i as usize] + source[(i - stride) as usize];
-            }
-            stride *= 2;
+    fn hierarchical_scan_matches_serial_prefix_at_block_boundaries() {
+        let runtime = WgpuRuntime::shared().unwrap();
+        for count in [0, 1, 2, 255, 256, 257, 511, 65_535, 65_536, 65_537, 1_000_003] {
+            let flags: Vec<u32> = (0..count).map(|i| u32::from((i * 37 % 113) < 47)).collect();
+            let input = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("scan-test-flags"),
+                contents: if flags.is_empty() { &[0; 4] } else { bytemuck::cast_slice(&flags) },
+                usage: wgpu::BufferUsages::STORAGE,
+            });
+            let output = runtime.device().create_buffer(&wgpu::BufferDescriptor {
+                label: Some("scan-test-output"),
+                size: (count.max(1) * 4) as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let mut encoder = runtime.device().create_command_encoder(&Default::default());
+            voxel_scan::encode_inclusive_scan(
+                &runtime,
+                &mut encoder,
+                &input,
+                &output,
+                count as u32,
+                &mut None,
+            );
+            runtime.queue().submit(Some(encoder.finish()));
+            let mut sum = 0;
+            let expected: Vec<_> = flags
+                .iter()
+                .map(|value| {
+                    sum += value;
+                    sum
+                })
+                .collect();
+            let actual = if count == 0 {
+                Vec::new()
+            } else {
+                read_u32_buffer(runtime.device(), runtime.queue(), &output, count).unwrap()
+            };
+            assert_eq!(actual, expected, "element count {count}");
         }
-        assert_eq!(inclusive, vec![1, 1, 2, 2, 3]);
+    }
+
+    #[test]
+    fn compaction_preserves_runs_crossing_blocks_and_hierarchy_levels() {
+        let runtime = WgpuRuntime::shared().unwrap();
+        for (count, run) in [(1, 1), (257, 1), (65_537, 1), (65_537, 257), (65_537, 65_537)] {
+            let entries: Vec<_> = (0..count)
+                .map(|i| TestEntry {
+                    ix: (i / run) as i32 - 100,
+                    iy: -3,
+                    iz: i32::MAX,
+                    point_index: (count - i - 1) as u32,
+                })
+                .collect();
+            let input = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("compact-test-sorted-entries"),
+                contents: bytemuck::cast_slice(&entries),
+                usage: wgpu::BufferUsages::STORAGE,
+            });
+            let segments =
+                compact_voxel_segments_gpu_buffers(&runtime, &input, count as u32).unwrap();
+            assert_eq!(segments.construction_readback_bytes(), 4);
+            let keys: Vec<_> = entries
+                .iter()
+                .map(|entry| (i64::from(entry.ix), i64::from(entry.iy), i64::from(entry.iz)))
+                .collect();
+            let mut expected = build_voxel_segments(&keys);
+            expected.point_indices = entries.iter().map(|entry| entry.point_index).collect();
+            let raw = read_u32_buffer(
+                runtime.device(),
+                runtime.queue(),
+                segments.point_indices_buffer(),
+                count,
+            )
+            .unwrap();
+            assert!(raw == expected.point_indices, "device index order count={count}, run={run}");
+            // The existing host conversion sorts indices within each cell.
+            for (&start, &length) in expected.cell_starts.iter().zip(&expected.cell_counts) {
+                expected.point_indices[start as usize..(start + length) as usize].sort_unstable();
+            }
+            let actual = segments.to_voxel_segments(&runtime).unwrap();
+            assert!(
+                actual.keys == expected.keys,
+                "key mismatch count={count}, run={run}: {:?}",
+                actual.keys.iter().zip(&expected.keys).position(|(a, b)| a != b)
+            );
+            for (name, a, b) in [
+                ("starts", &actual.cell_starts, &expected.cell_starts),
+                ("counts", &actual.cell_counts, &expected.cell_counts),
+                ("indices", &actual.point_indices, &expected.point_indices),
+            ] {
+                let first = a.iter().zip(b).position(|(a, b)| a != b);
+                assert!(a == b, "{name} mismatch count={count}, run={run}: lengths {} vs {}, first {:?}, values {:?}", a.len(), b.len(), first, first.map(|i| (a[i], b[i])));
+            }
+        }
     }
 }

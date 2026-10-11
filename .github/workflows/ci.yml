@@ -455,6 +455,7 @@ jobs:
         run: |
           cargo check -p spatialrust-web --target wasm32-unknown-unknown --features wasm,webgpu
           cargo check -p spatialrust-gpu --target wasm32-unknown-unknown --features gpu-image,gpu-aoso-staging
+          cargo check -p spatialrust-vision --target wasm32-unknown-unknown --features imgproc-analysis
           cargo build -p spatialrust-web --target wasm32-unknown-unknown --features wasm
           python -m unittest discover -s scripts/tests -p 'test_*.py'
           wasm_bindgen_version=$(python scripts/wasm_bindgen_version.py Cargo.lock)

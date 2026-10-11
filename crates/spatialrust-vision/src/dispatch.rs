@@ -3,12 +3,15 @@
 /// Minimum component count for lightweight row-parallel kernels.
 pub(crate) const LIGHT_PARALLEL_COMPONENTS: usize = 100_000;
 /// Minimum component count for row kernels with per-worker scratch.
+#[cfg(any(feature = "preprocess", feature = "imgproc-filter", test))]
 pub(crate) const ROW_PARALLEL_COMPONENTS: usize = 256 * 1024;
 /// Minimum component count for large row/band/tile kernels.
 pub(crate) const LARGE_PARALLEL_COMPONENTS: usize = 1_000_000;
 /// Tall outputs are grouped into bounded row tiles to amortize scheduling.
+#[cfg(any(feature = "resize", feature = "preprocess", feature = "imgproc-morphology"))]
 pub(crate) const TALL_IMAGE_ROWS: usize = 2_000;
 /// Rows processed by each tall-image tile.
+#[cfg(any(feature = "resize", feature = "preprocess", feature = "imgproc-morphology"))]
 pub(crate) const ROWS_PER_TILE: usize = 8;
 
 /// Returns whether a kernel should leave its scalar path.
@@ -59,6 +62,7 @@ pub(crate) const fn items_per_worker(independent_items: usize, workers: usize) -
 }
 
 /// Selects packed one/three-channel `u8` execution without weakening fallbacks.
+#[cfg(any(feature = "resize", feature = "imgproc-filter", feature = "imgproc-morphology", test))]
 #[inline]
 pub(crate) fn is_packed_u8_fast_path<const CHANNELS: usize>(
     input_width: usize,

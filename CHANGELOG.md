@@ -55,6 +55,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Parallel image and point-cloud execution: GPU voxel compaction now uses a
+  work-efficient hierarchical prefix scan in one submission, preserving device
+  index order and four-byte cell-count readback. CPU image thresholding and u8
+  histograms use bounded Rayon row bands under `imgproc-analysis`, with exact
+  strided/ROI results and scalar paths for small or single-row inputs.
+
 - Optional shared GPU compute-pass timestamps for resident image chains and
   AoSoA voxel/radius-normal frames. Timestamp-enabled runtimes check adapter
   support, bounded profilers validate capacity/runtime ownership before work,
