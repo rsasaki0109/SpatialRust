@@ -51,7 +51,7 @@ workspace because its build requires a Python toolchain.
 | `spatialrust-math` | vector/matrix/pose math | serde | none |
 | `spatialrust-io` | no format enabled by default | PCD, PLY, LAS/LAZ, E57, COPC, HTTP COPC, explicit roots/manifests, per-node `CopcNodeReader` hierarchy walk | format and checksum crates are optional |
 | `spatialrust-ros2` | ROS 2 type contracts through `spatialrust-runtime` | read-only rosbag2 SQLite PointCloud2 CDR streaming with optional float32 intensity, plus source-bound TFMessage inventory | `rusqlite` is isolated behind `rosbag2-sqlite` |
-| `spatialrust-search` | KD-tree | graph, bounded parallel radius/k-NN queries | none; Criterion is dev-only |
+| `spatialrust-search` | KD-tree | graph, bounded parallel radius/k-NN queries and graph construction | none; Criterion is dev-only |
 | `spatialrust-semantic` | entities, embeddings, fusion, search | `semantic-model`: `OnnxEntityEmbedder` through an existing model session | `spatialrust-ai`/`spatialrust-tensor` optional; ONNX stays in the AI crate |
 | `spatialrust-filtering` | voxel | GPU voxel, outlier, crop, FPS, MLS | wgpu/search optional |
 | `spatialrust-features` | normals | ISS, orientation, boundary, GPU normals | wgpu/search optional |
@@ -118,6 +118,13 @@ workspace because its build requires a Python toolchain.
   empty inputs and parallel k-NN with `k=0` leave output untouched. Metadata is
   worker-sized, while output and local neighbor buffers remain result-sized.
   `spatialrust/search-parallel` exposes the same functions through the facade.
+  Combining `search-graph` and `parallel` adds `knn_graph_parallel` and
+  `radius_graph_parallel`, with one shared KD-tree, 256-point query chunks and
+  identical serial edge order. The facade exposes these with `search-graph` plus
+  `search-parallel`. Serial graph APIs retain caller execution. Graph storage
+  scales with edges, potentially quadratically for radius graphs; u32 index
+  limits and oversized k arithmetic are checked. See the
+  [completed graph measurements](../notes/2026-10-12_parallel_neighbor_graphs.md).
 - GPU storage retention is explicit and bounded under `gpu-wgpu`: upload/CHW
   and private point scratch pools each default to 64 MiB, with at most eight
   resources per size. `gpu-image` adds an independent 64 MiB RGBA8 texture pool.

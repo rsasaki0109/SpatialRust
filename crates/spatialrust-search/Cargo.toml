@@ -30,3 +30,12 @@ required-features = ["parallel", "search-kdtree"]
 [[example]]
 name = "parallel_queries"
 required-features = ["parallel", "search-kdtree"]
+
+[[example]]
+name = "parallel_graphs"
+required-features = ["parallel", "search-graph"]
+
+[[bench]]
+name = "neighbor_graphs"
+harness = false
+required-features = ["parallel", "search-graph"]

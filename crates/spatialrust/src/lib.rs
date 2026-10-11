@@ -144,6 +144,9 @@ pub use spatialrust_search::{
 #[cfg(feature = "search-graph")]
 pub use spatialrust_search::{knn_graph, radius_graph, NeighborGraph};
 
+#[cfg(all(feature = "search-graph", feature = "search-parallel"))]
+pub use spatialrust_search::{knn_graph_parallel, radius_graph_parallel};
+
 #[cfg(feature = "filter-voxel")]
 pub use spatialrust_filtering::{
     AttributeAggregation, PointCloudFilter, VoxelAggregationMode, VoxelGridDownsample,
