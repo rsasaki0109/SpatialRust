@@ -75,7 +75,7 @@ compares the frozen current flat shader in
 to production traversal. The older PR #131 serial diagnostic remains available;
 its timing is not used to attribute this change's gain.
 
-Hardware: NVIDIA GeForce GTX 1660 Ti, Vulkan backend, driver 596.36, Intel
+Hardware: local GPU, Vulkan backend, driver 596.36, Intel
 Core i7-9750H (6 cores/12 logical CPUs), Windows, Rust/Cargo 1.98.1, wgpu 24.0.5.
 Each fixture has four warmups and 40 alternating paired rounds on the same
 runtime, resident source, uniform parameters, layout and workgroup dispatch,

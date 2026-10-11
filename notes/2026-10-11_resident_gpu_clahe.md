@@ -81,7 +81,7 @@ invariant. Other corners take the full arithmetic path.
 
 ## Verification
 
-The full native all-feature GPU suite passed 105 tests on GTX 1660 Ti/Vulkan:
+The full native all-feature GPU suite passed 105 tests on the local GPU/Vulkan:
 81 unit, four CDF, five CLAHE, five equalization, three histogram and seven shared
 image/point timing tests. An additional production interpolation test passed
 66,049 synthetic pixels, for 106 passing distinct tests. Synthetic LUT/geometry
@@ -113,7 +113,7 @@ adapter-free planners and compiles `image_clahe`; the named inventory stays 114.
 
 ## Completed-work measurements
 
-Windows, Rust 1.98.1 release/thin LTO, i7-9750H, GTX 1660 Ti/Vulkan NVIDIA 596.36.
+Windows, Rust 1.98.1 release/thin LTO, i7-9750H, local GPU/Vulkan NVIDIA 596.36.
 Other user Python computations remained active, without stopping/reprioritizing
 them. Only the benchmark process sets `RAYON_NUM_THREADS=6`; CPU reference is
 production bounded-parallel `spatialrust_vision::clahe` at clip 2.0, grid 8x8.

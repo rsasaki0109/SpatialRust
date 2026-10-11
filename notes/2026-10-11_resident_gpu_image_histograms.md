@@ -91,7 +91,7 @@ checks required by this slice's merge guard, with all required names checked.
 
 ## Completed-work measurements
 
-Machine: Windows, Rust 1.98.1 release/thin LTO, i7-9750H and GTX 1660 Ti,
+Machine: Windows, Rust 1.98.1 release/thin LTO, i7-9750H and a local GPU,
 Vulkan NVIDIA 596.36. Other user Python computations stayed active throughout;
 none were stopped or reprioritized. The benchmark process alone sets
 `RAYON_NUM_THREADS=6`. The production CPU histogram runs scalar below one

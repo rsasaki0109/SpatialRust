@@ -82,7 +82,7 @@ barrier. Constant images use an identity lookup, preserving their observed byte.
 Full native `cargo test -p spatialrust-gpu --all-features -- --test-threads=2`
 passed 79 unit, five new equalization integration, four CDF integration, three
 histogram integration and seven prior image/point timing integration tests:
-98 total on the real GTX 1660 Ti/Vulkan device.
+98 total on the local GPU/Vulkan device.
 
 The batched lookup proof compares 2,309,120 actual GPU entries against independent
 CPU binary64 evaluation/nearest-even rounding. It covers denominators 1..4096,
@@ -117,7 +117,7 @@ application. These baseline receipts/estimates are preserved, not discarded.
 Final measurements are recorded separately; the desktop load between runs is
 not controlled, so they are not an isolated speedup comparison.
 
-Windows, Rust 1.98.1 release/thin LTO, i7-9750H, GTX 1660 Ti/Vulkan NVIDIA 596.36.
+Windows, Rust 1.98.1 release/thin LTO, i7-9750H, local GPU/Vulkan NVIDIA 596.36.
 Other user Python computations remained active and were not stopped/reprioritized.
 Only the benchmark process sets `RAYON_NUM_THREADS=6`. CPU reference is production
 `spatialrust_vision::equalize_histogram`, including its bounded parallel histogram

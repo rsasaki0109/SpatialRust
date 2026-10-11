@@ -28,7 +28,7 @@ and sparse-radius-grid consumers all use the shared implementation.
 
 - Windows 11, x86-64
 - Intel Core i7-9750H, 6 cores / 12 logical processors
-- NVIDIA GeForce GTX 1660 Ti; Vulkan; NVIDIA driver 596.36
+- local GPU; Vulkan; NVIDIA driver 596.36
 - Rust 1.98.1, Criterion 0.5.1, wgpu 24.0.5
 - Parent baseline: `52c547f6f761f134c4693fe21b65eea79f9d377c`
 - Workload: existing `point_xyzi` centroid benchmark, leaf size `4.0`, release

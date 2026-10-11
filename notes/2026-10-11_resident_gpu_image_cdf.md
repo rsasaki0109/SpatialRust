@@ -61,7 +61,7 @@ before implementing lookup application.
 
 `cargo test -p spatialrust-gpu --all-features -- --test-threads=2` passed all
 77 unit, four new public CDF integration, three histogram integration and seven
-existing image/point timing integration tests: 91 total on GTX 1660 Ti/Vulkan.
+existing image/point timing integration tests: 91 total on the local GPU/Vulkan.
 The five new unit tests cover seven insufficient device-limit fields, exact
 one-hot/leading/trailing/mixed/full-width bins through u32::MAX, immutable source
 bins, repeated explicit readbacks, stale output reuse, retained outputs after
@@ -85,8 +85,8 @@ check count stays 114.
 
 ## Completed-work measurements
 
-Windows, Rust 1.98.1 release/thin LTO, i7-9750H (6 cores/12 logical CPUs), GTX
-1660 Ti, Vulkan NVIDIA 596.36. Other user Python computations remained running;
+Windows, Rust 1.98.1 release/thin LTO, i7-9750H (6 cores/12 logical CPUs),
+local GPU, Vulkan NVIDIA 596.36. Other user Python computations remained running;
 none were stopped or reprioritized. Only the benchmark process sets
 `RAYON_NUM_THREADS=6`; its image CPU reference is production
 `spatialrust_vision::histogram_u8`, and the 256-bin CPU scan is a scalar inclusive

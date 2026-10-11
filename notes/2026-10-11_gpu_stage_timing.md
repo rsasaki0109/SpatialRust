@@ -41,7 +41,7 @@ The implementation lives in
 
 ## Validation
 
-On the local NVIDIA GeForce GTX 1660 Ti / Vulkan / driver 596.36:
+On the local GPU / Vulkan / driver 596.36:
 
 ```powershell
 cargo test -p spatialrust-gpu --features gpu-aoso-staging,gpu-image -- --test-threads=1
@@ -65,7 +65,7 @@ adapter feature selection, and tick conversion including zero/wraparound.
 
 Hardware-dependent profiling integration tests skip when timestamp queries are
 unavailable. Unsupported selection and tick conversion also have pure tests.
-The GTX 1660 Ti example confirms the hardware timestamp path ran locally.
+The local GPU example confirms the hardware timestamp path ran locally.
 
 CI additionally exposed a wgpu-only WebAssembly configuration where neither
 native collection nor the optional image/point profiled entry points existed.
