@@ -76,6 +76,14 @@ the image/AoSoA GPU WASM configuration. The browser CI now builds both surfaces.
 
 ## Reproduction and observations
 
+The next CI run passed all 685 Python/ONNX tests, then encountered
+`FileExistsError` while creating `target/icp-convergence-study`: that output
+directory had been restored from the Rust target cache. Controlled ICP and
+trimmed-ICP studies now write under runner temporary storage, in a directory
+named by run ID and attempt, and artifact upload reads those same fresh paths.
+This preserves the studies' refusal to overwrite existing output and prevents
+an old cached report from being mistaken for a current execution.
+
 The runnable example is
 `C:/Users/rsasa/Workspace/SpatialRust/crates/spatialrust-gpu/examples/gpu_stage_timing.rs`:
 

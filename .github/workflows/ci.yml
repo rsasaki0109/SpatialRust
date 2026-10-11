@@ -313,6 +313,8 @@ jobs:
     name: Python ONNX real-model verification
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      SPATIALRUST_STUDY_NAME: spatialrust-studies-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -334,8 +336,8 @@ jobs:
           maturin develop --release --features onnxruntime --manifest-path crates/spatialrust-py/Cargo.toml
           pytest crates/spatialrust-py/tests --junitxml=target/python-onnx-tests.xml
           python -c "import xml.etree.ElementTree as E; s=E.parse('target/python-onnx-tests.xml').getroot().find('testsuite'); assert s is not None and int(s.attrib['skipped']) == 0, 'ONNX validation must not silently skip'"
-          python scripts/study_icp_convergence.py --output-dir target/icp-convergence-study
-          python scripts/study_trimmed_icp.py --output-dir target/trimmed-icp-study
+          python scripts/study_icp_convergence.py --output-dir "$RUNNER_TEMP/$SPATIALRUST_STUDY_NAME/icp-convergence-study"
+          python scripts/study_trimmed_icp.py --output-dir "$RUNNER_TEMP/$SPATIALRUST_STUDY_NAME/trimmed-icp-study"
       - name: Save ONNX test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -351,8 +353,8 @@ jobs:
         with:
           name: icp-convergence-study
           path: |
-            target/icp-convergence-study/study.json
-            target/icp-convergence-study/report.html
+            ${{ runner.temp }}/${{ env.SPATIALRUST_STUDY_NAME }}/icp-convergence-study/study.json
+            ${{ runner.temp }}/${{ env.SPATIALRUST_STUDY_NAME }}/icp-convergence-study/report.html
           if-no-files-found: warn
           retention-days: 14
 
@@ -362,8 +364,8 @@ jobs:
         with:
           name: trimmed-icp-study
           path: |
-            target/trimmed-icp-study/study.json
-            target/trimmed-icp-study/report.html
+            ${{ runner.temp }}/${{ env.SPATIALRUST_STUDY_NAME }}/trimmed-icp-study/study.json
+            ${{ runner.temp }}/${{ env.SPATIALRUST_STUDY_NAME }}/trimmed-icp-study/report.html
           if-no-files-found: warn
           retention-days: 14
 
