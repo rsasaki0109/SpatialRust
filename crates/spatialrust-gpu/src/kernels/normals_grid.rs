@@ -1,15 +1,11 @@
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
-use wgpu::util::DeviceExt;
 
+use super::point_estimators::{self, Kind};
 use crate::kernels::normals::GpuNormal;
 use crate::runtime::WgpuRuntime;
 
-use spatialrust_search::{build_grid, grid_bounds};
-
 pub use spatialrust_search::uniform_grid_fits;
-
-const WORKGROUP_SIZE: u32 = 256;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
@@ -213,8 +209,11 @@ pub fn estimate_normals_grid_gpu(
     radius: f32,
 ) -> SpatialResult<Vec<GpuNormal>> {
     let point_count = x.len();
-    if y.len() != point_count || z.len() != point_count {
+    if y.len() != point_count {
         return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: y.len() });
+    }
+    if z.len() != point_count {
+        return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: z.len() });
     }
     if point_count == 0 {
         return Ok(Vec::new());
@@ -222,132 +221,32 @@ pub fn estimate_normals_grid_gpu(
     if radius <= 0.0 || radius.is_nan() {
         return Err(SpatialError::InvalidArgument("grid radius must be positive".to_owned()));
     }
-
-    let (origin, dims) = grid_bounds(x, y, z, radius)?;
-    let (sorted, cell_start) = build_grid(x, y, z, origin, dims, radius);
-
-    let device = runtime.device();
-    let queue = runtime.queue();
-    let inv_cell = 1.0 / radius;
-
-    let storage = wgpu::BufferUsages::STORAGE;
-    let x_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-x"),
-        contents: bytemuck::cast_slice(x),
-        usage: storage,
-    });
-    let y_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-y"),
-        contents: bytemuck::cast_slice(y),
-        usage: storage,
-    });
-    let z_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-z"),
-        contents: bytemuck::cast_slice(z),
-        usage: storage,
-    });
-    let sorted_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-sorted"),
-        contents: bytemuck::cast_slice(&sorted),
-        usage: storage,
-    });
-    let cell_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-cell-start"),
-        contents: bytemuck::cast_slice(&cell_start),
-        usage: storage,
-    });
-    let uniform = GridUniform {
+    let (origin, dims, sorted, cell_start) =
+        point_estimators::prepare_grid(runtime, Kind::RadiusNormals, x, y, z, radius)?;
+    let params = GridUniform {
         origin: [origin[0], origin[1], origin[2], 0.0],
         dims: [dims[0], dims[1], dims[2], point_count as u32],
-        inv_cell,
+        inv_cell: 1.0 / radius,
         radius_sq: radius * radius,
         _pad0: 0.0,
         _pad1: 0.0,
     };
-    let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("ng-uniform"),
-        contents: bytemuck::bytes_of(&uniform),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
-
-    let output_len = (point_count * std::mem::size_of::<[f32; 4]>()) as u64;
-    let output_buf = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("ng-output"),
-        size: output_len,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
-
-    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("ng-shader"),
-        source: wgpu::ShaderSource::Wgsl(NORMALS_GRID_WGSL.into()),
-    });
-    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("ng-pipeline"),
-        layout: None,
-        module: &module,
-        entry_point: Some("main"),
-        compilation_options: wgpu::PipelineCompilationOptions::default(),
-        cache: None,
-    });
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("ng-bind-group"),
-        layout: &pipeline.get_bind_group_layout(0),
-        entries: &[
-            wgpu::BindGroupEntry { binding: 0, resource: uniform_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 1, resource: x_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 2, resource: y_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 3, resource: z_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 4, resource: sorted_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 5, resource: cell_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 6, resource: output_buf.as_entire_binding() },
+    point_estimators::run(
+        runtime,
+        Kind::RadiusNormals,
+        point_count,
+        bytemuck::bytes_of(&params),
+        &[
+            bytemuck::cast_slice(x),
+            bytemuck::cast_slice(y),
+            bytemuck::cast_slice(z),
+            bytemuck::cast_slice(&sorted),
+            bytemuck::cast_slice(&cell_start),
         ],
-    });
-
-    let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("ng") });
-    {
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("ng-pass"),
-            timestamp_writes: None,
-        });
-        pass.set_pipeline(&pipeline);
-        pass.set_bind_group(0, &bind_group, &[]);
-        pass.dispatch_workgroups((point_count as u32).div_ceil(WORKGROUP_SIZE), 1, 1);
-    }
-    queue.submit(Some(encoder.finish()));
-
-    let staging = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("ng-staging"),
-        size: output_len,
-        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("ng-rb") });
-    encoder.copy_buffer_to_buffer(&output_buf, 0, &staging, 0, output_len);
-    queue.submit(Some(encoder.finish()));
-
-    let slice = staging.slice(..);
-    let (sender, receiver) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |result| {
-        let _ = sender.send(result);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    receiver
-        .recv()
-        .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
-        .map_err(|error| {
-            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
-        })?;
-    let data = slice.get_mapped_range();
-    let raw: &[[f32; 4]] = bytemuck::cast_slice(&data);
-    let normals =
-        raw.iter().map(|v| GpuNormal { normal: [v[0], v[1], v[2]], curvature: v[3] }).collect();
-    drop(data);
-    staging.unmap();
-
-    Ok(normals)
+        |rows| {
+            rows.iter().map(|r| GpuNormal { normal: [r[0], r[1], r[2]], curvature: r[3] }).collect()
+        },
+    )
 }
 
 #[cfg(test)]

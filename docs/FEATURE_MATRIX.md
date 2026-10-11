@@ -6,6 +6,13 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+Standalone `gpu-wgpu` k-NN/radius normals and plane covariances reuse lazy
+per-runtime pipelines and bounded storage scratch. Compute and the existing
+host-result copy share one submission. These APIs still upload their input
+slices and synchronously return CPU results; no resident-frame contract or
+automatic placement changes. Kernel math stays unchanged, and invalid indices
+or unsupported storage/uniform/dispatch sizes return errors before allocation.
+
 GPU gray box blur under `gpu-image` keeps the previous integer mean and border
 semantics. Positive odd boxes with area at least 81 and at least 65,536 total
 pixel/sample visits use two device passes and a four-byte-per-pixel private

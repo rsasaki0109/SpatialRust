@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Standalone GPU k-NN/radius normals and plane covariance estimators lazily reuse
+  per-runtime pipelines and pooled storage buffers, and submit compute plus
+  readback copy together. Shader arithmetic and returned float words remain
+  unchanged. Index, buffer, uniform and dispatch bounds reject before device
+  allocation; grid storage is checked before CPU counting-sort allocation.
+  Invalid neighbor indices now return an error, and z-length errors report the
+  actual z length. Empty inputs preserve the existing early-return behavior.
+
 - GPU rectangular erosion and dilation use exact horizontal/vertical extrema
   for boxes with area at least 81 and at least 1,048,576 pixel/sample visits.
   Replicate borders and odd kernels in `1..=31` stay unchanged. Two passes share
