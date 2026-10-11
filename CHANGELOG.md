@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU CLAHE axis geometry bypasses fractional long division for power-of-two
+  tile sizes, retaining identical binary64 ratio and interpolation-weight words.
+  General ratio arithmetic, scratch retention, pass count, explicit transfers
+  and public signatures remain unchanged.
 - Point-cloud k-NN/radius graph construction gains explicit bounded CPU parallel
   APIs under `search-graph` plus `parallel`, also exposed by the facade with
   `search-graph` plus `search-parallel`. One shared KD-tree and ordered worker

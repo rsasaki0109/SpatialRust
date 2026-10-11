@@ -213,6 +213,11 @@ Receipts include `clahe_histogram_gpu` and the partial histogram write bytes.
 Shared integer-word lookup rounding and a finite non-negative binary64 arithmetic
 subset preserve the CPU's division, subtraction, multiplication/addition
 operation order without shader float64.
+Geometry ratios with positive power-of-two divisors scale the exponent of an
+exact u32 value, returning identical binary64 words without fractional long
+division. Other ratios retain the original division and rounding algorithm.
+All axis entries are still regenerated on device per call using the same bounded
+scratch; no geometry-retention cache or additional transfer is introduced.
 Equal integer corners bypass interpolation only when the final byte is invariant
 under CPU rounding. No payload readback, geometry upload or host wait is hidden.
 The clip limit is a scalar host parameter; per-tile counts, padded coordinates,

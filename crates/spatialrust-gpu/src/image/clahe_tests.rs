@@ -359,3 +359,9 @@ fn production_interpolation_matches_cpu_at_half_boundaries_and_equal_corners() {
     source.recycle(&runtime);
     eprintln!("Verified 66049 production interpolation pixels, including exact/neighboring half boundaries and equal corners");
 }
+
+#[path = "clahe_geometry_benchmark.rs"]
+mod geometry_benchmark;
+
+#[path = "clahe_geometry_ratio_tests.rs"]
+mod geometry_ratio_tests;
