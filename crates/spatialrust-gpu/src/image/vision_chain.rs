@@ -53,17 +53,27 @@ pub fn run_gpu_vision_chain(
     run_gpu_vision_chain_with_profiler(runtime, source, options, None)
 }
 
-/// Runs the resident image chain with six GPU compute-pass timing samples.
+/// Runs the resident image chain with six or seven compute-pass timing samples.
 ///
 /// Queries remain on the device until the caller explicitly collects the
-/// profiler. At least six unused profiler stages are required before execution.
+/// profiler. Small blur workloads need six unused stages. Boxes with area at
+/// least 81 and at least 65,536 total pixel/sample visits need seven, including
+/// the unrounded horizontal-sum pass.
 pub fn run_gpu_vision_chain_profiled(
     runtime: &WgpuRuntime,
     source: &GpuImage,
     options: GpuVisionChainOptions,
     profiler: &mut crate::GpuStageProfiler,
 ) -> SpatialResult<GpuAiTensor> {
-    profiler.validate(runtime, 6)?;
+    profiler.validate(
+        runtime,
+        5 + super::kernels::box_blur::blur_pass_count(
+            options.width,
+            options.height,
+            options.blur_kernel,
+            options.blur_kernel,
+        ),
+    )?;
     let result = run_gpu_vision_chain_with_profiler(runtime, source, options, Some(profiler));
     profiler.finish_recording(&result);
     result

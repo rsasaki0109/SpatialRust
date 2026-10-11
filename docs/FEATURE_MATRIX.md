@@ -6,6 +6,14 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+GPU gray box blur under `gpu-image` keeps the previous integer mean and border
+semantics. Positive odd boxes with area at least 81 and at least 65,536 total
+pixel/sample visits use two device passes and a four-byte-per-pixel private
+intermediate; smaller workloads use one pass.
+Host image transfers stay explicit. Profiled resident Vision chains need seven
+unused stages for the separable path and six for small boxes. Unsupported
+pixel/sum/coordinate or device limits return an error before blur allocation.
+
 | Profile | Enables | Intended use |
 | --- | --- | --- |
 | `mvp` | PCD, PLY, LAS/LAZ, COPC; voxel, normals, plane, Euclidean clustering, ICP, MVP pipeline | CPU-first end-to-end pipeline |

@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU gray box blur uses unrounded horizontal u32 sums and a vertical pass for
+  boxes with area at least 81 and at least 65,536 total pixel/sample visits,
+  preserving the integer mean and border
+  semantics with four scratch bytes per pixel. Both passes share one submission;
+  host image transfers stay explicit. Small workloads retain one pass. Profiled
+  Vision chains reserve six or seven stages, and unsupported pixel/sum/coordinate
+  or device limits reject before blur allocation.
+
 - Local GPU measurements omit the adapter model name in public documentation;
   backend, software versions, measurement conditions, and results are retained.
 
