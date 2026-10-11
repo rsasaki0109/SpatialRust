@@ -4,9 +4,8 @@ use spatialrust_core::{
     PointSchema, SpatialError, SpatialResult, SpatialTensor, TransferDirection, TransferStats,
 };
 
-use crate::aoso_staging::{build_voxel_segments_aoso_chunks, runtime_device_key};
+use crate::aoso_staging::runtime_device_key;
 use crate::{
-    build_radius_grid_aoso_gpu, estimate_normals_radius_grid_aoso_gpu,
     reduce_voxel_attributes_aoso_chunks, upload_spatial_tensor_xyz_chunks,
     AoSoAAttributeAggregation, AoSoAAttributeReduction, GpuAoSoAttributeChunk, GpuAoSoNormals,
     GpuAoSoRadiusGrid, GpuAoSoXyzBuffer, GpuVoxelSegments, WgpuRuntime,
@@ -245,8 +244,22 @@ impl GpuSpatialFrame {
 
     /// Rebuilds the sparse radius grid from retained positions.
     pub fn rebuild_radius_grid(&mut self, runtime: &WgpuRuntime, radius: f32) -> SpatialResult<()> {
+        self.rebuild_radius_grid_with_profiler(runtime, radius, None)
+    }
+
+    fn rebuild_radius_grid_with_profiler(
+        &mut self,
+        runtime: &WgpuRuntime,
+        radius: f32,
+        profiler: Option<&mut crate::GpuStageProfiler>,
+    ) -> SpatialResult<()> {
         self.validate_runtime(runtime)?;
-        let grid = build_radius_grid_aoso_gpu(runtime, &self.positions, radius)?;
+        let grid = crate::aoso_staging::build_radius_grid_aoso_gpu_with_profiler(
+            runtime,
+            &self.positions,
+            radius,
+            profiler,
+        )?;
         self.receipt
             .transfers
             .record(TransferDirection::DeviceToHost, grid.segments().construction_readback_bytes());
@@ -257,15 +270,29 @@ impl GpuSpatialFrame {
 
     /// Estimates normals using a cached matching grid or rebuilds it first.
     pub fn estimate_normals(&mut self, runtime: &WgpuRuntime, radius: f32) -> SpatialResult<()> {
+        self.estimate_normals_with_profiler(runtime, radius, None)
+    }
+
+    fn estimate_normals_with_profiler(
+        &mut self,
+        runtime: &WgpuRuntime,
+        radius: f32,
+        mut profiler: Option<&mut crate::GpuStageProfiler>,
+    ) -> SpatialResult<()> {
         self.validate_runtime(runtime)?;
         let matches = self.radius_grid.as_ref().is_some_and(|grid| grid.radius() == radius);
         if !matches {
-            self.rebuild_radius_grid(runtime, radius)?;
+            self.rebuild_radius_grid_with_profiler(runtime, radius, profiler.as_deref_mut())?;
         }
         let grid = self.radius_grid.as_ref().ok_or_else(|| {
             SpatialError::InvalidArgument("radius grid is unavailable".to_owned())
         })?;
-        let normals = estimate_normals_radius_grid_aoso_gpu(runtime, &self.positions, grid)?;
+        let normals = crate::aoso_staging::estimate_normals_radius_grid_aoso_gpu_with_profiler(
+            runtime,
+            &self.positions,
+            grid,
+            profiler,
+        )?;
         self.attach_normals(runtime, normals)?;
         self.receipt.stages.push("radius-normals");
         Ok(())
@@ -367,12 +394,73 @@ pub fn run_aoso_voxel_normal_frame(
     inv_leaf: f32,
     normal_radius: f32,
 ) -> SpatialResult<GpuSpatialFrame> {
+    run_aoso_voxel_normal_frame_with_profiler(
+        runtime,
+        tensor,
+        origin,
+        inv_leaf,
+        normal_radius,
+        None,
+    )
+}
+
+/// Runs a frame with pass timestamps for both partitions and radius normals.
+///
+/// Query readback requires an explicit profiler collection and is separate
+/// from the frame's transfer receipt. Capacity is checked before any upload.
+#[allow(clippy::too_many_arguments)]
+pub fn run_aoso_voxel_normal_frame_profiled(
+    runtime: &WgpuRuntime,
+    tensor: &SpatialTensor<'_>,
+    origin: [f32; 3],
+    inv_leaf: f32,
+    normal_radius: f32,
+    profiler: &mut crate::GpuStageProfiler,
+) -> SpatialResult<GpuSpatialFrame> {
+    let n = u32::try_from(tensor.len()).map_err(|_| {
+        SpatialError::InvalidArgument("AoSoA positions exceed the GPU point limit".to_owned())
+    })?;
+    let stages = if n == 0 {
+        0
+    } else {
+        // Keys + entry build + radix (24 digits * 3 phases) + compaction
+        // (mark/init/write and ceil(log2(n)) scan passes), for two grids.
+        let scan = u32::BITS - (n - 1).leading_zeros();
+        2 * (5 + if n > 1 { 72 } else { 0 } + scan) + 1
+    };
+    profiler.validate(runtime, stages)?;
+    let result = run_aoso_voxel_normal_frame_with_profiler(
+        runtime,
+        tensor,
+        origin,
+        inv_leaf,
+        normal_radius,
+        Some(profiler),
+    );
+    profiler.finish_recording(&result);
+    result
+}
+
+pub(crate) fn run_aoso_voxel_normal_frame_with_profiler(
+    runtime: &WgpuRuntime,
+    tensor: &SpatialTensor<'_>,
+    origin: [f32; 3],
+    inv_leaf: f32,
+    normal_radius: f32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuSpatialFrame> {
     let chunks = upload_spatial_tensor_xyz_chunks(runtime, tensor)?;
     let upload_bytes = chunks
         .iter()
         .map(|chunk| (chunk.point_count() * 3 * std::mem::size_of::<f32>()) as u64)
         .sum();
-    let partition = build_voxel_segments_aoso_chunks(runtime, &chunks, origin, inv_leaf);
+    let partition = crate::aoso_staging::build_voxel_segments_aoso_chunks_with_profiler(
+        runtime,
+        &chunks,
+        origin,
+        inv_leaf,
+        profiler.as_deref_mut(),
+    );
     for chunk in chunks {
         chunk.recycle(runtime);
     }
@@ -386,7 +474,7 @@ pub fn run_aoso_voxel_normal_frame(
     frame.receipt.transfers.record(TransferDirection::HostToDevice, upload_bytes);
     frame.receipt.transfers.record(TransferDirection::DeviceToDevice, upload_bytes);
     frame.receipt.stages = vec!["upload", "voxel-segments"];
-    frame.estimate_normals(runtime, normal_radius)?;
+    frame.estimate_normals_with_profiler(runtime, normal_radius, profiler)?;
     Ok(frame)
 }
 

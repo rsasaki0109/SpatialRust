@@ -104,6 +104,14 @@ pub(crate) fn create_gray_pipeline(device: &wgpu::Device) -> GrayPipeline {
 
 /// Converts an RGB `GpuImage` to a gray `GpuImage` using BT.601 fixed-point luma.
 pub fn rgb_to_gray_gpu(runtime: &WgpuRuntime, source: &GpuImage) -> SpatialResult<GpuImage> {
+    rgb_to_gray_gpu_with_profiler(runtime, source, None)
+}
+
+pub(crate) fn rgb_to_gray_gpu_with_profiler(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuImage> {
     source.validate_runtime(runtime)?;
     if source.channels() != 3 {
         return Err(SpatialError::InvalidArgument(
@@ -144,7 +152,7 @@ pub fn rgb_to_gray_gpu(runtime: &WgpuRuntime, source: &GpuImage) -> SpatialResul
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("gpu-image-gray-pass"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "rgb_to_gray_gpu"),
         });
         pass.set_pipeline(&pipeline.pipeline);
         pass.set_bind_group(0, &bind_group, &[]);

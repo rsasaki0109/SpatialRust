@@ -74,6 +74,13 @@ channel count. Kernels return device-resident images and append named receipt
 stages; only `upload_u8` and `readback_u8` cross the host/device boundary.
 Runtime adapter identity and synchronization are explicit (`adapter_info`,
 `wait_idle`), and `recycle` returns textures to the runtime pool.
+Optional `GpuStageProfiler` instrumentation is shared by image and point-cloud
+chains in `spatialrust-gpu`. Timestamp-enabled runtime construction requests
+only adapter-supported pass queries; default runtimes enable none. Profiled
+entry points reserve bounded capacity before execution. Query collection is an
+explicit native synchronization/readback boundary with a separate byte receipt.
+GPU pass times exclude CPU setup, transfers and inter-pass gaps; completed wall
+time remains a separate measurement. Failed recordings cannot be collected.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

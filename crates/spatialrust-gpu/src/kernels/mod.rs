@@ -24,6 +24,9 @@ mod voxel_segments;
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_sort;
 
+#[cfg(feature = "gpu-aoso-staging")]
+pub(crate) use voxel_sort::build_voxel_segments_gpu_from_keys_buffer_with_profiler as build_voxel_segments_with_profiler;
+
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_radix;
 

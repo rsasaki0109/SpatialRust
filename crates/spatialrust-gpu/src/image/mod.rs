@@ -11,7 +11,9 @@ pub use kernels::{
     box_blur_gpu, copy_gpu_image, morphology_gpu, resize_nearest_gpu, rgb_to_gray_gpu, sobel_gpu,
     GpuImageBorder, GpuMorphology,
 };
-pub use vision_chain::{run_gpu_vision_chain, GpuVisionChainOptions};
+pub use vision_chain::{
+    run_gpu_vision_chain, run_gpu_vision_chain_profiled, GpuVisionChainOptions,
+};
 
 #[cfg(test)]
 mod tests {

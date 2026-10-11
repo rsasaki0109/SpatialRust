@@ -21,6 +21,7 @@ pub(super) fn sort_entries_radix_gpu(
     runtime: &WgpuRuntime,
     entries: wgpu::Buffer,
     point_count: u32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> wgpu::Buffer {
     if point_count <= 1 {
         return entries;
@@ -71,14 +72,14 @@ pub(super) fn sort_entries_radix_gpu(
             });
             // Separate dispatches provide device-wide producer/consumer
             // ordering. All 24 digits are submitted together without readback.
-            for (pipeline, groups) in [
-                (&pipelines.histogram, group_count),
-                (&pipelines.prefix, RADIX as u32),
-                (&pipelines.scatter, group_count),
+            for (pipeline, groups, stage) in [
+                (&pipelines.histogram, group_count, "voxel-radix-histogram"),
+                (&pipelines.prefix, RADIX as u32, "voxel-radix-prefix"),
+                (&pipelines.scatter, group_count, "voxel-radix-scatter"),
             ] {
                 let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                     label: Some("voxel-radix-pass"),
-                    timestamp_writes: None,
+                    timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, stage),
                 });
                 pass.set_pipeline(pipeline);
                 pass.set_bind_group(0, &bind_group, &[]);
