@@ -55,6 +55,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Explicit bounded native keyframe study adapters retain a fixed keyframe or
+  promote an already accepted pose using input-only geometric support. A
+  separate coarse-SVD/fine-plane variant records each objective. Four official
+  TUM sequence comparisons preserve all failed/missing poses, typed input
+  attributes, frozen hashes and independent audits; none meets all fixed
+  accuracy/coverage gates. The default estimator remains unchanged.
+
 - Optional shared GPU compute-pass timestamps for resident image chains and
   AoSoA voxel/radius-normal frames. Timestamp-enabled runtimes check adapter
   support, bounded profilers validate capacity/runtime ownership before work,

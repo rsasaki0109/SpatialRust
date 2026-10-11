@@ -103,8 +103,8 @@ def plot(manifest_path, output):
     if Path(manifest_path).read_bytes()!=manifest_raw:
         raise ValueError('plot manifest changed')
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
-    fig.savefig(output/'trajectory.png',dpi=180)
-    fig.savefig(output/'trajectory.svg')
+    fig.savefig(output/'trajectory.png',dpi=180,bbox_inches='tight')
+    fig.savefig(output/'trajectory.svg',bbox_inches='tight')
     plt.close(fig)
     def metric(value):return 'unevaluated' if value is None else '{:.6f}'.format(value)
     rows=[]

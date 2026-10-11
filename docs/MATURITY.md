@@ -1,9 +1,25 @@
 # Maturity assessment
 
-Current assessment (2026-10-10): **87%, provisional**. This is a subjective
+Current assessment (2026-10-11): **87%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+A separately fixed keyframe study now compares static, input-overlap and
+coarse-SVD/fine-plane adapters on four official TUM sequences. Desk was fixed
+before acquisition for the static revision; the overlap revision was fixed
+after acquisition but before fitting. After preserving their failures and
+scores, hybrid objectives and the new desk2 sequence were committed before
+desk2 acquisition. All 12 new study/comparison cases fail at least one unchanged
+coverage/accuracy gate. Hybrid desk2 completes 639/639 poses but gives 1.045931 m
+ATE and 0.179715 m RPE, worse than its 0.523587/0.102466 m plane baseline. Hybrid
+desk stops at 265/595 poses, with support below the fixed 0.5 minimum. Every
+failure/reference gap is retained, all 12 independent score audits pass, and
+both local Python endpoints pass 731 tests with three expected ONNX skips.
+These are real failure findings, not evidence of a better default or of accurate
+motion. The estimate stays **87%**; measured source-bound Autoware calibration
+and broad accurate-motion gates remain open. See
+[the fixed chronology and all outcomes](TUM_KEYFRAME_VALIDATION.md).
 
 A separately committed native point-to-plane protocol now tests the already
 examined xyz sequence and an untouched rpy sequence fixed before acquisition.
