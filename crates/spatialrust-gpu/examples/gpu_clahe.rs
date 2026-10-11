@@ -49,7 +49,7 @@ fn main() {
             );
             println!("texture_pool={:?}", runtime.image_texture_pool_stats());
             if runtime.timestamp_queries_enabled() {
-                let mut profiler = GpuStageProfiler::new(&runtime, 3).unwrap();
+                let mut profiler = GpuStageProfiler::new(&runtime, 4).unwrap();
                 let output =
                     clahe_gpu_profiled(&runtime, &fixture.uploaded, 2.0, 8, 8, &mut profiler)
                         .unwrap();

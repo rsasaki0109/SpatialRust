@@ -175,3 +175,9 @@ mod benchmark;
 
 #[path = "clahe_traversal_tests.rs"]
 mod traversal;
+
+#[path = "clahe_split_benchmark.rs"]
+mod split_benchmark;
+
+#[path = "clahe_split_tests.rs"]
+mod split_tests;

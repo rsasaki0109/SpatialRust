@@ -57,6 +57,37 @@ fn clahe_plan_bounds_grid_padding_buffers_and_device_dispatch() {
     assert!(plan(65536, 65536, 2.0, 1, 1, &huge).is_err());
     assert!(plan(u32::MAX, 1, 2.0, 1, 1, &huge).is_err());
     assert!(plan(1, 1, 2.0, 131073, 1, &huge).is_err());
+
+    let limits = wgpu::Limits::default();
+    assert!(plan(127, 129, 2., 1, 1, &limits).unwrap().split.is_none());
+    assert!(plan(128, 128, 2., 1, 1, &limits).unwrap().split.is_none());
+    assert!(plan(129, 129, 2., 1, 1, &limits).unwrap().split.is_none());
+    assert!(plan(255, 257, 2., 1, 1, &limits).unwrap().split.is_none());
+    assert_eq!(plan(256, 256, 2., 1, 1, &limits).unwrap().split.unwrap().params.chunks, 8);
+    assert_eq!(plan(257, 257, 2., 1, 1, &limits).unwrap().split.unwrap().params.chunks, 9);
+    let p = plan(3840, 2160, 2., 4, 4, &limits).unwrap().split.unwrap();
+    assert_eq!((p.params.chunks, p.params.partial_groups, p.partial_bytes), (32, 512, 524_288));
+    assert!(plan(3840, 2160, 2., 17, 1, &limits).unwrap().split.is_none());
+    assert!(plan(3840, 2160, 2., 8, 8, &limits).unwrap().split.is_none());
+    let mut constrained = limits.clone();
+    constrained.max_compute_workgroups_per_dimension = 1;
+    assert_eq!(
+        plan(3840, 2160, 2., 4, 4, &constrained).unwrap().split.unwrap().params.partial_groups,
+        1
+    );
+    constrained.max_storage_buffer_binding_size = 524_287;
+    assert!(plan(3840, 2160, 2., 4, 4, &constrained).unwrap().split.is_none());
+    constrained.max_storage_buffer_binding_size += 1;
+    assert!(plan(3840, 2160, 2., 4, 4, &constrained).unwrap().split.is_some());
+    constrained.max_buffer_size = 524_287;
+    assert!(plan(3840, 2160, 2., 4, 4, &constrained).unwrap().split.is_none());
+    constrained.max_buffer_size = 96_000;
+    constrained.max_storage_buffer_binding_size = 96_000;
+    assert!(plan(3840, 2160, 2., 4, 4, &constrained).unwrap().split.is_none());
+    constrained = limits;
+    constrained.max_texture_dimension_2d = 65537;
+    let p = plan(65535, 65537, 2., 1, 1, &constrained).unwrap().split.unwrap();
+    assert_eq!((p.params.chunks, p.partial_bytes), (32, 32 * 1024));
 }
 
 #[test]
