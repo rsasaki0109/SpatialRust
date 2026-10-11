@@ -125,3 +125,43 @@ TUM tests pass; generation/evaluation helpers, Python tests and study metadata
 remain unchanged, as does the SHA-verified historical native SDK. Hosted COPC
 diagnosis remains incomplete while detailed logs are inaccessible. Do not merge
 using the failed/superseded head or call the real-motion/calibration gates closed.
+
+## Published log access and complete-header fixture repair
+
+The newly published environment includes the exact log destination. A normal
+verified-TLS request now downloads the 50,062-byte failed-job log without bypassing
+the proxy. The log identifies `local_http_head_has_no_body`, at the client's
+`read_to_end`, with OS error 104 / `ConnectionReset`. The fixture had processed
+only one TCP read: it could respond and close while later request-header bytes
+were still unread. Its earlier no-body HEAD repair did not address fragmentation.
+
+Two real TCP regressions split the final HEAD delimiter and the Range endpoint.
+Both fail before the repair because the fixture responds before complete headers.
+The server now reads through CRLF-CRLF within the existing 4 KiB buffer, retries
+interrupted reads, and bounds incomplete requests with a five-second read timeout.
+After repair, the COPC profile passes 36 tests with no failures or ignores,
+including strict HEAD no-body and exact four-byte partial-content assertions.
+The exact originally failing HEAD assertion also passes 100 separate executions.
+The production COPC reader and sensor/trajectory algorithms are unchanged.
+
+The restored runtime verifies all 12 estimate/score/audit/plan records, historical
+Git helper blobs and the native SDK, all four final plot sets, and all four source
+archives (1,551,929,060 bytes). Its 78 relevant TUM tests pass. Local receipts are
+under `/workspace/SpatialRust/target/goal-continuation/`:
+`pr126-copc-failed-job-published-runtime.log`,
+`pr126-copc-published-runtime-log-access.json`,
+`pr126-fragmented-headers-before-fix.log`,
+`pr126-fragmented-headers-after-fix-profile.log`,
+`pr126-head-repeat-after-fix.json`, `pr126-main135-tum-junit.xml`, and
+`published-runtime-copc-resume-frozen-verification.json`.
+
+The previous `055c70b` head completes its own 107 main and seven required wheel
+jobs successfully; only PyPI publication is intentionally skipped. That result
+does not certify this fixture repair or subsequent main changes. Main PRs #130
+through #135 are also preserved, including their GPU shaders, runtime ownership,
+benchmarks and CI commands; required counts remain 107 main and seven wheel jobs.
+Only CHANGELOG insertion conflicts need resolution, retaining both additions.
+Require the resulting head's own gates and a fresh identical candidate merge tree.
+No real estimate, score or physical limit changes. All 12 cases still fail at
+least one fixed condition; source-bound canonical calibration is unavailable.
+The maturity remains **87%, provisional**, and 90% remains unsupported.

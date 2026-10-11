@@ -46,11 +46,28 @@ impl Drop for LocalHttpFileServer {
 }
 
 fn serve_http_file_request(mut stream: TcpStream, payload: &[u8]) {
+    if stream.set_read_timeout(Some(Duration::from_secs(5))).is_err() {
+        return;
+    }
     let mut buffer = [0_u8; 4096];
-    let read = match stream.read(&mut buffer) {
-        Ok(0) | Err(_) => return,
-        Ok(read) => read,
-    };
+    let mut read = 0;
+    loop {
+        if read == buffer.len() {
+            return;
+        }
+        match stream.read(&mut buffer[read..]) {
+            Ok(0) => return,
+            Ok(count) => read += count,
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => return,
+        }
+        // A TCP read can end anywhere in the headers. Responding before the
+        // terminator can miss a Range header and close with unread request
+        // bytes, resetting the client's connection instead of ending cleanly.
+        if buffer[..read].windows(4).any(|window| window == b"\r\n\r\n") {
+            break;
+        }
+    }
     let request = String::from_utf8_lossy(&buffer[..read]);
     let request_line = request.lines().next().unwrap_or_default();
 

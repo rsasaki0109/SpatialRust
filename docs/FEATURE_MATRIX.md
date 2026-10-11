@@ -43,6 +43,29 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
+- `gpu-image` adds resident grayscale `clahe_gpu` and its three-pass profiled
+  variant. Reflect101 tile histograms, clip redistribution, lookup rounding and
+  bilinear interpolation match CPU CLAHE using u32-word binary64 arithmetic.
+  Tile clipping/CDF use a workgroup-wide integer tree scan with analytic residual
+  prefixes, replacing serial bin loops within the existing 4 KiB local limit.
+  Larger tile histograms use row strips with shape-dependent lane assignment and
+  reflected edge handling, retaining the same scratch and three passes.
+  Geometry is computed on device, with no image/bin/geometry payload transfer.
+  Temporary storage is 1 KiB per tile plus 16 bytes per source row/column,
+  checked against binding limits and leased through final submission. Metadata
+  is preserved; constant bytes follow CPU CLAHE rather than global equalization.
+  Output download is explicit/full RGBA8; query collection reads 48 bytes.
+  GPU limits and invalid grids/clips/channels reject before work allocation.
+  Browser shader execution is not claimed. APIs remain provisional.
+- `gpu-image` also adds `equalize_histogram_gpu` and its five-pass profiled
+  variant for resident one-channel u8 images. Histogram/CDF/lookup/application
+  have no intermediate payload readback; the owned output preserves metadata
+  and constant-image bytes. GPU integer word arithmetic reproduces CPU binary64
+  half-boundary rounding without shader f64. Inputs accept at most u32::MAX
+  pixels and require supported texture/compute limits. Existing partial/CDF
+  storage is reused; additional lookup scratch is 1 KiB. Native output readback
+  is explicit and copies the physical RGBA8 image; five timestamp stages collect
+  80 query bytes separately. APIs remain provisional; dependencies are unchanged.
 - `gpu-image` also adds `histogram_cdf_gpu`, its one-pass profiled variant and
   resident `GpuImageCdf`. Each of the 256 u32 entries counts pixels at or below
   that byte value; the final entry equals source pixel count. A single 256-lane
@@ -138,9 +161,21 @@ builds, sorts, and compacts the sparse grid on wgpu and performs deterministic
 component union on the host. This split is visible in receipts and is not an
 implicit CPU fallback.
 
+GPU RANSAC plane scoring additionally parallelizes the point direction from
+1,024 points, reducing exact integer inlier counts within each 256-lane group
+while retaining per-point f32 distance arithmetic. Smaller inputs retain scalar
+point traversal. Both pipelines are lazy/runtime-cached; bounded hypothesis
+strides, checked indices/limits and one compute-plus-score-copy submission keep
+uploads and score readback explicit. See the
+[RANSAC validation receipt](../notes/2026-10-11_parallel_gpu_ransac_plane.md).
+
 Voxel key sorting uses stable four-bit GPU radix passes over signed i32 XYZ
 coordinates, preserving increasing source indices inside each cell. Sorting
-allocates exact-sized entries, stays on the device, and no longer needs padded
+uses the legacy histogram/prefix through 524,288 points. Larger sorts reuse
+offset scratch for histogram-generated earlier-digit subtotals; a
+work-efficient tree scan avoids repeated global reads of earlier histograms.
+The 24 digits/72 passes, buffer sizes, stage timing and transfers are retained.
+Exact-sized entries stay on the device and no longer need padded
 entry filtering or its scalar readback. Segment compaction still synchronizes
 the existing four-byte cell count; GPU segment metadata remains resident until
 an explicit metadata readback. See the

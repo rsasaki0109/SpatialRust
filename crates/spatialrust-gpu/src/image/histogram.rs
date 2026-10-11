@@ -127,13 +127,17 @@ fn create_pipelines(device: &wgpu::Device) -> HistogramPipelines {
     }
 }
 
-struct DispatchPlan {
+pub(super) struct DispatchPlan {
     pixels: u32,
     groups: u32,
     partial_bytes: u64,
 }
 
-fn dispatch_plan(width: u32, height: u32, limits: &wgpu::Limits) -> SpatialResult<DispatchPlan> {
+pub(super) fn dispatch_plan(
+    width: u32,
+    height: u32,
+    limits: &wgpu::Limits,
+) -> SpatialResult<DispatchPlan> {
     let pixels = u64::from(width) * u64::from(height);
     if pixels == 0 || pixels > u64::from(u32::MAX) {
         return Err(invalid("GPU histogram requires 1..=u32::MAX pixels"));

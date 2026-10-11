@@ -19,7 +19,45 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+### Changed
+
+- GPU RANSAC plane scoring parallelizes points within each hypothesis from
+  1,024 points and tree-reduces integer inlier counts, retaining f32 plane and
+  distance arithmetic. Smaller inputs retain scalar traversal. Lazy per-runtime
+  serial/parallel pipelines replace per-call compilation, at most 256 groups
+  stride over hypotheses, and the score copy shares the compute submission.
+  Invalid indices, empty point arrays and unsupported sizes/limits reject before
+  GPU allocation; explicit XYZ/hypothesis uploads and score readback stay the same.
+
+- GPU CLAHE builds larger tile histograms with power-of-two row strips, avoiding
+  per-pixel flat-index division and reflecting only padded coordinates. Short and
+  narrow tiles adjust lane assignment; tiles of at most 256 pixels keep direct
+  one-pixel-per-lane traversal. CPU byte parity, scratch bounds, transfers and
+  three-pass profiling remain unchanged. Native raw-count proofs and paired
+  previous/current lookup diagnostics cover padding and degenerate shapes.
+
 ### Fixed
+
+- The local COPC HTTP test server waits for complete request headers within its
+  existing 4 KiB bound before responding. Fragmented HEAD and Range requests no
+  longer cause premature responses or connection resets; a read deadline bounds
+  incomplete requests. Real TCP regressions retain strict response assertions.
+
+- Large GPU voxel radix sorts compute earlier-digit subtotals once per input
+  workgroup and reuses existing offset scratch for the prefix pass. A parallel
+  tree scan replaces redundant shared additions and global histogram reads,
+  preserving stable signed XYZ/source-index order, all 72 sort passes, storage
+  sizes and explicit transfers. Maximum-counter prefix, million-point live
+  output/pool reuse tests and paired stage/completion measurements cover the path.
+  Through 524,288 points the legacy specialization avoids the extra histogram
+  barrier; larger inputs lazily cache the optimized histogram/prefix pair.
+
+- GPU CLAHE parallelizes tile clipping and cumulative counts across all 256
+  workgroup lanes. A tree scan of bounded counts/excess plus analytic residual
+  prefixes preserves exact CPU redistribution and byte rounding, including
+  maximum u32 tile counts. Global storage, dispatch limits, transfers and the
+  three-pass API are unchanged. Independent million-bin parity and alternating
+  old/new GPU pass measurements cover clip/grid/distribution variations.
 
 - Parallel point-cloud radius/k-NN queries cap scoped workers by available CPU
   parallelism instead of spawning one OS thread per tensor chunk. Balanced
@@ -69,6 +107,21 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   TUM sequence comparisons preserve all failed/missing poses, typed input
   attributes, frozen hashes and independent audits; none meets all fixed
   accuracy/coverage gates. The default estimator remains unchanged.
+
+- `gpu-image` adds resident grayscale `clahe_gpu` and a three-pass profiled
+  variant. Reflect101 tiles, clip redistribution and binary64 lookup/interpolation
+  rounding match CPU CLAHE without payload readback or shader float64. GPU axis
+  geometry and tile lookups use checked private scratch until application is
+  submitted. Odd-grid/ROI/metadata/constant parity, 65,536 arithmetic/geometry
+  bit comparisons, 66,049 interpolation boundary pixels, ownership/concurrency
+  and completed-work placement benchmarks cover the provisional API; CPU output and dependencies are unchanged.
+
+- `gpu-image` adds resident grayscale `equalize_histogram_gpu` and a five-pass
+  profiled variant. Histogram/CDF/lookup/application avoid intermediate readback;
+  constant bytes and metadata are preserved. Integer word arithmetic reproduces
+  CPU binary64 half-boundary rounding without shader float64. Device/counter
+  limits, 2,309,120 lookup entries, ROI/byte parity, concurrent live outputs and
+  completed-work/transfer benchmarks cover the provisional API.
 
 - `gpu-image` adds exact inclusive `histogram_cdf_gpu` and its one-pass profiled
   variant, returning independently owned resident `GpuImageCdf`. The 256-bin

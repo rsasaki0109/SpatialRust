@@ -90,6 +90,25 @@ runtime-owned buffer pool. A scratch batch owns every lease until its encoder,
 including the scalar count copy, is submitted; abandoned batches are not
 recycled. Submitted buffers can be reused through queue ordering without a new
 wait or device copy. Caller-owned segment outputs stay outside this pool.
+Large voxel radix sorts reuse offset scratch for per-workgroup earlier-digit
+subtotals written by the histogram pass. The prefix pass reads only its own
+digit slice, scans chunk totals with a work-efficient tree and overwrites offsets
+after all lanes finish reading. This removes repeated global earlier-digit loads
+without another scratch allocation or pass. Stable ranks, 24 digits/72 passes, bounded
+dispatch, queue ordering and the explicit compaction count readback are retained.
+Up to 2,048 input workgroups (524,288 points), legacy histogram/prefix kernels
+remain specialized without the extra subtotal barrier. Larger inputs lazily cache
+two optimized pipelines using a compile-time override; scatter is shared. This
+internal GPU selection retains small-input work and adds no CPU/GPU placement.
+RANSAC plane scoring retains its explicit XYZ/hypothesis uploads and score
+readback. Below 1,024 points the scalar per-hypothesis loop is retained; larger
+inputs assign a 256-lane workgroup to a hypothesis and tree-reduce integer
+inlier counts. Plane construction and each point's f32 distance expression
+retain their operation order. At most 256 groups stride over hypotheses, with
+subtraction guards preventing u32 wrap and a barrier before model reuse.
+Serial/parallel pipelines are independently lazy and cached per runtime. Input
+indices and buffer/compute limits are checked before allocation. The score copy
+and compute pass share one submission; no global partial-count scratch is added.
 Upload/CHW buffers, point scratch and RGBA8 textures each retain at most 64 MiB
 by default, independently, and at most eight resources per size. Full pools
 reject incoming resources; a budget decrease below retention clears the cache,
@@ -120,7 +139,45 @@ inherits source transfer history, adds one device-write stage, and requires
 explicit native readback/recycling. The histogram may be recycled immediately
 after the CDF call submits its reads; queue order protects later pool reuse.
 CDF recording adds one profiler stage (16 query bytes upon explicit collection).
-Normalized CDFs and equalization rounding are separate future contracts.
+Grayscale `equalize_histogram_gpu` consumes the histogram/CDF inside a five-pass
+resident operation: two histogram passes, one CDF pass, a 256-entry lookup pass
+and bounded grid-stride image application. Lookup scratch is 1 KiB, leased until
+both lookup/application passes are submitted; internal histogram/CDF outputs are
+recycled after their dependent reads. The final texture remains caller-owned.
+A u32-word arithmetic model reproduces the CPU's binary64 reciprocal/multiply
+rounding at exact half-byte boundaries, without requiring float64 shaders or
+changing CPU output. Non-half rational values are rounded exactly; constant
+images retain their byte and all images retain metadata. Construction performs
+no payload readback or host wait. Five profiled passes require five free stages;
+explicit timestamp collection returns 80 query bytes separately from payloads.
+Other channel counts and unsupported counters/device limits fail before work
+allocation. Empty GPU images remain unsupported. Normalized public CDFs and
+adaptive tile equalization remain separate future contracts.
+Resident grayscale `clahe_gpu` adds three passes in one submission: axis geometry,
+per-tile histogram/clipping/lookup, then interpolation/application. Lookup storage
+is 1 KiB per tile; axis geometry is 16 bytes per source row/column, both private
+scratch leased through application submission. Reflect101 padding and exact
+clipped-count redistribution match the CPU. Per-tile cumulative counts use a
+workgroup-wide tree scan of bounded counts and clipped excess. The residual
+redistribution prefix is computed analytically from the CPU's bin positions,
+avoiding a second scan and serial 256-bin clipping/CDF loops. Histogram bins and
+scan storage use about 3 KiB of workgroup memory within the existing 4 KiB limit;
+global scratch, dispatch bounds and three-pass submission remain unchanged.
+Tiles with at most 256 padded pixels assign one pixel per lane. Larger tiles
+partition columns/rows with power-of-two strides, avoiding per-pixel flat-index
+division. Short tiles use more columns to keep lanes occupied; narrow tiles use
+more rows. Reflect101 computes a remainder only outside the source bounds, and
+subtraction guards keep stride increments within the validated u32 dimensions.
+Shared integer-word lookup rounding and a finite non-negative binary64 arithmetic
+subset preserve the CPU's division, subtraction, multiplication/addition
+operation order without shader float64.
+Equal integer corners bypass interpolation only when the final byte is invariant
+under CPU rounding. No payload readback, geometry upload or host wait is hidden.
+The clip limit is a scalar host parameter; per-tile counts, padded coordinates,
+buffer bindings and compute limits are checked before allocations. Caller-owned
+output preserves metadata; constant bytes may change as in CPU CLAHE. Three
+profiled passes collect 48 query bytes explicitly. Browser shader execution is
+still unverified; adaptive contrast APIs remain provisional.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
 large thresholds, u8 histograms and histogram-equalization lookup application.
 Tasks are bounded by image rows and the current pool; histograms merge exact

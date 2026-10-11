@@ -352,11 +352,41 @@ pub struct VoxelRadixPipelines {
     pub prefix: wgpu::ComputePipeline,
     /// Scatters entries to their stable sorted positions.
     pub scatter: wgpu::ComputePipeline,
+    cached_prefix: std::sync::OnceLock<[wgpu::ComputePipeline; 2]>,
     _pipeline_layout: wgpu::PipelineLayout,
     _shader: wgpu::ShaderModule,
 }
 
 impl VoxelRadixPipelines {
+    // At most eight group-count items per scan lane retain the legacy kernels.
+    // The extra histogram barrier pays off only for larger prefix chunks.
+    pub(crate) fn sort_pipelines(
+        &self,
+        device: &wgpu::Device,
+        group_count: u32,
+    ) -> [&wgpu::ComputePipeline; 3] {
+        if group_count <= 2048 {
+            return [&self.histogram, &self.prefix, &self.scatter];
+        }
+        let cached = self.cached_prefix.get_or_init(|| {
+            let constants = std::collections::HashMap::from([("cached_prefix".to_owned(), 1.0)]);
+            ["histogram", "prefix"].map(|entry| {
+                device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                    label: Some("voxel-radix-cached-prefix"),
+                    layout: Some(&self._pipeline_layout),
+                    module: &self._shader,
+                    entry_point: Some(entry),
+                    compilation_options: wgpu::PipelineCompilationOptions {
+                        constants: &constants,
+                        ..Default::default()
+                    },
+                    cache: None,
+                })
+            })
+        });
+        [&cached[0], &cached[1], &self.scatter]
+    }
+
     fn new(device: &wgpu::Device) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("voxel-radix-layout"),
@@ -398,6 +428,7 @@ impl VoxelRadixPipelines {
                 "voxel-radix-scatter",
                 "scatter",
             ),
+            cached_prefix: std::sync::OnceLock::new(),
             bind_group_layout,
             _pipeline_layout: pipeline_layout,
             _shader: shader,

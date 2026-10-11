@@ -21,6 +21,7 @@ pub struct WgpuRuntime {
     queue: wgpu::Queue,
     pipelines: OnceLock<ComputePipelineCache>,
     pub(crate) voxel_scan_pipelines: OnceLock<crate::kernels::PrefixScanPipelines>,
+    pub(crate) ransac_plane_pipelines: OnceLock<crate::kernels::RansacPlanePipelines>,
     max_gather_channels: u32,
     upload_pool: GpuBufferPool,
     pub(crate) scratch_pool: GpuBufferPool,
@@ -41,6 +42,10 @@ pub struct WgpuRuntime {
     pub(crate) image_histogram_pipelines: OnceLock<crate::image::histogram::HistogramPipelines>,
     #[cfg(feature = "gpu-image")]
     pub(crate) image_cdf_pipeline: OnceLock<crate::image::histogram::CdfPipeline>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_equalize_pipelines: OnceLock<crate::image::equalize::EqualizePipelines>,
+    #[cfg(feature = "gpu-image")]
+    pub(crate) image_clahe_pipelines: OnceLock<crate::image::clahe::ClahePipelines>,
 }
 
 /// Stable, serializable-friendly identity for the selected wgpu adapter.
@@ -226,6 +231,8 @@ impl WgpuRuntime {
             + usize::from(self.image_ai_pack_pipeline.get().is_some())
             + usize::from(self.image_histogram_pipelines.get().is_some())
             + usize::from(self.image_cdf_pipeline.get().is_some())
+            + usize::from(self.image_equalize_pipelines.get().is_some())
+            + usize::from(self.image_clahe_pipelines.get().is_some())
     }
 
     /// Returns cached compute pipelines for this runtime's device.
@@ -374,6 +381,7 @@ impl WgpuRuntime {
             queue,
             pipelines: OnceLock::new(),
             voxel_scan_pipelines: OnceLock::new(),
+            ransac_plane_pipelines: OnceLock::new(),
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
             scratch_pool: GpuBufferPool::default(),
@@ -398,6 +406,10 @@ impl WgpuRuntime {
             image_histogram_pipelines: OnceLock::new(),
             #[cfg(feature = "gpu-image")]
             image_cdf_pipeline: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_equalize_pipelines: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_clahe_pipelines: OnceLock::new(),
         })
     }
 }

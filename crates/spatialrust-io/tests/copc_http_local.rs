@@ -22,6 +22,50 @@ fn local_http_head_has_no_body() {
     assert!(response.ends_with("\r\n\r\n"));
 }
 
+fn fragmented_request(first: impl FnOnce(&str) -> String, last: &[u8]) -> Vec<u8> {
+    use std::io::{Read, Write};
+    use std::net::TcpStream;
+
+    let (_server, url) = common::LocalHttpFileServer::start(vec![0xff; 128]);
+    let address = url.strip_prefix("http://").unwrap().split('/').next().unwrap();
+    let mut stream = TcpStream::connect(address).unwrap();
+    stream.set_read_timeout(Some(std::time::Duration::from_millis(200))).unwrap();
+    stream.write_all(first(address).as_bytes()).unwrap();
+    let error = stream.read(&mut [0_u8; 1]).expect_err("response before complete request headers");
+    assert!(matches!(error.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut));
+    stream.write_all(last).unwrap();
+    stream.set_read_timeout(Some(std::time::Duration::from_secs(5))).unwrap();
+    let mut response = Vec::new();
+    stream.read_to_end(&mut response).unwrap();
+    response
+}
+
+#[test]
+fn local_http_fragmented_head_waits_for_header_terminator() {
+    let response = fragmented_request(
+        |address| format!("HEAD /fixture.copc.laz HTTP/1.1\r\nHost: {address}\r\n"),
+        b"\r\n",
+    );
+    let response = String::from_utf8(response).expect("HEAD must not send payload bytes");
+    assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(response.contains("Content-Length: 128\r\n"));
+    assert!(response.ends_with("\r\n\r\n"));
+}
+
+#[test]
+fn local_http_fragmented_range_waits_for_complete_range() {
+    let response = fragmented_request(
+        |address| format!("GET /fixture.copc.laz HTTP/1.1\r\nHost: {address}\r\nRange: bytes=4-"),
+        b"7\r\n\r\n",
+    );
+    let separator = response.windows(4).position(|w| w == b"\r\n\r\n").unwrap();
+    let headers = std::str::from_utf8(&response[..separator + 4]).unwrap();
+    assert!(headers.starts_with("HTTP/1.1 206 Partial Content\r\n"));
+    assert!(headers.contains("Content-Length: 4\r\n"));
+    assert!(headers.contains("Content-Range: bytes 4-7/128\r\n"));
+    assert_eq!(&response[separator + 4..], &[0xff; 4]);
+}
+
 #[test]
 fn read_copc_url_with_query_matches_local_file() {
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};
