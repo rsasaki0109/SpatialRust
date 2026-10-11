@@ -51,7 +51,11 @@ def plot(manifest_path, output):
     origin = min(c['est']['poses'][0]['timestamp_ns'] for c in cases)
     last = max(c['est']['poses'][-1]['timestamp_ns'] for c in cases)
     ref_xyz = np.array([r['world_from_sensor'][:3,3] for r in reference if origin <= r['timestamp_ns'] <= last])
-    fig = plt.figure(figsize=(13,9), layout='constrained')
+    # Fixed outer margins keep 3D titles/rotated labels and long coverage legends
+    # inside both raster and vector canvases; automatic tight bounds can omit
+    # mplot3d artists and shift axes between successive exports.
+    fig = plt.figure(figsize=(13,9))
+    fig.subplots_adjust(left=.10,right=.98,bottom=.10,top=.88,wspace=.30,hspace=.40)
     spatial = fig.add_subplot(2,2,1,projection='3d')
     planar = fig.add_subplot(2,2,2)
     ate = fig.add_subplot(2,2,3)
@@ -86,7 +90,8 @@ def plot(manifest_path, output):
     for axis,value in zip(('x','y','z'),midpoint):
         getattr(spatial,'set_'+axis+'lim')(value-radius,value+radius)
     spatial.set_box_aspect((1,1,1))
-    spatial.set(xlabel='World X (m)',ylabel='World Y (m)',zlabel='World Z (m)',title='Common world frame; first-pose SE(3) gauge')
+    spatial.set(xlabel='World X (m)',ylabel='World Y (m)',zlabel='World Z (m)')
+    spatial.set_title('Common world frame; first-pose SE(3) gauge',fontsize=10)
     planar.set(xlabel='World X (m)',ylabel='World Y (m)',title='XY projection')
     planar.set_aspect('equal',adjustable='datalim')
     ate.set(xlabel='Seconds from first depth frame',ylabel='Translation error (m)',title='Pointwise ATE; missing reference remains a gap')
@@ -103,8 +108,9 @@ def plot(manifest_path, output):
     if Path(manifest_path).read_bytes()!=manifest_raw:
         raise ValueError('plot manifest changed')
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
-    fig.savefig(output/'trajectory.png',dpi=180,bbox_inches='tight')
-    fig.savefig(output/'trajectory.svg',bbox_inches='tight')
+    fig.canvas.draw()
+    fig.savefig(output/'trajectory.png',dpi=180)
+    fig.savefig(output/'trajectory.svg')
     plt.close(fig)
     def metric(value):return 'unevaluated' if value is None else '{:.6f}'.format(value)
     rows=[]

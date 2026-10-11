@@ -51,9 +51,9 @@ plane baseline's 0.523587/0.102466 m. Both fail their 0.10/0.05 m limits.
 Hybrid desk stops at 265/595, with support 0.486208 below the fixed 0.5 limit.
 
 PNG/SVG/HTML comparisons are local under
-`/workspace/SpatialRust/target/tum-keyframe-reference/*-comparison-report-v2/`.
+`/workspace/SpatialRust/target/tum-keyframe-reference/*-comparison-report-v4/`.
 The first exports are preserved; a visually observed clipped rpy legend is
-fixed by including outer artists in saved bounds. Plot hashes bind the exact
+fixed with explicit canvas margins and stable 3D title sizing. Plot hashes bind the exact
 estimates/scores; export framing does not change accuracy or coverage.
 
 The source-bound measured clock/front/rear mounting calibration for the exact

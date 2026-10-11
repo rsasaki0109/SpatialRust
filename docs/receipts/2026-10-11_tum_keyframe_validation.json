@@ -1256,54 +1256,54 @@
     "rotation_degrees": 1e-06,
     "translation_m": 1e-08
   },
-  "plot_export_note": "v1 artifacts retained; v2 includes outer artists in output bounds after visual inspection found the rpy legend clipped. Frozen estimates and scores unchanged.",
+  "plot_export_note": "Earlier exports retained; v4 uses explicit canvas margins and stable 3D title sizing for raster/vector labels. All four plots inspected; matching raster title/ylabel pixels and SVG coordinates verified in rpy/desk2. Frozen estimates and scores unchanged.",
   "plots": [
     {
       "artifacts": {
-        "report.html": "6a4bbd9c30c4dda1169ff6cc279a78bf6b0c796332da5704eedeea52a4279900",
-        "trajectory.png": "c62fccc009830c90b8f28a3a3b8752f372ba736dcd2de1aeac1af07b79c6b709",
-        "trajectory.svg": "39c05e883ef20a12dbad86bff26ce7a774d9796fadd3703fa96131367ee02533"
+        "report.html": "cfee976286bd3accab790489a3c8f0b610fad8a795750bef647b46efd78300b5",
+        "trajectory.png": "f5665bdb602c157812d9e052b794774d128bb5817c0a77945513ccce37572372",
+        "trajectory.svg": "d9670636de974b71ed65dca3e6f86b3d59e7840bb1ce55755f827aa34276bc4e"
       },
-      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/xyz-comparison-plot-manifest-v2.json",
+      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/xyz-comparison-plot-manifest-v4.json",
       "manifest_sha256": "ef87096782919819e42a8f89baaf4d25750239bb8f1bae7d05cfdb26ed6bfecd",
-      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/xyz-comparison-report-v2/receipt.json",
-      "receipt_sha256": "9b28aa76f1880ff610145fde64828a153eb228829f57605a42901e15ca6bed30",
+      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/xyz-comparison-report-v4/receipt.json",
+      "receipt_sha256": "c3b2aa8ffd82c6b364638d5dc8b1a881b83062b9037c1f799d3d9378f2e49ac5",
       "sequence": "xyz"
     },
     {
       "artifacts": {
-        "report.html": "03b6f0bfa57b6b81056c73fc7bbd5e16fe44cd2bcce71357df4283b90bddcb0d",
-        "trajectory.png": "7ba12091e1cede43094b4f5b837bd06d96aa7b5dba54ce43bf76e069c7132329",
-        "trajectory.svg": "a30925bdfb503dd363c2aa9605b8941a269b838f6ea6050265cb08941e62cc44"
+        "report.html": "8cc79d4a102ee55b636d84df442026ca05d0476e87fa7673bde705eac125aaa4",
+        "trajectory.png": "092958805629aa7efac18bc5cae87a762df547e2ace57648359c2c0990aa8995",
+        "trajectory.svg": "6bd247e4dc396e7e28b4ee840f60550fa6982f61ef24eb62e81f6f8e0a6741ee"
       },
-      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/rpy-comparison-plot-manifest-v2.json",
+      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/rpy-comparison-plot-manifest-v4.json",
       "manifest_sha256": "e0b08bce0ae3952ad1d1697c02d334ef8eac94f4e168c465be781eb718d2153d",
-      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/rpy-comparison-report-v2/receipt.json",
-      "receipt_sha256": "3df1c4d84ee986267ec84db1c7902f14ff7a959e4765b22f20cc435f6a119cb2",
+      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/rpy-comparison-report-v4/receipt.json",
+      "receipt_sha256": "863b53e47ea00cc93d68f31d8b58c0da88a6aecf428a5c16b3f097b7d71d4baf",
       "sequence": "rpy"
     },
     {
       "artifacts": {
-        "report.html": "71dc52d4644578f1d12fc23b252938076f3d4f4f867f9ad8439cb26a3fff249b",
-        "trajectory.png": "d66d048b465294984e1b1ec0929c2a98115e28005db2eb78247f0fd9b38b1a3b",
-        "trajectory.svg": "078e1bd6b57509244abb9dd8ca7a801332d8ae79f9d657df8014ee4a80e94644"
+        "report.html": "828b45b6ef0fd82a4fb1d9426371c2be7be96b10eac5dc5c6ee28a465db164ce",
+        "trajectory.png": "86b47c3063502398da90c7e297d90ad8e718edef5045fde2713413350d3e422b",
+        "trajectory.svg": "2103847a92d33bde53213565b7dc5b907920c2c823b02a05d8ed5e536f551a84"
       },
-      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/desk-comparison-plot-manifest-v2.json",
+      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/desk-comparison-plot-manifest-v4.json",
       "manifest_sha256": "a8e476f8dd2f4fe89fed43a77c55ab773bd4e54c68afc16fc44e1cd16f121344",
-      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/desk-comparison-report-v2/receipt.json",
-      "receipt_sha256": "974a7a81f507d429adf825bca644dd053373cd50d1cbba23dda2f02d66a46969",
+      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/desk-comparison-report-v4/receipt.json",
+      "receipt_sha256": "41e78f274c994851e353c540a29596719d0a1b0b74f79bb8640ce30c15f40b7d",
       "sequence": "desk"
     },
     {
       "artifacts": {
-        "report.html": "c23de7d41a85b96c9bc1173c42518f7084d6bb503a812a27220bdc9d1cb1a983",
-        "trajectory.png": "5a6cc8de1187a82b09192c00cd80c6bde82b51d25f853162d09d06e84a95a46d",
-        "trajectory.svg": "51fe848fd7278d92967a699d94bd26d05e29993332ef13128dafbd7a9f5182f6"
+        "report.html": "0bc63e22c894ef53e1ed398f9a1ca34e4a4444800644d955cd52feadc91c9135",
+        "trajectory.png": "a17a1e053a144bf917fd675c489595cd568e92ec5183f71d47bccc6682a02dc2",
+        "trajectory.svg": "22d356041e83dbba8e9bf3ae2fc1c722c7b238c9973a836d23d7e9d60534af5f"
       },
-      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/desk2-comparison-plot-manifest-v2.json",
+      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/desk2-comparison-plot-manifest-v4.json",
       "manifest_sha256": "46ab08642bd1a8b335d947b32c40683ad131b3dc5581e9069867999282f7982f",
-      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/desk2-comparison-report-v2/receipt.json",
-      "receipt_sha256": "7fb3e20dc4404df8b3a37ba014cb27ba67ca3327a52d33d8b4afbfb671f05d35",
+      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/desk2-comparison-report-v4/receipt.json",
+      "receipt_sha256": "2218e1f28127ef81a709a3ff229fa3a7a2a951262051d5bafd1c9208fa37f835",
       "sequence": "desk2"
     }
   ],
@@ -1372,5 +1372,6 @@
       "total": 734
     }
   },
+  "updated_at_utc": "2026-10-11T01:30:51.394462+00:00",
   "world_gauge": "first-pose SE(3) only; no best fit, scale, resets or relocalization"
 }

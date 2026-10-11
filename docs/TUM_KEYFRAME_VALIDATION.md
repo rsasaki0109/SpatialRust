@@ -137,10 +137,11 @@ the full unchanged pair lists are retained in the local scored artifacts.
 
 Standalone hash-bound comparisons were generated and visually inspected for
 all four sequences under `/workspace/SpatialRust/target/tum-keyframe-reference/`:
-`xyz-comparison-report-v2`, `rpy-comparison-report-v2`,
-`desk-comparison-report-v2`, `desk2-comparison-report-v2` (PNG, SVG and HTML).
-The original v1 exports remain; v2 includes outer artists in its saved bounds
-so the rpy legend is not clipped. This changes export framing, not scores.
+`xyz-comparison-report-v4`, `rpy-comparison-report-v4`,
+`desk-comparison-report-v4`, `desk2-comparison-report-v4` (PNG, SVG and HTML).
+Earlier exports remain; v4 fixes canvas margins and the 3D title size so long
+labels stay visible across raster/vector saves. Raster title/ylabel pixels and
+SVG coordinates agree in the two affected sequences. Framing does not change scores.
 
 ## Evidence status
 
