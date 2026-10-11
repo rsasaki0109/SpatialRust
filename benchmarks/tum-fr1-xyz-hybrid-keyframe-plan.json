@@ -1,0 +1,83 @@
+{
+  "acceptance": {
+    "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_one_second_translation_rpe_rmse_m": 0.05,
+    "minimum_evaluated_fraction": 0.95,
+    "minimum_generated_fraction": 1.0
+  },
+  "calibration": {
+    "axes": "x right, y down, z forward",
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration.",
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "fx": 525.0,
+    "fy": 525.0,
+    "height": 480,
+    "sensor_frame": "tum_rgb_optical",
+    "width": 640
+  },
+  "controls": {
+    "evaluation_max_gap_ns": 20000000,
+    "io_stride": 60,
+    "max_depth_m": 5.0,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "projection_tolerance_m": 1e-06,
+    "rgb_max_gap_ns": 20000000,
+    "rpe_delta_ns": 1000000000,
+    "stages": [
+      {
+        "gate_m": 0.2,
+        "iterations": 20,
+        "leaf_m": 0.1
+      },
+      {
+        "gate_m": 0.1,
+        "iterations": 20,
+        "leaf_m": 0.05
+      }
+    ]
+  },
+  "estimator": {
+    "coarse_fitness_epsilon": 1e-06,
+    "coarse_rotation_epsilon": 1e-08,
+    "coarse_translation_epsilon": 1e-08,
+    "coarse_trim_fraction": 1.0,
+    "fitness_epsilon": 1e-06,
+    "initialization": "previous_estimated_pose_in_active_keyframe",
+    "keyframe_interval_frames": 30,
+    "method": "spatialrust_hybrid_keyframe_cpu",
+    "min_correspondences": 6,
+    "normal_neighbors": 20,
+    "promotion": "fixed_interval_or_low_geometric_overlap",
+    "promotion_support_fraction": 0.75,
+    "stage_objectives": [
+      "point_to_point",
+      "point_to_plane"
+    ],
+    "tracking_reset": false,
+    "transformation_epsilon": 1e-08
+  },
+  "expected_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+  "generation": "Same accepted-pose overlap promotion, keyframe initialization, geometry, 20/20 iteration budgets, final50% support and no resets. Coarse stage uses native point-to-point closed-form SVD ICP; fine stage uses native point-to-plane. Preserve objective/stopping distinctions and all intermediate transforms. No algorithm switches after failure, reference poses or tracking relocalization.",
+  "limits": {
+    "max_frames": 10000,
+    "max_member_bytes": 16777216,
+    "max_members": 30000,
+    "max_total_bytes": 8589934592
+  },
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "redirect_basis": "Official host observed for previous xyz/rpy; this sequence request is verified at acquisition.",
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "scope": "XYZ/rpy/desk have now been evaluated and are exploratory. After geometric divergence and failed original outcomes, the hybrid objectives are fixed before any desk2 acquisition, preparation, generation or reference interpretation. desk2 is the new untouched validation sequence for this revision. Preserve every preceding failure and score; do not retune after this outcome. Physical canonical clock/mounting calibration remains unavailable.",
+  "sequence": "rgbd_dataset_freiburg1_xyz",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz"
+}

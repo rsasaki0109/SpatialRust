@@ -32,7 +32,8 @@ def require_sha256(value):
 def validate_plan(plan):
     # Only these declared Freiburg 1 protocols share the registered-depth convention.
     if plan.get('schema') != 'spatialrust.tum-sequence-plan.v1' or plan.get('sequence') not in (
-            'rgbd_dataset_freiburg1_xyz', 'rgbd_dataset_freiburg1_rpy', 'rgbd_dataset_freiburg1_desk'):
+            'rgbd_dataset_freiburg1_xyz', 'rgbd_dataset_freiburg1_rpy', 'rgbd_dataset_freiburg1_desk',
+            'rgbd_dataset_freiburg1_desk2'):
         raise ValueError('unsupported TUM sequence protocol')
     c = plan['calibration']
     for name, value in dict(width=640, height=480, fx=525., fy=525., cx=319.5, cy=239.5,

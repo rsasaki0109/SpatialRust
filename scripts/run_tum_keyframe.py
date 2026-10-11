@@ -44,10 +44,11 @@ class KeyframeTracker:
     The smaller intervals accepted by this helper support analytic tests; the
     executable study validates and always uses the fixed 30-frame protocol.
     """
-    def __init__(self, interval_frames=ESTIMATOR['keyframe_interval_frames']):
+    def __init__(self, interval_frames=ESTIMATOR['keyframe_interval_frames'], pair_aligner=None):
         if type(interval_frames) is not int or not 1 <= interval_frames <= 1000:
             raise ValueError('require a bounded integer keyframe interval')
         self.interval_frames = interval_frames
+        self.pair_aligner = pair_aligner
         self.keyframe = None
         self.previous = None
         self.keyframe_from_previous = np.eye(4)
@@ -67,7 +68,8 @@ class KeyframeTracker:
             # Zero displacement from the previously estimated pose. No velocity,
             # future frame, reference pose or optimized world gauge is supplied.
             moved = sr.apply_transform(current, initial.astype(np.float32))
-            correction, report = align_point_to_plane(moved, self.keyframe, controls)
+            aligner = align_point_to_plane if self.pair_aligner is None else self.pair_aligner
+            correction, report = aligner(moved, self.keyframe, controls)
             keyframe_from_current = compose_camera_pose(correction, initial)
             previous_from_current = compose_camera_pose(np.linalg.inv(initial), keyframe_from_current)
             ordinal = self.pose_ordinal + 1

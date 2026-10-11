@@ -24,8 +24,8 @@ def validate_overlap_plan(plan, original):
 
 class OverlapKeyframeTracker:
     """Promote only an already accepted pose; never retry an unsupported pose."""
-    def __init__(self):
-        self.tracker = KeyframeTracker()
+    def __init__(self, pair_aligner=None):
+        self.tracker = KeyframeTracker(pair_aligner=pair_aligner)
 
     def align_pair(self, current, previous, controls):
         delta, report = self.tracker.align_pair(current, previous, controls)

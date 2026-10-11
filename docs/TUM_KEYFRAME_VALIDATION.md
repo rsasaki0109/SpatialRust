@@ -61,13 +61,41 @@ interpretation. Therefore pre-acquisition fixation applies to the original
 static study; the adaptive desk study has a pre-fitting fixation. Neither is
 claimed to be a universally blind benchmark.
 
+## Outcomes and a separately fixed hybrid revision
+
+All seven static/overlap trajectories were frozen before scoring. Independent
+SciPy audits reproduced their scores with the unchanged numerical tolerances.
+None satisfies all four acceptance conditions. Static xyz/rpy stop at images
+569/42; static desk stops at 26. Overlap xyz/rpy retain all planned poses but
+worsen ATE and RPE compared with the preceding point-to-plane baseline. Overlap
+desk stops at 266 when native plane ICP finds only three correspondences,
+below its six-correspondence requirement. The desk baseline also stops at 526.
+The low static-desk ATE describes only its 26 successful poses and cannot
+establish full-sequence accuracy. Every failed pose remains in the timeline.
+
+`run_tum_hybrid_keyframe.py` changes the coarse objective to native closed-form
+point-to-point SVD ICP, followed by the same native point-to-plane refinement.
+The voxel/gate schedule, 20/20 iteration budgets, accepted-pose keyframe policy,
+50% final support, calibration and four score limits remain fixed. Diagnostics
+identify each objective and whether its stopping cause is observable. It does
+not switch objectives after failure, retry, reset, fit scale or use references.
+
+XYZ/rpy/desk are now evaluated exploratory sequences. The hybrid plans and
+the separate unchanged desk2 plane baseline are fixed before acquiring,
+preparing, fitting or interpreting reference poses for Freiburg 1 desk2.
+This new sequence is the untouched validation for this revision. The earlier
+desk result remains a failed validation of the earlier methods; it does not
+become held out again. Hybrid generation, scoring and audits are pending at
+this preregistration commit. No result will justify tuning these fixed limits.
+
 ## Evidence status
 
 Analytic native motion recovery across two keyframe promotions, singular
 geometry/lost-chain retention, exact helper binding, fixed settings and wrong
-archive root regressions pass. Real generation, scoring and independent audits
-are pending at the preregistration commit. These tests alone do not establish
-accurate real motion. The maturity remains 87%, provisional.
+archive root regressions pass, including actual native hybrid motion recovery
+through two promotions and singular-geometry rejection. The preceding real
+results are failures, preserved for comparison. Unit tests alone do not
+establish accurate real motion. The maturity remains 87%, provisional.
 
 The source calibration remains the publisher-recommended approximate ROS
 intrinsics for already registered depth, without extra distortion, rescaling
