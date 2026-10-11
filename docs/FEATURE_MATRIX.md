@@ -161,7 +161,11 @@ implicit CPU fallback.
 
 Voxel key sorting uses stable four-bit GPU radix passes over signed i32 XYZ
 coordinates, preserving increasing source indices inside each cell. Sorting
-allocates exact-sized entries, stays on the device, and no longer needs padded
+uses the legacy histogram/prefix through 524,288 points. Larger sorts reuse
+offset scratch for histogram-generated earlier-digit subtotals; a
+work-efficient tree scan avoids repeated global reads of earlier histograms.
+The 24 digits/72 passes, buffer sizes, stage timing and transfers are retained.
+Exact-sized entries stay on the device and no longer need padded
 entry filtering or its scalar readback. Segment compaction still synchronizes
 the existing four-byte cell count; GPU segment metadata remains resident until
 an explicit metadata readback. See the

@@ -21,6 +21,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Large GPU voxel radix sorts compute earlier-digit subtotals once per input
+  workgroup and reuses existing offset scratch for the prefix pass. A parallel
+  tree scan replaces redundant shared additions and global histogram reads,
+  preserving stable signed XYZ/source-index order, all 72 sort passes, storage
+  sizes and explicit transfers. Maximum-counter prefix, million-point live
+  output/pool reuse tests and paired stage/completion measurements cover the path.
+  Through 524,288 points the legacy specialization avoids the extra histogram
+  barrier; larger inputs lazily cache the optimized histogram/prefix pair.
+
 - GPU CLAHE parallelizes tile clipping and cumulative counts across all 256
   workgroup lanes. A tree scan of bounded counts/excess plus analytic residual
   prefixes preserves exact CPU redistribution and byte rounding, including
