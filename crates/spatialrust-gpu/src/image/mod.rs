@@ -2,11 +2,13 @@
 
 pub(crate) mod ai_tensor;
 mod gpu_image;
+pub(crate) mod histogram;
 pub(crate) mod kernels;
 mod vision_chain;
 
 pub use ai_tensor::{pack_ai_chw_gpu, GpuAiTensor};
 pub use gpu_image::{GpuImage, GpuImageReceipt};
+pub use histogram::{histogram_u8_gpu, histogram_u8_gpu_profiled, GpuImageHistogram};
 pub use kernels::{
     box_blur_gpu, copy_gpu_image, morphology_gpu, resize_nearest_gpu, rgb_to_gray_gpu, sobel_gpu,
     GpuImageBorder, GpuMorphology,

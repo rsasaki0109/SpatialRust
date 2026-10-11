@@ -99,6 +99,19 @@ memory. `GpuResourcePoolStats` counts requested allocations, cache hits and
 retained/discarded resources; clearing preserves these lifetime counters.
 Image/tensor ownership uses a retained runtime identity token rather than a
 runtime address, so moving a runtime preserves valid resources.
+GPU channel histograms under `gpu-image` use exact integer RGBA8 loads and two
+compute passes in one submission. At most 256 workgroups build private 256-bin
+partials (at most 256 KiB), then independently reduce each bin into a live
+1 KiB `GpuImageHistogram`. Every partial and output bin is overwritten, including
+zero counts in reused storage. Scratch follows the submitted-lease protocol;
+live histogram outputs stay outside the scratch pool until explicit recycling.
+Channels are logical source components, with no implicit luma conversion.
+Inputs above u32::MAX pixels and insufficient compute/buffer limits are rejected
+before allocation. Counts and their sum therefore remain exactly representable.
+Optional profiling records exactly two passes; native `readback_u32` explicitly
+transfers 1,024 bytes and timestamp collection separately transfers 32 bytes.
+Histogram construction has no payload readback or implicit host synchronization.
+The public APIs are provisional; CPU references/Rayon are dev-only dependencies.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
 large thresholds, u8 histograms and histogram-equalization lookup application.
 Tasks are bounded by image rows and the current pool; histograms merge exact
