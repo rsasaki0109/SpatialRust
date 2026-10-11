@@ -108,3 +108,7 @@ required-features = ["odometry"]
 name = "photography"
 harness = false
 required-features = ["photography"]
+
+[[example]]
+name = "parallel_contrast"
+required-features = ["imgproc-analysis"]
