@@ -20,3 +20,13 @@ spatialrust-math = { workspace = true }
 
 [dev-dependencies]
 spatialrust-core = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "chunked_queries"
+harness = false
+required-features = ["parallel", "search-kdtree"]
+
+[[example]]
+name = "parallel_queries"
+required-features = ["parallel", "search-kdtree"]

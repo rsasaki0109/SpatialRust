@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Parallel point-cloud radius/k-NN queries cap scoped workers by available CPU
+  parallelism instead of spawning one OS thread per tensor chunk. Balanced
+  contiguous chunk groups preserve callback boundaries, neighbor order and
+  existing output prefixes; single-worker jobs run on the caller. Dispatch
+  metadata scales with workers, while neighbor buffers remain result-sized.
+  Minimal `parallel` feature tests no longer require KD-tree. Completed-query
+  benchmarks and facade/minimal parallel CI profiles cover the bounded path.
+
 - GPU AoSoA frame construction no longer computes and reads back unused voxel
   centroids; all source points and per-point normals remain device-resident.
   Frame receipts include scalar cell-count readbacks on construction/grid
@@ -61,6 +69,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   TUM sequence comparisons preserve all failed/missing poses, typed input
   attributes, frozen hashes and independent audits; none meets all fixed
   accuracy/coverage gates. The default estimator remains unchanged.
+
+- `gpu-image` adds exact two-pass `histogram_u8_gpu` channel counts and a profiled
+  variant, returning resident `GpuImageHistogram`. Private partials are capped
+  at 256 KiB; the result is 1 KiB with explicit native readback/recycling and
+  retained runtime ownership. Invalid channels, overflowing pixel counts and
+  insufficient device limits fail before allocation. GPU/CPU parity, pool reuse,
+  concurrent live outputs and completed-work/transfer benchmarks cover the API.
 
 - CPU contrast enhancement now parallelizes CLAHE lookup tiles and output row
   bands at one million pixels, sharing horizontal interpolation geometry while

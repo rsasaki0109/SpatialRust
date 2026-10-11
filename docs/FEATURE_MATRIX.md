@@ -29,7 +29,7 @@ workspace because its build requires a Python toolchain.
 | `spatialrust-math` | vector/matrix/pose math | serde | none |
 | `spatialrust-io` | no format enabled by default | PCD, PLY, LAS/LAZ, E57, COPC, HTTP COPC, explicit roots/manifests, per-node `CopcNodeReader` hierarchy walk | format and checksum crates are optional |
 | `spatialrust-ros2` | ROS 2 type contracts through `spatialrust-runtime` | read-only rosbag2 SQLite PointCloud2 CDR streaming with optional float32 intensity, plus source-bound TFMessage inventory | `rusqlite` is isolated behind `rosbag2-sqlite` |
-| `spatialrust-search` | KD-tree | graph, parallel queries | none |
+| `spatialrust-search` | KD-tree | graph, bounded parallel radius/k-NN queries | none; Criterion is dev-only |
 | `spatialrust-semantic` | entities, embeddings, fusion, search | `semantic-model`: `OnnxEntityEmbedder` through an existing model session | `spatialrust-ai`/`spatialrust-tensor` optional; ONNX stays in the AI crate |
 | `spatialrust-filtering` | voxel | GPU voxel, outlier, crop, FPS, MLS | wgpu/search optional |
 | `spatialrust-features` | normals | ISS, orientation, boundary, GPU normals | wgpu/search optional |
@@ -43,6 +43,22 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
+- `gpu-image` adds `histogram_u8_gpu`, its two-pass profiled variant and resident
+  `GpuImageHistogram` for any logical channel of a 1..=4-channel u8 texture.
+  Exact 256-bin u32 counts accept at most u32::MAX pixels; private partials are
+  capped at 256 KiB and the live result at 1 KiB. Construction stays resident;
+  native `readback_u32` explicitly reads 1 KiB per call, and `recycle` returns
+  storage only to its original runtime. Device limits, invalid channels and
+  foreign sources are rejected before allocation. Grayscale conversion is an
+  explicit preceding kernel when needed. Benchmark CPU/Rayon dependencies are
+  dev-only; no production/default/core dependency is added.
+- `spatialrust-search/parallel` bounds each radius/k-NN tensor query by available
+  CPU parallelism and original chunk count, without a production dependency.
+  Contiguous worker bands preserve backend chunk ranges and append result order.
+  Inputs below 4,096 points and single-worker/single-chunk jobs run on the caller;
+  empty inputs and parallel k-NN with `k=0` leave output untouched. Metadata is
+  worker-sized, while output and local neighbor buffers remain result-sized.
+  `spatialrust/search-parallel` exposes the same functions through the facade.
 - GPU storage retention is explicit and bounded under `gpu-wgpu`: upload/CHW
   and private point scratch pools each default to 64 MiB, with at most eight
   resources per size. `gpu-image` adds an independent 64 MiB RGBA8 texture pool.

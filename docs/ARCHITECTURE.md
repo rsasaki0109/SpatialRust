@@ -99,6 +99,19 @@ memory. `GpuResourcePoolStats` counts requested allocations, cache hits and
 retained/discarded resources; clearing preserves these lifetime counters.
 Image/tensor ownership uses a retained runtime identity token rather than a
 runtime address, so moving a runtime preserves valid resources.
+GPU channel histograms under `gpu-image` use exact integer RGBA8 loads and two
+compute passes in one submission. At most 256 workgroups build private 256-bin
+partials (at most 256 KiB), then independently reduce each bin into a live
+1 KiB `GpuImageHistogram`. Every partial and output bin is overwritten, including
+zero counts in reused storage. Scratch follows the submitted-lease protocol;
+live histogram outputs stay outside the scratch pool until explicit recycling.
+Channels are logical source components, with no implicit luma conversion.
+Inputs above u32::MAX pixels and insufficient compute/buffer limits are rejected
+before allocation. Counts and their sum therefore remain exactly representable.
+Optional profiling records exactly two passes; native `readback_u32` explicitly
+transfers 1,024 bytes and timestamp collection separately transfers 32 bytes.
+Histogram construction has no payload readback or implicit host synchronization.
+The public APIs are provisional; CPU references/Rayon are dev-only dependencies.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
 large thresholds, u8 histograms and histogram-equalization lookup application.
 Tasks are bounded by image rows and the current pool; histograms merge exact
@@ -113,6 +126,14 @@ large CLAHE lookup grids can still dispatch independent tiles. CLAHE grid size
 and lookup byte size are checked before allocation. The existing lookup matrix
 and output buffer remain image/grid-sized; per-active-tile scratch is 256 usize
 bins, and horizontal geometry is shared rather than duplicated per worker.
+CPU point queries under `spatialrust-search/parallel` group contiguous original
+`SpatialTensor` chunks into scoped workers, capped per call by available CPU
+parallelism and chunk count. Worker bands differ by at most one chunk; callbacks
+keep their original ranges and result order. Fewer than 4,096 points, one chunk
+or one available worker run on the caller. Dispatch range/handle metadata scales
+with workers instead of chunks; result buffers still scale with neighbor count.
+This uses standard-library threads without an additional runtime dependency or
+implicit device transfer; concurrent callers each have their own worker budget.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

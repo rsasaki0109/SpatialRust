@@ -85,3 +85,12 @@ frozen outputs. Verify the repaired head's own complete matrices before merge.
 
 Subsequent main PR #124 GPU bounded retention and PR #125 parallel contrast
 changes are preserved. CHANGELOG conflicts retain both independent additions.
+
+The premerge main refresh also finds PR #127 bounded parallel point queries
+and PR #128 resident GPU image histograms. Their source, documentation and CI
+profiles are preserved; only the overlapping CHANGELOG insertion needs manual
+resolution, retaining both entries. These add four feature-matrix jobs, so the
+integrated head requires **107 main jobs**, seven required wheel jobs and only
+the intentionally skipped PyPI publication. Older 103-job runs cannot certify
+this integrated head. Frozen study inputs, helpers, estimates and scores remain
+unchanged; the historical native SDK stays preserved for exact replay.
