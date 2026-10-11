@@ -113,6 +113,14 @@ large CLAHE lookup grids can still dispatch independent tiles. CLAHE grid size
 and lookup byte size are checked before allocation. The existing lookup matrix
 and output buffer remain image/grid-sized; per-active-tile scratch is 256 usize
 bins, and horizontal geometry is shared rather than duplicated per worker.
+CPU point queries under `spatialrust-search/parallel` group contiguous original
+`SpatialTensor` chunks into scoped workers, capped per call by available CPU
+parallelism and chunk count. Worker bands differ by at most one chunk; callbacks
+keep their original ranges and result order. Fewer than 4,096 points, one chunk
+or one available worker run on the caller. Dispatch range/handle metadata scales
+with workers instead of chunks; result buffers still scale with neighbor count.
+This uses standard-library threads without an additional runtime dependency or
+implicit device transfer; concurrent callers each have their own worker budget.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Parallel point-cloud radius/k-NN queries cap scoped workers by available CPU
+  parallelism instead of spawning one OS thread per tensor chunk. Balanced
+  contiguous chunk groups preserve callback boundaries, neighbor order and
+  existing output prefixes; single-worker jobs run on the caller. Dispatch
+  metadata scales with workers, while neighbor buffers remain result-sized.
+  Minimal `parallel` feature tests no longer require KD-tree. Completed-query
+  benchmarks and facade/minimal parallel CI profiles cover the bounded path.
+
 - GPU AoSoA frame construction no longer computes and reads back unused voxel
   centroids; all source points and per-point normals remain device-resident.
   Frame receipts include scalar cell-count readbacks on construction/grid

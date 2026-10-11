@@ -88,7 +88,9 @@ mod tests {
         nearest_k_spatial_tensor, radius_search_spatial_tensor, ChunkedNearestNeighborIndex,
         ChunkedRadiusSearchIndex,
     };
-    use crate::{brute::BruteForceIndex, kdtree::KdTree, RadiusSearchIndex};
+    #[cfg(feature = "search-kdtree")]
+    use crate::kdtree::KdTree;
+    use crate::{brute::BruteForceIndex, RadiusSearchIndex};
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};
 
     fn sample_cloud() -> (Vec<f32>, Vec<f32>, Vec<f32>) {
@@ -119,6 +121,7 @@ mod tests {
         assert_eq!(chunked, expected);
     }
 
+    #[cfg(feature = "search-kdtree")]
     #[test]
     fn kdtree_chunked_radius_matches_per_index() {
         let (x, y, z) = sample_cloud();
@@ -136,7 +139,7 @@ mod tests {
     #[test]
     fn spatial_tensor_radius_matches_full_scan() {
         let (x, y, z) = sample_cloud();
-        let tree = KdTree::from_slices(&x, &y, &z);
+        let index = BruteForceIndex::from_slices(&x, &y, &z);
 
         let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
         for index in 0..x.len() {
@@ -146,10 +149,10 @@ mod tests {
         let tensor = cloud.spatial_tensor_chunks(2).unwrap();
 
         let mut tensor_out = Vec::new();
-        radius_search_spatial_tensor(&tree, &x, &y, &z, &tensor, 1.5, &mut tensor_out);
+        radius_search_spatial_tensor(&index, &x, &y, &z, &tensor, 1.5, &mut tensor_out);
 
         let mut full_out = Vec::new();
-        tree.radius_search_chunk_into(&x, &y, &z, 0..x.len(), 1.5, &mut full_out);
+        index.radius_search_chunk_into(&x, &y, &z, 0..x.len(), 1.5, &mut full_out);
 
         tensor_out.sort_by_key(|a| (a.0, a.1.index));
         full_out.sort_by_key(|a| (a.0, a.1.index));
@@ -159,7 +162,7 @@ mod tests {
     #[test]
     fn spatial_tensor_nearest_k_matches_full_scan() {
         let (x, y, z) = sample_cloud();
-        let tree = KdTree::from_slices(&x, &y, &z);
+        let index = BruteForceIndex::from_slices(&x, &y, &z);
 
         let mut builder = PointCloudBuilder::new(StandardSchemas::point_xyz());
         for index in 0..x.len() {
@@ -169,10 +172,10 @@ mod tests {
         let tensor = cloud.spatial_tensor_chunks(2).unwrap();
 
         let mut tensor_out = Vec::new();
-        nearest_k_spatial_tensor(&tree, &x, &y, &z, &tensor, 2, &mut tensor_out);
+        nearest_k_spatial_tensor(&index, &x, &y, &z, &tensor, 2, &mut tensor_out);
 
         let mut full_out = Vec::new();
-        tree.nearest_k_chunk_into(&x, &y, &z, 0..x.len(), 2, &mut full_out);
+        index.nearest_k_chunk_into(&x, &y, &z, 0..x.len(), 2, &mut full_out);
 
         tensor_out.sort_by(|a, b| {
             a.0.cmp(&b.0)

@@ -70,8 +70,7 @@ mod tests {
     #[test]
     fn ranges_cover_all_indices() {
         let point_count = 50_000;
-        let workers = parallel_worker_count(point_count);
-        assert!(workers > 1);
+        let workers = 6;
         let ranges: Vec<_> = parallel_index_ranges(point_count, workers).collect();
         let covered: usize = ranges.iter().map(|range| range.len()).sum();
         assert_eq!(covered, point_count);
