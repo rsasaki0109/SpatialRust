@@ -19,6 +19,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+### Changed
+
+- GPU CLAHE builds larger tile histograms with power-of-two row strips, avoiding
+  per-pixel flat-index division and reflecting only padded coordinates. Short and
+  narrow tiles adjust lane assignment; tiles of at most 256 pixels keep direct
+  one-pixel-per-lane traversal. CPU byte parity, scratch bounds, transfers and
+  three-pass profiling remain unchanged. Native raw-count proofs and paired
+  previous/current lookup diagnostics cover padding and degenerate shapes.
+
 ### Fixed
 
 - Large GPU voxel radix sorts compute earlier-digit subtotals once per input

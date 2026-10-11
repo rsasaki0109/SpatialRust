@@ -172,3 +172,6 @@ fn prove_scan(@builtin(local_invocation_index) lane: u32, @builtin(workgroup_id)
 
 #[path = "clahe_lookup_benchmark.rs"]
 mod benchmark;
+
+#[path = "clahe_traversal_tests.rs"]
+mod traversal;
