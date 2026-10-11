@@ -16,6 +16,7 @@ const GEOMETRY_SHADER: &str = concat!(
 const LOOKUP_SHADER: &str = concat!(
     include_str!("rounding_u32.wgsl"),
     include_str!("clahe_params.wgsl"),
+    include_str!("clahe_clip_scan.wgsl"),
     include_str!("clahe_lookup.wgsl")
 );
 const APPLY_SHADER: &str = concat!(
@@ -351,3 +352,7 @@ fn error(message: &str) -> SpatialError {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "clahe_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "clahe_lookup_tests.rs"]
+mod lookup_tests;

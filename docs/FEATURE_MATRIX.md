@@ -46,6 +46,8 @@ workspace because its build requires a Python toolchain.
 - `gpu-image` adds resident grayscale `clahe_gpu` and its three-pass profiled
   variant. Reflect101 tile histograms, clip redistribution, lookup rounding and
   bilinear interpolation match CPU CLAHE using u32-word binary64 arithmetic.
+  Tile clipping/CDF use a workgroup-wide integer tree scan with analytic residual
+  prefixes, replacing serial bin loops within the existing 4 KiB local limit.
   Geometry is computed on device, with no image/bin/geometry payload transfer.
   Temporary storage is 1 KiB per tile plus 16 bytes per source row/column,
   checked against binding limits and leased through final submission. Metadata

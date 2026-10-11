@@ -1,7 +1,6 @@
 @group(0) @binding(1) var source: texture_2d<u32>;
 @group(0) @binding(2) var<storage, read_write> lookups: array<u32>;
 var<workgroup> bins: array<atomic<u32>, 256>;
-var<workgroup> cumulative: array<u32, 256>;
 var<workgroup> scale: vec4<u32>;
 fn reflect101(position: u32, length: u32) -> u32 {
     if length == 1u { return 0u; }
@@ -30,27 +29,10 @@ fn clahe_lookup(@builtin(local_invocation_index) lane: u32,
             index += 256u;
         }
         workgroupBarrier();
-        if lane == 0u {
-            var clipped = 0u;
-            for (var bin = 0u; bin < 256u; bin++) {
-                let count = atomicLoad(&bins[bin]);
-                let bounded = select(count, min(count, params.clip_count), params.clip_count != 0u);
-                cumulative[bin] = bounded;
-                clipped += count - bounded;
-            }
-            let batch = clipped / 256u;
-            let residual = clipped % 256u;
-            var step = 1u;
-            if residual != 0u { step = max(256u / residual, 1u); }
-            var count = 0u;
-            for (var bin = 0u; bin < 256u; bin++) {
-                count += cumulative[bin] + batch + select(0u, 1u, bin % step == 0u && bin / step < residual);
-                cumulative[bin] = count;
-            }
-            scale = reciprocal_info(area);
-        }
+        let cumulative = clahe_cumulative(lane, atomicLoad(&bins[lane]), params.clip_count);
+        if lane == 0u { scale = reciprocal_info(area); }
         workgroupBarrier();
-        lookups[tile * 256u + lane] = mapped(cumulative[lane], scale);
+        lookups[tile * 256u + lane] = mapped(cumulative, scale);
         workgroupBarrier();
         if params.tile_count - tile <= params.tile_groups { break; }
         tile += params.tile_groups;

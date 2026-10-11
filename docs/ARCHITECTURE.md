@@ -138,9 +138,15 @@ Resident grayscale `clahe_gpu` adds three passes in one submission: axis geometr
 per-tile histogram/clipping/lookup, then interpolation/application. Lookup storage
 is 1 KiB per tile; axis geometry is 16 bytes per source row/column, both private
 scratch leased through application submission. Reflect101 padding and exact
-clipped-count redistribution match the CPU. Shared integer-word lookup rounding
-and a finite non-negative binary64 arithmetic subset preserve the CPU's division,
-subtraction, multiplication/addition operation order without shader float64.
+clipped-count redistribution match the CPU. Per-tile cumulative counts use a
+workgroup-wide tree scan of bounded counts and clipped excess. The residual
+redistribution prefix is computed analytically from the CPU's bin positions,
+avoiding a second scan and serial 256-bin clipping/CDF loops. Histogram bins and
+scan storage use about 3 KiB of workgroup memory within the existing 4 KiB limit;
+global scratch, dispatch bounds and three-pass submission remain unchanged.
+Shared integer-word lookup rounding and a finite non-negative binary64 arithmetic
+subset preserve the CPU's division, subtraction, multiplication/addition
+operation order without shader float64.
 Equal integer corners bypass interpolation only when the final byte is invariant
 under CPU rounding. No payload readback, geometry upload or host wait is hidden.
 The clip limit is a scalar host parameter; per-tile counts, padded coordinates,
