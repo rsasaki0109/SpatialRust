@@ -1,4 +1,4 @@
-//! Compare completed grayscale equalization and explicit image placement.
+//! Compare completed grayscale CLAHE and explicit image placement.
 mod clahe_common;
 
 use clahe_common::{Fixture, MODES};

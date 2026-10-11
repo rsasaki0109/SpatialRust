@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- GPU CLAHE parallelizes tile clipping and cumulative counts across all 256
+  workgroup lanes. A tree scan of bounded counts/excess plus analytic residual
+  prefixes preserves exact CPU redistribution and byte rounding, including
+  maximum u32 tile counts. Global storage, dispatch limits, transfers and the
+  three-pass API are unchanged. Independent million-bin parity and alternating
+  old/new GPU pass measurements cover clip/grid/distribution variations.
+
 - Parallel point-cloud radius/k-NN queries cap scoped workers by available CPU
   parallelism instead of spawning one OS thread per tensor chunk. Balanced
   contiguous chunk groups preserve callback boundaries, neighbor order and
