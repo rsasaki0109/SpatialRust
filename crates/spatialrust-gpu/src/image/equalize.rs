@@ -93,7 +93,7 @@ impl EqualizePipelines {
         Self {
             lookup: pipeline(
                 &lookup_layout,
-                include_str!("equalize_lookup.wgsl"),
+                concat!(include_str!("rounding_u32.wgsl"), include_str!("equalize_lookup.wgsl")),
                 "equalize_lookup",
             ),
             apply: pipeline(&apply_layout, include_str!("equalize_apply.wgsl"), "equalize_apply"),

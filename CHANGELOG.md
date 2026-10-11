@@ -63,6 +63,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- `gpu-image` adds resident grayscale `clahe_gpu` and a three-pass profiled
+  variant. Reflect101 tiles, clip redistribution and binary64 lookup/interpolation
+  rounding match CPU CLAHE without payload readback or shader float64. GPU axis
+  geometry and tile lookups use checked private scratch until application is
+  submitted. Odd-grid/ROI/metadata/constant parity, 65,536 arithmetic/geometry
+  bit comparisons, 66,049 interpolation boundary pixels, ownership/concurrency
+  and completed-work placement benchmarks cover the provisional API; CPU output and dependencies are unchanged.
+
 - `gpu-image` adds resident grayscale `equalize_histogram_gpu` and a five-pass
   profiled variant. Histogram/CDF/lookup/application avoid intermediate readback;
   constant bytes and metadata are preserved. Integer word arithmetic reproduces

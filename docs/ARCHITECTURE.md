@@ -134,6 +134,20 @@ explicit timestamp collection returns 80 query bytes separately from payloads.
 Other channel counts and unsupported counters/device limits fail before work
 allocation. Empty GPU images remain unsupported. Normalized public CDFs and
 adaptive tile equalization remain separate future contracts.
+Resident grayscale `clahe_gpu` adds three passes in one submission: axis geometry,
+per-tile histogram/clipping/lookup, then interpolation/application. Lookup storage
+is 1 KiB per tile; axis geometry is 16 bytes per source row/column, both private
+scratch leased through application submission. Reflect101 padding and exact
+clipped-count redistribution match the CPU. Shared integer-word lookup rounding
+and a finite non-negative binary64 arithmetic subset preserve the CPU's division,
+subtraction, multiplication/addition operation order without shader float64.
+Equal integer corners bypass interpolation only when the final byte is invariant
+under CPU rounding. No payload readback, geometry upload or host wait is hidden.
+The clip limit is a scalar host parameter; per-tile counts, padded coordinates,
+buffer bindings and compute limits are checked before allocations. Caller-owned
+output preserves metadata; constant bytes may change as in CPU CLAHE. Three
+profiled passes collect 48 query bytes explicitly. Browser shader execution is
+still unverified; adaptive contrast APIs remain provisional.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
 large thresholds, u8 histograms and histogram-equalization lookup application.
 Tasks are bounded by image rows and the current pool; histograms merge exact

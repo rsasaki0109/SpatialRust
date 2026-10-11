@@ -84,3 +84,12 @@ required-features = ["gpu-image", "gpu-aoso-staging"]
 [[example]]
 name = "gpu_pool_reuse"
 required-features = ["gpu-image"]
+
+[[bench]]
+name = "image_clahe"
+harness = false
+required-features = ["gpu-image"]
+
+[[example]]
+name = "gpu_clahe"
+required-features = ["gpu-image"]
