@@ -85,10 +85,34 @@ Voxel boundary compaction uses a 256-lane shared-memory scan with recursively
 scanned block totals and offset propagation. All levels stay device-resident
 in one submission; the existing four-byte cell-count synchronization remains
 explicit. Temporary hierarchy storage shrinks by a factor of 256 per level.
+Radix, boundary flags, prefix levels and atomic count scratch use a private
+runtime-owned buffer pool. A scratch batch owns every lease until its encoder,
+including the scalar count copy, is submitted; abandoned batches are not
+recycled. Submitted buffers can be reused through queue ordering without a new
+wait or device copy. Caller-owned segment outputs stay outside this pool.
+Upload/CHW buffers, point scratch and RGBA8 textures each retain at most 64 MiB
+by default, independently, and at most eight resources per size. Full pools
+reject incoming resources; a budget decrease below retention clears the cache,
+and zero disables retention. Budgets cover recycled payload bytes, not active
+outputs, uniforms, mapped staging, allocator/driver overhead or peak process
+memory. `GpuResourcePoolStats` counts requested allocations, cache hits and
+retained/discarded resources; clearing preserves these lifetime counters.
+Image/tensor ownership uses a retained runtime identity token rather than a
+runtime address, so moving a runtime preserves valid resources.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
-large thresholds and u8 histograms. Tasks are bounded by image rows and the
-current pool; histograms merge exact integer counts from 256-bin local arrays.
-Strided/ROI views exclude padding, and small or single-row images stay scalar.
+large thresholds, u8 histograms and histogram-equalization lookup application.
+Tasks are bounded by image rows and the current pool; histograms merge exact
+integer counts from 256-bin local arrays. CLAHE independently groups lookup
+tiles and output rows into at most the current pool's worker count at one
+million pixels. Tiles retain their original clipping and reflect-101 sampling;
+parallel interpolation shares one horizontal geometry table proportional to
+image width, without changing f64 operation order or ties-to-even rounding.
+Strided/ROI views exclude storage padding. Small inputs and one-worker pools
+keep scalar interpolation; a single output row cannot dispatch row bands, but
+large CLAHE lookup grids can still dispatch independent tiles. CLAHE grid size
+and lookup byte size are checked before allocation. The existing lookup matrix
+and output buffer remain image/grid-sized; per-active-tile scratch is 256 usize
+bins, and horizontal geometry is shared rather than duplicated per worker.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

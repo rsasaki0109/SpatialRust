@@ -21,6 +21,15 @@ mod readback;
 mod upload_cache;
 
 #[cfg(feature = "gpu-wgpu")]
+mod resource_cache;
+
+#[cfg(feature = "gpu-wgpu")]
+mod scratch;
+
+#[cfg(feature = "gpu-wgpu")]
+pub use resource_cache::{GpuResourcePoolStats, DEFAULT_GPU_POOL_BUDGET_BYTES};
+
+#[cfg(feature = "gpu-wgpu")]
 mod runtime;
 
 #[cfg(feature = "gpu-wgpu")]

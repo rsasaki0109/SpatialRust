@@ -128,7 +128,7 @@ pub struct GpuAiTensor {
     height: u32,
     channels: u32,
     byte_len: u64,
-    device_key: usize,
+    device_key: std::sync::Arc<()>,
     receipt: GpuImageReceipt,
 }
 
@@ -147,7 +147,7 @@ impl GpuAiTensor {
 
     /// Explicitly reads planar values back to host memory.
     pub fn readback_f32(&mut self, runtime: &WgpuRuntime) -> SpatialResult<Vec<f32>> {
-        if self.device_key != runtime_device_key(runtime) {
+        if !std::sync::Arc::ptr_eq(&self.device_key, &runtime_device_key(runtime)) {
             return Err(SpatialError::InvalidArgument(
                 "GpuAiTensor belongs to a different runtime device".to_owned(),
             ));
@@ -174,7 +174,7 @@ impl GpuAiTensor {
 
     /// Returns tensor storage to the runtime pool.
     pub fn recycle(self, runtime: &WgpuRuntime) {
-        if self.device_key == runtime_device_key(runtime) {
+        if std::sync::Arc::ptr_eq(&self.device_key, &runtime_device_key(runtime)) {
             runtime.recycle_storage(self.byte_len, self.buffer);
         }
     }

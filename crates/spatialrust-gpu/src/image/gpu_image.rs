@@ -93,7 +93,7 @@ pub struct GpuImage {
     width: u32,
     height: u32,
     channels: u32,
-    device_key: usize,
+    device_key: std::sync::Arc<()>,
     texture: wgpu::Texture,
     storage_bytes: u64,
     metadata: ImageMetadata,
@@ -246,7 +246,7 @@ impl GpuImage {
     }
 
     pub(crate) fn validate_runtime(&self, runtime: &WgpuRuntime) -> SpatialResult<()> {
-        if self.device_key != runtime_device_key(runtime) {
+        if !std::sync::Arc::ptr_eq(&self.device_key, &runtime_device_key(runtime)) {
             return Err(SpatialError::InvalidArgument(
                 "GpuImage belongs to a different runtime device".to_owned(),
             ));
@@ -322,8 +322,8 @@ const fn texture_bytes(width: u32, height: u32) -> u64 {
     width as u64 * height as u64 * BYTES_PER_TEXEL
 }
 
-pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> usize {
-    runtime.device() as *const wgpu::Device as usize
+pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> std::sync::Arc<()> {
+    runtime.profiling_identity()
 }
 
 pub(crate) fn read_staging_bytes(

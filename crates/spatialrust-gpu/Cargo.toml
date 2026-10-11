@@ -51,3 +51,7 @@ criterion = { workspace = true }
 [[example]]
 name = "gpu_stage_timing"
 required-features = ["gpu-image", "gpu-aoso-staging"]
+
+[[example]]
+name = "gpu_pool_reuse"
+required-features = ["gpu-image"]

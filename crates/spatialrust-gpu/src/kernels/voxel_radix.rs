@@ -30,18 +30,12 @@ pub(super) fn sort_entries_radix_gpu(
     let device = runtime.device();
     let pipelines = &runtime.pipelines().voxel_radix;
     let group_count = point_count.div_ceil(WORKGROUP_SIZE);
-    let storage = |label, size| {
-        device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some(label),
-            size,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        })
-    };
-    let scratch = storage("voxel-radix-scratch", entries.size());
-    let histograms = storage("voxel-radix-histograms", u64::from(group_count) * RADIX * 4);
-    let offsets = storage("voxel-radix-offsets", histograms.size());
-    let ranks = storage("voxel-radix-ranks", u64::from(point_count) * 4);
+    let mut temporaries = crate::scratch::ScratchBuffers::new(runtime);
+    let scratch = temporaries.acquire("voxel-radix-scratch", entries.size());
+    let histograms =
+        temporaries.acquire("voxel-radix-histograms", u64::from(group_count) * RADIX * 4);
+    let offsets = temporaries.acquire("voxel-radix-offsets", histograms.size());
+    let ranks = temporaries.acquire("voxel-radix-ranks", u64::from(point_count) * 4);
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-radix-encoder"),
     });
@@ -88,7 +82,7 @@ pub(super) fn sort_entries_radix_gpu(
             std::mem::swap(&mut input, &mut output);
         }
     }
-    runtime.queue().submit(Some(encoder.finish()));
+    temporaries.submit_and_recycle(encoder);
 
     // Twenty-four ping-pong passes finish in the original allocation.
     entries
