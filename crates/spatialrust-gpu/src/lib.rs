@@ -98,7 +98,8 @@ pub use gpu_frame::{
 
 #[cfg(feature = "gpu-image")]
 pub use image::{
-    box_blur_gpu, copy_gpu_image, morphology_gpu, pack_ai_chw_gpu, resize_nearest_gpu,
-    rgb_to_gray_gpu, run_gpu_vision_chain, run_gpu_vision_chain_profiled, sobel_gpu, GpuAiTensor,
-    GpuImage, GpuImageBorder, GpuImageReceipt, GpuMorphology, GpuVisionChainOptions,
+    box_blur_gpu, copy_gpu_image, histogram_u8_gpu, histogram_u8_gpu_profiled, morphology_gpu,
+    pack_ai_chw_gpu, resize_nearest_gpu, rgb_to_gray_gpu, run_gpu_vision_chain,
+    run_gpu_vision_chain_profiled, sobel_gpu, GpuAiTensor, GpuImage, GpuImageBorder,
+    GpuImageHistogram, GpuImageReceipt, GpuMorphology, GpuVisionChainOptions,
 };

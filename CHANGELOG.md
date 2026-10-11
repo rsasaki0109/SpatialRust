@@ -63,6 +63,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- `gpu-image` adds exact two-pass `histogram_u8_gpu` channel counts and a profiled
+  variant, returning resident `GpuImageHistogram`. Private partials are capped
+  at 256 KiB; the result is 1 KiB with explicit native readback/recycling and
+  retained runtime ownership. Invalid channels, overflowing pixel counts and
+  insufficient device limits fail before allocation. GPU/CPU parity, pool reuse,
+  concurrent live outputs and completed-work/transfer benchmarks cover the API.
+
 - CPU contrast enhancement now parallelizes CLAHE lookup tiles and output row
   bands at one million pixels, sharing horizontal interpolation geometry while
   preserving clipping, reflect-101 padding and exact rounding. Histogram

@@ -43,6 +43,15 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
+- `gpu-image` adds `histogram_u8_gpu`, its two-pass profiled variant and resident
+  `GpuImageHistogram` for any logical channel of a 1..=4-channel u8 texture.
+  Exact 256-bin u32 counts accept at most u32::MAX pixels; private partials are
+  capped at 256 KiB and the live result at 1 KiB. Construction stays resident;
+  native `readback_u32` explicitly reads 1 KiB per call, and `recycle` returns
+  storage only to its original runtime. Device limits, invalid channels and
+  foreign sources are rejected before allocation. Grayscale conversion is an
+  explicit preceding kernel when needed. Benchmark CPU/Rayon dependencies are
+  dev-only; no production/default/core dependency is added.
 - `spatialrust-search/parallel` bounds each radius/k-NN tensor query by available
   CPU parallelism and original chunk count, without a production dependency.
   Contiguous worker bands preserve backend chunk ranges and append result order.
