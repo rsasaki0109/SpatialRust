@@ -3,6 +3,7 @@
 var<workgroup> bins: array<atomic<u32>, 256>;
 var<workgroup> scale: vec4<u32>;
 fn reflect101(position: u32, length: u32) -> u32 {
+    if position < length { return position; }
     if length == 1u { return 0u; }
     let period = (length - 1u) * 2u;
     let value = position % period;
@@ -19,14 +20,36 @@ fn clahe_lookup(@builtin(local_invocation_index) lane: u32,
         workgroupBarrier();
         let origin = vec2<u32>((tile % params.tiles_x) * params.tile_width,
             (tile / params.tiles_x) * params.tile_height);
-        var index = lane;
-        loop {
-            if index >= area { break; }
-            let x = reflect101(origin.x + index % params.tile_width, params.width);
-            let y = reflect101(origin.y + index / params.tile_width, params.height);
-            atomicAdd(&bins[textureLoad(source, vec2<i32>(i32(x), i32(y)), 0).r], 1u);
-            if area - index <= 256u { break; }
-            index += 256u;
+        if area <= 256u {
+            if lane < area {
+                let x = reflect101(origin.x + lane % params.tile_width, params.width);
+                let y = reflect101(origin.y + lane / params.tile_width, params.height);
+                atomicAdd(&bins[textureLoad(source, vec2<i32>(i32(x), i32(y)), 0).r], 1u);
+            }
+        } else {
+            // Power-of-two row strips cover narrow tiles without dividing each
+            // pixel's flat index. Every (column,row) belongs to exactly one lane.
+            // Short tiles need more columns to keep the 256 lanes occupied.
+            let height_shift = min(8u, 31u - countLeadingZeros(params.tile_height));
+            let shift = min(max(5u, 8u - height_shift),
+                32u - countLeadingZeros(params.tile_width - 1u));
+            let columns = 1u << shift;
+            let rows = 256u >> shift;
+            var row = lane >> shift;
+            loop {
+                if row >= params.tile_height { break; }
+                let y = reflect101(origin.y + row, params.height);
+                var column = lane & (columns - 1u);
+                loop {
+                    if column >= params.tile_width { break; }
+                    let x = reflect101(origin.x + column, params.width);
+                    atomicAdd(&bins[textureLoad(source, vec2<i32>(i32(x), i32(y)), 0).r], 1u);
+                    if params.tile_width - column <= columns { break; }
+                    column += columns;
+                }
+                if params.tile_height - row <= rows { break; }
+                row += rows;
+            }
         }
         workgroupBarrier();
         let cumulative = clahe_cumulative(lane, atomicLoad(&bins[lane]), params.clip_count);

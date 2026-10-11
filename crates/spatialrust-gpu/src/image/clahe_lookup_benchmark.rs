@@ -9,6 +9,13 @@ const SERIAL_SHADER: &str = concat!(
     include_str!("../../tests/fixtures/clahe_lookup_serial.wgsl")
 );
 
+const FLAT_SHADER: &str = concat!(
+    include_str!("rounding_u32.wgsl"),
+    include_str!("clahe_params.wgsl"),
+    include_str!("clahe_clip_scan.wgsl"),
+    include_str!("../../tests/fixtures/clahe_lookup_flat.wgsl")
+);
+
 fn expected_lookups(image: &Image<u8, 1>, p: &Params) -> Vec<u32> {
     let reflect = |position: u32, length: u32| {
         if length == 1 {
@@ -43,35 +50,58 @@ fn expected_lookups(image: &Image<u8, 1>, p: &Params) -> Vec<u32> {
 #[test]
 #[ignore = "native paired GPU timestamp benchmark; requires explicit invocation"]
 fn paired_serial_parallel_clahe_lookup_timestamps() {
+    paired_lookup(SERIAL_SHADER, ["serial_lookup", "parallel_lookup"], false);
+}
+
+// Frozen PR #133 flat traversal versus the production row-strip traversal.
+#[test]
+#[ignore = "native paired GPU timestamp benchmark; requires explicit invocation"]
+fn paired_flat_rows_clahe_lookup_timestamps() {
+    paired_lookup(FLAT_SHADER, ["flat_lookup", "rows_lookup"], true);
+}
+
+fn paired_lookup(baseline: &str, labels: [&'static str; 2], row_fixtures: bool) {
     let runtime =
         WgpuRuntime::new_headless_with_timestamps(WgpuPowerPreference::HighPerformance).unwrap();
     assert!(runtime.timestamp_queries_enabled(), "paired benchmark requires timestamp support");
     eprintln!("adapter={:?}; 4 warmups + 40 alternating paired rounds; timestamps exclude uploads, allocation, command setup and readback", runtime.adapter_info());
     let pipelines = ClahePipelines::new(runtime.device());
     let module = runtime.device().create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("clahe-serial-baseline"),
-        source: wgpu::ShaderSource::Wgsl(SERIAL_SHADER.into()),
+        label: Some(labels[0]),
+        source: wgpu::ShaderSource::Wgsl(baseline.into()),
     });
     let layout = runtime.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
         bind_group_layouts: &[&pipelines.layouts[1]],
         push_constant_ranges: &[],
     });
-    let serial = runtime.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("clahe-serial-baseline"),
+    let previous = runtime.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+        label: Some(labels[0]),
         layout: Some(&layout),
         module: &module,
         entry_point: Some("clahe_lookup"),
         compilation_options: Default::default(),
         cache: None,
     });
-    for (width, height, x, y) in [
+    let mut fixtures = vec![
         (17, 19, 8, 8),
         (640, 480, 8, 8),
         (640, 480, 64, 64),
         (3840, 2160, 8, 8),
         (3840, 2160, 32, 32),
-    ] {
+    ];
+    if row_fixtures {
+        fixtures.extend([
+            (1, 1027, 1, 1),
+            (1027, 1, 1, 1),
+            (1027, 2, 1, 1),
+            (1027, 3, 1, 1),
+            (1027, 7, 1, 1),
+            (257, 259, 3, 5),
+            (1025, 1027, 13, 11),
+        ]);
+    }
+    for (width, height, x, y) in fixtures {
         for hot in [false, true] {
             let image = Image::<u8, 1>::try_new(
                 width as usize,
@@ -119,8 +149,7 @@ fn paired_serial_parallel_clahe_lookup_timestamps() {
                         ],
                     })
                 });
-                let variants = [&serial, &pipelines.pipelines[1]];
-                let labels = ["serial_lookup", "parallel_lookup"];
+                let variants = [&previous, &pipelines.pipelines[1]];
                 let mut samples: [Vec<f64>; 2] = std::array::from_fn(|_| Vec::new());
                 for round in 0..44 {
                     let mut profiler = GpuStageProfiler::new(&runtime, 2).unwrap();
@@ -170,7 +199,12 @@ fn paired_serial_parallel_clahe_lookup_timestamps() {
                         );
                     }
                 }
-                eprintln!("PAIRED {{\"width\":{width},\"height\":{height},\"tiles_x\":{x},\"tiles_y\":{y},\"hot\":{hot},\"clip\":{clip},\"serial_us\":{:?},\"parallel_us\":{:?}}}",samples[0],samples[1]);
+                let [baseline_key, current_key] = if row_fixtures {
+                    ["baseline_us", "current_us"]
+                } else {
+                    ["serial_us", "parallel_us"]
+                };
+                eprintln!("PAIRED {{\"width\":{width},\"height\":{height},\"tiles_x\":{x},\"tiles_y\":{y},\"hot\":{hot},\"clip\":{clip},\"{baseline_key}\":{:?},\"{current_key}\":{:?}}}",samples[0],samples[1]);
             }
             source.recycle(&runtime);
         }

@@ -154,6 +154,11 @@ redistribution prefix is computed analytically from the CPU's bin positions,
 avoiding a second scan and serial 256-bin clipping/CDF loops. Histogram bins and
 scan storage use about 3 KiB of workgroup memory within the existing 4 KiB limit;
 global scratch, dispatch bounds and three-pass submission remain unchanged.
+Tiles with at most 256 padded pixels assign one pixel per lane. Larger tiles
+partition columns/rows with power-of-two strides, avoiding per-pixel flat-index
+division. Short tiles use more columns to keep lanes occupied; narrow tiles use
+more rows. Reflect101 computes a remainder only outside the source bounds, and
+subtraction guards keep stride increments within the validated u32 dimensions.
 Shared integer-word lookup rounding and a finite non-negative binary64 arithmetic
 subset preserve the CPU's division, subtraction, multiplication/addition
 operation order without shader float64.

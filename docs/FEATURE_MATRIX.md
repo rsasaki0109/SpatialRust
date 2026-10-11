@@ -48,6 +48,8 @@ workspace because its build requires a Python toolchain.
   bilinear interpolation match CPU CLAHE using u32-word binary64 arithmetic.
   Tile clipping/CDF use a workgroup-wide integer tree scan with analytic residual
   prefixes, replacing serial bin loops within the existing 4 KiB local limit.
+  Larger tile histograms use row strips with shape-dependent lane assignment and
+  reflected edge handling, retaining the same scratch and three passes.
   Geometry is computed on device, with no image/bin/geometry payload transfer.
   Temporary storage is 1 KiB per tile plus 16 bytes per source row/column,
   checked against binding limits and leased through final submission. Metadata
