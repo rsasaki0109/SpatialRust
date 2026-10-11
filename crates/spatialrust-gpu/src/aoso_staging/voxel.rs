@@ -53,6 +53,16 @@ pub(crate) fn build_voxel_segments_aoso_chunks(
     origin: [f32; 3],
     inv_leaf: f32,
 ) -> SpatialResult<(GpuAoSoXyzBuffer, GpuVoxelSegments)> {
+    build_voxel_segments_aoso_chunks_with_profiler(runtime, chunks, origin, inv_leaf, None)
+}
+
+pub(crate) fn build_voxel_segments_aoso_chunks_with_profiler(
+    runtime: &WgpuRuntime,
+    chunks: &[GpuAoSoXyzChunk],
+    origin: [f32; 3],
+    inv_leaf: f32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<(GpuAoSoXyzBuffer, GpuVoxelSegments)> {
     if !inv_leaf.is_finite() || inv_leaf <= 0.0 {
         return Err(SpatialError::InvalidArgument(
             "inverse voxel leaf size must be finite and positive".to_owned(),
@@ -78,10 +88,21 @@ pub(crate) fn build_voxel_segments_aoso_chunks(
         SpatialError::InvalidArgument("AoSoA chunks exceed the GPU point limit".to_owned())
     })?;
     let positions = combine_aoso_chunks(runtime, chunks, total_points);
-    let keys =
-        dispatch_voxel_keys_aoso(runtime, positions.buffer(), point_count, origin, inv_leaf)?;
-    let segments =
-        build_voxel_segments_gpu_from_keys_buffer(runtime, &keys, point_count, point_count)?;
+    let keys = dispatch_voxel_keys_aoso_with_profiler(
+        runtime,
+        positions.buffer(),
+        point_count,
+        origin,
+        inv_leaf,
+        profiler.as_deref_mut(),
+    )?;
+    let segments = crate::kernels::build_voxel_segments_with_profiler(
+        runtime,
+        &keys,
+        point_count,
+        point_count,
+        profiler,
+    )?;
     Ok((positions, segments))
 }
 
@@ -142,12 +163,13 @@ fn combine_aoso_chunks(
     }
 }
 
-pub(super) fn dispatch_voxel_keys_aoso(
+pub(crate) fn dispatch_voxel_keys_aoso_with_profiler(
     runtime: &WgpuRuntime,
     positions: &Buffer,
     point_count: u32,
     origin: [f32; 3],
     inv_leaf: f32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<Buffer> {
     let device = runtime.device();
     let uniform = VoxelKeyUniform {
@@ -183,7 +205,7 @@ pub(super) fn dispatch_voxel_keys_aoso(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-key-aoso-pass"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "voxel-keys"),
         });
         pass.set_pipeline(&pipelines.voxel_keys_aoso.pipeline);
         pass.set_bind_group(0, &bind_group, &[]);

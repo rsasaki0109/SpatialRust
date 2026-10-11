@@ -66,6 +66,15 @@ workspace because its build requires a Python toolchain.
   including attribute concatenation, but exclude kernel parameter uniforms,
   shader storage accesses, and transfers made outside frame methods. See the
   [frame transfer receipt](../notes/2026-10-11_gpu_frame_transfer_accounting.md).
+- `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
+  `run_gpu_vision_chain_profiled` (`gpu-image`) and
+  `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
+  timestamp runtime, check `timestamp_queries_enabled`, then explicitly call
+  native `collect`. The report counts 16 query readback bytes per pass; image
+  and frame payload receipts remain separate. Default constructors request no
+  timestamp features. GPU pass sums exclude copies, CPU work and inter-pass
+  gaps; use `wait_idle` when measuring completed wall time. See
+  [shared GPU timing](../notes/2026-10-11_gpu_stage_timing.md).
 - `SpatialRuntime` contains only backend identity and policy compatibility;
   backend-specific queues, buffers, and transfers stay in the implementing
   crate.

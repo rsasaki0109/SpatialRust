@@ -3,7 +3,6 @@ use spatialrust_core::{SpatialError, SpatialResult};
 use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
-use crate::kernels::voxel_compact::compact_voxel_segments_gpu_buffers;
 use crate::kernels::voxel_keys::VoxelKeyOutput;
 use crate::kernels::voxel_radix::sort_entries_radix_gpu;
 use crate::kernels::voxel_segments::VoxelSegments;
@@ -81,6 +80,22 @@ pub fn build_voxel_segments_gpu_from_keys_buffer(
     point_count: u32,
     padded_count: u32,
 ) -> SpatialResult<GpuVoxelSegments> {
+    build_voxel_segments_gpu_from_keys_buffer_with_profiler(
+        runtime,
+        keys_buffer,
+        point_count,
+        padded_count,
+        None,
+    )
+}
+
+pub(crate) fn build_voxel_segments_gpu_from_keys_buffer_with_profiler(
+    runtime: &WgpuRuntime,
+    keys_buffer: &wgpu::Buffer,
+    point_count: u32,
+    padded_count: u32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuVoxelSegments> {
     if point_count == 0 {
         return empty_gpu_segments(runtime);
     }
@@ -100,9 +115,19 @@ pub fn build_voxel_segments_gpu_from_keys_buffer(
         ));
     }
 
-    let entries = build_sort_entries_from_keys_gpu(runtime, keys_buffer, point_count);
-    let sorted = sort_entries_radix_gpu(runtime, entries, point_count);
-    compact_voxel_segments_gpu_buffers(runtime, &sorted, point_count)
+    let entries = build_sort_entries_from_keys_gpu(
+        runtime,
+        keys_buffer,
+        point_count,
+        profiler.as_deref_mut(),
+    );
+    let sorted = sort_entries_radix_gpu(runtime, entries, point_count, profiler.as_deref_mut());
+    super::voxel_compact::compact_voxel_segments_gpu_buffers_with_profiler(
+        runtime,
+        &sorted,
+        point_count,
+        profiler,
+    )
 }
 
 fn validate_sort_size(runtime: &WgpuRuntime, point_count: u32) -> SpatialResult<()> {
@@ -123,6 +148,7 @@ fn build_sort_entries_from_keys_gpu(
     runtime: &WgpuRuntime,
     keys_buffer: &wgpu::Buffer,
     point_count: u32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> wgpu::Buffer {
     let device = runtime.device();
     let entries_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -153,7 +179,7 @@ fn build_sort_entries_from_keys_gpu(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-sort-build-pass"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "voxel-sort-build"),
         });
         pass.set_pipeline(&pipelines.voxel_sort_build.pipeline);
         pass.set_bind_group(0, &bind_group, &[]);

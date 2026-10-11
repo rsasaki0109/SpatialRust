@@ -23,6 +23,12 @@ mod upload_cache;
 #[cfg(feature = "gpu-wgpu")]
 mod runtime;
 
+#[cfg(feature = "gpu-wgpu")]
+mod profiling;
+
+#[cfg(feature = "gpu-wgpu")]
+pub use profiling::{GpuStageProfiler, GpuStageTiming, GpuTimingReport};
+
 #[cfg(feature = "gpu-aoso-staging")]
 mod aoso_staging;
 
@@ -77,12 +83,13 @@ pub use aoso_staging::{
 
 #[cfg(feature = "gpu-aoso-staging")]
 pub use gpu_frame::{
-    run_aoso_voxel_normal_frame, GpuExecutionReceipt, GpuFrameCapability, GpuSpatialFrame,
+    run_aoso_voxel_normal_frame, run_aoso_voxel_normal_frame_profiled, GpuExecutionReceipt,
+    GpuFrameCapability, GpuSpatialFrame,
 };
 
 #[cfg(feature = "gpu-image")]
 pub use image::{
     box_blur_gpu, copy_gpu_image, morphology_gpu, pack_ai_chw_gpu, resize_nearest_gpu,
-    rgb_to_gray_gpu, run_gpu_vision_chain, sobel_gpu, GpuAiTensor, GpuImage, GpuImageBorder,
-    GpuImageReceipt, GpuMorphology, GpuVisionChainOptions,
+    rgb_to_gray_gpu, run_gpu_vision_chain, run_gpu_vision_chain_profiled, sobel_gpu, GpuAiTensor,
+    GpuImage, GpuImageBorder, GpuImageReceipt, GpuMorphology, GpuVisionChainOptions,
 };

@@ -43,6 +43,15 @@ pub fn compact_voxel_segments_gpu_buffers(
     entries_buffer: &wgpu::Buffer,
     point_count: u32,
 ) -> SpatialResult<GpuVoxelSegments> {
+    compact_voxel_segments_gpu_buffers_with_profiler(runtime, entries_buffer, point_count, None)
+}
+
+pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
+    runtime: &WgpuRuntime,
+    entries_buffer: &wgpu::Buffer,
+    point_count: u32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuVoxelSegments> {
     if point_count == 0 {
         return Ok(GpuVoxelSegments::new(
             0,
@@ -138,7 +147,10 @@ pub fn compact_voxel_segments_gpu_buffers(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-compact-mark-pass"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(
+                &mut profiler,
+                "voxel-compact-mark",
+            ),
         });
         pass.set_pipeline(&pipelines.voxel_compact.mark);
         pass.set_bind_group(0, &mark_bind_group, &[]);
@@ -161,7 +173,10 @@ pub fn compact_voxel_segments_gpu_buffers(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-compact-init-pass"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(
+                &mut profiler,
+                "voxel-compact-init",
+            ),
         });
         pass.set_pipeline(&pipelines.voxel_compact.init);
         pass.set_bind_group(0, &init_bind_group, &[]);
@@ -188,7 +203,10 @@ pub fn compact_voxel_segments_gpu_buffers(
         {
             let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("voxel-compact-scan-pass"),
-                timestamp_writes: None,
+                timestamp_writes: crate::profiling::timestamp_writes(
+                    &mut profiler,
+                    "voxel-compact-scan",
+                ),
             });
             pass.set_pipeline(&pipelines.voxel_compact.scan);
             pass.set_bind_group(0, &scan_bind_group, &[]);
@@ -219,7 +237,10 @@ pub fn compact_voxel_segments_gpu_buffers(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("voxel-compact-write-pass"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(
+                &mut profiler,
+                "voxel-compact-write",
+            ),
         });
         pass.set_pipeline(&pipelines.voxel_compact.write);
         pass.set_bind_group(0, &write_bind_group, &[]);

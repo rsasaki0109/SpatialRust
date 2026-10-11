@@ -175,6 +175,16 @@ pub fn resize_nearest_gpu(
     width: u32,
     height: u32,
 ) -> SpatialResult<GpuImage> {
+    resize_nearest_gpu_with_profiler(runtime, source, width, height, None)
+}
+
+pub(crate) fn resize_nearest_gpu_with_profiler(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    width: u32,
+    height: u32,
+    profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuImage> {
     if width == 0 || height == 0 {
         return Err(SpatialError::InvalidArgument(
             "GPU resize output dimensions must be positive".to_owned(),
@@ -194,11 +204,20 @@ pub fn resize_nearest_gpu(
             .resize,
         "resize_nearest_gpu",
         source.channels(),
+        profiler,
     )
 }
 
 /// Computes clamped L1 Sobel magnitude on a single-channel device image.
 pub fn sobel_gpu(runtime: &WgpuRuntime, source: &GpuImage) -> SpatialResult<GpuImage> {
+    sobel_gpu_with_profiler(runtime, source, None)
+}
+
+pub(crate) fn sobel_gpu_with_profiler(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuImage> {
     require_gray(source, "sobel_gpu")?;
     dispatch(
         runtime,
@@ -214,6 +233,7 @@ pub fn sobel_gpu(runtime: &WgpuRuntime, source: &GpuImage) -> SpatialResult<GpuI
             .sobel,
         "sobel_gpu",
         1,
+        profiler,
     )
 }
 
@@ -224,6 +244,17 @@ pub fn morphology_gpu(
     kernel_width: u32,
     kernel_height: u32,
     operation: GpuMorphology,
+) -> SpatialResult<GpuImage> {
+    morphology_gpu_with_profiler(runtime, source, kernel_width, kernel_height, operation, None)
+}
+
+pub(crate) fn morphology_gpu_with_profiler(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    kernel_width: u32,
+    kernel_height: u32,
+    operation: GpuMorphology,
+    profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuImage> {
     require_gray(source, "morphology_gpu")?;
     if kernel_width == 0
@@ -254,6 +285,7 @@ pub fn morphology_gpu(
             .morphology,
         "morphology_gpu",
         1,
+        profiler,
     )
 }
 
@@ -269,6 +301,7 @@ fn dispatch(
     pipeline: &wgpu::ComputePipeline,
     stage: &'static str,
     output_channels: u32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuImage> {
     source.validate_runtime(runtime)?;
     let output = create_texture(runtime, output_width, output_height, stage);
@@ -315,7 +348,7 @@ fn dispatch(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some(stage),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, stage),
         });
         pass.set_pipeline(pipeline);
         pass.set_bind_group(0, &bind_group, &[]);

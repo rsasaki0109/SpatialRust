@@ -152,6 +152,17 @@ pub fn box_blur_gpu(
     kernel_height: u32,
     border: GpuImageBorder,
 ) -> SpatialResult<GpuImage> {
+    box_blur_gpu_with_profiler(runtime, source, kernel_width, kernel_height, border, None)
+}
+
+pub(crate) fn box_blur_gpu_with_profiler(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    kernel_width: u32,
+    kernel_height: u32,
+    border: GpuImageBorder,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuImage> {
     source.validate_runtime(runtime)?;
     if source.channels() != 1 {
         return Err(SpatialError::InvalidArgument(
@@ -209,7 +220,7 @@ pub fn box_blur_gpu(
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("gpu-image-blur-pass"),
-            timestamp_writes: None,
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "box_blur_gpu"),
         });
         pass.set_pipeline(&pipeline.pipeline);
         pass.set_bind_group(0, &bind_group, &[]);
