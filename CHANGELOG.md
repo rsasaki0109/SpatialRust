@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- FPFH point-cloud descriptors share one KD-tree across bounded scoped CPU
+  workers for both SPFH construction and neighbor weighting. Small/one-worker
+  clouds stay serial; output order and exact descriptor words are preserved
+  under `register-fpfh`, without a new dependency or public signature.
 - GPU nearest resize and Sobel reject foreign runtimes, unsupported dimensions,
   device limits and insufficient profiler capacity before work allocation or
   pipeline initialization. Resize coordinate products are checked for u32

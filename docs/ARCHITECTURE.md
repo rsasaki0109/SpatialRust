@@ -277,6 +277,15 @@ vector is allocated once; fitting scratch remains local to each active point.
 No all-query neighborhood table, new dependency or implicit device transfer is
 introduced. Filter reconstruction preserves field names, schema, all non-position
 buffers and metadata. Concurrent calls have independent per-call worker budgets.
+FPFH descriptors under `spatialrust-registration/register-fpfh` reuse the same
+point-staging policy for independent SPFH rows and weighted FPFH rows. Each
+phase fills disjoint slices directly in its final descriptor array, sharing one
+immutable KD-tree. The SPFH scope joins completely before weighting reads its
+rows. Per-point neighbor order, Darboux/bin/normalization arithmetic and output
+order are preserved; descriptor matching and seeded RANSAC retain their existing
+execution. Two 132-byte-per-point descriptor arrays are retained during weighting,
+with one radius-neighbor vector per active worker and no all-query neighborhood
+table. Worker caps are per call, not a process-wide CPU or scratch-byte budget.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

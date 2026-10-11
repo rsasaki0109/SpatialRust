@@ -191,6 +191,11 @@ workspace because its build requires a Python toolchain.
   Existing small/one-worker point staging remains serial; each concurrent call
   has its own worker budget. No GPU transfer or extra runtime dependency is added.
   See [MLS execution measurements](../notes/2026-10-12_parallel_mls_smoothing.md).
+- `register-fpfh` computes SPFH and weighted FPFH rows with bounded scoped CPU
+  workers sharing one KD-tree. The first phase joins before weighting begins;
+  neighbor order, descriptor words and seeded registration results are preserved.
+  Small/one-worker clouds retain serial staging, with no additional dependency.
+  See [FPFH execution measurements](../notes/2026-10-12_parallel_fpfh_descriptors.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
