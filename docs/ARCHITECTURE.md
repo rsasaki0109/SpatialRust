@@ -81,6 +81,14 @@ entry points reserve bounded capacity before execution. Query collection is an
 explicit native synchronization/readback boundary with a separate byte receipt.
 GPU pass times exclude CPU setup, transfers and inter-pass gaps; completed wall
 time remains a separate measurement. Failed recordings cannot be collected.
+Voxel boundary compaction uses a 256-lane shared-memory scan with recursively
+scanned block totals and offset propagation. All levels stay device-resident
+in one submission; the existing four-byte cell-count synchronization remains
+explicit. Temporary hierarchy storage shrinks by a factor of 256 per level.
+CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
+large thresholds and u8 histograms. Tasks are bounded by image rows and the
+current pool; histograms merge exact integer counts from 256-bin local arrays.
+Strided/ROI views exclude padding, and small or single-row images stay scalar.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

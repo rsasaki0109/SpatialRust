@@ -34,6 +34,14 @@ mod voxel_radix;
 mod voxel_compact;
 
 #[cfg(feature = "gpu-wgpu")]
+mod voxel_scan;
+
+#[cfg(feature = "gpu-aoso-staging")]
+pub(crate) use voxel_scan::scan_pass_count as voxel_scan_pass_count;
+
+pub(crate) use voxel_scan::PrefixScanPipelines;
+
+#[cfg(feature = "gpu-wgpu")]
 mod voxel_segments_gpu;
 
 #[cfg(feature = "gpu-wgpu")]

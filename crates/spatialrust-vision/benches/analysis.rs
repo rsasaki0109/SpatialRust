@@ -1,6 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use spatialrust_image::Image;
-use spatialrust_vision::{clahe, equalize_histogram, integral_image, threshold, ThresholdType};
+use spatialrust_vision::{
+    clahe, equalize_histogram, histogram_u8, integral_image, threshold, ThresholdType,
+};
 
 fn benchmark_analysis(c: &mut Criterion) {
     for &(name, width, height) in &[("640p", 640, 480), ("1080p", 1920, 1080), ("4k", 3840, 2160)] {
@@ -19,6 +21,12 @@ fn benchmark_analysis(c: &mut Criterion) {
                 "equalize_histogram",
                 Box::new(|| {
                     black_box(equalize_histogram(image.view()).unwrap());
+                }),
+            ),
+            (
+                "histogram_u8",
+                Box::new(|| {
+                    black_box(histogram_u8(image.view()));
                 }),
             ),
             (
