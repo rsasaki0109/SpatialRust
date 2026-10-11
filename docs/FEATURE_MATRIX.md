@@ -181,6 +181,11 @@ workspace because its build requires a Python toolchain.
   are unchanged. Geometry remains regenerated per call, with existing scratch
   bounds, stages and receipt bytes.
   See [geometry ratio measurements](../notes/2026-10-12_exact_gpu_clahe_geometry.md).
+- `filter-mls` uses bounded scoped CPU workers for independent point fits,
+  sharing one KD-tree and preserving coordinate words, field order and metadata.
+  Existing small/one-worker point staging remains serial; each concurrent call
+  has its own worker budget. No GPU transfer or extra runtime dependency is added.
+  See [MLS execution measurements](../notes/2026-10-12_parallel_mls_smoothing.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
