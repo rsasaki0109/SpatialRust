@@ -123,3 +123,9 @@ gap warrants inspecting dispatch/submission and resource setup before assuming
 shader arithmetic is the main limit. This report does not classify that gap as
 CPU time: transfers, driver work and synchronization are also excluded from pass
 samples. Bounded scratch retention remains the subsequent memory follow-up.
+
+The subsequent same-day parallel-execution slice implements hierarchical
+compaction and documents completed segment-build comparisons in
+`C:/Users/rsasa/Workspace/SpatialRust/notes/2026-10-11_parallel_image_point_execution.md`.
+Its profiled 65,536-point frame uses 159 passes and 2,544 query bytes; the
+187-pass/2,992-byte observation above describes the preceding implementation.

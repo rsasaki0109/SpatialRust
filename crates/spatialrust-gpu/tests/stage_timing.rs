@@ -108,7 +108,7 @@ fn shared_recording_preserves_point_frames_and_accumulates_images() {
     let image = image(runtime);
     let cloud = cloud(64);
     let tensor = SpatialTensor::new(&cloud, 7).unwrap();
-    let mut profiler = GpuStageProfiler::new(runtime, 179).unwrap();
+    let mut profiler = GpuStageProfiler::new(runtime, 167).unwrap();
     let before = run_gpu_vision_chain_profiled(runtime, &image, options(), &mut profiler).unwrap();
     let mut profiled =
         run_aoso_voxel_normal_frame_profiled(runtime, &tensor, [0.0; 3], 2.0, 0.25, &mut profiler)
@@ -118,14 +118,14 @@ fn shared_recording_preserves_point_frames_and_accumulates_images() {
     assert_eq!(profiled.receipt(), plain.receipt());
     assert_eq!(profiled.receipt().device_to_host_bytes(), 8);
     let report = profiler.collect(runtime).unwrap();
-    check_report(&report, 179);
+    check_report(&report, 167);
     for (stage, count) in [
         ("voxel-keys", 2),
         ("voxel-sort-build", 2),
         ("voxel-radix-histogram", 48),
         ("voxel-radix-prefix", 48),
         ("voxel-radix-scatter", 48),
-        ("voxel-compact-scan", 12),
+        ("voxel-compact-scan-blocks", 2),
         ("radius-normals", 1),
     ] {
         assert_eq!(report.stages.iter().filter(|sample| sample.stage == stage).count(), count);
@@ -154,11 +154,13 @@ fn shared_recording_preserves_point_frames_and_accumulates_images() {
 }
 
 #[test]
-fn empty_and_singleton_frames_use_only_written_queries() {
+fn frame_query_capacity_tracks_empty_inputs_and_hierarchy_levels() {
     let Some(runtime) = runtime() else {
         return;
     };
-    for (n, count) in [(0, 0), (1, 11), (2, 157), (3, 159)] {
+    for (n, count) in
+        [(0, 0), (1, 11), (2, 155), (3, 155), (257, 159), (65_536, 159), (65_537, 163)]
+    {
         let cloud = cloud(n);
         let tensor = SpatialTensor::new(&cloud, 1).unwrap();
         let mut profiler = GpuStageProfiler::new(runtime, count.max(1)).unwrap();

@@ -1,8 +1,13 @@
 //! Thresholding, histograms, contrast enhancement, and integral images.
 
+use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView};
 
 use crate::border::fetch;
+use crate::dispatch::{
+    bounded_workers, items_per_worker, should_parallelize, LARGE_PARALLEL_COMPONENTS,
+    LIGHT_PARALLEL_COMPONENTS,
+};
 use crate::{BorderMode, PixelComponent, VisionError, VisionResult};
 
 /// Point-wise threshold transformation.
@@ -30,6 +35,7 @@ pub enum AdaptiveThresholdMethod {
 }
 
 /// Applies a fixed threshold independently to every component.
+#[inline]
 pub fn threshold<T: PixelComponent, const CHANNELS: usize>(
     input: ImageView<'_, T, CHANNELS>,
     threshold: f64,
@@ -39,6 +45,83 @@ pub fn threshold<T: PixelComponent, const CHANNELS: usize>(
     if !threshold.is_finite() || !max_value.is_finite() {
         return Err(VisionError::InvalidParameter("threshold and max_value must be finite".into()));
     }
+    let workers = analysis_workers(
+        input.width() * input.height() * CHANNELS,
+        input.height(),
+        LIGHT_PARALLEL_COMPONENTS,
+    );
+    if workers == 1 {
+        return threshold_scalar(input, threshold, max_value, threshold_type);
+    }
+    // Select the mode outside the hot loop and convert constant outputs once.
+    // In particular, integer binary thresholds need no per-component rounding.
+    let zero = T::from_f64(0.0);
+    match threshold_type {
+        ThresholdType::Binary => {
+            let max = T::from_f64(max_value);
+            threshold_map(
+                input,
+                workers,
+                |value| if value.to_f64() > threshold { max } else { zero },
+            )
+        }
+        ThresholdType::BinaryInv => {
+            let max = T::from_f64(max_value);
+            threshold_map(
+                input,
+                workers,
+                |value| if value.to_f64() > threshold { zero } else { max },
+            )
+        }
+        ThresholdType::Truncate => {
+            threshold_map(input, workers, |value| T::from_f64(value.to_f64().min(threshold)))
+        }
+        ThresholdType::ToZero => threshold_map(input, workers, |value| {
+            let value = value.to_f64();
+            if value > threshold {
+                T::from_f64(value)
+            } else {
+                zero
+            }
+        }),
+        ThresholdType::ToZeroInv => threshold_map(input, workers, |value| {
+            let value = value.to_f64();
+            if value > threshold {
+                zero
+            } else {
+                T::from_f64(value)
+            }
+        }),
+    }
+}
+
+fn threshold_map<T: PixelComponent, const CHANNELS: usize>(
+    input: ImageView<'_, T, CHANNELS>,
+    workers: usize,
+    transform: impl Fn(T) -> T + Sync,
+) -> VisionResult<Image<T, CHANNELS>> {
+    let row_len = input.width() * CHANNELS;
+    let len = row_len * input.height();
+    let mut output = vec![T::from_f64(0.0); len];
+    let rows = items_per_worker(input.height(), workers);
+    output.par_chunks_mut(rows * row_len).enumerate().for_each(|(band, output)| {
+        for (row, target) in output.chunks_mut(row_len).enumerate() {
+            let source = input.row(band * rows + row).expect("validated image row");
+            for (to, &from) in target.iter_mut().zip(source) {
+                *to = transform(from);
+            }
+        }
+    });
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+}
+
+#[inline]
+fn threshold_scalar<T: PixelComponent, const CHANNELS: usize>(
+    input: ImageView<'_, T, CHANNELS>,
+    threshold: f64,
+    max_value: f64,
+    threshold_type: ThresholdType,
+) -> VisionResult<Image<T, CHANNELS>> {
     let mut output = Vec::with_capacity(input.width() * input.height() * CHANNELS);
     for y in 0..input.height() {
         for x in 0..input.width() {
@@ -54,6 +137,15 @@ pub fn threshold<T: PixelComponent, const CHANNELS: usize>(
         }
     }
     Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+}
+
+fn analysis_workers(components: usize, rows: usize, threshold: usize) -> usize {
+    if should_parallelize(components, rows, threshold) {
+        bounded_workers(components, rows, threshold, rayon::current_num_threads())
+    } else {
+        // Keep small/empty inputs from initializing the global worker pool.
+        1
+    }
 }
 
 /// Selects an Otsu threshold for an 8-bit grayscale image and applies it.
@@ -198,10 +290,35 @@ pub fn histogram<T: PixelComponent, const CHANNELS: usize>(
 /// Computes the exact 256-bin histogram of an 8-bit grayscale image.
 #[must_use]
 pub fn histogram_u8(input: ImageView<'_, u8, 1>) -> Vec<u64> {
+    let workers =
+        analysis_workers(input.width() * input.height(), input.height(), LARGE_PARALLEL_COMPONENTS);
+    if workers > 1 {
+        let rows = items_per_worker(input.height(), workers);
+        // One fixed-size histogram per bounded band; no shared counters.
+        let partials: Vec<[u64; 256]> = (0..input.height().div_ceil(rows))
+            .into_par_iter()
+            .map(|band| {
+                let mut histogram = [0_u64; 256];
+                for y in band * rows..((band + 1) * rows).min(input.height()) {
+                    for &value in input.row(y).expect("validated image row") {
+                        histogram[usize::from(value)] += 1;
+                    }
+                }
+                histogram
+            })
+            .collect();
+        let mut result = vec![0_u64; 256];
+        for partial in partials {
+            for (count, value) in result.iter_mut().zip(partial) {
+                *count += value;
+            }
+        }
+        return result;
+    }
     let mut result = vec![0_u64; 256];
     for y in 0..input.height() {
-        for x in 0..input.width() {
-            result[input.get(x, y).expect("coordinate in bounds")[0] as usize] += 1;
+        for &value in input.row(y).expect("validated image row") {
+            result[usize::from(value)] += 1;
         }
     }
     result
@@ -564,6 +681,126 @@ mod tests {
     };
     use crate::BorderMode;
     use spatialrust_image::{Image, ImageRegion};
+
+    fn pool(threads: usize) -> rayon::ThreadPool {
+        rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap()
+    }
+
+    const MODES: [ThresholdType; 5] = [
+        ThresholdType::Binary,
+        ThresholdType::BinaryInv,
+        ThresholdType::Truncate,
+        ThresholdType::ToZero,
+        ThresholdType::ToZeroInv,
+    ];
+
+    #[test]
+    fn parallel_threshold_preserves_strided_roi_channels_and_metadata() {
+        let image = Image::<u16, 3>::try_new(
+            514,
+            262,
+            (0..514 * 262 * 3).map(|i| (i * 37 % 65_536) as u16).collect(),
+        )
+        .unwrap();
+        let roi = image.view().subview(ImageRegion::new(1, 2, 511, 257)).unwrap();
+        let serial = pool(1);
+        for threads in [2, 6] {
+            let parallel = pool(threads);
+            for mode in MODES {
+                let expected = serial.install(|| threshold(roi, 32_768.0, 66_000.0, mode).unwrap());
+                let actual = parallel.install(|| threshold(roi, 32_768.0, 66_000.0, mode).unwrap());
+                let reference: Vec<u16> = (0..roi.height())
+                    .flat_map(|y| roi.row(y).unwrap())
+                    .map(|&value| {
+                        <u16 as crate::PixelComponent>::from_f64(super::apply_threshold(
+                            f64::from(value),
+                            32_768.0,
+                            66_000.0,
+                            mode,
+                        ))
+                    })
+                    .collect();
+                assert!(expected.as_slice() == reference, "original definition, mode={mode:?}");
+                assert!(
+                    actual.as_slice() == expected.as_slice(),
+                    "threads={threads}, mode={mode:?}"
+                );
+                assert_eq!(actual.metadata(), roi.metadata());
+                assert_eq!((actual.width(), actual.height()), (511, 257));
+            }
+        }
+    }
+
+    #[test]
+    fn parallel_float_threshold_preserves_nan_infinity_and_signed_zero_bits() {
+        let (width, height, stride) = (129, 261, 129 * 4 + 7);
+        let mut data = vec![12345_f32; stride * height];
+        let values = [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, -0.0, 0.0, 0.5, 1.0, -7.0];
+        for y in 0..height {
+            for i in 0..width * 4 {
+                data[y * stride + i] = values[(y + i) % values.len()];
+            }
+        }
+        let input =
+            spatialrust_image::ImageView::<f32, 4>::new(width, height, stride, &data).unwrap();
+        let serial = pool(1);
+        let parallel = pool(6);
+        for mode in MODES {
+            let expected = serial.install(|| threshold(input, 0.5, 1.0, mode).unwrap());
+            let actual = parallel.install(|| threshold(input, 0.5, 1.0, mode).unwrap());
+            let reference: Vec<f32> = (0..height)
+                .flat_map(|y| input.row(y).unwrap())
+                .map(|&value| super::apply_threshold(f64::from(value), 0.5, 1.0, mode) as f32)
+                .collect();
+            assert!(
+                expected.as_slice().iter().zip(&reference).all(|(a, b)| a.to_bits() == b.to_bits()),
+                "original definition, mode={mode:?}"
+            );
+            assert!(
+                actual
+                    .as_slice()
+                    .iter()
+                    .zip(expected.as_slice())
+                    .all(|(a, b)| a.to_bits() == b.to_bits()),
+                "mode={mode:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn parallel_histogram_excludes_padding_and_has_exact_integer_counts() {
+        let (width, height, stride) = (1025, 1027, 1042);
+        let mut data = vec![255; stride * height];
+        let mut expected = vec![0_u64; 256];
+        for y in 0..height {
+            for x in 0..width {
+                let value = ((x + y * 7) % 255) as u8;
+                data[y * stride + x] = value;
+                expected[usize::from(value)] += 1;
+            }
+        }
+        let input =
+            spatialrust_image::ImageView::<u8, 1>::new(width, height, stride, &data).unwrap();
+        for threads in [1, 2, 6] {
+            let actual = pool(threads).install(|| super::histogram_u8(input));
+            assert_eq!(actual, expected);
+            assert_eq!(actual[255], 0);
+            assert_eq!(actual.iter().sum::<u64>(), (width * height) as u64);
+        }
+    }
+
+    #[test]
+    fn analysis_handles_empty_single_row_and_small_inputs_with_multiple_workers() {
+        let parallel = pool(6);
+        for (width, height) in [(0, 0), (1, 1), (31, 3), (100_003, 1)] {
+            let image = Image::<u8, 1>::try_new(width, height, vec![7; width * height]).unwrap();
+            let output = parallel
+                .install(|| threshold(image.view(), 7.0, 255.0, ThresholdType::BinaryInv).unwrap());
+            assert!(output.as_slice().iter().all(|&value| value == 255));
+            let histogram = parallel.install(|| super::histogram_u8(image.view()));
+            assert_eq!(histogram[7], (width * height) as u64);
+        }
+    }
 
     #[test]
     fn fixed_threshold_types_match_definitions_on_roi() {

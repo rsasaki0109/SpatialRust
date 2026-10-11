@@ -43,6 +43,12 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
+- `spatialrust-vision/imgproc-analysis` enables optional Rayon for bounded CPU
+  threshold/histogram row bands. Large thresholds dispatch at 100,000 components
+  and u8 histograms at 1,000,000 pixels when at least two rows and pool workers
+  are available. Single-worker, small, empty and single-row inputs use scalar
+  execution. Histograms use 2 KiB per local band, with exact integer merging.
+  The default vision feature set and `spatialrust-core` gain no dependencies.
 - `ExecutionPolicy::CpuSingle` and `CpuParallel` request CPU execution.
 - `ExecutionPolicy::Gpu(DeviceKind)` explicitly names the requested GPU
   backend. A backend that cannot satisfy the request must return an error; it
@@ -66,6 +72,11 @@ workspace because its build requires a Python toolchain.
   including attribute concatenation, but exclude kernel parameter uniforms,
   shader storage accesses, and transfers made outside frame methods. See the
   [frame transfer receipt](../notes/2026-10-11_gpu_frame_transfer_accounting.md).
+- GPU voxel compaction scans 256-element blocks and recursively scans their
+  totals, then propagates offsets in the same submission. Segment arrays stay
+  resident; the four-byte cell-count readback is unchanged. Profiled frames
+  reserve the actual hierarchy's pass count, including partial blocks. See
+  [parallel execution measurements](../notes/2026-10-11_parallel_image_point_execution.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
