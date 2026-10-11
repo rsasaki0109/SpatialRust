@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Point-cloud k-NN/radius graph construction gains explicit bounded CPU parallel
+  APIs under `search-graph` plus `parallel`, also exposed by the facade with
+  `search-graph` plus `search-parallel`. One shared KD-tree and ordered worker
+  joins retain the serial edge sequence, including ties and duplicates. Small
+  inputs and one-worker calls execute on the caller. Graph indices are checked
+  against u32 limits, and oversized k requests avoid addition/reservation-product
+  overflow by limiting the search to the actual cloud size. Existing serial
+  graph APIs keep serial execution; no production dependency is added.
 - Resident GPU CLAHE splits histograms for up to 16 tiles of at least 65,536
   padded pixels, merging bounded integer partials before unchanged clipping and
   lookup rounding. Partial storage uses submitted scratch leases and falls back

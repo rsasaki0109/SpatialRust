@@ -47,3 +47,6 @@ pub use kdtree::KdTree;
 
 #[cfg(feature = "search-graph")]
 pub use graph::{knn_graph, radius_graph, NeighborGraph};
+
+#[cfg(all(feature = "search-graph", feature = "parallel"))]
+pub use graph::{knn_graph_parallel, radius_graph_parallel};

@@ -243,6 +243,16 @@ or one available worker run on the caller. Dispatch range/handle metadata scales
 with workers instead of chunks; result buffers still scale with neighbor count.
 This uses standard-library threads without an additional runtime dependency or
 implicit device transfer; concurrent callers each have their own worker budget.
+`search-graph` together with `parallel` adds explicit `knn_graph_parallel` and
+`radius_graph_parallel` APIs. They build one shared KD-tree, reuse that bounded
+chunk dispatcher with 256-point chunks, and produce worker-local edge lists in
+source-point order. Ordered joins preserve the serial neighbor/edge sequence,
+including KD-tree ties and duplicate-coordinate selection. Single-worker and
+below-threshold graph calls keep one caller range. No all-query neighbor table
+or distance matrix is staged; per-query neighbors and live local/final edge
+vectors still consume result-dependent memory (radius graphs may be quadratic).
+Existing serial APIs keep serial execution. Graph point counts must fit u32;
+large k requests are capped by cloud size with checked reservation arithmetic.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

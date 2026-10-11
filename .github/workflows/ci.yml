@@ -105,9 +105,9 @@ jobs:
           - name: spatialrust-search-parallel-meta
             args: -p spatialrust --features search-parallel
           - name: spatialrust-search-graph
-            args: -p spatialrust-search --features search-graph
+            args: -p spatialrust-search --features search-graph,parallel
           - name: spatialrust-search-graph-meta
-            args: -p spatialrust --features search-graph
+            args: -p spatialrust --features search-graph,search-parallel
           - name: spatialrust-filter-voxel
             args: -p spatialrust-filtering --features filter-voxel
           - name: spatialrust-filter-outlier
