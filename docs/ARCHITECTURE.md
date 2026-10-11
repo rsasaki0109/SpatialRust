@@ -95,6 +95,14 @@ The separable pair is lazy within the existing spatial pipeline family.
 The resident Vision chain records six passes for small workloads and one extra
 for each separable blur/morphology path (up to eight), reserving all timestamp
 capacity before recording.
+GPU nearest resize and Sobel validate their runtime identity, positive source/
+output dimensions, signed coordinates, texture/compute/binding limits and one
+free profiler stage before output allocation or spatial-pipeline initialization.
+Resize checks that each maximum output-coordinate/source-dimension product fits
+u32 before division. Valid work retains the original shader and one output pass,
+with four physical write bytes per pixel and 16 query bytes on explicit collection.
+No global scratch, intermediate texture, pipeline or payload transfer is added;
+Vision chains keep their six-to-eight-pass contract.
 Optional `GpuStageProfiler` instrumentation is shared by image and point-cloud
 chains in `spatialrust-gpu`. Timestamp-enabled runtime construction requests
 only adapter-supported pass queries; default runtimes enable none. Profiled

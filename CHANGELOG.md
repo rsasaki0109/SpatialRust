@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU nearest resize and Sobel reject foreign runtimes, unsupported dimensions,
+  device limits and insufficient profiler capacity before work allocation or
+  pipeline initialization. Resize coordinate products are checked for u32
+  overflow; valid output bytes, one-pass receipts and explicit transfers stay unchanged.
 - MLS point-cloud smoothing shares one KD-tree across bounded scoped CPU
   workers using the existing point-staging policy. Small/one-worker clouds stay
   serial; neighborhood order, exact coordinate words, schema and attributes

@@ -181,6 +181,11 @@ workspace because its build requires a Python toolchain.
   are unchanged. Geometry remains regenerated per call, with existing scratch
   bounds, stages and receipt bytes.
   See [geometry ratio measurements](../notes/2026-10-12_exact_gpu_clahe_geometry.md).
+- GPU nearest resize and Sobel validate runtime, dimensions, compute/binding
+  limits and profiler capacity before allocation; resize checks coordinate-product
+  overflow. Valid shader math, metadata, receipts and transfers remain unchanged.
+  Shared-input Sobel tiling remains test-only after inconsistent paired results.
+  See [spatial dispatch validation and measurements](../notes/2026-10-12_gpu_spatial_dispatch_validation.md).
 - `filter-mls` uses bounded scoped CPU workers for independent point fits,
   sharing one KD-tree and preserving coordinate words, field order and metadata.
   Existing small/one-worker point staging remains serial; each concurrent call
