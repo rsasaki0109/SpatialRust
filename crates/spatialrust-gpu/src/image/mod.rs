@@ -1,5 +1,8 @@
 //! GPU-resident packed images with explicit host/device transfers.
 
+pub(crate) mod clahe;
+pub use clahe::{clahe_gpu, clahe_gpu_profiled};
+
 pub(crate) mod ai_tensor;
 pub(crate) mod equalize;
 mod gpu_image;
