@@ -58,6 +58,14 @@ workspace because its build requires a Python toolchain.
   are available. Single-worker, small, empty and single-row inputs use scalar
   execution. Histograms use 2 KiB per local band, with exact integer merging.
   The default vision feature set and `spatialrust-core` gain no dependencies.
+- Contrast enhancement uses the same `imgproc-analysis` Rayon dependency.
+  Equalization lookup mapping dispatches at 100,000 pixels with independent
+  rows. CLAHE tile lookup and output interpolation dispatch at 1,000,000 pixels,
+  each bounded by its independent tile/row count and the current pool. Only the
+  parallel interpolation path retains width-sized shared horizontal geometry;
+  scalar interpolation, clipping, reflected image padding and rounding remain
+  numerically identical. Invalid grid/lookup-size products fail before
+  allocation. No default/core dependencies or automatic GPU placement change.
 - `ExecutionPolicy::CpuSingle` and `CpuParallel` request CPU execution.
 - `ExecutionPolicy::Gpu(DeviceKind)` explicitly names the requested GPU
   backend. A backend that cannot satisfy the request must return an error; it

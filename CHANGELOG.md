@@ -55,6 +55,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- CPU contrast enhancement now parallelizes CLAHE lookup tiles and output row
+  bands at one million pixels, sharing horizontal interpolation geometry while
+  preserving clipping, reflect-101 padding and exact rounding. Histogram
+  equalization applies its lookup in bounded row bands at 100,000 pixels.
+  Scalar interpolation remains available for small inputs and one-worker pools;
+  overflowing CLAHE lookup grids fail before allocation. This reuses optional
+  Rayon under `imgproc-analysis` without adding default/core dependencies.
+
 - Bounded GPU resource retention: point-cloud radix/compaction/scan scratch now
   returns to a private runtime pool only after its commands and scalar copy are
   submitted. Upload buffers, scratch buffers, and image textures each default

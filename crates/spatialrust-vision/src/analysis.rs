@@ -59,24 +59,16 @@ pub fn threshold<T: PixelComponent, const CHANNELS: usize>(
     match threshold_type {
         ThresholdType::Binary => {
             let max = T::from_f64(max_value);
-            threshold_map(
-                input,
-                workers,
-                |value| if value.to_f64() > threshold { max } else { zero },
-            )
+            map_rows(input, workers, |value| if value.to_f64() > threshold { max } else { zero })
         }
         ThresholdType::BinaryInv => {
             let max = T::from_f64(max_value);
-            threshold_map(
-                input,
-                workers,
-                |value| if value.to_f64() > threshold { zero } else { max },
-            )
+            map_rows(input, workers, |value| if value.to_f64() > threshold { zero } else { max })
         }
         ThresholdType::Truncate => {
-            threshold_map(input, workers, |value| T::from_f64(value.to_f64().min(threshold)))
+            map_rows(input, workers, |value| T::from_f64(value.to_f64().min(threshold)))
         }
-        ThresholdType::ToZero => threshold_map(input, workers, |value| {
+        ThresholdType::ToZero => map_rows(input, workers, |value| {
             let value = value.to_f64();
             if value > threshold {
                 T::from_f64(value)
@@ -84,7 +76,7 @@ pub fn threshold<T: PixelComponent, const CHANNELS: usize>(
                 zero
             }
         }),
-        ThresholdType::ToZeroInv => threshold_map(input, workers, |value| {
+        ThresholdType::ToZeroInv => map_rows(input, workers, |value| {
             let value = value.to_f64();
             if value > threshold {
                 zero
@@ -95,7 +87,7 @@ pub fn threshold<T: PixelComponent, const CHANNELS: usize>(
     }
 }
 
-fn threshold_map<T: PixelComponent, const CHANNELS: usize>(
+fn map_rows<T: PixelComponent, const CHANNELS: usize>(
     input: ImageView<'_, T, CHANNELS>,
     workers: usize,
     transform: impl Fn(T) -> T + Sync,
@@ -382,31 +374,69 @@ pub fn clahe(
     } else {
         0
     };
-    let mut lookups = vec![[0_u8; 256]; tiles_x * tiles_y];
-    for tile_y in 0..tiles_y {
-        for tile_x in 0..tiles_x {
-            let mut histogram = [0_usize; 256];
-            for local_y in 0..tile_height {
-                for local_x in 0..tile_width {
-                    let x = tile_x * tile_width + local_x;
-                    let y = tile_y * tile_height + local_y;
-                    let value = fetch(input, x as isize, y as isize, BorderMode::Reflect101)[0];
-                    histogram[value as usize] += 1;
-                }
-            }
-            if clip_count > 0 {
-                clip_histogram(&mut histogram, clip_count);
-            }
-            let scale = 255.0 / tile_area as f64;
-            let mut cumulative = 0_usize;
-            for (value, &count) in histogram.iter().enumerate() {
-                cumulative += count;
-                lookups[tile_y * tiles_x + tile_x][value] =
-                    cv_round(cumulative as f64 * scale).clamp(0, 255) as u8;
-            }
+    let tile_count = tiles_x
+        .checked_mul(tiles_y)
+        .ok_or_else(|| VisionError::InvalidDimensions("CLAHE tile grid overflows".into()))?;
+    if tile_count > isize::MAX as usize / std::mem::size_of::<[u8; 256]>() {
+        return Err(VisionError::InvalidDimensions("CLAHE lookup allocation overflows".into()));
+    }
+    let mut lookups = vec![[0_u8; 256]; tile_count];
+    let workers =
+        analysis_workers(input.width() * input.height(), tile_count, LARGE_PARALLEL_COMPONENTS);
+    let fill = |start: usize, lookups: &mut [[u8; 256]]| {
+        for (offset, lookup) in lookups.iter_mut().enumerate() {
+            let tile = start + offset;
+            clahe_tile_lookup(
+                input,
+                tile % tiles_x,
+                tile / tiles_x,
+                tile_width,
+                tile_height,
+                clip_count,
+                lookup,
+            );
         }
+    };
+    if workers > 1 {
+        let tiles = items_per_worker(tile_count, workers);
+        lookups
+            .par_chunks_mut(tiles)
+            .enumerate()
+            .for_each(|(band, lookups)| fill(band * tiles, lookups));
+    } else {
+        fill(0, &mut lookups);
     }
     interpolate_clahe(input, &lookups, tiles_x, tiles_y, tile_width, tile_height)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn clahe_tile_lookup(
+    input: ImageView<'_, u8, 1>,
+    tile_x: usize,
+    tile_y: usize,
+    tile_width: usize,
+    tile_height: usize,
+    clip_count: usize,
+    lookup: &mut [u8; 256],
+) {
+    let mut histogram = [0_usize; 256];
+    for local_y in 0..tile_height {
+        for local_x in 0..tile_width {
+            let x = tile_x * tile_width + local_x;
+            let y = tile_y * tile_height + local_y;
+            let value = fetch(input, x as isize, y as isize, BorderMode::Reflect101)[0];
+            histogram[value as usize] += 1;
+        }
+    }
+    if clip_count > 0 {
+        clip_histogram(&mut histogram, clip_count);
+    }
+    let scale = 255.0 / (tile_width * tile_height) as f64;
+    let mut cumulative = 0_usize;
+    for (value, &count) in histogram.iter().enumerate() {
+        cumulative += count;
+        lookup[value] = cv_round(cumulative as f64 * scale).clamp(0, 255) as u8;
+    }
 }
 
 /// Summed-area table with a zero top row and left column.
@@ -596,6 +626,11 @@ fn gaussian_weights(size: usize) -> Vec<f64> {
 }
 
 fn map_u8(input: ImageView<'_, u8, 1>, lookup: &[u8; 256]) -> VisionResult<Image<u8, 1>> {
+    let workers =
+        analysis_workers(input.width() * input.height(), input.height(), LIGHT_PARALLEL_COMPONENTS);
+    if workers > 1 {
+        return map_rows(input, workers, |value| lookup[usize::from(value)]);
+    }
     let mut output = Vec::with_capacity(input.width() * input.height());
     for y in 0..input.height() {
         for x in 0..input.width() {
@@ -624,7 +659,64 @@ fn clip_histogram(histogram: &mut [usize; 256], clip_limit: usize) {
     }
 }
 
+// Horizontal geometry is independent of the image row. Share one compact
+// table across bounded output bands, preserving the original f64 operation order.
+struct ClaheHorizontal {
+    left: usize,
+    right: usize,
+    weight: f64,
+}
+
 fn interpolate_clahe(
+    input: ImageView<'_, u8, 1>,
+    lookups: &[[u8; 256]],
+    tiles_x: usize,
+    tiles_y: usize,
+    tile_width: usize,
+    tile_height: usize,
+) -> VisionResult<Image<u8, 1>> {
+    let workers =
+        analysis_workers(input.width() * input.height(), input.height(), LARGE_PARALLEL_COMPONENTS);
+    if workers == 1 {
+        return interpolate_clahe_scalar(input, lookups, tiles_x, tiles_y, tile_width, tile_height);
+    }
+    let horizontal: Vec<_> = (0..input.width())
+        .map(|x| {
+            let tx = x as f64 / tile_width as f64 - 0.5;
+            let raw = tx.floor() as isize;
+            ClaheHorizontal {
+                left: raw.clamp(0, tiles_x as isize - 1) as usize,
+                right: (raw + 1).clamp(0, tiles_x as isize - 1) as usize,
+                weight: tx - tx.floor(),
+            }
+        })
+        .collect();
+    let rows = items_per_worker(input.height(), workers);
+    let mut output = vec![0; input.width() * input.height()];
+    output.par_chunks_mut(rows * input.width()).enumerate().for_each(|(band, output)| {
+        for (row, target) in output.chunks_mut(input.width()).enumerate() {
+            let y = band * rows + row;
+            let ty = y as f64 / tile_height as f64 - 0.5;
+            let raw = ty.floor() as isize;
+            let ya = ty - ty.floor();
+            let y0 = raw.clamp(0, tiles_y as isize - 1) as usize;
+            let y1 = (raw + 1).clamp(0, tiles_y as isize - 1) as usize;
+            let source = input.row(y).expect("validated image row");
+            for ((to, &from), geometry) in target.iter_mut().zip(source).zip(&horizontal) {
+                let value = usize::from(from);
+                let xa = geometry.weight;
+                let top = f64::from(lookups[y0 * tiles_x + geometry.left][value]) * (1.0 - xa)
+                    + f64::from(lookups[y0 * tiles_x + geometry.right][value]) * xa;
+                let bottom = f64::from(lookups[y1 * tiles_x + geometry.left][value]) * (1.0 - xa)
+                    + f64::from(lookups[y1 * tiles_x + geometry.right][value]) * xa;
+                *to = cv_round(top * (1.0 - ya) + bottom * ya).clamp(0, 255) as u8;
+            }
+        }
+    });
+    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+}
+
+fn interpolate_clahe_scalar(
     input: ImageView<'_, u8, 1>,
     lookups: &[[u8; 256]],
     tiles_x: usize,
@@ -862,6 +954,150 @@ mod tests {
         let image = Image::<u8, 1>::from_pixel(7, 5, [42]).unwrap();
         let output = clahe(image.view(), 2.0, 3, 2).unwrap();
         assert_eq!((output.width(), output.height()), (7, 5));
+    }
+
+    #[test]
+    fn parallel_equalization_preserves_padded_roi_and_metadata() {
+        use spatialrust_image::{ColorRange, ColorSpace, ImageMetadata, ImageView};
+        let (width, height, stride) = (1029, 1029, 1043);
+        let mut data = vec![255; stride * height];
+        for y in 0..height {
+            for x in 0..width {
+                data[y * stride + x] = ((x * 17 + y * 31) % 129 + 32) as u8;
+            }
+        }
+        let metadata = ImageMetadata {
+            color_space: ColorSpace::Gray,
+            color_range: ColorRange::Full,
+            ..Default::default()
+        };
+        let input = ImageView::<u8, 1>::new_with_metadata(width, height, stride, &data, metadata)
+            .unwrap()
+            .subview(ImageRegion::new(2, 1, 1025, 1027))
+            .unwrap();
+        let expected = pool(1).install(|| equalize_histogram(input).unwrap());
+        for workers in [2, 6] {
+            let actual = pool(workers).install(|| equalize_histogram(input).unwrap());
+            assert!(actual.as_slice() == expected.as_slice(), "workers={workers}");
+            assert_eq!(actual.metadata(), metadata);
+            assert_eq!((actual.width(), actual.height()), (1025, 1027));
+        }
+    }
+
+    #[test]
+    fn parallel_clahe_matches_scalar_for_odd_roi_tiles_and_clip_limits() {
+        use spatialrust_image::{ColorRange, ColorSpace, ImageMetadata};
+        let metadata = ImageMetadata {
+            color_space: ColorSpace::Gray,
+            color_range: ColorRange::Limited,
+            ..Default::default()
+        };
+        let image = Image::<u8, 1>::try_new_with_metadata(
+            1029,
+            1031,
+            (0..1029 * 1031).map(|i| ((i * 37 + i / 1029 * 17) % 251) as u8).collect(),
+            metadata,
+        )
+        .unwrap();
+        let input = image.view().subview(ImageRegion::new(2, 3, 1025, 1027)).unwrap();
+        let serial = pool(1);
+        let two = pool(2);
+        let six = pool(6);
+        for (tiles_x, tiles_y) in [(8, 8), (7, 5), (1, 1)] {
+            for clip in [0.0, 0.01, 2.0, 1e100] {
+                let expected = serial.install(|| clahe(input, clip, tiles_x, tiles_y).unwrap());
+                for parallel in [&two, &six] {
+                    let actual = parallel.install(|| clahe(input, clip, tiles_x, tiles_y).unwrap());
+                    assert!(
+                        actual.as_slice() == expected.as_slice(),
+                        "workers={}, grid={tiles_x}x{tiles_y}, clip={clip}",
+                        parallel.current_num_threads()
+                    );
+                    assert_eq!(actual.metadata(), metadata);
+                    assert_eq!((actual.width(), actual.height()), (1025, 1027));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn parallel_clahe_interpolation_keeps_original_rounding_at_narrow_borders() {
+        let lookups: Vec<[u8; 256]> = (0..4)
+            .map(|tile| {
+                std::array::from_fn(|value| match tile {
+                    0 => value as u8,
+                    1 => (255 - value) as u8,
+                    2 => (value / 2) as u8,
+                    _ => (value / 2 + 128) as u8,
+                })
+            })
+            .collect();
+        let parallel = pool(6);
+        for (width, height) in [(1, 1_000_003), (2, 500_003), (1_000_003, 1)] {
+            let image = Image::<u8, 1>::try_new(
+                width,
+                height,
+                (0..width * height).map(|i| (i % 256) as u8).collect(),
+            )
+            .unwrap();
+            let tile_width = width.div_ceil(2);
+            let tile_height = height.div_ceil(2);
+            let expected = super::interpolate_clahe_scalar(
+                image.view(),
+                &lookups,
+                2,
+                2,
+                tile_width,
+                tile_height,
+            )
+            .unwrap();
+            let actual = parallel.install(|| {
+                super::interpolate_clahe(image.view(), &lookups, 2, 2, tile_width, tile_height)
+                    .unwrap()
+            });
+            assert!(actual.as_slice() == expected.as_slice(), "dimensions={width}x{height}");
+        }
+    }
+
+    #[test]
+    fn contrast_fallbacks_constant_images_and_rounding_fixture_remain_exact() {
+        let serial = pool(1);
+        let parallel = pool(6);
+        for (width, height) in [(0, 0), (1, 1), (7, 5), (100_003, 1), (1, 100_003)] {
+            let image = Image::<u8, 1>::from_pixel(width, height, [42]).unwrap();
+            let expected = serial.install(|| clahe(image.view(), 2.0, 13, 11).unwrap());
+            let actual = parallel.install(|| clahe(image.view(), 2.0, 13, 11).unwrap());
+            assert!(actual.as_slice() == expected.as_slice());
+            assert!(parallel
+                .install(|| equalize_histogram(image.view()).unwrap())
+                .as_slice()
+                .iter()
+                .all(|&value| value == 42));
+        }
+        let constant = Image::<u8, 1>::from_pixel(1025, 1027, [42]).unwrap();
+        let actual = parallel.install(|| clahe(constant.view(), 0.0, 7, 5).unwrap());
+        assert!(actual.as_slice().iter().all(|&value| value == 255));
+        let fixture = Image::<u8, 1>::try_new(3, 2, vec![0, 40, 80, 120, 160, 200]).unwrap();
+        assert_eq!(
+            clahe(fixture.view(), 0.0, 1, 1).unwrap().as_slice(),
+            &[42, 85, 128, 170, 212, 255]
+        );
+    }
+
+    #[test]
+    fn clahe_rejects_overflowing_lookup_grids_before_allocation() {
+        let image = Image::<u8, 1>::from_pixel(1, 1, [42]).unwrap();
+        for (x, y) in [(usize::MAX, 2), (isize::MAX as usize / 256 + 1, 1)] {
+            assert!(matches!(
+                clahe(image.view(), 2.0, x, y),
+                Err(crate::VisionError::InvalidDimensions(_))
+            ));
+        }
+        for clip in [-1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(clahe(image.view(), clip, 8, 8).is_err());
+        }
+        assert!(clahe(image.view(), 2.0, 0, 8).is_err());
+        assert!(clahe(image.view(), 2.0, 8, 0).is_err());
     }
 
     #[test]
