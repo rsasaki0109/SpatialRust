@@ -207,6 +207,42 @@ fn capacity_rejection_preserves_prior_recording() {
 }
 
 #[test]
+fn separable_blur_reserves_seven_stages_and_preserves_chain_results() {
+    let Some(runtime) = runtime() else {
+        return;
+    };
+    let image = image(runtime);
+    let large = GpuVisionChainOptions { width: 32, height: 32, blur_kernel: 9, ..options() };
+    let mut insufficient = GpuStageProfiler::new(runtime, 6).unwrap();
+    assert!(run_gpu_vision_chain_profiled(runtime, &image, large, &mut insufficient).is_err());
+    check_report(&insufficient.collect(runtime).unwrap(), 0);
+    let mut profiler = GpuStageProfiler::new(runtime, 7).unwrap();
+    let mut profiled =
+        run_gpu_vision_chain_profiled(runtime, &image, large, &mut profiler).unwrap();
+    let mut plain = run_gpu_vision_chain(runtime, &image, large).unwrap();
+    assert_eq!(profiled.receipt(), plain.receipt());
+    assert_eq!(profiled.receipt().device_to_host_bytes(), 0);
+    let report = profiler.collect(runtime).unwrap();
+    check_report(&report, 7);
+    assert_eq!(
+        report.stages.iter().map(|sample| sample.stage).collect::<Vec<_>>(),
+        [
+            "resize_nearest_gpu",
+            "rgb_to_gray_gpu",
+            "box_blur_horizontal_gpu",
+            "box_blur_gpu",
+            "sobel_gpu",
+            "morphology_gpu",
+            "pack_ai_chw_gpu"
+        ]
+    );
+    assert_eq!(profiled.readback_f32(runtime).unwrap(), plain.readback_f32(runtime).unwrap());
+    profiled.recycle(runtime);
+    plain.recycle(runtime);
+    image.recycle(runtime);
+}
+
+#[test]
 fn partial_chain_failure_invalidates_collection() {
     let Some(runtime) = runtime() else {
         return;

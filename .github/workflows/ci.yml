@@ -261,6 +261,7 @@ jobs:
               cargo test ${{ matrix.args }} cdf_requires_bounded_scan_limits --lib
               cargo test ${{ matrix.args }} equalization_plan_bounds_counters_textures_and_dispatch_before_allocation --lib
               cargo test ${{ matrix.args }} clahe_plan_bounds_grid_padding_buffers_and_device_dispatch --lib
+              cargo test ${{ matrix.args }} blur_plan_bounds_pixels_sums_scratch_and_dispatch --lib
               ;;
             spatialrust-segmentation|spatialrust-pipeline-mvp-gpu|spatialrust-gpu-crate|spatialrust-filter-voxel-gpu|spatialrust-mvp-gpu-integration)
               cargo test ${{ matrix.args }} --no-run

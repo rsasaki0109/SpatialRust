@@ -74,6 +74,17 @@ channel count. Kernels return device-resident images and append named receipt
 stages; only `upload_u8` and `readback_u8` cross the host/device boundary.
 Runtime adapter identity and synchronization are explicit (`adapter_info`,
 `wait_idle`), and `recycle` returns textures to the runtime pool.
+Gray GPU box blur retains the integer full-box mean with one final half-up
+rounding. Boxes with area at least 81 and at least 65,536 total pixel/sample
+visits use horizontal unrounded u32 sums and a vertical reduction in one
+submission; smaller workloads retain one-pass traversal.
+The exclusive intermediate buffer is four bytes per pixel and uses submitted
+scratch leases. Oversized separable kernels scan only valid coordinates and
+weight replicated edge pixels analytically; constant-zero padding retains the
+full kernel divisor. Pixel, coordinate, sum and device limits reject before
+allocation. Both paths use bounded grid strides and independently lazy runtime
+pipelines. The resident Vision chain records six passes for small workloads
+and seven for separable boxes, reserving all timestamp capacity before recording.
 Optional `GpuStageProfiler` instrumentation is shared by image and point-cloud
 chains in `spatialrust-gpu`. Timestamp-enabled runtime construction requests
 only adapter-supported pass queries; default runtimes enable none. Profiled
