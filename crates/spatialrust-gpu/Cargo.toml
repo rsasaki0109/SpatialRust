@@ -59,6 +59,15 @@ required-features = ["gpu-image"]
 name = "gpu_histogram"
 required-features = ["gpu-image"]
 
+[[bench]]
+name = "image_cdf"
+harness = false
+required-features = ["gpu-image"]
+
+[[example]]
+name = "gpu_cdf"
+required-features = ["gpu-image"]
+
 [[example]]
 name = "gpu_stage_timing"
 required-features = ["gpu-image", "gpu-aoso-staging"]

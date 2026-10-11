@@ -1,5 +1,10 @@
 //! Exact, bounded two-pass histograms of resident u8 image channels.
 
+mod cdf;
+
+pub(crate) use cdf::CdfPipeline;
+pub use cdf::{histogram_cdf_gpu, histogram_cdf_gpu_profiled, GpuImageCdf};
+
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
 use wgpu::util::DeviceExt;
@@ -197,23 +202,7 @@ impl GpuImageHistogram {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn readback_u32(&mut self, runtime: &WgpuRuntime) -> SpatialResult<[u32; 256]> {
         self.validate_runtime(runtime)?;
-        let staging = runtime.device().create_buffer(&wgpu::BufferDescriptor {
-            label: Some("gpu-image-histogram-readback"),
-            size: HISTOGRAM_BYTES,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-        let mut encoder =
-            runtime.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("gpu-image-histogram-readback-encoder"),
-            });
-        encoder.copy_buffer_to_buffer(&self.buffer, 0, &staging, 0, HISTOGRAM_BYTES);
-        runtime.queue().submit(Some(encoder.finish()));
-        let bytes = read_staging_bytes(runtime.device(), &staging, HISTOGRAM_BYTES as usize)?;
-        let mut result = [0; 256];
-        for (count, bytes) in result.iter_mut().zip(bytes.chunks_exact(4)) {
-            *count = u32::from_le_bytes(bytes.try_into().expect("four-byte histogram count"));
-        }
+        let result = readback_bins_u32(runtime, &self.buffer)?;
         self.receipt.record_device_to_host(HISTOGRAM_BYTES, "readback_histogram_u32");
         Ok(result)
     }
@@ -232,6 +221,27 @@ impl GpuImageHistogram {
         }
         Ok(())
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn readback_bins_u32(runtime: &WgpuRuntime, buffer: &wgpu::Buffer) -> SpatialResult<[u32; 256]> {
+    let staging = runtime.device().create_buffer(&wgpu::BufferDescriptor {
+        label: Some("gpu-image-histogram-readback"),
+        size: HISTOGRAM_BYTES,
+        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        mapped_at_creation: false,
+    });
+    let mut encoder = runtime.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("gpu-image-histogram-readback-encoder"),
+    });
+    encoder.copy_buffer_to_buffer(buffer, 0, &staging, 0, HISTOGRAM_BYTES);
+    runtime.queue().submit(Some(encoder.finish()));
+    let bytes = read_staging_bytes(runtime.device(), &staging, HISTOGRAM_BYTES as usize)?;
+    let mut result = [0; 256];
+    for (count, bytes) in result.iter_mut().zip(bytes.chunks_exact(4)) {
+        *count = u32::from_le_bytes(bytes.try_into().expect("four-byte histogram count"));
+    }
+    Ok(result)
 }
 
 /// Counts one logical channel (0..source.channels()) without leaving the GPU.
