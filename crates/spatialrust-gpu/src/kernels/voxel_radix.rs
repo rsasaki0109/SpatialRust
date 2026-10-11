@@ -30,6 +30,8 @@ pub(super) fn sort_entries_radix_gpu(
     let device = runtime.device();
     let pipelines = &runtime.pipelines().voxel_radix;
     let group_count = point_count.div_ceil(WORKGROUP_SIZE);
+    let [histogram_pipeline, prefix_pipeline, scatter_pipeline] =
+        pipelines.sort_pipelines(device, group_count);
     let mut temporaries = crate::scratch::ScratchBuffers::new(runtime);
     let scratch = temporaries.acquire("voxel-radix-scratch", entries.size());
     let histograms =
@@ -67,9 +69,9 @@ pub(super) fn sort_entries_radix_gpu(
             // Separate dispatches provide device-wide producer/consumer
             // ordering. All 24 digits are submitted together without readback.
             for (pipeline, groups, stage) in [
-                (&pipelines.histogram, group_count, "voxel-radix-histogram"),
-                (&pipelines.prefix, RADIX as u32, "voxel-radix-prefix"),
-                (&pipelines.scatter, group_count, "voxel-radix-scatter"),
+                (histogram_pipeline, group_count, "voxel-radix-histogram"),
+                (prefix_pipeline, RADIX as u32, "voxel-radix-prefix"),
+                (scatter_pipeline, group_count, "voxel-radix-scatter"),
             ] {
                 let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                     label: Some("voxel-radix-pass"),
@@ -87,3 +89,7 @@ pub(super) fn sort_entries_radix_gpu(
     // Twenty-four ping-pong passes finish in the original allocation.
     entries
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_radix_tests.rs"]
+mod tests;

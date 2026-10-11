@@ -90,6 +90,16 @@ runtime-owned buffer pool. A scratch batch owns every lease until its encoder,
 including the scalar count copy, is submitted; abandoned batches are not
 recycled. Submitted buffers can be reused through queue ordering without a new
 wait or device copy. Caller-owned segment outputs stay outside this pool.
+Large voxel radix sorts reuse offset scratch for per-workgroup earlier-digit
+subtotals written by the histogram pass. The prefix pass reads only its own
+digit slice, scans chunk totals with a work-efficient tree and overwrites offsets
+after all lanes finish reading. This removes repeated global earlier-digit loads
+without another scratch allocation or pass. Stable ranks, 24 digits/72 passes, bounded
+dispatch, queue ordering and the explicit compaction count readback are retained.
+Up to 2,048 input workgroups (524,288 points), legacy histogram/prefix kernels
+remain specialized without the extra subtotal barrier. Larger inputs lazily cache
+two optimized pipelines using a compile-time override; scatter is shared. This
+internal GPU selection retains small-input work and adds no CPU/GPU placement.
 Upload/CHW buffers, point scratch and RGBA8 textures each retain at most 64 MiB
 by default, independently, and at most eight resources per size. Full pools
 reject incoming resources; a budget decrease below retention clears the cache,
