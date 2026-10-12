@@ -21,6 +21,67 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU RGB-to-gray supports images beyond one dispatch axis by distributing
+  flat 256-lane workgroups across bounded rows. Single-row work retains its
+  original shader; dimensions, counters, device limits and profiler capacity
+  reject before allocation, with unchanged luma bytes and explicit transfers.
+- FPFH point-cloud descriptors share one KD-tree across bounded scoped CPU
+  workers for both SPFH construction and neighbor weighting. Small/one-worker
+  clouds stay serial; output order and exact descriptor words are preserved
+  under `register-fpfh`, without a new dependency or public signature.
+- GPU nearest resize and Sobel reject foreign runtimes, unsupported dimensions,
+  device limits and insufficient profiler capacity before work allocation or
+  pipeline initialization. Resize coordinate products are checked for u32
+  overflow; valid output bytes, one-pass receipts and explicit transfers stay unchanged.
+- MLS point-cloud smoothing shares one KD-tree across bounded scoped CPU
+  workers using the existing point-staging policy. Small/one-worker clouds stay
+  serial; neighborhood order, exact coordinate words, schema and attributes
+  remain unchanged under `filter-mls`, without an additional dependency.
+- GPU CLAHE axis geometry bypasses fractional long division for power-of-two
+  tile sizes, retaining identical binary64 ratio and interpolation-weight words.
+  General ratio arithmetic, scratch retention, pass count, explicit transfers
+  and public signatures remain unchanged.
+- Point-cloud k-NN/radius graph construction gains explicit bounded CPU parallel
+  APIs under `search-graph` plus `parallel`, also exposed by the facade with
+  `search-graph` plus `search-parallel`. One shared KD-tree and ordered worker
+  joins retain the serial edge sequence, including ties and duplicates. Small
+  inputs and one-worker calls execute on the caller. Graph indices are checked
+  against u32 limits, and oversized k requests avoid addition/reservation-product
+  overflow by limiting the search to the actual cloud size. Existing serial
+  graph APIs keep serial execution; no production dependency is added.
+- Resident GPU CLAHE splits histograms for up to 16 tiles of at least 65,536
+  padded pixels, merging bounded integer partials before unchanged clipping and
+  lookup rounding. Partial storage uses submitted scratch leases and falls back
+  to the direct path when device binding limits are insufficient. Selected work
+  records four stages and 64 explicit query bytes; direct work retains three
+  stages and 48 bytes. Transfer receipts include the private histogram writes.
+- Standalone GPU k-NN/radius normals and plane covariance estimators lazily reuse
+  per-runtime pipelines and pooled storage buffers, and submit compute plus
+  readback copy together. Shader arithmetic and returned float words remain
+  unchanged. Index, buffer, uniform and dispatch bounds reject before device
+  allocation; grid storage is checked before CPU counting-sort allocation.
+  Invalid neighbor indices now return an error, and z-length errors report the
+  actual z length. Empty inputs preserve the existing early-return behavior.
+
+- GPU rectangular erosion and dilation use exact horizontal/vertical extrema
+  for boxes with area at least 81 and at least 1,048,576 pixel/sample visits.
+  Replicate borders and odd kernels in `1..=31` stay unchanged. Two passes share
+  one submission and a four-byte-per-pixel pooled texture; small workloads keep
+  the original single pass. Unsupported coordinate/device limits reject before
+  allocation. Profiled Vision chains reserve six to eight stages for the selected
+  blur and morphology paths, without image payload readback.
+
+- GPU gray box blur uses unrounded horizontal u32 sums and a vertical pass for
+  boxes with area at least 81 and at least 65,536 total pixel/sample visits,
+  preserving the integer mean and border
+  semantics with four scratch bytes per pixel. Both passes share one submission;
+  host image transfers stay explicit. Small workloads retain one pass. Profiled
+  Vision chains reserve six or seven stages, and unsupported pixel/sum/coordinate
+  or device limits reject before blur allocation.
+
+- Local GPU measurements omit the adapter model name in public documentation;
+  backend, software versions, measurement conditions, and results are retained.
+
 - GPU RANSAC plane scoring parallelizes points within each hypothesis from
   1,024 points and tree-reduces integer inlier counts, retaining f32 plane and
   distance arithmetic. Smaller inputs retain scalar traversal. Lazy per-runtime

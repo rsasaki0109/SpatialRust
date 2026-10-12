@@ -42,7 +42,7 @@ slice does not eliminate those scalar synchronizations.
 Workspace: `C:\Users\rsasa\Workspace\SpatialRust`.
 
 `cargo test -p spatialrust-gpu --features gpu-aoso-staging,gpu-image -- --test-threads=1`
-passes all 53 tests on NVIDIA GeForce GTX 1660 Ti / Vulkan. The tests include
+passes all 53 tests on the local GPU / Vulkan. The tests include
 seven image GPU regressions (known pixels, CPU luma parity, retained chains,
 pipeline caching, and upload/readback accounting) as well as point-cloud kernels.
 The related filtering and segmentation run below passes another 18 and 10 tests,
@@ -77,7 +77,7 @@ normal estimation, completion waiting, and frame recycling; they are not shader
 timestamps.
 
 Parent: `d646ab11795a91829d703485ef4c50f47c817880`. Environment: Windows 11,
-Rust 1.98.1, wgpu 24.0.5, Criterion 0.5.1, NVIDIA GeForce GTX 1660 Ti / Vulkan,
+Rust 1.98.1, wgpu 24.0.5, Criterion 0.5.1, local GPU / Vulkan,
 driver 596.36. The synthetic fixture uses 16,384-point chunks, inverse voxel leaf
 size 20.0, and normal radius 0.08. Each process uses 10 samples and two-second
 warmup/measurement windows.

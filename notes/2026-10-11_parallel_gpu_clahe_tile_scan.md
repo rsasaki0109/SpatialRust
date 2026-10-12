@@ -58,7 +58,7 @@ image/point timing tests. The paired benchmark is ignored by default and passed
 on explicit invocation. Existing odd-grid/ROI/metadata/constant/half-rounding,
 65,536 binary64/geometry rows, 66,049 interpolation pixels, 2,309,120 global LUT
 comparisons, concurrent live outputs, stale scratch and point-cloud regressions
-all pass. The native adapter is GTX 1660 Ti, Vulkan, NVIDIA 596.36.
+all pass. The native adapter is a local GPU, Vulkan, NVIDIA 596.36.
 
 All-feature and default all-target Clippy with warnings denied passed. Minimal
 `gpu-image` tests compiled; minimal `gpu-image` and `gpu-wgpu` WASM library Clippy

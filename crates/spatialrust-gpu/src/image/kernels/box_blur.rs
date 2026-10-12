@@ -1,13 +1,21 @@
-//! Gray box blur on the GPU.
+//! Exact integer gray box blur with bounded device-resident separable sums.
 
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
+use std::sync::OnceLock;
 use wgpu::util::DeviceExt;
 
-use crate::image::gpu_image::{create_texture, GpuImage, GpuImageReceipt};
-use crate::WgpuRuntime;
+use crate::image::gpu_image::{create_texture, GpuImage};
+use crate::{scratch::ScratchBuffers, GpuStageProfiler, WgpuRuntime};
 
 const WORKGROUP: u32 = 256;
+const SEPARABLE_MIN_AREA: u64 = 81;
+const SEPARABLE_MIN_SAMPLES: u64 = 65_536;
+const SHADERS: [&str; 3] = [
+    include_str!("box_blur_serial.wgsl"),
+    concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_horizontal.wgsl")),
+    concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_vertical.wgsl")),
+];
 
 /// Border extrapolation for GPU image filters.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,125 +34,227 @@ struct BlurParams {
     kernel_width: u32,
     kernel_height: u32,
     border_mode: u32,
-    _pad0: u32,
-    _pad1: u32,
-    _pad2: u32,
+    groups: u32,
+    pixel_count: u32,
+    _pad: u32,
 }
 
-const BLUR_WGSL: &str = r#"
-struct Params {
+struct Plan {
+    params: BlurParams,
+    separable: bool,
+    bytes: u64,
+}
+
+pub(crate) fn blur_pass_count(
     width: u32,
     height: u32,
     kernel_width: u32,
     kernel_height: u32,
-    border_mode: u32,
-    pad0: u32,
-    pad1: u32,
-    pad2: u32,
-};
-
-@group(0) @binding(0) var<uniform> params: Params;
-@group(0) @binding(1) var input_px: texture_2d<u32>;
-@group(0) @binding(2) var output_px: texture_storage_2d<rgba8uint, write>;
-
-fn sample_gray(x: i32, y: i32) -> u32 {
-    var sx = x;
-    var sy = y;
-    if (params.border_mode == 0u) {
-        sx = clamp(sx, 0, i32(params.width) - 1);
-        sy = clamp(sy, 0, i32(params.height) - 1);
-    } else if (sx < 0 || sy < 0 || sx >= i32(params.width) || sy >= i32(params.height)) {
-        return 0u;
-    }
-    return textureLoad(input_px, vec2<i32>(sx, sy), 0).r;
+) -> u32 {
+    let area = u64::from(kernel_width) * u64::from(kernel_height);
+    let count = u64::from(width) * u64::from(height);
+    // Compare via division so even unvalidated profiler inputs cannot overflow.
+    1 + u32::from(area >= SEPARABLE_MIN_AREA && count >= SEPARABLE_MIN_SAMPLES.div_ceil(area))
 }
 
-@compute @workgroup_size(256)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let index = gid.x;
-    let pixel_count = params.width * params.height;
-    if (index >= pixel_count) {
-        return;
+fn plan(
+    width: u32,
+    height: u32,
+    kw: u32,
+    kh: u32,
+    border: GpuImageBorder,
+    limits: &wgpu::Limits,
+) -> SpatialResult<Plan> {
+    let invalid = || {
+        SpatialError::InvalidArgument(
+        "GPU box blur requires positive odd kernels, supported texture/compute limits, bounded u32 pixels/sums and supported separable scratch".to_owned())
+    };
+    let count = u64::from(width) * u64::from(height);
+    let area = u64::from(kw) * u64::from(kh);
+    let separable = blur_pass_count(width, height, kw, kh) == 2;
+    let bytes = count.checked_mul(4).ok_or_else(invalid)?;
+    if width == 0
+        || height == 0
+        || kw == 0
+        || kh == 0
+        || kw % 2 == 0
+        || kh % 2 == 0
+        || count > u64::from(u32::MAX)
+        || area > u64::from(u32::MAX) / 255
+        || area * 255 + area / 2 > u64::from(u32::MAX)
+        || width > limits.max_texture_dimension_2d
+        || height > limits.max_texture_dimension_2d
+        || width > i32::MAX as u32
+        || height > i32::MAX as u32
+        || u64::from(width - 1) + u64::from(kw / 2) > i32::MAX as u64
+        || u64::from(height - 1) + u64::from(kh / 2) > i32::MAX as u64
+        || limits.max_compute_invocations_per_workgroup < WORKGROUP
+        || limits.max_compute_workgroup_size_x < WORKGROUP
+        || limits.max_compute_workgroups_per_dimension == 0
+        || limits.max_sampled_textures_per_shader_stage == 0
+        || limits.max_storage_textures_per_shader_stage == 0
+        || limits.max_uniform_buffers_per_shader_stage == 0
+        || limits.max_uniform_buffer_binding_size < std::mem::size_of::<BlurParams>() as u32
+        || (separable
+            && (limits.max_storage_buffers_per_shader_stage == 0
+                || bytes
+                    > limits
+                        .max_buffer_size
+                        .min(u64::from(limits.max_storage_buffer_binding_size))))
+    {
+        return Err(invalid());
     }
-    let x = i32(index % params.width);
-    let y = i32(index / params.width);
-    let radius_x = i32(params.kernel_width / 2u);
-    let radius_y = i32(params.kernel_height / 2u);
-    var sum: u32 = 0u;
-    var count: u32 = 0u;
-    for (var dy: i32 = -radius_y; dy <= radius_y; dy = dy + 1) {
-        for (var dx: i32 = -radius_x; dx <= radius_x; dx = dx + 1) {
-            sum = sum + sample_gray(x + dx, y + dy);
-            count = count + 1u;
-        }
-    }
-    let value = (sum + count / 2u) / count;
-    textureStore(output_px, vec2<i32>(x, y), vec4<u32>(value, 0u, 0u, 0u));
+    let groups = (count as u32)
+        .div_ceil(WORKGROUP)
+        .min(4096)
+        .min(limits.max_compute_workgroups_per_dimension);
+    Ok(Plan {
+        params: BlurParams {
+            width,
+            height,
+            kernel_width: kw,
+            kernel_height: kh,
+            border_mode: u32::from(border == GpuImageBorder::ConstantZero),
+            groups,
+            pixel_count: count as u32,
+            _pad: 0,
+        },
+        separable,
+        bytes,
+    })
 }
-"#;
 
-pub(crate) struct BlurPipeline {
-    bind_group_layout: wgpu::BindGroupLayout,
+struct Variant {
+    layout: wgpu::BindGroupLayout,
     pipeline: wgpu::ComputePipeline,
 }
 
-pub(crate) fn create_blur_pipeline(device: &wgpu::Device) -> BlurPipeline {
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("gpu-image-blur-bgl"),
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Uint,
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    multisampled: false,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::StorageTexture {
-                    access: wgpu::StorageTextureAccess::WriteOnly,
-                    format: wgpu::TextureFormat::Rgba8Uint,
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                },
-                count: None,
-            },
-        ],
-    });
-    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("gpu-image-blur-shader"),
-        source: wgpu::ShaderSource::Wgsl(BLUR_WGSL.into()),
-    });
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("gpu-image-blur-pl"),
-        bind_group_layouts: &[&bind_group_layout],
-        push_constant_ranges: &[],
-    });
-    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("gpu-image-blur-pipeline"),
-        layout: Some(&pipeline_layout),
-        module: &shader,
-        entry_point: Some("main"),
-        compilation_options: wgpu::PipelineCompilationOptions::default(),
-        cache: None,
-    });
-    BlurPipeline { bind_group_layout, pipeline }
+pub(crate) struct BlurPipeline {
+    variants: [OnceLock<Variant>; 3],
 }
 
-/// Applies a square/rectangular mean box blur to a single-channel `GpuImage`.
+impl BlurPipeline {
+    fn new() -> Self {
+        Self { variants: std::array::from_fn(|_| OnceLock::new()) }
+    }
+
+    fn variant(&self, device: &wgpu::Device, index: usize) -> &Variant {
+        self.variants[index].get_or_init(|| {
+            let buffer = |ty| wgpu::BindingType::Buffer {
+                ty,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            };
+            let texture = wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Uint,
+                view_dimension: wgpu::TextureViewDimension::D2,
+                multisampled: false,
+            };
+            let output = wgpu::BindingType::StorageTexture {
+                access: wgpu::StorageTextureAccess::WriteOnly,
+                format: wgpu::TextureFormat::Rgba8Uint,
+                view_dimension: wgpu::TextureViewDimension::D2,
+            };
+            let types = [
+                buffer(wgpu::BufferBindingType::Uniform),
+                if index == 2 {
+                    buffer(wgpu::BufferBindingType::Storage { read_only: true })
+                } else {
+                    texture
+                },
+                if index == 1 {
+                    buffer(wgpu::BufferBindingType::Storage { read_only: false })
+                } else {
+                    output
+                },
+            ];
+            let entries: Vec<_> = types
+                .into_iter()
+                .enumerate()
+                .map(|(binding, ty)| wgpu::BindGroupLayoutEntry {
+                    binding: binding as u32,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty,
+                    count: None,
+                })
+                .collect();
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("gpu-blur-bgl"),
+                entries: &entries,
+            });
+            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("gpu-blur-shader"),
+                source: wgpu::ShaderSource::Wgsl(SHADERS[index].into()),
+            });
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("gpu-blur-pl"),
+                bind_group_layouts: &[&layout],
+                push_constant_ranges: &[],
+            });
+            let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("gpu-blur-pipeline"),
+                layout: Some(&pipeline_layout),
+                module: &shader,
+                entry_point: Some("main"),
+                compilation_options: Default::default(),
+                cache: None,
+            });
+            Variant { layout, pipeline }
+        })
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn encode(
+    runtime: &WgpuRuntime,
+    cache: &BlurPipeline,
+    p: &Plan,
+    source: &wgpu::TextureView,
+    output: &wgpu::TextureView,
+    uniform: &wgpu::Buffer,
+    sums: Option<&wgpu::Buffer>,
+    encoder: &mut wgpu::CommandEncoder,
+    mut profiler: Option<&mut GpuStageProfiler>,
+) {
+    let indices: &[usize] = if p.separable { &[1, 2] } else { &[0] };
+    for &index in indices {
+        let variant = cache.variant(runtime.device(), index);
+        let input = if index == 2 {
+            sums.unwrap().as_entire_binding()
+        } else {
+            wgpu::BindingResource::TextureView(source)
+        };
+        let target = if index == 1 {
+            sums.unwrap().as_entire_binding()
+        } else {
+            wgpu::BindingResource::TextureView(output)
+        };
+        let stage = if index == 1 { "box_blur_horizontal_gpu" } else { "box_blur_gpu" };
+        let group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(stage),
+            layout: &variant.layout,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: input },
+                wgpu::BindGroupEntry { binding: 2, resource: target },
+            ],
+        });
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some(stage),
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, stage),
+        });
+        pass.set_pipeline(&variant.pipeline);
+        pass.set_bind_group(0, &group, &[]);
+        pass.dispatch_workgroups(p.params.groups, 1, 1);
+    }
+}
+
+/// Applies an integer mean box blur to a single-channel `GpuImage`.
+///
+/// Positive odd kernels round half upward once after summing the entire box.
+/// Boxes with area at least 81 and at least 65,536 total pixel/sample visits
+/// use two passes and four scratch bytes per pixel; smaller workloads use one
+/// pass. Both paths keep transfers explicit and bounded.
 pub fn box_blur_gpu(
     runtime: &WgpuRuntime,
     source: &GpuImage,
@@ -161,75 +271,49 @@ pub(crate) fn box_blur_gpu_with_profiler(
     kernel_width: u32,
     kernel_height: u32,
     border: GpuImageBorder,
-    mut profiler: Option<&mut crate::GpuStageProfiler>,
+    profiler: Option<&mut GpuStageProfiler>,
 ) -> SpatialResult<GpuImage> {
     source.validate_runtime(runtime)?;
     if source.channels() != 1 {
         return Err(SpatialError::InvalidArgument(
-            "box_blur_gpu currently supports single-channel GpuImage inputs".to_owned(),
+            "GPU box blur requires one logical channel".to_owned(),
         ));
     }
-    if kernel_width == 0 || kernel_height == 0 || kernel_width % 2 == 0 || kernel_height % 2 == 0 {
-        return Err(SpatialError::InvalidArgument(
-            "box_blur_gpu requires positive odd kernel dimensions".to_owned(),
-        ));
-    }
-    let pixel_count = (source.width() as usize).saturating_mul(source.height() as usize);
-    let out_bytes = u64::from(source.width()) * u64::from(source.height()) * 4;
-    let output = create_texture(runtime, source.width(), source.height(), "gpu-image-blur-out");
-    let params = BlurParams {
-        width: source.width(),
-        height: source.height(),
+    let p = plan(
+        source.width(),
+        source.height(),
         kernel_width,
         kernel_height,
-        border_mode: match border {
-            GpuImageBorder::Replicate => 0,
-            GpuImageBorder::ConstantZero => 1,
-        },
-        _pad0: 0,
-        _pad1: 0,
-        _pad2: 0,
-    };
+        border,
+        &runtime.device().limits(),
+    )?;
+    let cache = runtime.image_blur_pipeline.get_or_init(BlurPipeline::new);
+    let mut scratch = ScratchBuffers::new(runtime);
+    let sums = p.separable.then(|| scratch.acquire("gpu-blur-horizontal-sums", p.bytes));
+    let output = create_texture(runtime, source.width(), source.height(), "gpu-image-blur-out");
     let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("gpu-image-blur-params"),
-        contents: bytemuck::bytes_of(&params),
+        contents: bytemuck::bytes_of(&p.params),
         usage: wgpu::BufferUsages::UNIFORM,
     });
-    let pipeline =
-        runtime.image_blur_pipeline.get_or_init(|| create_blur_pipeline(runtime.device()));
-    let source_view = source.view();
-    let output_view = output.create_view(&wgpu::TextureViewDescriptor::default());
-    let bind_group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("gpu-image-blur-bg"),
-        layout: &pipeline.bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: wgpu::BindingResource::TextureView(&source_view),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: wgpu::BindingResource::TextureView(&output_view),
-            },
-        ],
-    });
-    let mut encoder = runtime.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("gpu-image-blur-encoder"),
-    });
-    {
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("gpu-image-blur-pass"),
-            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "box_blur_gpu"),
-        });
-        pass.set_pipeline(&pipeline.pipeline);
-        pass.set_bind_group(0, &bind_group, &[]);
-        pass.dispatch_workgroups(pixel_count.div_ceil(WORKGROUP as usize) as u32, 1, 1);
+    let mut encoder = runtime.device().create_command_encoder(&Default::default());
+    encode(
+        runtime,
+        cache,
+        &p,
+        &source.view(),
+        &output.create_view(&Default::default()),
+        &uniform,
+        sums.as_ref(),
+        &mut encoder,
+        profiler,
+    );
+    scratch.submit_and_recycle(encoder);
+    let mut receipt = source.receipt().clone();
+    if p.separable {
+        receipt.record_gpu_to_gpu(p.bytes, "box_blur_horizontal_gpu");
     }
-    runtime.queue().submit(Some(encoder.finish()));
-    let mut receipt = GpuImageReceipt::default();
-    receipt.merge_from(source.receipt());
-    receipt.record_gpu_to_gpu(out_bytes, "box_blur_gpu");
+    receipt.record_gpu_to_gpu(p.bytes, "box_blur_gpu");
     GpuImage::from_parts(
         runtime,
         source.width(),
@@ -240,3 +324,7 @@ pub(crate) fn box_blur_gpu_with_profiler(
         receipt,
     )
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "box_blur_tests.rs"]
+mod tests;

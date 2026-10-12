@@ -119,7 +119,7 @@ They do not measure complete centroid/frame/API latency.
 Each pair explicitly collects 144 stages/2,304 query bytes after both wall timers.
 Final outputs from both implementations are fully compared with the independent
 CPU tuple sort after measurement. Five point counts (including both sides of
-the cutoff) times three distributions give 15 fixtures. GPU is GTX 1660 Ti,
+the cutoff) times three distributions give 15 fixtures. Measurements use the local GPU,
 Vulkan, NVIDIA 596.36; Rust 1.98.1/wgpu 24.0.5 on the i7-9750H Windows workspace.
 Other agent-started GPU checks finished before the diagnostic. The user's Python
 workloads were left running; desktop load and GPU clocks can still vary.

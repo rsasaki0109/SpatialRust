@@ -2,12 +2,138 @@
 
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
+use std::sync::OnceLock;
+use wgpu::util::DeviceExt;
 
 use crate::image::gpu_image::{create_texture, GpuImage, GpuImageReceipt};
 use crate::WgpuRuntime;
 
 const WORKGROUP_X: u32 = 16;
 const WORKGROUP_Y: u32 = 16;
+const SEPARABLE_MIN_AREA: u64 = 81;
+const SEPARABLE_MIN_SAMPLES: u64 = 1_048_576;
+fn validate_spatial_dispatch(
+    source: [u32; 2],
+    output: [u32; 2],
+    limits: &wgpu::Limits,
+) -> SpatialResult<()> {
+    if source
+        .into_iter()
+        .chain(output)
+        .any(|v| v == 0 || v > limits.max_texture_dimension_2d || v > i32::MAX as u32)
+        || limits.max_compute_invocations_per_workgroup < WORKGROUP_X * WORKGROUP_Y
+        || limits.max_compute_workgroup_size_x < WORKGROUP_X
+        || limits.max_compute_workgroup_size_y < WORKGROUP_Y
+        || limits.max_compute_workgroup_size_z == 0
+        || output[0].div_ceil(WORKGROUP_X) > limits.max_compute_workgroups_per_dimension
+        || output[1].div_ceil(WORKGROUP_Y) > limits.max_compute_workgroups_per_dimension
+        || limits.max_sampled_textures_per_shader_stage == 0
+        || limits.max_storage_textures_per_shader_stage == 0
+        || limits.max_uniform_buffers_per_shader_stage == 0
+        || limits.max_uniform_buffer_binding_size < std::mem::size_of::<SpatialParams>() as u32
+        || limits.max_buffer_size < std::mem::size_of::<SpatialParams>() as u64
+        || limits.max_bind_groups == 0
+        || limits.max_bindings_per_bind_group < 3
+    {
+        return Err(SpatialError::InvalidArgument(
+            "GPU spatial dispatch requires positive dimensions and supported texture/compute/coordinate limits"
+                .to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_resize_dispatch(
+    source: [u32; 2],
+    output: [u32; 2],
+    limits: &wgpu::Limits,
+) -> SpatialResult<()> {
+    validate_spatial_dispatch(source, output, limits)?;
+    // The shader multiplies the output coordinate by the source dimension.
+    if source
+        .into_iter()
+        .zip(output)
+        .any(|(s, o)| u64::from(o - 1) * u64::from(s) > u64::from(u32::MAX))
+    {
+        return Err(SpatialError::InvalidArgument(
+            "GPU nearest resize coordinate product exceeds u32::MAX".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+pub(crate) fn morphology_pass_count(width: u32, height: u32, kw: u32, kh: u32) -> u32 {
+    let area = u64::from(kw) * u64::from(kh);
+    let count = u64::from(width) * u64::from(height);
+    // Also called with unvalidated profiler options: avoid overflow and division by zero.
+    1 + u32::from(area >= SEPARABLE_MIN_AREA && count >= SEPARABLE_MIN_SAMPLES.div_ceil(area))
+}
+
+struct MorphologyPlan {
+    params: SpatialParams,
+    separable: bool,
+    bytes: u64,
+}
+
+fn morphology_plan(
+    width: u32,
+    height: u32,
+    kw: u32,
+    kh: u32,
+    operation: GpuMorphology,
+    limits: &wgpu::Limits,
+) -> SpatialResult<MorphologyPlan> {
+    let invalid = || {
+        SpatialError::InvalidArgument(
+        "GPU morphology requires odd kernels in 1..=31 and supported texture/compute/coordinate limits".to_owned())
+    };
+    let count = u64::from(width) * u64::from(height);
+    let bytes = count.checked_mul(4).ok_or_else(invalid)?;
+    if width == 0
+        || height == 0
+        || kw == 0
+        || kh == 0
+        || kw % 2 == 0
+        || kh % 2 == 0
+        || kw > 31
+        || kh > 31
+        || width > limits.max_texture_dimension_2d
+        || height > limits.max_texture_dimension_2d
+        || width > i32::MAX as u32
+        || height > i32::MAX as u32
+        || u64::from(width - 1) + u64::from(kw / 2) > i32::MAX as u64
+        || u64::from(height - 1) + u64::from(kh / 2) > i32::MAX as u64
+        || limits.max_compute_invocations_per_workgroup < WORKGROUP_X * WORKGROUP_Y
+        || limits.max_compute_workgroup_size_x < WORKGROUP_X
+        || limits.max_compute_workgroup_size_y < WORKGROUP_Y
+        || limits.max_compute_workgroup_size_z == 0
+        || width.div_ceil(WORKGROUP_X) > limits.max_compute_workgroups_per_dimension
+        || height.div_ceil(WORKGROUP_Y) > limits.max_compute_workgroups_per_dimension
+        || limits.max_sampled_textures_per_shader_stage == 0
+        || limits.max_storage_textures_per_shader_stage == 0
+        || limits.max_uniform_buffers_per_shader_stage == 0
+        || limits.max_uniform_buffer_binding_size < std::mem::size_of::<SpatialParams>() as u32
+        || limits.max_buffer_size < std::mem::size_of::<SpatialParams>() as u64
+        || limits.max_bind_groups == 0
+        || limits.max_bindings_per_bind_group < 3
+    {
+        return Err(invalid());
+    }
+    Ok(MorphologyPlan {
+        params: SpatialParams {
+            source_width: width,
+            source_height: height,
+            output_width: width,
+            output_height: height,
+            kernel_width: kw,
+            kernel_height: kh,
+            operation: u32::from(operation == GpuMorphology::Dilate),
+            _pad: 0,
+        },
+        separable: morphology_pass_count(width, height, kw, kh) == 2,
+        bytes,
+    })
+}
 
 /// Single-channel morphology operation executed on a GPU texture.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -103,6 +229,33 @@ pub(crate) struct SpatialPipelines {
     resize: wgpu::ComputePipeline,
     sobel: wgpu::ComputePipeline,
     morphology: wgpu::ComputePipeline,
+    separable_morphology: OnceLock<[wgpu::ComputePipeline; 2]>,
+}
+
+impl SpatialPipelines {
+    fn separable_morphology(&self, device: &wgpu::Device) -> &[wgpu::ComputePipeline; 2] {
+        self.separable_morphology.get_or_init(|| {
+            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("gpu-morphology-separable-shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("morphology_separable.wgsl").into()),
+            });
+            let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("gpu-morphology-separable-pl"),
+                bind_group_layouts: &[&self.layout],
+                push_constant_ranges: &[],
+            });
+            ["horizontal", "vertical"].map(|entry| {
+                device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                    label: Some(entry),
+                    layout: Some(&layout),
+                    module: &shader,
+                    entry_point: Some(entry),
+                    compilation_options: Default::default(),
+                    cache: None,
+                })
+            })
+        })
+    }
 }
 
 pub(crate) fn create_spatial_pipelines(device: &wgpu::Device) -> SpatialPipelines {
@@ -165,10 +318,14 @@ pub(crate) fn create_spatial_pipelines(device: &wgpu::Device) -> SpatialPipeline
         resize: create("resize_nearest"),
         sobel: create("sobel"),
         morphology: create("morphology"),
+        separable_morphology: OnceLock::new(),
     }
 }
 
 /// Resizes a device image with nearest-neighbor sampling without host transfer.
+///
+/// Unsupported dimensions, coordinate products and device limits return an
+/// error before output allocation or pipeline initialization.
 pub fn resize_nearest_gpu(
     runtime: &WgpuRuntime,
     source: &GpuImage,
@@ -185,10 +342,14 @@ pub(crate) fn resize_nearest_gpu_with_profiler(
     height: u32,
     profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuImage> {
-    if width == 0 || height == 0 {
-        return Err(SpatialError::InvalidArgument(
-            "GPU resize output dimensions must be positive".to_owned(),
-        ));
+    source.validate_runtime(runtime)?;
+    validate_resize_dispatch(
+        [source.width(), source.height()],
+        [width, height],
+        &runtime.device().limits(),
+    )?;
+    if let Some(profiler) = &profiler {
+        profiler.validate(runtime, 1)?;
     }
     dispatch(
         runtime,
@@ -209,6 +370,9 @@ pub(crate) fn resize_nearest_gpu_with_profiler(
 }
 
 /// Computes clamped L1 Sobel magnitude on a single-channel device image.
+///
+/// Runtime, dimensions and device limits are validated before work allocation
+/// or pipeline initialization. Output bytes and explicit transfers are unchanged.
 pub fn sobel_gpu(runtime: &WgpuRuntime, source: &GpuImage) -> SpatialResult<GpuImage> {
     sobel_gpu_with_profiler(runtime, source, None)
 }
@@ -219,6 +383,17 @@ pub(crate) fn sobel_gpu_with_profiler(
     profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuImage> {
     require_gray(source, "sobel_gpu")?;
+    source.validate_runtime(runtime)?;
+    validate_spatial_dispatch(
+        [source.width(), source.height()],
+        [source.width(), source.height()],
+        &runtime.device().limits(),
+    )?;
+    if let Some(profiler) = &profiler {
+        profiler.validate(runtime, 1)?;
+    }
+    let cache =
+        runtime.image_spatial_pipelines.get_or_init(|| create_spatial_pipelines(runtime.device()));
     dispatch(
         runtime,
         source,
@@ -227,10 +402,7 @@ pub(crate) fn sobel_gpu_with_profiler(
         3,
         3,
         0,
-        &runtime
-            .image_spatial_pipelines
-            .get_or_init(|| create_spatial_pipelines(runtime.device()))
-            .sobel,
+        &cache.sobel,
         "sobel_gpu",
         1,
         profiler,
@@ -238,6 +410,10 @@ pub(crate) fn sobel_gpu_with_profiler(
 }
 
 /// Applies rectangular erosion or dilation without leaving device memory.
+///
+/// Odd kernels in `1..=31` use replicate borders. Boxes with area at least 81
+/// and at least 1,048,576 pixel/sample visits use two exact extrema passes and
+/// four scratch bytes per pixel; smaller workloads use the original single pass.
 pub fn morphology_gpu(
     runtime: &WgpuRuntime,
     source: &GpuImage,
@@ -257,36 +433,107 @@ pub(crate) fn morphology_gpu_with_profiler(
     profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuImage> {
     require_gray(source, "morphology_gpu")?;
-    if kernel_width == 0
-        || kernel_height == 0
-        || kernel_width % 2 == 0
-        || kernel_height % 2 == 0
-        || kernel_width > 31
-        || kernel_height > 31
-    {
-        return Err(SpatialError::InvalidArgument(
-            "GPU morphology kernels must be odd and in 1..=31".to_owned(),
-        ));
-    }
-    dispatch(
-        runtime,
-        source,
+    source.validate_runtime(runtime)?;
+    let p = morphology_plan(
         source.width(),
         source.height(),
         kernel_width,
         kernel_height,
-        match operation {
-            GpuMorphology::Erode => 0,
-            GpuMorphology::Dilate => 1,
-        },
-        &runtime
-            .image_spatial_pipelines
-            .get_or_init(|| create_spatial_pipelines(runtime.device()))
-            .morphology,
-        "morphology_gpu",
-        1,
+        operation,
+        &runtime.device().limits(),
+    )?;
+    let cache =
+        runtime.image_spatial_pipelines.get_or_init(|| create_spatial_pipelines(runtime.device()));
+    let output = create_texture(runtime, source.width(), source.height(), "gpu-morphology-out");
+    let intermediate = p.separable.then(|| {
+        create_texture(runtime, source.width(), source.height(), "gpu-morphology-horizontal")
+    });
+    let intermediate_view = intermediate.as_ref().map(|t| t.create_view(&Default::default()));
+    let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("gpu-morphology-params"),
+        contents: bytemuck::bytes_of(&p.params),
+        usage: wgpu::BufferUsages::UNIFORM,
+    });
+    let mut encoder = runtime.device().create_command_encoder(&Default::default());
+    encode_morphology(
+        runtime,
+        cache,
+        &p,
+        &source.view(),
+        &output.create_view(&Default::default()),
+        intermediate_view.as_ref(),
+        &uniform,
+        &mut encoder,
         profiler,
+    );
+    runtime.queue().submit(Some(encoder.finish()));
+    // Only submitted scratch is returned. Queue ordering protects later reuse;
+    // an abandoned encoder drops its texture instead of publishing it to the pool.
+    if let Some(texture) = intermediate {
+        runtime.recycle_image_texture(source.width(), source.height(), texture);
+    }
+    let mut receipt = source.receipt().clone();
+    if p.separable {
+        receipt.record_gpu_to_gpu(p.bytes, "morphology_horizontal_gpu");
+    }
+    receipt.record_gpu_to_gpu(p.bytes, "morphology_gpu");
+    GpuImage::from_parts(
+        runtime,
+        source.width(),
+        source.height(),
+        1,
+        output,
+        source.metadata(),
+        receipt,
     )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn encode_morphology(
+    runtime: &WgpuRuntime,
+    cache: &SpatialPipelines,
+    p: &MorphologyPlan,
+    source: &wgpu::TextureView,
+    output: &wgpu::TextureView,
+    intermediate: Option<&wgpu::TextureView>,
+    uniform: &wgpu::Buffer,
+    encoder: &mut wgpu::CommandEncoder,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) {
+    let pipelines = p.separable.then(|| cache.separable_morphology(runtime.device()));
+    for index in 0..if p.separable { 2 } else { 1 } {
+        let pipeline = pipelines.map_or(&cache.morphology, |pipelines| &pipelines[index]);
+        let input = if p.separable && index == 1 { intermediate.unwrap() } else { source };
+        let target = if p.separable && index == 0 { intermediate.unwrap() } else { output };
+        let stage =
+            if p.separable && index == 0 { "morphology_horizontal_gpu" } else { "morphology_gpu" };
+        let group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(stage),
+            layout: &cache.layout,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(input),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(target),
+                },
+            ],
+        });
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some(stage),
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, stage),
+        });
+        pass.set_pipeline(pipeline);
+        pass.set_bind_group(0, &group, &[]);
+        pass.dispatch_workgroups(
+            p.params.output_width.div_ceil(WORKGROUP_X),
+            p.params.output_height.div_ceil(WORKGROUP_Y),
+            1,
+        );
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -382,3 +629,11 @@ fn require_gray(source: &GpuImage, operation: &str) -> SpatialResult<()> {
     }
     Ok(())
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "morphology_tests.rs"]
+mod morphology_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "sobel_tests.rs"]
+mod sobel_tests;

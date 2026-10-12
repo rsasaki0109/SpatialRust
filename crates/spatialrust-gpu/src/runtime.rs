@@ -22,6 +22,8 @@ pub struct WgpuRuntime {
     pipelines: OnceLock<ComputePipelineCache>,
     pub(crate) voxel_scan_pipelines: OnceLock<crate::kernels::PrefixScanPipelines>,
     pub(crate) ransac_plane_pipelines: OnceLock<crate::kernels::RansacPlanePipelines>,
+    pub(crate) point_estimator_pipelines:
+        OnceLock<crate::kernels::point_estimators::PointEstimatorPipelines>,
     max_gather_channels: u32,
     upload_pool: GpuBufferPool,
     pub(crate) scratch_pool: GpuBufferPool,
@@ -382,6 +384,7 @@ impl WgpuRuntime {
             pipelines: OnceLock::new(),
             voxel_scan_pipelines: OnceLock::new(),
             ransac_plane_pipelines: OnceLock::new(),
+            point_estimator_pipelines: OnceLock::new(),
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
             scratch_pool: GpuBufferPool::default(),

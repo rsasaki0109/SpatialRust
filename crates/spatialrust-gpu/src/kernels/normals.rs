@@ -1,10 +1,8 @@
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
-use wgpu::util::DeviceExt;
 
+use super::point_estimators::{self, Kind};
 use crate::runtime::WgpuRuntime;
-
-const WORKGROUP_SIZE: u32 = 256;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
@@ -160,130 +158,32 @@ pub fn estimate_normals_gpu(
     k: u32,
 ) -> SpatialResult<Vec<GpuNormal>> {
     let point_count = x.len();
-    if y.len() != point_count || z.len() != point_count {
+    if y.len() != point_count {
         return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: y.len() });
+    }
+    if z.len() != point_count {
+        return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: z.len() });
     }
     if point_count == 0 {
         return Ok(Vec::new());
     }
-    if k == 0 || neighbors.len() != point_count * k as usize {
-        return Err(SpatialError::InvalidArgument(format!(
-            "neighbors must have point_count*k = {} entries, got {}",
-            point_count * k as usize,
-            neighbors.len()
-        )));
-    }
-
-    let device = runtime.device();
-    let queue = runtime.queue();
-
-    let x_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("normals-x"),
-        contents: bytemuck::cast_slice(x),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-    let y_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("normals-y"),
-        contents: bytemuck::cast_slice(y),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-    let z_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("normals-z"),
-        contents: bytemuck::cast_slice(z),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-    let neighbor_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("normals-neighbors"),
-        contents: bytemuck::cast_slice(neighbors),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-    let uniform = NormalsUniform { point_count: point_count as u32, k, _pad0: 0, _pad1: 0 };
-    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("normals-uniform"),
-        contents: bytemuck::bytes_of(&uniform),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
-
-    let output_len = (point_count * std::mem::size_of::<[f32; 4]>()) as u64;
-    let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("normals-output"),
-        size: output_len,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
-
-    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("normals-shader"),
-        source: wgpu::ShaderSource::Wgsl(NORMALS_WGSL.into()),
-    });
-    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("normals-pipeline"),
-        layout: None,
-        module: &module,
-        entry_point: Some("main"),
-        compilation_options: wgpu::PipelineCompilationOptions::default(),
-        cache: None,
-    });
-
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("normals-bind-group"),
-        layout: &pipeline.get_bind_group_layout(0),
-        entries: &[
-            wgpu::BindGroupEntry { binding: 0, resource: uniform_buffer.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 1, resource: x_buffer.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 2, resource: y_buffer.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 3, resource: z_buffer.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 4, resource: neighbor_buffer.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 5, resource: output_buffer.as_entire_binding() },
+    point_estimators::validate_knn(runtime, point_count, neighbors, k)?;
+    let params = NormalsUniform { point_count: point_count as u32, k, _pad0: 0, _pad1: 0 };
+    point_estimators::run(
+        runtime,
+        Kind::KnnNormals,
+        point_count,
+        bytemuck::bytes_of(&params),
+        &[
+            bytemuck::cast_slice(x),
+            bytemuck::cast_slice(y),
+            bytemuck::cast_slice(z),
+            bytemuck::cast_slice(neighbors),
         ],
-    });
-
-    let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("normals") });
-    {
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("normals-pass"),
-            timestamp_writes: None,
-        });
-        pass.set_pipeline(&pipeline);
-        pass.set_bind_group(0, &bind_group, &[]);
-        pass.dispatch_workgroups((point_count as u32).div_ceil(WORKGROUP_SIZE), 1, 1);
-    }
-    queue.submit(Some(encoder.finish()));
-
-    let staging = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("normals-staging"),
-        size: output_len,
-        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("normals-readback"),
-    });
-    encoder.copy_buffer_to_buffer(&output_buffer, 0, &staging, 0, output_len);
-    queue.submit(Some(encoder.finish()));
-
-    let slice = staging.slice(..);
-    let (sender, receiver) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |result| {
-        let _ = sender.send(result);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    receiver
-        .recv()
-        .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
-        .map_err(|error| {
-            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
-        })?;
-
-    let data = slice.get_mapped_range();
-    let raw: &[[f32; 4]] = bytemuck::cast_slice(&data);
-    let normals =
-        raw.iter().map(|v| GpuNormal { normal: [v[0], v[1], v[2]], curvature: v[3] }).collect();
-    drop(data);
-    staging.unmap();
-
-    Ok(normals)
+        |rows| {
+            rows.iter().map(|r| GpuNormal { normal: [r[0], r[1], r[2]], curvature: r[3] }).collect()
+        },
+    )
 }
 
 #[cfg(test)]

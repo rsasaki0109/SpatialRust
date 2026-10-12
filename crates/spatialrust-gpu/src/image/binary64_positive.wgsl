@@ -105,6 +105,13 @@ fn fp_product(a: F64, b: F64) -> F64 {
 }
 fn fp_ratio(n: u32, d: u32) -> F64 {
     if n == 0u { return F64(vec2<u32>(0u), 0i); }
+    // Positive dyadic divisors only shift the exponent of an exact u32 value.
+    // The smallest supported ratio is still normal, so no rounding is needed.
+    if d != 0u && (d & (d - 1u)) == 0u {
+        var value = fp_uint(n);
+        value.exponent -= i32(firstLeadingBit(d));
+        return value;
+    }
     var e = i32(firstLeadingBit(n)) - i32(firstLeadingBit(d));
     if e >= 0i {
         if less64(vec2<u32>(n, 0u), shift64(d, u32(e))) { e -= 1i; }

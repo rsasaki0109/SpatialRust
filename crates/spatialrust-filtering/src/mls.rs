@@ -11,7 +11,7 @@ use spatialrust_core::{
     SpatialResult,
 };
 use spatialrust_math::{solve_linear_system, symmetric_eigen3, LeastSquaresResult, Mat3, Vec3};
-use spatialrust_search::{KdTree, RadiusSearchIndex};
+use spatialrust_search::{parallel_worker_count, KdTree, RadiusSearchIndex};
 
 use crate::filter::PointCloudFilter;
 
@@ -60,7 +60,20 @@ impl MlsSmoothing {
     }
 
     /// Returns the smoothed XYZ positions, one per input point.
+    ///
+    /// Shares one KD-tree between bounded scoped CPU workers using the same
+    /// staging policy as neighborhood outlier filters. Small clouds and one
+    /// available worker retain serial execution. Point order, neighborhood
+    /// order and each fit's floating-point operation order are preserved.
     pub fn smoothed_positions(&self, input: &PointCloud) -> SpatialResult<Vec<Vec3<f32>>> {
+        self.smoothed_positions_with_workers(input, parallel_worker_count(input.len()))
+    }
+
+    fn smoothed_positions_with_workers(
+        &self,
+        input: &PointCloud,
+        workers: usize,
+    ) -> SpatialResult<Vec<Vec3<f32>>> {
         if self.config.search_radius <= 0.0 || self.config.search_radius.is_nan() {
             return Err(SpatialError::InvalidArgument("search_radius must be positive".to_owned()));
         }
@@ -77,25 +90,55 @@ impl MlsSmoothing {
         // still down-weighting the far neighborhood to preserve curvature.
         let h_sq = (self.config.search_radius / 2.0).powi(2).max(1e-12);
 
-        let mut out = Vec::with_capacity(len);
-        for i in 0..len {
-            let p = Vec3::new(x[i], y[i], z[i]);
-            let neighbors = tree.radius_search(p.x, p.y, p.z, self.config.search_radius);
-            if neighbors.len() < self.config.min_neighbors {
-                out.push(p);
-                continue;
+        let smooth = |i| smooth_point(i, &tree, x, y, z, self.config, h_sq);
+        let workers = workers.max(1).min(len.max(1));
+        if workers == 1 {
+            let mut out = Vec::with_capacity(len);
+            for i in 0..len {
+                out.push(smooth(i));
             }
-            // Leave-one-out: exclude the query point itself so the surface is
-            // determined by its neighbors, which smooths the point's own noise.
-            let pts: Vec<Vec3<f32>> = neighbors
-                .iter()
-                .filter(|n| n.index != i)
-                .map(|n| Vec3::new(x[n.index], y[n.index], z[n.index]))
-                .collect();
-            out.push(project_point(p, &pts, self.config.polynomial_order, h_sq).unwrap_or(p));
+            return Ok(out);
         }
+
+        let mut out = vec![Vec3::new(0.0, 0.0, 0.0); len];
+        let chunk_size = len.div_ceil(workers);
+        std::thread::scope(|scope| {
+            for (band, chunk) in out.chunks_mut(chunk_size).enumerate() {
+                let start = band * chunk_size;
+                let smooth = &smooth;
+                scope.spawn(move || {
+                    for (offset, position) in chunk.iter_mut().enumerate() {
+                        *position = smooth(start + offset);
+                    }
+                });
+            }
+        });
         Ok(out)
     }
+}
+
+fn smooth_point(
+    i: usize,
+    tree: &KdTree,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    config: MlsConfig,
+    h_sq: f32,
+) -> Vec3<f32> {
+    let p = Vec3::new(x[i], y[i], z[i]);
+    let neighbors = tree.radius_search(p.x, p.y, p.z, config.search_radius);
+    if neighbors.len() < config.min_neighbors {
+        return p;
+    }
+    // Leave-one-out: exclude the query point itself so the surface is
+    // determined by its neighbors, which smooths the point's own noise.
+    let pts: Vec<Vec3<f32>> = neighbors
+        .iter()
+        .filter(|n| n.index != i)
+        .map(|n| Vec3::new(x[n.index], y[n.index], z[n.index]))
+        .collect();
+    project_point(p, &pts, config.polynomial_order, h_sq).unwrap_or(p)
 }
 
 impl PointCloudFilter for MlsSmoothing {
@@ -250,6 +293,19 @@ fn clone_buffer(buffer: &PointBuffer) -> PointBuffer {
         PointBuffer::I32(v) => PointBuffer::I32(v.clone()),
     }
 }
+
+#[cfg(test)]
+#[allow(dead_code)]
+#[path = "../tests/fixtures/mls_serial.rs"]
+mod previous;
+
+#[cfg(test)]
+#[path = "mls_parallel_tests.rs"]
+mod parallel_tests;
+
+#[cfg(test)]
+#[path = "mls_parallel_benchmark.rs"]
+mod parallel_benchmark;
 
 #[cfg(test)]
 mod tests {

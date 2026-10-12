@@ -74,6 +74,44 @@ channel count. Kernels return device-resident images and append named receipt
 stages; only `upload_u8` and `readback_u8` cross the host/device boundary.
 Runtime adapter identity and synchronization are explicit (`adapter_info`,
 `wait_idle`), and `recycle` returns textures to the runtime pool.
+RGB-to-gray retains the original 256-lane linear shader when its group count
+fits one dispatch axis. Larger inputs balance those flat groups across bounded
+dispatch rows. Padding groups return before pixel-index multiplication to prevent
+u32 wrap; source dimensions, pixel count, compute/binding limits and one free
+profiler stage are validated before work allocation or pipeline initialization.
+Linear and multi-row pipelines are independently lazy within one runtime-owned
+family and share the existing 16-byte uniform/layout. Integer BT.601 output,
+gray metadata, one pass, four physical write bytes per pixel and 16 query bytes
+on explicit collection remain unchanged. There is no new scratch or payload copy.
+Gray GPU box blur retains the integer full-box mean with one final half-up
+rounding. Boxes with area at least 81 and at least 65,536 total pixel/sample
+visits use horizontal unrounded u32 sums and a vertical reduction in one
+submission; smaller workloads retain one-pass traversal.
+The exclusive intermediate buffer is four bytes per pixel and uses submitted
+scratch leases. Oversized separable kernels scan only valid coordinates and
+weight replicated edge pixels analytically; constant-zero padding retains the
+full kernel divisor. Pixel, coordinate, sum and device limits reject before
+allocation. Both paths use bounded grid strides and independently lazy runtime
+pipelines. GPU rectangular morphology retains odd kernels in `1..=31` and
+replicate borders. With box area at least 81 and at least 1,048,576 pixel/sample
+visits it reduces horizontal then vertical minima/maxima. Clipping valid
+coordinates is exact because repeated edge values do not alter an extremum.
+Both passes share one submission; the exclusive RGBA8 intermediate is four
+bytes per pixel and returns to the bounded image pool only after submission.
+Small workloads keep the original full-box pass. Coordinate, texture, dispatch,
+uniform and workgroup limits reject before output/scratch/cache allocation.
+The separable pair is lazy within the existing spatial pipeline family.
+The resident Vision chain records six passes for small workloads and one extra
+for each separable blur/morphology path (up to eight), reserving all timestamp
+capacity before recording.
+GPU nearest resize and Sobel validate their runtime identity, positive source/
+output dimensions, signed coordinates, texture/compute/binding limits and one
+free profiler stage before output allocation or spatial-pipeline initialization.
+Resize checks that each maximum output-coordinate/source-dimension product fits
+u32 before division. Valid work retains the original shader and one output pass,
+with four physical write bytes per pixel and 16 query bytes on explicit collection.
+No global scratch, intermediate texture, pipeline or payload transfer is added;
+Vision chains keep their six-to-eight-pass contract.
 Optional `GpuStageProfiler` instrumentation is shared by image and point-cloud
 chains in `spatialrust-gpu`. Timestamp-enabled runtime construction requests
 only adapter-supported pass queries; default runtimes enable none. Profiled
@@ -81,6 +119,17 @@ entry points reserve bounded capacity before execution. Query collection is an
 explicit native synchronization/readback boundary with a separate byte receipt.
 GPU pass times exclude CPU setup, transfers and inter-pass gaps; completed wall
 time remains a separate measurement. Failed recordings cannot be collected.
+Standalone host-returning k-NN normals, grid radius normals and plane covariance
+estimators share bounded execution. Each kind lazily initializes its own pipeline
+on its owning runtime; shader math and neighborhood order stay unchanged.
+Storage inputs/output use exclusive submitted scratch leases, with full input
+uploads on every call and no content cache. Compute and result staging copy share
+one submission before scratch is returned. Mapping remains the explicit
+synchronous boundary of these host-returning APIs. Uniform and staging buffers
+are still created per call; the existing scratch pool bounds retained storage.
+Point, index, buffer, uniform and dispatch limits reject before device allocation.
+Grid cell storage is checked before CPU counting-sort allocation. Resident AoSoA
+frame execution and its timing/transfer receipts remain separate.
 Voxel boundary compaction uses a 256-lane shared-memory scan with recursively
 scanned block totals and offset propagation. All levels stay device-resident
 in one submission; the existing four-byte cell-count synchronization remains
@@ -153,8 +202,8 @@ explicit timestamp collection returns 80 query bytes separately from payloads.
 Other channel counts and unsupported counters/device limits fail before work
 allocation. Empty GPU images remain unsupported. Normalized public CDFs and
 adaptive tile equalization remain separate future contracts.
-Resident grayscale `clahe_gpu` adds three passes in one submission: axis geometry,
-per-tile histogram/clipping/lookup, then interpolation/application. Lookup storage
+Resident grayscale `clahe_gpu` runs three or four passes in one submission:
+axis geometry, histogram/lookup, then interpolation/application. Lookup storage
 is 1 KiB per tile; axis geometry is 16 bytes per source row/column, both private
 scratch leased through application submission. Reflect101 padding and exact
 clipped-count redistribution match the CPU. Per-tile cumulative counts use a
@@ -162,22 +211,38 @@ workgroup-wide tree scan of bounded counts and clipped excess. The residual
 redistribution prefix is computed analytically from the CPU's bin positions,
 avoiding a second scan and serial 256-bin clipping/CDF loops. Histogram bins and
 scan storage use about 3 KiB of workgroup memory within the existing 4 KiB limit;
-global scratch, dispatch bounds and three-pass submission remain unchanged.
-Tiles with at most 256 padded pixels assign one pixel per lane. Larger tiles
-partition columns/rows with power-of-two strides, avoiding per-pixel flat-index
+the minimum workgroup storage requirement remains 4 KiB. Direct histograms use
+three passes. Tiles with at most 256 padded pixels assign one pixel per lane.
+Larger direct tiles partition columns/rows with power-of-two strides, avoiding per-pixel flat-index
 division. Short tiles use more columns to keep lanes occupied; narrow tiles use
 more rows. Reflect101 computes a remainder only outside the source bounds, and
 subtraction guards keep stride increments within the validated u32 dimensions.
+For at most 16 tiles with at least 65,536 padded pixels each, a separate
+histogram pass partitions each tile into `ceil(area/8192)` contiguous chunks,
+bounded to 8–32 chunks. Up to 512 independent workgroups write 256 integer bins
+per chunk; fewer available groups stride through all chunks. The lookup pass
+merges these exact counts before the same clipping/scan/rounding. This adds at
+most 512 KiB of private scratch and one pass; insufficient buffer/binding limits
+select the original direct path. Both split pipelines initialize lazily in the
+owning runtime. Partial buffers stay exclusively leased through application
+submission and follow the existing byte-bounded scratch retention controls.
+Receipts include `clahe_histogram_gpu` and the partial histogram write bytes.
 Shared integer-word lookup rounding and a finite non-negative binary64 arithmetic
 subset preserve the CPU's division, subtraction, multiplication/addition
 operation order without shader float64.
+Geometry ratios with positive power-of-two divisors scale the exponent of an
+exact u32 value, returning identical binary64 words without fractional long
+division. Other ratios retain the original division and rounding algorithm.
+All axis entries are still regenerated on device per call using the same bounded
+scratch; no geometry-retention cache or additional transfer is introduced.
 Equal integer corners bypass interpolation only when the final byte is invariant
 under CPU rounding. No payload readback, geometry upload or host wait is hidden.
 The clip limit is a scalar host parameter; per-tile counts, padded coordinates,
 buffer bindings and compute limits are checked before allocations. Caller-owned
-output preserves metadata; constant bytes may change as in CPU CLAHE. Three
-profiled passes collect 48 query bytes explicitly. Browser shader execution is
-still unverified; adaptive contrast APIs remain provisional.
+output preserves metadata; constant bytes may change as in CPU CLAHE. Direct
+work requires three free profile stages and collects 48 query bytes; split work
+requires four stages and collects 64 bytes. Capacity is checked before work
+allocation. Browser shader execution is still unverified; adaptive contrast APIs remain provisional.
 CPU image analysis under `imgproc-analysis` uses optional Rayon row bands for
 large thresholds, u8 histograms and histogram-equalization lookup application.
 Tasks are bounded by image rows and the current pool; histograms merge exact
@@ -200,6 +265,36 @@ or one available worker run on the caller. Dispatch range/handle metadata scales
 with workers instead of chunks; result buffers still scale with neighbor count.
 This uses standard-library threads without an additional runtime dependency or
 implicit device transfer; concurrent callers each have their own worker budget.
+`search-graph` together with `parallel` adds explicit `knn_graph_parallel` and
+`radius_graph_parallel` APIs. They build one shared KD-tree, reuse that bounded
+chunk dispatcher with 256-point chunks, and produce worker-local edge lists in
+source-point order. Ordered joins preserve the serial neighbor/edge sequence,
+including KD-tree ties and duplicate-coordinate selection. Single-worker and
+below-threshold graph calls keep one caller range. No all-query neighbor table
+or distance matrix is staged; per-query neighbors and live local/final edge
+vectors still consume result-dependent memory (radius graphs may be quadratic).
+Existing serial APIs keep serial execution. Graph point counts must fit u32;
+large k requests are capped by cloud size with checked reservation arithmetic.
+MLS smoothing under `spatialrust-filtering/filter-mls` shares one caller-built
+KD-tree and writes independent contiguous output bands with scoped CPU workers.
+It reuses the existing point-staging policy: below 4,096 points, one available
+worker, or fewer than two useful 16,384-point chunks, execution stays serial.
+Worker count is capped by available CPU parallelism and useful chunk count.
+Each point retains unsorted KD-tree radius-neighbor order, leave-one-out
+selection and the original weighted covariance/polynomial arithmetic. The final position
+vector is allocated once; fitting scratch remains local to each active point.
+No all-query neighborhood table, new dependency or implicit device transfer is
+introduced. Filter reconstruction preserves field names, schema, all non-position
+buffers and metadata. Concurrent calls have independent per-call worker budgets.
+FPFH descriptors under `spatialrust-registration/register-fpfh` reuse the same
+point-staging policy for independent SPFH rows and weighted FPFH rows. Each
+phase fills disjoint slices directly in its final descriptor array, sharing one
+immutable KD-tree. The SPFH scope joins completely before weighting reads its
+rows. Per-point neighbor order, Darboux/bin/normalization arithmetic and output
+order are preserved; descriptor matching and seeded RANSAC retain their existing
+execution. Two 132-byte-per-point descriptor arrays are retained during weighting,
+with one radius-neighbor vector per active worker and no all-query neighborhood
+table. Worker caps are per call, not a process-wide CPU or scratch-byte budget.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

@@ -1,11 +1,8 @@
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
-use wgpu::util::DeviceExt;
 
+use super::point_estimators::{self, Kind};
 use crate::runtime::WgpuRuntime;
-use spatialrust_search::{build_grid, grid_bounds};
-
-const WORKGROUP_SIZE: u32 = 256;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
@@ -22,7 +19,7 @@ struct CovUniform {
 /// `[c00, c11, c22, c01, c02, c12]`.
 pub type GpuCovariance = [f32; 6];
 
-const COV_GRID_WGSL: &str = r#"
+pub(crate) const COV_GRID_WGSL: &str = r#"
 struct Params {
     origin: vec4<f32>,
     dims: vec4<u32>,
@@ -222,8 +219,11 @@ pub fn estimate_plane_covariances_grid_gpu(
     epsilon: f32,
 ) -> SpatialResult<Vec<GpuCovariance>> {
     let point_count = x.len();
-    if y.len() != point_count || z.len() != point_count {
+    if y.len() != point_count {
         return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: y.len() });
+    }
+    if z.len() != point_count {
+        return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: z.len() });
     }
     if point_count == 0 {
         return Ok(Vec::new());
@@ -231,40 +231,9 @@ pub fn estimate_plane_covariances_grid_gpu(
     if radius <= 0.0 || radius.is_nan() {
         return Err(SpatialError::InvalidArgument("grid radius must be positive".to_owned()));
     }
-
-    let (origin, dims) = grid_bounds(x, y, z, radius)?;
-    let (sorted, cell_start) = build_grid(x, y, z, origin, dims, radius);
-
-    let device = runtime.device();
-    let queue = runtime.queue();
-    let storage = wgpu::BufferUsages::STORAGE;
-
-    let x_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("cg-x"),
-        contents: bytemuck::cast_slice(x),
-        usage: storage,
-    });
-    let y_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("cg-y"),
-        contents: bytemuck::cast_slice(y),
-        usage: storage,
-    });
-    let z_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("cg-z"),
-        contents: bytemuck::cast_slice(z),
-        usage: storage,
-    });
-    let sorted_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("cg-sorted"),
-        contents: bytemuck::cast_slice(&sorted),
-        usage: storage,
-    });
-    let cell_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("cg-cell-start"),
-        contents: bytemuck::cast_slice(&cell_start),
-        usage: storage,
-    });
-    let uniform = CovUniform {
+    let (origin, dims, sorted, cell_start) =
+        point_estimators::prepare_grid(runtime, Kind::PlaneCovariances, x, y, z, radius)?;
+    let params = CovUniform {
         origin: [origin[0], origin[1], origin[2], 0.0],
         dims: [dims[0], dims[1], dims[2], point_count as u32],
         inv_cell: 1.0 / radius,
@@ -272,95 +241,28 @@ pub fn estimate_plane_covariances_grid_gpu(
         epsilon,
         _pad: 0.0,
     };
-    let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("cg-uniform"),
-        contents: bytemuck::bytes_of(&uniform),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
-
-    // Two vec4 rows per point: row0 = (c00,c11,c22,c01), row1 = (c02,c12,_,_).
-    let output_len = (2 * point_count * std::mem::size_of::<[f32; 4]>()) as u64;
-    let output_buf = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("cg-output"),
-        size: output_len,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
-
-    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("cg-shader"),
-        source: wgpu::ShaderSource::Wgsl(COV_GRID_WGSL.into()),
-    });
-    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("cg-pipeline"),
-        layout: None,
-        module: &module,
-        entry_point: Some("main"),
-        compilation_options: wgpu::PipelineCompilationOptions::default(),
-        cache: None,
-    });
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("cg-bind-group"),
-        layout: &pipeline.get_bind_group_layout(0),
-        entries: &[
-            wgpu::BindGroupEntry { binding: 0, resource: uniform_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 1, resource: x_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 2, resource: y_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 3, resource: z_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 4, resource: sorted_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 5, resource: cell_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 6, resource: output_buf.as_entire_binding() },
+    point_estimators::run(
+        runtime,
+        Kind::PlaneCovariances,
+        point_count,
+        bytemuck::bytes_of(&params),
+        &[
+            bytemuck::cast_slice(x),
+            bytemuck::cast_slice(y),
+            bytemuck::cast_slice(z),
+            bytemuck::cast_slice(&sorted),
+            bytemuck::cast_slice(&cell_start),
         ],
-    });
-
-    let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("cg") });
-    {
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("cg-pass"),
-            timestamp_writes: None,
-        });
-        pass.set_pipeline(&pipeline);
-        pass.set_bind_group(0, &bind_group, &[]);
-        pass.dispatch_workgroups((point_count as u32).div_ceil(WORKGROUP_SIZE), 1, 1);
-    }
-    queue.submit(Some(encoder.finish()));
-
-    let staging = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("cg-staging"),
-        size: output_len,
-        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("cg-rb") });
-    encoder.copy_buffer_to_buffer(&output_buf, 0, &staging, 0, output_len);
-    queue.submit(Some(encoder.finish()));
-
-    let slice = staging.slice(..);
-    let (sender, receiver) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |result| {
-        let _ = sender.send(result);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    receiver
-        .recv()
-        .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
-        .map_err(|error| {
-            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
-        })?;
-    let data = slice.get_mapped_range();
-    let rows: &[[f32; 4]] = bytemuck::cast_slice(&data);
-    let mut out = Vec::with_capacity(point_count);
-    for i in 0..point_count {
-        let row0 = rows[i];
-        let row1 = rows[point_count + i];
-        out.push([row0[0], row0[1], row0[2], row0[3], row1[0], row1[1]]);
-    }
-    drop(data);
-    staging.unmap();
-
-    Ok(out)
+        |rows| {
+            (0..point_count)
+                .map(|i| {
+                    let a = rows[i];
+                    let b = rows[point_count + i];
+                    [a[0], a[1], a[2], a[3], b[0], b[1]]
+                })
+                .collect()
+        },
+    )
 }
 
 #[cfg(test)]

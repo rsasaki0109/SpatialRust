@@ -6,6 +6,28 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+Standalone `gpu-wgpu` k-NN/radius normals and plane covariances reuse lazy
+per-runtime pipelines and bounded storage scratch. Compute and the existing
+host-result copy share one submission. These APIs still upload their input
+slices and synchronously return CPU results; no resident-frame contract or
+automatic placement changes. Kernel math stays unchanged, and invalid indices
+or unsupported storage/uniform/dispatch sizes return errors before allocation.
+
+GPU gray box blur under `gpu-image` keeps the previous integer mean and border
+semantics. Positive odd boxes with area at least 81 and at least 65,536 total
+pixel/sample visits use two device passes and a four-byte-per-pixel private
+intermediate; smaller workloads use one pass.
+Host image transfers stay explicit. Profiled resident Vision chains reserve six
+stages plus one per separable blur/morphology path (up to eight). Unsupported
+pixel/sum/coordinate or device limits return an error before blur allocation.
+
+GPU rectangular erosion/dilation under `gpu-image` retains replicate borders
+and odd kernels in `1..=31`. Boxes with area at least 81 and at least 1,048,576
+pixel/sample visits use exact horizontal/vertical extrema in one submission,
+with four scratch bytes per pixel in the bounded image texture pool. Smaller
+workloads keep the original one-pass shader. Coordinate and device limits fail
+before allocation; no dependency, public signature or image readback is added.
+
 | Profile | Enables | Intended use |
 | --- | --- | --- |
 | `mvp` | PCD, PLY, LAS/LAZ, COPC; voxel, normals, plane, Euclidean clustering, ICP, MVP pipeline | CPU-first end-to-end pipeline |
@@ -29,7 +51,7 @@ workspace because its build requires a Python toolchain.
 | `spatialrust-math` | vector/matrix/pose math | serde | none |
 | `spatialrust-io` | no format enabled by default | PCD, PLY, LAS/LAZ, E57, COPC, HTTP COPC, explicit roots/manifests, per-node `CopcNodeReader` hierarchy walk | format and checksum crates are optional |
 | `spatialrust-ros2` | ROS 2 type contracts through `spatialrust-runtime` | read-only rosbag2 SQLite PointCloud2 CDR streaming with optional float32 intensity, plus source-bound TFMessage inventory | `rusqlite` is isolated behind `rosbag2-sqlite` |
-| `spatialrust-search` | KD-tree | graph, bounded parallel radius/k-NN queries | none; Criterion is dev-only |
+| `spatialrust-search` | KD-tree | graph, bounded parallel radius/k-NN queries and graph construction | none; Criterion is dev-only |
 | `spatialrust-semantic` | entities, embeddings, fusion, search | `semantic-model`: `OnnxEntityEmbedder` through an existing model session | `spatialrust-ai`/`spatialrust-tensor` optional; ONNX stays in the AI crate |
 | `spatialrust-filtering` | voxel | GPU voxel, outlier, crop, FPS, MLS | wgpu/search optional |
 | `spatialrust-features` | normals | ISS, orientation, boundary, GPU normals | wgpu/search optional |
@@ -43,18 +65,24 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
-- `gpu-image` adds resident grayscale `clahe_gpu` and its three-pass profiled
+- `gpu-image` adds resident grayscale `clahe_gpu` and its three/four-pass profiled
   variant. Reflect101 tile histograms, clip redistribution, lookup rounding and
   bilinear interpolation match CPU CLAHE using u32-word binary64 arithmetic.
   Tile clipping/CDF use a workgroup-wide integer tree scan with analytic residual
   prefixes, replacing serial bin loops within the existing 4 KiB local limit.
   Larger tile histograms use row strips with shape-dependent lane assignment and
-  reflected edge handling, retaining the same scratch and three passes.
+  reflected edge handling on the direct three-pass path. For up to 16 tiles with
+  at least 65,536 padded pixels, a separate histogram pass splits each tile into
+  8–32 chunks, then merges exact integer counts before clipping. Up to 512 KiB
+  of additional submitted scratch is bounded by device binding/buffer limits;
+  insufficient capacity selects direct execution. Split pipelines initialize
+  lazily per runtime, and receipts include partial histogram write bytes.
   Geometry is computed on device, with no image/bin/geometry payload transfer.
   Temporary storage is 1 KiB per tile plus 16 bytes per source row/column,
   checked against binding limits and leased through final submission. Metadata
   is preserved; constant bytes follow CPU CLAHE rather than global equalization.
-  Output download is explicit/full RGBA8; query collection reads 48 bytes.
+  Output download is explicit/full RGBA8; query collection reads 48 direct or
+  64 split bytes, requiring three or four unused profile stages respectively.
   GPU limits and invalid grids/clips/channels reject before work allocation.
   Browser shader execution is not claimed. APIs remain provisional.
 - `gpu-image` also adds `equalize_histogram_gpu` and its five-pass profiled
@@ -90,6 +118,13 @@ workspace because its build requires a Python toolchain.
   empty inputs and parallel k-NN with `k=0` leave output untouched. Metadata is
   worker-sized, while output and local neighbor buffers remain result-sized.
   `spatialrust/search-parallel` exposes the same functions through the facade.
+  Combining `search-graph` and `parallel` adds `knn_graph_parallel` and
+  `radius_graph_parallel`, with one shared KD-tree, 256-point query chunks and
+  identical serial edge order. The facade exposes these with `search-graph` plus
+  `search-parallel`. Serial graph APIs retain caller execution. Graph storage
+  scales with edges, potentially quadratically for radius graphs; u32 index
+  limits and oversized k arithmetic are checked. See the
+  [completed graph measurements](../notes/2026-10-12_parallel_neighbor_graphs.md).
 - GPU storage retention is explicit and bounded under `gpu-wgpu`: upload/CHW
   and private point scratch pools each default to 64 MiB, with at most eight
   resources per size. `gpu-image` adds an independent 64 MiB RGBA8 texture pool.
@@ -141,6 +176,31 @@ workspace because its build requires a Python toolchain.
   resident; the four-byte cell-count readback is unchanged. Profiled frames
   reserve the actual hierarchy's pass count, including partial blocks. See
   [parallel execution measurements](../notes/2026-10-11_parallel_image_point_execution.md).
+- GPU CLAHE geometry uses exact exponent scaling for power-of-two tile sizes.
+  General ratios retain binary64 long division; all ratio and axis-weight words
+  are unchanged. Geometry remains regenerated per call, with existing scratch
+  bounds, stages and receipt bytes.
+  See [geometry ratio measurements](../notes/2026-10-12_exact_gpu_clahe_geometry.md).
+- GPU nearest resize and Sobel validate runtime, dimensions, compute/binding
+  limits and profiler capacity before allocation; resize checks coordinate-product
+  overflow. Valid shader math, metadata, receipts and transfers remain unchanged.
+  Shared-input Sobel tiling remains test-only after inconsistent paired results.
+  See [spatial dispatch validation and measurements](../notes/2026-10-12_gpu_spatial_dispatch_validation.md).
+- GPU RGB-to-gray distributes large flat workloads across bounded dispatch rows,
+  while single-row workloads retain their original shader. Both pipelines are
+  independently lazy; checked u32 pixel/index math, pre-allocation limits and
+  profiler checks preserve exact BT.601 bytes, receipts and explicit transfers.
+  See [bounded gray dispatch validation](../notes/2026-10-12_bounded_gpu_gray_dispatch.md).
+- `filter-mls` uses bounded scoped CPU workers for independent point fits,
+  sharing one KD-tree and preserving coordinate words, field order and metadata.
+  Existing small/one-worker point staging remains serial; each concurrent call
+  has its own worker budget. No GPU transfer or extra runtime dependency is added.
+  See [MLS execution measurements](../notes/2026-10-12_parallel_mls_smoothing.md).
+- `register-fpfh` computes SPFH and weighted FPFH rows with bounded scoped CPU
+  workers sharing one KD-tree. The first phase joins before weighting begins;
+  neighbor order, descriptor words and seeded registration results are preserved.
+  Small/one-worker clouds retain serial staging, with no additional dependency.
+  See [FPFH execution measurements](../notes/2026-10-12_parallel_fpfh_descriptors.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional

@@ -84,7 +84,7 @@ pub fn nearest_k_spatial_tensor_parallel_into<I: ChunkedNearestNeighborIndex + S
     });
 }
 
-fn available_workers() -> usize {
+pub(crate) fn available_workers() -> usize {
     std::thread::available_parallelism().map_or(1, |count| count.get())
 }
 
@@ -95,13 +95,13 @@ fn chunk_worker_count(point_count: usize, chunk_size: usize, available: usize) -
     available.max(1).min(point_count.div_ceil(chunk_size))
 }
 
-fn dispatch_chunks<Q>(
+pub(crate) fn dispatch_chunks<T: Send, Q>(
     tensor: &SpatialTensor<'_>,
     available: usize,
-    out: &mut Vec<(usize, Neighbor)>,
+    out: &mut Vec<T>,
     query: Q,
 ) where
-    Q: Fn(Range<usize>, &mut Vec<(usize, Neighbor)>) + Sync,
+    Q: Fn(Range<usize>, &mut Vec<T>) + Sync,
 {
     let point_count = tensor.len();
     if point_count == 0 {
@@ -112,7 +112,7 @@ fn dispatch_chunks<Q>(
     let workers = chunk_worker_count(point_count, chunk_size, available);
     // Preserve each backend callback's original chunk boundary. Compute ranges
     // lazily, avoiding an O(chunk_count) range/handle allocation for tiny chunks.
-    let query_band = |chunks: Range<usize>, local: &mut Vec<(usize, Neighbor)>| {
+    let query_band = |chunks: Range<usize>, local: &mut Vec<T>| {
         for chunk in chunks {
             let start = chunk * chunk_size; // chunk < ceil(point_count/chunk_size)
             let end = start + chunk_size.min(point_count - start);

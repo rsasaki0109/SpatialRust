@@ -19,6 +19,9 @@ SpatialRust is a Rust-native spatial computing framework: point clouds, geometry
   without waiting for step-by-step confirmation unless a true blocker appears.
 
 ## Delivery standards
+- Keep the local GPU model name out of tracked files, PR text, and published
+  benchmark artifacts. Describe the backend, relevant device capabilities, and
+  measurement conditions without naming the local adapter.
 - Keep changes focused and reviewable.
 - Add tests for correctness-critical math, schema, and IO behavior.
 - Use absolute paths when referencing files in notes and reports.

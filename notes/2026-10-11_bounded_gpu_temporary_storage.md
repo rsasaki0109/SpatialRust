@@ -81,7 +81,7 @@ run unchanged.
 
 ## Measurements
 
-Hardware: Windows, Intel Core i7-9750H, NVIDIA GeForce GTX 1660 Ti, Vulkan,
+Hardware: Windows, Intel Core i7-9750H, local GPU, Vulkan,
 NVIDIA driver 596.36. Rust/Cargo 1.98.1, wgpu 24.0.5. Other desktop/Python work
 continued; timings are local observations, not portable performance guarantees.
 Benchmark builds and GPU tests finished before the Criterion measurement.
