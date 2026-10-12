@@ -304,3 +304,6 @@ fn cold_cache_concurrency_moves_retained_results_and_pool_reuse_stay_independent
 
 #[path = "point_estimators_benchmark.rs"]
 mod benchmark;
+
+#[path = "grid_rows_tests.rs"]
+mod grid_rows;

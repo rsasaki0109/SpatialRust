@@ -300,6 +300,11 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
+Dense-grid radius normals and plane covariances gather neighboring x cells in
+contiguous rows with preserved point/accumulation order. Host grid construction,
+uploads and synchronous result mapping stay explicit; see
+[row traversal evidence](../notes/2026-10-12_gpu_grid_row_traversal.md).
+
 GPU runtime tests require a compatible adapter. On GPU-less CI, compile the
 GPU test targets and execute them on a runner with a wgpu adapter.
 

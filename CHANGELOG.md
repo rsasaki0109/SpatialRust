@@ -21,6 +21,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU grid radius normals and plane covariances scan adjacent x cells as one
+  contiguous row interval, preserving neighborhood order and floating operations
+  while reducing repeated grid-offset traversal without new transfers or scratch.
 - Large GPU voxel radix sorts reuse per-digit mask counts as shared exclusive
   word prefixes for stable local ranks. The existing cached-path barrier and
   524,288-point cutoff are preserved, with unchanged ordering, 24 digits/72
