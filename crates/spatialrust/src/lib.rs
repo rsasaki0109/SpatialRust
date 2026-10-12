@@ -176,6 +176,9 @@ pub use spatialrust_features::{
 #[cfg(feature = "feature-iss")]
 pub use spatialrust_features::{IssKeypointConfig, IssKeypointDetector, IssKeypointResult};
 
+#[cfg(feature = "feature-iss-gpu")]
+pub use spatialrust_features::GpuIssKeypointResult;
+
 #[cfg(feature = "feature-normal-orient")]
 pub use spatialrust_features::{orient_normals_consistent, NormalOrientationConfig};
 

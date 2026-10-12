@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add opt-in `feature-iss-gpu` keypoint detection: shared uploaded positions feed
+  GPU radius graphs, compensated covariance, eigenvalue saliency and local
+  maxima. Explicit payload receipts cover upload and flag/status download;
+  incomplete/malformed graphs invalidate all output. CPU defaults, ordered
+  host compaction and attribute gathering are retained. GPU selection can
+  differ at numerical thresholds/ties; diagnostic eigen readback is explicit.
+
 - Add opt-in `register-fpfh-gpu` descriptor computation: reusable radius
   neighborhoods feed GPU SPFH and distance-weighted FPFH passes, with explicit
   sample/tree/query upload and descriptor/status readback receipts. Input and

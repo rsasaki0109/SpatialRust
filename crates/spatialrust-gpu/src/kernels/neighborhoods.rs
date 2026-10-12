@@ -26,6 +26,10 @@ pub struct GpuQueryBatch {
 }
 
 impl GpuQueryBatch {
+    pub(crate) fn buffer(&self) -> Option<&wgpu::Buffer> {
+        self.buffer.as_ref()
+    }
+
     /// Uploads XYZ queries as padded 16-byte records. Finite XYZ and supported
     /// buffer/dispatch sizes are required; empty batches allocate no buffer.
     pub fn upload(runtime: &WgpuRuntime, queries: &[[f32; 3]]) -> SpatialResult<Self> {
