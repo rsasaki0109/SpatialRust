@@ -661,8 +661,16 @@ FPFH descriptors have an explicit GPU path under `register-fpfh-gpu`:
 search, SPFH and weighted FPFH on device and reports all payload transfers.
 Resident APIs reuse uploaded input and neighborhoods. Capacity overflow returns
 an error; GPU rounding can change angular bins near boundaries. CPU matching/
-RANSAC and ordinary descriptor defaults are retained; ISS/MLS remain CPU.
+RANSAC and ordinary descriptor defaults are retained; MLS remains CPU.
 See [FPFH measurements](notes/2026-10-12_gpu_fpfh_descriptors.md).
+
+ISS keypoints have an explicit `feature-iss-gpu` path:
+`detector.detect_with_gpu(&runtime, &cloud, salient_capacity, non_max_capacity)`
+runs both radius graphs, covariance/eigenvalue saliency and local maxima on GPU.
+CPU tree construction, ordered flag compaction and schema/attribute gathering
+remain host stages. Capacity includes self; incomplete graphs reject.
+GPU f32 arithmetic can change selection near thresholds and NMS ties compared
+with CPU f64. See [ISS validation and measurements](notes/2026-10-13_gpu_iss_keypoints.md).
 
 ### Library
 

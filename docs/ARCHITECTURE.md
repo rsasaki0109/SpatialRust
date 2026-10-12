@@ -30,7 +30,7 @@ Nearest-k rows retain CPU stable ordering; radius rows retain traversal order
 and expose overflow. Complete CPU readback rejects incomplete neighborhoods;
 GPU consumers must inspect counts before using rows. Target/query payloads
 remain resident between passes. This adds no core/search dependency and does
-not change feature algorithm placement; ISS/MLS device compute follows.
+not change feature algorithm placement; MLS device compute follows.
 
 FPFH device computation now consumes this radius-row representation through
 `GpuFpfhInput` and neighborhoods tied to that exact uploaded input. Explicit
@@ -41,6 +41,16 @@ rows before downstream feature use; invalid results are zeroed and explicit
 download rejects them. No neighborhood/SPFH readback is needed. The optional
 `register-fpfh-gpu` wrapper retains CPU validation/tree construction and exposes
 complete transfer receipts; CPU descriptor matching and RANSAC are unchanged.
+
+ISS device computation also consumes input-bound radius rows via `GpuIssInput`.
+The uploaded query positions double as covariance samples. Two device passes
+validate both graphs, compute compensated local covariance/Jacobi saliency and
+select local maxima. Incomplete/malformed graphs or numerical underflow invalidate
+all flags/scores. Owned result buffers outlive their inputs; GPU consumers must
+inspect status. `feature-iss-gpu` adds explicit detection with transfer receipts,
+retaining CPU tree construction, ordered flag compaction and attribute gathering.
+GPU f32 selection can differ near thresholds/ties from CPU f64; ordinary CPU
+behavior remains unchanged. Eigen diagnostics require separate explicit readback.
 
 | Area | Decision |
 | --- | --- |

@@ -6,6 +6,20 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+`feature-iss-gpu` exposes `IssKeypointDetector::detect_with_gpu` with a supplied
+runtime and salient/non-max capacities. Both graphs, compensated local
+covariance, eigenvalue saliency and local maxima run on GPU; CPU tree
+construction, ordered flag compaction and schema/attribute gathering remain.
+Capacities include self and must fit all rows, even rejected candidates.
+Positions/extents must be finite, radii need positive finite nonzero squares and
+gamma values must be finite in [0,1], stricter than ordinary CPU ISS. Evaluated
+nonzero local extents with subnormal/zero f32 squares return numerical errors.
+GPU f32 decisions can differ near thresholds/NMS ties from CPU f64. `GpuIssInput`
+under `gpu-wgpu` exposes resident graphs/flags and eigen diagnostics. Default
+readback is 4 bytes per input point plus 32 status bytes; optional score readback
+costs 16 bytes per point plus 32 status bytes. No intermediate graph readback or
+automatic CPU fallback occurs. See [ISS evidence](../notes/2026-10-13_gpu_iss_keypoints.md).
+
 `register-fpfh-gpu` exposes
 `fpfh_descriptors_gpu(runtime, cloud, radius, neighbor_capacity)` alongside the
 ordinary CPU descriptor API. CPU validation and KD-tree construction precede
@@ -30,7 +44,7 @@ CPU traversal order, counts all matches, and supports capacity=0 count-only
 search. `download` accounts for padded readback bytes; complete row access
 rejects overflow while `truncated_rows` explicitly returns a traversal prefix.
 Self/duplicate points are included. GPU feature consumers must check counts
-and preserve query/target semantics. GPU FPFH consumes radius rows as described
+and preserve query/target semantics. GPU FPFH/ISS consume radius rows as described
 above; other feature algorithms retain their separate CPU APIs. Native correctness and completed/
 resident measurements are in
 [the neighborhood note](../notes/2026-10-12_gpu_bounded_neighborhoods.md).
@@ -91,6 +105,7 @@ before allocation; no dependency, public signature or image readback is added.
 | `register-icp-gpu` | ICP and wgpu correspondence search | Explicit GPU target upload and per-batch query/readback; CPU pose solver |
 | `register-gicp-gpu` | GICP, GPU radius covariance and explicit GPU correspondences | Caller-owned runtime and full payload receipt on explicit alignment; CPU pose solver |
 | `register-fpfh-gpu` | GPU radius search, SPFH and weighted FPFH | Explicit descriptor API and payload receipts; CPU matching/RANSAC |
+| `feature-iss-gpu` | GPU radius graphs, covariance/eigenvalue saliency and local maxima | Explicit detection/receipts; CPU tree, compaction and attribute gathering |
 | `pipeline-mvp-gpu` | `mvp` GPU stages plus `gpu-wgpu` | GPU-enabled MVP pipeline |
 | `gpu-aoso-staging` | AoSoA core packing plus GPU-resident frame APIs | Chained GPU execution with explicit readback |
 | `serde` | serde derives for core/math metadata and schemas | Configuration and metadata serialization |

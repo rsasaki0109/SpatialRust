@@ -56,6 +56,16 @@ pub struct IssKeypointResult {
     pub keypoints: PointCloud,
 }
 
+/// Explicit GPU ISS detection with complete input/flag/status payload receipts.
+#[cfg(feature = "feature-iss-gpu")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuIssKeypointResult {
+    /// Ordered original indices and gathered keypoint cloud.
+    pub result: IssKeypointResult,
+    /// Tree/query upload and selection/status download; uniform controls excluded.
+    pub transfers: spatialrust_core::TransferStats,
+}
+
 /// Intrinsic Shape Signatures keypoint detector.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct IssKeypointDetector {
@@ -82,6 +92,64 @@ impl IssKeypointDetector {
     /// the caller; neighborhood arithmetic, ties and point order are preserved.
     pub fn detect(&self, input: &PointCloud) -> SpatialResult<IssKeypointResult> {
         self.detect_with_workers(input, parallel_worker_count(input.len()))
+    }
+
+    /// Explicitly uploads input and computes radius graphs, covariance,
+    /// eigenvalue saliency and non-maximum suppression on the supplied GPU.
+    /// CPU tree construction, ordered flag compaction and attribute gathering
+    /// remain host operations; no automatic CPU fallback occurs.
+    /// Both capacities include self and must fit ALL radius matches. Overflow
+    /// rejects instead of silently using truncated rows. Positions/extents must
+    /// be finite, radii must have positive finite nonzero f32 squares, and gamma
+    /// values must be finite in [0,1]. These checks are stricter than CPU ISS.
+    /// GPU f32 covariance/eigen arithmetic can change selection near threshold
+    /// and NMS ties compared with the CPU's f64 arithmetic.
+    /// A nonzero evaluated local extent whose f32 square underflows the normal
+    /// range returns a numerical error; no approximate zero-variance fallback.
+    #[cfg(feature = "feature-iss-gpu")]
+    pub fn detect_with_gpu(
+        &self,
+        runtime: &spatialrust_gpu::WgpuRuntime,
+        input: &PointCloud,
+        salient_capacity: u32,
+        non_max_capacity: u32,
+    ) -> SpatialResult<GpuIssKeypointResult> {
+        let radii = [self.config.salient_radius, self.config.non_max_radius];
+        let gamma = [self.config.gamma_21, self.config.gamma_32];
+        if radii.iter().any(|&r| !r.is_finite() || r <= 0.0 || !(r * r).is_finite() || r * r == 0.0)
+            || gamma.iter().any(|g| !g.is_finite() || !(0.0..=1.0).contains(g))
+        {
+            return Err(SpatialError::InvalidArgument("GPU ISS requires positive finite nonzero radius squares and finite gamma values in [0,1]".to_owned()));
+        }
+        let (x, y, z) = input.positions3()?;
+        if x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+            return Err(SpatialError::InvalidArgument("GPU ISS requires finite XYZ".to_owned()));
+        }
+        let tree = KdTree::from_slices(x, y, z);
+        let device_input = spatialrust_gpu::GpuIssInput::upload(runtime, &tree)?;
+        let neighborhoods = device_input.neighborhoods_resident(
+            runtime,
+            self.config.salient_radius,
+            self.config.non_max_radius,
+            salient_capacity,
+            non_max_capacity,
+        )?;
+        let output = device_input.keypoints_resident(
+            runtime,
+            &neighborhoods,
+            self.config.gamma_21,
+            self.config.gamma_32,
+            u32::try_from(self.config.min_neighbors).unwrap_or(u32::MAX),
+        )?;
+        let (indices, downloaded) = output.download(runtime)?;
+        let indices: Vec<_> = indices.into_iter().map(|i| i as usize).collect();
+        let keypoints = gather_indices(input, &indices)?;
+        let mut transfers = device_input.upload_transfers();
+        transfers.record(
+            spatialrust_core::TransferDirection::DeviceToHost,
+            downloaded.device_to_host_bytes(),
+        );
+        Ok(GpuIssKeypointResult { result: IssKeypointResult { indices, keypoints }, transfers })
     }
 
     fn detect_with_workers(

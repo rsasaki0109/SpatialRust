@@ -30,6 +30,9 @@ pub use boundary::{BoundaryConfig, BoundaryDetector, BoundaryResult};
 #[cfg(feature = "feature-iss")]
 pub use iss::{IssKeypointConfig, IssKeypointDetector, IssKeypointResult};
 
+#[cfg(feature = "feature-iss-gpu")]
+pub use iss::GpuIssKeypointResult;
+
 #[cfg(feature = "feature-normal-orient")]
 pub use orient::{orient_normals_consistent, NormalOrientationConfig};
 
