@@ -437,6 +437,9 @@ fn grid_radius_neighbors<'a>(
     sorted: &'a [u32],
     cell_start: &'a [u32],
 ) -> GridRadiusNeighbors<'a> {
+    let cx = cell_coord(x[index], origin[0], 1.0 / tolerance, dims[0]);
+    let cy = cell_coord(y[index], origin[1], 1.0 / tolerance, dims[1]);
+    let cz = cell_coord(z[index], origin[2], 1.0 / tolerance, dims[2]);
     GridRadiusNeighbors {
         index,
         x,
@@ -446,16 +449,15 @@ fn grid_radius_neighbors<'a>(
         radius_sq,
         sorted,
         cell_start,
-        cell: 0,
         slot: 0,
         end: 0,
-        dz: -1,
-        dy: -1,
-        dx: -1,
-        cx: cell_coord(x[index], origin[0], 1.0 / tolerance, dims[0]),
-        cy: cell_coord(y[index], origin[1], 1.0 / tolerance, dims[1]),
-        cz: cell_coord(z[index], origin[2], 1.0 / tolerance, dims[2]),
-        started: false,
+        ny: (cy - 1).max(0) as usize,
+        nz: (cz - 1).max(0) as usize,
+        first_y: (cy - 1).max(0) as usize,
+        after_y: (cy + 1).min(dims[1] as i32 - 1) as usize + 1,
+        after_z: (cz + 1).min(dims[2] as i32 - 1) as usize + 1,
+        first_x: (cx - 1).max(0) as usize,
+        after_x: (cx + 1).min(dims[0] as i32 - 1) as usize + 1,
     }
 }
 
@@ -468,16 +470,15 @@ struct GridRadiusNeighbors<'a> {
     radius_sq: f32,
     sorted: &'a [u32],
     cell_start: &'a [u32],
-    cell: usize,
     slot: u32,
     end: u32,
-    dz: i32,
-    dy: i32,
-    dx: i32,
-    cx: i32,
-    cy: i32,
-    cz: i32,
-    started: bool,
+    ny: usize,
+    nz: usize,
+    first_y: usize,
+    after_y: usize,
+    after_z: usize,
+    first_x: usize,
+    after_x: usize,
 }
 
 impl Iterator for GridRadiusNeighbors<'_> {
@@ -485,13 +486,8 @@ impl Iterator for GridRadiusNeighbors<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if !self.started {
-                self.started = true;
-                if !self.advance_cell() {
-                    return None;
-                }
-            } else if self.slot >= self.end {
-                if !self.advance_cell() {
+            if self.slot >= self.end {
+                if !self.advance_row() {
                     return None;
                 }
             } else {
@@ -512,49 +508,26 @@ impl Iterator for GridRadiusNeighbors<'_> {
 }
 
 impl GridRadiusNeighbors<'_> {
-    fn advance_cell(&mut self) -> bool {
-        let dimx = self.dims[0] as i32;
-        let dimy = self.dims[1] as i32;
-        let dimz = self.dims[2] as i32;
-
-        loop {
-            if self.dz > 1 {
-                return false;
-            }
-            let nx = self.cx + self.dx;
-            let ny = self.cy + self.dy;
-            let nz = self.cz + self.dz;
-            if nx >= 0 && ny >= 0 && nz >= 0 && nx < dimx && ny < dimy && nz < dimz {
-                self.cell = cell_index(nx, ny, nz, self.dims[0], self.dims[1]) as usize;
-                self.slot = self.cell_start[self.cell];
-                self.end = self.cell_start[self.cell + 1];
-                self.bump_offset();
-                return true;
-            }
-            self.bump_offset();
+    fn advance_row(&mut self) -> bool {
+        if self.nz >= self.after_z {
+            return false;
         }
-    }
-
-    fn bump_offset(&mut self) {
-        self.dx += 1;
-        if self.dx > 1 {
-            self.dx = -1;
-            self.dy += 1;
-            if self.dy > 1 {
-                self.dy = -1;
-                self.dz += 1;
-            }
+        // X cells are consecutive in both the grid and stable CSR order.
+        let row = (self.nz * self.dims[1] as usize + self.ny) * self.dims[0] as usize;
+        self.slot = self.cell_start[row + self.first_x];
+        self.end = self.cell_start[row + self.after_x];
+        self.ny += 1;
+        if self.ny >= self.after_y {
+            self.ny = self.first_y;
+            self.nz += 1;
         }
+        true
     }
 }
 
 fn cell_coord(value: f32, origin: f32, inv_cell: f32, dim: u32) -> i32 {
     let cell = ((value - origin) * inv_cell).floor() as i32;
     cell.clamp(0, dim as i32 - 1)
-}
-
-fn cell_index(cx: i32, cy: i32, cz: i32, dimx: u32, dimy: u32) -> u32 {
-    (cz as u32 * dimy + cy as u32) * dimx + cx as u32
 }
 
 #[cfg(test)]
@@ -596,3 +569,11 @@ mod tests {
         assert_eq!(actual, expected);
     }
 }
+
+#[cfg(test)]
+#[path = "uniform_grid_rows_tests.rs"]
+mod row_tests;
+
+#[cfg(test)]
+#[path = "uniform_grid_rows_benchmark.rs"]
+mod row_benchmark;

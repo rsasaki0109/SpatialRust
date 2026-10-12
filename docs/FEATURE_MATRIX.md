@@ -245,6 +245,12 @@ workspace because its build requires a Python toolchain.
   nonfinite behavior remain compatible with k=1 queries; no dependency or
   device transfer changes. See
   [scalar search measurements](../notes/2026-10-12_allocation_free_nearest_one.md).
+- Dense-grid `spatialrust-search::euclidean_cluster_roots` reads adjacent x cells
+  as stable CSR row intervals, with clipped y/z traversal. Ordered neighborhoods,
+  radius arithmetic and minimum roots remain identical under serial execution
+  and the existing `parallel` feature. No heap scratch or dependency is added;
+  GPU sparse-grid clustering and the segmentation KD-tree CPU path are separate.
+  See [CPU grid measurements](../notes/2026-10-12_cpu_grid_row_traversal.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
