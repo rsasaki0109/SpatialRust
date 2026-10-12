@@ -49,7 +49,7 @@ pub use fpfh::{
 pub use icp::{GpuIcpDiagnostics, GpuIcpReductionDiagnostics};
 
 #[cfg(feature = "register-gicp-gpu")]
-pub use gicp::GpuGicpDiagnostics;
+pub use gicp::{GpuGicpDiagnostics, GpuGicpIteration, GpuGicpReductionDiagnostics};
 
 #[cfg(feature = "register-fpfh-gpu")]
 pub use fpfh::{fpfh_descriptors_gpu, GpuFpfhResult};

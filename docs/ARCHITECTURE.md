@@ -37,6 +37,21 @@ caller-provided runtime and reports all input/grid payload and padded output
 transfers; errors propagate. Without a radius, covariance remains CPU k-NN.
 The legacy native shared-runtime covariance route keeps its fallback contract.
 
+`GicpRegistration::align_with_gpu_reduction` under the same feature retains
+source/target/tree and packed SPD covariances in `GpuGicpInput`. Five device
+passes transform originals, search with the existing unbounded traversal,
+apply the inclusive gate, prepare rotated covariance inverses, and reduce
+Hessian/gradient/Euclidean error. Centered coordinates, distance normalization,
+a target-inverse trace weight bound and compensated sums limit dynamic range.
+Owned 256-byte equations/status are explicitly downloaded; CPU solves the
+normalized 6x6 system and converts the linearized step to the existing world
+update/stopping convention. Post-update equations serve the next solve/final
+fitness. Covariance preparation stays CPU k-NN or explicit radius-GPU readback
+and re-upload with complete receipts. Unsupported covariance conditioning or
+nonfinite arithmetic invalidates all result payload. GPU f32 math and normalized
+solving can change pose/stopping; ordinary GICP remains unchanged. See
+[GICP reduction evidence](../notes/2026-10-13_gpu_gicp_reduction.md).
+
 Reusable finite `GpuQueryBatch` uploads and owned `GpuNeighborhoods` make the
 next feature-compute boundary explicit. GPU KD-tree k-NN/radius search writes
 fixed-capacity rows with stored/total counts and original index/distance pairs.

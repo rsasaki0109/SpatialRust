@@ -610,6 +610,12 @@ impl GicpSearch for GpuGicpSearch<'_> {
     }
 }
 
+#[cfg(feature = "register-gicp-gpu")]
+#[path = "gicp_reduction.rs"]
+mod reduction;
+#[cfg(feature = "register-gicp-gpu")]
+pub use reduction::{GpuGicpIteration, GpuGicpReductionDiagnostics};
+
 #[cfg(test)]
 mod tests {
     use super::{GicpConfig, GicpRegistration};

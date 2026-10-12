@@ -51,7 +51,9 @@ mod voxel_gather;
 
 pub(crate) mod cluster_union;
 pub(crate) mod fpfh;
+pub(crate) mod gicp_reduction;
 pub(crate) mod icp_reduction;
+pub use gicp_reduction::{GpuGicpEquations, GpuGicpInput, GpuGicpNormalEquations};
 pub(crate) mod iss;
 pub(crate) mod mls;
 pub use icp_reduction::{GpuIcpInput, GpuIcpMoments, GpuIcpStatistics};

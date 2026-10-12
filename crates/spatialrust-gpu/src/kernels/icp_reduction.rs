@@ -78,13 +78,13 @@ fn geometry(points: &[[f32; 3]]) -> SpatialResult<([f32; 4], f64)> {
 /// CPU target-tree construction is external. Original source points remain
 /// immutable; every evaluation applies the absolute pose to those originals.
 pub struct GpuIcpInput {
-    source: GpuQueryBatch,
-    target: GpuQueryBatch,
-    tree: GpuKdTree,
-    source_anchor: [f32; 4],
+    pub(super) source: GpuQueryBatch,
+    pub(super) target: GpuQueryBatch,
+    pub(super) tree: GpuKdTree,
+    pub(super) source_anchor: [f32; 4],
     target_anchor: [f32; 4],
-    scale: f32,
-    identity: Arc<()>,
+    pub(super) scale: f32,
+    pub(super) identity: Arc<()>,
     transfers: TransferStats,
 }
 
