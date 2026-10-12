@@ -337,6 +337,16 @@ budget rather than total query count; KD-tree storage remains input-sized, and
 worker caps are per call rather than a process-wide CPU limit. Each active band
 reuses one one-neighbor result vector with the same KD-tree traversal and fresh
 per-query accumulator, avoiding a heap allocation for every parallel query.
+KD-tree construction carries the selected axis's already-computed minimum into
+median selection. A minimum or NaN pivot cannot have a strictly smaller element;
+selection reproduces the original pivot swap directly instead of scanning the
+range. Moving right past a finite pivot raises the active range's lower bound;
+NaN pivots leave it unchanged. General partitions, axis choice, leaf size and
+recursive node construction keep their original behavior. Point permutations
+and split words remain identical, preserving query ties and unsorted neighbor
+order for downstream floating-point algorithms. This removes repeated scans of
+minimum buckets while retaining serial execution and existing storage. General
+quickselect worst-case complexity and parallel tree construction are unchanged.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

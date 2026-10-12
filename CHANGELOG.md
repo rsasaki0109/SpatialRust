@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- KD-tree construction skips partition scans when a pivot equals the known
+  minimum or is NaN. The original pivot swaps, point permutation, split words
+  and tree layout are preserved, retaining nearest/radius query order and ties.
+  Duplicate-heavy inputs avoid repeated full scans without another allocation,
+  dependency, public signature or device transfer; construction stays serial.
 - Chamfer/Hausdorff cloud metrics share each target KD-tree across bounded CPU
   query workers under `metrics-distance`. A reusable score window holds at
   most one default point chunk per worker, with one reused query buffer per

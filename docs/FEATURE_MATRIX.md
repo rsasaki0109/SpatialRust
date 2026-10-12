@@ -225,6 +225,11 @@ workspace because its build requires a Python toolchain.
   query buffer. Small/one-worker directions keep
   the original serial loop. Neither dependencies nor device transfers change.
   See [cloud distance measurements](../notes/2026-10-12_parallel_cloud_distances.md).
+- `search-kdtree` carries an axis minimum through median selection to bypass
+  scans for minimum/NaN pivots. Exact point permutations, node/split words and
+  query order remain unchanged, including ties. Construction stays serial and
+  retains existing storage and dependencies. See
+  [KD-tree construction measurements](../notes/2026-10-12_exact_kdtree_minimum_pivots.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
