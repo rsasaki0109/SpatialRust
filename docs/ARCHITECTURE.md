@@ -74,6 +74,17 @@ channel count. Kernels return device-resident images and append named receipt
 stages; only `upload_u8` and `readback_u8` cross the host/device boundary.
 Runtime adapter identity and synchronization are explicit (`adapter_info`,
 `wait_idle`), and `recycle` returns textures to the runtime pool.
+Image uploads validate positive u32 dimensions against the runtime's 2D texture
+limit, checked RGBA row/storage bytes and host Vec capacity before texture or
+packing allocation. Readback validates runtime ownership and logical channels,
+then checks row alignment, padded staging bytes against `max_buffer_size`, and
+host staging/output capacities before buffer allocation or copy submission.
+Transfer planning uses no compute or storage-binding limit: uploads write a
+texture and readback stages through an unmapped COPY_DST/MAP_READ buffer.
+Receipts retain four physical bytes per pixel rather than staging-row padding;
+rejections leave them unchanged. Internal image construction also checks u64
+physical storage arithmetic. Plans do not impose a new retention/peak-memory
+budget or change successful transfers, metadata, kernels or public signatures.
 RGB-to-gray retains the original 256-lane linear shader when its group count
 fits one dispatch axis. Larger inputs balance those flat groups across bounded
 dispatch rows. Padding groups return before pixel-index multiplication to prevent

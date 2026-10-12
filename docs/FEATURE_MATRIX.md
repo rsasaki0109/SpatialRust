@@ -196,6 +196,11 @@ workspace because its build requires a Python toolchain.
   one-pass receipts and explicit transfers are unchanged. Channel-lane and
   fixed-channel optimizations remain test-only after completed-call comparisons.
   See [AI packing validation and measurements](../notes/2026-10-12_validated_gpu_ai_packing.md).
+- `gpu-image` upload/readback validate texture dimensions, checked RGBA row
+  lengths, host capacity and padded readback-buffer limits before allocation.
+  Pixel values, metadata and physical transfer receipts are preserved; texture
+  transfers require no compute/storage-binding capability. See
+  [image transfer validation](../notes/2026-10-12_validated_gpu_image_transfers.md).
 - `filter-mls` uses bounded scoped CPU workers for independent point fits,
   sharing one KD-tree and preserving coordinate words, field order and metadata.
   Existing small/one-worker point staging remains serial; each concurrent call
