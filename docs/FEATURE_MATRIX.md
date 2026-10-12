@@ -191,6 +191,11 @@ workspace because its build requires a Python toolchain.
   independently lazy; checked u32 pixel/index math, pre-allocation limits and
   profiler checks preserve exact BT.601 bytes, receipts and explicit transfers.
   See [bounded gray dispatch validation](../notes/2026-10-12_bounded_gpu_gray_dispatch.md).
+- GPU CHW packing checks dimension/index/buffer/dispatch limits and profiler
+  ownership/capacity before allocation. Normalization math, output order,
+  one-pass receipts and explicit transfers are unchanged. Channel-lane and
+  fixed-channel optimizations remain test-only after completed-call comparisons.
+  See [AI packing validation and measurements](../notes/2026-10-12_validated_gpu_ai_packing.md).
 - `filter-mls` uses bounded scoped CPU workers for independent point fits,
   sharing one KD-tree and preserving coordinate words, field order and metadata.
   Existing small/one-worker point staging remains serial; each concurrent call

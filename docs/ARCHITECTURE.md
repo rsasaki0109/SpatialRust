@@ -83,6 +83,14 @@ Linear and multi-row pipelines are independently lazy within one runtime-owned
 family and share the existing 16-byte uniform/layout. Integer BT.601 output,
 gray metadata, one pass, four physical write bytes per pixel and 16 query bytes
 on explicit collection remain unchanged. There is no new scratch or payload copy.
+GPU AI CHW packing validates positive dimensions, logical channels, signed texture
+coordinates, u32 pixel/element indices, storage-binding/output-buffer sizes,
+16x16 dispatch limits and the 64-byte uniform before allocation or cache setup.
+Profile ownership and one free stage are checked before work begins. Finite
+scale/mean and finite nonzero standard deviations retain their existing contract;
+the original f32 normalization and CHW shader, single pass, storage retention
+and explicit payload/query collection remain unchanged. Experimental channel-lane
+and fixed-channel kernels remain native test fixtures after completed-call measurements.
 Gray GPU box blur retains the integer full-box mean with one final half-up
 rounding. Boxes with area at least 81 and at least 65,536 total pixel/sample
 visits use horizontal unrounded u32 sums and a vertical reduction in one
