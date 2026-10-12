@@ -168,6 +168,14 @@ Up to 2,048 input workgroups (524,288 points), legacy histogram/prefix kernels
 remain specialized without the extra subtotal barrier. Larger inputs lazily cache
 two optimized pipelines using a compile-time override; scatter is shared. This
 internal GPU selection retains small-input work and adds no CPU/GPU placement.
+The cached histogram's existing per-digit count loop also writes transposed
+exclusive prefixes for eight 32-bit mask words. After the existing subtotal
+barrier, each point reads its prefix and popcounts only preceding bits in its
+own word. Local ranks stay stable and exact, including partial input groups.
+All 128 prefix words are overwritten by sixteen digit lanes. This adds 512
+bytes of histogram workgroup storage, keeping its 1,088-byte footprint below
+the already-required 2,052-byte prefix kernel. No barrier, global allocation or
+pass is added; legacy specialization, pipeline selection and scatter are retained.
 RANSAC plane scoring retains its explicit XYZ/hypothesis uploads and score
 readback. Below 1,024 points the scalar per-hypothesis loop is retained; larger
 inputs assign a 256-lane workgroup to a hypothesis and tree-reduce integer

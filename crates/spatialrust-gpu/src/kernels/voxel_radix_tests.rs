@@ -302,6 +302,9 @@ fn radix_sort_preserves_device_order_with_stale_scratch_and_live_outputs() {
 #[path = "voxel_radix_benchmark.rs"]
 mod benchmark;
 
+#[path = "voxel_rank_tests.rs"]
+mod rank_tests;
+
 #[test]
 fn cached_radix_pipelines_initialize_once_across_concurrent_sorts() {
     let runtime = WgpuRuntime::new_headless().unwrap();

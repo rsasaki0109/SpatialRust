@@ -27,6 +27,8 @@ struct VoxelSortEntry {
 // on atomic insertion order or optional subgroup operations.
 var<workgroup> masks: array<atomic<u32>, 128>;
 var<workgroup> bucket_counts: array<u32, 16>;
+// Transposed word prefixes are produced by the existing per-digit count loop.
+var<workgroup> word_prefix: array<u32, 128>;
 var<workgroup> sums: array<vec2<u32>, 256>;
 var<workgroup> bucket_base: u32;
 
@@ -57,7 +59,7 @@ fn histogram(@builtin(local_invocation_index) lane: u32,
     }
     workgroupBarrier();
 
-    if index < params.point_count {
+    if !cached_prefix && index < params.point_count {
         let word = lane / 32u;
         let preceding = (1u << (lane % 32u)) - 1u;
         var rank = countOneBits(atomicLoad(&masks[bucket * 8u + word]) & preceding);
@@ -69,6 +71,7 @@ fn histogram(@builtin(local_invocation_index) lane: u32,
     if lane < 16u {
         var count = 0u;
         for (var word = 0u; word < 8u; word++) {
+            if cached_prefix { word_prefix[word * 16u + lane] = count; }
             count += countOneBits(atomicLoad(&masks[lane * 8u + word]));
         }
         if cached_prefix { bucket_counts[lane] = count; }
@@ -76,6 +79,12 @@ fn histogram(@builtin(local_invocation_index) lane: u32,
     }
     if cached_prefix {
         workgroupBarrier();
+        if index < params.point_count {
+            let word = lane / 32u;
+            let preceding = (1u << (lane % 32u)) - 1u;
+            ranks[index] = word_prefix[word * 16u + bucket]
+                + countOneBits(atomicLoad(&masks[bucket * 8u + word]) & preceding);
+        }
         if lane < 16u {
             var earlier = 0u;
             for (var bucket = 0u; bucket < lane; bucket++) {

@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Large GPU voxel radix sorts reuse per-digit mask counts as shared exclusive
+  word prefixes for stable local ranks. The existing cached-path barrier and
+  524,288-point cutoff are preserved, with unchanged ordering, 24 digits/72
+  passes, global scratch, profiling and explicit transfers.
 - Large GPU channel histograms use eight padded workgroup-local counter replicas
   to reduce concentrated atomic updates. Inputs outside 4,194,304..=8,388,608
   pixels or devices with less than 8,224 local bytes keep the original kernel. Exact
