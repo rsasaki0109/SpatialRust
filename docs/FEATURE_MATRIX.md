@@ -212,6 +212,12 @@ workspace because its build requires a Python toolchain.
   decisions, selected attributes and metadata are preserved. Small/one-worker
   calls stay serial, with no additional dependency or device transfer.
   See [boundary execution measurements](../notes/2026-10-12_parallel_boundary_detection.md).
+- `feature-iss` shares one KD-tree across bounded covariance and local-maximum
+  phases. Saliency joins before selection reads it; parallel selection uses one
+  temporary byte per point. Small/one-worker calls keep direct serial index
+  collection. Equal maxima, selected point order, schema, all attribute types
+  and metadata are preserved, without another dependency or device transfer.
+  See [ISS detection measurements](../notes/2026-10-12_parallel_iss_keypoints.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional

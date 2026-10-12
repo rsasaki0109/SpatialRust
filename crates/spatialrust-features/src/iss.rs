@@ -10,7 +10,7 @@ use spatialrust_core::{
     HasPositions3, PointBuffer, PointBufferSet, PointCloud, SpatialError, SpatialResult,
 };
 use spatialrust_math::{symmetric_eigen3, Mat3};
-use spatialrust_search::{KdTree, RadiusSearchIndex};
+use spatialrust_search::{parallel_worker_count, KdTree, RadiusSearchIndex};
 
 /// Configuration for [`IssKeypointDetector`].
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -76,7 +76,19 @@ impl IssKeypointDetector {
     }
 
     /// Detects keypoints and returns their indices and a keypoint sub-cloud.
+    ///
+    /// Shares one KD-tree across bounded scoped CPU workers. Saliency completes
+    /// before local-maximum selection reads it. Small/one-worker calls run on
+    /// the caller; neighborhood arithmetic, ties and point order are preserved.
     pub fn detect(&self, input: &PointCloud) -> SpatialResult<IssKeypointResult> {
+        self.detect_with_workers(input, parallel_worker_count(input.len()))
+    }
+
+    fn detect_with_workers(
+        &self,
+        input: &PointCloud,
+        workers: usize,
+    ) -> SpatialResult<IssKeypointResult> {
         if self.config.salient_radius <= 0.0 || self.config.non_max_radius <= 0.0 {
             return Err(SpatialError::InvalidArgument("ISS radii must be positive".to_owned()));
         }
@@ -84,45 +96,67 @@ impl IssKeypointDetector {
         let (x, y, z) = input.positions3()?;
         let len = input.len();
         let tree = KdTree::from_slices(x, y, z);
+        let workers = workers.max(1).min(len.max(1));
 
         // Saliency = smallest eigenvalue (lambda3) where the eigenvalue-ratio
         // tests pass; NaN marks a non-salient point.
         let mut saliency = vec![f32::NAN; len];
-        for i in 0..len {
-            let neighbors = tree.radius_search(x[i], y[i], z[i], self.config.salient_radius);
-            if neighbors.len() < self.config.min_neighbors {
-                continue;
+        fill_bands(&mut saliency, workers, |start, band| {
+            for (offset, value) in band.iter_mut().enumerate() {
+                let i = start + offset;
+                let neighbors = tree.radius_search(x[i], y[i], z[i], self.config.salient_radius);
+                if neighbors.len() < self.config.min_neighbors {
+                    continue;
+                }
+                let Some(eigenvalues) = neighborhood_eigenvalues(x, y, z, &neighbors) else {
+                    continue;
+                };
+                // Ascending order: l3 <= l2 <= l1.
+                let (l3, l2, l1) = (eigenvalues[0], eigenvalues[1], eigenvalues[2]);
+                if l1 <= 0.0 || l2 <= 0.0 {
+                    continue;
+                }
+                if (l2 / l1) < f64::from(self.config.gamma_21)
+                    && (l3 / l2) < f64::from(self.config.gamma_32)
+                {
+                    *value = l3 as f32;
+                }
             }
-            let Some(eigenvalues) = neighborhood_eigenvalues(x, y, z, &neighbors) else {
-                continue;
-            };
-            // Ascending order: l3 <= l2 <= l1.
-            let (l3, l2, l1) = (eigenvalues[0], eigenvalues[1], eigenvalues[2]);
-            if l1 <= 0.0 || l2 <= 0.0 {
-                continue;
-            }
-            if (l2 / l1) < f64::from(self.config.gamma_21)
-                && (l3 / l2) < f64::from(self.config.gamma_32)
-            {
-                saliency[i] = l3 as f32;
-            }
-        }
+        });
 
-        // Non-maximum suppression: keep points whose saliency is the strict
-        // maximum within `non_max_radius`.
-        let mut indices = Vec::new();
-        for i in 0..len {
+        // The completed saliency array is immutable throughout this phase.
+        // Equal maxima all survive, retaining the original >= tie behavior.
+        let is_keypoint = |i: usize| {
             let s = saliency[i];
             if s.is_nan() {
-                continue;
+                return false;
             }
             let neighbors = tree.radius_search(x[i], y[i], z[i], self.config.non_max_radius);
-            let is_local_max = neighbors.iter().all(|n| {
+            neighbors.iter().all(|n| {
                 let other = saliency[n.index];
                 n.index == i || other.is_nan() || s >= other
+            })
+        };
+        let mut indices = Vec::new();
+        if workers == 1 {
+            for i in 0..len {
+                if is_keypoint(i) {
+                    indices.push(i);
+                }
+            }
+        } else {
+            // One temporary byte per point avoids worker-local index vectors
+            // and a second result-sized index allocation during ordered joins.
+            let mut selected = vec![false; len];
+            fill_bands(&mut selected, workers, |start, band| {
+                for (offset, value) in band.iter_mut().enumerate() {
+                    *value = is_keypoint(start + offset);
+                }
             });
-            if is_local_max {
-                indices.push(i);
+            for (i, selected) in selected.into_iter().enumerate() {
+                if selected {
+                    indices.push(i);
+                }
             }
         }
 
@@ -130,6 +164,34 @@ impl IssKeypointDetector {
         Ok(IssKeypointResult { indices, keypoints })
     }
 }
+
+/// Fills disjoint output bands, joining all workers before the next phase.
+fn fill_bands<T: Send, F: Fn(usize, &mut [T]) + Sync>(output: &mut [T], workers: usize, fill: F) {
+    if workers == 1 {
+        fill(0, output);
+        return;
+    }
+    let chunk_size = output.len().div_ceil(workers);
+    std::thread::scope(|scope| {
+        for (band, chunk) in output.chunks_mut(chunk_size).enumerate() {
+            let fill = &fill;
+            scope.spawn(move || fill(band * chunk_size, chunk));
+        }
+    });
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "../tests/fixtures/iss_serial.rs"]
+#[allow(dead_code)]
+mod previous;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "iss_parallel_tests.rs"]
+mod parallel_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "iss_parallel_benchmark.rs"]
+mod parallel_benchmark;
 
 /// Eigenvalues (ascending) of the neighborhood covariance about its centroid.
 fn neighborhood_eigenvalues(
