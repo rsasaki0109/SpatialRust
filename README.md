@@ -661,7 +661,7 @@ FPFH descriptors have an explicit GPU path under `register-fpfh-gpu`:
 search, SPFH and weighted FPFH on device and reports all payload transfers.
 Resident APIs reuse uploaded input and neighborhoods. Capacity overflow returns
 an error; GPU rounding can change angular bins near boundaries. CPU matching/
-RANSAC and ordinary descriptor defaults are retained; MLS remains CPU.
+RANSAC and ordinary descriptor defaults are retained.
 See [FPFH measurements](notes/2026-10-12_gpu_fpfh_descriptors.md).
 
 ISS keypoints have an explicit `feature-iss-gpu` path:
@@ -671,6 +671,16 @@ CPU tree construction, ordered flag compaction and schema/attribute gathering
 remain host stages. Capacity includes self; incomplete graphs reject.
 GPU f32 arithmetic can change selection near thresholds and NMS ties compared
 with CPU f64. See [ISS validation and measurements](notes/2026-10-13_gpu_iss_keypoints.md).
+
+MLS smoothing has an explicit `filter-mls-gpu` path:
+`smoother.filter_with_gpu(&runtime, &cloud, neighbor_capacity)` runs radius search,
+weighted local frames and order-0/1/2 surface fits on GPU. The result preserves
+schema, metadata and attributes and reports transfers, per-point modes and
+unchanged/plane/polynomial counts. Resident APIs reuse uploaded input and radius
+rows. CPU tree construction and output reconstruction remain host stages.
+GPU f32 rank tests can choose a different fallback from CPU f64, with large
+differences on nearly singular fits. See
+[MLS precision and measurements](notes/2026-10-13_gpu_mls_smoothing.md).
 
 ### Library
 

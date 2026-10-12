@@ -40,6 +40,34 @@ impl MlsConfig {
     }
 }
 
+/// Explicit GPU MLS positions, device outcomes and payload receipt.
+#[cfg(feature = "filter-mls-gpu")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuMlsPositionResult {
+    /// Original-order explicitly downloaded GPU coordinates.
+    pub positions: Vec<Vec3<f32>>,
+    /// Per-point device outcomes aligned with positions.
+    pub modes: Vec<spatialrust_gpu::GpuMlsMode>,
+    /// Device fitting/fallback counts.
+    pub diagnostics: spatialrust_gpu::GpuMlsDiagnostics,
+    /// Tree/query upload and padded position/status download payload.
+    pub transfers: spatialrust_core::TransferStats,
+}
+
+/// Explicit GPU MLS filtered cloud, outcome counts and payload receipt.
+#[cfg(feature = "filter-mls-gpu")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuMlsFilterResult {
+    /// Smoothed cloud preserving schema, metadata and non-position fields.
+    pub cloud: PointCloud,
+    /// Per-point device outcomes aligned with cloud rows.
+    pub modes: Vec<spatialrust_gpu::GpuMlsMode>,
+    /// Device fitting/fallback counts.
+    pub diagnostics: spatialrust_gpu::GpuMlsDiagnostics,
+    /// Input upload and position/status download payload.
+    pub transfers: spatialrust_core::TransferStats,
+}
+
 /// Moving Least Squares smoothing filter.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MlsSmoothing {
@@ -67,6 +95,82 @@ impl MlsSmoothing {
     /// order and each fit's floating-point operation order are preserved.
     pub fn smoothed_positions(&self, input: &PointCloud) -> SpatialResult<Vec<Vec3<f32>>> {
         self.smoothed_positions_with_workers(input, parallel_worker_count(input.len()))
+    }
+
+    /// Explicitly uploads input, computes GPU radius neighborhoods, weighted
+    /// frames and order-0/1/2 polynomial fits, and downloads positions/status.
+    /// CPU tree construction remains; no automatic CPU fallback. Capacity includes
+    /// self and must fit all radius matches. GPU configuration requires finite
+    /// XYZ/extents and a positive finite nonzero f32 radius square, stricter than
+    /// CPU MLS. GPU normalized f32 math/rank tests can change coordinates and
+    /// fit/fallback decisions compared with CPU f64. Numerical underflow errors
+    /// propagate; insufficient support and singular fits use device fallbacks.
+    #[cfg(feature = "filter-mls-gpu")]
+    pub fn smoothed_positions_with_gpu(
+        &self,
+        runtime: &spatialrust_gpu::WgpuRuntime,
+        input: &PointCloud,
+        neighbor_capacity: u32,
+    ) -> SpatialResult<GpuMlsPositionResult> {
+        let radius = self.config.search_radius;
+        if !radius.is_finite()
+            || radius <= 0.0
+            || !(radius * radius).is_finite()
+            || radius * radius == 0.0
+            || self.config.polynomial_order > 2
+        {
+            return Err(SpatialError::InvalidArgument(
+                "GPU MLS requires a positive finite nonzero radius square and order 0..=2"
+                    .to_owned(),
+            ));
+        }
+        let (x, y, z) = input.positions3()?;
+        if x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+            return Err(SpatialError::InvalidArgument("GPU MLS requires finite XYZ".to_owned()));
+        }
+        let tree = KdTree::from_slices(x, y, z);
+        let device_input = spatialrust_gpu::GpuMlsInput::upload(runtime, &tree)?;
+        let rows = device_input.neighborhoods_resident(runtime, radius, neighbor_capacity)?;
+        let output = device_input.smooth_resident(
+            runtime,
+            &rows,
+            self.config.polynomial_order,
+            u32::try_from(self.config.min_neighbors).unwrap_or(u32::MAX),
+        )?;
+        let readback = output.download(runtime)?;
+        let mut transfers = device_input.upload_transfers();
+        transfers.record(
+            spatialrust_core::TransferDirection::DeviceToHost,
+            readback.transfers.device_to_host_bytes(),
+        );
+        let positions =
+            readback.positions.into_iter().map(|p| Vec3::new(p[0], p[1], p[2])).collect();
+        Ok(GpuMlsPositionResult {
+            positions,
+            modes: readback.modes,
+            diagnostics: readback.diagnostics,
+            transfers,
+        })
+    }
+
+    /// Explicit GPU MLS filtering with CPU schema/attribute reconstruction. The
+    /// ordinary filter trait retains CPU execution. See the position API for
+    /// capacity, precision and numeric-error contracts; all payload is reported.
+    #[cfg(feature = "filter-mls-gpu")]
+    pub fn filter_with_gpu(
+        &self,
+        runtime: &spatialrust_gpu::WgpuRuntime,
+        input: &PointCloud,
+        neighbor_capacity: u32,
+    ) -> SpatialResult<GpuMlsFilterResult> {
+        let result = self.smoothed_positions_with_gpu(runtime, input, neighbor_capacity)?;
+        let cloud = build_output(input, &result.positions)?;
+        Ok(GpuMlsFilterResult {
+            cloud,
+            modes: result.modes,
+            diagnostics: result.diagnostics,
+            transfers: result.transfers,
+        })
     }
 
     fn smoothed_positions_with_workers(
