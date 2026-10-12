@@ -40,7 +40,10 @@ pub fn uniform_grid_fits(x: &[f32], y: &[f32], z: &[f32], cell_size: f32) -> boo
     grid_bounds(x, y, z, cell_size).is_ok()
 }
 
-/// Counting-sort points into grid cells, returning sorted indices and CSR offsets.
+/// Stable counting-sort into grid cells, returning sorted indices and CSR offsets.
+///
+/// Reverse scattering reuses cumulative cell ends as the final start offsets,
+/// without an additional cell-sized cursor allocation.
 pub fn build_grid(
     x: &[f32],
     y: &[f32],
@@ -69,21 +72,19 @@ pub fn build_grid(
     }
     let mut acc = 0u32;
     for slot in counts.iter_mut() {
-        let c = *slot;
+        acc += *slot;
         *slot = acc;
-        acc += c;
     }
-    let cell_start = counts;
 
-    let mut cursor = cell_start.clone();
     let mut sorted = vec![0u32; n];
-    for index in 0..n {
+    // Descending input indices preserve ascending order within each cell.
+    // Decrementing each cumulative end exactly its count leaves its start.
+    for index in (0..n).rev() {
         let cell = cell_of(index);
-        let slot = cursor[cell];
-        sorted[slot as usize] = index as u32;
-        cursor[cell] = slot + 1;
+        counts[cell] -= 1;
+        sorted[counts[cell] as usize] = index as u32;
     }
-    (sorted, cell_start)
+    (sorted, counts)
 }
 
 /// Connected-component roots via uniform-grid union-find (minimum index per component).
@@ -577,3 +578,11 @@ mod row_tests;
 #[cfg(test)]
 #[path = "uniform_grid_rows_benchmark.rs"]
 mod row_benchmark;
+
+#[cfg(test)]
+#[path = "uniform_grid_build_tests.rs"]
+mod build_tests;
+
+#[cfg(test)]
+#[path = "uniform_grid_build_benchmark.rs"]
+mod build_benchmark;

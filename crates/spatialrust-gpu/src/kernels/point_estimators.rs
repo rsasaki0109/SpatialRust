@@ -249,3 +249,7 @@ pub(super) fn run<T>(
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "point_estimators_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "grid_build_tests.rs"]
+mod grid_build_tests;

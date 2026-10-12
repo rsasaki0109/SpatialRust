@@ -317,6 +317,16 @@ or one available worker run on the caller. Dispatch range/handle metadata scales
 with workers instead of chunks; result buffers still scale with neighbor count.
 This uses standard-library threads without an additional runtime dependency or
 implicit device transfer; concurrent callers each have their own worker budget.
+Shared CPU `build_grid` construction retains O(points + cells) counting-sort
+work, using cumulative cell ends and descending source indices for stable
+scattering. Each end is decremented to its final CSR start; the last sentinel
+remains the point count. This removes the separate cell cursor clone and
+`4 * (cells + 1)` bytes of live logical heap payload. Returned indices/starts,
+per-point f32 coordinate mapping and increasing source order inside each cell
+are identical. Grid construction stays serial under every feature set, without
+new dependencies, cached point IDs or implicit device copies. Standalone GPU
+radius normal/covariance preparation uses this same host builder; its storage
+uploads, shaders, scratch pools and readback remain unchanged.
 Dense-grid `euclidean_cluster_roots` merges the neighboring x cells into one
 stable CSR interval for each valid y/z row. Clipped row bounds avoid walking
 out-of-grid offsets, including single-row/axis grids. The z/y/x cell order,
