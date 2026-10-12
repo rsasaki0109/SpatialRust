@@ -105,6 +105,21 @@ the legacy shared-runtime route uses CPU covariance on WASM. Browser execution
 of the explicit GPU route is not verified. See
 [GICP measurements](../notes/2026-10-12_gpu_gicp_correspondences.md).
 
+The same `register-gicp-gpu` feature adds `GicpRegistration::align_with_gpu_reduction`.
+Original source/target/tree and packed covariances stay resident during GPU
+transform/search, covariance rotation/inversion and Hessian/gradient/fitness
+passes. A centered/scaled parameter basis and compensated sums produce an owned
+256-byte result per evaluation. CPU solves 6x6 equations and converts the
+linearized step to the existing world convention; post-update equations are
+reused. `GpuGicpInput` and owned normal equations under `gpu-wgpu` expose this
+boundary directly. Initial upload is 48*S + 64*T + 32*M bytes. CPU k-NN or
+explicit radius-GPU covariance readback/re-upload remains preparation and is
+included in receipts. Finite SPD f32 covariance rows, supported geometry/weight
+scales, eight storage bindings and finite valid configuration are required.
+Relative covariance Cholesky pivots <=1e-6 reject all result payload; no CPU
+fallback occurs. f32 weights/transforms and normalized solving can change
+matching/pose/stopping. See [GICP reduction evidence](../notes/2026-10-13_gpu_gicp_reduction.md).
+
 Standalone `gpu-wgpu` k-NN/radius normals and plane covariances reuse lazy
 per-runtime pipelines and bounded storage scratch. Compute and the existing
 host-result copy share one submission. These APIs still upload their input
@@ -133,7 +148,7 @@ before allocation; no dependency, public signature or image readback is added.
 | `mvp-http` | `mvp` + HTTP byte-range COPC | Remote COPC input |
 | `gpu-wgpu` | wgpu runtime and GPU kernels | Explicit GPU operation APIs |
 | `register-icp-gpu` | ICP GPU correspondence search and resident transforms/moment reductions | Explicit correspondence or untrimmed resident reduction API; CPU pose solver |
-| `register-gicp-gpu` | GICP, GPU radius covariance and explicit GPU correspondences | Caller-owned runtime and full payload receipt on explicit alignment; CPU pose solver |
+| `register-gicp-gpu` | GICP GPU correspondence or resident normal-equation reduction, optional radius covariance | Caller-owned runtime and complete receipts; CPU 6x6 pose solver |
 | `register-fpfh-gpu` | GPU radius search, SPFH and weighted FPFH | Explicit descriptor API and payload receipts; CPU matching/RANSAC |
 | `feature-iss-gpu` | GPU radius graphs, covariance/eigenvalue saliency and local maxima | Explicit detection/receipts; CPU tree, compaction and attribute gathering |
 | `filter-mls-gpu` | GPU radius search, weighted frames and order-0/1/2 surface fits | Explicit smoothing/receipts and per-point outcomes; CPU tree and attribute reconstruction |

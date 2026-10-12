@@ -657,6 +657,14 @@ GICP exposes the same explicit correspondence entry point under
 and share the transfer receipt. Its Hessian/gradient accumulation and pose
 solver stay on CPU. See [GICP measurements](notes/2026-10-12_gpu_gicp_correspondences.md).
 
+`GicpRegistration::align_with_gpu_reduction(&runtime, &source, &target)` under
+the same feature also runs transforms, covariance rotation/inversion and
+Hessian/gradient/fitness reductions on GPU. Each evaluation downloads 256 bytes
+of normalized equations/status for the CPU 6x6 solve. Covariance preparation
+remains CPU k-NN or explicit radius-GPU readback/re-upload. Strict conditioning
+guards and f32 differences are documented in
+[GICP reduction measurements](notes/2026-10-13_gpu_gicp_reduction.md).
+
 GPU k-NN/radius search can retain its results for later device passes with
 `GpuQueryBatch::upload` and
 `GpuKdTree::{nearest_k_resident,radius_neighbors_resident}` (`gpu-wgpu`). Radius

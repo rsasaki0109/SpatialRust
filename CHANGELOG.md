@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Extend `register-gicp-gpu` with explicit resident transform and normal-equation
+  reduction. GPU covariance rotation/inversion, Hessian/gradient and Euclidean
+  fitness phases share one submission; each evaluation downloads 256 bytes.
+  Centered/scaled equations use a CPU 6x6 solve and linearized world-step
+  conversion. CPU k-NN or explicit radius-GPU covariance preparation retains
+  full transfer receipts. Ordinary GICP remains unchanged; new finite/SPD and
+  conditioning guards reject unsupported numerics without CPU fallback.
+
 - Extend `register-icp-gpu` with explicit `align_with_gpu_reduction`: retain
   original source/target on GPU, transform, match and reduce centered moments
   on device, then download a fixed 176-byte result per evaluation. CPU Horn

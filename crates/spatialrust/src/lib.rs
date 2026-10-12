@@ -244,6 +244,9 @@ pub use spatialrust_registration::GpuIcpReductionDiagnostics;
 #[cfg(feature = "register-gicp")]
 pub use spatialrust_registration::{GicpConfig, GicpRegistration};
 
+#[cfg(feature = "register-gicp-gpu")]
+pub use spatialrust_registration::{GpuGicpIteration, GpuGicpReductionDiagnostics};
+
 #[cfg(feature = "register-ndt")]
 pub use spatialrust_registration::{NdtConfig, NdtRegistration};
 
