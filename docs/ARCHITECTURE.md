@@ -52,6 +52,21 @@ nonfinite arithmetic invalidates all result payload. GPU f32 math and normalized
 solving can change pose/stopping; ordinary GICP remains unchanged. See
 [GICP reduction evidence](../notes/2026-10-13_gpu_gicp_reduction.md).
 
+`GicpRegistration::align_with_gpu_resident_covariances` adds explicit k-NN
+preparation before that same resident update loop. `GpuGicpInput::upload_with_gpu_covariances`
+uses original positions for both queries and covariance samples, reuses the
+uploaded target tree, and temporarily uploads the source tree. Two bounded
+nearest-k passes and covariance/validation passes compute plane regularization
+on GPU. Centered/scaled compensated sample covariance and 32-step Jacobi
+normal eigenvectors preserve the physical 1e-12 stopping convention. A
+32-byte device status prefix makes any bad preparation invalidate all later
+256-byte equations; covariance/neighborhood payloads never cross to CPU.
+Upload is 32*(S+T) + 32*(source_nodes+target_nodes) bytes. CPU tree construction
+and the existing normalized solve/world update remain. This optional k=3..=64,
+epsilon=1e-4..=1 path requires covariance_radius=None; f32 covariance and
+repeated eigenvalues can change poses/stopping relative to old raw products.
+See [resident covariance evidence](../notes/2026-10-13_gpu_gicp_resident_covariances.md).
+
 `PointToPlaneIcp::align_with_gpu_reduction` under the optional
 `register-icp-point-to-plane-gpu` feature retains original positions/tree and
 raw target normals. Five passes transform originals, perform the existing

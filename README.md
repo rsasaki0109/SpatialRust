@@ -665,6 +665,13 @@ remains CPU k-NN or explicit radius-GPU readback/re-upload. Strict conditioning
 guards and f32 differences are documented in
 [GICP reduction measurements](notes/2026-10-13_gpu_gicp_reduction.md).
 
+`GicpRegistration::align_with_gpu_resident_covariances(&runtime, &source, &target)`
+also computes k-NN neighborhoods, sample covariance and plane eigenvectors on
+GPU and keeps them resident for the update loop. No covariance/neighborhood
+readback or re-upload occurs. This path requires covariance_radius=None,
+k=3..=64 and epsilon=1e-4..=1; CPU builds trees and solves 6x6 equations.
+See [resident covariance measurements](notes/2026-10-13_gpu_gicp_resident_covariances.md).
+
 Point-to-plane ICP also exposes
 `PointToPlaneIcp::align_with_gpu_reduction(&runtime, &source, &target)` under
 `register-icp-point-to-plane-gpu`. Transforms, nearest matching and plane

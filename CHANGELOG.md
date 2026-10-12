@@ -21,6 +21,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit resident k-NN covariance preparation for GICP under
+  `register-gicp-gpu`. GPU bounded neighborhoods, centered/scaled sample
+  covariance and plane eigenvectors feed the existing resident equation loop
+  without neighborhood/covariance readback or re-upload. Both original position
+  buffers and the target tree are reused. CPU tree construction and 6x6 pose
+  solving remain; receipts count both trees and fixed equation downloads.
+  Supports k=3..=64 and epsilon=1e-4..=1 with covariance_radius=None. Invalid
+  device preparation rejects all equations; existing CPU/radius routes retain
+  their behavior. f32 eigenvectors can differ at small/repeated spectra.
+
 - Add opt-in `register-icp-point-to-plane-gpu` resident transforms, nearest
   matching, plane Hessian/gradient and raw-normal plane fitness reductions.
   Reusable input and owned 256-byte equations retain explicit transfer receipts;

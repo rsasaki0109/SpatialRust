@@ -33,7 +33,7 @@ pub struct GpuGicpReductionDiagnostics {
     pub transfers: TransferStats,
     /// Completed resident evaluations (updates plus one).
     pub evaluation_batches: usize,
-    /// Explicit radius-GPU covariance estimates, zero or two.
+    /// Explicit GPU covariance estimates, zero or two (radius or resident k-NN).
     pub covariance_batches: usize,
 }
 
@@ -78,10 +78,45 @@ impl GicpRegistration {
         source: &PointCloud,
         target: &PointCloud,
     ) -> SpatialResult<GpuGicpReductionDiagnostics> {
+        self.align_reduction_impl(runtime, source, target, false)
+    }
+
+    /// Computes k-NN neighborhoods and plane covariances on GPU, retaining the
+    /// covariance buffers for the existing resident equation/update loop. No
+    /// neighborhood/covariance download or re-upload occurs. CPU builds both
+    /// trees, solves normalized 6x6 equations and composes/stops the pose.
+    /// Requires covariance_radius=None, k_neighbors=3..=64, epsilon (as f32)
+    /// in 1e-4..=1, and the same valid configuration as align_with_gpu_reduction.
+    /// Centered/scaled f32 covariance/eigenvectors may differ from CPU raw
+    /// products, particularly at repeated eigenvalues and search boundaries.
+    /// Invalid device preparation rejects equations without CPU fallback.
+    pub fn align_with_gpu_resident_covariances(
+        &self,
+        runtime: &WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+    ) -> SpatialResult<GpuGicpReductionDiagnostics> {
+        self.align_reduction_impl(runtime, source, target, true)
+    }
+
+    fn align_reduction_impl(
+        &self,
+        runtime: &WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+        resident_knn: bool,
+    ) -> SpatialResult<GpuGicpReductionDiagnostics> {
         self.validate_inputs(source, target)?;
         let c = self.config;
         let distance_squared = c.max_correspondence_distance * c.max_correspondence_distance;
         let epsilon = c.epsilon as f32;
+        if resident_knn
+            && (c.covariance_radius.is_some()
+                || c.k_neighbors > spatialrust_gpu::MAX_GPU_K_NEIGHBORS as usize
+                || !(1e-4..=1.0).contains(&epsilon))
+        {
+            return Err(SpatialError::InvalidArgument("resident GPU GICP covariances require covariance_radius=None, k_neighbors=3..=64 and epsilon (as f32) in 1e-4..=1".to_owned()));
+        }
         if c.max_iterations == 0
             || c.min_correspondences < 6
             || !c.epsilon.is_finite()
@@ -107,46 +142,53 @@ impl GicpRegistration {
         let tree = KdTree::from_slices(tx, ty, tz);
         let mut transfers = TransferStats::default();
         let mut covariance_batches = 0;
-        let mut prepare = |x: &[f32],
-                           y: &[f32],
-                           z: &[f32],
-                           tree: Option<&KdTree>|
-         -> SpatialResult<Vec<[f32; 6]>> {
-            if let Some(radius) = c.covariance_radius {
-                let (covariance, receipt) =
-                    spatialrust_gpu::estimate_plane_covariances_grid_gpu_with_receipt(
-                        runtime, x, y, z, radius, epsilon,
-                    )?;
-                record(&mut transfers, receipt);
-                covariance_batches += 1;
-                Ok(covariance)
-            } else {
-                let built;
-                let tree = if let Some(tree) = tree {
-                    tree
+        let input = if resident_knn {
+            let k = u32::try_from(c.k_neighbors).map_err(|_| invalid())?;
+            let source_tree = KdTree::from_slices(sx, sy, sz);
+            covariance_batches = 2;
+            GpuGicpInput::upload_with_gpu_covariances(runtime, &source_tree, &tree, k, epsilon)?
+        } else {
+            let mut prepare = |x: &[f32],
+                               y: &[f32],
+                               z: &[f32],
+                               tree: Option<&KdTree>|
+             -> SpatialResult<Vec<[f32; 6]>> {
+                if let Some(radius) = c.covariance_radius {
+                    let (covariance, receipt) =
+                        spatialrust_gpu::estimate_plane_covariances_grid_gpu_with_receipt(
+                            runtime, x, y, z, radius, epsilon,
+                        )?;
+                    record(&mut transfers, receipt);
+                    covariance_batches += 1;
+                    Ok(covariance)
                 } else {
-                    built = KdTree::from_slices(x, y, z);
-                    &built
-                };
-                Ok(covariances(x, y, z, tree, c.k_neighbors, c.epsilon)
-                    .into_iter()
-                    .map(|m| {
-                        [
-                            m[0][0] as f32,
-                            m[1][1] as f32,
-                            m[2][2] as f32,
-                            m[0][1] as f32,
-                            m[0][2] as f32,
-                            m[1][2] as f32,
-                        ]
-                    })
-                    .collect())
-            }
+                    let built;
+                    let tree = if let Some(tree) = tree {
+                        tree
+                    } else {
+                        built = KdTree::from_slices(x, y, z);
+                        &built
+                    };
+                    Ok(covariances(x, y, z, tree, c.k_neighbors, c.epsilon)
+                        .into_iter()
+                        .map(|m| {
+                            [
+                                m[0][0] as f32,
+                                m[1][1] as f32,
+                                m[2][2] as f32,
+                                m[0][1] as f32,
+                                m[0][2] as f32,
+                                m[1][2] as f32,
+                            ]
+                        })
+                        .collect())
+                }
+            };
+            let source_cov = prepare(sx, sy, sz, None)?;
+            let target_cov = prepare(tx, ty, tz, Some(&tree))?;
+            let positions: Vec<_> = (0..source.len()).map(|i| [sx[i], sy[i], sz[i]]).collect();
+            GpuGicpInput::upload(runtime, &positions, &source_cov, &tree, &target_cov)?
         };
-        let source_cov = prepare(sx, sy, sz, None)?;
-        let target_cov = prepare(tx, ty, tz, Some(&tree))?;
-        let positions: Vec<_> = (0..source.len()).map(|i| [sx[i], sy[i], sz[i]]).collect();
-        let input = GpuGicpInput::upload(runtime, &positions, &source_cov, &tree, &target_cov)?;
         record(&mut transfers, input.upload_transfers());
         let mut evaluation_batches = 0;
         let mut evaluate = |pose| -> SpatialResult<GpuGicpEquations> {

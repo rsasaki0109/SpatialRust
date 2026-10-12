@@ -3,7 +3,6 @@ struct Params {
     count: u32, targets: u32, groups: u32, unused: u32,
     bound: f32, max_distance: f32, scale: f32, weight_scale: f32,
 }
-struct Covariance { diagonal: vec4<f32>, off: vec4<f32> }
 struct Neighbor { index: u32, distance: f32 }
 struct Pair { w0: vec4<f32>, w1: vec4<f32>, p: vec4<f32>, residual: vec4<f32> }
 struct Partial { values: array<vec2<f32>,28>, counts: vec2<u32>, reserved: vec2<u32> }
@@ -16,7 +15,7 @@ struct Equations {
 @group(0) @binding(2) var<storage,read> target_points: array<vec4<f32>>;
 @group(0) @binding(3) var<storage,read_write> queries: array<vec4<f32>>;
 @group(0) @binding(4) var<storage,read> matches: array<Neighbor>;
-@group(0) @binding(5) var<storage,read> covariances: array<Covariance>;
+@group(0) @binding(5) var<storage,read> covariance_words: array<u32>;
 @group(0) @binding(6) var<storage,read_write> pairs: array<Pair>;
 @group(0) @binding(7) var<storage,read_write> partials: array<Partial>;
 @group(0) @binding(8) var<storage,read_write> result: Equations;
@@ -29,8 +28,11 @@ fn dot3(a: vec3<f32>, b: vec3<f32>) -> f32 {return a.x*b.x+a.y*b.y+a.z*b.z;}
 fn transform_point(p: vec3<f32>) -> vec3<f32> {
     return vec3<f32>(dot3(params.row0.xyz,p)+params.row0.w,dot3(params.row1.xyz,p)+params.row1.w,dot3(params.row2.xyz,p)+params.row2.w);
 }
-fn covariance(c: Covariance) -> mat3x3<f32> {
-    return mat3x3<f32>(vec3<f32>(c.diagonal.x,c.diagonal.w,c.off.x),vec3<f32>(c.diagonal.w,c.diagonal.y,c.off.y),vec3<f32>(c.off.x,c.off.y,c.diagonal.z));
+fn covariance(index:u32) -> mat3x3<f32> {
+    let base=index*8u;
+    let xx=bitcast<f32>(covariance_words[base]);let yy=bitcast<f32>(covariance_words[base+1u]);let zz=bitcast<f32>(covariance_words[base+2u]);
+    let xy=bitcast<f32>(covariance_words[base+3u]);let xz=bitcast<f32>(covariance_words[base+4u]);let yz=bitcast<f32>(covariance_words[base+5u]);
+    return mat3x3<f32>(vec3<f32>(xx,xy,xz),vec3<f32>(xy,yy,yz),vec3<f32>(xz,yz,zz));
 }
 fn add(a: vec2<f32>, b: f32) -> vec2<f32> {
     let s=a.x+b;let v=s-a.x;let e=(a.x-(s-v))+(b-v)+a.y;let h=s+e;
@@ -50,6 +52,7 @@ fn transform_source(@builtin(global_invocation_id) id: vec3<u32>) {
 fn prepare_pairs(@builtin(global_invocation_id) id: vec3<u32>) {
     let i=id.x;if i>=params.count {return;}
     pairs[i]=Pair(vec4<f32>(0.0),vec4<f32>(0.0),vec4<f32>(0.0),vec4<f32>(0.0));
+    if params.unused!=0u && covariance_words[0]!=0u {atomicOr(&result.status,16u);return;}
     let m=matches[i];
     if m.index==0xffffffffu {
         if m.distance!=bitcast<f32>(0x7f800000u) {atomicOr(&result.status,2u);}
@@ -62,7 +65,7 @@ fn prepare_pairs(@builtin(global_invocation_id) id: vec3<u32>) {
     let d=(p-anchor)/params.scale;let e=(p-q)/params.max_distance;
     if !finite3(d) || !finite3(e) {atomicOr(&result.status,4u);return;}
     let r=mat3x3<f32>(vec3<f32>(params.row0.x,params.row1.x,params.row2.x),vec3<f32>(params.row0.y,params.row1.y,params.row2.y),vec3<f32>(params.row0.z,params.row1.z,params.row2.z));
-    let c=covariance(covariances[params.count+m.index])+r*covariance(covariances[i])*transpose(r);
+    let c=covariance(params.unused+params.count+m.index)+r*covariance(params.unused+i)*transpose(r);
     let scale=max(c[0][0],max(c[1][1],c[2][2]));
     let factor=scale*params.weight_scale;
     if !finite(scale) || scale<=0.0 || !finite(factor) || factor<=0.0 {atomicOr(&result.status,4u);return;}
