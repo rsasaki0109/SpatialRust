@@ -149,6 +149,16 @@ are still created per call; the existing scratch pool bounds retained storage.
 Point, index, buffer, uniform and dispatch limits reject before device allocation.
 Grid cell storage is checked before CPU counting-sort allocation. Resident AoSoA
 frame execution and its timing/transfer receipts remain separate.
+Dense-grid radius normals and plane covariances merge the valid neighboring
+x cells into one counting-sort interval per y/z row, for at most nine row
+intervals per gather instead of 27 cell intervals. Both mean and covariance
+gathers retain the original z/y/x/point order, distance test and floating
+operations. Clamped x endpoints are reused across both gathers. The existing
+positive i32 dimensions and bounded cell/sentinel storage also bound these
+endpoints; no buffer, workgroup memory, barrier or transfer is added.
+The sparse AoSoA radius kernel has a dedicated shader matching the previous
+generated source. Its signed-key binary searches and per-cell traversal remain
+independent of dense CSR row gathering.
 Voxel boundary compaction uses a 256-lane shared-memory scan with recursively
 scanned block totals and offset propagation. All levels stay device-resident
 in one submission; the existing four-byte cell-count synchronization remains

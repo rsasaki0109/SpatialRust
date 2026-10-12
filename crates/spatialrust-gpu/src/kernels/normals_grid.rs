@@ -95,8 +95,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let cx = cell_coord(px, params.origin.x, params.inv_cell, dimx);
     let cy = cell_coord(py, params.origin.y, params.inv_cell, dimy);
     let cz = cell_coord(pz, params.origin.z, params.inv_cell, dimz);
+    // Adjacent x cells occupy one contiguous counting-sort interval.
+    let first_x = u32(max(cx - 1, 0));
+    let after_x = u32(min(cx + 1, i32(dimx) - 1)) + 1u;
 
-    // First pass: mean over radius neighbors across the 27 adjacent cells.
+    // First pass: mean over radius neighbors in up to nine contiguous cell rows.
     var mean = vec3<f32>(0.0, 0.0, 0.0);
     var count = 0.0;
     for (var dz = -1; dz <= 1; dz = dz + 1) {
@@ -105,19 +108,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         for (var dy = -1; dy <= 1; dy = dy + 1) {
             let ny = cy + dy;
             if (ny < 0 || ny >= i32(dimy)) { continue; }
-            for (var dx = -1; dx <= 1; dx = dx + 1) {
-                let nx = cx + dx;
-                if (nx < 0 || nx >= i32(dimx)) { continue; }
-                let cid = (u32(nz) * dimy + u32(ny)) * dimx + u32(nx);
-                let begin = cell_start[cid];
-                let end = cell_start[cid + 1u];
-                for (var s = begin; s < end; s = s + 1u) {
-                    let j = sorted[s];
-                    let d = vec3<f32>(xs[j] - px, ys[j] - py, zs[j] - pz);
-                    if (dot(d, d) <= params.radius_sq) {
-                        mean = mean + vec3<f32>(xs[j], ys[j], zs[j]);
-                        count = count + 1.0;
-                    }
+            let row = (u32(nz) * dimy + u32(ny)) * dimx;
+            let begin = cell_start[row + first_x];
+            let end = cell_start[row + after_x];
+            for (var s = begin; s < end; s = s + 1u) {
+                let j = sorted[s];
+                let d = vec3<f32>(xs[j] - px, ys[j] - py, zs[j] - pz);
+                if (dot(d, d) <= params.radius_sq) {
+                    mean = mean + vec3<f32>(xs[j], ys[j], zs[j]);
+                    count = count + 1.0;
                 }
             }
         }
@@ -137,25 +136,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         for (var dy = -1; dy <= 1; dy = dy + 1) {
             let ny = cy + dy;
             if (ny < 0 || ny >= i32(dimy)) { continue; }
-            for (var dx = -1; dx <= 1; dx = dx + 1) {
-                let nx = cx + dx;
-                if (nx < 0 || nx >= i32(dimx)) { continue; }
-                let cid = (u32(nz) * dimy + u32(ny)) * dimx + u32(nx);
-                let begin = cell_start[cid];
-                let end = cell_start[cid + 1u];
-                for (var s = begin; s < end; s = s + 1u) {
-                    let j = sorted[s];
-                    let p = vec3<f32>(xs[j], ys[j], zs[j]);
-                    let rel = p - vec3<f32>(px, py, pz);
-                    if (dot(rel, rel) <= params.radius_sq) {
-                        let dd = p - mean;
-                        c00 = c00 + dd.x * dd.x;
-                        c11 = c11 + dd.y * dd.y;
-                        c22 = c22 + dd.z * dd.z;
-                        c01 = c01 + dd.x * dd.y;
-                        c02 = c02 + dd.x * dd.z;
-                        c12 = c12 + dd.y * dd.z;
-                    }
+            let row = (u32(nz) * dimy + u32(ny)) * dimx;
+            let begin = cell_start[row + first_x];
+            let end = cell_start[row + after_x];
+            for (var s = begin; s < end; s = s + 1u) {
+                let j = sorted[s];
+                let p = vec3<f32>(xs[j], ys[j], zs[j]);
+                let rel = p - vec3<f32>(px, py, pz);
+                if (dot(rel, rel) <= params.radius_sq) {
+                    let dd = p - mean;
+                    c00 = c00 + dd.x * dd.x;
+                    c11 = c11 + dd.y * dd.y;
+                    c22 = c22 + dd.z * dd.z;
+                    c01 = c01 + dd.x * dd.y;
+                    c02 = c02 + dd.x * dd.z;
+                    c12 = c12 + dd.y * dd.z;
                 }
             }
         }
