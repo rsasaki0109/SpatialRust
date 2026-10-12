@@ -147,8 +147,12 @@ impl EuclideanClusterExtractor {
             );
             receipt
                 .record_transfer(TransferDirection::DeviceToHost, transfers.device_to_host_bytes());
-            receipt.record_stage("gpu-sparse-grid");
-            receipt.record_stage("cpu-component-labeling");
+            if !input.is_empty() {
+                if self.config.cluster_tolerance.is_finite() {
+                    receipt.record_stage("gpu-sparse-grid");
+                }
+                receipt.record_stage("gpu-component-labeling");
+            }
         }
         Ok(ExecutionOutput::new(output, receipt))
     }

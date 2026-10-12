@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Euclidean GPU clustering now performs minimum-index component union/find on
+  wgpu after sparse-cell construction, replacing host labeling and cell-metadata
+  readbacks with root readback. Receipts name `gpu-component-labeling`; host
+  cluster-size filtering and placement thresholds are retained. Nonfinite
+  coordinates, invalid reciprocals or unsupported limits reject before work;
+  infinite tolerance initializes zero roots on device.
 - GPU image transfers use complete RGBA row copies and bounded native CPU row
   bands for large 1..=3-channel packing/unpacking. ROI/padding, metadata, explicit
   transfer receipts and owned results are preserved; small/single-row/WASM

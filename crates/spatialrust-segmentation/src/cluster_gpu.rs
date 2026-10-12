@@ -6,9 +6,9 @@ use crate::segmenter::PointCloudSegmenter;
 
 /// GPU-grid-backed Euclidean cluster extractor.
 ///
-/// Sparse grid key generation, sorting, and compaction run on wgpu. Connected
-/// component labeling and cluster-size filtering remain deterministic host-side
-/// stages, matching [`crate::EuclideanClusterExtractor`] semantics.
+/// Sparse grid construction and minimum-index component labeling run on wgpu.
+/// Cluster-size filtering and output-cloud assembly remain on the host, matching
+/// [`crate::EuclideanClusterExtractor`] semantics.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GpuEuclideanClusterExtractor {
     config: EuclideanClusterConfig,
@@ -142,5 +142,90 @@ mod tests {
         let gpu = GpuEuclideanClusterExtractor::new(config).extract(&input).unwrap();
         assert_eq!(gpu.cluster_count, cpu.cluster_count);
         assert_eq!(gpu.cluster_sizes, cpu.cluster_sizes);
+    }
+
+    #[test]
+    fn gpu_policy_preserves_all_columns_metadata_size_filtering_and_receipts() {
+        use crate::cluster::EuclideanClusterExtractor;
+        use spatialrust_core::{
+            DeviceKind, ExecutionPolicy, FieldSemantic, PointBuffer, PointCloud, PointField,
+            SpatialMetadata, Timestamp,
+        };
+        let (mut schema, mut buffers, _) = three_clusters().into_parts();
+        for (name, buffer) in [
+            ("a_f32", PointBuffer::F32((0..27).map(|i| i as f32 * 0.5).collect())),
+            ("a_f64", PointBuffer::F64((0..27).map(|i| i as f64 * 0.25).collect())),
+            ("a_u8", PointBuffer::U8((0..27).map(|i| i as u8).collect())),
+            ("a_u16", PointBuffer::U16((0..27).map(|i| i as u16 * 37).collect())),
+            ("a_u32", PointBuffer::U32((0..27).map(|i| i * 104729).collect())),
+            ("a_i32", PointBuffer::I32((0..27).map(|i| i - 13).collect())),
+        ] {
+            schema =
+                schema.with_field(PointField::scalar(name, FieldSemantic::Unknown, buffer.dtype()));
+            buffers.insert(name.to_owned(), buffer);
+        }
+        let metadata = SpatialMetadata::new("synthetic-clusters", Timestamp::from_nanos(42));
+        let input = PointCloud::try_from_parts(schema, buffers, metadata).unwrap();
+        for (min_cluster_size, max_cluster_size) in [(1, 9), (10, usize::MAX), (1, 8)] {
+            let extractor = EuclideanClusterExtractor::new(EuclideanClusterConfig {
+                cluster_tolerance: 1.5,
+                min_cluster_size,
+                max_cluster_size,
+                gpu_min_points: None,
+            });
+            let expected = extractor.extract(&input).unwrap();
+            let actual = extractor
+                .extract_with_policy_and_receipt(&input, ExecutionPolicy::Gpu(DeviceKind::Wgpu))
+                .unwrap();
+            assert_eq!(actual.output().cluster_sizes, expected.cluster_sizes);
+            assert_eq!(actual.output().cluster_count, expected.cluster_count);
+            assert_eq!(actual.output().cloud.schema(), expected.cloud.schema());
+            assert_eq!(actual.output().cloud.metadata(), expected.cloud.metadata());
+            for field in expected.cloud.schema().fields() {
+                assert_eq!(
+                    actual.output().cloud.field(&field.name).unwrap(),
+                    expected.cloud.field(&field.name).unwrap()
+                );
+            }
+            assert_eq!(actual.receipt().host_to_device_bytes(), 27 * 12);
+            assert_eq!(actual.receipt().device_to_host_bytes(), 27 * 4 + 4);
+            assert_eq!(
+                actual.receipt().stages(),
+                &["euclidean-clustering", "gpu-sparse-grid", "gpu-component-labeling"]
+            );
+        }
+    }
+
+    #[test]
+    fn infinite_and_empty_gpu_policy_receipts_name_only_executed_device_stages() {
+        use crate::cluster::EuclideanClusterExtractor;
+        use spatialrust_core::{DeviceKind, ExecutionPolicy, PointBuffer, PointCloud};
+        let extractor = EuclideanClusterExtractor::new(EuclideanClusterConfig {
+            cluster_tolerance: f32::INFINITY,
+            min_cluster_size: 1,
+            max_cluster_size: usize::MAX,
+            gpu_min_points: None,
+        });
+        let actual = extractor
+            .extract_with_policy_and_receipt(
+                &three_clusters(),
+                ExecutionPolicy::Gpu(DeviceKind::Wgpu),
+            )
+            .unwrap();
+        assert_eq!(actual.output().cloud.field("label").unwrap(), &PointBuffer::I32(vec![0; 27]));
+        assert_eq!(actual.receipt().host_to_device_bytes(), 0);
+        assert_eq!(actual.receipt().device_to_host_bytes(), 27 * 4);
+        assert_eq!(actual.receipt().stages(), &["euclidean-clustering", "gpu-component-labeling"]);
+        let (schema, mut buffers, metadata) = three_clusters().into_parts();
+        for field in schema.fields() {
+            buffers.insert(field.name.clone(), PointBuffer::with_capacity(field.dtype, 0));
+        }
+        let empty = PointCloud::try_from_parts(schema, buffers, metadata).unwrap();
+        let actual = extractor
+            .extract_with_policy_and_receipt(&empty, ExecutionPolicy::Gpu(DeviceKind::Wgpu))
+            .unwrap();
+        assert_eq!(actual.receipt().host_to_device_bytes(), 0);
+        assert_eq!(actual.receipt().device_to_host_bytes(), 0);
+        assert_eq!(actual.receipt().stages(), &["euclidean-clustering"]);
     }
 }
