@@ -132,6 +132,52 @@ impl KdTree {
         (point_index, x, y, z)
     }
 
+    fn nearest_one_recursive(
+        &self,
+        node: u32,
+        qx: f32,
+        qy: f32,
+        qz: f32,
+        best: &mut Option<Neighbor>,
+    ) {
+        if node == INVALID_NODE {
+            return;
+        }
+
+        let node_data = self.nodes[node as usize];
+        if node_data.axis == AXIS_LEAF {
+            for order_index in node_data.start..node_data.end {
+                let (index, px, py, pz) = self.ordered_point(order_index);
+                let distance_squared = squared_distance(px, py, pz, qx, qy, qz);
+                if let Some(neighbor) = best {
+                    // Retain the k=1 accumulator's rejection comparison:
+                    // NaN candidates or incumbents must still be replaced.
+                    if distance_squared >= neighbor.distance_squared {
+                        continue;
+                    }
+                }
+                *best = Some(Neighbor { index: index as usize, distance_squared });
+            }
+            return;
+        }
+
+        let diff = match node_data.axis {
+            0 => qx - node_data.split,
+            1 => qy - node_data.split,
+            _ => qz - node_data.split,
+        };
+        let (near, far) = if diff <= 0.0 {
+            (node_data.left, node_data.right)
+        } else {
+            (node_data.right, node_data.left)
+        };
+
+        self.nearest_one_recursive(near, qx, qy, qz, best);
+        if best.as_ref().map_or(true, |neighbor| diff * diff < neighbor.distance_squared) {
+            self.nearest_one_recursive(far, qx, qy, qz, best);
+        }
+    }
+
     fn nearest_k_recursive(
         &self,
         node: u32,
@@ -366,7 +412,9 @@ impl SpatialIndex for KdTree {
 
 impl NearestNeighborIndex for KdTree {
     fn nearest_one(&self, x: f32, y: f32, z: f32) -> Option<Neighbor> {
-        self.nearest_k(x, y, z, 1).into_iter().next()
+        let mut best = None;
+        self.nearest_one_recursive(self.root, x, y, z, &mut best);
+        best
     }
 
     fn nearest_k(&self, x: f32, y: f32, z: f32, k: usize) -> Vec<Neighbor> {
@@ -600,6 +648,14 @@ mod partition_tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "kdtree_partition_benchmark.rs"]
 mod partition_benchmark;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "kdtree_nearest_tests.rs"]
+mod nearest_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "kdtree_nearest_benchmark.rs"]
+mod nearest_benchmark;
 
 fn partition_by_axis(
     x: &[f32],

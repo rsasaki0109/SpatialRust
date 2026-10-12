@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- KD-tree single-neighbor queries keep one stack-resident optional result instead
+  of allocating a one-element Vec. The existing traversal, equal-distance ties,
+  NaN replacement/pruning and overflow behavior remain unchanged, with no new
+  dependency, public signature or device transfer.
 - KD-tree construction skips partition scans when a pivot equals the known
   minimum or is NaN. The original pivot swaps, point permutation, split words
   and tree layout are preserved, retaining nearest/radius query order and ties.
