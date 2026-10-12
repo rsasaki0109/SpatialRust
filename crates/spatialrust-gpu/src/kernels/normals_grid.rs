@@ -192,7 +192,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 /// search over a uniform grid.
 ///
 /// The grid (cell size = `radius`) is built on the CPU with a counting sort
-/// (O(n)); the per-point neighbor gather, covariance, and eigen-decomposition
+/// (O(n + cells)); the per-point neighbor gather, covariance, and eigen-decomposition
 /// all run on the GPU. Returns `SpatialError::InvalidArgument` when the bounding
 /// grid would exceed an internal cell cap (caller should fall back to the CPU
 /// KD-tree path).

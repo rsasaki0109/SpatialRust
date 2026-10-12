@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- CPU dense-grid construction reuses cumulative cell ends as final CSR starts
+  through stable reverse scattering. This removes a cell-sized cursor copy
+  from CPU clustering and standalone GPU normal/covariance preparation while
+  preserving all sorted point indices and offsets.
 - CPU dense-grid component labeling scans adjacent x cells as one stable CSR
   interval per valid y/z row, preserving ordered neighbors and minimum roots
   for both serial and existing parallel execution without new heap scratch.

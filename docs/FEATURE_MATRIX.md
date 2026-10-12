@@ -245,6 +245,12 @@ workspace because its build requires a Python toolchain.
   nonfinite behavior remain compatible with k=1 queries; no dependency or
   device transfer changes. See
   [scalar search measurements](../notes/2026-10-12_allocation_free_nearest_one.md).
+- Shared CPU `build_grid` uses stable reverse scattering and one cell-offset
+  table, eliminating the auxiliary cursor clone. Logical live heap payload
+  drops by `4 * (cells + 1)` bytes; returned CSR order/sentinels and GPU uploads
+  remain identical. Construction stays serial, with O(points + cells) work.
+  Standalone GPU radius normals/covariances reuse this preparation. See
+  [grid construction measurements](../notes/2026-10-12_reduced_cpu_grid_scratch.md).
 - Dense-grid `spatialrust-search::euclidean_cluster_roots` reads adjacent x cells
   as stable CSR row intervals, with clipped y/z traversal. Ordered neighborhoods,
   radius arithmetic and minimum roots remain identical under serial execution
