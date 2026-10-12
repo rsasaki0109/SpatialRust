@@ -500,9 +500,9 @@ fn build_node(
         return node_index;
     }
 
-    let axis = select_axis(x, y, z, points_order, start, end);
+    let (axis, minimum) = select_axis(x, y, z, points_order, start, end);
     let mid = start + count / 2;
-    select_nth_by_axis(x, y, z, points_order, start, end, axis, mid);
+    select_nth_by_axis(x, y, z, points_order, start, end, (axis, minimum), mid);
 
     let split_point = points_order[mid];
     let split_value = coordinate(x, y, z, split_point, axis);
@@ -524,7 +524,7 @@ fn select_axis(
     points_order: &[u32],
     start: usize,
     end: usize,
-) -> u8 {
+) -> (u8, f32) {
     let mut min = [f32::INFINITY; 3];
     let mut max = [f32::NEG_INFINITY; 3];
     for &point_index in &points_order[start..end] {
@@ -545,7 +545,7 @@ fn select_axis(
             best_axis = axis;
         }
     }
-    best_axis
+    (best_axis, min[best_axis as usize])
 }
 
 fn select_nth_by_axis(
@@ -555,20 +555,51 @@ fn select_nth_by_axis(
     points_order: &mut [u32],
     start: usize,
     end: usize,
-    axis: u8,
+    axis_and_minimum: (u8, f32),
     nth: usize,
 ) {
+    let (axis, mut lower_bound) = axis_and_minimum;
     let mut left = start;
     let mut right = end;
     while left < right {
-        let pivot = partition_by_axis(x, y, z, points_order, left, right, axis);
+        let pivot_index = (left + right) / 2;
+        let pivot_value = coordinate(x, y, z, points_order[pivot_index], axis);
+        let pivot = if pivot_value == lower_bound || pivot_value.is_nan() {
+            // Nothing compares below the known lower bound, or below NaN.
+            // The original partition then performs only this pivot swap.
+            // Retain that exact permutation, including equal-distance ties.
+            points_order.swap(left, pivot_index);
+            left
+        } else {
+            partition_by_axis(x, y, z, points_order, left, right, axis)
+        };
         match nth.cmp(&pivot) {
             Ordering::Less => right = pivot,
-            Ordering::Greater => left = pivot + 1,
+            Ordering::Greater => {
+                left = pivot + 1;
+                // The retained finite values did not compare below this
+                // pivot. NaN partitions provide no new numeric lower bound.
+                if !pivot_value.is_nan() {
+                    lower_bound = pivot_value;
+                }
+            }
             Ordering::Equal => break,
         }
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "../tests/fixtures/kdtree_serial.rs"]
+#[allow(dead_code)]
+mod previous;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "kdtree_partition_tests.rs"]
+mod partition_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "kdtree_partition_benchmark.rs"]
+mod partition_benchmark;
 
 fn partition_by_axis(
     x: &[f32],
