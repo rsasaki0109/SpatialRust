@@ -3,6 +3,7 @@
 use spatialrust::gpu::{build_voxel_segments_gpu_from_keys_buffer, WgpuRuntime};
 
 #[test]
+#[ignore = "requires a native wgpu adapter; run explicitly on GPU-capable hosts"]
 fn facade_large_voxel_segments_preserve_indices_and_scalar_transfer_boundary() {
     let runtime = WgpuRuntime::new_headless().unwrap();
     let count = 524289u32;

@@ -65,10 +65,18 @@ WASM compilation checks pass: minimal GPU, GPU image/AoSoA, and minimal facade
 GPU. These establish compilation, not browser execution or browser performance.
 Formatting and diff checks pass.
 
+The facade smoke requires a native adapter and is explicitly ignored by default:
+GPU-less hosted CI also enables `gpu-wgpu` indirectly through normal/GICP/voxel
+features. Those feature jobs must compile the smoke without attempting device
+execution. Native validation runs it explicitly with `--include-ignored`; this
+retains its hard adapter/output assertions instead of turning adapter errors
+into successful output checks. The initial PR CI exposed this test registration
+issue; no production shader or transfer behavior changed in its correction.
+
 ```text
 cargo test -p spatialrust-gpu --all-features --tests -- --test-threads=1 --nocapture
 cargo test -p spatialrust-gpu --no-default-features --features gpu-wgpu --lib rank_tests -- --test-threads=1 --nocapture
-cargo test -p spatialrust --no-default-features --features gpu-wgpu --test gpu_radix_word_rank_smoke -- --test-threads=1
+cargo test -p spatialrust --no-default-features --features gpu-wgpu --test gpu_radix_word_rank_smoke -- --include-ignored --test-threads=1
 cargo test -p spatialrust-segmentation --no-default-features --features segment-euclidean-gpu --lib
 cargo test -p spatialrust --features mvp,pipeline-mvp-gpu --test mvp_pipeline gpu_voxel_matches_cpu -- --test-threads=1
 cargo clippy -p spatialrust-gpu --all-features --all-targets -- -D warnings
