@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Extend explicit GPU correspondence reuse to GICP under `register-gicp-gpu`,
+  retaining unbounded matching followed by the original host distance gate,
+  ordered Hessian/gradient reduction and CPU pose solving. Optional radius
+  covariances use the caller's runtime and propagate errors on this explicit
+  path. Covariance receipts count XYZ, sorted indices, grid offsets and the full
+  padded readback; legacy alignment keeps its covariance fallback behavior.
+
 - Add explicit reusable `GpuKdTree` upload and batched nearest-point readback,
   using GPU KD-tree traversal with CPU near-first tie order and inclusive gates.
   The optional `register-icp-gpu` API reuses the target for update and fitness

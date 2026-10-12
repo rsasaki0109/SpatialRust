@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use spatialrust_core::{SpatialError, SpatialResult};
+use spatialrust_core::{SpatialError, SpatialResult, TransferStats};
 
 use super::point_estimators::{self, Kind};
 use crate::runtime::WgpuRuntime;
@@ -226,6 +226,22 @@ pub fn estimate_plane_covariances_grid_gpu(
     radius: f32,
     epsilon: f32,
 ) -> SpatialResult<Vec<GpuCovariance>> {
+    estimate_plane_covariances_grid_gpu_with_receipt(runtime, x, y, z, radius, epsilon)
+        .map(|(covariances, _)| covariances)
+}
+
+/// Explicit covariance upload/readback with payload transfer accounting.
+/// Includes XYZ, sorted indices and grid offsets uploaded, and the complete
+/// padded 32-byte-per-point output downloaded; uniform controls are excluded.
+/// Grid construction remains CPU, and errors propagate without fallback.
+pub fn estimate_plane_covariances_grid_gpu_with_receipt(
+    runtime: &WgpuRuntime,
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    radius: f32,
+    epsilon: f32,
+) -> SpatialResult<(Vec<GpuCovariance>, TransferStats)> {
     let point_count = x.len();
     if y.len() != point_count {
         return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: y.len() });
@@ -234,7 +250,7 @@ pub fn estimate_plane_covariances_grid_gpu(
         return Err(SpatialError::BufferLengthMismatch { expected: point_count, found: z.len() });
     }
     if point_count == 0 {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), TransferStats::default()));
     }
     if radius <= 0.0 || radius.is_nan() {
         return Err(SpatialError::InvalidArgument("grid radius must be positive".to_owned()));
@@ -249,7 +265,7 @@ pub fn estimate_plane_covariances_grid_gpu(
         epsilon,
         _pad: 0.0,
     };
-    point_estimators::run(
+    point_estimators::run_with_receipt(
         runtime,
         Kind::PlaneCovariances,
         point_count,

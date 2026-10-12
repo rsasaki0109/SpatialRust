@@ -644,6 +644,11 @@ The target KD-tree is uploaded once and reused for update/fitness queries;
 the result contains the ICP trace and transfer accounting. Pose estimation
 remains on CPU. See [measurements and limits](notes/2026-10-12_gpu_icp_correspondences.md).
 
+GICP exposes the same explicit correspondence entry point under
+`register-gicp-gpu`; configured radius covariances run on the supplied runtime
+and share the transfer receipt. Its Hessian/gradient accumulation and pose
+solver stay on CPU. See [GICP measurements](notes/2026-10-12_gpu_gicp_correspondences.md).
+
 ### Library
 
 Load or save by file extension:

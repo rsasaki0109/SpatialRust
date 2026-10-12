@@ -16,6 +16,13 @@ or dispatch sizes reject before device resource use; ordinary ICP placement is
 unchanged. This is a native synchronous search boundary, not a claim that the
 entire registration loop is device resident.
 
+GICP reuses this search through its own explicit GPU entry point, retaining
+unbounded nearest matching before the existing host gate and ordered CPU
+Hessian/gradient accumulation. Radius covariance, when configured, runs on the
+caller-provided runtime and reports all input/grid payload and padded output
+transfers; errors propagate. Without a radius, covariance remains CPU k-NN.
+The legacy native shared-runtime covariance route keeps its fallback contract.
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
