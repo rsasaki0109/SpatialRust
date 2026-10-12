@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Chamfer/Hausdorff cloud metrics share each target KD-tree across bounded CPU
+  query workers under `metrics-distance`. A reusable score window holds at
+  most one default point chunk per worker, with one reused query buffer per
+  active band; f64 sums and maxima retain original
+  query order and exact output words. Small/one-worker sides keep the original
+  serial loop, with no new dependency, public signature or device transfer.
 - ISS keypoint detection shares one KD-tree across bounded scoped CPU workers
   for covariance saliency and local-maximum selection under `feature-iss`.
   Saliency completes before selection; small/one-worker clouds stay serial.
