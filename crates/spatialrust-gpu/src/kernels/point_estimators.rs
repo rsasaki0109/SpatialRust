@@ -1,6 +1,6 @@
 //! Shared bounded execution for host-returning point normal/covariance estimators.
 
-use spatialrust_core::{SpatialError, SpatialResult};
+use spatialrust_core::{SpatialError, SpatialResult, TransferDirection, TransferStats};
 use std::sync::OnceLock;
 use wgpu::util::DeviceExt;
 
@@ -177,6 +177,17 @@ pub(super) fn run<T>(
     inputs: &[&[u8]],
     decode: impl FnOnce(&[[f32; 4]]) -> Vec<T>,
 ) -> SpatialResult<Vec<T>> {
+    run_with_receipt(runtime, kind, points, uniform, inputs, decode).map(|(values, _)| values)
+}
+
+pub(super) fn run_with_receipt<T>(
+    runtime: &WgpuRuntime,
+    kind: Kind,
+    points: usize,
+    uniform: &[u8],
+    inputs: &[&[u8]],
+    decode: impl FnOnce(&[[f32; 4]]) -> Vec<T>,
+) -> SpatialResult<(Vec<T>, TransferStats)> {
     let auxiliary: Vec<_> = inputs[3..].iter().map(|bytes| (bytes.len() / 4) as u64).collect();
     let p = plan(kind, points as u64, &auxiliary, &runtime.device().limits())?;
     debug_assert_eq!(uniform.len() as u64, kind.uniform_bytes());
@@ -243,7 +254,12 @@ pub(super) fn run<T>(
     let result = decode(bytemuck::cast_slice(&mapped));
     drop(mapped);
     staging.unmap();
-    Ok(result)
+    let mut transfers = TransferStats::default();
+    for input in inputs {
+        transfers.record(TransferDirection::HostToDevice, input.len() as u64);
+    }
+    transfers.record(TransferDirection::DeviceToHost, p.output_bytes);
+    Ok((result, transfers))
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]

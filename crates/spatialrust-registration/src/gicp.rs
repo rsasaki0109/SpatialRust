@@ -7,7 +7,7 @@ use spatialrust_math::{
     solve_linear_system, symmetric_eigen3, Isometry3, LeastSquaresResult, Mat3, Quat,
     TransformPoint, Vec3,
 };
-use spatialrust_search::{KdTree, NearestNeighborIndex};
+use spatialrust_search::{KdTree, NearestNeighborIndex, Neighbor};
 
 use crate::registration::{PointCloudRegistration, RegistrationResult};
 
@@ -89,7 +89,7 @@ impl GicpRegistration {
     /// Per-point plane-regularized covariances, on the GPU when a covariance
     /// radius is configured and the `register-gicp-gpu` feature is enabled.
     fn point_covariances(&self, x: &[f32], y: &[f32], z: &[f32]) -> Vec<M3> {
-        #[cfg(feature = "register-gicp-gpu")]
+        #[cfg(all(feature = "register-gicp-gpu", not(target_arch = "wasm32")))]
         if let Some(radius) = self.config.covariance_radius {
             if let Some(cov) = gpu_covariances(x, y, z, radius, self.config.epsilon) {
                 return cov;
@@ -99,12 +99,7 @@ impl GicpRegistration {
         covariances(x, y, z, &tree, self.config.k_neighbors, self.config.epsilon)
     }
 
-    /// Aligns `source` to `target` using Generalized ICP.
-    pub fn align_with_diagnostics(
-        &self,
-        source: &PointCloud,
-        target: &PointCloud,
-    ) -> SpatialResult<RegistrationResult> {
+    fn validate_inputs(&self, source: &PointCloud, target: &PointCloud) -> SpatialResult<()> {
         if source.is_empty() || target.is_empty() {
             return Err(SpatialError::InvalidArgument(
                 "GICP requires non-empty source and target point clouds".to_owned(),
@@ -116,11 +111,66 @@ impl GicpRegistration {
             ));
         }
 
+        Ok(())
+    }
+
+    /// Aligns `source` to `target` using Generalized ICP.
+    pub fn align_with_diagnostics(
+        &self,
+        source: &PointCloud,
+        target: &PointCloud,
+    ) -> SpatialResult<RegistrationResult> {
+        self.align_impl(source, target, Ok).map(|(result, _)| result)
+    }
+
+    /// Aligns with explicit GPU correspondence uploads/readbacks and a reused
+    /// target. Covariance estimation uses CPU k-NN when covariance_radius is
+    /// None, or explicit radius-GPU execution on this runtime when configured.
+    /// Hessian/gradient reduction, pose solving, transforms and fitness sums
+    /// remain CPU. All GPU errors propagate without the legacy CPU fallback.
+    /// This explicit path requires finite input/transformed XYZ.
+    #[cfg(feature = "register-gicp-gpu")]
+    pub fn align_with_gpu_correspondences(
+        &self,
+        runtime: &spatialrust_gpu::WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+    ) -> SpatialResult<GpuGicpDiagnostics> {
+        self.validate_inputs(source, target)?;
+        for cloud in [source, target] {
+            let (x, y, z) = cloud.positions3()?;
+            if x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+                return Err(SpatialError::InvalidArgument(
+                    "GPU GICP requires finite XYZ".to_owned(),
+                ));
+            }
+        }
+        let (result, search) = self.align_impl(source, target, |tree| {
+            let target = spatialrust_gpu::GpuKdTree::upload(runtime, &tree)?;
+            let transfers = target.upload_transfers();
+            Ok(GpuGicpSearch { runtime, target, transfers, batches: 0, covariance_batches: 0 })
+        })?;
+        Ok(GpuGicpDiagnostics {
+            result,
+            transfers: search.transfers,
+            correspondence_batches: search.batches,
+            covariance_batches: search.covariance_batches,
+        })
+    }
+
+    fn align_impl<S: GicpSearch>(
+        &self,
+        source: &PointCloud,
+        target: &PointCloud,
+        make_search: impl FnOnce(KdTree) -> SpatialResult<S>,
+    ) -> SpatialResult<(RegistrationResult, S)> {
+        self.validate_inputs(source, target)?;
+
         let (sx, sy, sz) = source.positions3()?;
         let (tx, ty, tz) = target.positions3()?;
-        let target_tree = KdTree::from_slices(tx, ty, tz);
-        let source_cov = self.point_covariances(sx, sy, sz);
-        let target_cov = self.point_covariances(tx, ty, tz);
+        let mut search = make_search(KdTree::from_slices(tx, ty, tz))?;
+        let source_cov = search.covariances(self, sx, sy, sz)?;
+        let target_cov = search.covariances(self, tx, ty, tz)?;
 
         let max_distance_squared =
             self.config.max_correspondence_distance * self.config.max_correspondence_distance;
@@ -141,12 +191,9 @@ impl GicpRegistration {
             let mut gradient = [0.0_f64; 6];
             let mut count = 0usize;
 
-            for (i, point) in transformed.iter().enumerate() {
-                let Some(neighbor) = target_tree.nearest_one(point.x, point.y, point.z) else {
-                    continue;
-                };
+            search.visit(&transformed, |i, point, neighbor| {
                 if neighbor.distance_squared > max_distance_squared {
-                    continue;
+                    return;
                 }
                 let j = neighbor.index;
 
@@ -154,7 +201,7 @@ impl GicpRegistration {
                 let rotated_source = mat_mul(mat_mul(rot, source_cov[i]), rot_t);
                 let combined = mat_add(target_cov[j], rotated_source);
                 let Some(m) = inverse3(combined) else {
-                    continue;
+                    return;
                 };
 
                 let e = [
@@ -176,7 +223,7 @@ impl GicpRegistration {
                     }
                 }
                 count += 1;
-            }
+            })?;
 
             if count < self.config.min_correspondences {
                 return Err(SpatialError::InvalidArgument(format!(
@@ -200,7 +247,7 @@ impl GicpRegistration {
                 converged = true;
                 break;
             }
-            if euclidean_fitness(&transformed, tx, ty, tz, &target_tree, max_distance_squared)
+            if euclidean_fitness(&transformed, tx, ty, tz, &mut search, max_distance_squared)?
                 < self.config.fitness_epsilon
             {
                 converged = true;
@@ -208,19 +255,22 @@ impl GicpRegistration {
             }
         }
 
-        Ok(RegistrationResult {
-            transform,
-            fitness: euclidean_fitness(
-                &transformed,
-                tx,
-                ty,
-                tz,
-                &target_tree,
-                max_distance_squared,
-            ),
-            iterations,
-            converged,
-        })
+        Ok((
+            RegistrationResult {
+                transform,
+                fitness: euclidean_fitness(
+                    &transformed,
+                    tx,
+                    ty,
+                    tz,
+                    &mut search,
+                    max_distance_squared,
+                )?,
+                iterations,
+                converged,
+            },
+            search,
+        ))
     }
 }
 
@@ -236,7 +286,7 @@ impl PointCloudRegistration for GicpRegistration {
 
 /// GPU path: per-point plane covariances via a uniform-grid neighbor search.
 /// Returns `None` on any GPU error so the caller falls back to the CPU path.
-#[cfg(feature = "register-gicp-gpu")]
+#[cfg(all(feature = "register-gicp-gpu", not(target_arch = "wasm32")))]
 fn gpu_covariances(x: &[f32], y: &[f32], z: &[f32], radius: f32, epsilon: f64) -> Option<Vec<M3>> {
     use spatialrust_gpu::{estimate_plane_covariances_grid_gpu, WgpuRuntime};
     let runtime = WgpuRuntime::shared().ok()?;
@@ -327,33 +377,27 @@ fn update_magnitude(solution: &[f64]) -> f64 {
     solution.iter().map(|value| value * value).sum::<f64>().sqrt()
 }
 
-fn euclidean_fitness(
+fn euclidean_fitness<S: GicpSearch>(
     transformed: &[Vec3<f32>],
     tx: &[f32],
     ty: &[f32],
     tz: &[f32],
-    tree: &KdTree,
+    search: &mut S,
     max_distance_squared: f32,
-) -> f64 {
+) -> SpatialResult<f64> {
     let mut sum = 0.0_f64;
     let mut count = 0usize;
-    for point in transformed {
-        let Some(neighbor) = tree.nearest_one(point.x, point.y, point.z) else {
-            continue;
-        };
+    search.visit(transformed, |_, point, neighbor| {
         if neighbor.distance_squared > max_distance_squared {
-            continue;
+            return;
         }
         let dx = f64::from(point.x - tx[neighbor.index]);
         let dy = f64::from(point.y - ty[neighbor.index]);
         let dz = f64::from(point.z - tz[neighbor.index]);
         sum += dx * dx + dy * dy + dz * dz;
         count += 1;
-    }
-    if count == 0 {
-        return f64::MAX;
-    }
-    sum / count as f64
+    })?;
+    Ok(if count == 0 { f64::MAX } else { sum / count as f64 })
 }
 
 fn mat3_to_f64(matrix: Mat3<f32>) -> M3 {
@@ -440,6 +484,132 @@ fn inverse3(a: M3) -> Option<M3> {
     Some(out)
 }
 
+trait GicpSearch {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        consume: impl FnMut(usize, &Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()>;
+    fn covariances(
+        &mut self,
+        registration: &GicpRegistration,
+        x: &[f32],
+        y: &[f32],
+        z: &[f32],
+    ) -> SpatialResult<Vec<M3>> {
+        Ok(registration.point_covariances(x, y, z))
+    }
+}
+impl GicpSearch for KdTree {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        mut consume: impl FnMut(usize, &Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()> {
+        for (i, point) in points.iter().enumerate() {
+            if let Some(neighbor) = self.nearest_one(point.x, point.y, point.z) {
+                consume(i, point, neighbor);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Result and explicit transfer accounting for GPU GICP correspondence search.
+#[cfg(feature = "register-gicp-gpu")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuGicpDiagnostics {
+    /// Pose, Euclidean fitness, iteration count and convergence flag.
+    pub result: RegistrationResult,
+    /// Target/query and optional radius-covariance uploads/readbacks.
+    pub transfers: spatialrust_core::TransferStats,
+    /// Completed nearest-query batches; depends on the stopping path.
+    pub correspondence_batches: usize,
+    /// Completed explicit radius-GPU covariance batches (0 or 2).
+    pub covariance_batches: usize,
+}
+
+#[cfg(feature = "register-gicp-gpu")]
+struct GpuGicpSearch<'a> {
+    runtime: &'a spatialrust_gpu::WgpuRuntime,
+    target: spatialrust_gpu::GpuKdTree,
+    transfers: spatialrust_core::TransferStats,
+    batches: usize,
+    covariance_batches: usize,
+}
+#[cfg(feature = "register-gicp-gpu")]
+impl GpuGicpSearch<'_> {
+    fn record(&mut self, transfers: spatialrust_core::TransferStats) {
+        self.transfers.record(
+            spatialrust_core::TransferDirection::HostToDevice,
+            transfers.host_to_device_bytes(),
+        );
+        self.transfers.record(
+            spatialrust_core::TransferDirection::DeviceToHost,
+            transfers.device_to_host_bytes(),
+        );
+    }
+}
+#[cfg(feature = "register-gicp-gpu")]
+impl GicpSearch for GpuGicpSearch<'_> {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        mut consume: impl FnMut(usize, &Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()> {
+        if points.iter().any(|p| !p.x.is_finite() || !p.y.is_finite() || !p.z.is_finite()) {
+            return Err(SpatialError::InvalidArgument(
+                "GPU GICP requires finite transformed XYZ".to_owned(),
+            ));
+        }
+        let queries: Vec<_> = points.iter().map(|p| [p.x, p.y, p.z]).collect();
+        // Preserve GICP's unbounded search followed by its host rejection gate.
+        // For finite target/query coordinates this equals CPU nearest_one,
+        // including first-encountered ties and infinite squared distances.
+        let (neighbors, transfers) =
+            self.target.nearest_one_within_download(self.runtime, &queries, f32::INFINITY)?;
+        self.record(transfers);
+        self.batches += 1;
+        for (i, (point, neighbor)) in points.iter().zip(neighbors).enumerate() {
+            if let Some(neighbor) = neighbor {
+                consume(i, point, neighbor);
+            }
+        }
+        Ok(())
+    }
+    fn covariances(
+        &mut self,
+        registration: &GicpRegistration,
+        x: &[f32],
+        y: &[f32],
+        z: &[f32],
+    ) -> SpatialResult<Vec<M3>> {
+        let Some(radius) = registration.config.covariance_radius else {
+            return Ok(registration.point_covariances(x, y, z));
+        };
+        let (raw, transfers) = spatialrust_gpu::estimate_plane_covariances_grid_gpu_with_receipt(
+            self.runtime,
+            x,
+            y,
+            z,
+            radius,
+            registration.config.epsilon as f32,
+        )?;
+        self.record(transfers);
+        self.covariance_batches += 1;
+        Ok(raw
+            .into_iter()
+            .map(|[c00, c11, c22, c01, c02, c12]| {
+                [
+                    [f64::from(c00), f64::from(c01), f64::from(c02)],
+                    [f64::from(c01), f64::from(c11), f64::from(c12)],
+                    [f64::from(c02), f64::from(c12), f64::from(c22)],
+                ]
+            })
+            .collect())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{GicpConfig, GicpRegistration};
@@ -495,7 +665,7 @@ mod tests {
         assert!(gicp.align(&cloud, &cloud).is_err());
     }
 
-    #[cfg(feature = "register-gicp-gpu")]
+    #[cfg(all(feature = "register-gicp-gpu", not(target_arch = "wasm32")))]
     #[test]
     fn aligns_with_gpu_covariances() {
         // Skip gracefully when no GPU/software adapter is available.

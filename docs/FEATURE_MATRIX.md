@@ -19,6 +19,19 @@ inclusive gates and near-first tie order. Native synchronous execution is
 verified; browser execution is not claimed. See
 [correspondence measurements](../notes/2026-10-12_gpu_icp_correspondences.md).
 
+`register-gicp-gpu` also exposes
+`GicpRegistration::align_with_gpu_correspondences(runtime, source, target)`.
+The device reuses a target for unbounded nearest matching, followed by GICP's
+original host rejection gate. CPU Hessian/gradient sums, pose solving and
+fitness accumulation are retained. CPU k-NN covariance is used when
+`covariance_radius` is None; configured radius covariance uses the provided
+runtime and adds its complete uploads and padded readbacks to the receipt.
+This explicit path requires finite input/transformed XYZ and propagates GPU
+errors. Legacy native alignment retains its shared-runtime covariance fallback;
+the legacy shared-runtime route uses CPU covariance on WASM. Browser execution
+of the explicit GPU route is not verified. See
+[GICP measurements](../notes/2026-10-12_gpu_gicp_correspondences.md).
+
 Standalone `gpu-wgpu` k-NN/radius normals and plane covariances reuse lazy
 per-runtime pipelines and bounded storage scratch. Compute and the existing
 host-result copy share one submission. These APIs still upload their input
@@ -47,6 +60,7 @@ before allocation; no dependency, public signature or image readback is added.
 | `mvp-http` | `mvp` + HTTP byte-range COPC | Remote COPC input |
 | `gpu-wgpu` | wgpu runtime and GPU kernels | Explicit GPU operation APIs |
 | `register-icp-gpu` | ICP and wgpu correspondence search | Explicit GPU target upload and per-batch query/readback; CPU pose solver |
+| `register-gicp-gpu` | GICP, GPU radius covariance and explicit GPU correspondences | Caller-owned runtime and full payload receipt on explicit alignment; CPU pose solver |
 | `pipeline-mvp-gpu` | `mvp` GPU stages plus `gpu-wgpu` | GPU-enabled MVP pipeline |
 | `gpu-aoso-staging` | AoSoA core packing plus GPU-resident frame APIs | Chained GPU execution with explicit readback |
 | `serde` | serde derives for core/math metadata and schemas | Configuration and metadata serialization |
