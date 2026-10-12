@@ -290,11 +290,17 @@ workspace because its build requires a Python toolchain.
   crate.
 - `spatialrust-core` contains no wgpu, CUDA, ROS2, ONNX, or IO implementation.
 
-Host-staged GPU algorithms are explicit hybrid implementations: voxel, normal,
-and plane APIs expose their GPU kernel boundary, while Euclidean clustering
-builds, sorts, and compacts the sparse grid on wgpu and performs deterministic
-component union on the host. This split is visible in receipts and is not an
-implicit CPU fallback.
+Host-returning GPU algorithms expose their transfer boundary explicitly.
+Euclidean clustering now builds/sorts/compacts sparse cells and labels
+minimum-index components on wgpu. Initialization, atomic root hooking and final
+compression use three device passes in one submission after cell construction;
+no host union/find or iterative convergence readback remains. Finite calls upload
+12 bytes per point and download 4 root bytes per point plus the existing 4-byte
+cell-count synchronization. Positive-infinite tolerance uses a device zero-root
+initialization without XYZ upload or cell construction. Host validation/origin
+reduction and high-level cluster-size filtering/labeled-cloud assembly remain.
+Receipts report `gpu-component-labeling`; placement thresholds stay unchanged.
+See [GPU component labeling](../notes/2026-10-12_gpu_cluster_union.md).
 
 GPU RANSAC plane scoring additionally parallelizes the point direction from
 1,024 points, reducing exact integer inlier counts within each 256-lane group

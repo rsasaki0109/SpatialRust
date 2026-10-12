@@ -184,6 +184,24 @@ endpoints; no buffer, workgroup memory, barrier or transfer is added.
 The sparse AoSoA radius kernel has a dedicated shader matching the previous
 generated source. Its signed-key binary searches and per-cell traversal remain
 independent of dense CSR row gathering.
+Standalone Euclidean clustering retains uploaded XYZ and compacted sparse cells
+for GPU component labeling. Each sorted point recovers its owning cell from
+ascending starts, traverses signed adjacent-cell keys with overflow guards, and
+tests original-order scalar squared distances. Each undirected edge is visited
+once. Weak compare/exchange hooks only a current higher root to a lower root;
+atomic path shortening preserves strictly decreasing parents. Initialization,
+connection and final compression are separate device passes in one submission,
+without host union/find or convergence polling. The component minimum index is
+preserved independently of invocation order. Only roots and the existing scalar
+cell count return to the host: `4 * points + 4` bytes for finite tolerance,
+replacing cell-key/start/index metadata downloads. XYZ uploads remain `12 * points`.
+Positive-infinite tolerance initializes zero roots on device, avoiding XYZ/grid
+work. Invalid coordinates, reciprocal or buffer/compute sizes reject before
+allocation. Host validation/origin reduction and high-level cluster-size
+filtering/label-cloud assembly remain explicit. Placement and public signatures
+are unchanged; receipts now name `gpu-component-labeling`. Parent scratch is
+fully initialized and leased through submission; cached pipelines belong to the
+runtime. Dense neighborhoods retain quadratic worst-case pair work.
 Voxel boundary compaction uses a 256-lane shared-memory scan with recursively
 scanned block totals and offset propagation. All levels stay device-resident
 in one submission; the existing four-byte cell-count synchronization remains

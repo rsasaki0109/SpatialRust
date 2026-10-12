@@ -632,8 +632,10 @@ selects GPU from ~2k points for plane/cluster MVP paths and ~10k for normals.
 When GPU normals run without an explicit `search_radius`, MVP derives one from
 the voxel leaf (`normal_gpu_radius_scale`, default `2.0`) to use the fast grid path.
 Full-cloud plane bench: ~11× speedup (`bench/ransac_plane/`). Cluster bench:
-`bench/euclidean_cluster/` — GPU sparse-grid construction matches CPU cluster
-labels; deterministic component union remains an explicit host stage.
+`bench/euclidean_cluster/` — sparse-grid construction and deterministic
+minimum-index component union/find now run on GPU; host size filtering and
+output-cloud assembly remain. See
+[GPU component measurements](notes/2026-10-12_gpu_cluster_union.md).
 
 ### Library
 

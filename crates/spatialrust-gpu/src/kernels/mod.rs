@@ -49,6 +49,7 @@ mod voxel_segments_gpu;
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_gather;
 
+pub(crate) mod cluster_union;
 #[cfg(feature = "gpu-wgpu")]
 mod euclidean_cluster;
 
