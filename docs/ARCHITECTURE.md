@@ -313,6 +313,17 @@ selected points in original index order and preserves all field types and
 metadata. Small/one-worker calls remain serial. Neighbor/angle scratch scales
 with radius support per active worker; the worker cap is not a scratch-byte or
 process-wide CPU budget. No device copy or new dependency is introduced.
+ISS keypoint detection under `spatialrust-features/feature-iss` uses the same
+bounded staging policy in two scoped phases sharing one KD-tree. Workers fill
+disjoint slices of the existing four-byte-per-point saliency array; the first
+scope joins before local-maximum selection can read any row. Parallel selection
+writes a temporary one-byte-per-point mask and scans it in original index order,
+dropping it before schema/attribute gathering. Serial calls retain direct index
+collection and allocate no selection mask. Unsorted neighborhood order, f64
+centroid/covariance arithmetic, eigenvalue ratios and the existing >= tie rule
+are preserved. Per-query neighbor vectors scale with radius support; worker
+caps remain per call rather than a scratch-byte or process-wide CPU budget.
+No floating-point reduction spans workers and no device transfer is introduced.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

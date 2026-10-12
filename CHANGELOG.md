@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- ISS keypoint detection shares one KD-tree across bounded scoped CPU workers
+  for covariance saliency and local-maximum selection under `feature-iss`.
+  Saliency completes before selection; small/one-worker clouds stay serial.
+  Equal maxima, selected point order, schema, attributes and metadata remain
+  unchanged. Parallel selection uses one temporary byte per point, without a
+  new dependency or public signature.
 - Point-cloud boundary detection shares one KD-tree across bounded scoped CPU
   workers under `feature-boundary`. Workers reuse angular scratch and write
   disjoint mask bands directly; small/one-worker clouds stay serial. Boundary
