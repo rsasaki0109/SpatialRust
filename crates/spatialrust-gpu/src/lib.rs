@@ -52,6 +52,12 @@ pub use device::{GpuDevice, WgpuDevice};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use kernels::{
+    GpuNeighborhoodKind, GpuNeighborhoodReadback, GpuNeighborhoods, GpuQueryBatch,
+    MAX_GPU_K_NEIGHBORS,
+};
+
+#[cfg(feature = "gpu-wgpu")]
+pub use kernels::{
     build_voxel_segments, build_voxel_segments_from_positions_gpu,
     build_voxel_segments_from_positions_gpu_buffers, build_voxel_segments_gpu,
     build_voxel_segments_gpu_from_keys_buffer, compact_voxel_segments_from_sorted,

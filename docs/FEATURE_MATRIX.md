@@ -6,6 +6,21 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+`gpu-wgpu` exposes `GpuQueryBatch::upload` and
+`GpuKdTree::{nearest_k_resident,radius_neighbors_resident}` for shared GPU
+neighborhoods. Target/query uploads are explicit and reusable; search submits
+without payload copies or a host wait and returns owned `GpuNeighborhoods`.
+Each row stores two u32 counts plus bounded index/distance pairs. k=0..=64 is
+stably sorted by distance with CPU selection ties. Radius membership retains
+CPU traversal order, counts all matches, and supports capacity=0 count-only
+search. `download` accounts for padded readback bytes; complete row access
+rejects overflow while `truncated_rows` explicitly returns a traversal prefix.
+Self/duplicate points are included. GPU feature consumers must check counts
+and preserve query/target semantics. Feature algorithms remain separate CPU
+APIs until their device compute is added. Native correctness and completed/
+resident measurements are in
+[the neighborhood note](../notes/2026-10-12_gpu_bounded_neighborhoods.md).
+
 `register-icp-gpu` enables the explicit
 `IcpRegistration::align_with_gpu_correspondences(runtime, source, target)` API.
 The target KD-tree is built on CPU and uploaded once; each update and fitness

@@ -23,6 +23,15 @@ caller-provided runtime and reports all input/grid payload and padded output
 transfers; errors propagate. Without a radius, covariance remains CPU k-NN.
 The legacy native shared-runtime covariance route keeps its fallback contract.
 
+Reusable finite `GpuQueryBatch` uploads and owned `GpuNeighborhoods` make the
+next feature-compute boundary explicit. GPU KD-tree k-NN/radius search writes
+fixed-capacity rows with stored/total counts and original index/distance pairs.
+Nearest-k rows retain CPU stable ordering; radius rows retain traversal order
+and expose overflow. Complete CPU readback rejects incomplete neighborhoods;
+GPU consumers must inspect counts before using rows. Target/query payloads
+remain resident between passes. This adds no core/search dependency and does
+not change feature algorithm placement; FPFH/ISS/MLS device compute follows.
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
