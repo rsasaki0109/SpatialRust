@@ -158,6 +158,10 @@ jobs:
             args: -p spatialrust --features segment-region-growing
           - name: spatialrust-registration-icp
             args: -p spatialrust-registration --features register-icp
+          - name: spatialrust-registration-icp-gpu
+            args: -p spatialrust-registration --features register-icp-gpu
+          - name: spatialrust-registration-icp-gpu-meta
+            args: -p spatialrust --features register-icp-gpu
           - name: spatialrust-registration-point-to-plane
             args: -p spatialrust-registration --features register-icp-point-to-plane
           - name: spatialrust-registration-point-to-plane-meta

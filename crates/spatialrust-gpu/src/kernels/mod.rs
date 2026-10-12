@@ -50,6 +50,8 @@ mod voxel_segments_gpu;
 mod voxel_gather;
 
 pub(crate) mod cluster_union;
+pub(crate) mod nearest;
+pub use nearest::GpuKdTree;
 #[cfg(feature = "gpu-wgpu")]
 mod euclidean_cluster;
 

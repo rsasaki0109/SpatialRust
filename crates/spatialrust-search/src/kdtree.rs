@@ -33,7 +33,73 @@ struct KdNode {
     axis: u8,
 }
 
+/// A backend-neutral node in a borrowed KD-tree layout.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum KdTreeNode {
+    /// Leaf range in the layout's point order (end exclusive).
+    Leaf {
+        /// First ordered point.
+        start: u32,
+        /// End of the ordered point range.
+        end: u32,
+    },
+    /// Near-first split; children are indices into the node iterator.
+    Branch {
+        /// Coordinate axis (0, 1 or 2).
+        axis: u8,
+        /// Split coordinate.
+        split: f32,
+        /// Child visited first when the query coordinate is <= split.
+        left: u32,
+        /// Other child.
+        right: u32,
+    },
+}
+
+/// Read-only layout for explicit backend staging, retaining CPU traversal ties.
+/// The tree owns all storage; borrowing this view performs no copies.
+pub struct KdTreeLayout<'a> {
+    tree: &'a KdTree,
+}
+
+impl<'a> KdTreeLayout<'a> {
+    /// Coordinates in original point order.
+    #[must_use]
+    pub fn positions(&self) -> (&'a [f32], &'a [f32], &'a [f32]) {
+        (&self.tree.x, &self.tree.y, &self.tree.z)
+    }
+
+    /// Original point indices in leaf traversal order.
+    #[must_use]
+    pub fn point_order(&self) -> &'a [u32] {
+        &self.tree.points_order
+    }
+
+    /// Root node index, or None for an empty tree.
+    #[must_use]
+    pub fn root(&self) -> Option<u32> {
+        (self.tree.root != INVALID_NODE).then_some(self.tree.root)
+    }
+
+    /// Nodes in index order. The balanced tree has at most 32 levels for u32 points.
+    pub fn nodes(&self) -> impl ExactSizeIterator<Item = KdTreeNode> + '_ {
+        self.tree.nodes.iter().map(|n| {
+            if n.axis == AXIS_LEAF {
+                KdTreeNode::Leaf { start: n.start, end: n.end }
+            } else {
+                KdTreeNode::Branch { axis: n.axis, split: n.split, left: n.left, right: n.right }
+            }
+        })
+    }
+}
+
 impl KdTree {
+    /// Borrows the tree's backend-neutral layout without changing query behavior.
+    #[must_use]
+    pub fn layout(&self) -> KdTreeLayout<'_> {
+        KdTreeLayout { tree: self }
+    }
+
     /// Finds the nearest point inside an inclusive squared-distance bound.
     ///
     /// Uses the same traversal and first-encountered tie policy as `nearest_one`,

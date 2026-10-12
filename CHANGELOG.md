@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit reusable `GpuKdTree` upload and batched nearest-point readback,
+  using GPU KD-tree traversal with CPU near-first tie order and inclusive gates.
+  The optional `register-icp-gpu` API reuses the target for update and fitness
+  matching and reports transfer bytes and query counts; CPU pose solving and
+  ordinary ICP defaults are retained. Search exposes a borrowed backend-neutral
+  layout without adding GPU dependencies to the core or search crates.
+
 - Euclidean GPU clustering now performs minimum-index component union/find on
   wgpu after sparse-cell construction, replacing host labeling and cell-metadata
   readbacks with root readback. Receipts name `gpu-component-labeling`; host

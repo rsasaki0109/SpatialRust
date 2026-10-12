@@ -6,6 +6,19 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+`register-icp-gpu` enables the explicit
+`IcpRegistration::align_with_gpu_correspondences(runtime, source, target)` API.
+The target KD-tree is built on CPU and uploaded once; each update and fitness
+query traverses it on GPU. Transform application, trimming, Kabsch, ordered f64
+fitness accumulation and convergence remain on CPU. The returned
+`GpuIcpDiagnostics` includes the ordinary trace, completed query count and
+target/query upload plus result download bytes. Ordinary ICP remains CPU.
+`GpuKdTree::upload` / `nearest_one_within_download` under `gpu-wgpu` also expose
+this reusable search directly, with runtime ownership, finite-target validation,
+inclusive gates and near-first tie order. Native synchronous execution is
+verified; browser execution is not claimed. See
+[correspondence measurements](../notes/2026-10-12_gpu_icp_correspondences.md).
+
 Standalone `gpu-wgpu` k-NN/radius normals and plane covariances reuse lazy
 per-runtime pipelines and bounded storage scratch. Compute and the existing
 host-result copy share one submission. These APIs still upload their input
@@ -33,6 +46,7 @@ before allocation; no dependency, public signature or image readback is added.
 | `mvp` | PCD, PLY, LAS/LAZ, COPC; voxel, normals, plane, Euclidean clustering, ICP, MVP pipeline | CPU-first end-to-end pipeline |
 | `mvp-http` | `mvp` + HTTP byte-range COPC | Remote COPC input |
 | `gpu-wgpu` | wgpu runtime and GPU kernels | Explicit GPU operation APIs |
+| `register-icp-gpu` | ICP and wgpu correspondence search | Explicit GPU target upload and per-batch query/readback; CPU pose solver |
 | `pipeline-mvp-gpu` | `mvp` GPU stages plus `gpu-wgpu` | GPU-enabled MVP pipeline |
 | `gpu-aoso-staging` | AoSoA core packing plus GPU-resident frame APIs | Chained GPU execution with explicit readback |
 | `serde` | serde derives for core/math metadata and schemas | Configuration and metadata serialization |
@@ -56,7 +70,7 @@ workspace because its build requires a Python toolchain.
 | `spatialrust-filtering` | voxel | GPU voxel, outlier, crop, FPS, MLS | wgpu/search optional |
 | `spatialrust-features` | normals | ISS, orientation, boundary, GPU normals | wgpu/search optional |
 | `spatialrust-segmentation` | plane and Euclidean clustering | GPU stages, DBSCAN, ground, primitives, region growing | wgpu/search optional |
-| `spatialrust-registration` | ICP | point-to-plane, GICP, GPU covariance, NDT, FPFH | wgpu/search optional |
+| `spatialrust-registration` | ICP | GPU ICP correspondences, point-to-plane, GICP, GPU covariance, NDT, FPFH | wgpu/search optional |
 | `spatialrust-gpu` | device markers only | wgpu runtime, AoSoA staging | wgpu/bytemuck/pollster optional |
 | `spatialrust-pipeline` | MVP pipeline | GPU MVP stages | algorithm crates only |
 | `spatialrust-interchange` | `interchange-gltf`, `interchange-openusd` | `tiles3d`: deterministic OGC 3D Tiles 1.1 `tileset.json` + `pnts` octree export; `tiles3d-copc`: bounded COPC hierarchy → tileset | `tiles3d-copc` pulls `spatialrust-io` + `spatialrust-core` for COPC node reads |

@@ -1126,7 +1126,8 @@ Dependencies and explicit transfers come before broader algorithm coverage.
 
 | Phase | Status | Dependency and deliverable | Acceptance |
 | --- | --- | --- | --- |
-| ICP/GICP correspondences | Planned | Reusable runtime-owned GPU target search, batched nearest-point results and explicit uploads/readback; keep solver placement visible | Independent/frozen nearest-point ties and distance gates, ownership/reuse/capacity, completed query and registration comparisons |
+| ICP correspondences | Complete | Reusable runtime-owned GPU KD-tree and explicit batched nearest uploads/readback; opt-in ICP update/fitness integration with CPU solver | CPU/brute nearest ties and gates, ownership/reuse/capacity, pose/trace/receipt checks and completed query/registration comparisons; `notes/2026-10-12_gpu_icp_correspondences.md` |
+| GICP correspondences | Planned | Integrate reusable GPU search while preserving GICP's matching/gating semantics and CPU Hessian/pose solver | Nonfinite/overflow/tie contract, pose/convergence/fitness parity and completed-call comparisons |
 | Feature neighborhoods | Planned | Bounded resident radius/k-NN results shared by descriptors, keypoints and smoothing | Exact membership/order/capacity, degenerate/tied supports, explicit transfer receipts and completed-work measurements |
 | FPFH/ISS/MLS compute | Planned | Device feature/smoothing phases on the shared neighborhood representation | CPU/math references, attribute/schema preservation, numeric tolerances where reductions change, transfer-inclusive benefit |
 | Registration updates | Planned | Explicit correspondence reduction/pose-update boundaries after GPU search is established | Pose/convergence/fitness references, numerical conditioning, source/target residency and end-to-end registration timing |
