@@ -146,6 +146,11 @@ uploads on every call and no content cache. Compute and result staging copy shar
 one submission before scratch is returned. Mapping remains the explicit
 synchronous boundary of these host-returning APIs. Uniform and staging buffers
 are still created per call; the existing scratch pool bounds retained storage.
+Every active covariance invocation writes both vec4 output rows. With fewer
+than three neighbors it writes the existing epsilon diagonal and zero cross
+terms/padding explicitly, so recycled storage cannot influence the fallback.
+The existing point/output bounds cover both row addresses; no global clear,
+extra dispatch, allocation or transfer is needed.
 Point, index, buffer, uniform and dispatch limits reject before device allocation.
 Grid cell storage is checked before CPU counting-sort allocation. Resident AoSoA
 frame execution and its timing/transfer receipts remain separate.
