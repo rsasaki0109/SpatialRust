@@ -1,0 +1,1402 @@
+{
+  "canonical_calibration_ready": false,
+  "cases": [
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": false,
+        "ate": false,
+        "minimum_reference_coverage": false,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.7986295149198627,
+      "audit_max_rotation_difference_degrees": 1.1937117960769683e-12,
+      "audit_max_translation_difference_m": 1.1726730697603216e-15,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": false,
+      "counts": {
+        "evaluated_poses": 566,
+        "generated_poses": 569,
+        "planned_poses": 798,
+        "rpe_evaluated_pairs": 533,
+        "rpe_planned_pairs": 768,
+        "unmatched_reference_poses": 3
+      },
+      "duration_ns": 26594239000,
+      "estimates": "target/tum-keyframe-reference/xyz-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "e64e764148cc7a810f7a0d545358af1a8a7393e86190ed1e18d36bf922a54d85",
+      "evaluation": "target/tum-keyframe-reference/xyz-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "dcd2242b609302ae6b0354628ba0133086722fc429d594779dbaa44e00ee6aad",
+      "exact_typed_io_frames": 10,
+      "failed_generation_poses": 229,
+      "first_generation_error": {
+        "error": "point-to-plane lacks fixed common support: count=111086, fraction=0.48906616653238766, rmse=0.04448848764777234",
+        "index": 569,
+        "timestamp_ns": 1305031121147355000
+      },
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "714c436c0190c7ef6f69c00cfb2521579aefbe06cf4004103c29342f16f18f29",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "04fb18a512dc38a8506d8dce0ba24188af58a112a533bf6661788175c385ac39",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "c1329a94b72a39a7b980a697985108e2dd7dbdce345a930efd0e33f17701be7a"
+      },
+      "generation_commit": "aff896602f490eb996436417fbef029d3eec535e",
+      "generation_failure_index_ranges_inclusive": [
+        [
+          569,
+          797
+        ]
+      ],
+      "independent_audit": "target/tum-keyframe-reference/xyz-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "2519f42fb4da57f1a56a526f17447a6dc65537ce7728a351abdccbacdd426b9b",
+      "keyframe_promotion_counts": {
+        "interval": 18
+      },
+      "maximum_numeric_projection_difference_m": 2.709699358227624e-07,
+      "method": "spatialrust_keyframe_point_to_plane_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-xyz-keyframe-plan.json",
+      "plan_sha256": "ef3d4349e1cc08302a7a6c665409088378796904ca51c3a1b7246939a5795603",
+      "projected_points": 133033225,
+      "protocol_commit": "aff896602f490eb996436417fbef029d3eec535e",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "rgb_frames": 798,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 16.01745979808285,
+      "rpe_translation_rmse_m": 0.4208201549577812,
+      "scope": "exploratory or comparison baseline; see protocol chronology",
+      "sequence": "xyz",
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          171,
+          173,
+          201,
+          203
+        ],
+        [
+          201,
+          203,
+          231,
+          233
+        ],
+        [
+          539,
+          767,
+          569,
+          797
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          201,
+          203
+        ]
+      ],
+      "variant": "keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": false,
+        "ate": false,
+        "minimum_reference_coverage": false,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.4421619993419853,
+      "audit_max_rotation_difference_degrees": 2.2026824808563106e-13,
+      "audit_max_translation_difference_m": 5.551115123125783e-16,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": false,
+      "counts": {
+        "evaluated_poses": 42,
+        "generated_poses": 42,
+        "planned_poses": 722,
+        "rpe_evaluated_pairs": 12,
+        "rpe_planned_pairs": 692,
+        "unmatched_reference_poses": 6
+      },
+      "duration_ns": 24061021000,
+      "estimates": "target/tum-keyframe-reference/rpy-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "09e38a3ef98509c773c603176aa028b1e24e22e2743d9c09ed6c552b85e09ef2",
+      "evaluation": "target/tum-keyframe-reference/rpy-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "72ce09c09a044170ad2f87eb0ae076da4bd53fffec9109be29e6e946effde0fd",
+      "exact_typed_io_frames": 1,
+      "failed_generation_poses": 680,
+      "first_generation_error": {
+        "error": "point-to-plane lacks fixed common support: count=111380, fraction=0.49651175749470633, rmse=0.03617675639927751",
+        "index": 42,
+        "timestamp_ns": 1305031230937310000
+      },
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "714c436c0190c7ef6f69c00cfb2521579aefbe06cf4004103c29342f16f18f29",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "04fb18a512dc38a8506d8dce0ba24188af58a112a533bf6661788175c385ac39",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "c1329a94b72a39a7b980a697985108e2dd7dbdce345a930efd0e33f17701be7a"
+      },
+      "generation_commit": "aff896602f490eb996436417fbef029d3eec535e",
+      "generation_failure_index_ranges_inclusive": [
+        [
+          42,
+          721
+        ]
+      ],
+      "independent_audit": "target/tum-keyframe-reference/rpy-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "df0adcffee6c37f9b90c2010f78ca070a8c02bbf11a8b6b319747bbf52f41f15",
+      "keyframe_promotion_counts": {
+        "interval": 1
+      },
+      "maximum_numeric_projection_difference_m": 3.3297802159992784e-07,
+      "method": "spatialrust_keyframe_point_to_plane_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-rpy-keyframe-plan.json",
+      "plan_sha256": "f9806f537e7ebd594ce57837b1b1133ba9a9be28475e382d529150ebeb542ffb",
+      "projected_points": 9848815,
+      "protocol_commit": "aff896602f490eb996436417fbef029d3eec535e",
+      "reference_sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989",
+      "rgb_frames": 723,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 58.89666384711937,
+      "rpe_translation_rmse_m": 0.6540687886510914,
+      "scope": "exploratory or comparison baseline; see protocol chronology",
+      "sequence": "rpy",
+      "source_sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          12,
+          691,
+          42,
+          721
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          458,
+          461
+        ],
+        [
+          463,
+          464
+        ]
+      ],
+      "variant": "keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": true,
+        "ate": false,
+        "minimum_reference_coverage": true,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.4598468918496708,
+      "audit_max_rotation_difference_degrees": 6.963318810448982e-13,
+      "audit_max_translation_difference_m": 9.575673587391975e-16,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": true,
+      "counts": {
+        "evaluated_poses": 795,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "rpe_evaluated_pairs": 762,
+        "rpe_planned_pairs": 768,
+        "unmatched_reference_poses": 3
+      },
+      "duration_ns": 26594239000,
+      "estimates": "target/tum-keyframe-reference/xyz-overlap-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "201efe51df65197312fcace6014f137fd97fdbe802c1b78790faf7735f1355fe",
+      "evaluation": "target/tum-keyframe-reference/xyz-overlap-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "76f2328c553861cd8f177215b3b4e3f0049caa55cd88201caa1695f15fb8b9ba",
+      "exact_typed_io_frames": 15,
+      "failed_generation_poses": 0,
+      "first_generation_error": null,
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_adaptive_keyframe.py": "29f225573e70901b8fc7e2f17601062e676f8f8281ca926ddbc645567d139205",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "714c436c0190c7ef6f69c00cfb2521579aefbe06cf4004103c29342f16f18f29",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "c8d61bc609159f25538d420e3edbe5a98767045e70cce272057d38c129ebbfd5",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "c1329a94b72a39a7b980a697985108e2dd7dbdce345a930efd0e33f17701be7a"
+      },
+      "generation_commit": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+      "generation_failure_index_ranges_inclusive": [],
+      "independent_audit": "target/tum-keyframe-reference/xyz-overlap-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "05c16741de882dd062fca3f0666ccdaf20b2375a2ed9e429cdb00c223d89b41b",
+      "keyframe_promotion_counts": {
+        "geometric_overlap_margin": 16,
+        "interval": 15
+      },
+      "maximum_numeric_projection_difference_m": 2.709699358227624e-07,
+      "method": "spatialrust_overlap_keyframe_point_to_plane_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-xyz-overlap-keyframe-plan.json",
+      "plan_sha256": "16fd935d1bfb5cb6482a1f850162ebc6bfe39824ff435f9609eab9d6f0953366",
+      "projected_points": 185553749,
+      "protocol_commit": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "rgb_frames": 798,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 5.0076858664793376,
+      "rpe_translation_rmse_m": 0.13747857459792234,
+      "scope": "exploratory or comparison baseline; see protocol chronology",
+      "sequence": "xyz",
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          171,
+          173,
+          201,
+          203
+        ],
+        [
+          201,
+          203,
+          231,
+          233
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          201,
+          203
+        ]
+      ],
+      "variant": "overlap-keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": false,
+        "ate": true,
+        "minimum_reference_coverage": false,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.024601760868867843,
+      "audit_max_rotation_difference_degrees": 2.842170943040401e-14,
+      "audit_max_translation_difference_m": 4.440892098500626e-16,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": false,
+      "counts": {
+        "evaluated_poses": 26,
+        "generated_poses": 26,
+        "planned_poses": 595,
+        "rpe_evaluated_pairs": 0,
+        "rpe_planned_pairs": 565,
+        "unmatched_reference_poses": 1
+      },
+      "duration_ns": 19816716000,
+      "estimates": "target/tum-keyframe-reference/desk-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "7ba5e9e880e329fb0434c9174ebc10e6e7cc09baa5ad5628d03e9bf59ec5a9a9",
+      "evaluation": "target/tum-keyframe-reference/desk-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "ff3f21f77e37b7094023029bd7b93288c58859940fe35810288c96ecd26c587f",
+      "exact_typed_io_frames": 1,
+      "failed_generation_poses": 569,
+      "first_generation_error": {
+        "error": "point-to-plane lacks fixed common support: count=106701, fraction=0.47676943699731905, rmse=0.024507464998056037",
+        "index": 26,
+        "timestamp_ns": 1305031454240858000
+      },
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "714c436c0190c7ef6f69c00cfb2521579aefbe06cf4004103c29342f16f18f29",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "c8d61bc609159f25538d420e3edbe5a98767045e70cce272057d38c129ebbfd5",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "c1329a94b72a39a7b980a697985108e2dd7dbdce345a930efd0e33f17701be7a"
+      },
+      "generation_commit": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+      "generation_failure_index_ranges_inclusive": [
+        [
+          26,
+          594
+        ]
+      ],
+      "independent_audit": "target/tum-keyframe-reference/desk-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "ec05676a58cb81ec009597390d5a02a3ade25eea2f745d3b7ed2d96e9287407f",
+      "keyframe_promotion_counts": {},
+      "maximum_numeric_projection_difference_m": 1.8078104657703875e-07,
+      "method": "spatialrust_keyframe_point_to_plane_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-desk-keyframe-plan.json",
+      "plan_sha256": "ec357dce197969f4a929e2e962ac57ed434595abaef243ce01fb28c94a69ac49",
+      "projected_points": 6303685,
+      "protocol_commit": "aff896602f490eb996436417fbef029d3eec535e",
+      "reference_sha256": "48c4fa61f5d78310ea579f404d31d296738c4210c19c2bdac4a5cdf6bff50831",
+      "rgb_frames": 613,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": null,
+      "rpe_translation_rmse_m": null,
+      "scope": "fresh pre-acquisition validation for static policy",
+      "sequence": "desk",
+      "source_sha256": "e983d6830916e66dc4a46a71368046b149b283de87769690e7aa4e0b9483530c",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          0,
+          564,
+          30,
+          594
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          423,
+          423
+        ]
+      ],
+      "variant": "keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": true,
+        "ate": false,
+        "minimum_reference_coverage": true,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 1.4736654912616138,
+      "audit_max_rotation_difference_degrees": 4.263256414560601e-13,
+      "audit_max_translation_difference_m": 9.71445146547012e-16,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": true,
+      "counts": {
+        "evaluated_poses": 716,
+        "generated_poses": 722,
+        "planned_poses": 722,
+        "rpe_evaluated_pairs": 680,
+        "rpe_planned_pairs": 692,
+        "unmatched_reference_poses": 6
+      },
+      "duration_ns": 24061021000,
+      "estimates": "target/tum-keyframe-reference/rpy-overlap-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "49b7962d8c65022b20d128fe5ea1b0210ec065c6106b08cafcf1009ca016849e",
+      "evaluation": "target/tum-keyframe-reference/rpy-overlap-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "0d8f8180fde263be685f6138ff60ff125c786a74b5f543f918daa594bd7a69f3",
+      "exact_typed_io_frames": 14,
+      "failed_generation_poses": 0,
+      "first_generation_error": null,
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_adaptive_keyframe.py": "29f225573e70901b8fc7e2f17601062e676f8f8281ca926ddbc645567d139205",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "714c436c0190c7ef6f69c00cfb2521579aefbe06cf4004103c29342f16f18f29",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "c8d61bc609159f25538d420e3edbe5a98767045e70cce272057d38c129ebbfd5",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "c1329a94b72a39a7b980a697985108e2dd7dbdce345a930efd0e33f17701be7a"
+      },
+      "generation_commit": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+      "generation_failure_index_ranges_inclusive": [],
+      "independent_audit": "target/tum-keyframe-reference/rpy-overlap-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "fbd12a0562d3409b68f9caa5ef816615c836c88434f6c6af89e4f3b0569d916b",
+      "keyframe_promotion_counts": {
+        "geometric_overlap_margin": 39,
+        "interval": 7
+      },
+      "maximum_numeric_projection_difference_m": 3.7286376919354325e-07,
+      "method": "spatialrust_overlap_keyframe_point_to_plane_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-rpy-overlap-keyframe-plan.json",
+      "plan_sha256": "f3746c32789ad8cb830bd93c8f9abb7afa530310339953c32758ca6acabd69b9",
+      "projected_points": 170661420,
+      "protocol_commit": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+      "reference_sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989",
+      "rgb_frames": 723,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 20.107568403814863,
+      "rpe_translation_rmse_m": 0.2573587345428416,
+      "scope": "exploratory or comparison baseline; see protocol chronology",
+      "sequence": "rpy",
+      "source_sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          428,
+          431,
+          458,
+          461
+        ],
+        [
+          433,
+          434,
+          463,
+          464
+        ],
+        [
+          458,
+          461,
+          488,
+          491
+        ],
+        [
+          463,
+          464,
+          493,
+          494
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          458,
+          461
+        ],
+        [
+          463,
+          464
+        ]
+      ],
+      "variant": "overlap-keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": false,
+        "ate": false,
+        "minimum_reference_coverage": false,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.45541517126123804,
+      "audit_max_rotation_difference_degrees": 3.907985046680551e-13,
+      "audit_max_translation_difference_m": 8.881784197001252e-16,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": false,
+      "counts": {
+        "evaluated_poses": 525,
+        "generated_poses": 526,
+        "planned_poses": 595,
+        "rpe_evaluated_pairs": 494,
+        "rpe_planned_pairs": 565,
+        "unmatched_reference_poses": 1
+      },
+      "duration_ns": 19816716000,
+      "estimates": "target/tum-keyframe-reference/desk-plane-generated-v1/estimates.json",
+      "estimates_sha256": "e868616c6ba8239411dc24ee80fee39e254d4e0bcd77815f48efcba8b8a3c53f",
+      "evaluation": "target/tum-keyframe-reference/desk-plane-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "ec8cedd8ed3d98de57045d601f84e3d28331f83a6d3835031a0fb73ff95177e7",
+      "exact_typed_io_frames": 9,
+      "failed_generation_poses": 69,
+      "first_generation_error": {
+        "error": "point-to-plane lacks fixed common support: count=101124, fraction=0.4493421432665775, rmse=0.04140067229340746",
+        "index": 526,
+        "timestamp_ns": 1305031470924410000
+      },
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "c8d61bc609159f25538d420e3edbe5a98767045e70cce272057d38c129ebbfd5",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "c1329a94b72a39a7b980a697985108e2dd7dbdce345a930efd0e33f17701be7a"
+      },
+      "generation_commit": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+      "generation_failure_index_ranges_inclusive": [
+        [
+          526,
+          594
+        ]
+      ],
+      "independent_audit": "target/tum-keyframe-reference/desk-plane-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "f4cfb6f3f3ef052f2fcaaf3c68f6d530540f3facec53252410c92b03bb2632ff",
+      "keyframe_promotion_counts": {},
+      "maximum_numeric_projection_difference_m": 2.6921372198174254e-07,
+      "method": "spatialrust_point_to_plane_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-desk-plane-plan.json",
+      "plan_sha256": "7a422842f065601bf4b879b27a944b7e5876e1ee8f626b15b38a8e9674e42705",
+      "projected_points": 119581678,
+      "protocol_commit": "aff896602f490eb996436417fbef029d3eec535e",
+      "reference_sha256": "48c4fa61f5d78310ea579f404d31d296738c4210c19c2bdac4a5cdf6bff50831",
+      "rgb_frames": 613,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 5.939700275801641,
+      "rpe_translation_rmse_m": 0.10581982360286653,
+      "scope": "exploratory or comparison baseline; see protocol chronology",
+      "sequence": "desk",
+      "source_sha256": "e983d6830916e66dc4a46a71368046b149b283de87769690e7aa4e0b9483530c",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          393,
+          393,
+          423,
+          423
+        ],
+        [
+          423,
+          423,
+          453,
+          453
+        ],
+        [
+          496,
+          564,
+          526,
+          594
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          423,
+          423
+        ]
+      ],
+      "variant": "plane"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": false,
+        "ate": false,
+        "minimum_reference_coverage": false,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.8361525473158625,
+      "audit_max_rotation_difference_degrees": 2.6290081223123707e-13,
+      "audit_max_translation_difference_m": 1.1102230246251565e-15,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": false,
+      "counts": {
+        "evaluated_poses": 266,
+        "generated_poses": 266,
+        "planned_poses": 595,
+        "rpe_evaluated_pairs": 236,
+        "rpe_planned_pairs": 565,
+        "unmatched_reference_poses": 1
+      },
+      "duration_ns": 19816716000,
+      "estimates": "target/tum-keyframe-reference/desk-overlap-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "e36ae0a9747bcf1cd47481d49e0eacd02c8126fc8dddd3af95f40fff1f7cd460",
+      "evaluation": "target/tum-keyframe-reference/desk-overlap-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "ef6ef3f8cf81e97acaafe95eefdeb53a11f99e2ba9ccd5f04174d55310759fd6",
+      "exact_typed_io_frames": 5,
+      "failed_generation_poses": 329,
+      "first_generation_error": {
+        "error": "invalid argument: point-to-plane ICP found only 3 correspondences, minimum is 6",
+        "index": 266,
+        "timestamp_ns": 1305031462248986000
+      },
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_adaptive_keyframe.py": "29f225573e70901b8fc7e2f17601062e676f8f8281ca926ddbc645567d139205",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "714c436c0190c7ef6f69c00cfb2521579aefbe06cf4004103c29342f16f18f29",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "c8d61bc609159f25538d420e3edbe5a98767045e70cce272057d38c129ebbfd5",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "c1329a94b72a39a7b980a697985108e2dd7dbdce345a930efd0e33f17701be7a"
+      },
+      "generation_commit": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+      "generation_failure_index_ranges_inclusive": [
+        [
+          266,
+          594
+        ]
+      ],
+      "independent_audit": "target/tum-keyframe-reference/desk-overlap-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "a6b30ef89723039c757c88fd0a3911e68fcc49bfcc68e5a66cd49a715862ee06",
+      "keyframe_promotion_counts": {
+        "geometric_overlap_margin": 9,
+        "interval": 4
+      },
+      "maximum_numeric_projection_difference_m": 1.854858397987158e-07,
+      "method": "spatialrust_overlap_keyframe_point_to_plane_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-desk-overlap-keyframe-plan.json",
+      "plan_sha256": "86eed5f366165d400c49de8c88ef4a1580cf676371affb99a84474110b929da5",
+      "projected_points": 59488195,
+      "protocol_commit": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+      "reference_sha256": "48c4fa61f5d78310ea579f404d31d296738c4210c19c2bdac4a5cdf6bff50831",
+      "rgb_frames": 613,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 17.18818796707534,
+      "rpe_translation_rmse_m": 0.45229710385986627,
+      "scope": "fresh pre-fitting validation for overlap policy, fixed after acquisition",
+      "sequence": "desk",
+      "source_sha256": "e983d6830916e66dc4a46a71368046b149b283de87769690e7aa4e0b9483530c",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          236,
+          564,
+          266,
+          594
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          423,
+          423
+        ]
+      ],
+      "variant": "overlap-keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": true,
+        "ate": false,
+        "minimum_reference_coverage": true,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.8546180099651224,
+      "audit_max_rotation_difference_degrees": 8.384404281969182e-13,
+      "audit_max_translation_difference_m": 1.1102230246251565e-15,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": true,
+      "counts": {
+        "evaluated_poses": 795,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "rpe_evaluated_pairs": 762,
+        "rpe_planned_pairs": 768,
+        "unmatched_reference_poses": 3
+      },
+      "duration_ns": 26594239000,
+      "estimates": "target/tum-keyframe-reference/xyz-hybrid-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "d57cf2f4741b16b75c1cbab37f3683e17715b1341a7c2aa5e235aa79f06c0e75",
+      "evaluation": "target/tum-keyframe-reference/xyz-hybrid-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "3c019cfa695fae2afcdd5706da66d8e6ea6465cdab7a66ebeb916ec4a65f9f75",
+      "exact_typed_io_frames": 15,
+      "failed_generation_poses": 0,
+      "first_generation_error": null,
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_adaptive_keyframe.py": "6f70024ba24e24cfe6aa776e7659b95c9b8ddc60b8536621829891f5b50b5a35",
+        "/workspace/SpatialRust/scripts/run_tum_hybrid_keyframe.py": "5b0c501852249b99437e210b5b3a6af652e777acb05f548a1b098c2744378bac",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "6369f72926c85f80f91ffa491a1166b82d35b5ea6b76d10d16eba75dcb5915f2",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "0e5697cce3dafae01fec751daa884dc888276d9071221812c90807b179c67a78",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36"
+      },
+      "generation_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "generation_failure_index_ranges_inclusive": [],
+      "independent_audit": "target/tum-keyframe-reference/xyz-hybrid-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "6814d9d1eb3882c16d0d0ec5fe46e38afa0d0b8b0875c6316acc0090244784db",
+      "keyframe_promotion_counts": {
+        "geometric_overlap_margin": 16,
+        "interval": 16
+      },
+      "maximum_numeric_projection_difference_m": 2.709699358227624e-07,
+      "method": "spatialrust_hybrid_keyframe_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-xyz-hybrid-keyframe-plan.json",
+      "plan_sha256": "1cd2c8c90483f64c2d92b445cd6939a009df51079e71291fd8369145ec0b4b71",
+      "projected_points": 185553749,
+      "protocol_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "rgb_frames": 798,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 7.630423254741686,
+      "rpe_translation_rmse_m": 0.15559865018126354,
+      "scope": "exploratory or comparison baseline; see protocol chronology",
+      "sequence": "xyz",
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          171,
+          173,
+          201,
+          203
+        ],
+        [
+          201,
+          203,
+          231,
+          233
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          201,
+          203
+        ]
+      ],
+      "variant": "hybrid-keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": true,
+        "ate": false,
+        "minimum_reference_coverage": true,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.618902743921134,
+      "audit_max_rotation_difference_degrees": 4.263256414560601e-13,
+      "audit_max_translation_difference_m": 8.81239525796218e-16,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": true,
+      "counts": {
+        "evaluated_poses": 716,
+        "generated_poses": 722,
+        "planned_poses": 722,
+        "rpe_evaluated_pairs": 680,
+        "rpe_planned_pairs": 692,
+        "unmatched_reference_poses": 6
+      },
+      "duration_ns": 24061021000,
+      "estimates": "target/tum-keyframe-reference/rpy-hybrid-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "9d2b60055d6b753bbed37da78b64022960f699512163d64c5588e91bdf21ae32",
+      "evaluation": "target/tum-keyframe-reference/rpy-hybrid-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "343dac6ef488e623ceb602e862d0a5929bfdd95c00d56e35fac3877cf3a61dff",
+      "exact_typed_io_frames": 14,
+      "failed_generation_poses": 0,
+      "first_generation_error": null,
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_adaptive_keyframe.py": "6f70024ba24e24cfe6aa776e7659b95c9b8ddc60b8536621829891f5b50b5a35",
+        "/workspace/SpatialRust/scripts/run_tum_hybrid_keyframe.py": "5b0c501852249b99437e210b5b3a6af652e777acb05f548a1b098c2744378bac",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "6369f72926c85f80f91ffa491a1166b82d35b5ea6b76d10d16eba75dcb5915f2",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "0e5697cce3dafae01fec751daa884dc888276d9071221812c90807b179c67a78",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36"
+      },
+      "generation_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "generation_failure_index_ranges_inclusive": [],
+      "independent_audit": "target/tum-keyframe-reference/rpy-hybrid-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "5019d13db40327e3f44503c61e3a28f67e0f8a1f4200310d0828c1313177d375",
+      "keyframe_promotion_counts": {
+        "geometric_overlap_margin": 39,
+        "interval": 8
+      },
+      "maximum_numeric_projection_difference_m": 3.7286376919354325e-07,
+      "method": "spatialrust_hybrid_keyframe_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-rpy-hybrid-keyframe-plan.json",
+      "plan_sha256": "dec45b0a451356572487011eebc85e3102f5c113eb7cb47c1c753569120c3971",
+      "projected_points": 170661420,
+      "protocol_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "reference_sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989",
+      "rgb_frames": 723,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 10.506437820502986,
+      "rpe_translation_rmse_m": 0.1370333403333988,
+      "scope": "exploratory or comparison baseline; see protocol chronology",
+      "sequence": "rpy",
+      "source_sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          428,
+          431,
+          458,
+          461
+        ],
+        [
+          433,
+          434,
+          463,
+          464
+        ],
+        [
+          458,
+          461,
+          488,
+          491
+        ],
+        [
+          463,
+          464,
+          493,
+          494
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          458,
+          461
+        ],
+        [
+          463,
+          464
+        ]
+      ],
+      "variant": "hybrid-keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": false,
+        "ate": false,
+        "minimum_reference_coverage": false,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.4264567739671682,
+      "audit_max_rotation_difference_degrees": 3.410605131648481e-13,
+      "audit_max_translation_difference_m": 8.049116928532385e-16,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": false,
+      "counts": {
+        "evaluated_poses": 265,
+        "generated_poses": 265,
+        "planned_poses": 595,
+        "rpe_evaluated_pairs": 235,
+        "rpe_planned_pairs": 565,
+        "unmatched_reference_poses": 1
+      },
+      "duration_ns": 19816716000,
+      "estimates": "target/tum-keyframe-reference/desk-hybrid-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "4763c9b0d1797af212856e46ed0db320782862c48f8f10e7367ad2cf3326ef87",
+      "evaluation": "target/tum-keyframe-reference/desk-hybrid-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "f78369eb4d57ee0e6e0d92a694633a3d1e7484eff377d29d2ad1bbc22a1d5057",
+      "exact_typed_io_frames": 5,
+      "failed_generation_poses": 330,
+      "first_generation_error": {
+        "error": "hybrid lacks fixed common support: count=110800, fraction=0.4862080162888462, rmse=0.03619833134204599",
+        "index": 265,
+        "timestamp_ns": 1305031462212836000
+      },
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_adaptive_keyframe.py": "6f70024ba24e24cfe6aa776e7659b95c9b8ddc60b8536621829891f5b50b5a35",
+        "/workspace/SpatialRust/scripts/run_tum_hybrid_keyframe.py": "5b0c501852249b99437e210b5b3a6af652e777acb05f548a1b098c2744378bac",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "6369f72926c85f80f91ffa491a1166b82d35b5ea6b76d10d16eba75dcb5915f2",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "0e5697cce3dafae01fec751daa884dc888276d9071221812c90807b179c67a78",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36"
+      },
+      "generation_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "generation_failure_index_ranges_inclusive": [
+        [
+          265,
+          594
+        ]
+      ],
+      "independent_audit": "target/tum-keyframe-reference/desk-hybrid-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "3656a8388f801d6462b34a763feb8f660f94820b3ec25d68cdcbfbfed99474f7",
+      "keyframe_promotion_counts": {
+        "geometric_overlap_margin": 6,
+        "interval": 5
+      },
+      "maximum_numeric_projection_difference_m": 1.854858397987158e-07,
+      "method": "spatialrust_hybrid_keyframe_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-desk-hybrid-keyframe-plan.json",
+      "plan_sha256": "3b59cdd31fd8c967253fa4de2fba5199942b241858d3b9adca30d37d4221ead6",
+      "projected_points": 59260309,
+      "protocol_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "reference_sha256": "48c4fa61f5d78310ea579f404d31d296738c4210c19c2bdac4a5cdf6bff50831",
+      "rgb_frames": 613,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 5.49401383581553,
+      "rpe_translation_rmse_m": 0.2063322604203089,
+      "scope": "exploratory or comparison baseline; see protocol chronology",
+      "sequence": "desk",
+      "source_sha256": "e983d6830916e66dc4a46a71368046b149b283de87769690e7aa4e0b9483530c",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          235,
+          564,
+          265,
+          594
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          423,
+          423
+        ]
+      ],
+      "variant": "hybrid-keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": true,
+        "ate": false,
+        "minimum_reference_coverage": true,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 1.0459310623344362,
+      "audit_max_rotation_difference_degrees": 7.887024366937112e-13,
+      "audit_max_translation_difference_m": 1.3322676295501878e-15,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": true,
+      "counts": {
+        "evaluated_poses": 624,
+        "generated_poses": 639,
+        "planned_poses": 639,
+        "rpe_evaluated_pairs": 591,
+        "rpe_planned_pairs": 609,
+        "unmatched_reference_poses": 15
+      },
+      "duration_ns": 21288169000,
+      "estimates": "target/tum-keyframe-reference/desk2-hybrid-keyframe-generated-v1/estimates.json",
+      "estimates_sha256": "d3ac0c53641007ff3b83d8e284a1e04c528085d49cc63d2aa5fdc7d6d5445eb6",
+      "evaluation": "target/tum-keyframe-reference/desk2-hybrid-keyframe-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "b98fe3bb458646dc85adc8c3470a57e069d391235911c77c5768ff6c214d053c",
+      "exact_typed_io_frames": 12,
+      "failed_generation_poses": 0,
+      "first_generation_error": null,
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_adaptive_keyframe.py": "6f70024ba24e24cfe6aa776e7659b95c9b8ddc60b8536621829891f5b50b5a35",
+        "/workspace/SpatialRust/scripts/run_tum_hybrid_keyframe.py": "5b0c501852249b99437e210b5b3a6af652e777acb05f548a1b098c2744378bac",
+        "/workspace/SpatialRust/scripts/run_tum_keyframe.py": "6369f72926c85f80f91ffa491a1166b82d35b5ea6b76d10d16eba75dcb5915f2",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "0e5697cce3dafae01fec751daa884dc888276d9071221812c90807b179c67a78",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36"
+      },
+      "generation_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "generation_failure_index_ranges_inclusive": [],
+      "independent_audit": "target/tum-keyframe-reference/desk2-hybrid-keyframe-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "c9d12f3eac8fdf595d5fc244aa04e31fd5dea92087d2ec299f6934a52341f07b",
+      "keyframe_promotion_counts": {
+        "geometric_overlap_margin": 42,
+        "interval": 4
+      },
+      "maximum_numeric_projection_difference_m": 3.7286376919354325e-07,
+      "method": "spatialrust_hybrid_keyframe_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-desk2-hybrid-keyframe-plan.json",
+      "plan_sha256": "481c9cf95c285a562c3db779d6f46f2f4807ac432c3056fbc762f4b761304d10",
+      "projected_points": 146714333,
+      "protocol_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "reference_sha256": "de1c4f91685f7ce0ec5bdc644f5aec007affc4d51b3476ddc946cbf21e48b166",
+      "rgb_frames": 640,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 11.217596966510449,
+      "rpe_translation_rmse_m": 0.17971521717158284,
+      "scope": "fresh pre-acquisition validation for the hybrid revision",
+      "sequence": "desk2",
+      "source_sha256": "a569e4cb453a3cd9285bc985fcb109e65f055c75b33a4b155acd9a68d96b77d2",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          19,
+          29,
+          49,
+          59
+        ],
+        [
+          399,
+          399,
+          429,
+          429
+        ],
+        [
+          401,
+          402,
+          431,
+          432
+        ],
+        [
+          429,
+          429,
+          459,
+          459
+        ],
+        [
+          431,
+          432,
+          461,
+          462
+        ],
+        [
+          608,
+          608,
+          638,
+          638
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          19,
+          29
+        ],
+        [
+          429,
+          429
+        ],
+        [
+          431,
+          432
+        ],
+        [
+          638,
+          638
+        ]
+      ],
+      "variant": "hybrid-keyframe"
+    },
+    {
+      "acceptance": {
+        "basis": "Same fixed engineering limits as the preceding plane study, committed before this study runs; not publisher guarantees.",
+        "maximum_first_pose_ate_rmse_m": 0.1,
+        "maximum_one_second_translation_rpe_rmse_m": 0.05,
+        "minimum_evaluated_fraction": 0.95,
+        "minimum_generated_fraction": 1.0
+      },
+      "acceptance_checks": {
+        "all_planned_generated": true,
+        "ate": false,
+        "minimum_reference_coverage": true,
+        "rpe": false
+      },
+      "ate_first_pose_rmse_m": 0.523587476496287,
+      "audit_max_rotation_difference_degrees": 2.984279490192421e-13,
+      "audit_max_translation_difference_m": 8.881784197001252e-16,
+      "calibration_sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94",
+      "complete_accuracy_comparison": true,
+      "counts": {
+        "evaluated_poses": 624,
+        "generated_poses": 639,
+        "planned_poses": 639,
+        "rpe_evaluated_pairs": 591,
+        "rpe_planned_pairs": 609,
+        "unmatched_reference_poses": 15
+      },
+      "duration_ns": 21288169000,
+      "estimates": "target/tum-keyframe-reference/desk2-plane-generated-v1/estimates.json",
+      "estimates_sha256": "7d7a661e7d64c07574a6694157585bf4fc6050f16c63e097e0e869f2480af840",
+      "evaluation": "target/tum-keyframe-reference/desk2-plane-evaluation-v1/accuracy.json",
+      "evaluation_sha256": "0ba4a12a91e4efe1b242a432b1d59c5c26050948921462fbf847bed78b56ad05",
+      "exact_typed_io_frames": 12,
+      "failed_generation_poses": 0,
+      "first_generation_error": null,
+      "generation_bindings": {
+        "/workspace/.spatialrust-env/comparison/lib/python3.12/site-packages/spatialrust/spatialrust.abi3.so": "483696e3dad11a19a47ad50239db35540bacb242ef2dfc10c5652ae3ed269b87",
+        "/workspace/SpatialRust/scripts/evaluate_pose_reference.py": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e",
+        "/workspace/SpatialRust/scripts/realsense_reference.py": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73",
+        "/workspace/SpatialRust/scripts/run_tum_point_to_plane.py": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+        "/workspace/SpatialRust/scripts/run_tum_sequence.py": "0e5697cce3dafae01fec751daa884dc888276d9071221812c90807b179c67a78",
+        "/workspace/SpatialRust/scripts/timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+        "/workspace/SpatialRust/scripts/tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36"
+      },
+      "generation_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "generation_failure_index_ranges_inclusive": [],
+      "independent_audit": "target/tum-keyframe-reference/desk2-plane-independent-audit-v1/audit.json",
+      "independent_audit_sha256": "8dc52c20a39fc2f31d7dae9bf4a718023c607ca8e8cdde5d806925a645943332",
+      "keyframe_promotion_counts": {},
+      "maximum_numeric_projection_difference_m": 3.7286376919354325e-07,
+      "method": "spatialrust_point_to_plane_cpu",
+      "passes_all_conditions": false,
+      "plan": "benchmarks/tum-fr1-desk2-plane-plan.json",
+      "plan_sha256": "f433e9c1d19d6acc741573a2248e33a5508bb215bda492d5fd05ad76c869ce38",
+      "projected_points": 146714333,
+      "protocol_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "reference_sha256": "de1c4f91685f7ce0ec5bdc644f5aec007affc4d51b3476ddc946cbf21e48b166",
+      "rgb_frames": 640,
+      "rgb_unmatched_depth_frames": 0,
+      "rpe_rotation_rmse_degrees": 6.826299722473939,
+      "rpe_translation_rmse_m": 0.1024659489323622,
+      "scope": "fresh pre-acquisition validation for the hybrid revision",
+      "sequence": "desk2",
+      "source_sha256": "a569e4cb453a3cd9285bc985fcb109e65f055c75b33a4b155acd9a68d96b77d2",
+      "unevaluated_rpe_pair_run_encoding": "[source_first, source_last, target_first, target_last]; both indices increase by one; lossless inclusive runs",
+      "unevaluated_rpe_pair_runs_inclusive": [
+        [
+          19,
+          29,
+          49,
+          59
+        ],
+        [
+          399,
+          399,
+          429,
+          429
+        ],
+        [
+          401,
+          402,
+          431,
+          432
+        ],
+        [
+          429,
+          429,
+          459,
+          459
+        ],
+        [
+          431,
+          432,
+          461,
+          462
+        ],
+        [
+          608,
+          608,
+          638,
+          638
+        ]
+      ],
+      "unmatched_reference_index_ranges_inclusive": [
+        [
+          19,
+          29
+        ],
+        [
+          429,
+          429
+        ],
+        [
+          431,
+          432
+        ],
+        [
+          638,
+          638
+        ]
+      ],
+      "variant": "plane"
+    }
+  ],
+  "current_maturity_percent": 87,
+  "license": "TUM RGB-D Benchmark (Sturm et al., IROS 2012), CC BY 4.0. Metadata only; archives, image/point-cloud dumps and native binaries are local artifacts.",
+  "local_full_records": {
+    "all-five-hybrid-frozen-before-evaluation-v1.json": "769fcf2bdbca531294d025a04ed65babb67049a66575bdf354a0f8c77dc54833",
+    "all-seven-frozen-before-evaluation-v1.json": "1dd9e53ffdfb94e29c26b1cc6149caeb8ea5d64cb555d9bd80e566570bce59fb",
+    "evaluated-hybrid-study-v1.json": "dc2e86554812955c7d611ee5ac064054fb987a5ebf4434f13bc18e06a35c6529",
+    "evaluated-study-v1.json": "5af3fd54f81810a922aa0f2ad87876b1d886c7d08f800c727186be2600896c54"
+  },
+  "maturity_basis": "All 12 study/comparison cases fail at least one unchanged full-coverage/accuracy condition; fresh desk2 hybrid ATE/RPE worsen versus its baseline. Independent audits reproduce scores but do not certify motion. Canonical measured clock/front-rear mounting remains unavailable. Keep 87%, provisional.",
+  "maturity_change": false,
+  "numerical_audit_tolerances": {
+    "rotation_degrees": 1e-06,
+    "translation_m": 1e-08
+  },
+  "plot_export_note": "Earlier exports retained; v4 uses explicit canvas margins and stable 3D title sizing for raster/vector labels. All four plots inspected; matching raster title/ylabel pixels and SVG coordinates verified in rpy/desk2. Frozen estimates and scores unchanged.",
+  "plots": [
+    {
+      "artifacts": {
+        "report.html": "cfee976286bd3accab790489a3c8f0b610fad8a795750bef647b46efd78300b5",
+        "trajectory.png": "f5665bdb602c157812d9e052b794774d128bb5817c0a77945513ccce37572372",
+        "trajectory.svg": "d9670636de974b71ed65dca3e6f86b3d59e7840bb1ce55755f827aa34276bc4e"
+      },
+      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/xyz-comparison-plot-manifest-v4.json",
+      "manifest_sha256": "ef87096782919819e42a8f89baaf4d25750239bb8f1bae7d05cfdb26ed6bfecd",
+      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/xyz-comparison-report-v4/receipt.json",
+      "receipt_sha256": "c3b2aa8ffd82c6b364638d5dc8b1a881b83062b9037c1f799d3d9378f2e49ac5",
+      "sequence": "xyz"
+    },
+    {
+      "artifacts": {
+        "report.html": "8cc79d4a102ee55b636d84df442026ca05d0476e87fa7673bde705eac125aaa4",
+        "trajectory.png": "092958805629aa7efac18bc5cae87a762df547e2ace57648359c2c0990aa8995",
+        "trajectory.svg": "6bd247e4dc396e7e28b4ee840f60550fa6982f61ef24eb62e81f6f8e0a6741ee"
+      },
+      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/rpy-comparison-plot-manifest-v4.json",
+      "manifest_sha256": "e0b08bce0ae3952ad1d1697c02d334ef8eac94f4e168c465be781eb718d2153d",
+      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/rpy-comparison-report-v4/receipt.json",
+      "receipt_sha256": "863b53e47ea00cc93d68f31d8b58c0da88a6aecf428a5c16b3f097b7d71d4baf",
+      "sequence": "rpy"
+    },
+    {
+      "artifacts": {
+        "report.html": "828b45b6ef0fd82a4fb1d9426371c2be7be96b10eac5dc5c6ee28a465db164ce",
+        "trajectory.png": "86b47c3063502398da90c7e297d90ad8e718edef5045fde2713413350d3e422b",
+        "trajectory.svg": "2103847a92d33bde53213565b7dc5b907920c2c823b02a05d8ed5e536f551a84"
+      },
+      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/desk-comparison-plot-manifest-v4.json",
+      "manifest_sha256": "a8e476f8dd2f4fe89fed43a77c55ab773bd4e54c68afc16fc44e1cd16f121344",
+      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/desk-comparison-report-v4/receipt.json",
+      "receipt_sha256": "41e78f274c994851e353c540a29596719d0a1b0b74f79bb8640ce30c15f40b7d",
+      "sequence": "desk"
+    },
+    {
+      "artifacts": {
+        "report.html": "0bc63e22c894ef53e1ed398f9a1ca34e4a4444800644d955cd52feadc91c9135",
+        "trajectory.png": "a17a1e053a144bf917fd675c489595cd568e92ec5183f71d47bccc6682a02dc2",
+        "trajectory.svg": "22d356041e83dbba8e9bf3ae2fc1c722c7b238c9973a836d23d7e9d60534af5f"
+      },
+      "manifest": "/workspace/SpatialRust/target/tum-keyframe-reference/desk2-comparison-plot-manifest-v4.json",
+      "manifest_sha256": "46ab08642bd1a8b335d947b32c40683ad131b3dc5581e9069867999282f7982f",
+      "receipt": "/workspace/SpatialRust/target/tum-keyframe-reference/desk2-comparison-report-v4/receipt.json",
+      "receipt_sha256": "2218e1f28127ef81a709a3ff229fa3a7a2a951262051d5bafd1c9208fa37f835",
+      "sequence": "desk2"
+    }
+  ],
+  "protocol_chronology": {
+    "hybrid": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+    "overlap": "fdc52e6fbd4e5066b80fa552c5ffe0d91236c69d",
+    "static": "aff896602f490eb996436417fbef029d3eec535e"
+  },
+  "recorded_at_utc": "2026-10-11T01:23:21.393173+00:00",
+  "reference_used_for_generation": false,
+  "schema": "spatialrust.tum-keyframe-validation.v1",
+  "sources": {
+    "desk": {
+      "archive_bytes": 344011403,
+      "completed_at_utc": "2026-10-11T00:43:02.651778+00:00",
+      "curl_exit_code": 0,
+      "effective_url": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk.tgz",
+      "http_code": 200,
+      "license": "CC BY 4.0",
+      "plan_sha256": "ec357dce197969f4a929e2e962ac57ed434595abaef243ce01fb28c94a69ac49",
+      "protocol_commit": "aff896602f490eb996436417fbef029d3eec535e",
+      "publisher_archive_checksum_supplied": false,
+      "receipt_sha256": "af98e87d59d21c288f613e50325088dfcd90ce20ff3c27c3790616191ff95c58",
+      "requested_url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk.tgz",
+      "source_sha256": "e983d6830916e66dc4a46a71368046b149b283de87769690e7aa4e0b9483530c",
+      "ssl_verify_result": 0,
+      "timestamp_correction_note": "The unchanged original desk receipt misnames its post-download completion time as requested_at_utc; request time was not separately recorded.",
+      "verified_https": true
+    },
+    "desk2": {
+      "archive_bytes": 349445005,
+      "completed_at_utc": "2026-10-11T01:12:39.709050+00:00",
+      "curl_exit_code": 0,
+      "effective_url": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk2.tgz",
+      "http_code": 200,
+      "license": "CC BY 4.0",
+      "plan_sha256": "481c9cf95c285a562c3db779d6f46f2f4807ac432c3056fbc762f4b761304d10",
+      "protocol_commit": "2248b315674c36dfacf38cca7c70b6b2698071b8",
+      "publisher_archive_checksum_supplied": false,
+      "receipt_sha256": "10fdb0a832709cc04d9d7496ea7620d5b8f54491c8b58f7ce521d31e6deecd58",
+      "requested_at_utc": "2026-10-11T01:10:22.554440+00:00",
+      "requested_url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk2.tgz",
+      "source_sha256": "a569e4cb453a3cd9285bc985fcb109e65f055c75b33a4b155acd9a68d96b77d2",
+      "ssl_verify_result": 0,
+      "verified_https": true
+    }
+  },
+  "target_percent": 90,
+  "tests": {
+    "312": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 731,
+      "path": "target/tum-keyframe-reference/hybrid-full-python312-junit.xml",
+      "sha256": "79293866641ecc36b1e78b9982f94b9bc5657887ce7ff82be107db561ae5bf2e",
+      "skipped": 3,
+      "total": 734
+    },
+    "38": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 731,
+      "path": "target/tum-keyframe-reference/hybrid-full-python38-junit.xml",
+      "sha256": "aed28e0f2c8fe5193e90c251f360454226fd2fcb06d6fd0a711754e6b6400317",
+      "skipped": 3,
+      "total": 734
+    }
+  },
+  "updated_at_utc": "2026-10-11T01:30:51.394462+00:00",
+  "windows_path_repair": {
+    "annotation_receipt": "target/goal-continuation/pr126-windows-path-diagnosis.json",
+    "annotation_receipt_sha256": "5211c0eedcfa8cc25fa21c9cb06272a1653abe52a9108c6112030e2b1a170194",
+    "check_run": 114359975507,
+    "diagnosis": "Slash-only source-path assertions fail on Windows; now check the exact resolved absolute key and actual source SHA.",
+    "failed_head": "69ecb43021daa31660ed81d0393fb350e587c443",
+    "failed_test_assertions": 3,
+    "fix_commit": "4cbf8d88a3b66488db847c5e08e3909bb5639ebf",
+    "generation_or_score_changes": false,
+    "local_endpoint_tests": {
+      "312": {
+        "passed": 731,
+        "path": "target/goal-continuation/pr126-windows-fix-full-python312-junit.xml",
+        "sha256": "316f2e4d41f58915c1cb68b84680eb8e6737f5194e1fbd0142cfb619d21394e4",
+        "skipped": 3
+      },
+      "38": {
+        "passed": 731,
+        "path": "target/goal-continuation/pr126-windows-fix-full-python38-junit.xml",
+        "sha256": "f45c9d89302ead4e4b0d917391ebc6ceaa48912da20be924f38ad6c5f17a662f",
+        "skipped": 3
+      }
+    },
+    "remote_repaired_head_validation": "pending"
+  },
+  "world_gauge": "first-pose SE(3) only; no best fit, scale, resets or relocalization"
+}

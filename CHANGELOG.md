@@ -99,6 +99,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- The local COPC HTTP test server waits for complete request headers within its
+  existing 4 KiB bound before responding. Fragmented HEAD and Range requests no
+  longer cause premature responses or connection resets; a read deadline bounds
+  incomplete requests. Accepted sockets explicitly use blocking mode, including
+  Darwin's inherited nonblocking sockets. Real TCP regressions force that mode
+  on every platform and retain strict response assertions.
+
 - Large GPU voxel radix sorts compute earlier-digit subtotals once per input
   workgroup and reuses existing offset scratch for the prefix pass. A parallel
   tree scan replaces redundant shared additions and global histogram reads,
@@ -156,6 +163,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   Python file alignment with intensity, labels, timestamps and rotated normals.
 
 ### Added
+
+- Explicit bounded native keyframe study adapters retain a fixed keyframe or
+  promote an already accepted pose using input-only geometric support. A
+  separate coarse-SVD/fine-plane variant records each objective. Four official
+  TUM sequence comparisons preserve all failed/missing poses, typed input
+  attributes, frozen hashes and independent audits; none meets all fixed
+  accuracy/coverage gates. The default estimator remains unchanged.
 
 - `gpu-image` adds resident grayscale `clahe_gpu` and a three-pass profiled
   variant. Reflect101 tiles, clip redistribution and binary64 lookup/interpolation

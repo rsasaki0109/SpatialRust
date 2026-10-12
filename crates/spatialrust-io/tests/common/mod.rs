@@ -12,6 +12,14 @@ pub struct LocalHttpFileServer {
 
 impl LocalHttpFileServer {
     pub fn start(payload: Vec<u8>) -> (Self, String) {
+        Self::start_with_socket_mode(payload, false)
+    }
+
+    pub fn start_with_nonblocking_connections(payload: Vec<u8>) -> (Self, String) {
+        Self::start_with_socket_mode(payload, true)
+    }
+
+    fn start_with_socket_mode(payload: Vec<u8>, force_nonblocking: bool) -> (Self, String) {
         let payload = Arc::new(payload);
         let stop = Arc::new(AtomicBool::new(false));
         let stop_server = Arc::clone(&stop);
@@ -24,6 +32,11 @@ impl LocalHttpFileServer {
             while !stop_server.load(Ordering::Relaxed) {
                 match listener.accept() {
                     Ok((stream, _)) => {
+                        if force_nonblocking {
+                            // Exercise the accepted-socket mode inherited on Darwin,
+                            // even on platforms that do not inherit O_NONBLOCK.
+                            stream.set_nonblocking(true).expect("nonblocking accepted socket");
+                        }
                         let data = Arc::clone(&payload);
                         thread::spawn(move || serve_http_file_request(stream, &data));
                     }
@@ -46,11 +59,32 @@ impl Drop for LocalHttpFileServer {
 }
 
 fn serve_http_file_request(mut stream: TcpStream, payload: &[u8]) {
+    // Darwin can inherit O_NONBLOCK from the listener. The request worker reads
+    // synchronously; a read timeout alone does not restore blocking semantics.
+    if stream.set_nonblocking(false).is_err()
+        || stream.set_read_timeout(Some(Duration::from_secs(5))).is_err()
+    {
+        return;
+    }
     let mut buffer = [0_u8; 4096];
-    let read = match stream.read(&mut buffer) {
-        Ok(0) | Err(_) => return,
-        Ok(read) => read,
-    };
+    let mut read = 0;
+    loop {
+        if read == buffer.len() {
+            return;
+        }
+        match stream.read(&mut buffer[read..]) {
+            Ok(0) => return,
+            Ok(count) => read += count,
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => return,
+        }
+        // A TCP read can end anywhere in the headers. Responding before the
+        // terminator can miss a Range header and close with unread request
+        // bytes, resetting the client's connection instead of ending cleanly.
+        if buffer[..read].windows(4).any(|window| window == b"\r\n\r\n") {
+            break;
+        }
+    }
     let request = String::from_utf8_lossy(&buffer[..read]);
     let request_line = request.lines().next().unwrap_or_default();
 
