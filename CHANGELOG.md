@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Point-cloud boundary detection shares one KD-tree across bounded scoped CPU
+  workers under `feature-boundary`. Workers reuse angular scratch and write
+  disjoint mask bands directly; small/one-worker clouds stay serial. Boundary
+  decisions, selected point order, schema, attributes and metadata are preserved
+  without a new dependency or public signature.
 - GPU CHW image packing validates output indices, buffer/binding/dispatch limits
   and profiler ownership/capacity before work allocation or pipeline setup.
   The original f32 normalization shader, CHW order, one-pass receipts and
