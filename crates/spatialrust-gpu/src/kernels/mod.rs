@@ -50,7 +50,9 @@ mod voxel_segments_gpu;
 mod voxel_gather;
 
 pub(crate) mod cluster_union;
+pub(crate) mod fpfh;
 pub(crate) mod nearest;
+pub use fpfh::{GpuFpfhDescriptors, GpuFpfhInput, GpuFpfhNeighborhoods, GPU_FPFH_DESCRIPTOR_LEN};
 pub use nearest::{
     GpuKdTree, GpuNeighborhoodKind, GpuNeighborhoodReadback, GpuNeighborhoods, GpuQueryBatch,
     MAX_GPU_K_NEIGHBORS,

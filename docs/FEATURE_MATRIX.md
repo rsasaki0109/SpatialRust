@@ -6,6 +6,20 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+`register-fpfh-gpu` exposes
+`fpfh_descriptors_gpu(runtime, cloud, radius, neighbor_capacity)` alongside the
+ordinary CPU descriptor API. CPU validation and KD-tree construction precede
+explicit GPU input upload; radius search, SPFH and weighted FPFH run on device.
+Capacity includes self and must fit every radius match; incomplete/malformed
+rows set GPU status, zero all descriptors and reject at readback. No automatic
+CPU fallback or placement change occurs. `GpuFpfhInput` under `gpu-wgpu` also
+exposes input-bound reusable `GpuFpfhNeighborhoods` and resident descriptors
+for later device consumers, which must check the GPU status buffer. The two
+feature passes share a submission without neighborhood/SPFH readback. Output
+transfer is 132 bytes per point plus 16 status bytes; GPU angular rounding can
+change bins near boundaries. Descriptor matching/RANSAC remain CPU. See
+[FPFH measurements](../notes/2026-10-12_gpu_fpfh_descriptors.md).
+
 `gpu-wgpu` exposes `GpuQueryBatch::upload` and
 `GpuKdTree::{nearest_k_resident,radius_neighbors_resident}` for shared GPU
 neighborhoods. Target/query uploads are explicit and reusable; search submits
@@ -16,8 +30,8 @@ CPU traversal order, counts all matches, and supports capacity=0 count-only
 search. `download` accounts for padded readback bytes; complete row access
 rejects overflow while `truncated_rows` explicitly returns a traversal prefix.
 Self/duplicate points are included. GPU feature consumers must check counts
-and preserve query/target semantics. Feature algorithms remain separate CPU
-APIs until their device compute is added. Native correctness and completed/
+and preserve query/target semantics. GPU FPFH consumes radius rows as described
+above; other feature algorithms retain their separate CPU APIs. Native correctness and completed/
 resident measurements are in
 [the neighborhood note](../notes/2026-10-12_gpu_bounded_neighborhoods.md).
 
@@ -76,6 +90,7 @@ before allocation; no dependency, public signature or image readback is added.
 | `gpu-wgpu` | wgpu runtime and GPU kernels | Explicit GPU operation APIs |
 | `register-icp-gpu` | ICP and wgpu correspondence search | Explicit GPU target upload and per-batch query/readback; CPU pose solver |
 | `register-gicp-gpu` | GICP, GPU radius covariance and explicit GPU correspondences | Caller-owned runtime and full payload receipt on explicit alignment; CPU pose solver |
+| `register-fpfh-gpu` | GPU radius search, SPFH and weighted FPFH | Explicit descriptor API and payload receipts; CPU matching/RANSAC |
 | `pipeline-mvp-gpu` | `mvp` GPU stages plus `gpu-wgpu` | GPU-enabled MVP pipeline |
 | `gpu-aoso-staging` | AoSoA core packing plus GPU-resident frame APIs | Chained GPU execution with explicit readback |
 | `serde` | serde derives for core/math metadata and schemas | Configuration and metadata serialization |

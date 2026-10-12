@@ -63,6 +63,43 @@ fn fpfh_descriptors_with_workers(
     Ok(compute_fpfh_with_workers(&set, feature_radius, workers))
 }
 
+/// Explicit GPU FPFH result and payload transfers; ordinary FPFH stays CPU.
+#[cfg(feature = "register-fpfh-gpu")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuFpfhResult {
+    /// Original-order GPU-computed 33-bin descriptor rows.
+    pub descriptors: Vec<FpfhDescriptor>,
+    /// Target/query/normal uploads plus descriptor/status download bytes.
+    pub transfers: spatialrust_core::TransferStats,
+}
+
+/// Explicitly uploads a cloud, runs GPU radius search, SPFH and weighted FPFH,
+/// then downloads descriptors/status. No automatic CPU fallback occurs.
+/// `neighbor_capacity` includes self and must fit ALL radius matches; overflow
+/// returns an error rather than descriptors computed from truncated rows.
+/// Input validation matches CPU FPFH; GPU angular/bin rounding may differ near
+/// boundaries. Descriptor matching and RANSAC registration remain CPU.
+#[cfg(feature = "register-fpfh-gpu")]
+pub fn fpfh_descriptors_gpu(
+    runtime: &spatialrust_gpu::WgpuRuntime,
+    cloud: &PointCloud,
+    feature_radius: f32,
+    neighbor_capacity: u32,
+) -> SpatialResult<GpuFpfhResult> {
+    validate_distance(feature_radius, "feature_radius")?;
+    let set = PointSet::from_cloud(cloud)?;
+    let normals: Vec<_> = set.normals.iter().map(|n| [n.x, n.y, n.z]).collect();
+    let input = spatialrust_gpu::GpuFpfhInput::upload(runtime, &set.tree, &normals)?;
+    let neighborhoods =
+        input.radius_neighborhoods_resident(runtime, feature_radius, neighbor_capacity)?;
+    let output = input.descriptors_resident(runtime, &neighborhoods)?;
+    let (descriptors, download) = output.download(runtime)?;
+    let mut transfers = input.upload_transfers();
+    transfers
+        .record(spatialrust_core::TransferDirection::DeviceToHost, download.device_to_host_bytes());
+    Ok(GpuFpfhResult { descriptors, transfers })
+}
+
 /// Configuration for [`FpfhRansacRegistration`].
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FpfhRansacConfig {

@@ -17,6 +17,7 @@ register-gicp = ["dep:spatialrust-search"]
 register-gicp-gpu = ["register-gicp", "dep:spatialrust-gpu"]
 register-ndt = []
 register-fpfh = ["dep:spatialrust-search"]
+register-fpfh-gpu = ["register-fpfh", "dep:spatialrust-gpu"]
 
 [dependencies]
 spatialrust-core = { workspace = true }

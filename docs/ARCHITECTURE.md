@@ -30,7 +30,17 @@ Nearest-k rows retain CPU stable ordering; radius rows retain traversal order
 and expose overflow. Complete CPU readback rejects incomplete neighborhoods;
 GPU consumers must inspect counts before using rows. Target/query payloads
 remain resident between passes. This adds no core/search dependency and does
-not change feature algorithm placement; FPFH/ISS/MLS device compute follows.
+not change feature algorithm placement; ISS/MLS device compute follows.
+
+FPFH device computation now consumes this radius-row representation through
+`GpuFpfhInput` and neighborhoods tied to that exact uploaded input. Explicit
+input upload retains original positions/unit normals plus target/query buffers.
+SPFH normalization and ordered distance-weighted aggregation run on GPU in two
+passes sharing one submission. GPU status detects capacity overflow or malformed
+rows before downstream feature use; invalid results are zeroed and explicit
+download rejects them. No neighborhood/SPFH readback is needed. The optional
+`register-fpfh-gpu` wrapper retains CPU validation/tree construction and exposes
+complete transfer receipts; CPU descriptor matching and RANSAC are unchanged.
 
 | Area | Decision |
 | --- | --- |
