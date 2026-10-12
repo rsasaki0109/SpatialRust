@@ -649,6 +649,13 @@ GICP exposes the same explicit correspondence entry point under
 and share the transfer receipt. Its Hessian/gradient accumulation and pose
 solver stay on CPU. See [GICP measurements](notes/2026-10-12_gpu_gicp_correspondences.md).
 
+GPU k-NN/radius search can retain its results for later device passes with
+`GpuQueryBatch::upload` and
+`GpuKdTree::{nearest_k_resident,radius_neighbors_resident}` (`gpu-wgpu`). Radius
+capacity overflow is counted explicitly and complete readback rejects it.
+This provides the neighborhood foundation for feature compute; FPFH/ISS/MLS
+remain CPU algorithms. See [contracts and measurements](notes/2026-10-12_gpu_bounded_neighborhoods.md).
+
 ### Library
 
 Load or save by file extension:

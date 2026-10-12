@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicitly uploaded reusable GPU query batches and resident KD-tree
+  nearest-k/radius neighborhoods under `gpu-wgpu`. k=0..=64 retains CPU
+  selection and stable distance order; radius rows retain traversal order and
+  count all matches even when capacity is exceeded. Complete readback access
+  rejects overflow; named truncated access and count-only search are explicit.
+  Owned result buffers can feed subsequent GPU kernels without readback.
+
 - Extend explicit GPU correspondence reuse to GICP under `register-gicp-gpu`,
   retaining unbounded matching followed by the original host distance gate,
   ordered Hessian/gradient reduction and CPU pose solving. Optional radius

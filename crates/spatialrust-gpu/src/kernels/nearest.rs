@@ -7,6 +7,14 @@ use wgpu::util::DeviceExt;
 
 use crate::{scratch::ScratchBuffers, WgpuRuntime};
 
+#[path = "neighborhoods.rs"]
+mod neighborhoods;
+pub(crate) use neighborhoods::NeighborhoodPipelines;
+pub use neighborhoods::{
+    GpuNeighborhoodKind, GpuNeighborhoodReadback, GpuNeighborhoods, GpuQueryBatch,
+    MAX_GPU_K_NEIGHBORS,
+};
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Node {
