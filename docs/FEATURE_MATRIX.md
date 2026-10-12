@@ -111,6 +111,11 @@ workspace because its build requires a Python toolchain.
   foreign sources are rejected before allocation. Grayscale conversion is an
   explicit preceding kernel when needed. Benchmark CPU/Rayon dependencies are
   dev-only; no production/default/core dependency is added.
+- GPU histogram partials use eight padded local bin replicas for
+  4,194,304..=8,388,608 pixels when 8,224 bytes of local storage are supported.
+  Calls outside that range or storage limit use the original kernel. Counts, two passes,
+  global scratch, resident outputs and receipts are preserved. See
+  [histogram accumulation measurements](../notes/2026-10-12_replicated_gpu_histograms.md).
 - `spatialrust-search/parallel` bounds each radius/k-NN tensor query by available
   CPU parallelism and original chunk count, without a production dependency.
   Contiguous worker bands preserve backend chunk ranges and append result order.
