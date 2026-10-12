@@ -303,6 +303,16 @@ order are preserved; descriptor matching and seeded RANSAC retain their existing
 execution. Two 132-byte-per-point descriptor arrays are retained during weighting,
 with one radius-neighbor vector per active worker and no all-query neighborhood
 table. Worker caps are per call, not a process-wide CPU or scratch-byte budget.
+Boundary detection under `spatialrust-features/feature-boundary` uses the same
+bounded staging policy, sharing one immutable KD-tree while filling disjoint
+contiguous slices directly in the final boundary mask. Each worker reuses one
+angle vector across its points and holds only the current radius-query neighbors.
+Neighbor order, tangent-plane math, angle sorting and threshold comparisons stay
+unchanged; no floating-point reduction spans workers. The detector gathers
+selected points in original index order and preserves all field types and
+metadata. Small/one-worker calls remain serial. Neighbor/angle scratch scales
+with radius support per active worker; the worker cap is not a scratch-byte or
+process-wide CPU budget. No device copy or new dependency is introduced.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

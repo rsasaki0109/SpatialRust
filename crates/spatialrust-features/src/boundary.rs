@@ -11,7 +11,7 @@ use spatialrust_core::{
     SpatialResult,
 };
 use spatialrust_math::Vec3;
-use spatialrust_search::{KdTree, RadiusSearchIndex};
+use spatialrust_search::{parallel_worker_count, KdTree, RadiusSearchIndex};
 
 /// Configuration for [`BoundaryDetector`].
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -68,7 +68,19 @@ impl BoundaryDetector {
     }
 
     /// Computes the per-point boundary mask (`true` = boundary).
+    ///
+    /// Shares one KD-tree across bounded scoped CPU workers using the existing
+    /// point-staging policy. Small clouds and one-worker calls run on the caller.
+    /// Point order, neighborhood order and per-point arithmetic are preserved.
     pub fn boundary_mask(&self, input: &PointCloud) -> SpatialResult<Vec<bool>> {
+        self.boundary_mask_with_workers(input, parallel_worker_count(input.len()))
+    }
+
+    fn boundary_mask_with_workers(
+        &self,
+        input: &PointCloud,
+        workers: usize,
+    ) -> SpatialResult<Vec<bool>> {
         if self.config.search_radius <= 0.0 || self.config.search_radius.is_nan() {
             return Err(SpatialError::InvalidArgument("search_radius must be positive".to_owned()));
         }
@@ -82,29 +94,46 @@ impl BoundaryDetector {
         let tree = KdTree::from_slices(x, y, z);
 
         let mut mask = vec![false; len];
-        let mut angles: Vec<f32> = Vec::new();
-        for i in 0..len {
-            let p = Vec3::new(x[i], y[i], z[i]);
-            let normal = Vec3::new(nx[i], ny[i], nz[i]);
-            let (u, v) = tangent_basis(normal);
+        let fill = |start: usize, band: &mut [bool]| {
+            // Reuse angular scratch within each worker, without retaining an
+            // all-point neighbor table or allocating a worker result vector.
+            let mut angles: Vec<f32> = Vec::new();
+            for (offset, is_boundary) in band.iter_mut().enumerate() {
+                let i = start + offset;
+                let p = Vec3::new(x[i], y[i], z[i]);
+                let normal = Vec3::new(nx[i], ny[i], nz[i]);
+                let (u, v) = tangent_basis(normal);
 
-            let neighbors = tree.radius_search(p.x, p.y, p.z, self.config.search_radius);
-            angles.clear();
-            for neighbor in &neighbors {
-                let j = neighbor.index;
-                if j == i {
+                let neighbors = tree.radius_search(p.x, p.y, p.z, self.config.search_radius);
+                angles.clear();
+                for neighbor in &neighbors {
+                    let j = neighbor.index;
+                    if j == i {
+                        continue;
+                    }
+                    let d = Vec3::new(x[j] - p.x, y[j] - p.y, z[j] - p.z);
+                    let (du, dv) = (d.dot(u), d.dot(v));
+                    if du * du + dv * dv > 1e-12 {
+                        angles.push(dv.atan2(du));
+                    }
+                }
+                if angles.len() < self.config.min_neighbors {
                     continue;
                 }
-                let d = Vec3::new(x[j] - p.x, y[j] - p.y, z[j] - p.z);
-                let (du, dv) = (d.dot(u), d.dot(v));
-                if du * du + dv * dv > 1e-12 {
-                    angles.push(dv.atan2(du));
+                *is_boundary = max_angle_gap(&mut angles) > self.config.angle_threshold;
+            }
+        };
+        let workers = workers.max(1).min(len);
+        if workers == 1 {
+            fill(0, &mut mask);
+        } else {
+            let chunk_size = len.div_ceil(workers);
+            std::thread::scope(|scope| {
+                for (band, chunk) in mask.chunks_mut(chunk_size).enumerate() {
+                    let fill = &fill;
+                    scope.spawn(move || fill(band * chunk_size, chunk));
                 }
-            }
-            if angles.len() < self.config.min_neighbors {
-                continue;
-            }
-            mask[i] = max_angle_gap(&mut angles) > self.config.angle_threshold;
+            });
         }
         Ok(mask)
     }
@@ -118,6 +147,19 @@ impl BoundaryDetector {
         Ok(BoundaryResult { indices, boundary })
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "../tests/fixtures/boundary_serial.rs"]
+#[allow(dead_code)]
+mod previous;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "boundary_parallel_tests.rs"]
+mod parallel_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "boundary_parallel_benchmark.rs"]
+mod parallel_benchmark;
 
 /// Builds an orthonormal basis `(u, v)` spanning the plane perpendicular to `n`.
 fn tangent_basis(n: Vec3<f32>) -> (Vec3<f32>, Vec3<f32>) {

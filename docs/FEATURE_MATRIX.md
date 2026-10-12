@@ -206,6 +206,12 @@ workspace because its build requires a Python toolchain.
   neighbor order, descriptor words and seeded registration results are preserved.
   Small/one-worker clouds retain serial staging, with no additional dependency.
   See [FPFH execution measurements](../notes/2026-10-12_parallel_fpfh_descriptors.md).
+- `feature-boundary` computes tangent-plane boundary masks with bounded scoped
+  CPU workers sharing one KD-tree and writing disjoint mask bands directly.
+  Each worker reuses angular scratch; neighborhood and point order, threshold
+  decisions, selected attributes and metadata are preserved. Small/one-worker
+  calls stay serial, with no additional dependency or device transfer.
+  See [boundary execution measurements](../notes/2026-10-12_parallel_boundary_detection.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
