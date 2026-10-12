@@ -9,6 +9,64 @@ use crate::WgpuRuntime;
 const WORKGROUP_X: u32 = 16;
 const WORKGROUP_Y: u32 = 16;
 
+#[derive(Clone, Copy, Debug)]
+struct AiPackPlan {
+    byte_len: u64,
+    groups: [u32; 3],
+}
+
+fn pack_plan(
+    width: u32,
+    height: u32,
+    channels: u32,
+    limits: &wgpu::Limits,
+) -> SpatialResult<AiPackPlan> {
+    let invalid = || {
+        SpatialError::InvalidArgument(
+        "GPU AI packing requires positive dimensions, supported channels and buffer/compute/index limits".to_owned(),
+    )
+    };
+    let pixels = u64::from(width) * u64::from(height);
+    if width == 0
+        || height == 0
+        || !(1..=4).contains(&channels)
+        || width > limits.max_texture_dimension_2d
+        || height > limits.max_texture_dimension_2d
+        || width > i32::MAX as u32
+        || height > i32::MAX as u32
+        || pixels > u64::from(u32::MAX)
+        || limits.max_compute_invocations_per_workgroup < WORKGROUP_X * WORKGROUP_Y
+        || limits.max_compute_workgroup_size_x < WORKGROUP_X
+        || limits.max_compute_workgroup_size_y < WORKGROUP_Y
+        || limits.max_compute_workgroup_size_z == 0
+        || width.div_ceil(WORKGROUP_X) > limits.max_compute_workgroups_per_dimension
+        || height.div_ceil(WORKGROUP_Y) > limits.max_compute_workgroups_per_dimension
+        || limits.max_sampled_textures_per_shader_stage == 0
+        || limits.max_storage_buffers_per_shader_stage == 0
+        || limits.max_uniform_buffers_per_shader_stage == 0
+        || limits.max_uniform_buffer_binding_size < std::mem::size_of::<AiPackParams>() as u32
+        || limits.max_buffer_size < std::mem::size_of::<AiPackParams>() as u64
+        || limits.max_bind_groups == 0
+        || limits.max_bindings_per_bind_group < 3
+    {
+        return Err(invalid());
+    }
+    let elements = pixels
+        .checked_mul(u64::from(channels))
+        .filter(|&n| n <= u64::from(u32::MAX))
+        .ok_or_else(invalid)?;
+    let byte_len = elements.checked_mul(4).ok_or_else(invalid)?;
+    if byte_len > limits.max_buffer_size
+        || byte_len > u64::from(limits.max_storage_buffer_binding_size)
+    {
+        return Err(invalid());
+    }
+    Ok(AiPackPlan {
+        byte_len,
+        groups: [width.div_ceil(WORKGROUP_X), height.div_ceil(WORKGROUP_Y), 1],
+    })
+}
+
 const SHADER: &str = r#"
 struct Params {
     width: u32,
@@ -181,6 +239,9 @@ impl GpuAiTensor {
 }
 
 /// Packs a resident image into normalized planar CHW `f32` storage.
+///
+/// Runtime, index, dispatch, binding and output-buffer limits are checked
+/// before allocation or pipeline setup; valid shader math remains unchanged.
 pub fn pack_ai_chw_gpu(
     runtime: &WgpuRuntime,
     source: &GpuImage,
@@ -197,7 +258,7 @@ pub(crate) fn pack_ai_chw_gpu_with_profiler(
     scale: f32,
     mean: [f32; 4],
     std: [f32; 4],
-    mut profiler: Option<&mut crate::GpuStageProfiler>,
+    profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuAiTensor> {
     source.validate_runtime(runtime)?;
     if !scale.is_finite()
@@ -208,9 +269,29 @@ pub(crate) fn pack_ai_chw_gpu_with_profiler(
             "AI packing scale/mean/std must be finite and std non-zero".to_owned(),
         ));
     }
-    let elements =
-        u64::from(source.width()) * u64::from(source.height()) * u64::from(source.channels());
-    let byte_len = elements * std::mem::size_of::<f32>() as u64;
+    let plan =
+        pack_plan(source.width(), source.height(), source.channels(), &runtime.device().limits())?;
+    if let Some(profiler) = &profiler {
+        profiler.validate(runtime, 1)?;
+    }
+    let cache =
+        runtime.image_ai_pack_pipeline.get_or_init(|| create_ai_pack_pipeline(runtime.device()));
+    pack_dispatch(runtime, source, scale, mean, std, plan, cache, &cache.pipeline, profiler)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn pack_dispatch(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    scale: f32,
+    mean: [f32; 4],
+    std: [f32; 4],
+    plan: AiPackPlan,
+    cache: &AiPackPipeline,
+    pipeline: &wgpu::ComputePipeline,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuAiTensor> {
+    let byte_len = plan.byte_len;
     let output = runtime.buffer_pool().acquire_storage(runtime, "gpu-ai-chw-output", byte_len);
     let params = AiPackParams {
         width: source.width(),
@@ -229,12 +310,10 @@ pub(crate) fn pack_ai_chw_gpu_with_profiler(
         mapped_at_creation: false,
     });
     runtime.queue().write_buffer(&uniform, 0, bytemuck::bytes_of(&params));
-    let pipeline =
-        runtime.image_ai_pack_pipeline.get_or_init(|| create_ai_pack_pipeline(runtime.device()));
     let source_view = source.view();
     let bind_group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("gpu-ai-pack-bg"),
-        layout: &pipeline.layout,
+        layout: &cache.layout,
         entries: &[
             wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
             wgpu::BindGroupEntry {
@@ -252,13 +331,9 @@ pub(crate) fn pack_ai_chw_gpu_with_profiler(
             label: Some("pack_ai_chw_gpu"),
             timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "pack_ai_chw_gpu"),
         });
-        pass.set_pipeline(&pipeline.pipeline);
+        pass.set_pipeline(pipeline);
         pass.set_bind_group(0, &bind_group, &[]);
-        pass.dispatch_workgroups(
-            source.width().div_ceil(WORKGROUP_X),
-            source.height().div_ceil(WORKGROUP_Y),
-            1,
-        );
+        pass.dispatch_workgroups(plan.groups[0], plan.groups[1], plan.groups[2]);
     }
     runtime.queue().submit(Some(encoder.finish()));
     let mut receipt = source.receipt().clone();
@@ -273,3 +348,7 @@ pub(crate) fn pack_ai_chw_gpu_with_profiler(
         receipt,
     })
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "ai_pack_tests.rs"]
+mod tests;

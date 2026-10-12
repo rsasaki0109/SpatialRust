@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU CHW image packing validates output indices, buffer/binding/dispatch limits
+  and profiler ownership/capacity before work allocation or pipeline setup.
+  The original f32 normalization shader, CHW order, one-pass receipts and
+  explicit transfers are preserved.
 - GPU RGB-to-gray supports images beyond one dispatch axis by distributing
   flat 256-lane workgroups across bounded rows. Single-row work retains its
   original shader; dimensions, counters, device limits and profiler capacity
