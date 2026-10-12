@@ -3,6 +3,7 @@
 use spatialrust_core::{SpatialError, SpatialResult};
 use spatialrust_image::{Image, ImageMetadata, ImageView};
 
+use super::transfer_packing::{pack_rgba8, unpack_rgba8};
 use crate::WgpuRuntime;
 
 const BYTES_PER_TEXEL: u64 = 4;
@@ -263,12 +264,13 @@ impl GpuImage {
         );
         runtime.queue().submit(Some(encoder.finish()));
         let rgba = read_staging_bytes(runtime.device(), &staging, plan.staging_len)?;
-        let mut data = Vec::with_capacity(plan.output_len);
-        for row in rgba.chunks_exact(plan.padded_row as usize).take(self.height as usize) {
-            for texel in row[..plan.row_bytes as usize].chunks_exact(BYTES_PER_TEXEL as usize) {
-                data.extend_from_slice(&texel[..CHANNELS]);
-            }
-        }
+        let data = unpack_rgba8::<CHANNELS>(
+            &rgba,
+            plan.row_bytes as usize / BYTES_PER_TEXEL as usize,
+            self.height as usize,
+            plan.padded_row as usize,
+            plan.output_len,
+        );
         self.receipt.record_device_to_host(self.storage_bytes, "readback_u8_texture");
         Image::try_new_with_metadata(self.width as usize, self.height as usize, data, self.metadata)
             .map_err(|error| SpatialError::InvalidArgument(error.to_string()))
@@ -368,21 +370,6 @@ pub(crate) fn create_texture(
     runtime.acquire_image_texture(width, height, label)
 }
 
-fn pack_rgba8<const CHANNELS: usize>(
-    view: ImageView<'_, u8, CHANNELS>,
-    packed_len: usize,
-) -> Vec<u8> {
-    let mut packed = vec![0_u8; packed_len];
-    for y in 0..view.height() {
-        let source = view.row(y).expect("input row in bounds");
-        let target = &mut packed[y * view.width() * 4..(y + 1) * view.width() * 4];
-        for (pixel, texel) in source.chunks_exact(CHANNELS).zip(target.chunks_exact_mut(4)) {
-            texel[..CHANNELS].copy_from_slice(pixel);
-        }
-    }
-    packed
-}
-
 const fn extent(width: u32, height: u32) -> wgpu::Extent3d {
     wgpu::Extent3d { width, height, depth_or_array_layers: 1 }
 }
@@ -394,6 +381,10 @@ fn texture_bytes(width: u32, height: u32) -> SpatialResult<u64> {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "transfer_tests.rs"]
 mod transfer_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "transfer_packing_gpu_tests.rs"]
+mod transfer_packing_gpu_tests;
 
 pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> std::sync::Arc<()> {
     runtime.profiling_identity()

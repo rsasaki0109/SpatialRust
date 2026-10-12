@@ -8,6 +8,7 @@ pub(crate) mod equalize;
 mod gpu_image;
 pub(crate) mod histogram;
 pub(crate) mod kernels;
+mod transfer_packing;
 mod vision_chain;
 
 pub use ai_tensor::{pack_ai_chw_gpu, GpuAiTensor};
