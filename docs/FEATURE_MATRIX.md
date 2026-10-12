@@ -65,6 +65,12 @@ workspace because its build requires a Python toolchain.
 
 ## Execution contract
 
+- GPU image transfer host transforms use complete RGBA row copies. Native
+  1..=3-channel packing/unpacking from 1,048,576 pixels uses scoped row bands,
+  capped by CPUs, 262,144-pixel chunks and height. Small/single-row/WASM paths
+  stay serial. Budgets are per call; ROI/padding, metadata, owned results and
+  explicit physical-byte receipts are preserved. See
+  [transfer row measurements](../notes/2026-10-12_parallel_image_transfer_rows.md).
 - `gpu-image` adds resident grayscale `clahe_gpu` and its three/four-pass profiled
   variant. Reflect101 tile histograms, clip redistribution, lookup rounding and
   bilinear interpolation match CPU CLAHE using u32-word binary64 arithmetic.

@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU image transfers use complete RGBA row copies and bounded native CPU row
+  bands for large 1..=3-channel packing/unpacking. ROI/padding, metadata, explicit
+  transfer receipts and owned results are preserved; small/single-row/WASM
+  transforms retain serial execution.
 - Native dense-grid prefixes under `parallel` use bounded scoped workers for
   large sparse cell tables, retaining stable CSR indices/offsets and worker-sized
   metadata. `gpu-wgpu` enables this dependency-free search feature for host

@@ -85,6 +85,14 @@ Receipts retain four physical bytes per pixel rather than staging-row padding;
 rejections leave them unchanged. Internal image construction also checks u64
 physical storage arithmetic. Plans do not impose a new retention/peak-memory
 budget or change successful transfers, metadata, kernels or public signatures.
+Host transfer transforms copy complete RGBA rows directly. Large native 1..=3
+channel images use scoped disjoint row bands for RGBA packing and logical-channel
+unpacking from at least 1,048,576 pixels. Workers are capped by available CPUs,
+262,144-pixel work chunks and image height; single-row/small images and WASM
+retain caller execution. Extra scheduling metadata scales with workers and the
+budget is per call, without a process-wide thread or stack limit. Unused upload
+components stay zero, ROI/host padding is excluded, and readback staging-row
+padding is skipped. Explicit device transfers and their receipts are unchanged.
 RGB-to-gray retains the original 256-lane linear shader when its group count
 fits one dispatch axis. Larger inputs balance those flat groups across bounded
 dispatch rows. Padding groups return before pixel-index multiplication to prevent
