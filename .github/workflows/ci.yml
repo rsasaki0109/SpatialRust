@@ -182,6 +182,10 @@ jobs:
             args: -p spatialrust-registration --features register-fpfh
           - name: spatialrust-registration-fpfh-meta
             args: -p spatialrust --features register-fpfh
+          - name: spatialrust-registration-fpfh-gpu
+            args: -p spatialrust-registration --features register-fpfh-gpu
+          - name: spatialrust-registration-fpfh-gpu-meta
+            args: -p spatialrust --features register-fpfh-gpu
           - name: spatialrust-metrics
             args: -p spatialrust-metrics --features metrics-distance
           - name: spatialrust-metrics-meta

@@ -50,3 +50,6 @@ pub use icp::GpuIcpDiagnostics;
 
 #[cfg(feature = "register-gicp-gpu")]
 pub use gicp::GpuGicpDiagnostics;
+
+#[cfg(feature = "register-fpfh-gpu")]
+pub use fpfh::{fpfh_descriptors_gpu, GpuFpfhResult};

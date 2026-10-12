@@ -106,6 +106,7 @@ register-fpfh = [
     "spatialrust-registration/register-fpfh",
     "spatialrust-search/search-kdtree",
 ]
+register-fpfh-gpu = ["register-fpfh", "spatialrust-registration/register-fpfh-gpu", "gpu-wgpu"]
 mvp = [
     "io-pcd",
     "io-ply",

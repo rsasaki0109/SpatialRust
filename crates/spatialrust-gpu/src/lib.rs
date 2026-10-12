@@ -52,7 +52,8 @@ pub use device::{GpuDevice, WgpuDevice};
 
 #[cfg(feature = "gpu-wgpu")]
 pub use kernels::{
-    GpuNeighborhoodKind, GpuNeighborhoodReadback, GpuNeighborhoods, GpuQueryBatch,
+    GpuFpfhDescriptors, GpuFpfhInput, GpuFpfhNeighborhoods, GpuNeighborhoodKind,
+    GpuNeighborhoodReadback, GpuNeighborhoods, GpuQueryBatch, GPU_FPFH_DESCRIPTOR_LEN,
     MAX_GPU_K_NEIGHBORS,
 };
 

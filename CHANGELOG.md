@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add opt-in `register-fpfh-gpu` descriptor computation: reusable radius
+  neighborhoods feed GPU SPFH and distance-weighted FPFH passes, with explicit
+  sample/tree/query upload and descriptor/status readback receipts. Input and
+  neighborhood ownership are checked; incomplete/malformed rows invalidate
+  the entire device result and return errors at download. CPU FPFH/RANSAC
+  defaults remain unchanged; GPU angular/bin rounding is documented.
+
 - Add explicitly uploaded reusable GPU query batches and resident KD-tree
   nearest-k/radius neighborhoods under `gpu-wgpu`. k=0..=64 retains CPU
   selection and stable distance order; radius rows retain traversal order and
