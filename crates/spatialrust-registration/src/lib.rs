@@ -46,7 +46,7 @@ pub use fpfh::{
 };
 
 #[cfg(feature = "register-icp-gpu")]
-pub use icp::GpuIcpDiagnostics;
+pub use icp::{GpuIcpDiagnostics, GpuIcpReductionDiagnostics};
 
 #[cfg(feature = "register-gicp-gpu")]
 pub use gicp::GpuGicpDiagnostics;

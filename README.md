@@ -644,6 +644,14 @@ The target KD-tree is uploaded once and reused for update/fitness queries;
 the result contains the ICP trace and transfer accounting. Pose estimation
 remains on CPU. See [measurements and limits](notes/2026-10-12_gpu_icp_correspondences.md).
 
+`IcpRegistration::align_with_gpu_reduction(&runtime, &source, &target)` under
+the same feature retains both clouds on GPU and also runs coordinate transforms,
+centroid/cross-covariance and fitness reductions on device. Each evaluation
+downloads only 176 bytes of moments/status; CPU pose solving and convergence
+remain. This route requires untrimmed ICP and uses f32 device math, which can
+differ near match gates and degenerate geometry. See
+[resident ICP measurements](notes/2026-10-13_gpu_icp_reduction.md).
+
 GICP exposes the same explicit correspondence entry point under
 `register-gicp-gpu`; configured radius covariances run on the supplied runtime
 and share the transfer receipt. Its Hessian/gradient accumulation and pose

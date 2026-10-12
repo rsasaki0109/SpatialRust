@@ -77,6 +77,21 @@ inclusive gates and near-first tie order. Native synchronous execution is
 verified; browser execution is not claimed. See
 [correspondence measurements](../notes/2026-10-12_gpu_icp_correspondences.md).
 
+The same `register-icp-gpu` feature adds
+`IcpRegistration::align_with_gpu_reduction(runtime, source, target)`.
+Original source and original-order target stay resident alongside the tree.
+GPU transforms, bounded nearest matching, compensated centroid/fitness and
+centered cross-covariance reductions share one six-pass submission per
+evaluation; only 176 bytes of owned moments/status are downloaded. CPU Horn
+pose solving and convergence remain. Post-update moments feed the next update
+and final fitness. Input payload is 16*S + 32*T + 32*M bytes for source/target/
+tree-node counts; no repeated point upload or match readback occurs. The API
+requires `trim_fraction=1`, finite extents and a normal positive combined
+normalization extent square (coincident inputs use scale 1). Device f32 math
+can change matching/pose/stopping near gates and degeneracy. `GpuIcpInput`/
+`GpuIcpMoments` under `gpu-wgpu` expose this reusable boundary directly. See
+[resident ICP evidence](../notes/2026-10-13_gpu_icp_reduction.md).
+
 `register-gicp-gpu` also exposes
 `GicpRegistration::align_with_gpu_correspondences(runtime, source, target)`.
 The device reuses a target for unbounded nearest matching, followed by GICP's
@@ -117,7 +132,7 @@ before allocation; no dependency, public signature or image readback is added.
 | `mvp` | PCD, PLY, LAS/LAZ, COPC; voxel, normals, plane, Euclidean clustering, ICP, MVP pipeline | CPU-first end-to-end pipeline |
 | `mvp-http` | `mvp` + HTTP byte-range COPC | Remote COPC input |
 | `gpu-wgpu` | wgpu runtime and GPU kernels | Explicit GPU operation APIs |
-| `register-icp-gpu` | ICP and wgpu correspondence search | Explicit GPU target upload and per-batch query/readback; CPU pose solver |
+| `register-icp-gpu` | ICP GPU correspondence search and resident transforms/moment reductions | Explicit correspondence or untrimmed resident reduction API; CPU pose solver |
 | `register-gicp-gpu` | GICP, GPU radius covariance and explicit GPU correspondences | Caller-owned runtime and full payload receipt on explicit alignment; CPU pose solver |
 | `register-fpfh-gpu` | GPU radius search, SPFH and weighted FPFH | Explicit descriptor API and payload receipts; CPU matching/RANSAC |
 | `feature-iss-gpu` | GPU radius graphs, covariance/eigenvalue saliency and local maxima | Explicit detection/receipts; CPU tree, compaction and attribute gathering |

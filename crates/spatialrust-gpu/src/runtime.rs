@@ -28,6 +28,8 @@ pub struct WgpuRuntime {
     pub(crate) fpfh_pipelines: OnceLock<crate::kernels::fpfh::FpfhPipelines>,
     pub(crate) iss_pipelines: OnceLock<crate::kernels::iss::IssPipelines>,
     pub(crate) mls_pipelines: OnceLock<crate::kernels::mls::MlsPipelines>,
+    pub(crate) icp_reduction_pipelines:
+        OnceLock<crate::kernels::icp_reduction::IcpReductionPipelines>,
     pub(crate) point_estimator_pipelines:
         OnceLock<crate::kernels::point_estimators::PointEstimatorPipelines>,
     max_gather_channels: u32,
@@ -394,6 +396,7 @@ impl WgpuRuntime {
             fpfh_pipelines: OnceLock::new(),
             iss_pipelines: OnceLock::new(),
             mls_pipelines: OnceLock::new(),
+            icp_reduction_pipelines: OnceLock::new(),
             point_estimator_pipelines: OnceLock::new(),
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
