@@ -324,6 +324,19 @@ centroid/covariance arithmetic, eigenvalue ratios and the existing >= tie rule
 are preserved. Per-query neighbor vectors scale with radius support; worker
 caps remain per call rather than a scratch-byte or process-wide CPU budget.
 No floating-point reduction spans workers and no device transfer is introduced.
+Cloud distances under `spatialrust-metrics/metrics-distance` build one KD-tree
+per cloud and independently bound each direction's query workers with the same
+point-staging policy. Parallel queries fill disjoint slices of a reusable window
+of at most `workers * DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE` optional f32 distances.
+Each window joins before its values are converted to f64, added and square-rooted
+in original point order; sums are never regrouped across workers or windows.
+Missing neighbors remain distinct from returned NaNs. One-worker directions use
+the unchanged serial loop and allocate no score window. The two directions run
+sequentially, so their windows are not live together. Scratch scales with worker
+budget rather than total query count; KD-tree storage remains input-sized, and
+worker caps are per call rather than a process-wide CPU limit. Each active band
+reuses one one-neighbor result vector with the same KD-tree traversal and fresh
+per-query accumulator, avoiding a heap allocation for every parallel query.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

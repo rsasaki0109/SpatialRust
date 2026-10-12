@@ -218,6 +218,13 @@ workspace because its build requires a Python toolchain.
   collection. Equal maxima, selected point order, schema, all attribute types
   and metadata are preserved, without another dependency or device transfer.
   See [ISS detection measurements](../notes/2026-10-12_parallel_iss_keypoints.md).
+- `metrics-distance` shares each target KD-tree across bounded CPU query workers
+  for Chamfer/Hausdorff statistics. A reusable optional-distance window holds at
+  most one 16,384-point chunk per worker; ordered f64 accumulation preserves
+  exact statistics without worker-local sums. Each band reuses its one-neighbor
+  query buffer. Small/one-worker directions keep
+  the original serial loop. Neither dependencies nor device transfers change.
+  See [cloud distance measurements](../notes/2026-10-12_parallel_cloud_distances.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional

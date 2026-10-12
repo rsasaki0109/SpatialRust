@@ -1,7 +1,9 @@
 //! Chamfer and Hausdorff distances between two point clouds.
 
-use spatialrust_core::{HasPositions3, PointCloud, SpatialError, SpatialResult};
-use spatialrust_search::{KdTree, NearestNeighborIndex};
+use spatialrust_core::{
+    HasPositions3, PointCloud, SpatialError, SpatialResult, DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE,
+};
+use spatialrust_search::{parallel_worker_count, KdTree, NearestNeighborIndex};
 
 /// A bundle of directed and symmetric cloud-to-cloud distance statistics.
 ///
@@ -35,7 +37,25 @@ impl CloudDistances {
 
 /// Computes directed NN distance statistics between `a` and `b` in both
 /// directions with a single KD-tree per side.
+///
+/// Large query sides share their target tree across bounded scoped CPU workers.
+/// A reusable window holds at most one default point chunk per worker. Distance
+/// accumulation retains input order; small/one-worker sides remain serial.
 pub fn cloud_distances(a: &PointCloud, b: &PointCloud) -> SpatialResult<CloudDistances> {
+    cloud_distances_with_workers(
+        a,
+        b,
+        parallel_worker_count(a.len()),
+        parallel_worker_count(b.len()),
+    )
+}
+
+fn cloud_distances_with_workers(
+    a: &PointCloud,
+    b: &PointCloud,
+    workers_a: usize,
+    workers_b: usize,
+) -> SpatialResult<CloudDistances> {
     if a.is_empty() || b.is_empty() {
         return Err(SpatialError::InvalidArgument("both clouds must be non-empty".to_owned()));
     }
@@ -45,14 +65,62 @@ pub fn cloud_distances(a: &PointCloud, b: &PointCloud) -> SpatialResult<CloudDis
     let tree_b = KdTree::from_slices(bx, by, bz);
     let tree_a = KdTree::from_slices(ax, ay, az);
 
-    let (mean_sq_a_to_b, max_a_to_b) = directed(ax, ay, az, &tree_b);
-    let (mean_sq_b_to_a, max_b_to_a) = directed(bx, by, bz, &tree_a);
+    let (mean_sq_a_to_b, max_a_to_b) = directed(ax, ay, az, &tree_b, workers_a);
+    let (mean_sq_b_to_a, max_b_to_a) = directed(bx, by, bz, &tree_a, workers_b);
 
     Ok(CloudDistances { mean_sq_a_to_b, mean_sq_b_to_a, max_a_to_b, max_b_to_a })
 }
 
 /// Mean squared and max NN distance from each query point to `target`.
-fn directed(x: &[f32], y: &[f32], z: &[f32], target: &KdTree) -> (f64, f64) {
+fn directed(x: &[f32], y: &[f32], z: &[f32], target: &KdTree, workers: usize) -> (f64, f64) {
+    let workers = workers.max(1).min(x.len().max(1));
+    if workers == 1 {
+        return directed_serial(x, y, z, target);
+    }
+    // Preserve Some(NaN) versus None, including the original sum/max behavior.
+    // Reuse a worker-bounded window instead of staging every query's result.
+    let window_size = x.len().min(workers.saturating_mul(DEFAULT_SPATIAL_TENSOR_CHUNK_SIZE));
+    let mut nearest = vec![None; window_size];
+    let mut sum_sq = 0.0_f64;
+    let mut max = 0.0_f64;
+    for start in (0..x.len()).step_by(window_size) {
+        let count = window_size.min(x.len() - start);
+        let active_workers = workers.min(count);
+        let fill = |offset: usize, band: &mut [Option<f32>]| {
+            // nearest_one uses this same one-neighbor traversal. Reuse its
+            // output buffer; nearest_k_into resets the query accumulator.
+            let mut neighbor = Vec::new();
+            for (i, distance) in band.iter_mut().enumerate() {
+                let i = start + offset + i;
+                target.nearest_k_into(x[i], y[i], z[i], 1, &mut neighbor);
+                *distance = neighbor.first().map(|n| n.distance_squared);
+            }
+        };
+        if active_workers == 1 {
+            fill(0, &mut nearest[..count]);
+        } else {
+            let chunk_size = count.div_ceil(active_workers);
+            std::thread::scope(|scope| {
+                for (band, chunk) in nearest[..count].chunks_mut(chunk_size).enumerate() {
+                    let fill = &fill;
+                    scope.spawn(move || fill(band * chunk_size, chunk));
+                }
+            });
+        }
+        // Never combine worker-local sums: f64 addition is order-sensitive.
+        for distance in nearest[..count].iter().flatten() {
+            let d_sq = f64::from(*distance);
+            sum_sq += d_sq;
+            let d = d_sq.sqrt();
+            if d > max {
+                max = d;
+            }
+        }
+    }
+    (sum_sq / x.len() as f64, max)
+}
+
+fn directed_serial(x: &[f32], y: &[f32], z: &[f32], target: &KdTree) -> (f64, f64) {
     let mut sum_sq = 0.0_f64;
     let mut max = 0.0_f64;
     for i in 0..x.len() {
@@ -79,6 +147,19 @@ pub fn chamfer_distance(a: &PointCloud, b: &PointCloud) -> SpatialResult<f64> {
 pub fn hausdorff_distance(a: &PointCloud, b: &PointCloud) -> SpatialResult<f64> {
     Ok(cloud_distances(a, b)?.hausdorff())
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "../tests/fixtures/distance_serial.rs"]
+#[allow(dead_code)]
+mod previous;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "distance_parallel_tests.rs"]
+mod parallel_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "distance_parallel_benchmark.rs"]
+mod parallel_benchmark;
 
 #[cfg(test)]
 mod tests {
