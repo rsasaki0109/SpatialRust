@@ -196,6 +196,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 /// all run on the GPU. Returns `SpatialError::InvalidArgument` when the bounding
 /// grid would exceed an internal cell cap (caller should fall back to the CPU
 /// KD-tree path).
+/// Nonempty inputs require finite coordinates and a positive radius with a
+/// finite reciprocal; positive infinity retains the unbounded one-cell grid.
 pub fn estimate_normals_grid_gpu(
     runtime: &WgpuRuntime,
     x: &[f32],

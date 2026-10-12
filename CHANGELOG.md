@@ -151,6 +151,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Shared dense-grid bounds reject malformed axes, nonfinite coordinates,
+  unrepresentable cell reciprocals/spans and overflowing dimensions before
+  counting-sort or GPU work. Large dimensions can no longer wrap into small
+  grids or panic; valid f32 bounds, the cell cap and positive-infinite-radius
+  one-cell behavior remain compatible.
 - GPU plane covariance estimation writes both output rows when fewer than three
   neighbors are available. Reused storage no longer leaks previous cross terms
   or NaNs into the isotropic fallback; supported-point math and transfers remain

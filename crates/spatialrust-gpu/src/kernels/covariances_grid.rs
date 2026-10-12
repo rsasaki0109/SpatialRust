@@ -216,6 +216,8 @@ mod output_tests;
 /// neighbor gather, covariance, and eigen-decomposition run on the GPU.
 /// Fewer than three radius neighbors produce the isotropic covariance
 /// `[epsilon, epsilon, epsilon, 0, 0, 0]`, including when output storage is reused.
+/// Nonempty inputs require finite coordinates and a positive radius with a
+/// finite reciprocal; positive infinity retains the unbounded one-cell grid.
 pub fn estimate_plane_covariances_grid_gpu(
     runtime: &WgpuRuntime,
     x: &[f32],

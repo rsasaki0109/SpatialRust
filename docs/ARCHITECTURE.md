@@ -154,6 +154,18 @@ extra dispatch, allocation or transfer is needed.
 Point, index, buffer, uniform and dispatch limits reject before device allocation.
 Grid cell storage is checked before CPU counting-sort allocation. Resident AoSoA
 frame execution and its timing/transfer receipts remain separate.
+Shared dense-grid bounds validate equal XYZ lengths, finite coordinates and a
+positive cell size with finite reciprocal before dimension planning. Finite
+cell sizes retain the original f32 subtraction/multiply/floor mapping; nonfinite
+spans reject instead of saturating into integer dimensions. Dimension increments
+and cumulative cell products use checked u64 arithmetic, enforce the existing
+cell cap before checked u32 narrowing, and never return zero dimensions.
+Positive-infinite radius retains a one-cell grid for finite inputs, including
+widths whose f32 subtraction would overflow. Valid empty bounds retain the
+existing infinite origin and unit dimensions. `uniform_grid_fits` returns false
+for invalid inputs. Radius normal/covariance calls reject before counting-sort,
+scratch acquisition or pipeline initialization; existing empty-call shortcuts,
+device/sentinel checks, transfers and accepted shader math remain unchanged.
 Dense-grid radius normals and plane covariances merge the valid neighboring
 x cells into one counting-sort interval per y/z row, for at most nine row
 intervals per gather instead of 27 cell intervals. Both mean and covariance

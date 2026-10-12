@@ -245,6 +245,12 @@ workspace because its build requires a Python toolchain.
   nonfinite behavior remain compatible with k=1 queries; no dependency or
   device transfer changes. See
   [scalar search measurements](../notes/2026-10-12_allocation_free_nearest_one.md).
+- Shared dense-grid bounds validate axes/coordinates/cell scales and perform
+  checked dimension/product arithmetic before u32 narrowing. Overflowing spans
+  return errors and `uniform_grid_fits` returns false before CPU grid or GPU
+  work. Accepted f32 bounds, the exact cell cap and positive-infinite-radius
+  one-cell behavior remain compatible. See
+  [grid validation regression receipt](../notes/2026-10-12_validated_grid_bounds.md).
 - Shared CPU `build_grid` uses stable reverse scattering and one cell-offset
   table, eliminating the auxiliary cursor clone. Logical live heap payload
   drops by `4 * (cells + 1)` bytes; returned CSR order/sentinels and GPU uploads
