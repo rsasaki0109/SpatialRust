@@ -16,6 +16,20 @@ or dispatch sizes reject before device resource use; ordinary ICP placement is
 unchanged. This is a native synchronous search boundary, not a claim that the
 entire registration loop is device resident.
 
+The same feature adds `align_with_gpu_reduction` for untrimmed point-to-point
+ICP. `GpuIcpInput` explicitly uploads original source, original-order target
+and target tree once. Six ordered passes per evaluation transform originals,
+perform the unchanged bounded nearest traversal and reduce centroids/fitness
+then centered cross-covariance. Actual transformed anchors, normalized
+compensated f32 sums and exact counts form an owned 176-byte result; private
+transformed/match/partial scratch is leased through one submission. CPU Horn's
+small eigensolve, transform composition and stopping remain. Post-update moments
+serve the next update and final fitness, avoiding duplicate search/readback.
+There is no point/match readback, repeated payload upload or CPU fallback.
+Trimming requires the existing correspondence path; f32 transforms/reductions
+can change matching, pose and stopping near gates or degenerate geometry. See
+[resident ICP evidence](../notes/2026-10-13_gpu_icp_reduction.md).
+
 GICP reuses this search through its own explicit GPU entry point, retaining
 unbounded nearest matching before the existing host gate and ordered CPU
 Hessian/gradient accumulation. Radius covariance, when configured, runs on the

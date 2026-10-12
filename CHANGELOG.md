@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Extend `register-icp-gpu` with explicit `align_with_gpu_reduction`: retain
+  original source/target on GPU, transform, match and reduce centered moments
+  on device, then download a fixed 176-byte result per evaluation. CPU Horn
+  pose solving and convergence remain; post-update moments are reused for the
+  next update and final fitness. Ordinary CPU/correspondence paths retain their
+  math and trimming support. The new route requires untrimmed ICP and documents
+  f32 matching/reduction/conditioning differences and full-call measurements.
+
 - Add opt-in `filter-mls-gpu` smoothing for constant, linear and quadratic
   surfaces. Reusable input-bound radius rows feed GPU weighted frames and
   polynomial fits in three passes; explicit upload/download receipts and

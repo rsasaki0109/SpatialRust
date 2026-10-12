@@ -139,6 +139,58 @@ pub struct GpuKdTree {
 }
 
 impl GpuKdTree {
+    // Internal device consumer: queries/results remain private to its encoder.
+    // Reuses the ordinary bounded nearest shader and tie traversal exactly.
+    pub(crate) fn encode_nearest(
+        &self,
+        runtime: &WgpuRuntime,
+        encoder: &mut wgpu::CommandEncoder,
+        queries: &wgpu::Buffer,
+        count: u32,
+        bound: f32,
+        results: &wgpu::Buffer,
+    ) -> SpatialResult<()> {
+        if !Arc::ptr_eq(&self.identity, &runtime.profiling_identity()) || self.root.is_none() {
+            return Err(invalid());
+        }
+        check_compute(&runtime.device().limits(), u64::from(count))?;
+        let params = Params { count, root: self.root.unwrap(), bound, unused: 0 };
+        let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("resident-nearest-params"),
+            contents: bytemuck::bytes_of(&params),
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
+        let cache = runtime.nearest_pipeline.get_or_init(|| NearestPipeline::new(runtime.device()));
+        let buffers = [
+            &uniform,
+            self.nodes.as_ref().unwrap(),
+            self.points.as_ref().unwrap(),
+            queries,
+            results,
+        ];
+        let entries: Vec<_> = buffers
+            .iter()
+            .enumerate()
+            .map(|(binding, buffer)| wgpu::BindGroupEntry {
+                binding: binding as u32,
+                resource: buffer.as_entire_binding(),
+            })
+            .collect();
+        let group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("resident-nearest-bindings"),
+            layout: &cache.layout,
+            entries: &entries,
+        });
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some("resident-nearest"),
+            timestamp_writes: None,
+        });
+        pass.set_pipeline(&cache.pipeline);
+        pass.set_bind_group(0, &group, &[]);
+        pass.dispatch_workgroups(count.div_ceil(64), 1, 1);
+        Ok(())
+    }
+
     /// Uploads a finite CPU KD-tree, preserving its leaf and tie traversal order.
     /// The borrowed tree may be dropped afterwards. Upload accounting includes
     /// 16 bytes per point and 32 per node, excluding uniform control data.

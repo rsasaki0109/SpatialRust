@@ -41,6 +41,20 @@ pub fn estimate_rigid_transform(
             }
         }
     }
+    estimate_rigid_transform_from_moments(source.len(), mean_source, mean_target, h)
+}
+
+pub(crate) fn estimate_rigid_transform_from_moments(
+    count: usize,
+    mean_source: [f64; 3],
+    mean_target: [f64; 3],
+    mut h: [[f64; 3]; 3],
+) -> Option<Isometry3<f32>> {
+    if count < 3
+        || mean_source.iter().chain(&mean_target).chain(h.iter().flatten()).any(|v| !v.is_finite())
+    {
+        return None;
+    }
     let scale = h.iter().flatten().fold(0.0_f64, |largest, v| largest.max(v.abs()));
     let rotation = if scale == 0.0 {
         Quat::<f32>::identity()

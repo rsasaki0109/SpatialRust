@@ -211,13 +211,7 @@ impl IcpRegistration {
         })
     }
 
-    fn align_impl<S: IcpCorrespondences>(
-        &self,
-        source: &PointCloud,
-        target: &PointCloud,
-        mut observe: impl FnMut(IcpIteration),
-        make_search: impl FnOnce(KdTree) -> SpatialResult<S>,
-    ) -> SpatialResult<(RegistrationResult, IcpStopReason, S)> {
+    fn validate_inputs(&self, source: &PointCloud, target: &PointCloud) -> SpatialResult<()> {
         if !self.trim_fraction.is_finite() || self.trim_fraction <= 0.0 || self.trim_fraction > 1.0
         {
             return Err(SpatialError::InvalidArgument(
@@ -269,6 +263,21 @@ impl IcpRegistration {
             }
         }
         validate_icp_transform(self.config.initial_guess)?;
+        Ok(())
+    }
+
+    fn align_impl<S: IcpCorrespondences>(
+        &self,
+        source: &PointCloud,
+        target: &PointCloud,
+        mut observe: impl FnMut(IcpIteration),
+        make_search: impl FnOnce(KdTree) -> SpatialResult<S>,
+    ) -> SpatialResult<(RegistrationResult, IcpStopReason, S)> {
+        self.validate_inputs(source, target)?;
+        let max_distance_squared =
+            self.config.max_correspondence_distance * self.config.max_correspondence_distance;
+        let (source_x, source_y, source_z) = source.positions3()?;
+        let (target_x, target_y, target_z) = target.positions3()?;
         let mut search = make_search(KdTree::from_slices(target_x, target_y, target_z))?;
 
         let mut transform = self.config.initial_guess;
@@ -560,6 +569,12 @@ impl IcpCorrespondences for GpuCorrespondences<'_> {
         Ok(())
     }
 }
+
+#[cfg(feature = "register-icp-gpu")]
+#[path = "icp_reduction.rs"]
+mod reduction;
+#[cfg(feature = "register-icp-gpu")]
+pub use reduction::GpuIcpReductionDiagnostics;
 
 #[cfg(test)]
 mod tests {
