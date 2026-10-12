@@ -279,6 +279,11 @@ uses the legacy histogram/prefix through 524,288 points. Larger sorts reuse
 offset scratch for histogram-generated earlier-digit subtotals; a
 work-efficient tree scan avoids repeated global reads of earlier histograms.
 The 24 digits/72 passes, buffer sizes, stage timing and transfers are retained.
+The cached large radix histogram also reuses each digit's eight mask-word counts
+as transposed exclusive rank prefixes. One prefix lookup and one partial-word
+popcount replace repeated preceding-word counts after the existing barrier.
+The 524,288-point cutoff, stable ordering, global scratch and passes stay
+unchanged. See [word-rank measurements](../notes/2026-10-12_cached_gpu_radix_word_ranks.md).
 Exact-sized entries stay on the device and no longer need padded
 entry filtering or its scalar readback. Segment compaction still synchronizes
 the existing four-byte cell count; GPU segment metadata remains resident until
