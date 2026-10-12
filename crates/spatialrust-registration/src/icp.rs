@@ -487,6 +487,80 @@ fn transform_delta_magnitudes(delta: Isometry3<f32>) -> (f64, f64) {
     (translation_norm, rotation_angle)
 }
 
+trait IcpCorrespondences {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        bound: f32,
+        consume: impl FnMut(&Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()>;
+}
+
+impl IcpCorrespondences for KdTree {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        bound: f32,
+        mut consume: impl FnMut(&Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()> {
+        for point in points {
+            if let Some(neighbor) = self.nearest_one_within(point.x, point.y, point.z, bound) {
+                consume(point, neighbor);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// GPU correspondence receipt with the ordinary ICP trace and CPU pose solver.
+#[cfg(feature = "register-icp-gpu")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuIcpDiagnostics {
+    /// Pose, fitness, convergence and per-update trace.
+    pub diagnostics: IcpDiagnostics,
+    /// Explicit target/query upload and nearest-result download bytes.
+    pub transfers: spatialrust_core::TransferStats,
+    /// Completed GPU nearest-point batches (update, fitness, final fitness).
+    pub correspondence_batches: usize,
+}
+
+#[cfg(feature = "register-icp-gpu")]
+struct GpuCorrespondences<'a> {
+    runtime: &'a spatialrust_gpu::WgpuRuntime,
+    target: spatialrust_gpu::GpuKdTree,
+    transfers: spatialrust_core::TransferStats,
+    batches: usize,
+}
+
+#[cfg(feature = "register-icp-gpu")]
+impl IcpCorrespondences for GpuCorrespondences<'_> {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        bound: f32,
+        mut consume: impl FnMut(&Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()> {
+        let queries: Vec<_> = points.iter().map(|p| [p.x, p.y, p.z]).collect();
+        let (neighbors, transfers) =
+            self.target.nearest_one_within_download(self.runtime, &queries, bound)?;
+        self.transfers.record(
+            spatialrust_core::TransferDirection::HostToDevice,
+            transfers.host_to_device_bytes(),
+        );
+        self.transfers.record(
+            spatialrust_core::TransferDirection::DeviceToHost,
+            transfers.device_to_host_bytes(),
+        );
+        self.batches += 1;
+        for (point, neighbor) in points.iter().zip(neighbors) {
+            if let Some(neighbor) = neighbor {
+                consume(point, neighbor);
+            }
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
@@ -782,79 +856,5 @@ mod tests {
         let restored = composed.transform_point(probe);
         assert!((restored.x - probe.x).abs() < 1e-2);
         assert!((restored.y - probe.y).abs() < 1e-2);
-    }
-}
-
-trait IcpCorrespondences {
-    fn visit(
-        &mut self,
-        points: &[Vec3<f32>],
-        bound: f32,
-        consume: impl FnMut(&Vec3<f32>, Neighbor),
-    ) -> SpatialResult<()>;
-}
-
-impl IcpCorrespondences for KdTree {
-    fn visit(
-        &mut self,
-        points: &[Vec3<f32>],
-        bound: f32,
-        mut consume: impl FnMut(&Vec3<f32>, Neighbor),
-    ) -> SpatialResult<()> {
-        for point in points {
-            if let Some(neighbor) = self.nearest_one_within(point.x, point.y, point.z, bound) {
-                consume(point, neighbor);
-            }
-        }
-        Ok(())
-    }
-}
-
-/// GPU correspondence receipt with the ordinary ICP trace and CPU pose solver.
-#[cfg(feature = "register-icp-gpu")]
-#[derive(Clone, Debug, PartialEq)]
-pub struct GpuIcpDiagnostics {
-    /// Pose, fitness, convergence and per-update trace.
-    pub diagnostics: IcpDiagnostics,
-    /// Explicit target/query upload and nearest-result download bytes.
-    pub transfers: spatialrust_core::TransferStats,
-    /// Completed GPU nearest-point batches (update, fitness, final fitness).
-    pub correspondence_batches: usize,
-}
-
-#[cfg(feature = "register-icp-gpu")]
-struct GpuCorrespondences<'a> {
-    runtime: &'a spatialrust_gpu::WgpuRuntime,
-    target: spatialrust_gpu::GpuKdTree,
-    transfers: spatialrust_core::TransferStats,
-    batches: usize,
-}
-
-#[cfg(feature = "register-icp-gpu")]
-impl IcpCorrespondences for GpuCorrespondences<'_> {
-    fn visit(
-        &mut self,
-        points: &[Vec3<f32>],
-        bound: f32,
-        mut consume: impl FnMut(&Vec3<f32>, Neighbor),
-    ) -> SpatialResult<()> {
-        let queries: Vec<_> = points.iter().map(|p| [p.x, p.y, p.z]).collect();
-        let (neighbors, transfers) =
-            self.target.nearest_one_within_download(self.runtime, &queries, bound)?;
-        self.transfers.record(
-            spatialrust_core::TransferDirection::HostToDevice,
-            transfers.host_to_device_bytes(),
-        );
-        self.transfers.record(
-            spatialrust_core::TransferDirection::DeviceToHost,
-            transfers.device_to_host_bytes(),
-        );
-        self.batches += 1;
-        for (point, neighbor) in points.iter().zip(neighbors) {
-            if let Some(neighbor) = neighbor {
-                consume(point, neighbor);
-            }
-        }
-        Ok(())
     }
 }
