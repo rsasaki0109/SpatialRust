@@ -12,6 +12,14 @@ pub struct LocalHttpFileServer {
 
 impl LocalHttpFileServer {
     pub fn start(payload: Vec<u8>) -> (Self, String) {
+        Self::start_with_socket_mode(payload, false)
+    }
+
+    pub fn start_with_nonblocking_connections(payload: Vec<u8>) -> (Self, String) {
+        Self::start_with_socket_mode(payload, true)
+    }
+
+    fn start_with_socket_mode(payload: Vec<u8>, force_nonblocking: bool) -> (Self, String) {
         let payload = Arc::new(payload);
         let stop = Arc::new(AtomicBool::new(false));
         let stop_server = Arc::clone(&stop);
@@ -24,6 +32,11 @@ impl LocalHttpFileServer {
             while !stop_server.load(Ordering::Relaxed) {
                 match listener.accept() {
                     Ok((stream, _)) => {
+                        if force_nonblocking {
+                            // Exercise the accepted-socket mode inherited on Darwin,
+                            // even on platforms that do not inherit O_NONBLOCK.
+                            stream.set_nonblocking(true).expect("nonblocking accepted socket");
+                        }
                         let data = Arc::clone(&payload);
                         thread::spawn(move || serve_http_file_request(stream, &data));
                     }
@@ -46,7 +59,11 @@ impl Drop for LocalHttpFileServer {
 }
 
 fn serve_http_file_request(mut stream: TcpStream, payload: &[u8]) {
-    if stream.set_read_timeout(Some(Duration::from_secs(5))).is_err() {
+    // Darwin can inherit O_NONBLOCK from the listener. The request worker reads
+    // synchronously; a read timeout alone does not restore blocking semantics.
+    if stream.set_nonblocking(false).is_err()
+        || stream.set_read_timeout(Some(Duration::from_secs(5))).is_err()
+    {
         return;
     }
     let mut buffer = [0_u8; 4096];

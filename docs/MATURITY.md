@@ -1,9 +1,17 @@
 # Maturity assessment
 
-Current assessment (2026-10-11): **87%, provisional**. This is a subjective
+Current assessment (2026-10-12): **87%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.
+
+Resuming the current keyframe PR retrieves the previously inaccessible macOS
+failure log. Forced nonblocking accepted-socket tests reproduce both hosted
+HTTP fixture failures on Linux; explicit blocking mode repairs them, and all
+76 streaming IO tests pass locally. Hosted verification of the repaired head
+remains necessary. This test-infrastructure repair does not change real-motion
+accuracy or physical calibration evidence, so the estimate stays **87%**.
+See [the reproduced failure and repair](../notes/2026-10-12_copc_accepted_socket_regression.md).
 
 A separately fixed keyframe study now compares static, input-overlap and
 coarse-SVD/fine-plane adapters on four official TUM sequences. Desk was fixed

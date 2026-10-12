@@ -41,7 +41,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - The local COPC HTTP test server waits for complete request headers within its
   existing 4 KiB bound before responding. Fragmented HEAD and Range requests no
   longer cause premature responses or connection resets; a read deadline bounds
-  incomplete requests. Real TCP regressions retain strict response assertions.
+  incomplete requests. Accepted sockets explicitly use blocking mode, including
+  Darwin's inherited nonblocking sockets. Real TCP regressions force that mode
+  on every platform and retain strict response assertions.
 
 - Large GPU voxel radix sorts compute earlier-digit subtotals once per input
   workgroup and reuses existing offset scratch for the prefix pass. A parallel

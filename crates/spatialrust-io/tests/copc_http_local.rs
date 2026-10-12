@@ -23,10 +23,18 @@ fn local_http_head_has_no_body() {
 }
 
 fn fragmented_request(first: impl FnOnce(&str) -> String, last: &[u8]) -> Vec<u8> {
+    fragmented_request_with_server(common::LocalHttpFileServer::start(vec![0xff; 128]), first, last)
+}
+
+fn fragmented_request_with_server(
+    server: (common::LocalHttpFileServer, String),
+    first: impl FnOnce(&str) -> String,
+    last: &[u8],
+) -> Vec<u8> {
     use std::io::{Read, Write};
     use std::net::TcpStream;
 
-    let (_server, url) = common::LocalHttpFileServer::start(vec![0xff; 128]);
+    let (_server, url) = server;
     let address = url.strip_prefix("http://").unwrap().split('/').next().unwrap();
     let mut stream = TcpStream::connect(address).unwrap();
     stream.set_read_timeout(Some(std::time::Duration::from_millis(200))).unwrap();
@@ -46,6 +54,20 @@ fn local_http_fragmented_head_waits_for_header_terminator() {
         |address| format!("HEAD /fixture.copc.laz HTTP/1.1\r\nHost: {address}\r\n"),
         b"\r\n",
     );
+    assert_head_response(response);
+}
+
+#[test]
+fn local_http_nonblocking_head_waits_for_header_terminator() {
+    let response = fragmented_request_with_server(
+        common::LocalHttpFileServer::start_with_nonblocking_connections(vec![0xff; 128]),
+        |address| format!("HEAD /fixture.copc.laz HTTP/1.1\r\nHost: {address}\r\n"),
+        b"\r\n",
+    );
+    assert_head_response(response);
+}
+
+fn assert_head_response(response: Vec<u8>) {
     let response = String::from_utf8(response).expect("HEAD must not send payload bytes");
     assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
     assert!(response.contains("Content-Length: 128\r\n"));
@@ -58,6 +80,20 @@ fn local_http_fragmented_range_waits_for_complete_range() {
         |address| format!("GET /fixture.copc.laz HTTP/1.1\r\nHost: {address}\r\nRange: bytes=4-"),
         b"7\r\n\r\n",
     );
+    assert_range_response(response);
+}
+
+#[test]
+fn local_http_nonblocking_range_waits_for_complete_range() {
+    let response = fragmented_request_with_server(
+        common::LocalHttpFileServer::start_with_nonblocking_connections(vec![0xff; 128]),
+        |address| format!("GET /fixture.copc.laz HTTP/1.1\r\nHost: {address}\r\nRange: bytes=4-"),
+        b"7\r\n\r\n",
+    );
+    assert_range_response(response);
+}
+
+fn assert_range_response(response: Vec<u8>) {
     let separator = response.windows(4).position(|w| w == b"\r\n\r\n").unwrap();
     let headers = std::str::from_utf8(&response[..separator + 4]).unwrap();
     assert!(headers.starts_with("HTTP/1.1 206 Partial Content\r\n"));
