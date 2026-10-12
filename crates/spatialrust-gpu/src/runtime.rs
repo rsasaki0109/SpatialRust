@@ -23,13 +23,13 @@ pub struct WgpuRuntime {
     pub(crate) voxel_scan_pipelines: OnceLock<crate::kernels::PrefixScanPipelines>,
     pub(crate) ransac_plane_pipelines: OnceLock<crate::kernels::RansacPlanePipelines>,
     pub(crate) cluster_pipelines: OnceLock<crate::kernels::cluster_union::ClusterPipelines>,
+    pub(crate) nearest_pipeline: OnceLock<crate::kernels::nearest::NearestPipeline>,
     pub(crate) point_estimator_pipelines:
         OnceLock<crate::kernels::point_estimators::PointEstimatorPipelines>,
     max_gather_channels: u32,
     upload_pool: GpuBufferPool,
     pub(crate) scratch_pool: GpuBufferPool,
     adapter_info: WgpuAdapterInfo,
-    #[cfg(any(not(target_arch = "wasm32"), feature = "gpu-image", feature = "gpu-aoso-staging"))]
     profiling_identity: std::sync::Arc<()>,
     #[cfg(feature = "gpu-image")]
     image_texture_pool: Mutex<ResourceCache<(u32, u32), wgpu::Texture>>,
@@ -116,7 +116,6 @@ impl WgpuRuntime {
         self.device.features().contains(wgpu::Features::TIMESTAMP_QUERY)
     }
 
-    #[cfg(any(not(target_arch = "wasm32"), feature = "gpu-image", feature = "gpu-aoso-staging"))]
     pub(crate) fn profiling_identity(&self) -> std::sync::Arc<()> {
         std::sync::Arc::clone(&self.profiling_identity)
     }
@@ -386,16 +385,12 @@ impl WgpuRuntime {
             voxel_scan_pipelines: OnceLock::new(),
             ransac_plane_pipelines: OnceLock::new(),
             cluster_pipelines: OnceLock::new(),
+            nearest_pipeline: OnceLock::new(),
             point_estimator_pipelines: OnceLock::new(),
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
             scratch_pool: GpuBufferPool::default(),
             adapter_info,
-            #[cfg(any(
-                not(target_arch = "wasm32"),
-                feature = "gpu-image",
-                feature = "gpu-aoso-staging"
-            ))]
             profiling_identity: std::sync::Arc::new(()),
             #[cfg(feature = "gpu-image")]
             image_texture_pool: Mutex::new(ResourceCache::new(DEFAULT_GPU_POOL_BUDGET_BYTES)),

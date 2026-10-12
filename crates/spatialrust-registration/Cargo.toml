@@ -11,6 +11,7 @@ description = "Point cloud registration for SpatialRust"
 [features]
 default = ["register-icp"]
 register-icp = ["dep:spatialrust-search"]
+register-icp-gpu = ["register-icp", "dep:spatialrust-gpu"]
 register-icp-point-to-plane = ["dep:spatialrust-search"]
 register-gicp = ["dep:spatialrust-search"]
 register-gicp-gpu = ["register-gicp", "dep:spatialrust-gpu"]

@@ -43,7 +43,7 @@ pub use parallel_chunked::{
 };
 
 #[cfg(feature = "search-kdtree")]
-pub use kdtree::KdTree;
+pub use kdtree::{KdTree, KdTreeLayout, KdTreeNode};
 
 #[cfg(feature = "search-graph")]
 pub use graph::{knn_graph, radius_graph, NeighborGraph};

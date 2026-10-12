@@ -6,6 +6,16 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+The optional `register-icp-gpu` correspondence API explicitly stages a borrowed,
+backend-neutral CPU KD-tree layout into an immutable runtime-owned `GpuKdTree`.
+Target buffers survive all ICP iterations; query uploads and nearest-result
+downloads are named and counted. Near-first GPU traversal keeps the tree's
+tie order and inclusive distance gate. Pose solving, transforms, trimming and
+f64 fitness accumulation stay on CPU. Runtime mismatches and unsupported buffer
+or dispatch sizes reject before device resource use; ordinary ICP placement is
+unchanged. This is a native synchronous search boundary, not a claim that the
+entire registration loop is device resident.
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

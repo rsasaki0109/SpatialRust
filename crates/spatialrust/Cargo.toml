@@ -87,6 +87,7 @@ register-icp = [
     "spatialrust-registration/register-icp",
     "spatialrust-search/search-kdtree",
 ]
+register-icp-gpu = ["register-icp", "spatialrust-registration/register-icp-gpu", "gpu-wgpu"]
 register-icp-point-to-plane = [
     "spatialrust-registration/register-icp-point-to-plane",
     "spatialrust-search/search-kdtree",

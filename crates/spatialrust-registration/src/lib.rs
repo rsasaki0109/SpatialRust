@@ -44,3 +44,6 @@ pub use ndt::{NdtConfig, NdtRegistration};
 pub use fpfh::{
     fpfh_descriptors, FpfhDescriptor, FpfhRansacConfig, FpfhRansacRegistration, FPFH_DESCRIPTOR_LEN,
 };
+
+#[cfg(feature = "register-icp-gpu")]
+pub use icp::GpuIcpDiagnostics;

@@ -1,6 +1,6 @@
 use spatialrust_core::{HasPositions3, PointCloud, SpatialError, SpatialResult};
 use spatialrust_math::{Isometry3, TransformPoint, Vec3};
-use spatialrust_search::KdTree;
+use spatialrust_search::{KdTree, Neighbor};
 
 use crate::kabsch::estimate_rigid_transform;
 use crate::registration::{PointCloudRegistration, RegistrationResult};
@@ -167,7 +167,7 @@ impl IcpRegistration {
         source: &PointCloud,
         target: &PointCloud,
     ) -> SpatialResult<RegistrationResult> {
-        self.align_impl(source, target, |_| {}).map(|(result, _)| result)
+        self.align_impl(source, target, |_| {}, Ok).map(|(result, _, _)| result)
     }
 
     /// Aligns with an opt-in history; errors use the same path as ordinary alignment.
@@ -177,16 +177,47 @@ impl IcpRegistration {
         target: &PointCloud,
     ) -> SpatialResult<IcpDiagnostics> {
         let mut history = Vec::new();
-        let (result, stop_reason) = self.align_impl(source, target, |row| history.push(row))?;
+        let (result, stop_reason, _) =
+            self.align_impl(source, target, |row| history.push(row), Ok)?;
         Ok(IcpDiagnostics { result, history, stop_reason })
     }
 
-    fn align_impl(
+    /// Aligns with explicit GPU query uploads/readbacks and a resident target.
+    /// Both update matching and post-update fitness matching run on GPU.
+    /// Transform application, trimming, Kabsch, f64 fitness accumulation and
+    /// convergence remain on CPU. No automatic CPU fallback is performed.
+    #[cfg(feature = "register-icp-gpu")]
+    pub fn align_with_gpu_correspondences(
+        &self,
+        runtime: &spatialrust_gpu::WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+    ) -> SpatialResult<GpuIcpDiagnostics> {
+        let mut history = Vec::new();
+        let (result, stop_reason, search) = self.align_impl(
+            source,
+            target,
+            |row| history.push(row),
+            |tree| {
+                let target = spatialrust_gpu::GpuKdTree::upload(runtime, &tree)?;
+                let transfers = target.upload_transfers();
+                Ok(GpuCorrespondences { runtime, target, transfers, batches: 0 })
+            },
+        )?;
+        Ok(GpuIcpDiagnostics {
+            diagnostics: IcpDiagnostics { result, history, stop_reason },
+            transfers: search.transfers,
+            correspondence_batches: search.batches,
+        })
+    }
+
+    fn align_impl<S: IcpCorrespondences>(
         &self,
         source: &PointCloud,
         target: &PointCloud,
         mut observe: impl FnMut(IcpIteration),
-    ) -> SpatialResult<(RegistrationResult, IcpStopReason)> {
+        make_search: impl FnOnce(KdTree) -> SpatialResult<S>,
+    ) -> SpatialResult<(RegistrationResult, IcpStopReason, S)> {
         if !self.trim_fraction.is_finite() || self.trim_fraction <= 0.0 || self.trim_fraction > 1.0
         {
             return Err(SpatialError::InvalidArgument(
@@ -238,7 +269,7 @@ impl IcpRegistration {
             }
         }
         validate_icp_transform(self.config.initial_guess)?;
-        let tree = KdTree::from_slices(target_x, target_y, target_z);
+        let mut search = make_search(KdTree::from_slices(target_x, target_y, target_z))?;
 
         let mut transform = self.config.initial_guess;
         let mut transformed = Vec::with_capacity(source.len());
@@ -259,12 +290,7 @@ impl IcpRegistration {
             let mut pairs_target = Vec::new();
             let mut ranked_pairs = Vec::new();
 
-            for point in &transformed {
-                let Some(neighbor) =
-                    tree.nearest_one_within(point.x, point.y, point.z, max_distance_squared)
-                else {
-                    continue;
-                };
+            search.visit(&transformed, max_distance_squared, |point, neighbor| {
                 if neighbor.distance_squared <= max_distance_squared {
                     pairs_source.push(*point);
                     pairs_target.push(Vec3::new(
@@ -276,7 +302,7 @@ impl IcpRegistration {
                         ranked_pairs.push((neighbor.distance_squared, pairs_source.len() - 1));
                     }
                 }
-            }
+            })?;
 
             if pairs_source.len() < self.config.min_correspondences {
                 return Err(SpatialError::InvalidArgument(format!(
@@ -322,9 +348,9 @@ impl IcpRegistration {
                 target_x,
                 target_y,
                 target_z,
-                &tree,
+                &mut search,
                 max_distance_squared,
-            );
+            )?;
             let (translation_delta, rotation_delta_radians) = transform_delta_magnitudes(delta);
             observe(IcpIteration {
                 iteration: iterations,
@@ -358,14 +384,15 @@ impl IcpRegistration {
                     target_x,
                     target_y,
                     target_z,
-                    &tree,
+                    &mut search,
                     max_distance_squared,
-                )
+                )?
                 .0,
                 iterations,
                 converged,
             },
             stop_reason,
+            search,
         ))
     }
 }
@@ -393,22 +420,17 @@ fn apply_transform_in_place(
     }
 }
 
-fn evaluate_fitness(
+fn evaluate_fitness<S: IcpCorrespondences>(
     transformed: &[Vec3<f32>],
     target_x: &[f32],
     target_y: &[f32],
     target_z: &[f32],
-    tree: &KdTree,
+    search: &mut S,
     max_distance_squared: f32,
-) -> (f64, usize) {
+) -> SpatialResult<(f64, usize)> {
     let mut sum = 0.0_f64;
     let mut count = 0usize;
-    for point in transformed {
-        let Some(neighbor) =
-            tree.nearest_one_within(point.x, point.y, point.z, max_distance_squared)
-        else {
-            continue;
-        };
+    search.visit(transformed, max_distance_squared, |point, neighbor| {
         if neighbor.distance_squared <= max_distance_squared {
             let dx = f64::from(point.x - target_x[neighbor.index]);
             let dy = f64::from(point.y - target_y[neighbor.index]);
@@ -416,8 +438,8 @@ fn evaluate_fitness(
             sum += dx * dx + dy * dy + dz * dz;
             count += 1;
         }
-    }
-    (if count == 0 { f64::MAX } else { sum / count as f64 }, count)
+    })?;
+    Ok((if count == 0 { f64::MAX } else { sum / count as f64 }, count))
 }
 
 #[cfg(test)]
@@ -760,5 +782,79 @@ mod tests {
         let restored = composed.transform_point(probe);
         assert!((restored.x - probe.x).abs() < 1e-2);
         assert!((restored.y - probe.y).abs() < 1e-2);
+    }
+}
+
+trait IcpCorrespondences {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        bound: f32,
+        consume: impl FnMut(&Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()>;
+}
+
+impl IcpCorrespondences for KdTree {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        bound: f32,
+        mut consume: impl FnMut(&Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()> {
+        for point in points {
+            if let Some(neighbor) = self.nearest_one_within(point.x, point.y, point.z, bound) {
+                consume(point, neighbor);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// GPU correspondence receipt with the ordinary ICP trace and CPU pose solver.
+#[cfg(feature = "register-icp-gpu")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuIcpDiagnostics {
+    /// Pose, fitness, convergence and per-update trace.
+    pub diagnostics: IcpDiagnostics,
+    /// Explicit target/query upload and nearest-result download bytes.
+    pub transfers: spatialrust_core::TransferStats,
+    /// Completed GPU nearest-point batches (update, fitness, final fitness).
+    pub correspondence_batches: usize,
+}
+
+#[cfg(feature = "register-icp-gpu")]
+struct GpuCorrespondences<'a> {
+    runtime: &'a spatialrust_gpu::WgpuRuntime,
+    target: spatialrust_gpu::GpuKdTree,
+    transfers: spatialrust_core::TransferStats,
+    batches: usize,
+}
+
+#[cfg(feature = "register-icp-gpu")]
+impl IcpCorrespondences for GpuCorrespondences<'_> {
+    fn visit(
+        &mut self,
+        points: &[Vec3<f32>],
+        bound: f32,
+        mut consume: impl FnMut(&Vec3<f32>, Neighbor),
+    ) -> SpatialResult<()> {
+        let queries: Vec<_> = points.iter().map(|p| [p.x, p.y, p.z]).collect();
+        let (neighbors, transfers) =
+            self.target.nearest_one_within_download(self.runtime, &queries, bound)?;
+        self.transfers.record(
+            spatialrust_core::TransferDirection::HostToDevice,
+            transfers.host_to_device_bytes(),
+        );
+        self.transfers.record(
+            spatialrust_core::TransferDirection::DeviceToHost,
+            transfers.device_to_host_bytes(),
+        );
+        self.batches += 1;
+        for (point, neighbor) in points.iter().zip(neighbors) {
+            if let Some(neighbor) = neighbor {
+                consume(point, neighbor);
+            }
+        }
+        Ok(())
     }
 }

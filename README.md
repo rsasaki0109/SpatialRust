@@ -637,6 +637,13 @@ minimum-index component union/find now run on GPU; host size filtering and
 output-cloud assembly remain. See
 [GPU component measurements](notes/2026-10-12_gpu_cluster_union.md).
 
+Point-to-point ICP can explicitly use GPU correspondence search with
+`register-icp-gpu` and
+`IcpRegistration::align_with_gpu_correspondences(&runtime, &source, &target)`.
+The target KD-tree is uploaded once and reused for update/fitness queries;
+the result contains the ICP trace and transfer accounting. Pose estimation
+remains on CPU. See [measurements and limits](notes/2026-10-12_gpu_icp_correspondences.md).
+
 ### Library
 
 Load or save by file extension:
@@ -685,7 +692,7 @@ currently keeps centroid voxel filtering on CPU because the latest end-to-end
 receipt found no GPU crossover through 2M points. Explicit GPU execution remains
 available with the threshold disabled. GPU plane, normal, and Euclidean
 clustering use the same policy flags (`--plane-policy`, `--normal-policy`,
-`--cluster-policy`). GPU sparse-grid construction and deterministic host
+`--cluster-policy`). GPU sparse-grid construction and deterministic GPU
 component labeling are exposed in the stage receipt through
 `MvpPipelineResult::receipt` together with explicit transfer accounting.
 
