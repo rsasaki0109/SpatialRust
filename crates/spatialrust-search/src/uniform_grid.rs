@@ -5,37 +5,75 @@ use spatialrust_core::{SpatialError, SpatialResult};
 /// Upper bound on dense grid cells; callers should fall back when exceeded.
 pub const MAX_UNIFORM_GRID_CELLS: u64 = 64_000_000;
 
-/// Returns grid origin (min corner) and cell counts for cell size `radius`.
+/// Returns grid origin (min corner) and cell counts for `cell_size`.
+///
+/// Axes must have equal lengths and finite coordinates. The cell size must be
+/// positive with a finite reciprocal; positive infinity yields a single cell.
+/// Nonfinite spans and grids exceeding [`MAX_UNIFORM_GRID_CELLS`] return errors.
+/// Empty axes retain the infinite origin and unit dimensions.
 pub fn grid_bounds(
     x: &[f32],
     y: &[f32],
     z: &[f32],
     cell_size: f32,
 ) -> SpatialResult<([f32; 3], [u32; 3])> {
+    if x.len() != y.len() || x.len() != z.len() {
+        return Err(SpatialError::InvalidArgument("xyz arrays must have equal length".to_owned()));
+    }
+    if cell_size <= 0.0 || cell_size.is_nan() {
+        return Err(SpatialError::InvalidArgument("cell_size must be positive".to_owned()));
+    }
+    let inv_cell = 1.0 / cell_size;
+    if !inv_cell.is_finite() {
+        return Err(SpatialError::InvalidArgument(
+            "cell_size reciprocal must be finite".to_owned(),
+        ));
+    }
     let mut min = [f32::INFINITY; 3];
     let mut max = [f32::NEG_INFINITY; 3];
     for index in 0..x.len() {
         for (axis, value) in [x[index], y[index], z[index]].into_iter().enumerate() {
+            if !value.is_finite() {
+                return Err(SpatialError::InvalidArgument(
+                    "grid coordinates must be finite".to_owned(),
+                ));
+            }
             min[axis] = min[axis].min(value);
             max[axis] = max[axis].max(value);
         }
     }
-    let inv_cell = 1.0 / cell_size;
-    let mut dims = [0u32; 3];
-    for axis in 0..3 {
-        let span = ((max[axis] - min[axis]) * inv_cell).floor() as i64 + 1;
-        dims[axis] = span.max(1) as u32;
+    if x.is_empty() || inv_cell == 0.0 {
+        return Ok((min, [1; 3]));
     }
-    let cells = dims[0] as u64 * dims[1] as u64 * dims[2] as u64;
-    if cells > MAX_UNIFORM_GRID_CELLS {
-        return Err(SpatialError::InvalidArgument(format!(
-            "grid would need {cells} cells (cap {MAX_UNIFORM_GRID_CELLS}); use a larger radius or the CPU path"
-        )));
+    let mut dims = [1u32; 3];
+    let mut cells = 1u64;
+    for axis in 0..3 {
+        // Preserve the existing f32 mapping; validate before integer narrowing.
+        let span = ((max[axis] - min[axis]) * inv_cell).floor();
+        if !span.is_finite() {
+            return Err(SpatialError::InvalidArgument("grid span must be finite".to_owned()));
+        }
+        let dim = (span as u64)
+            .checked_add(1)
+            .ok_or_else(|| SpatialError::InvalidArgument("grid dimension overflows".to_owned()))?;
+        cells = cells
+            .checked_mul(dim)
+            .ok_or_else(|| SpatialError::InvalidArgument("grid cell count overflows".to_owned()))?;
+        if cells > MAX_UNIFORM_GRID_CELLS {
+            return Err(SpatialError::InvalidArgument(format!(
+                "grid would need {cells} cells (cap {MAX_UNIFORM_GRID_CELLS}); use a larger radius or the CPU path"
+            )));
+        }
+        dims[axis] = u32::try_from(dim).map_err(|_| {
+            SpatialError::InvalidArgument("grid dimension does not fit u32".to_owned())
+        })?;
     }
     Ok((min, dims))
 }
 
-/// Returns whether a uniform grid with the given cell size fits within the cell cap.
+/// Returns whether valid axes and cell size form a grid within the cell cap.
+///
+/// Invalid lengths, coordinates, scales and unrepresentable spans return false.
 pub fn uniform_grid_fits(x: &[f32], y: &[f32], z: &[f32], cell_size: f32) -> bool {
     grid_bounds(x, y, z, cell_size).is_ok()
 }
@@ -586,3 +624,7 @@ mod build_tests;
 #[cfg(test)]
 #[path = "uniform_grid_build_benchmark.rs"]
 mod build_benchmark;
+
+#[cfg(test)]
+#[path = "uniform_grid_bounds_tests.rs"]
+mod bounds_tests;
