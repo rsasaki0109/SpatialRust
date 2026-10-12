@@ -21,6 +21,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- CPU dense-grid component labeling scans adjacent x cells as one stable CSR
+  interval per valid y/z row, preserving ordered neighbors and minimum roots
+  for both serial and existing parallel execution without new heap scratch.
 - GPU grid radius normals and plane covariances scan adjacent x cells as one
   contiguous row interval, preserving neighborhood order and floating operations
   while reducing repeated grid-offset traversal without new transfers or scratch.

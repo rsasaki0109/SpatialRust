@@ -317,6 +317,16 @@ or one available worker run on the caller. Dispatch range/handle metadata scales
 with workers instead of chunks; result buffers still scale with neighbor count.
 This uses standard-library threads without an additional runtime dependency or
 implicit device transfer; concurrent callers each have their own worker budget.
+Dense-grid `euclidean_cluster_roots` merges the neighboring x cells into one
+stable CSR interval for each valid y/z row. Clipped row bounds avoid walking
+out-of-grid offsets, including single-row/axis grids. The z/y/x cell order,
+within-cell source order, self exclusion and f32 radius predicate are preserved.
+Both caller-thread and existing atomic union-find workers use the same iterator;
+the 4,096-point dispatch threshold and scheduling remain unchanged. Iterators
+hold constant stack state, without additional heap scratch, device transfers or
+dependencies. Grid construction and sparse segment labeling retain their prior
+execution. This applies to the public dense-grid search API; GPU sparse-grid
+clustering and the segmentation extractor's KD-tree CPU path use other walkers.
 `search-graph` together with `parallel` adds explicit `knn_graph_parallel` and
 `radius_graph_parallel` APIs. They build one shared KD-tree, reuse that bounded
 chunk dispatcher with 256-point chunks, and produce worker-local edge lists in
