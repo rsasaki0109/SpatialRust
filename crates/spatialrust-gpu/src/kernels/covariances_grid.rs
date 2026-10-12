@@ -124,7 +124,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Too few neighbors: emit an isotropic epsilon-scaled covariance.
     if (count < 3.0) {
         out_cov[i] = vec4<f32>(params.epsilon, params.epsilon, params.epsilon, 0.0);
-        // remaining elements default to zero
+        // Recycled output storage is uninitialized; overwrite the second row.
+        out_cov[params.dims.w + i] = vec4<f32>(0.0);
         return;
     }
     mean = mean / count;
@@ -202,6 +203,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 }
 "#;
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "covariance_output_tests.rs"]
+mod output_tests;
+
 /// Estimates per-point plane-regularized covariances on the GPU via a uniform
 /// grid radius neighbor search.
 ///
@@ -209,6 +214,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 /// matrix whose eigenvalues have been set to `(epsilon, 1, 1)` (the GICP
 /// plane-to-plane model). Grid construction (counting sort) runs on the CPU; the
 /// neighbor gather, covariance, and eigen-decomposition run on the GPU.
+/// Fewer than three radius neighbors produce the isotropic covariance
+/// `[epsilon, epsilon, epsilon, 0, 0, 0]`, including when output storage is reused.
 pub fn estimate_plane_covariances_grid_gpu(
     runtime: &WgpuRuntime,
     x: &[f32],

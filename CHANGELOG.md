@@ -144,6 +144,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- GPU plane covariance estimation writes both output rows when fewer than three
+  neighbors are available. Reused storage no longer leaks previous cross terms
+  or NaNs into the isotropic fallback; supported-point math and transfers remain
+  unchanged, with no buffer-clear pass or additional allocation.
 - The local COPC HTTP test server waits for complete request headers within its
   existing 4 KiB bound before responding. Fragmented HEAD and Range requests no
   longer cause premature responses or connection resets; a read deadline bounds
