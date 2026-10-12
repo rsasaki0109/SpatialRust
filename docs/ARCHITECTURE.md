@@ -347,6 +347,13 @@ and split words remain identical, preserving query ties and unsorted neighbor
 order for downstream floating-point algorithms. This removes repeated scans of
 minimum buckets while retaining serial execution and existing storage. General
 quickselect worst-case complexity and parallel tree construction are unchanged.
+Unbounded KD-tree single-neighbor queries hold one optional neighbor on the
+stack, without heap scratch. Traversal and distance arithmetic match the k=1
+accumulator: a candidate is rejected with `>=`, including the original NaN
+replacement behavior; far branches use strict distance pruning once a neighbor
+exists. Empty trees return no neighbor. Query validation, nonfinite results,
+ties and bounded/k-NN APIs retain their existing semantics. This path introduces
+no device copy, allocation, dependency or worker scheduling.
 `spatialrust-image-io` depends on storage, never the reverse; standard codecs
 are additive, while TIFF and OpenEXR remain independently gated.
 Calibration datasets, robust solver controls, and residual receipts live in

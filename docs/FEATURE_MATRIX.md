@@ -230,6 +230,11 @@ workspace because its build requires a Python toolchain.
   query order remain unchanged, including ties. Construction stays serial and
   retains existing storage and dependencies. See
   [KD-tree construction measurements](../notes/2026-10-12_exact_kdtree_minimum_pivots.md).
+- `search-kdtree` single-neighbor queries use one stack-resident optional result
+  instead of a temporary Vec. Exact indices/distance words, traversal ties and
+  nonfinite behavior remain compatible with k=1 queries; no dependency or
+  device transfer changes. See
+  [scalar search measurements](../notes/2026-10-12_allocation_free_nearest_one.md).
 - `GpuStageProfiler` (under `gpu-wgpu`) records named pass timestamps through
   `run_gpu_vision_chain_profiled` (`gpu-image`) and
   `run_aoso_voxel_normal_frame_profiled` (`gpu-aoso-staging`). Create an optional
