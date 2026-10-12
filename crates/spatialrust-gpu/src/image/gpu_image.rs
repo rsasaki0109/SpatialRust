@@ -7,6 +7,85 @@ use crate::WgpuRuntime;
 
 const BYTES_PER_TEXEL: u64 = 4;
 
+struct UploadPlan {
+    width: u32,
+    height: u32,
+    row_bytes: u32,
+    storage_bytes: u64,
+    packed_len: usize,
+}
+
+struct ReadbackPlan {
+    row_bytes: u32,
+    padded_row: u32,
+    staging_bytes: u64,
+    staging_len: usize,
+    output_len: usize,
+}
+
+fn invalid_transfer() -> SpatialError {
+    SpatialError::InvalidArgument(
+        "GpuImage transfer requires positive supported dimensions, 1..=4 channels and representable byte lengths".to_owned(),
+    )
+}
+
+fn transfer_dimensions(
+    width: u32,
+    height: u32,
+    channels: usize,
+    limits: &wgpu::Limits,
+) -> SpatialResult<u32> {
+    if width == 0
+        || height == 0
+        || !(1..=4).contains(&channels)
+        || width > limits.max_texture_dimension_2d
+        || height > limits.max_texture_dimension_2d
+    {
+        return Err(invalid_transfer());
+    }
+    width.checked_mul(BYTES_PER_TEXEL as u32).ok_or_else(invalid_transfer)
+}
+
+fn host_length(bytes: u64) -> SpatialResult<usize> {
+    if bytes > isize::MAX as u64 {
+        return Err(invalid_transfer());
+    }
+    usize::try_from(bytes).map_err(|_| invalid_transfer())
+}
+
+fn upload_plan(
+    width: usize,
+    height: usize,
+    channels: usize,
+    limits: &wgpu::Limits,
+) -> SpatialResult<UploadPlan> {
+    let width = u32::try_from(width).map_err(|_| invalid_transfer())?;
+    let height = u32::try_from(height).map_err(|_| invalid_transfer())?;
+    let row_bytes = transfer_dimensions(width, height, channels, limits)?;
+    let storage_bytes = texture_bytes(width, height)?;
+    let packed_len = host_length(storage_bytes)?;
+    Ok(UploadPlan { width, height, row_bytes, storage_bytes, packed_len })
+}
+
+fn readback_plan(
+    width: u32,
+    height: u32,
+    channels: usize,
+    limits: &wgpu::Limits,
+) -> SpatialResult<ReadbackPlan> {
+    let row_bytes = transfer_dimensions(width, height, channels, limits)?;
+    let alignment = u64::from(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT);
+    let padded_row = u32::try_from(u64::from(row_bytes).div_ceil(alignment) * alignment)
+        .map_err(|_| invalid_transfer())?;
+    let staging_bytes = u64::from(padded_row) * u64::from(height);
+    if staging_bytes > limits.max_buffer_size {
+        return Err(invalid_transfer());
+    }
+    let staging_len = host_length(staging_bytes)?;
+    let output_len = host_length(u64::from(width) * u64::from(height) * channels as u64)?;
+    Ok(ReadbackPlan { row_bytes, padded_row, staging_bytes, staging_len, output_len })
+}
+
 /// Transfer accounting for GPU image uploads, device copies, and readbacks.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct GpuImageReceipt {
@@ -102,26 +181,15 @@ pub struct GpuImage {
 
 impl GpuImage {
     /// Explicitly uploads a packed or strided `u8` image into a texture.
+    /// Dimensions, row bytes and host capacity are checked before allocation.
     pub fn upload_u8<const CHANNELS: usize>(
         runtime: &WgpuRuntime,
         view: ImageView<'_, u8, CHANNELS>,
     ) -> SpatialResult<Self> {
-        if CHANNELS == 0 || CHANNELS > 4 {
-            return Err(SpatialError::InvalidArgument(
-                "GpuImage upload supports 1..=4 channels".to_owned(),
-            ));
-        }
-        let width = u32::try_from(view.width())
-            .map_err(|_| SpatialError::InvalidArgument("GpuImage width exceeds u32".to_owned()))?;
-        let height = u32::try_from(view.height())
-            .map_err(|_| SpatialError::InvalidArgument("GpuImage height exceeds u32".to_owned()))?;
-        if width == 0 || height == 0 {
-            return Err(SpatialError::InvalidArgument(
-                "GpuImage upload requires positive width and height".to_owned(),
-            ));
-        }
+        let plan = upload_plan(view.width(), view.height(), CHANNELS, &runtime.device().limits())?;
+        let (width, height) = (plan.width, plan.height);
         let texture = create_texture(runtime, width, height, "gpu-image-upload");
-        let texels = pack_rgba8(view);
+        let texels = pack_rgba8(view, plan.packed_len);
         runtime.queue().write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &texture,
@@ -132,12 +200,12 @@ impl GpuImage {
             &texels,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(width * BYTES_PER_TEXEL as u32),
+                bytes_per_row: Some(plan.row_bytes),
                 rows_per_image: Some(height),
             },
             extent(width, height),
         );
-        let storage_bytes = texture_bytes(width, height);
+        let storage_bytes = plan.storage_bytes;
         let mut receipt = GpuImageReceipt::default();
         receipt.record_host_to_device(storage_bytes, "upload_u8_texture");
         Ok(Self {
@@ -153,6 +221,7 @@ impl GpuImage {
     }
 
     /// Explicitly reads the texture back into an owned packed host image.
+    /// Row padding, staging limits and host capacity are checked before work.
     pub fn readback_u8<const CHANNELS: usize>(
         &mut self,
         runtime: &WgpuRuntime,
@@ -164,13 +233,10 @@ impl GpuImage {
                 self.channels
             )));
         }
-        let unpadded_row = self.width * BYTES_PER_TEXEL as u32;
-        let padded_row = unpadded_row.div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
-            * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
-        let staging_size = u64::from(padded_row) * u64::from(self.height);
+        let plan = readback_plan(self.width, self.height, CHANNELS, &runtime.device().limits())?;
         let staging = runtime.device().create_buffer(&wgpu::BufferDescriptor {
             label: Some("gpu-image-texture-readback"),
-            size: staging_size,
+            size: plan.staging_bytes,
             usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -189,17 +255,17 @@ impl GpuImage {
                 buffer: &staging,
                 layout: wgpu::TexelCopyBufferLayout {
                     offset: 0,
-                    bytes_per_row: Some(padded_row),
+                    bytes_per_row: Some(plan.padded_row),
                     rows_per_image: Some(self.height),
                 },
             },
             extent(self.width, self.height),
         );
         runtime.queue().submit(Some(encoder.finish()));
-        let rgba = read_staging_bytes(runtime.device(), &staging, staging_size as usize)?;
-        let mut data = Vec::with_capacity(self.width as usize * self.height as usize * CHANNELS);
-        for row in rgba.chunks_exact(padded_row as usize).take(self.height as usize) {
-            for texel in row[..unpadded_row as usize].chunks_exact(BYTES_PER_TEXEL as usize) {
+        let rgba = read_staging_bytes(runtime.device(), &staging, plan.staging_len)?;
+        let mut data = Vec::with_capacity(plan.output_len);
+        for row in rgba.chunks_exact(plan.padded_row as usize).take(self.height as usize) {
+            for texel in row[..plan.row_bytes as usize].chunks_exact(BYTES_PER_TEXEL as usize) {
                 data.extend_from_slice(&texel[..CHANNELS]);
             }
         }
@@ -286,7 +352,7 @@ impl GpuImage {
             channels,
             device_key: runtime_device_key(runtime),
             texture,
-            storage_bytes: texture_bytes(width, height),
+            storage_bytes: texture_bytes(width, height)?,
             metadata,
             receipt,
         })
@@ -302,8 +368,11 @@ pub(crate) fn create_texture(
     runtime.acquire_image_texture(width, height, label)
 }
 
-fn pack_rgba8<const CHANNELS: usize>(view: ImageView<'_, u8, CHANNELS>) -> Vec<u8> {
-    let mut packed = vec![0_u8; view.width() * view.height() * BYTES_PER_TEXEL as usize];
+fn pack_rgba8<const CHANNELS: usize>(
+    view: ImageView<'_, u8, CHANNELS>,
+    packed_len: usize,
+) -> Vec<u8> {
+    let mut packed = vec![0_u8; packed_len];
     for y in 0..view.height() {
         let source = view.row(y).expect("input row in bounds");
         let target = &mut packed[y * view.width() * 4..(y + 1) * view.width() * 4];
@@ -318,9 +387,13 @@ const fn extent(width: u32, height: u32) -> wgpu::Extent3d {
     wgpu::Extent3d { width, height, depth_or_array_layers: 1 }
 }
 
-const fn texture_bytes(width: u32, height: u32) -> u64 {
-    width as u64 * height as u64 * BYTES_PER_TEXEL
+fn texture_bytes(width: u32, height: u32) -> SpatialResult<u64> {
+    (u64::from(width) * u64::from(height)).checked_mul(BYTES_PER_TEXEL).ok_or_else(invalid_transfer)
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "transfer_tests.rs"]
+mod transfer_tests;
 
 pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> std::sync::Arc<()> {
     runtime.profiling_identity()

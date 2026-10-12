@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- GPU image upload/readback validate texture dimensions, RGBA row arithmetic,
+  host byte capacities and padded staging-buffer limits before work allocation.
+  Unsupported transfers return errors without changing receipts or texture
+  pools; valid pixels, metadata and explicit transfer accounting are preserved.
 - KD-tree single-neighbor queries keep one stack-resident optional result instead
   of allocating a one-element Vec. The existing traversal, equal-distance ties,
   NaN replacement/pruning and overflow behavior remain unchanged, with no new
