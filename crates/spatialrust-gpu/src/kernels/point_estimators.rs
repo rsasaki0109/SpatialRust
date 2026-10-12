@@ -257,3 +257,7 @@ mod grid_build_tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "grid_bounds_tests.rs"]
 mod grid_bounds_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "grid_prefix_tests.rs"]
+mod grid_prefix_tests;

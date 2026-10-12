@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Native dense-grid prefixes under `parallel` use bounded scoped workers for
+  large sparse cell tables, retaining stable CSR indices/offsets and worker-sized
+  metadata. `gpu-wgpu` enables this dependency-free search feature for host
+  preparation. Small/denser/one-worker calls and WASM keep scalar grid prefixes;
+  WASM dense-root dispatch also retains serial execution.
 - CPU dense-grid construction reuses cumulative cell ends as final CSR starts
   through stable reverse scattering. This removes a cell-sized cursor copy
   from CPU clustering and standalone GPU normal/covariance preparation while
