@@ -94,6 +94,7 @@ register-icp-point-to-plane = [
     "spatialrust-registration/register-icp-point-to-plane",
     "spatialrust-search/search-kdtree",
 ]
+register-icp-point-to-plane-gpu = ["register-icp-point-to-plane", "spatialrust-registration/register-icp-point-to-plane-gpu", "gpu-wgpu"]
 register-gicp = [
     "spatialrust-registration/register-gicp",
     "spatialrust-search/search-kdtree",

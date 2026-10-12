@@ -52,6 +52,10 @@ mod voxel_gather;
 pub(crate) mod cluster_union;
 pub(crate) mod fpfh;
 pub(crate) mod gicp_reduction;
+pub(crate) mod point_to_plane_reduction;
+pub use point_to_plane_reduction::{
+    GpuPointToPlaneEquations, GpuPointToPlaneInput, GpuPointToPlaneNormalEquations,
+};
 pub(crate) mod icp_reduction;
 pub use gicp_reduction::{GpuGicpEquations, GpuGicpInput, GpuGicpNormalEquations};
 pub(crate) mod iss;

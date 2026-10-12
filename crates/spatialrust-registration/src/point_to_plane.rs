@@ -278,6 +278,12 @@ fn point_to_plane_fitness(
     sum / count as f64
 }
 
+#[cfg(feature = "register-icp-point-to-plane-gpu")]
+#[path = "point_to_plane_reduction.rs"]
+mod gpu_reduction;
+#[cfg(feature = "register-icp-point-to-plane-gpu")]
+pub use gpu_reduction::{GpuPointToPlaneIteration, GpuPointToPlaneReductionDiagnostics};
+
 #[cfg(test)]
 mod tests {
     use super::{PointToPlaneIcp, PointToPlaneIcpConfig};

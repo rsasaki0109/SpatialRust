@@ -238,6 +238,9 @@ pub use spatialrust_registration::{
 #[cfg(feature = "register-icp-point-to-plane")]
 pub use spatialrust_registration::{PointToPlaneIcp, PointToPlaneIcpConfig};
 
+#[cfg(feature = "register-icp-point-to-plane-gpu")]
+pub use spatialrust_registration::{GpuPointToPlaneIteration, GpuPointToPlaneReductionDiagnostics};
+
 #[cfg(feature = "register-icp-gpu")]
 pub use spatialrust_registration::GpuIcpReductionDiagnostics;
 

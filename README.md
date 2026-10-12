@@ -665,6 +665,13 @@ remains CPU k-NN or explicit radius-GPU readback/re-upload. Strict conditioning
 guards and f32 differences are documented in
 [GICP reduction measurements](notes/2026-10-13_gpu_gicp_reduction.md).
 
+Point-to-plane ICP also exposes
+`PointToPlaneIcp::align_with_gpu_reduction(&runtime, &source, &target)` under
+`register-icp-point-to-plane-gpu`. Transforms, nearest matching and plane
+Hessian/gradient/fitness reductions run on GPU; each evaluation downloads
+256 bytes for the CPU 6x6 solve. Raw target normals retain relative length
+weights. See [point-to-plane measurements](notes/2026-10-13_gpu_point_to_plane_reduction.md).
+
 GPU k-NN/radius search can retain its results for later device passes with
 `GpuQueryBatch::upload` and
 `GpuKdTree::{nearest_k_resident,radius_neighbors_resident}` (`gpu-wgpu`). Radius

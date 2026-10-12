@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add opt-in `register-icp-point-to-plane-gpu` resident transforms, nearest
+  matching, plane Hessian/gradient and raw-normal plane fitness reductions.
+  Reusable input and owned 256-byte equations retain explicit transfer receipts;
+  CPU solves normalized 6x6 equations and converts the linearized world step.
+  Target normals retain relative length weights (including zero rows); ordinary
+  CPU point-to-plane ICP stays unchanged. Invalid configuration, unsupported
+  numeric scales and device limits return errors without CPU fallback.
+
 - Extend `register-gicp-gpu` with explicit resident transform and normal-equation
   reduction. GPU covariance rotation/inversion, Hessian/gradient and Euclidean
   fitness phases share one submission; each evaluation downloads 256 bytes.
