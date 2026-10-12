@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Large GPU channel histograms use eight padded workgroup-local counter replicas
+  to reduce concentrated atomic updates. Inputs outside 4,194,304..=8,388,608
+  pixels or devices with less than 8,224 local bytes keep the original kernel. Exact
+  counts, two passes, scratch bounds, resident ownership and receipts are retained.
 - GPU image upload/readback validate texture dimensions, RGBA row arithmetic,
   host byte capacities and padded staging-buffer limits before work allocation.
   Unsupported transfers return errors without changing receipts or texture

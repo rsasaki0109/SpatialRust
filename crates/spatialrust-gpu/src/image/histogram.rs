@@ -7,6 +7,7 @@ pub use cdf::{histogram_cdf_gpu, histogram_cdf_gpu_profiled, GpuImageCdf};
 
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
+use std::sync::OnceLock;
 use wgpu::util::DeviceExt;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -18,6 +19,9 @@ use crate::{scratch::ScratchBuffers, GpuStageProfiler, WgpuRuntime};
 const BINS: u32 = 256;
 const HISTOGRAM_BYTES: u64 = BINS as u64 * 4;
 const MAX_GROUPS: u32 = 256;
+const REPLICATED_MIN_PIXELS: u32 = 4 * 1024 * 1024;
+const REPLICATED_MAX_PIXELS: u32 = 8 * 1024 * 1024;
+const REPLICATED_WORKGROUP_BYTES: u32 = 8 * 257 * 4;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -74,6 +78,31 @@ pub(crate) struct HistogramPipelines {
     layout: wgpu::BindGroupLayout,
     partials: wgpu::ComputePipeline,
     reduce: wgpu::ComputePipeline,
+    replicated: OnceLock<wgpu::ComputePipeline>,
+}
+
+impl HistogramPipelines {
+    fn replicated_partials(&self, device: &wgpu::Device) -> &wgpu::ComputePipeline {
+        self.replicated.get_or_init(|| {
+            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("gpu-image-histogram-replicated-shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("histogram/replicated.wgsl").into()),
+            });
+            let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("gpu-image-histogram-replicated-layout"),
+                bind_group_layouts: &[&self.layout],
+                push_constant_ranges: &[],
+            });
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("gpu-image-histogram-replicated-partials"),
+                layout: Some(&layout),
+                module: &shader,
+                entry_point: Some("histogram_partials"),
+                compilation_options: Default::default(),
+                cache: None,
+            })
+        })
+    }
 }
 
 fn create_pipelines(device: &wgpu::Device) -> HistogramPipelines {
@@ -123,6 +152,7 @@ fn create_pipelines(device: &wgpu::Device) -> HistogramPipelines {
     HistogramPipelines {
         partials: pipeline("histogram_partials"),
         reduce: pipeline("histogram_reduce"),
+        replicated: OnceLock::new(),
         layout,
     }
 }
@@ -131,6 +161,12 @@ pub(super) struct DispatchPlan {
     pixels: u32,
     groups: u32,
     partial_bytes: u64,
+}
+
+fn use_replicated(plan: &DispatchPlan, limits: &wgpu::Limits) -> bool {
+    plan.pixels >= REPLICATED_MIN_PIXELS
+        && plan.pixels <= REPLICATED_MAX_PIXELS
+        && limits.max_compute_workgroup_storage_size >= REPLICATED_WORKGROUP_BYTES
 }
 
 pub(super) fn dispatch_plan(
@@ -252,6 +288,8 @@ fn readback_bins_u32(runtime: &WgpuRuntime, buffer: &wgpu::Buffer) -> SpatialRes
 ///
 /// Uses at most 256 workgroups, 256 KiB private pooled partials and a 1 KiB
 /// resident output. Every scratch/output bin is overwritten before reuse.
+/// Images with 4..=8 Mi pixels use eight local counter replicas when shared
+/// memory permits; other calls retain the original kernel.
 /// Apply `rgb_to_gray_gpu` first when a luma histogram is desired.
 pub fn histogram_u8_gpu(
     runtime: &WgpuRuntime,
@@ -285,7 +323,8 @@ fn histogram_with_profiler(
     if channel >= source.channels() {
         return Err(invalid("GPU histogram channel is outside the logical image channels"));
     }
-    let plan = dispatch_plan(source.width(), source.height(), &runtime.device().limits())?;
+    let limits = runtime.device().limits();
+    let plan = dispatch_plan(source.width(), source.height(), &limits)?;
     let params =
         Params { width: source.width(), height: source.height(), channel, groups: plan.groups };
     let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -295,6 +334,11 @@ fn histogram_with_profiler(
     });
     let pipelines =
         runtime.image_histogram_pipelines.get_or_init(|| create_pipelines(runtime.device()));
+    let partial_pipeline = if use_replicated(&plan, &limits) {
+        pipelines.replicated_partials(runtime.device())
+    } else {
+        &pipelines.partials
+    };
     let mut scratch = ScratchBuffers::new(runtime);
     let partials = scratch.acquire("gpu-image-histogram-partials", plan.partial_bytes);
     let output = runtime.buffer_pool().acquire_storage(
@@ -320,7 +364,7 @@ fn histogram_with_profiler(
         label: Some("gpu-image-histogram-encoder"),
     });
     for (pipeline, stage, groups) in [
-        (&pipelines.partials, "histogram_u8_partials_gpu", plan.groups),
+        (partial_pipeline, "histogram_u8_partials_gpu", plan.groups),
         (&pipelines.reduce, "histogram_u8_reduce_gpu", 1),
     ] {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -347,6 +391,18 @@ fn histogram_with_profiler(
 fn invalid(message: &str) -> SpatialError {
     SpatialError::InvalidArgument(message.to_owned())
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "histogram_experiment_execution.rs"]
+mod experiment;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "histogram_replica_tests.rs"]
+mod replica_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "histogram_replica_benchmark.rs"]
+mod replica_benchmark;
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {

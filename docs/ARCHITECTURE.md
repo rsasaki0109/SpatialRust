@@ -199,6 +199,16 @@ Optional profiling records exactly two passes; native `readback_u32` explicitly
 transfers 1,024 bytes and timestamp collection separately transfers 32 bytes.
 Histogram construction has no payload readback or implicit host synchronization.
 The public APIs are provisional; CPU references/Rayon are dev-only dependencies.
+At 4,194,304..=8,388,608 pixels and at least 8,224 bytes of workgroup storage,
+histogram partials use eight independent local bin replicas. One padding word
+per replica separates equal-bin addresses; each lane accumulates into its
+`lane & 7` replica and sums the eight counters after a workgroup barrier. All
+used local bins are explicitly initialized. Integer mass stays bounded by the
+original u32 pixel count. The extra partial pipeline is lazy per runtime;
+inputs outside that range or lower shared-memory limits retain the original pipeline.
+Group count, global partial/output storage, final reduction, two-pass profiling
+and transfer receipts are unchanged. Native per-lane run compression remains
+an experimental fixture after distribution-dependent completion measurements.
 Resident histogram consumers include `histogram_cdf_gpu`, a one-workgroup
 inclusive tree scan of the 256 bins. It uses 1 KiB local memory, a separate 1 KiB
 output, and no global temporary buffer or uniform. Integer counts remain exact
