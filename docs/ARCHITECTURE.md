@@ -30,7 +30,7 @@ Nearest-k rows retain CPU stable ordering; radius rows retain traversal order
 and expose overflow. Complete CPU readback rejects incomplete neighborhoods;
 GPU consumers must inspect counts before using rows. Target/query payloads
 remain resident between passes. This adds no core/search dependency and does
-not change feature algorithm placement; MLS device compute follows.
+not change ordinary feature algorithm placement; explicit device consumers follow.
 
 FPFH device computation now consumes this radius-row representation through
 `GpuFpfhInput` and neighborhoods tied to that exact uploaded input. Explicit
@@ -51,6 +51,23 @@ inspect status. `feature-iss-gpu` adds explicit detection with transfer receipts
 retaining CPU tree construction, ordered flag compaction and attribute gathering.
 GPU f32 selection can differ near thresholds/ties from CPU f64; ordinary CPU
 behavior remains unchanged. Eigen diagnostics require separate explicit readback.
+
+MLS uses the same input-bound radius representation through `GpuMlsInput`.
+The uploaded query positions are shared with frame computation. Three device
+passes in one submission validate complete neighborhoods, compute compensated
+weighted frames/Jacobi eigenvectors, fit order-0/1/2 surfaces and finalize global
+validity. Private leased scratch stores 64-byte frames and 192-byte fit systems
+per point; owned original-order position/mode buffers survive input drops.
+`filter-mls-gpu` keeps CPU tree construction and schema/attribute reconstruction
+at explicit upload/download boundaries. Minimum support includes self, then
+fitting excludes only the query index. Sparse points retain their coordinates;
+insufficient polynomial support or rank failure uses a device plane fallback.
+Normalized f32 Cholesky uses relative rank threshold 1e-6; CPU f64 Gaussian
+elimination uses absolute 1e-12. Nearly singular fits can differ substantially;
+per-point modes and counts expose outcomes, without a CPU equivalence promise.
+Malformed/incomplete rows or evaluated local-extent underflow invalidate and
+zero all output; consumers must inspect the first five status words. See
+[MLS evidence](../notes/2026-10-13_gpu_mls_smoothing.md).
 
 | Area | Decision |
 | --- | --- |

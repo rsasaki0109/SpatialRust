@@ -167,6 +167,9 @@ pub use spatialrust_filtering::{FarthestPointSampling, FarthestPointSamplingConf
 #[cfg(feature = "filter-mls")]
 pub use spatialrust_filtering::{MlsConfig, MlsSmoothing};
 
+#[cfg(feature = "filter-mls-gpu")]
+pub use spatialrust_filtering::{GpuMlsFilterResult, GpuMlsPositionResult};
+
 #[cfg(feature = "feature-normal")]
 pub use spatialrust_features::{
     orient_normal_towards_viewpoint, FeatureEstimator, KdTreeNeighborhood, NeighborhoodProvider,

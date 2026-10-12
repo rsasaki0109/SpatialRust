@@ -31,6 +31,9 @@ pub use fps::{FarthestPointSampling, FarthestPointSamplingConfig};
 #[cfg(feature = "filter-mls")]
 pub use mls::{MlsConfig, MlsSmoothing};
 
+#[cfg(feature = "filter-mls-gpu")]
+pub use mls::{GpuMlsFilterResult, GpuMlsPositionResult};
+
 #[cfg(feature = "filter-outlier")]
 pub use outlier::{
     RadiusOutlierConfig, RadiusOutlierRemoval, StatisticalOutlierConfig, StatisticalOutlierRemoval,

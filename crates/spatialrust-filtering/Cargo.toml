@@ -16,6 +16,7 @@ filter-outlier = ["dep:spatialrust-search"]
 filter-crop = []
 filter-fps = []
 filter-mls = ["dep:spatialrust-search"]
+filter-mls-gpu = ["filter-mls", "dep:spatialrust-gpu", "spatialrust-gpu/gpu-wgpu"]
 
 [dependencies]
 spatialrust-core = { workspace = true }

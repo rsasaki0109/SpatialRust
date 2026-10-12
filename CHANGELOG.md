@@ -21,6 +21,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add opt-in `filter-mls-gpu` smoothing for constant, linear and quadratic
+  surfaces. Reusable input-bound radius rows feed GPU weighted frames and
+  polynomial fits in three passes; explicit upload/download receipts and
+  per-point unchanged/plane/polynomial outcomes accompany the result. CPU tree
+  construction and schema/attribute reconstruction remain. Normalized f32
+  Cholesky uses a different rank test from CPU f64; nearly singular fits can
+  produce large coordinate differences, documented with adverse fixtures.
+  Incomplete/malformed rows or numerical errors invalidate all device output.
+
 - Add opt-in `feature-iss-gpu` keypoint detection: shared uploaded positions feed
   GPU radius graphs, compensated covariance, eigenvalue saliency and local
   maxima. Explicit payload receipts cover upload and flag/status download;

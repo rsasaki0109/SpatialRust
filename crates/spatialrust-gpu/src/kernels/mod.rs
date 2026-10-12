@@ -52,7 +52,12 @@ mod voxel_gather;
 pub(crate) mod cluster_union;
 pub(crate) mod fpfh;
 pub(crate) mod iss;
+pub(crate) mod mls;
 pub use iss::{GpuIssInput, GpuIssKeypoints, GpuIssNeighborhoods};
+pub use mls::{
+    GpuMlsDiagnostics, GpuMlsInput, GpuMlsMode, GpuMlsNeighborhoods, GpuMlsPositions,
+    GpuMlsReadback,
+};
 pub(crate) mod nearest;
 pub use fpfh::{GpuFpfhDescriptors, GpuFpfhInput, GpuFpfhNeighborhoods, GPU_FPFH_DESCRIPTOR_LEN};
 pub use nearest::{
