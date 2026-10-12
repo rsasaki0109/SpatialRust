@@ -108,11 +108,7 @@ pub fn build_grid(
     for index in 0..n {
         counts[cell_of(index)] += 1;
     }
-    let mut acc = 0u32;
-    for slot in counts.iter_mut() {
-        acc += *slot;
-        *slot = acc;
-    }
+    inclusive_grid_prefix(&mut counts, n);
 
     let mut sorted = vec![0u32; n];
     // Descending input indices preserve ascending order within each cell.
@@ -147,7 +143,7 @@ pub fn euclidean_cluster_roots(
     let (sorted, cell_start) = build_grid(x, y, z, origin, dims, cluster_tolerance);
     let radius_sq = cluster_tolerance * cluster_tolerance;
 
-    #[cfg(feature = "parallel")]
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
     if point_count >= PARALLEL_CLUSTER_MIN_POINTS {
         return Ok(cluster_roots_parallel(
             point_count,
@@ -291,7 +287,7 @@ pub fn euclidean_cluster_roots_from_segments(
 }
 
 /// Minimum point count before the `parallel` feature uses threaded union-find.
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
 const PARALLEL_CLUSTER_MIN_POINTS: usize = 4_096;
 
 #[allow(clippy::too_many_arguments)]
@@ -329,7 +325,7 @@ fn cluster_roots_sequential(
     compress_roots(&mut parent, point_count)
 }
 
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
 #[allow(clippy::too_many_arguments)]
 fn cluster_roots_parallel(
     point_count: usize,
@@ -386,7 +382,7 @@ fn cluster_roots_parallel(
     compress_roots(&mut parent_vec, point_count)
 }
 
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
 fn atomic_union_min_root(parent: &[std::sync::atomic::AtomicU32], a: u32, b: u32) {
     use std::sync::atomic::Ordering;
 
@@ -412,7 +408,7 @@ fn atomic_union_min_root(parent: &[std::sync::atomic::AtomicU32], a: u32, b: u32
     }
 }
 
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
 fn atomic_find_root(parent: &[std::sync::atomic::AtomicU32], mut index: u32) -> u32 {
     use std::sync::atomic::Ordering;
 
@@ -628,3 +624,7 @@ mod build_benchmark;
 #[cfg(test)]
 #[path = "uniform_grid_bounds_tests.rs"]
 mod bounds_tests;
+
+#[path = "grid_prefix.rs"]
+mod grid_prefix;
+use grid_prefix::inclusive_grid_prefix;

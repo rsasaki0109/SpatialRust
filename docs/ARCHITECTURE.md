@@ -335,10 +335,19 @@ scattering. Each end is decremented to its final CSR start; the last sentinel
 remains the point count. This removes the separate cell cursor clone and
 `4 * (cells + 1)` bytes of live logical heap payload. Returned indices/starts,
 per-point f32 coordinate mapping and increasing source order inside each cell
-are identical. Grid construction stays serial under every feature set, without
-new dependencies, cached point IDs or implicit device copies. Standalone GPU
-radius normal/covariance preparation uses this same host builder; its storage
-uploads, shaders, scratch pools and readback remain unchanged.
+are identical. Native `parallel` builds scan cell-offset tables with at least
+8,388,608 entries and at least 1,024 entries per point using scoped CPU workers,
+capped by available parallelism and useful 262,144-entry chunks. Worker-local
+inclusive scans join before ordered base computation; a second scope adds bases
+in disjoint bands, skipping
+zero bases. Metadata scales with workers, without another cell/point-sized
+table. Small/denser tables, one-worker calls and WASM keep caller execution.
+Mapping and stable reverse scattering remain serial. `gpu-wgpu` enables this existing
+search feature for shared host preparation without another dependency. Cargo
+feature unification also enables the existing native dense-root dispatcher;
+WASM dense roots keep the serial path. Budgets are per call rather than a
+process-wide CPU/stack limit. Standalone GPU radius normal/covariance preparation
+retains its storage uploads, shaders, scratch pools and readback.
 Dense-grid `euclidean_cluster_roots` merges the neighboring x cells into one
 stable CSR interval for each valid y/z row. Clipped row bounds avoid walking
 out-of-grid offsets, including single-row/axis grids. The z/y/x cell order,

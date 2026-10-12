@@ -254,7 +254,14 @@ workspace because its build requires a Python toolchain.
 - Shared CPU `build_grid` uses stable reverse scattering and one cell-offset
   table, eliminating the auxiliary cursor clone. Logical live heap payload
   drops by `4 * (cells + 1)` bytes; returned CSR order/sentinels and GPU uploads
-  remain identical. Construction stays serial, with O(points + cells) work.
+  remain identical, with O(points + cells) work. Native `parallel` builds use
+  bounded scoped workers from 8,388,608 offset entries with at least 1,024 entries
+  per point; mapping and scattering remain serial. Small/denser/one-worker/WASM
+  calls keep scalar prefixes.
+  `gpu-wgpu` enables this search feature for host preparation and existing native
+  dense-root dispatch; WASM dense roots stay serial. Worker/handle metadata is
+  worker-sized, not a process-wide CPU/stack budget. See
+  [parallel grid prefix measurements](../notes/2026-10-12_parallel_grid_prefix.md).
   Standalone GPU radius normals/covariances reuse this preparation. See
   [grid construction measurements](../notes/2026-10-12_reduced_cpu_grid_scratch.md).
 - Dense-grid `spatialrust-search::euclidean_cluster_roots` reads adjacent x cells
