@@ -526,6 +526,9 @@ impl GicpReductionPipelines {
 #[path = "gicp_covariances.rs"]
 pub(crate) mod resident_covariances;
 
+#[path = "gicp_grid_covariances.rs"]
+pub(crate) mod resident_grid_covariances;
+
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "gicp_reduction_tests.rs"]
 mod tests;

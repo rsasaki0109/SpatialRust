@@ -80,6 +80,19 @@ epsilon=1e-4..=1 are required. Upload/download ownership and receipts match
 resident k-NN. CPU trees/6x6 updates remain; legacy preparation is unchanged.
 See [resident radius evidence](../notes/2026-10-13_gpu_gicp_resident_radius_covariances.md).
 
+`align_with_gpu_resident_grid_covariances` / `upload_with_gpu_grid_covariances`
+offer explicit dense-grid preparation. CPU counting-sort indices/offsets are
+uploaded into private scratch leased through one submission. Two grid gathers
+share the existing original query/sample buffers and write directly into owned
+packed covariances; a final pass zeros both sets on invalid data/support/SPD.
+The canonical grid arithmetic is reused, preserving raw f32 means, central sums
+and 16 three-pivot sweeps. Support capacity includes self/duplicates but requires
+no neighborhood allocation; overflow rejects all equations. Source KD-tree
+construction/upload is removed. Upload is 20*S+36*T+32*target_nodes plus four
+bytes per grid offset entry. CPU grid construction/target tree/6x6 solve remain;
+dense-grid cell limits reject without automatically selecting another route.
+See [resident grid evidence](../notes/2026-10-13_gpu_gicp_resident_grid_covariances.md).
+
 `PointToPlaneIcp::align_with_gpu_reduction` under the optional
 `register-icp-point-to-plane-gpu` feature retains original positions/tree and
 raw target normals. Five passes transform originals, perform the existing
