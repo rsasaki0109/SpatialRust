@@ -92,12 +92,13 @@ fn inverse_trace(c: &[f32; 6]) -> SpatialResult<f64> {
 }
 
 /// Reusable explicitly uploaded positions/tree and SPD covariances for GICP.
-/// Covariance preparation is external. Position storage shares the ICP input
+/// Covariances are explicitly uploaded or prepared on GPU. Position storage shares the ICP input
 /// representation; every evaluation transforms immutable original source points.
 pub struct GpuGicpInput {
     positions: GpuIcpInput,
     covariances: wgpu::Buffer,
     weight_scale: f32,
+    covariance_offset: u32,
     transfers: TransferStats,
 }
 
@@ -146,10 +147,10 @@ impl GpuGicpInput {
         });
         let mut transfers = positions.upload_transfers();
         transfers.record(TransferDirection::HostToDevice, total * 32);
-        Ok(Self { positions, covariances, weight_scale, transfers })
+        Ok(Self { positions, covariances, weight_scale, covariance_offset: 0, transfers })
     }
 
-    /// All position/tree/covariance payload uploaded at construction.
+    /// Payload copied at construction; GPU-generated covariances add no H2D.
     #[must_use]
     pub const fn upload_transfers(&self) -> TransferStats {
         self.transfers
@@ -224,7 +225,7 @@ impl GpuGicpInput {
             count,
             targets: self.positions.target.query_count(),
             groups,
-            unused: 0,
+            unused: self.covariance_offset,
             bound,
             max_distance,
             scale: self.positions.scale,
@@ -363,7 +364,8 @@ impl GpuGicpNormalEquations {
     /// vec4<f32> actual anchor, then 28 compensated vec2<f32> sums. Terms 0..20
     /// are Hessian upper triangle by row, 21..26 gradient and 27 Euclidean error
     /// normalized by distance squared. Status bits 1/2/4/8 indicate transform,
-    /// match, nonfinite arithmetic and unsupported covariance conditioning.
+    /// match, nonfinite arithmetic and unsupported covariance conditioning;
+    /// bit 16 indicates invalid resident covariance preparation.
     /// Any nonzero status invalidates ALL payload, which is zeroed on device.
     /// GPU consumers must check status and preserve immutable application data.
     #[must_use]
@@ -519,6 +521,9 @@ impl GicpReductionPipelines {
         Self { layout, pipelines }
     }
 }
+
+#[path = "gicp_covariances.rs"]
+pub(crate) mod resident_covariances;
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "gicp_reduction_tests.rs"]

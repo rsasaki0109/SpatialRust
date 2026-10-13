@@ -120,6 +120,21 @@ Relative covariance Cholesky pivots <=1e-6 reject all result payload; no CPU
 fallback occurs. f32 weights/transforms and normalized solving can change
 matching/pose/stopping. See [GICP reduction evidence](../notes/2026-10-13_gpu_gicp_reduction.md).
 
+The same `register-gicp-gpu` feature adds
+`GicpRegistration::align_with_gpu_resident_covariances` and
+`GpuGicpInput::upload_with_gpu_covariances`. Both bounded k-NN searches, centered
+sample covariances and plane eigenvectors run on GPU and remain resident for
+registration. Original positions and target tree are reused; source-tree upload
+is counted. Payload H2D is 32*(S+T+source_nodes+target_nodes); only 256-byte
+equations per evaluation are read back. CPU tree construction/6x6 pose solve
+remain. Requires nonempty clouds, k=3..=64, epsilon as f32 in 1e-4..=1 and
+covariance_radius=None, plus existing reduction limits/valid configuration.
+Malformed neighborhoods or unsupported arithmetic zero all covariance rows;
+equation status bit 16 rejects their use without fallback. f32 eigenvectors,
+small/repeated spectra and CPU raw-product rounding can change results.
+Radius covariance remains the existing explicit readback/re-upload route.
+See [resident covariance evidence](../notes/2026-10-13_gpu_gicp_resident_covariances.md).
+
 `register-icp-point-to-plane-gpu` adds
 `PointToPlaneIcp::align_with_gpu_reduction` and diagnostic iteration history.
 `GpuPointToPlaneInput` under `gpu-wgpu` explicitly retains originals/tree and
@@ -164,7 +179,7 @@ before allocation; no dependency, public signature or image readback is added.
 | `gpu-wgpu` | wgpu runtime and GPU kernels | Explicit GPU operation APIs |
 | `register-icp-gpu` | ICP GPU correspondence search and resident transforms/moment reductions | Explicit correspondence or untrimmed resident reduction API; CPU pose solver |
 | `register-icp-point-to-plane-gpu` | Resident transforms, nearest matching, plane Hessian/gradient/fitness reductions | Raw target normal weights; explicit receipts and CPU 6x6 pose solver |
-| `register-gicp-gpu` | GICP GPU correspondence or resident normal-equation reduction, optional radius covariance | Caller-owned runtime and complete receipts; CPU 6x6 pose solver |
+| `register-gicp-gpu` | GICP correspondence/reductions, resident k-NN or explicit radius covariance | Caller-owned runtime and complete receipts; CPU 6x6 pose solver |
 | `register-fpfh-gpu` | GPU radius search, SPFH and weighted FPFH | Explicit descriptor API and payload receipts; CPU matching/RANSAC |
 | `feature-iss-gpu` | GPU radius graphs, covariance/eigenvalue saliency and local maxima | Explicit detection/receipts; CPU tree, compaction and attribute gathering |
 | `filter-mls-gpu` | GPU radius search, weighted frames and order-0/1/2 surface fits | Explicit smoothing/receipts and per-point outcomes; CPU tree and attribute reconstruction |
