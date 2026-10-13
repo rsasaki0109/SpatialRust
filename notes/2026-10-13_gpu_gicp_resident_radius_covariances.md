@@ -243,4 +243,3 @@ transfers do not imply faster complete calls or a smaller total memory footprint
   `C:\Users\rsasa\Workspace\SpatialRust\target\automation\gpu-gicp-resident-radius-covariances-bench-2.log`.
   Publication files/logs omit the local adapter model. Existing 124 named CI
   checks remain required before merge, together with the pinned parent slice.
-
