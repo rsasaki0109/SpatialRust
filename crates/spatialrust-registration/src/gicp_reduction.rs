@@ -70,6 +70,8 @@ enum CovariancePreparation {
     ResidentGrid(u32),
 }
 
+type TreeBuilder = fn(&[f32], &[f32], &[f32]) -> KdTree;
+
 impl GicpRegistration {
     /// Retains source/target/covariances on GPU for transform, nearest matching,
     /// rotated covariance inverse, Hessian/gradient and Euclidean fitness passes.
@@ -164,6 +166,23 @@ impl GicpRegistration {
         target: &PointCloud,
         preparation: CovariancePreparation,
     ) -> SpatialResult<GpuGicpReductionDiagnostics> {
+        self.align_reduction_with_tree_builder(
+            runtime,
+            source,
+            target,
+            preparation,
+            KdTree::from_slices_parallel,
+        )
+    }
+
+    fn align_reduction_with_tree_builder(
+        &self,
+        runtime: &WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+        preparation: CovariancePreparation,
+        build_tree: TreeBuilder,
+    ) -> SpatialResult<GpuGicpReductionDiagnostics> {
         self.validate_inputs(source, target)?;
         let c = self.config;
         let distance_squared = c.max_correspondence_distance * c.max_correspondence_distance;
@@ -208,7 +227,7 @@ impl GicpRegistration {
         if sx.iter().chain(sy).chain(sz).chain(tx).chain(ty).chain(tz).any(|v| !v.is_finite()) {
             return Err(SpatialError::InvalidArgument("GPU GICP requires finite XYZ".to_owned()));
         }
-        let tree = KdTree::from_slices(tx, ty, tz);
+        let tree = build_tree(tx, ty, tz);
         let mut transfers = TransferStats::default();
         let mut covariance_batches = 0;
         let input = if let CovariancePreparation::ResidentGrid(capacity) = preparation {
@@ -222,7 +241,7 @@ impl GicpRegistration {
                 epsilon,
             )?
         } else if !matches!(preparation, CovariancePreparation::Legacy) {
-            let source_tree = KdTree::from_slices(sx, sy, sz);
+            let source_tree = build_tree(sx, sy, sz);
             covariance_batches = 2;
             match preparation {
                 CovariancePreparation::ResidentKnn => {
@@ -268,7 +287,7 @@ impl GicpRegistration {
                     let tree = if let Some(tree) = tree {
                         tree
                     } else {
-                        built = KdTree::from_slices(x, y, z);
+                        built = build_tree(x, y, z);
                         &built
                     };
                     Ok(covariances(x, y, z, tree, c.k_neighbors, c.epsilon)
@@ -355,3 +374,7 @@ impl GicpRegistration {
         })
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "gicp_tree_build_tests.rs"]
+mod tree_build_tests;

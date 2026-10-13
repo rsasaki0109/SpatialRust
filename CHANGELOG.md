@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit bounded parallel KD-tree construction under search `parallel`
+  and facade `search-parallel`. Disjoint preorder node/point ranges retain exact
+  canonical partition order and search ties, without unsafe, per-worker trees
+  or a node merge. Native large inputs use available-CPU-bounded workers;
+  small/one-worker/WASM builds remain serial. Resident GPU GICP opts into the
+  same preparation with unchanged equations/transfer receipts. Ordinary tree
+  constructors and CPU GICP retain serial placement.
+
 - Add explicit resident grid GICP covariance preparation under
   `register-gicp-gpu`. Reuse original GPU positions and canonical radius-grid
   arithmetic, eliminating source KD-tree preparation, per-point neighborhood
