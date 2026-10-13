@@ -1,4 +1,4 @@
-use super::{covariances, delta_from_solution, update_magnitude, GicpRegistration};
+use super::{delta_from_solution, update_magnitude, GicpRegistration};
 use crate::RegistrationResult;
 use spatialrust_core::{
     HasPositions3, PointCloud, SpatialError, SpatialResult, TransferDirection, TransferStats,
@@ -72,6 +72,9 @@ enum CovariancePreparation {
 
 type TreeBuilder = fn(&[f32], &[f32], &[f32]) -> KdTree;
 
+#[path = "gicp_covariance_preparation.rs"]
+mod covariance_preparation;
+
 impl GicpRegistration {
     /// Retains source/target/covariances on GPU for transform, nearest matching,
     /// rotated covariance inverse, Hessian/gradient and Euclidean fitness passes.
@@ -79,7 +82,10 @@ impl GicpRegistration {
     /// the existing world update/stopping convention. Each evaluation explicitly
     /// downloads 256 bytes; post-update equations feed the next solve/final fitness.
     /// Covariance preparation remains CPU k-NN or explicit radius-GPU readback
-    /// and re-upload with full receipts. No automatic CPU fallback occurs.
+    /// and re-upload with full receipts. CPU k-NN rows are packed directly with
+    /// bounded scoped workers for large native inputs; small/WASM inputs stay
+    /// serial. Per-point neighbor and f64 accumulation order is preserved.
+    /// No automatic CPU fallback occurs.
     /// Configuration/conditioning restrictions are stricter than legacy GICP;
     /// f32 weights, transforms and sums can change pose/matching/stopping.
     pub fn align_with_gpu_reduction(
@@ -290,19 +296,7 @@ impl GicpRegistration {
                         built = build_tree(x, y, z);
                         &built
                     };
-                    Ok(covariances(x, y, z, tree, c.k_neighbors, c.epsilon)
-                        .into_iter()
-                        .map(|m| {
-                            [
-                                m[0][0] as f32,
-                                m[1][1] as f32,
-                                m[2][2] as f32,
-                                m[0][1] as f32,
-                                m[0][2] as f32,
-                                m[1][2] as f32,
-                            ]
-                        })
-                        .collect())
+                    Ok(covariance_preparation::prepare(x, y, z, tree, c.k_neighbors, c.epsilon))
                 }
             };
             let source_cov = prepare(sx, sy, sz, None)?;

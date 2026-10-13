@@ -30,7 +30,7 @@ fn invalid() -> SpatialError {
 fn plan(source: u64, covariance_count: u64, limits: &wgpu::Limits) -> SpatialResult<u32> {
     let groups = source.div_ceil(64).min(256);
     let bound = limits.max_buffer_size.min(u64::from(limits.max_storage_buffer_binding_size));
-    for (count, stride) in [(source, 64), (covariance_count, 32), (groups, 240)] {
+    for (count, stride) in [(source, 48), (covariance_count, 32), (groups, 240)] {
         if count > u64::from(u32::MAX)
             || count
                 .checked_mul(stride)
@@ -56,6 +56,21 @@ fn plan(source: u64, covariance_count: u64, limits: &wgpu::Limits) -> SpatialRes
         return Err(invalid());
     }
     Ok(groups as u32)
+}
+
+// Nearest search finishes before queries become centered position/count rows.
+// The remaining inverse weights/residual use three vec4 rows per source.
+fn acquire_working_buffers(
+    scratch: &mut ScratchBuffers<'_>,
+    count: u32,
+    groups: u32,
+) -> [wgpu::Buffer; 4] {
+    [
+        scratch.acquire("gicp-queries-centered", u64::from(count) * 16),
+        scratch.acquire("gicp-matches", u64::from(count) * 8),
+        scratch.acquire("gicp-weights-residual", u64::from(count) * 48),
+        scratch.acquire("gicp-partials", u64::from(groups) * 240),
+    ]
 }
 
 // Validate exact packed-f32 SPD data in f64 and bound combined inverse weights
@@ -166,6 +181,8 @@ impl GpuGicpInput {
     /// finite inclusive gate, prepares rotated covariance inverse weights and
     /// reduces centered/scaled normal equations and Euclidean fitness. Five
     /// passes share one submission; no payload transfer or host wait occurs.
+    /// After matching, transformed queries become centered position/count rows.
+    /// Private scratch is 72*S + 240*min(ceil(S/64),256) bytes for nonempty S.
     /// GPU Cholesky pivots <=1e-6 of covariance scale reject the whole result,
     /// rather than silently dropping ill-conditioned pairs. f32 arithmetic can
     /// change weights, matches, solutions and stopping relative to CPU f64.
@@ -237,10 +254,8 @@ impl GpuGicpInput {
             usage: wgpu::BufferUsages::UNIFORM,
         });
         let mut scratch = ScratchBuffers::new(runtime);
-        let queries = scratch.acquire("gicp-transformed", u64::from(count) * 16);
-        let matches = scratch.acquire("gicp-matches", u64::from(count) * 8);
-        let pairs = scratch.acquire("gicp-pairs", u64::from(count) * 64);
-        let partials = scratch.acquire("gicp-partials", u64::from(groups) * 240);
+        let [queries, matches, pairs, partials] =
+            acquire_working_buffers(&mut scratch, count, groups);
         let cache = runtime
             .gicp_reduction_pipelines
             .get_or_init(|| GicpReductionPipelines::new(runtime.device()));

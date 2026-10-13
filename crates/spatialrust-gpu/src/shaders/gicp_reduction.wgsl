@@ -5,6 +5,7 @@ struct Params {
 }
 struct Neighbor { index: u32, distance: f32 }
 struct Pair { w0: vec4<f32>, w1: vec4<f32>, p: vec4<f32>, residual: vec4<f32> }
+struct WeightsResidual { w0: vec4<f32>, w1: vec4<f32>, residual: vec4<f32> }
 struct Partial { values: array<vec2<f32>,28>, counts: vec2<u32>, reserved: vec2<u32> }
 struct Equations {
     status: atomic<u32>, count: u32, fitness_count: u32, reserved: u32,
@@ -16,7 +17,7 @@ struct Equations {
 @group(0) @binding(3) var<storage,read_write> queries: array<vec4<f32>>;
 @group(0) @binding(4) var<storage,read> matches: array<Neighbor>;
 @group(0) @binding(5) var<storage,read> covariance_words: array<u32>;
-@group(0) @binding(6) var<storage,read_write> pairs: array<Pair>;
+@group(0) @binding(6) var<storage,read_write> pairs: array<WeightsResidual>;
 @group(0) @binding(7) var<storage,read_write> partials: array<Partial>;
 @group(0) @binding(8) var<storage,read_write> result: Equations;
 var<workgroup> sums: array<vec2<f32>,64>;
@@ -48,45 +49,51 @@ fn transform_source(@builtin(global_invocation_id) id: vec3<u32>) {
     else {queries[i]=vec4<f32>(p,0.0);}
 }
 
-@compute @workgroup_size(64)
-fn prepare_pairs(@builtin(global_invocation_id) id: vec3<u32>) {
-    let i=id.x;if i>=params.count {return;}
-    pairs[i]=Pair(vec4<f32>(0.0),vec4<f32>(0.0),vec4<f32>(0.0),vec4<f32>(0.0));
-    if params.unused!=0u && covariance_words[0]!=0u {atomicOr(&result.status,16u);return;}
+fn prepare_pair(i:u32) -> Pair {
+    let zero=Pair(vec4<f32>(0.0),vec4<f32>(0.0),vec4<f32>(0.0),vec4<f32>(0.0));
+    if params.unused!=0u && covariance_words[0]!=0u {atomicOr(&result.status,16u);return zero;}
     let m=matches[i];
     if m.index==0xffffffffu {
         if m.distance!=bitcast<f32>(0x7f800000u) {atomicOr(&result.status,2u);}
-        return;
+        return zero;
     }
-    if m.index>=params.targets || !(m.distance>=0.0) {atomicOr(&result.status,2u);return;}
-    if m.distance>params.bound || atomicLoad(&result.status)!=0u {return;}
+    if m.index>=params.targets || !(m.distance>=0.0) {atomicOr(&result.status,2u);return zero;}
+    if m.distance>params.bound || atomicLoad(&result.status)!=0u {return zero;}
     let p=queries[i].xyz;let q=target_points[m.index].xyz;
     let anchor=transform_point(params.anchor.xyz);
     let d=(p-anchor)/params.scale;let e=(p-q)/params.max_distance;
-    if !finite3(d) || !finite3(e) {atomicOr(&result.status,4u);return;}
+    if !finite3(d) || !finite3(e) {atomicOr(&result.status,4u);return zero;}
     let r=mat3x3<f32>(vec3<f32>(params.row0.x,params.row1.x,params.row2.x),vec3<f32>(params.row0.y,params.row1.y,params.row2.y),vec3<f32>(params.row0.z,params.row1.z,params.row2.z));
     let c=covariance(params.unused+params.count+m.index)+r*covariance(params.unused+i)*transpose(r);
     let scale=max(c[0][0],max(c[1][1],c[2][2]));
     let factor=scale*params.weight_scale;
-    if !finite(scale) || scale<=0.0 || !finite(factor) || factor<=0.0 {atomicOr(&result.status,4u);return;}
+    if !finite(scale) || scale<=0.0 || !finite(factor) || factor<=0.0 {atomicOr(&result.status,4u);return zero;}
     let xx=c[0][0]/scale;let yy=c[1][1]/scale;let zz=c[2][2]/scale;
     let xy=(0.5*c[0][1]+0.5*c[1][0])/scale;
     let xz=(0.5*c[0][2]+0.5*c[2][0])/scale;
     let yz=(0.5*c[1][2]+0.5*c[2][1])/scale;
-    if xx<=1e-6 {atomicOr(&result.status,8u);return;}
+    if xx<=1e-6 {atomicOr(&result.status,8u);return zero;}
     let l00=sqrt(xx);let l10=xy/l00;let l20=xz/l00;
     let pivot1=yy-l10*l10;
-    if pivot1<=1e-6 {atomicOr(&result.status,8u);return;}
+    if pivot1<=1e-6 {atomicOr(&result.status,8u);return zero;}
     let l11=sqrt(pivot1);let l21=(yz-l20*l10)/l11;
     let pivot2=zz-l20*l20-l21*l21;
-    if pivot2<=1e-6 {atomicOr(&result.status,8u);return;}
+    if pivot2<=1e-6 {atomicOr(&result.status,8u);return zero;}
     let l22=sqrt(pivot2);
     let a=1.0/l00;let b=-l10/(l00*l11);let cc=1.0/l11;
     let dd=(l10*l21/l11-l20)/(l00*l22);let ee=-l21/(l11*l22);let f=1.0/l22;
     let w0=vec4<f32>((a*a+b*b+dd*dd)/factor,(cc*cc+ee*ee)/factor,f*f/factor,(b*cc+dd*ee)/factor);
     let w1=vec4<f32>(dd*f/factor,ee*f/factor,dot3(e,e),0.0);
-    if !finite3(w0.xyz) || !finite(w0.w) || !finite3(w1.xyz) || any(w0.xyz<vec3<f32>(1.1754943508222875e-38)) {atomicOr(&result.status,4u);return;}
-    pairs[i]=Pair(w0,w1,vec4<f32>(d,1.0),vec4<f32>(e,1.0));
+    if !finite3(w0.xyz) || !finite(w0.w) || !finite3(w1.xyz) || any(w0.xyz<vec3<f32>(1.1754943508222875e-38)) {atomicOr(&result.status,4u);return zero;}
+    return Pair(w0,w1,vec4<f32>(d,1.0),vec4<f32>(e,1.0));
+}
+@compute @workgroup_size(64)
+fn prepare_pairs(@builtin(global_invocation_id) id: vec3<u32>) {
+    let i=id.x;if i>=params.count {return;}
+    // Search has finished. Read this invocation's query into a complete local
+    // pair before reusing it; valid/rejected components are each stored once.
+    let pair=prepare_pair(i);
+    queries[i]=pair.p;pairs[i]=WeightsResidual(pair.w0,pair.w1,pair.residual);
 }
 fn column(p: vec3<f32>, i: u32) -> vec3<f32> {
     switch i {case 0u:{return vec3<f32>(0.0,-p.z,p.y);} case 1u:{return vec3<f32>(p.z,0.0,-p.x);} case 2u:{return vec3<f32>(-p.y,p.x,0.0);}
@@ -104,7 +111,7 @@ fn indices(term: u32) -> vec2<u32> {
 fn reduce_partials(@builtin(workgroup_id) group: vec3<u32>,@builtin(local_invocation_index) lane:u32) {
     let term=group.y;let ab=indices(term);var total=vec2<f32>(0.0);var count=vec2<u32>(0u);
     for (var i=group.x*64u+lane;i<params.count;i+=params.groups*64u) {
-        let pair=pairs[i];count+=vec2<u32>(u32(pair.p.w),u32(pair.residual.w));
+        let stored=pairs[i];let pair=Pair(stored.w0,stored.w1,queries[i],stored.residual);count+=vec2<u32>(u32(pair.p.w),u32(pair.residual.w));
         var value=0.0;
         if term<21u {value=dot3(column(pair.p.xyz,ab.x),weighted(pair,column(pair.p.xyz,ab.y)));}
         else if term<27u {value=dot3(column(pair.p.xyz,term-21u),weighted(pair,pair.residual.xyz));}

@@ -310,17 +310,29 @@ fn covariances(x: &[f32], y: &[f32], z: &[f32], tree: &KdTree, k: usize, epsilon
     let len = x.len();
     let mut out = Vec::with_capacity(len);
     for index in 0..len {
-        let neighbors = tree.nearest_k(x[index], y[index], z[index], k);
-        let mut acc = spatialrust_math::CovarianceAccumulator3::new();
-        for neighbor in &neighbors {
-            acc.push(Vec3::new(x[neighbor.index], y[neighbor.index], z[neighbor.index]));
-        }
-        let cov = acc
-            .covariance()
-            .unwrap_or_else(|| Mat3::from_rows([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]));
-        out.push(regularize(cov, epsilon));
+        out.push(covariance_at(x, y, z, tree, index, k, epsilon));
     }
     out
+}
+
+fn covariance_at(
+    x: &[f32],
+    y: &[f32],
+    z: &[f32],
+    tree: &KdTree,
+    index: usize,
+    k: usize,
+    epsilon: f64,
+) -> M3 {
+    let neighbors = tree.nearest_k(x[index], y[index], z[index], k);
+    let mut acc = spatialrust_math::CovarianceAccumulator3::new();
+    for neighbor in &neighbors {
+        acc.push(Vec3::new(x[neighbor.index], y[neighbor.index], z[neighbor.index]));
+    }
+    let cov = acc
+        .covariance()
+        .unwrap_or_else(|| Mat3::from_rows([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]));
+    regularize(cov, epsilon)
 }
 
 /// Replaces a covariance's eigenvalues with (epsilon, 1, 1) to model a planar disk.

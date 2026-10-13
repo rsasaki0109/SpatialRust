@@ -83,16 +83,28 @@ The legacy native shared-runtime covariance route keeps its fallback contract.
 source/target/tree and packed SPD covariances in `GpuGicpInput`. Five device
 passes transform originals, search with the existing unbounded traversal,
 apply the inclusive gate, prepare rotated covariance inverses, and reduce
-Hessian/gradient/Euclidean error. Centered coordinates, distance normalization,
-a target-inverse trace weight bound and compensated sums limit dynamic range.
+Hessian/gradient/Euclidean error. After nearest matching, transformed query rows
+are reused for centered position/count rows; inverse weights and residuals occupy
+48 separate bytes per source. A complete local pair is prepared before each row
+is stored once, including zero rows for rejected pairs. Private working storage
+is 72*S + 240*min(ceil(S/64),256) bytes, down from 88*S plus the same partials.
+The five passes, covariance/geometry checks and compensated sum order remain.
+Centered coordinates, distance normalization, a target-inverse trace weight
+bound and compensated sums limit dynamic range.
 Owned 256-byte equations/status are explicitly downloaded; CPU solves the
 normalized 6x6 system and converts the linearized step to the existing world
 update/stopping convention. Post-update equations serve the next solve/final
 fitness. Covariance preparation stays CPU k-NN or explicit radius-GPU readback
-and re-upload with complete receipts. Unsupported covariance conditioning or
-nonfinite arithmetic invalidates all result payload. GPU f32 math and normalized
+and re-upload with complete receipts. The existing CPU k-NN preparation for this
+GPU entry point uses at most one scoped worker per 16,384 points and available
+CPU parallelism; below 32,768 points, one worker and WASM stay serial. Each row
+retains exact neighbor/accumulation/eigenvector order and packs six f32 components
+directly, avoiding the intermediate 72*S f64 matrix vector. Ordinary CPU GICP
+retains serial placement and the shared per-point math. Unsupported covariance
+conditioning or nonfinite arithmetic invalidates all result payload. GPU f32 math and normalized
 solving can change pose/stopping; ordinary GICP remains unchanged. See
-[GICP reduction evidence](../notes/2026-10-13_gpu_gicp_reduction.md).
+[GICP reduction evidence](../notes/2026-10-13_gpu_gicp_reduction.md) and
+[GICP working-set/preparation evidence](../notes/2026-10-13_gpu_gicp_reuse_transformed_queries.md).
 
 `GicpRegistration::align_with_gpu_resident_covariances` adds explicit k-NN
 preparation before that same resident update loop. `GpuGicpInput::upload_with_gpu_covariances`
