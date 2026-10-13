@@ -30,7 +30,7 @@ fn invalid() -> SpatialError {
 fn plan(source: u64, normal_count: u64, limits: &wgpu::Limits) -> SpatialResult<u32> {
     let groups = source.div_ceil(64).min(256);
     let bound = limits.max_buffer_size.min(u64::from(limits.max_storage_buffer_binding_size));
-    for (count, stride) in [(source, 32), (normal_count, 16), (groups, 240)] {
+    for (count, stride) in [(source, 16), (normal_count, 16), (groups, 240)] {
         if count > u64::from(u32::MAX)
             || count
                 .checked_mul(stride)
@@ -56,6 +56,22 @@ fn plan(source: u64, normal_count: u64, limits: &wgpu::Limits) -> SpatialResult<
         return Err(invalid());
     }
     Ok(groups as u32)
+}
+
+// The transformed queries become rotation Jacobian/residual rows after the
+// nearest-search pass. Only the normal/count half of each pair needs a separate
+// buffer; both halves are fully written before the reductions read them.
+fn acquire_working_buffers(
+    scratch: &mut ScratchBuffers<'_>,
+    count: u32,
+    groups: u32,
+) -> [wgpu::Buffer; 4] {
+    [
+        scratch.acquire("point_to_plane-queries-rotation", u64::from(count) * 16),
+        scratch.acquire("point_to_plane-matches", u64::from(count) * 8),
+        scratch.acquire("point_to_plane-pair-normals", u64::from(count) * 16),
+        scratch.acquire("point_to_plane-partials", u64::from(groups) * 240),
+    ]
 }
 
 /// Reusable explicitly uploaded positions/tree and original-order target normals.
@@ -130,8 +146,11 @@ impl GpuPointToPlaneInput {
     /// Transforms originals, runs unbounded nearest matching then an inclusive
     /// Euclidean distance gate, and reduces centered/scaled Hessian/gradient and
     /// raw-normal point-to-plane squared fitness. Five passes share a submission;
-    /// no payload transfer or host wait occurs. f32 operations can change matches,
-    /// weights, solutions and stopping relative to the existing CPU f64 path.
+    /// no payload transfer or host wait occurs. Transformed query storage is
+    /// reused for rotation/residual rows after matching. Private scratch is
+    /// 40*S + 240*min(ceil(S/64),256) bytes.
+    /// f32 operations can change matches, weights, solutions and stopping
+    /// relative to the existing CPU f64 path.
     pub fn equations_resident(
         &self,
         runtime: &WgpuRuntime,
@@ -200,10 +219,8 @@ impl GpuPointToPlaneInput {
             usage: wgpu::BufferUsages::UNIFORM,
         });
         let mut scratch = ScratchBuffers::new(runtime);
-        let queries = scratch.acquire("point_to_plane-transformed", u64::from(count) * 16);
-        let matches = scratch.acquire("point_to_plane-matches", u64::from(count) * 8);
-        let pairs = scratch.acquire("point_to_plane-pairs", u64::from(count) * 32);
-        let partials = scratch.acquire("point_to_plane-partials", u64::from(groups) * 240);
+        let [queries, matches, pair_normals, partials] =
+            acquire_working_buffers(&mut scratch, count, groups);
         let cache = runtime
             .point_to_plane_reduction_pipelines
             .get_or_init(|| PointToPlaneReductionPipelines::new(runtime.device()));
@@ -214,7 +231,7 @@ impl GpuPointToPlaneInput {
             &queries,
             &matches,
             &self.normals,
-            &pairs,
+            &pair_normals,
             &partials,
             &output.buffer,
         ];

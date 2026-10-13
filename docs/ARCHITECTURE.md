@@ -152,13 +152,21 @@ unbounded nearest search followed by the inclusive Euclidean gate, prepare
 centered/scaled Jacobian rows and reduce the symmetric 6x6 Hessian, gradient and
 raw-normal plane squared error. One common normal scale preserves relative
 length weights and zero rows; there is no per-normal unit normalization.
+After nearest matching completes, each invocation reuses its transformed query
+row for the rotation Jacobian and residual. A separate 16-byte row keeps the
+normal and contribution flag. Nonempty private scratch is
+40*S + 240*min(ceil(S/64),256) bytes, down from 56*S plus the same partials;
+the five-pass ordering and compensated arithmetic stay unchanged. Preparation
+builds a complete local pair and stores each row once, including zeros for
+rejected pairs, before reduction.
 Owned 256-byte equations/status are downloaded explicitly and reused after each
 update. CPU tree construction, normalized 6x6 solve, linearized world-step
 conversion and existing finite pose composition/stopping remain. Receipts count
 16*S + 48*T + 32*M upload bytes and 256 bytes per evaluation. Invalid numeric
 scales, nonfinite arithmetic or mismatched runtimes reject without fallback;
 f32 rounding can change matching, pose and stopping. See
-[point-to-plane evidence](../notes/2026-10-13_gpu_point_to_plane_reduction.md).
+[point-to-plane evidence](../notes/2026-10-13_gpu_point_to_plane_reduction.md) and
+[query storage reuse evidence](../notes/2026-10-13_gpu_plane_reuse_transformed_queries.md).
 
 Reusable finite `GpuQueryBatch` uploads and owned `GpuNeighborhoods` make the
 next feature-compute boundary explicit. GPU KD-tree k-NN/radius search writes
