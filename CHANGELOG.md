@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Halve resident GPU Canny's unrounded horizontal derivative/smoothing storage
+  from 8 to 4 bytes per pixel for apertures 5/7, preserving signed integer values
+  and final rounding. Private scratch falls from 28*N to 24*N, saving another
+  33,177,600 bytes at 4K; stage destination footprints fall from 44*N to 40*N.
+  Aperture 3, public options, edge bytes and explicit transfers retain behavior.
+
 - Parallelize resident Trimmed ICP histogram-bin gathering with a lazy 256-lane
   selector on capable devices from 64 partial groups. The existing 64-lane path
   handles smaller inputs and lower workgroup limits. Stable distance/source-index
