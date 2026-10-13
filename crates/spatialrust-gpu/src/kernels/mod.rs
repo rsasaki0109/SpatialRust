@@ -60,6 +60,7 @@ pub(crate) mod icp_reduction;
 pub use gicp_reduction::{GpuGicpEquations, GpuGicpInput, GpuGicpNormalEquations};
 pub(crate) mod iss;
 pub(crate) mod mls;
+pub use icp_reduction::trim::GpuIcpTrimPrecision;
 pub use icp_reduction::{
     GpuIcpInput, GpuIcpMoments, GpuIcpStatistics, GpuIcpTrimmedMoments, GpuIcpTrimmedStatistics,
 };

@@ -242,7 +242,7 @@ pub use spatialrust_registration::{PointToPlaneIcp, PointToPlaneIcpConfig};
 pub use spatialrust_registration::{GpuPointToPlaneIteration, GpuPointToPlaneReductionDiagnostics};
 
 #[cfg(feature = "register-icp-gpu")]
-pub use spatialrust_registration::GpuIcpReductionDiagnostics;
+pub use spatialrust_registration::{GpuIcpReductionDiagnostics, GpuIcpTrimPrecision};
 
 #[cfg(feature = "register-gicp")]
 pub use spatialrust_registration::{GicpConfig, GicpRegistration};

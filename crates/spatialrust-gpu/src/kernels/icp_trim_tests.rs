@@ -1,6 +1,12 @@
 use super::*;
 use spatialrust_math::{Quat, Vec3};
 
+#[path = "icp_trim_precision_tests.rs"]
+mod precision_tests;
+
+#[path = "icp_trim_math_tests.rs"]
+mod math_tests;
+
 fn read(runtime: &WgpuRuntime, buffer: &wgpu::Buffer, bytes: u64) -> Vec<u32> {
     let staging = runtime.device().create_buffer(&wgpu::BufferDescriptor {
         label: Some("trim-test-readback"),
@@ -514,4 +520,12 @@ fn trimmed_gate_overflow_and_malformed_fixed_readbacks_reject_all_payload() {
         };
         assert!(result.download(&runtime).is_err(), "malformed case {case}");
     }
+}
+
+#[test]
+fn explicit_f32_shader_preserves_the_pinned_previous_source() {
+    assert_eq!(
+        trimmed_shader(),
+        include_str!("../../tests/fixtures/icp_trimmed_f32_previous.wgsl").replace("\r\n", "\n")
+    );
 }

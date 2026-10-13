@@ -165,12 +165,19 @@ impl GpuIcpInput {
         transform: Isometry3<f32>,
         max_distance: f32,
     ) -> SpatialResult<GpuIcpMoments> {
-        self.moments_impl(runtime, transform, max_distance, None)
+        self.moments_impl(
+            runtime,
+            transform,
+            max_distance,
+            None,
+            trim::GpuIcpTrimPrecision::DoubleSingle,
+        )
     }
 
     /// Submits stable GPU selection of the lowest-distance floor(fraction*N)
     /// gated pairs, breaking distance ties by original source index. Moments
-    /// use retained pairs; fitness uses ALL gated pairs. Binary64 fraction
+    /// use retained pairs with DoubleSingle normalized arithmetic; fitness
+    /// uses ALL gated pairs. Binary64 fraction
     /// multiplication/floor is emulated with integer limbs on the device.
     /// No match/point payload readback or host wait occurs. A fraction of one
     /// delegates to the canonical untrimmed kernels; no CPU fallback occurs.
@@ -181,14 +188,41 @@ impl GpuIcpInput {
         max_distance: f32,
         fraction: f64,
     ) -> SpatialResult<GpuIcpTrimmedMoments> {
+        self.trimmed_moments_resident_with_precision(
+            runtime,
+            transform,
+            max_distance,
+            fraction,
+            trim::GpuIcpTrimPrecision::DoubleSingle,
+        )
+    }
+
+    /// Explicit choice of retained-moment arithmetic. DoubleSingle carries
+    /// two f32 words through normalized offsets, division and products; f32
+    /// transforms/search stay unchanged. CompensatedF32 retains the earlier
+    /// coordinate/product precision. Fraction one uses canonical ordinary
+    /// moments for either choice. Transfers/ownership/status rules are identical.
+    pub fn trimmed_moments_resident_with_precision(
+        &self,
+        runtime: &WgpuRuntime,
+        transform: Isometry3<f32>,
+        max_distance: f32,
+        fraction: f64,
+        precision: trim::GpuIcpTrimPrecision,
+    ) -> SpatialResult<GpuIcpTrimmedMoments> {
         if !fraction.is_finite() || fraction <= 0.0 || fraction > 1.0 {
             return Err(SpatialError::InvalidArgument(
                 "trim_fraction must be finite and in (0, 1]".to_owned(),
             ));
         }
         let trimmed = fraction < 1.0;
-        let inner =
-            self.moments_impl(runtime, transform, max_distance, trimmed.then_some(fraction))?;
+        let inner = self.moments_impl(
+            runtime,
+            transform,
+            max_distance,
+            trimmed.then_some(fraction),
+            precision,
+        )?;
         Ok(GpuIcpTrimmedMoments { inner, trimmed })
     }
 
@@ -198,6 +232,7 @@ impl GpuIcpInput {
         transform: Isometry3<f32>,
         max_distance: f32,
         fraction: Option<f64>,
+        precision: trim::GpuIcpTrimPrecision,
     ) -> SpatialResult<GpuIcpMoments> {
         let q = transform.rotation();
         let t = transform.translation();
@@ -266,10 +301,10 @@ impl GpuIcpInput {
         let partials = scratch.acquire("icp-partials", u64::from(groups) * 144);
         let selection = fraction.map(|_| scratch.acquire("icp-trim-selection", 32));
         let cache = if fraction.is_some() {
-            &runtime
+            runtime
                 .icp_trim_pipelines
                 .get_or_init(|| trim::TrimPipelines::new(runtime.device()))
-                .reduction
+                .reduction(runtime.device(), precision)
         } else {
             runtime
                 .icp_reduction_pipelines

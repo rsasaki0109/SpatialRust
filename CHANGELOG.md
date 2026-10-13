@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Improve resident trimmed ICP moment precision with a default DoubleSingle
+  route: integer product residuals and preserved f32 rounding carry two words
+  through coordinate normalization, centroid division and covariance products.
+  Explicit `GpuIcpTrimPrecision::CompensatedF32` retains the earlier arithmetic.
+  Fraction one keeps canonical untrimmed results; matching, all-gated fitness,
+  CPU Horn solving and fixed 176-byte readbacks remain. Large gated registration
+  regressions now enforce the unchanged CPU pose-agreement tolerance.
+
 - Add explicit resident GPU ICP trimming under `register-icp-gpu`. Stable
   distance/source-index selection retains floor(trim_fraction*gated_count)
   pairs for moments while all gated pairs still define fitness/stopping.

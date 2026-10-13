@@ -42,10 +42,22 @@ stopping denominator. A 176-byte result adds the all-gated count in reserved wor
 Private histogram/selection scratch stays leased through the same submission.
 CPU target-tree construction/Horn solving/composition/convergence remain; there
 is no payload readback or fallback. GPU distance rounding can change selection
-near ties compared with CPU, even when retained counts agree. A measured large
-partially gated case exceeds CPU pose-agreement tolerance; the evidence retains
-its error/fitness and does not classify its speed as accuracy-qualified. See
-[resident trimming evidence](../notes/2026-10-13_gpu_icp_resident_trimming.md).
+near ties compared with CPU, even when retained counts agree. See
+[initial resident trimming evidence](../notes/2026-10-13_gpu_icp_resident_trimming.md).
+
+Resident trimming now defaults to `GpuIcpTrimPrecision::DoubleSingle`. Integer
+24x24-bit products retain residuals, and a private runtime zero word in dependent
+bitcasts preserves rounded f32 values through compensated arithmetic. Two f32
+words carry coordinate differences, normalization, mean division and centered
+products, without relying on a fused WGSL `fma`. Explicit `*_with_precision`
+methods offer the previous `CompensatedF32` arithmetic. Reduction pipelines are
+lazy per runtime and precision; the unchanged selector and scratch are shared.
+No new pass, buffer layout, transfer or limit is added. Fraction one delegates
+to canonical ordinary moments for either choice. Transform/search and all-gated
+fitness keep their f32 arithmetic, and CPU solving/composition/convergence remain.
+The earlier large partially gated case now meets the original pose tolerance;
+near-gate/tied/degenerate f32 matching can still change other trajectories. See
+[trimming precision evidence](../notes/2026-10-13_gpu_icp_trimmed_precision.md).
 
 GICP reuses this search through its own explicit GPU entry point, retaining
 unbounded nearest matching before the existing host gate and ordered CPU
