@@ -15,6 +15,7 @@ struct Selection {
 @group(0) @binding(3) var<storage,read_write> selection: Selection;
 var<workgroup> histogram: array<atomic<u32>,256>;
 var<workgroup> totals: array<u32,256>;
+override select_lanes: u32 = 64u;
 
 fn multiply_wide(a: u32, b: u32) -> vec2<u32> {
     let a0=a&65535u; let a1=a>>16u; let b0=b&65535u; let b1=b>>16u;
@@ -90,9 +91,11 @@ fn histogram_prefix(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invo
     }
 }
 
-@compute @workgroup_size(64)
+@compute @workgroup_size(select_lanes)
 fn select_digit(@builtin(local_invocation_index) lane: u32) {
-    for (var digit=lane;digit<256u;digit+=64u) {
+    // A capable device can assign one lane per bin instead of four bins per
+    // lane, without changing integer sums, scratch, barriers or pass count.
+    for (var digit=lane;digit<256u;digit+=select_lanes) {
         var total=0u;
         for (var g=0u;g<params.groups;g+=1u) { total+=histograms[g*256u+digit]; }
         totals[digit]=total;

@@ -66,6 +66,13 @@ pub(crate) struct TrimPipelines {
     layout: wgpu::BindGroupLayout,
     histogram: wgpu::ComputePipeline,
     select: wgpu::ComputePipeline,
+    wide_select: std::sync::OnceLock<wgpu::ComputePipeline>,
+}
+
+fn use_wide_selector(groups: u32, limits: &wgpu::Limits) -> bool {
+    groups >= 64
+        && limits.max_compute_invocations_per_workgroup >= 256
+        && limits.max_compute_workgroup_size_x >= 256
 }
 
 impl TrimPipelines {
@@ -115,7 +122,37 @@ impl TrimPipelines {
             layout,
             histogram,
             select,
+            wide_select: std::sync::OnceLock::new(),
         }
+    }
+
+    fn selector(&self, device: &wgpu::Device, groups: u32) -> &wgpu::ComputePipeline {
+        if !use_wide_selector(groups, &device.limits()) {
+            return &self.select;
+        }
+        self.wide_select.get_or_init(|| {
+            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("icp-trim-wide-selector"),
+                source: wgpu::ShaderSource::Wgsl(SHADER.into()),
+            });
+            let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("icp-trim-wide-selector-layout"),
+                bind_group_layouts: &[&self.layout],
+                push_constant_ranges: &[],
+            });
+            let constants = std::collections::HashMap::from([("select_lanes".to_owned(), 256.0)]);
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("icp-trim-wide-selector"),
+                layout: Some(&layout),
+                module: &shader,
+                entry_point: Some("select_digit"),
+                compilation_options: wgpu::PipelineCompilationOptions {
+                    constants: &constants,
+                    ..Default::default()
+                },
+                cache: None,
+            })
+        })
     }
 
     pub(super) fn reduction(
@@ -143,6 +180,7 @@ impl TrimPipelines {
         selection: &wgpu::Buffer,
     ) {
         let histograms = scratch.acquire("icp-trim-histograms", u64::from(params.groups) * 1024);
+        let select = self.selector(runtime.device(), params.groups);
         encoder.clear_buffer(selection, 0, None);
         // Source indices have known leading zero bytes; do not dispatch those
         // digits. Distance still uses all four bytes, without a quantized cutoff.
@@ -167,7 +205,7 @@ impl TrimPipelines {
                 entries: &entries,
             });
             dispatch(encoder, &self.histogram, &group, params.groups, 1);
-            dispatch(encoder, &self.select, &group, 1, 1);
+            dispatch(encoder, select, &group, 1, 1);
         }
     }
 }

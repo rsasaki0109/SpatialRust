@@ -7,6 +7,9 @@ mod precision_tests;
 #[path = "icp_trim_math_tests.rs"]
 mod math_tests;
 
+#[path = "icp_trim_selector_tests.rs"]
+mod selector_tests;
+
 fn read(runtime: &WgpuRuntime, buffer: &wgpu::Buffer, bytes: u64) -> Vec<u32> {
     let staging = runtime.device().create_buffer(&wgpu::BufferDescriptor {
         label: Some("trim-test-readback"),
@@ -145,7 +148,8 @@ fn integer_fraction_floor_matches_binary64_for_rounding_boundaries_and_large_cou
 fn stable_radix_selection_matches_independent_sort_with_ties_missing_and_boundaries() {
     let runtime = WgpuRuntime::new_headless().unwrap();
     let cache = TrimPipelines::new(runtime.device());
-    for n in [1, 3, 63, 64, 65, 257, 4097, 16385, 65537] {
+    let previous = selector_tests::frozen_cache(&runtime);
+    for n in [1, 3, 63, 64, 65, 257, 4032, 4033, 4096, 4097, 16384, 16385, 65537, 262145] {
         for kind in 0..3 {
             let matches: Vec<[u32; 2]> = (0..n)
                 .map(|i| {
@@ -209,6 +213,19 @@ fn stable_radix_selection_matches_independent_sort_with_ties_missing_and_boundar
                 encoder.copy_buffer_to_buffer(&selection, 0, &owned, 0, 32);
                 scratch.submit_and_recycle(encoder);
                 let actual = read(&runtime, &owned, 32);
+                let old = selector_tests::selection_snapshot(
+                    &runtime,
+                    &previous,
+                    &input,
+                    TrimParams::new(
+                        n as u32,
+                        plan_trim(n as u64, &runtime.device().limits()).unwrap(),
+                        fraction,
+                        1.0,
+                        31,
+                    ),
+                );
+                assert_eq!(actual, old, "frozen n={n} kind={kind} fraction={fraction}");
                 let k = (order.len() as f64 * fraction).floor() as usize;
                 assert_eq!((actual[0] as usize, actual[1] as usize), (order.len(), k));
                 if k > 0 {
