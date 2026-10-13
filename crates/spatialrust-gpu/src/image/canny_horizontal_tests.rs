@@ -28,10 +28,22 @@ fn unrounded_horizontal_extrema_match_both_frozen_layouts_and_integer_reference(
                     ..Default::default()
                 };
                 let observed = snapshot(&runtime, &image, o, None, true);
-                let old =
-                    snapshot_with_cache(&runtime, &image, o, None, true, Some((&previous, false)));
-                let uncompressed =
-                    snapshot_with_cache(&runtime, &image, o, None, true, Some((&original, true)));
+                let old = snapshot_with_cache(
+                    &runtime,
+                    &image,
+                    o,
+                    None,
+                    true,
+                    Some((&previous, FrozenLayout::PackedGradients)),
+                );
+                let uncompressed = snapshot_with_cache(
+                    &runtime,
+                    &image,
+                    o,
+                    None,
+                    true,
+                    Some((&original, FrozenLayout::Unpacked)),
+                );
                 let expected = reference_horizontal(&image, o);
                 assert_eq!(observed.horizontal, expected);
                 assert_eq!(old.horizontal, expected);
@@ -58,8 +70,8 @@ fn packed_horizontal_footprints_keep_exact_gradient_binding_limits() {
         assert_eq!(p.gradient_bytes, 66_355_200);
         assert_eq!(p.horizontal_bytes, if aperture_size == 3 { 8 } else { 33_177_600 });
         assert_eq!(
-            p.gradient_bytes + p.horizontal_bytes + 3 * p.pixel_bytes,
-            if aperture_size == 3 { 165_888_008 } else { 199_065_600 }
+            p.gradient_bytes + p.horizontal_bytes + 2 * p.pixel_bytes,
+            if aperture_size == 3 { 132_710_408 } else { 165_888_000 }
         );
         let mut smaller = limits.clone();
         smaller.max_storage_buffer_binding_size = 66_355_199;

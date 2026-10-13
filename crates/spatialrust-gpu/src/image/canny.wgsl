@@ -12,10 +12,15 @@ struct Gradient { components:u32,magnitude:u32 }
 // Horizontal derivative/smoothing bounds are 765/4080 (5), 2550/16320 (7).
 // Keep both unrounded integer values exactly in the existing signed halves.
 @group(0) @binding(3) var<storage,read_write> horizontal:array<u32>;
-@group(0) @binding(4) var<storage,read_write> states:array<u32>;
+// Low two bits classify pixels; bit 2 flags a weak root touching a strong pixel.
+// Atomic access preserves classification while root markers run concurrently.
+@group(0) @binding(4) var<storage,read_write> states:array<atomic<u32>>;
 @group(0) @binding(5) var<storage,read_write> parent:array<atomic<u32>>;
-@group(0) @binding(6) var<storage,read_write> strong:array<atomic<u32>>;
 @group(0) @binding(7) var output:texture_storage_2d<rgba8uint,write>;
+
+fn classification(index:u32) -> u32 {
+    return atomicLoad(&states[index])&3u;
+}
 
 fn pixel(x:i32,y:i32) -> i32 {
     return i32(textureLoad(source,vec2<i32>(clamp(x,0,i32(params.width)-1),clamp(y,0,i32(params.height)-1)),0).x);
@@ -120,30 +125,30 @@ fn classify(@builtin(global_invocation_id) id:vec3<u32>) {
         if g.magnitude>params.low && directional_maximum(i32(index%params.width),i32(index/params.width),g) {
             state=select(1u,2u,g.magnitude>params.high);
         }
-        states[index]=state;
+        // Overwrite every bit, including stale root flags in recycled scratch.
+        atomicStore(&states[index],state);
         atomicStore(&parent[index],index);
-        atomicStore(&strong[index],0u);
     }
 }
 @compute @workgroup_size(256)
 fn connect(@builtin(global_invocation_id) id:vec3<u32>) {
     for(var index=id.x;index<params.pixels;index=advance(index)) {
-        if states[index]!=1u { continue; }
+        if classification(index)!=1u { continue; }
         let x=index%params.width; let y=index/params.width;
         // Four forward edges enumerate every undirected eight-neighbor edge.
-        if x+1u<params.width && states[index+1u]==1u { unite(index,index+1u); }
+        if x+1u<params.width && classification(index+1u)==1u { unite(index,index+1u); }
         if y+1u<params.height {
             let below=index+params.width;
-            if states[below]==1u { unite(index,below); }
-            if x>0u && states[below-1u]==1u { unite(index,below-1u); }
-            if x+1u<params.width && states[below+1u]==1u { unite(index,below+1u); }
+            if classification(below)==1u { unite(index,below); }
+            if x>0u && classification(below-1u)==1u { unite(index,below-1u); }
+            if x+1u<params.width && classification(below+1u)==1u { unite(index,below+1u); }
         }
     }
 }
 @compute @workgroup_size(256)
 fn mark_roots(@builtin(global_invocation_id) id:vec3<u32>) {
     for(var index=id.x;index<params.pixels;index=advance(index)) {
-        if states[index]!=1u { continue; }
+        if classification(index)!=1u { continue; }
         let r=root(index);
         atomicStore(&parent[index],r);
         let x=index%params.width; let y=index/params.width;
@@ -151,16 +156,17 @@ fn mark_roots(@builtin(global_invocation_id) id:vec3<u32>) {
         let x1=min(x+1u,params.width-1u); let y1=min(y+1u,params.height-1u);
         var seeded=false;
         for(var ny=y0;ny<=y1;ny+=1u) {
-            for(var nx=x0;nx<=x1;nx+=1u) { seeded=seeded || states[ny*params.width+nx]==2u; }
+            for(var nx=x0;nx<=x1;nx+=1u) { seeded=seeded || classification(ny*params.width+nx)==2u; }
         }
-        if seeded { atomicMax(&strong[r],1u); }
+        if seeded { atomicOr(&states[r],4u); }
     }
 }
 @compute @workgroup_size(256)
 fn pack_edges(@builtin(global_invocation_id) id:vec3<u32>) {
     for(var index=id.x;index<params.pixels;index=advance(index)) {
         let r=atomicLoad(&parent[index]);
-        let edge=select(0u,255u,states[index]==2u || (states[index]==1u && atomicLoad(&strong[r])!=0u));
+        let state=classification(index);
+        let edge=select(0u,255u,state==2u || (state==1u && (atomicLoad(&states[r])&4u)!=0u));
         textureStore(output,vec2<i32>(i32(index%params.width),i32(index/params.width)),vec4<u32>(edge,0u,0u,0u));
     }
 }

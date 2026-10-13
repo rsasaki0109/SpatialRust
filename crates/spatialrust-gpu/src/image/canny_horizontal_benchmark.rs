@@ -1,10 +1,11 @@
-//! Paired completed calls against PR #181's eight-byte horizontal rows.
+//! Historical paired completed calls between frozen PR #181 and #183 shaders.
 use super::*;
 use std::time::Instant;
 
 fn measure(
     runtimes: [&WgpuRuntime; 2],
     previous: &CannyPipelines,
+    packed: &CannyPipelines,
     w: usize,
     h: usize,
     profile: u32,
@@ -29,7 +30,7 @@ fn measure(
             let mut output = if variant == 0 {
                 previous_horizontal_canny(runtime, source, o, previous)
             } else {
-                canny_gpu(runtime, source, o).unwrap()
+                previous_state_flags_canny(runtime, source, o, packed)
             };
             let elapsed;
             if stage < 2 {
@@ -82,6 +83,7 @@ fn completed_horizontal_packing_calls() {
     let old = WgpuRuntime::new_headless().unwrap();
     let new = WgpuRuntime::new_headless().unwrap();
     let previous = previous_horizontal_pipelines(&old);
+    let packed = previous_state_flags_pipelines(&new);
     let info = old.adapter_info();
     assert_eq!(info.backend, new.adapter_info().backend);
     assert_eq!(info.device_type, new.adapter_info().device_type);
@@ -106,6 +108,7 @@ fn completed_horizontal_packing_calls() {
         measure(
             [&old, &new],
             &previous,
+            &packed,
             w,
             h,
             profile,

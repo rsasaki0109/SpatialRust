@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Share resident GPU Canny classification and root-neighbor flags in one atomic
+  u32 per pixel, preserving classification bits during concurrent root marking.
+  Remove the separate flag buffer for every aperture: private scratch falls to
+  16*N+8 bytes (3) or 20*N (5/7), saving 33,177,600 bytes at 4K. Four storage
+  buffers suffice; stage destination footprints fall to 32*N/36*N. Five/six
+  passes, exact edge bytes, metadata and explicit image transfers retain behavior.
+
 - Replace the capable-device resident Trimmed ICP selector's linear bin walk
   with an exact 256-bin integer sum tree and eight rank decisions. The wide
   pipeline uses 2 KiB shared storage under the existing limit and adds eight
