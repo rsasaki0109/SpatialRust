@@ -3,7 +3,9 @@ struct Params {
     aperture:u32,l2:u32,low:u32,high:u32,
     smoothing_weights:array<vec4<i32>,2>,derivative:array<vec4<i32>,2>,
 }
-struct Gradient { x:i32,y:i32,magnitude:u32,pad:u32 }
+// Scaled u8 Sobel components are bounded by 1020/12240/10200 (3/5/7).
+// Preserve both signed components exactly in one word, alongside u32 magnitude.
+struct Gradient { components:u32,magnitude:u32 }
 @group(0) @binding(0) var<uniform> params:Params;
 @group(0) @binding(1) var source:texture_2d<u32>;
 @group(0) @binding(2) var<storage,read_write> gradients:array<Gradient>;
@@ -19,6 +21,12 @@ fn pixel(x:i32,y:i32) -> i32 {
 fn magnitude(g:vec2<i32>) -> u32 {
     if params.l2!=0u { return u32(g.x*g.x+g.y*g.y); }
     return u32(abs(g.x)+abs(g.y));
+}
+fn pack_components(g:vec2<i32>) -> u32 {
+    return (u32(g.x)&65535u) | ((u32(g.y)&65535u)<<16u);
+}
+fn unpack_components(value:u32) -> vec2<i32> {
+    return vec2<i32>(i32(value<<16u)>>16u,i32(value)>>16u);
 }
 fn scaled(value:i32) -> i32 {
     if params.aperture!=7u { return value; }
@@ -62,7 +70,8 @@ fn gradient_direct(@builtin(global_invocation_id) id:vec3<u32>) {
         let d=pixel(x-1,y); let f=pixel(x+1,y);
         let g=pixel(x-1,y+1); let h=pixel(x,y+1); let i=pixel(x+1,y+1);
         let gx=c-a+2*(f-d)+i-g; let gy=g+2*h+i-a-2*b-c;
-        gradients[index]=Gradient(gx,gy,magnitude(vec2<i32>(gx,gy)),0u);
+        let derivative=vec2<i32>(gx,gy);
+        gradients[index]=Gradient(pack_components(derivative),magnitude(derivative));
     }
 }
 @compute @workgroup_size(256)
@@ -87,7 +96,7 @@ fn gradient_vertical(@builtin(global_invocation_id) id:vec3<u32>) {
             total+=horizontal[sy*params.width+x]*vec2<i32>(params.smoothing_weights[tap/4u][tap%4u],params.derivative[tap/4u][tap%4u]);
         }
         let g=vec2<i32>(scaled(total.x),scaled(total.y));
-        gradients[index]=Gradient(g.x,g.y,magnitude(g),0u);
+        gradients[index]=Gradient(pack_components(g),magnitude(g));
     }
 }
 fn neighbor_magnitude(x:i32,y:i32) -> u32 {
@@ -95,10 +104,11 @@ fn neighbor_magnitude(x:i32,y:i32) -> u32 {
     return gradients[u32(y)*params.width+u32(x)].magnitude;
 }
 fn directional_maximum(x:i32,y:i32,g:Gradient) -> bool {
-    let ax=u32(abs(g.x)); let ay=u32(abs(g.y))<<15u; let tg22=ax*13573u;
+    let direction=unpack_components(g.components);
+    let ax=u32(abs(direction.x)); let ay=u32(abs(direction.y))<<15u; let tg22=ax*13573u;
     if ay<tg22 { return g.magnitude>neighbor_magnitude(x-1,y) && g.magnitude>=neighbor_magnitude(x+1,y); }
     if ay>tg22+(ax<<16u) { return g.magnitude>neighbor_magnitude(x,y-1) && g.magnitude>=neighbor_magnitude(x,y+1); }
-    let sign=select(1,-1,(g.x^g.y)<0);
+    let sign=select(1,-1,(direction.x^direction.y)<0);
     return g.magnitude>neighbor_magnitude(x-sign,y-1) && g.magnitude>neighbor_magnitude(x+sign,y+1);
 }
 @compute @workgroup_size(256)

@@ -352,15 +352,19 @@ equivalent to full hysteresis while avoiding strong-only union work. There is no
 weak-edge propagation cutoff or host convergence
 readback. Five/six ordered passes share one submission and return an owned
 binary `GpuImage`; blur/grayscale conversion remain explicit caller stages.
-Private scratch requires `28*N+8` bytes for aperture 3 or `36*N` for 5/7.
-The largest binding is `16*N`; five storage buffers and a 96-byte control uniform
+Scaled signed derivatives are bounded by 1020/12240/10200 for 3/5/7 apertures;
+they occupy two exact signed 16-bit halves of a u32. Magnitude remains u32,
+so each private gradient occupies eight bytes. Private scratch requires
+`20*N+8` bytes for aperture 3 or `28*N` for 5/7.
+The largest binding is `8*N`; five storage buffers and a 96-byte control uniform
 are required. Runtime/dimension/signed-coordinate/index/buffer/binding/workgroup
 and profiler checks precede cache/output/scratch allocation. Receipts retain
 exact image upload/readback bytes and count per-stage destination storage
-footprints (44*N or 52*N), rather than repeated in-place atomic traffic.
+footprints (36*N or 44*N), rather than repeated in-place atomic traffic.
 Near-constant or sparse edge geometry affects union cost; device capacity or
 CPU/GPU placement is not selected automatically. See
-[Canny execution evidence](../notes/2026-10-13_gpu_canny.md).
+[Canny execution evidence](../notes/2026-10-13_gpu_canny.md) and
+[compact-gradient evidence](../notes/2026-10-13_gpu_canny_compact_gradients.md).
 
 GPU nearest resize and Sobel validate their runtime identity, positive source/
 output dimensions, signed coordinates, texture/compute/binding limits and one

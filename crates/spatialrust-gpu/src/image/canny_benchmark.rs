@@ -73,7 +73,7 @@ fn measure(
     assert_eq!(receipt.host_to_device_bytes(), (w * h * 4) as u64);
     assert_eq!(
         receipt.gpu_to_gpu_bytes(),
-        (w * h * if aperture_size == 3 { 44 } else { 52 }) as u64
+        (w * h * if aperture_size == 3 { 36 } else { 44 }) as u64
     );
     assert_eq!(receipt.device_to_host_bytes(), ((w * 4).div_ceil(256) * 256 * h) as u64);
     let edges = expected.as_slice().iter().filter(|&&v| v != 0).count();

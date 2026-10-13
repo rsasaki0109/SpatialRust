@@ -34,9 +34,102 @@ fn fixture(w: usize, h: usize, profile: u32) -> Image<u8, 1> {
     Image::try_new(w, h, data).unwrap()
 }
 
+// Frozen PR #180 shader from d5f73a5b263bba9262e2bb3526943168088f02ab.
+// Only the private gradient layout differs; all graph/threshold math is retained.
+fn previous_pipelines(runtime: &WgpuRuntime) -> CannyPipelines {
+    let current =
+        runtime.image_canny_pipelines.get_or_init(|| CannyPipelines::new(runtime.device()));
+    let module = runtime.device().create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("canny-frozen-unpacked"),
+        source: wgpu::ShaderSource::Wgsl(
+            include_str!("../../tests/fixtures/canny_unpacked_previous.wgsl").into(),
+        ),
+    });
+    let layout = runtime.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
+        bind_group_layouts: &[&current.layout],
+        push_constant_ranges: &[],
+    });
+    let pipelines = ENTRIES.map(|entry| {
+        runtime.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some(entry),
+            layout: Some(&layout),
+            module: &module,
+            entry_point: Some(entry),
+            compilation_options: Default::default(),
+            cache: None,
+        })
+    });
+    CannyPipelines { layout: current.layout.clone(), pipelines }
+}
+
+// Test-only previous completed call. The control preparation, buffer/texture
+// acquisition, submission, metadata and receipts match the production boundary.
+fn previous_canny(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    o: GpuCannyOptions,
+    cache: &CannyPipelines,
+) -> GpuImage {
+    source.validate_runtime(runtime).unwrap();
+    let mut p =
+        plan(source.width(), source.height(), source.channels(), o, &runtime.device().limits())
+            .unwrap();
+    p.gradient_bytes *= 2;
+    assert!(
+        p.gradient_bytes
+            <= runtime
+                .device()
+                .limits()
+                .max_buffer_size
+                .min(u64::from(runtime.device().limits().max_storage_buffer_binding_size))
+    );
+    let mut scratch = ScratchBuffers::new(runtime);
+    let work = Work::acquire(&mut scratch, &p);
+    let output = create_texture(runtime, source.width(), source.height(), "canny-previous-output");
+    let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("canny-previous-params"),
+        contents: bytemuck::bytes_of(&p.params),
+        usage: wgpu::BufferUsages::UNIFORM,
+    });
+    let group = work.bind(
+        runtime,
+        cache,
+        &uniform,
+        &source.view(),
+        &output.create_view(&Default::default()),
+    );
+    let mut encoder = runtime.device().create_command_encoder(&Default::default());
+    let indices = pass_indices(o.aperture_size);
+    encode(cache, &group, p.params.groups, indices, &mut encoder, None);
+    scratch.submit_and_recycle(encoder);
+    let mut receipt = source.receipt().clone();
+    for &index in indices {
+        let bytes = match index {
+            0 | 2 => p.gradient_bytes,
+            1 => p.horizontal_bytes,
+            3 => 3 * p.pixel_bytes,
+            5 => 2 * p.pixel_bytes,
+            _ => p.pixel_bytes,
+        };
+        receipt.record_gpu_to_gpu(bytes, STAGES[index]);
+    }
+    GpuImage::from_parts(
+        runtime,
+        source.width(),
+        source.height(),
+        1,
+        output,
+        source.metadata(),
+        receipt,
+    )
+    .unwrap()
+}
+
 #[test]
 fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
     let runtime = WgpuRuntime::new_headless().unwrap();
+    let previous = previous_pipelines(&runtime);
     let (mut calls, mut bytes) = (0, 0);
     for (w, h) in [(1, 1), (1, 37), (37, 1), (2, 3), (17, 19), (65, 33)] {
         for profile in 0..4 {
@@ -65,7 +158,7 @@ fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
                         result.receipt().validate_resident_chain((w * h * 4) as u64).unwrap();
                         assert_eq!(
                             result.receipt().gpu_to_gpu_bytes(),
-                            (w * h * if aperture_size == 3 { 44 } else { 52 }) as u64
+                            (w * h * if aperture_size == 3 { 36 } else { 44 }) as u64
                         );
                         assert_eq!(
                             result.readback_u8::<1>(&runtime).unwrap(),
@@ -73,6 +166,13 @@ fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
                             "{w}x{h} profile={profile} {o:?}"
                         );
                         result.recycle(&runtime);
+                        let mut old = previous_canny(&runtime, &source, o, &previous);
+                        assert_eq!(
+                            old.readback_u8::<1>(&runtime).unwrap(),
+                            expected,
+                            "unpacked {w}x{h} profile={profile} {o:?}"
+                        );
+                        old.recycle(&runtime);
                         calls += 1;
                         bytes += w * h;
                     }
@@ -100,12 +200,28 @@ fn snapshot(
     mask: Option<&[u32]>,
     force_one_group: bool,
 ) -> Snapshot {
+    snapshot_with_cache(runtime, image, o, mask, force_one_group, None)
+}
+
+fn snapshot_with_cache(
+    runtime: &WgpuRuntime,
+    image: &Image<u8, 1>,
+    o: GpuCannyOptions,
+    mask: Option<&[u32]>,
+    force_one_group: bool,
+    previous: Option<&CannyPipelines>,
+) -> Snapshot {
     let source = GpuImage::upload_u8(runtime, image.view()).unwrap();
     let mut p = plan(source.width(), source.height(), 1, o, &runtime.device().limits()).unwrap();
     if force_one_group {
         p.params.groups = 1;
     }
-    let cache = runtime.image_canny_pipelines.get_or_init(|| CannyPipelines::new(runtime.device()));
+    if previous.is_some() {
+        p.gradient_bytes *= 2;
+    }
+    let cache = previous.unwrap_or_else(|| {
+        runtime.image_canny_pipelines.get_or_init(|| CannyPipelines::new(runtime.device()))
+    });
     let mut scratch = ScratchBuffers::new(runtime);
     let work = Work::acquire(&mut scratch, &p);
     let output = create_texture(runtime, source.width(), source.height(), "canny-test-output");
@@ -161,13 +277,21 @@ fn snapshot(
     let mapped = slice.get_mapped_range();
     let words = bytemuck::cast_slice::<u8, u32>(&mapped);
     let n = p.params.pixels as usize;
-    let gradients = words[..4 * n]
-        .chunks_exact(4)
-        .map(|v| [v[0] as i32, v[1] as i32, v[2] as i32, v[3] as i32])
-        .collect();
-    let states = words[4 * n..5 * n].to_vec();
-    let roots = words[5 * n..6 * n].to_vec();
-    let flags = words[6 * n..7 * n].to_vec();
+    let gradient_words = p.gradient_bytes as usize / 4;
+    let gradients = if previous.is_some() {
+        words[..gradient_words]
+            .chunks_exact(4)
+            .map(|v| [v[0] as i32, v[1] as i32, v[2] as i32, v[3] as i32])
+            .collect()
+    } else {
+        words[..gradient_words]
+            .chunks_exact(2)
+            .map(|v| [i32::from(v[0] as i16), i32::from((v[0] >> 16) as i16), v[1] as i32, 0])
+            .collect()
+    };
+    let states = words[gradient_words..gradient_words + n].to_vec();
+    let roots = words[gradient_words + n..gradient_words + 2 * n].to_vec();
+    let flags = words[gradient_words + 2 * n..gradient_words + 3 * n].to_vec();
     drop(mapped);
     staging.unmap();
     let mut output = GpuImage::from_parts(
@@ -327,6 +451,7 @@ fn reference_components(w: usize, h: usize, states: &[u32]) -> (Vec<u32>, Vec<u3
 #[test]
 fn owned_snapshots_match_direct_f64_gradients_nms_and_bfs_roots() {
     let runtime = WgpuRuntime::new_headless().unwrap();
+    let previous = previous_pipelines(&runtime);
     for profile in 0..4 {
         let image = fixture(97, 53, profile);
         for aperture_size in [3, 5, 7] {
@@ -346,6 +471,12 @@ fn owned_snapshots_match_direct_f64_gradients_nms_and_bfs_roots() {
                 assert_eq!(observed.roots, roots);
                 assert_eq!(observed.flags, flags);
                 assert_eq!(observed.edges.as_slice(), edges);
+                let old = snapshot_with_cache(&runtime, &image, o, None, true, Some(&previous));
+                assert_eq!(old.gradients, observed.gradients);
+                assert_eq!(old.states, observed.states);
+                assert_eq!(old.roots, observed.roots);
+                assert_eq!(old.flags, observed.flags);
+                assert_eq!(old.edges, observed.edges);
             }
         }
     }
@@ -417,7 +548,7 @@ fn plan_and_invalid_public_inputs_reject_before_resource_initialization() {
         let mut bad = limits.clone();
         match field {
             0 => bad.max_buffer_size = 95,
-            1 => bad.max_storage_buffer_binding_size = 15,
+            1 => bad.max_storage_buffer_binding_size = 7,
             2 => bad.max_uniform_buffer_binding_size = 95,
             3 => bad.max_compute_invocations_per_workgroup = 255,
             4 => bad.max_compute_workgroup_size_x = 255,
@@ -434,10 +565,28 @@ fn plan_and_invalid_public_inputs_reject_before_resource_initialization() {
         assert!(plan(1, 1, 1, o, &bad).is_err(), "field={field}");
     }
     let mut exact = limits.clone();
-    exact.max_storage_buffer_binding_size = 16;
+    exact.max_storage_buffer_binding_size = 8;
     exact.max_buffer_size = 96;
     assert!(plan(1, 1, 1, o, &exact).is_ok());
     assert!(plan(2, 1, 1, o, &exact).is_err());
+    // An exact 4K binding now admits 4K and rejects an extra row. The tiny
+    // binding also rejects a single pixel beyond capacity, before allocation.
+    exact = limits.clone();
+    exact.max_storage_buffer_binding_size = 3840 * 2160 * 8;
+    for aperture_size in [3, 5, 7] {
+        let o = GpuCannyOptions { aperture_size, ..o };
+        let p = plan(3840, 2160, 1, o, &exact).unwrap();
+        assert_eq!(p.gradient_bytes, 66_355_200);
+        assert_eq!(
+            p.gradient_bytes + p.horizontal_bytes + 3 * p.pixel_bytes,
+            if aperture_size == 3 { 165_888_008 } else { 232_243_200 }
+        );
+        assert!(plan(3840, 2161, 1, o, &exact).is_err());
+        exact.max_storage_buffer_binding_size = 40;
+        assert!(plan(5, 1, 1, o, &exact).is_ok());
+        assert!(plan(6, 1, 1, o, &exact).is_err());
+        exact.max_storage_buffer_binding_size = 3840 * 2160 * 8;
+    }
     let runtime = WgpuRuntime::new_headless().unwrap();
     let other = WgpuRuntime::new_headless().unwrap();
     let image = fixture(17, 19, 1);
@@ -551,14 +700,18 @@ fn roi_metadata_concurrency_profiler_and_gaussian_ai_chain_keep_images_resident(
     );
 }
 
-#[test]
-fn aperture_seven_ties_even_rounding_matches_all_possible_raw_derivatives() {
-    let runtime = WgpuRuntime::new_headless().unwrap();
-    const MAX_RAW: i32 = 163200;
-    let count = (2 * MAX_RAW + 1) as usize;
-    let (w, h) = (512, count.div_ceil(512));
+// Probe the production pack/unpack/scale functions with signed host inputs.
+// Readback copies are encoded while the scratch leases are still exclusive.
+fn gradient_probe(
+    runtime: &WgpuRuntime,
+    values: &[[i32; 2]],
+    count: usize,
+    shader: &str,
+) -> (Vec<i32>, Vec<u32>) {
+    let (w, h) = (512, values.len().div_ceil(512));
+    assert_eq!(values.len(), w * h);
     let image = Image::<u8, 1>::try_new(w, h, vec![0; w * h]).unwrap();
-    let source = GpuImage::upload_u8(&runtime, image.view()).unwrap();
+    let source = GpuImage::upload_u8(runtime, image.view()).unwrap();
     let mut p = plan(
         w as u32,
         h as u32,
@@ -569,27 +722,25 @@ fn aperture_seven_ties_even_rounding_matches_all_possible_raw_derivatives() {
     .unwrap();
     p.params.pixels = count as u32;
     let cache = runtime.image_canny_pipelines.get_or_init(|| CannyPipelines::new(runtime.device()));
-    let mut scratch = ScratchBuffers::new(&runtime);
+    let mut scratch = ScratchBuffers::new(runtime);
     let work = Work::acquire(&mut scratch, &p);
-    let values: Vec<[i32; 4]> = (0..w * h).map(|i| [i as i32 - MAX_RAW, 0, 0, 0]).collect();
-    runtime.queue().write_buffer(&work.gradients, 0, bytemuck::cast_slice(&values));
+    runtime.queue().write_buffer(&work.gradients, 0, bytemuck::cast_slice(values));
     let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: None,
         contents: bytemuck::bytes_of(&p.params),
         usage: wgpu::BufferUsages::UNIFORM,
     });
-    let output = create_texture(&runtime, w as u32, h as u32, "round-test-unused");
+    let output = create_texture(runtime, w as u32, h as u32, "gradient-probe-unused");
     let group = work.bind(
-        &runtime,
+        runtime,
         cache,
         &uniform,
         &source.view(),
         &output.create_view(&Default::default()),
     );
-    let shader=format!("{SHADER}\n@compute @workgroup_size(256) fn test_round_values(@builtin(global_invocation_id) id:vec3<u32>) {{ for(var index=id.x;index<params.pixels;index=advance(index)) {{ gradients[index].y=scaled(gradients[index].x); }} }}");
     let module = runtime.device().create_shader_module(wgpu::ShaderModuleDescriptor {
         label: None,
-        source: wgpu::ShaderSource::Wgsl(shader.into()),
+        source: wgpu::ShaderSource::Wgsl(format!("{SHADER}\n{shader}").into()),
     });
     let layout = runtime.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
@@ -600,13 +751,13 @@ fn aperture_seven_ties_even_rounding_matches_all_possible_raw_derivatives() {
         label: None,
         layout: Some(&layout),
         module: &module,
-        entry_point: Some("test_round_values"),
+        entry_point: Some("probe"),
         compilation_options: Default::default(),
         cache: None,
     });
     let staging = runtime.device().create_buffer(&wgpu::BufferDescriptor {
         label: None,
-        size: p.gradient_bytes,
+        size: p.gradient_bytes + p.pixel_bytes,
         usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
         mapped_at_creation: false,
     });
@@ -618,6 +769,7 @@ fn aperture_seven_ties_even_rounding_matches_all_possible_raw_derivatives() {
         pass.dispatch_workgroups(p.params.groups, 1, 1);
     }
     encoder.copy_buffer_to_buffer(&work.gradients, 0, &staging, 0, p.gradient_bytes);
+    encoder.copy_buffer_to_buffer(&work.states, 0, &staging, p.gradient_bytes, p.pixel_bytes);
     scratch.submit_and_recycle(encoder);
     let slice = staging.slice(..);
     let (sender, receiver) = std::sync::mpsc::channel();
@@ -627,14 +779,81 @@ fn aperture_seven_ties_even_rounding_matches_all_possible_raw_derivatives() {
     runtime.device().poll(wgpu::Maintain::Wait);
     receiver.recv().unwrap().unwrap();
     let mapped = slice.get_mapped_range();
-    let words = bytemuck::cast_slice::<u8, i32>(&mapped);
-    for (i, value) in values.iter().take(count).enumerate() {
-        assert_eq!(words[4 * i + 1], rounded_even(f64::from(value[0]) / 16.0), "raw index={i}");
-    }
+    let words = bytemuck::cast_slice::<u8, u32>(&mapped);
+    let gradients = words[..values.len() * 2].iter().map(|&v| v as i32).collect();
+    let states = words[values.len() * 2..].to_vec();
     drop(mapped);
     staging.unmap();
+    source.recycle(runtime);
+    (gradients, states)
+}
+
+#[test]
+fn aperture_seven_ties_even_rounding_matches_all_possible_raw_derivatives() {
+    let runtime = WgpuRuntime::new_headless().unwrap();
+    const MAX_RAW: i32 = 163200;
+    let count = (2 * MAX_RAW + 1) as usize;
+    let values: Vec<[i32; 2]> =
+        (0..count.div_ceil(512) * 512).map(|i| [i as i32 - MAX_RAW, 0]).collect();
+    let shader = "@compute @workgroup_size(256) fn probe(@builtin(global_invocation_id) id:vec3<u32>) { for(var index=id.x;index<params.pixels;index=advance(index)) { gradients[index].magnitude=u32(scaled(i32(gradients[index].components))); states[index]=0u; } }";
+    let (words, _) = gradient_probe(&runtime, &values, count, shader);
+    for (i, value) in values.iter().take(count).enumerate() {
+        assert_eq!(words[2 * i + 1], rounded_even(f64::from(value[0]) / 16.0), "raw index={i}");
+    }
     eprintln!("GPU_CANNY_ROUND exact_signed_values={count}");
+}
+
+#[test]
+fn packed_components_preserve_every_signed_sixteen_bit_value_and_word_layout() {
+    let runtime = WgpuRuntime::new_headless().unwrap();
+    let values: Vec<[i32; 2]> =
+        (0..65536).map(|i| [i - 32768, ((i * 257 + 17) & 65535) - 32768]).collect();
+    let shader = "@compute @workgroup_size(256) fn probe(@builtin(global_invocation_id) id:vec3<u32>) { for(var index=id.x;index<params.pixels;index=advance(index)) { let g=vec2<i32>(i32(gradients[index].components),i32(gradients[index].magnitude)); let packed=pack_components(g); let decoded=unpack_components(packed); gradients[index]=Gradient(u32(decoded.x),u32(decoded.y)); states[index]=packed; } }";
+    let (words, packed) = gradient_probe(&runtime, &values, values.len(), shader);
+    for (i, &[x, y]) in values.iter().enumerate() {
+        assert_eq!(&words[2 * i..2 * i + 2], &[x, y], "signed index={i}");
+        let expected = u32::from(x as u16) | (u32::from(y as u16) << 16);
+        assert_eq!(packed[i], expected, "packed index={i}");
+    }
+    eprintln!("GPU_CANNY_PACK exact_signed_pairs={}", values.len());
+}
+
+#[test]
+fn packed_gradient_bounds_are_reached_by_extremal_u8_kernels() {
+    let runtime = WgpuRuntime::new_headless().unwrap();
+    for (size, maximum) in [(3, 1020), (5, 12240), (7, 10200)] {
+        for axis in [0, 1] {
+            for sign in [-1, 1] {
+                let data = (0..size * size)
+                    .map(|i| {
+                        let tap = if axis == 0 { i % size } else { i / size };
+                        let coefficient =
+                            choose(size - 2, tap as isize - 1) - choose(size - 2, tap as isize);
+                        if coefficient * sign > 0 {
+                            255
+                        } else {
+                            0
+                        }
+                    })
+                    .collect();
+                let image = Image::<u8, 1>::try_new(size, size, data).unwrap();
+                for l2_gradient in [false, true] {
+                    let o = GpuCannyOptions {
+                        aperture_size: size as u32,
+                        l2_gradient,
+                        ..Default::default()
+                    };
+                    let expected = reference_gradients(&image, o);
+                    let observed = snapshot(&runtime, &image, o, None, false);
+                    assert_eq!(observed.gradients, expected);
+                    assert_eq!(observed.gradients[(size * size) / 2][axis], maximum * sign as i32);
+                }
+            }
+        }
+    }
 }
 
 #[path = "canny_benchmark.rs"]
 mod benchmark;
+#[path = "canny_compact_benchmark.rs"]
+mod compact_benchmark;
