@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Prepare large explicit GPU registration input geometry with bounded native
+  CPU workers, sharing finite-XYZ/bounds scans across ICP, GICP and point-to-plane
+  uploads. Preserve exact nonzero anchors/extents and original point bits;
+  consistently use positive zero for derived zero anchors. Keep small/WASM
+  serial scans and transfer receipts without a new point-sized staging buffer.
+  See `notes/2026-10-14_parallel_gpu_registration_geometry.md`.
+
 - Fuse GICP explicit-upload covariance validation and padded row packing;
   use bounded native CPU workers for large batches with the original per-row
   f64 SPD arithmetic, target weight bound and upload order. Small/WASM inputs

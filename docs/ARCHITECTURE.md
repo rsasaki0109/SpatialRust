@@ -30,6 +30,22 @@ f32 transforms/reductions can change matching, pose and stopping near gates or
 numerically degenerate geometry. See
 [resident ICP evidence](../notes/2026-10-13_gpu_icp_reduction.md).
 
+The shared `GpuIcpInput` upload geometry preparation checks finite XYZ and
+collects per-axis bounds in bounded native chunks, at most one worker per
+65,536 points and available CPU parallelism. Source and target are prepared
+sequentially. Below 262,144 points, one worker and WASM retain the original
+serial scans and skip the CPU-count query. Each worker returns a 24-byte
+bounds summary; no extra point-sized staging vector is introduced. Original f64
+midpoint, difference, square and axis accumulation order remain. Derived zero
+anchors are now consistently `+0` in serial/native/WASM paths;
+input point bits, including signed zeros, remain unchanged. Rust min/max did not
+guarantee a stable sign for equal zeros; nonzero anchors and extents stay exact.
+Existing count/device checks precede this
+work, and geometry errors still precede device input allocation. This shared
+boundary also serves GICP, point-to-plane and resident covariance constructors.
+Payload, input layouts, kernels, result ownership and receipts remain unchanged.
+See [registration geometry evidence](../notes/2026-10-14_parallel_gpu_registration_geometry.md).
+
 `align_with_gpu_trimmed_reduction` and `GpuIcpInput::trimmed_moments_resident`
 extend the resident path with stable MSD selection by device distance and original
 source index. Four distance bytes and the necessary source-index bytes determine
