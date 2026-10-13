@@ -106,8 +106,9 @@ fn plan(
     // Both scaled signed derivatives fit i16; magnitude remains a full u32.
     let gradient_bytes = pixels.checked_mul(8).ok_or_else(invalid)?;
     let pixel_bytes = pixels.checked_mul(4).ok_or_else(invalid)?;
+    // Unrounded 5/7 horizontal derivative and smoothing sums also fit i16.
     let horizontal_bytes =
-        if options.aperture_size == 3 { 8 } else { pixels.checked_mul(8).ok_or_else(invalid)? };
+        if options.aperture_size == 3 { 8 } else { pixels.checked_mul(4).ok_or_else(invalid)? };
     let bound = limits.max_buffer_size.min(u64::from(limits.max_storage_buffer_binding_size));
     if width == 0
         || height == 0

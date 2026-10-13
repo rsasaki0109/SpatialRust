@@ -1,10 +1,11 @@
-//! Paired completed calls against the frozen unpacked PR #180 shader.
+//! Historical gradient comparison between frozen PR #180 and #181 shaders.
 use super::*;
 use std::time::Instant;
 
 fn measure(
     runtimes: [&WgpuRuntime; 2],
     previous: &CannyPipelines,
+    compact: &CannyPipelines,
     w: usize,
     h: usize,
     profile: u32,
@@ -33,7 +34,7 @@ fn measure(
             let mut output = if variant == 0 {
                 previous_canny(runtime, source, o, previous)
             } else {
-                canny_gpu(runtime, source, o).unwrap()
+                previous_horizontal_canny(runtime, source, o, compact)
             };
             let elapsed;
             if full {
@@ -83,6 +84,7 @@ fn completed_compact_gradient_calls() {
     let old = WgpuRuntime::new_headless().unwrap();
     let new = WgpuRuntime::new_headless().unwrap();
     let previous = previous_pipelines(&old);
+    let compact = previous_horizontal_pipelines(&new);
     let info = old.adapter_info();
     assert_eq!(info.backend, new.adapter_info().backend);
     assert_eq!(info.device_type, new.adapter_info().device_type);
@@ -107,6 +109,7 @@ fn completed_compact_gradient_calls() {
         measure(
             [&old, &new],
             &previous,
+            &compact,
             w,
             h,
             profile,

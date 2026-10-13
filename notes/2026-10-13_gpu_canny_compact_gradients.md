@@ -4,6 +4,11 @@ Date: 2026-10-13. Named slice: lossless private gradient packing for the existin
 resident image Canny API. This follows PR #180 without changing its public
 options, thresholds, five/six passes, metadata or explicit transfer contract.
 
+This records PR #181. The later [horizontal-packing slice](2026-10-13_gpu_canny_horizontal_packing.md)
+reduces 5/7 scratch further to 24*N; figures below retain the historical layout.
+The gradient benchmark now compares frozen PR #180/#181 shaders so a later
+production layout cannot silently alter that comparison.
+
 ## Representation and capacity
 
 A u8 Sobel component is bounded by 255 times the positive derivative-weight

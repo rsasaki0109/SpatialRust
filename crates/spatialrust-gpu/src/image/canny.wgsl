@@ -9,7 +9,9 @@ struct Gradient { components:u32,magnitude:u32 }
 @group(0) @binding(0) var<uniform> params:Params;
 @group(0) @binding(1) var source:texture_2d<u32>;
 @group(0) @binding(2) var<storage,read_write> gradients:array<Gradient>;
-@group(0) @binding(3) var<storage,read_write> horizontal:array<vec2<i32>>;
+// Horizontal derivative/smoothing bounds are 765/4080 (5), 2550/16320 (7).
+// Keep both unrounded integer values exactly in the existing signed halves.
+@group(0) @binding(3) var<storage,read_write> horizontal:array<u32>;
 @group(0) @binding(4) var<storage,read_write> states:array<u32>;
 @group(0) @binding(5) var<storage,read_write> parent:array<atomic<u32>>;
 @group(0) @binding(6) var<storage,read_write> strong:array<atomic<u32>>;
@@ -83,7 +85,7 @@ fn gradient_horizontal(@builtin(global_invocation_id) id:vec3<u32>) {
             let value=pixel(x+i32(tap)-i32(params.aperture/2u),y);
             total+=value*vec2<i32>(params.derivative[tap/4u][tap%4u],params.smoothing_weights[tap/4u][tap%4u]);
         }
-        horizontal[index]=total;
+        horizontal[index]=pack_components(total);
     }
 }
 @compute @workgroup_size(256)
@@ -93,7 +95,7 @@ fn gradient_vertical(@builtin(global_invocation_id) id:vec3<u32>) {
         var total=vec2<i32>(0);
         for(var tap=0u;tap<params.aperture;tap+=1u) {
             let sy=u32(clamp(y+i32(tap)-i32(params.aperture/2u),0,i32(params.height)-1));
-            total+=horizontal[sy*params.width+x]*vec2<i32>(params.smoothing_weights[tap/4u][tap%4u],params.derivative[tap/4u][tap%4u]);
+            total+=unpack_components(horizontal[sy*params.width+x])*vec2<i32>(params.smoothing_weights[tap/4u][tap%4u],params.derivative[tap/4u][tap%4u]);
         }
         let g=vec2<i32>(scaled(total.x),scaled(total.y));
         gradients[index]=Gradient(pack_components(g),magnitude(g));
