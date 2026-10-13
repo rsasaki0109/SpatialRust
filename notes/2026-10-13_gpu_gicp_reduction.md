@@ -1,5 +1,11 @@
 # Resident GICP normal-equation reduction
 
+The subsequent [working-set/preparation slice](2026-10-13_gpu_gicp_reuse_transformed_queries.md)
+reuses query storage and reduces nonempty private scratch from 88*S + 240*G
+to 72*S + 240*G. Its GPU-entry-point CPU k-NN preparation directly packs rows
+with bounded workers, retaining the original arithmetic and receipts. The
+execution layout and measurements below describe the initial implementation.
+
 Date: 2026-10-13. Named slice: device transforms, covariance inverse weighting,
 Hessian/gradient and Euclidean error, with an explicit CPU 6x6 solve boundary.
 

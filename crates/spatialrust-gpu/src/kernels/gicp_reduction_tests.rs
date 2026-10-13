@@ -3,6 +3,9 @@ use super::*;
 use spatialrust_math::{solve_linear_system, LeastSquaresResult, Quat, TransformPoint, Vec3};
 use spatialrust_search::NearestNeighborIndex;
 
+#[path = "gicp_reuse_query_tests.rs"]
+mod reuse_query_tests;
+
 fn tree(points: &[[f32; 3]]) -> KdTree {
     let columns: [Vec<_>; 3] = std::array::from_fn(|i| points.iter().map(|p| p[i]).collect());
     KdTree::from_slices(&columns[0], &columns[1], &columns[2])

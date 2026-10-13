@@ -21,6 +21,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse completed GICP transformed queries for centered position/count rows;
+  store each prepared component once and shrink private source-sized scratch
+  from 88 to 72 bytes per point. The five passes, normalized inverse weights,
+  compensated equations, explicit transfers and owned 256-byte results retain
+  their arithmetic. Prepare the existing CPU k-NN covariances for the GPU entry
+  point with bounded scoped workers and direct six-component packing, removing
+  the intermediate f64 matrix vector. Small/WASM and ordinary CPU GICP remain
+  serial. Frozen GPU/CPU word checks and paired public three-update registration
+  measurements cover the change; see `notes/2026-10-13_gpu_gicp_reuse_transformed_queries.md`.
+
 - Reuse point-to-plane GPU ICP transformed queries for rotation Jacobian/residual
   rows after nearest matching. Private per-source scratch drops from 56 to 40
   bytes (16 bytes saved per source), with unchanged partials, five passes,

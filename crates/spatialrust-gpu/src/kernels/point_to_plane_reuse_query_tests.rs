@@ -179,6 +179,9 @@ impl GpuPointToPlaneInput {
 #[path = "point_to_plane_reuse_query_benchmark.rs"]
 mod benchmark;
 
+#[path = "point_to_plane_reuse_query_phase_benchmark.rs"]
+mod phase_benchmark;
+
 type Fixture = (Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 3]>);
 
 fn fixture(n: usize, profile: u32) -> Fixture {
