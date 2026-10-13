@@ -8,6 +8,9 @@ use wgpu::util::DeviceExt;
 
 const RESULT_BYTES: u64 = 256;
 
+#[path = "gicp_upload_preparation.rs"]
+mod upload_preparation;
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Params {
@@ -122,6 +125,9 @@ impl GpuGicpInput {
     /// [xx,yy,zz,xy,xz,yz]. Covariances must be finite SPD in their f32 form.
     /// H2D payload is 48*S + 64*T + 32*M bytes; covariance rows are padded to 32
     /// bytes. A normal finite target-inverse trace scale is required.
+    /// Native large covariance batches use bounded CPU staging workers; each
+    /// row retains its f64 SPD validation and original upload order. Small
+    /// batches and WASM prepare serially, before any device upload.
     pub fn upload(
         runtime: &WgpuRuntime,
         source: &[[f32; 3]],
@@ -138,23 +144,9 @@ impl GpuGicpInput {
             .checked_add(target_covariances.len() as u64)
             .ok_or_else(invalid)?;
         plan(source.len() as u64, total, &runtime.device().limits())?;
-        for covariance in source_covariances {
-            inverse_trace(covariance)?;
-        }
-        let mut bound = 0.0_f64;
-        for covariance in target_covariances {
-            bound = bound.max(inverse_trace(covariance)?);
-        }
-        let weight_scale = bound as f32;
-        if !weight_scale.is_finite() || weight_scale < f32::MIN_POSITIVE {
-            return Err(invalid());
-        }
+        let (packed, weight_scale) =
+            upload_preparation::prepare(source_covariances, target_covariances)?;
         let positions = GpuIcpInput::upload(runtime, source, target)?;
-        let packed: Vec<[f32; 8]> = source_covariances
-            .iter()
-            .chain(target_covariances)
-            .map(|c| [c[0], c[1], c[2], c[3], c[4], c[5], 0.0, 0.0])
-            .collect();
         let covariances = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("gicp-covariances"),
             contents: bytemuck::cast_slice(&packed),

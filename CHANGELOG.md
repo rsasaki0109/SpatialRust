@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Fuse GICP explicit-upload covariance validation and padded row packing;
+  use bounded native CPU workers for large batches with the original per-row
+  f64 SPD arithmetic, target weight bound and upload order. Small/WASM inputs
+  remain serial; device transfers, shaders, equations and receipts are unchanged.
+  See `notes/2026-10-14_parallel_gicp_upload_preparation.md`.
+
 - Reuse completed GICP transformed queries for centered position/count rows;
   store each prepared component once and shrink private source-sized scratch
   from 88 to 72 bytes per point. The five passes, normalized inverse weights,

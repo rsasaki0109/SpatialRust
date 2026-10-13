@@ -106,6 +106,20 @@ solving can change pose/stopping; ordinary GICP remains unchanged. See
 [GICP reduction evidence](../notes/2026-10-13_gpu_gicp_reduction.md) and
 [GICP working-set/preparation evidence](../notes/2026-10-13_gpu_gicp_reuse_transformed_queries.md).
 
+Explicit `GpuGicpInput::upload` validates and packs covariance rows together
+before any device allocation. Native batches use at most one scoped worker per
+16,384 combined source/target covariance rows and available CPU parallelism;
+fewer than 32,768 rows, a single worker and WASM stay serial. Each row keeps
+the original f64 Cholesky/inverse-trace arithmetic and exact f32 components,
+including signed zero and two zero padding words. Only positive finite target
+inverse traces enter the maximum, so splitting that bound changes no rounding.
+Device limits and row counts are checked before staging; covariance errors
+return before GPU input allocation. Packed rows occupy the existing 32*(S+T)
+host bytes and remain live through position upload. Device payload, five passes,
+scratch, weight scale, result/status and receipts are unchanged. GPU-generated
+covariance constructors continue through their existing resident paths. See
+[covariance upload staging evidence](../notes/2026-10-14_parallel_gicp_upload_preparation.md).
+
 `GicpRegistration::align_with_gpu_resident_covariances` adds explicit k-NN
 preparation before that same resident update loop. `GpuGicpInput::upload_with_gpu_covariances`
 uses original positions for both queries and covariance samples, reuses the
