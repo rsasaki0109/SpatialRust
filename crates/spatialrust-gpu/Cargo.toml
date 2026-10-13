@@ -47,7 +47,7 @@ required-features = ["gpu-image"]
 
 [dev-dependencies]
 criterion = { workspace = true }
-spatialrust-vision = { workspace = true, default-features = false, features = ["imgproc-analysis", "imgproc-filter"] }
+spatialrust-vision = { workspace = true, default-features = false, features = ["imgproc-analysis", "imgproc-canny"] }
 rayon = { workspace = true }
 
 [[bench]]

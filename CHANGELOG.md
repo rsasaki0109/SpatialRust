@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit resident Canny edge extraction under `gpu-image`: integer 3/5/7
+  Sobel derivatives, exact L1/L2 threshold and directional tie rules, and complete
+  GPU eight-connected hysteresis via weak unions and root strong-neighbor flags.
+  Five/six passes share one submission; gradients, states and labels remain
+  private on device. Binary output preserves metadata and explicit transfer
+  receipts, with optional pass profiling and pre-allocation capacity checks.
+
 - Add explicit resident Gaussian blur under `gpu-image`, with 1..=4 logical
   channels, 3/5/7 kernels, five border modes and optional two-pass timestamps.
   Q8/Q15 weights and wide integer final sums preserve specialized CPU u8

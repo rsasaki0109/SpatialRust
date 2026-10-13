@@ -1,6 +1,8 @@
 //! GPU-resident packed images with explicit host/device transfers.
 
+pub(crate) mod canny;
 pub(crate) mod clahe;
+pub use canny::{canny_gpu, canny_gpu_profiled, GpuCannyOptions};
 pub use clahe::{clahe_gpu, clahe_gpu_profiled};
 
 pub(crate) mod ai_tensor;
