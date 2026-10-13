@@ -103,7 +103,8 @@ fn plan(
         SpatialError::InvalidArgument("GPU Canny requires a supported nonempty grayscale image, 3/5/7 aperture, finite nonnegative thresholds and bounded buffer/binding/compute limits".to_owned())
     };
     let pixels = u64::from(width) * u64::from(height);
-    let gradient_bytes = pixels.checked_mul(16).ok_or_else(invalid)?;
+    // Both scaled signed derivatives fit i16; magnitude remains a full u32.
+    let gradient_bytes = pixels.checked_mul(8).ok_or_else(invalid)?;
     let pixel_bytes = pixels.checked_mul(4).ok_or_else(invalid)?;
     let horizontal_bytes =
         if options.aperture_size == 3 { 8 } else { pixels.checked_mul(8).ok_or_else(invalid)? };

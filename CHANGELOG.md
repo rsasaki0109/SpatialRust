@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Halve resident GPU Canny gradient storage from 16 to 8 bytes per pixel by
+  packing bounded signed derivatives exactly and retaining full u32 magnitude.
+  Private scratch falls to 20*N+8 bytes for aperture 3 or 28*N for 5/7, saving
+  66,355,200 bytes per 4K call. Buffer capacity checks and destination receipts
+  use the smaller layout; public edge bytes and explicit transfer behavior remain.
+
 - Add explicit resident Canny edge extraction under `gpu-image`: integer 3/5/7
   Sobel derivatives, exact L1/L2 threshold and directional tie rules, and complete
   GPU eight-connected hysteresis via weak unions and root strong-neighbor flags.
