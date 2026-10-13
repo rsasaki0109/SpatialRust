@@ -52,6 +52,21 @@ nonfinite arithmetic invalidates all result payload. GPU f32 math and normalized
 solving can change pose/stopping; ordinary GICP remains unchanged. See
 [GICP reduction evidence](../notes/2026-10-13_gpu_gicp_reduction.md).
 
+`PointToPlaneIcp::align_with_gpu_reduction` under the optional
+`register-icp-point-to-plane-gpu` feature retains original positions/tree and
+raw target normals. Five passes transform originals, perform the existing
+unbounded nearest search followed by the inclusive Euclidean gate, prepare
+centered/scaled Jacobian rows and reduce the symmetric 6x6 Hessian, gradient and
+raw-normal plane squared error. One common normal scale preserves relative
+length weights and zero rows; there is no per-normal unit normalization.
+Owned 256-byte equations/status are downloaded explicitly and reused after each
+update. CPU tree construction, normalized 6x6 solve, linearized world-step
+conversion and existing finite pose composition/stopping remain. Receipts count
+16*S + 48*T + 32*M upload bytes and 256 bytes per evaluation. Invalid numeric
+scales, nonfinite arithmetic or mismatched runtimes reject without fallback;
+f32 rounding can change matching, pose and stopping. See
+[point-to-plane evidence](../notes/2026-10-13_gpu_point_to_plane_reduction.md).
+
 Reusable finite `GpuQueryBatch` uploads and owned `GpuNeighborhoods` make the
 next feature-compute boundary explicit. GPU KD-tree k-NN/radius search writes
 fixed-capacity rows with stored/total counts and original index/distance pairs.

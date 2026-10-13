@@ -34,6 +34,9 @@ pub use icp::{
 #[cfg(feature = "register-icp-point-to-plane")]
 pub use point_to_plane::{PointToPlaneIcp, PointToPlaneIcpConfig};
 
+#[cfg(feature = "register-icp-point-to-plane-gpu")]
+pub use point_to_plane::{GpuPointToPlaneIteration, GpuPointToPlaneReductionDiagnostics};
+
 #[cfg(feature = "register-gicp")]
 pub use gicp::{GicpConfig, GicpRegistration};
 

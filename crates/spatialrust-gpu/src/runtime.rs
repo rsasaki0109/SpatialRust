@@ -30,6 +30,8 @@ pub struct WgpuRuntime {
     pub(crate) mls_pipelines: OnceLock<crate::kernels::mls::MlsPipelines>,
     pub(crate) icp_reduction_pipelines:
         OnceLock<crate::kernels::icp_reduction::IcpReductionPipelines>,
+    pub(crate) point_to_plane_reduction_pipelines:
+        OnceLock<crate::kernels::point_to_plane_reduction::PointToPlaneReductionPipelines>,
     pub(crate) gicp_reduction_pipelines:
         OnceLock<crate::kernels::gicp_reduction::GicpReductionPipelines>,
     pub(crate) point_estimator_pipelines:
@@ -400,6 +402,7 @@ impl WgpuRuntime {
             mls_pipelines: OnceLock::new(),
             icp_reduction_pipelines: OnceLock::new(),
             gicp_reduction_pipelines: OnceLock::new(),
+            point_to_plane_reduction_pipelines: OnceLock::new(),
             point_estimator_pipelines: OnceLock::new(),
             max_gather_channels,
             upload_pool: GpuBufferPool::default(),
