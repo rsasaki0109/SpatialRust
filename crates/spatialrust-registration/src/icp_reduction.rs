@@ -6,7 +6,7 @@ use crate::{kabsch::estimate_rigid_transform_from_moments, RegistrationResult};
 use spatialrust_core::{
     HasPositions3, PointCloud, SpatialError, SpatialResult, TransferDirection, TransferStats,
 };
-use spatialrust_gpu::{GpuIcpInput, GpuIcpTrimmedStatistics, WgpuRuntime};
+use spatialrust_gpu::{GpuIcpInput, GpuIcpTrimPrecision, GpuIcpTrimmedStatistics, WgpuRuntime};
 use spatialrust_search::KdTree;
 
 /// Explicit resident-transform/reduction ICP result and fixed-size transfer receipt.
@@ -37,7 +37,7 @@ impl IcpRegistration {
         source: &PointCloud,
         target: &PointCloud,
     ) -> SpatialResult<GpuIcpReductionDiagnostics> {
-        self.align_reduction_impl(runtime, source, target, false)
+        self.align_reduction_impl(runtime, source, target, false, GpuIcpTrimPrecision::DoubleSingle)
     }
 
     /// Aligns using GPU stable distance/source-index trimming and resident
@@ -54,7 +54,28 @@ impl IcpRegistration {
         source: &PointCloud,
         target: &PointCloud,
     ) -> SpatialResult<GpuIcpReductionDiagnostics> {
-        self.align_reduction_impl(runtime, source, target, true)
+        self.align_with_gpu_trimmed_reduction_with_precision(
+            runtime,
+            source,
+            target,
+            GpuIcpTrimPrecision::DoubleSingle,
+        )
+    }
+
+    /// Aligns with an explicit retained-moment precision choice. DoubleSingle
+    /// (the default resident trimmed route) carries normalized quotient/product
+    /// residuals in two f32 words. CompensatedF32 retains the earlier lower-cost
+    /// arithmetic. Transform/search precision, all-gated fitness, CPU solving
+    /// and explicit fixed-size transfer receipts are the same for both choices.
+    #[cfg(feature = "register-icp-gpu")]
+    pub fn align_with_gpu_trimmed_reduction_with_precision(
+        &self,
+        runtime: &WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+        precision: GpuIcpTrimPrecision,
+    ) -> SpatialResult<GpuIcpReductionDiagnostics> {
+        self.align_reduction_impl(runtime, source, target, true, precision)
     }
 
     fn align_reduction_impl(
@@ -63,6 +84,7 @@ impl IcpRegistration {
         source: &PointCloud,
         target: &PointCloud,
         trimmed: bool,
+        precision: GpuIcpTrimPrecision,
     ) -> SpatialResult<GpuIcpReductionDiagnostics> {
         self.validate_inputs(source, target)?;
         if !trimmed && self.trim_fraction != 1.0 {
@@ -77,11 +99,12 @@ impl IcpRegistration {
         let mut evaluation_batches = 0;
         let mut evaluate = |pose| -> SpatialResult<GpuIcpTrimmedStatistics> {
             let statistics = input
-                .trimmed_moments_resident(
+                .trimmed_moments_resident_with_precision(
                     runtime,
                     pose,
                     self.config.max_correspondence_distance,
                     self.trim_fraction,
+                    precision,
                 )?
                 .download(runtime)?;
             transfers.record(

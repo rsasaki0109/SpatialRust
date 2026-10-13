@@ -60,11 +60,7 @@ fn completed_resident_trimmed_icp_calls() {
             );
             assert!(maximum.is_finite());
             let within_pose_tolerance = maximum < 3e-5;
-            // Preserve adverse large gated cases in the measurements rather
-            // than silently increasing the small-fixture agreement tolerance.
-            if n != 262145 || profile != 1 {
-                assert!(within_pose_tolerance, "n={n} profile={profile} max_pose_error={maximum}");
-            }
+            assert!(within_pose_tolerance, "n={n} profile={profile} max_pose_error={maximum}");
             assert_eq!(expected_gpu.diagnostics.result.iterations, 3);
             assert_eq!(expected_gpu.evaluation_batches, 4);
             for (a, b) in expected_cpu.history.iter().zip(&expected_gpu.diagnostics.history) {

@@ -3,6 +3,19 @@ use super::*;
 
 pub(super) const SHADER: &str = include_str!("../shaders/icp_trim.wgsl");
 
+/// Arithmetic used for retained ICP moments; transform/search remain f32.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum GpuIcpTrimPrecision {
+    /// Canonical f32 normalized coordinates/products with compensated sums.
+    /// Lower arithmetic cost, but coordinate/product rounding can bias moments.
+    CompensatedF32,
+    /// Two f32 words through offsets, normalization, mean division and products.
+    /// Carries quotient/product residuals to reduce moment bias; hardware f32
+    /// transforms/search and their gate/tie precision remain unchanged.
+    #[default]
+    DoubleSingle,
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub(super) struct TrimParams {
@@ -48,7 +61,8 @@ impl TrimParams {
 }
 
 pub(crate) struct TrimPipelines {
-    pub(super) reduction: IcpReductionPipelines,
+    reduction: std::sync::OnceLock<IcpReductionPipelines>,
+    precise: std::sync::OnceLock<IcpReductionPipelines>,
     layout: wgpu::BindGroupLayout,
     histogram: wgpu::ComputePipeline,
     select: wgpu::ComputePipeline,
@@ -96,10 +110,26 @@ impl TrimPipelines {
             })
         });
         Self {
-            reduction: IcpReductionPipelines::with_shader(device, &trimmed_shader(), true),
+            reduction: std::sync::OnceLock::new(),
+            precise: std::sync::OnceLock::new(),
             layout,
             histogram,
             select,
+        }
+    }
+
+    pub(super) fn reduction(
+        &self,
+        device: &wgpu::Device,
+        precision: GpuIcpTrimPrecision,
+    ) -> &IcpReductionPipelines {
+        match precision {
+            GpuIcpTrimPrecision::CompensatedF32 => self.reduction.get_or_init(|| {
+                IcpReductionPipelines::with_shader(device, &trimmed_shader(), true)
+            }),
+            GpuIcpTrimPrecision::DoubleSingle => self.precise.get_or_init(|| {
+                IcpReductionPipelines::with_shader(device, &precise_shader(), true)
+            }),
         }
     }
 
@@ -189,6 +219,64 @@ fn trimmed_shader() -> String {
         "result.count=0u; result.source_anchor=",
         "result.count=0u; result.reserved0=0u; result.source_anchor=",
     );
+    shader
+}
+
+fn precise_shader() -> String {
+    let mut shader = trimmed_shader();
+    shader.push_str(include_str!("../shaders/icp_trim_moments.wgsl"));
+    replace_once(&mut shader, "var value=0.0;", "var value=vec2<f32>(0.0);");
+    replace_once(
+        &mut shader,
+        "value=((p-anchor)/params.scale)[term];",
+        "value=ds_offset(p[term],anchor[term],params.scale);",
+    );
+    replace_once(
+        &mut shader,
+        "value=((q-params.target_anchor.xyz)/params.scale)[term-3u];",
+        "value=ds_offset(q[term-3u],params.target_anchor[term-3u],params.scale);",
+    );
+    replace_once(&mut shader, "value=dot3(d,d);", "value=vec2<f32>(dot3(d,d),0.0);");
+    replace_once(&mut shader, "if !finite(value) {", "if !finite(value.x) || !finite(value.y) {");
+    replace_once(
+        &mut shader,
+        "total=add(total,value);",
+        "if term==15u { total=add(total,value.x); } else { total=precise_merge(total,value); }",
+    );
+    replace_once(&mut shader, "result.values[term]=merge(vec2<f32>(total.x/f32(count),0.0),vec2<f32>(total.y/f32(count),0.0));", "result.values[term]=ds_divide(total,f32(count));");
+    replace_once(
+        &mut shader,
+        "let mean_s=result.values[row].x+result.values[row].y;",
+        "let mean_s=result.values[row];",
+    );
+    replace_once(
+        &mut shader,
+        "let mean_t=result.values[col+3u].x+result.values[col+3u].y;",
+        "let mean_t=result.values[col+3u];",
+    );
+    replace_once(
+        &mut shader,
+        "let s=(queries[i].xyz-result.source_anchor.xyz)/params.scale;",
+        "let s=ds_offset(queries[i][row],result.source_anchor[row],params.scale);",
+    );
+    replace_once(&mut shader, "let t=(target_points[matches[i].index].xyz-result.target_anchor.xyz)/params.scale;", "let t=ds_offset(target_points[matches[i].index][col],result.target_anchor[col],params.scale);");
+    replace_once(
+        &mut shader,
+        "total=add(total,(s[row]-mean_s)*(t[col]-mean_t));",
+        "total=precise_merge(total,ds_product(precise_merge(s,-mean_s),precise_merge(t,-mean_t)));",
+    );
+    replace_once(&mut shader, "if lane<stride { sums[lane]=merge(sums[lane],sums[lane+stride]); counts[lane]+=counts[lane+stride]; }", "if lane<stride { if term==15u { sums[lane]=merge(sums[lane],sums[lane+stride]); } else { sums[lane]=precise_merge(sums[lane],sums[lane+stride]); } counts[lane]+=counts[lane+stride]; }");
+    let group_merge =
+        "for (var g=0u;g<params.groups;g+=1u) { total=merge(total,partials[g].values[term]); }";
+    assert_eq!(shader.matches(group_merge).count(), 2);
+    shader=shader.replacen(group_merge,"for (var g=0u;g<params.groups;g+=1u) { if term==15u { total=merge(total,partials[g].values[term]); } else { total=precise_merge(total,partials[g].values[term]); } }",1);
+    replace_once(
+        &mut shader,
+        "if lane<stride { sums[lane]=merge(sums[lane],sums[lane+stride]); }",
+        "if lane<stride { sums[lane]=precise_merge(sums[lane],sums[lane+stride]); }",
+    );
+    // The remaining group merge belongs to covariance finalization.
+    replace_once(&mut shader, "for (var g=0u;g<params.groups;g+=1u) { total=merge(total,partials[g].values[term]); }", "for (var g=0u;g<params.groups;g+=1u) { total=precise_merge(total,partials[g].values[term]); }");
     shader
 }
 

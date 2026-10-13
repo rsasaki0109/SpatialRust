@@ -51,6 +51,9 @@ pub use fpfh::{
 #[cfg(feature = "register-icp-gpu")]
 pub use icp::{GpuIcpDiagnostics, GpuIcpReductionDiagnostics};
 
+#[cfg(feature = "register-icp-gpu")]
+pub use spatialrust_gpu::GpuIcpTrimPrecision;
+
 #[cfg(feature = "register-gicp-gpu")]
 pub use gicp::{GpuGicpDiagnostics, GpuGicpIteration, GpuGicpReductionDiagnostics};
 
