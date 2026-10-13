@@ -67,6 +67,7 @@ enum CovariancePreparation {
     Legacy,
     ResidentKnn,
     ResidentRadius(u32),
+    ResidentGrid(u32),
 }
 
 impl GicpRegistration {
@@ -132,6 +133,30 @@ impl GicpRegistration {
         )
     }
 
+    /// Prepares radius covariances with CPU counting-sort grids and GPU gather,
+    /// retaining the canonical grid's raw f32 means/central sums/Jacobi sweeps.
+    /// No source KD-tree, per-point neighborhood buffer or covariance readback
+    /// is needed. Positive capacity includes self/duplicates; overflow rejects
+    /// all equations. Configured radius/epsilon and normal-equation constraints
+    /// match the resident-radius API. Dense grids must fit existing cell/device
+    /// limits; no automatic sparse-path/CPU fallback occurs. CPU prepares grids
+    /// and the target tree and solves 6x6 equations. Downloads remain 256 bytes
+    /// per evaluation; all grid-index uploads are included in the receipt.
+    pub fn align_with_gpu_resident_grid_covariances(
+        &self,
+        runtime: &WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+        neighbor_capacity: u32,
+    ) -> SpatialResult<GpuGicpReductionDiagnostics> {
+        self.align_reduction_impl(
+            runtime,
+            source,
+            target,
+            CovariancePreparation::ResidentGrid(neighbor_capacity),
+        )
+    }
+
     fn align_reduction_impl(
         &self,
         runtime: &WgpuRuntime,
@@ -150,7 +175,9 @@ impl GicpRegistration {
         {
             return Err(SpatialError::InvalidArgument("resident GPU GICP covariances require covariance_radius=None, k_neighbors=3..=64 and epsilon (as f32) in 1e-4..=1".to_owned()));
         }
-        if let CovariancePreparation::ResidentRadius(capacity) = preparation {
+        if let CovariancePreparation::ResidentRadius(capacity)
+        | CovariancePreparation::ResidentGrid(capacity) = preparation
+        {
             if capacity == 0
                 || !(1e-4..=1.0).contains(&epsilon)
                 || c.covariance_radius
@@ -184,7 +211,17 @@ impl GicpRegistration {
         let tree = KdTree::from_slices(tx, ty, tz);
         let mut transfers = TransferStats::default();
         let mut covariance_batches = 0;
-        let input = if !matches!(preparation, CovariancePreparation::Legacy) {
+        let input = if let CovariancePreparation::ResidentGrid(capacity) = preparation {
+            covariance_batches = 2;
+            GpuGicpInput::upload_with_gpu_grid_covariances(
+                runtime,
+                (sx, sy, sz),
+                &tree,
+                c.covariance_radius.unwrap(),
+                capacity,
+                epsilon,
+            )?
+        } else if !matches!(preparation, CovariancePreparation::Legacy) {
             let source_tree = KdTree::from_slices(sx, sy, sz);
             covariance_batches = 2;
             match preparation {
@@ -208,7 +245,9 @@ impl GicpRegistration {
                         epsilon,
                     )?
                 }
-                CovariancePreparation::Legacy => unreachable!(),
+                CovariancePreparation::Legacy | CovariancePreparation::ResidentGrid(_) => {
+                    unreachable!()
+                }
             }
         } else {
             let mut prepare = |x: &[f32],

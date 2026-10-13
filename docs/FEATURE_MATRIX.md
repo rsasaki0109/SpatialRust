@@ -147,6 +147,18 @@ differ from grid raw means/sweeps. Upload is 32*(S+T+source_nodes+target_nodes),
 download is only 256 bytes per evaluation; CPU trees and 6x6 solve remain.
 See [resident radius evidence](../notes/2026-10-13_gpu_gicp_resident_radius_covariances.md).
 
+`GicpRegistration::align_with_gpu_resident_grid_covariances` and
+`GpuGicpInput::upload_with_gpu_grid_covariances` prepare radius covariances
+directly from resident original positions and CPU-built counting-sort grids.
+The canonical grid f32 math is retained, with complete support bounded by the
+caller's capacity including self/duplicates. No source KD-tree, neighborhood
+row storage or covariance readback/re-upload is needed. Dense grids must fit
+existing cell/device limits; sparse selection remains explicit. Grid indices
+are leased scratch, covariance/equation outputs owned. Invalid support/data/SPD
+zero all covariances and reject equations. CPU grids/target tree/6x6 solves
+remain; download is 256 bytes per evaluation with complete upload receipts.
+See [resident grid evidence](../notes/2026-10-13_gpu_gicp_resident_grid_covariances.md).
+
 `register-icp-point-to-plane-gpu` adds
 `PointToPlaneIcp::align_with_gpu_reduction` and diagnostic iteration history.
 `GpuPointToPlaneInput` under `gpu-wgpu` explicitly retains originals/tree and

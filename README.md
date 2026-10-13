@@ -681,6 +681,15 @@ Sparse neighborhoods retain the grid route's epsilon*I fallback. CPU tree
 construction and 6x6 solves remain; only 256-byte equations are downloaded.
 See [resident radius evidence](notes/2026-10-13_gpu_gicp_resident_radius_covariances.md).
 
+`align_with_gpu_resident_grid_covariances(&runtime, &source, &target,
+neighbor_capacity)` uses the existing radius-grid covariance math directly on
+resident original positions. CPU builds counting-sort grids and the target
+tree; no source KD-tree or per-point neighborhood buffer is needed. Capacity
+includes self/duplicates and overflow rejects all output. Dense grids must fit
+the existing cell/device limits; choose the bounded radius method explicitly
+for sparse extents. Only 256-byte equations are downloaded per evaluation.
+See [resident grid evidence](notes/2026-10-13_gpu_gicp_resident_grid_covariances.md).
+
 Point-to-plane ICP also exposes
 `PointToPlaneIcp::align_with_gpu_reduction(&runtime, &source, &target)` under
 `register-icp-point-to-plane-gpu`. Transforms, nearest matching and plane

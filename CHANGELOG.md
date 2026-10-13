@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit resident grid GICP covariance preparation under
+  `register-gicp-gpu`. Reuse original GPU positions and canonical radius-grid
+  arithmetic, eliminating source KD-tree preparation, per-point neighborhood
+  buffers and covariance readback/re-upload. CPU counting-sort grids and target
+  tree remain; support capacity includes self/duplicates and overflow rejects
+  all equations. Grid indices use private leased scratch with full receipts.
+  Existing sparse/resident/legacy routes retain their explicit contracts.
+
 - Add explicit resident radius covariance preparation for GICP under
   `register-gicp-gpu`. Inclusive bounded GPU neighborhoods, centered/scaled
   compensated central sums and plane eigenvectors feed resident equations
