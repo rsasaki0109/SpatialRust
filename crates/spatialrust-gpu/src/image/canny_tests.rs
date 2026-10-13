@@ -34,137 +34,16 @@ fn fixture(w: usize, h: usize, profile: u32) -> Image<u8, 1> {
     Image::try_new(w, h, data).unwrap()
 }
 
-// Frozen PR #180 shader from d5f73a5b263bba9262e2bb3526943168088f02ab.
-fn previous_pipelines(runtime: &WgpuRuntime) -> CannyPipelines {
-    source_pipelines(runtime, include_str!("../../tests/fixtures/canny_unpacked_previous.wgsl"))
-}
-
-// Frozen PR #181: compact gradients but the original eight-byte horizontal rows.
-fn previous_horizontal_pipelines(runtime: &WgpuRuntime) -> CannyPipelines {
-    source_pipelines(runtime, include_str!("../../tests/fixtures/canny_horizontal_previous.wgsl"))
-}
-
-fn source_pipelines(runtime: &WgpuRuntime, shader: &str) -> CannyPipelines {
-    let current =
-        runtime.image_canny_pipelines.get_or_init(|| CannyPipelines::new(runtime.device()));
-    let module = runtime.device().create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("canny-frozen-shader"),
-        source: wgpu::ShaderSource::Wgsl(shader.into()),
-    });
-    let layout = runtime.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: None,
-        bind_group_layouts: &[&current.layout],
-        push_constant_ranges: &[],
-    });
-    let pipelines = ENTRIES.map(|entry| {
-        runtime.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some(entry),
-            layout: Some(&layout),
-            module: &module,
-            entry_point: Some(entry),
-            compilation_options: Default::default(),
-            cache: None,
-        })
-    });
-    CannyPipelines { layout: current.layout.clone(), pipelines }
-}
-
-// Test-only previous completed call. The control preparation, buffer/texture
-// acquisition, submission, metadata and receipts match the production boundary.
-fn previous_canny(
-    runtime: &WgpuRuntime,
-    source: &GpuImage,
-    o: GpuCannyOptions,
-    cache: &CannyPipelines,
-) -> GpuImage {
-    frozen_canny(runtime, source, o, cache, true)
-}
-
-fn previous_horizontal_canny(
-    runtime: &WgpuRuntime,
-    source: &GpuImage,
-    o: GpuCannyOptions,
-    cache: &CannyPipelines,
-) -> GpuImage {
-    frozen_canny(runtime, source, o, cache, false)
-}
-
-fn frozen_plan(p: &mut Plan, unpacked_gradients: bool) {
-    if unpacked_gradients {
-        p.gradient_bytes *= 2;
-    }
-    if p.params.aperture != 3 {
-        p.horizontal_bytes = u64::from(p.params.pixels) * 8;
-    }
-}
-
-fn frozen_canny(
-    runtime: &WgpuRuntime,
-    source: &GpuImage,
-    o: GpuCannyOptions,
-    cache: &CannyPipelines,
-    unpacked_gradients: bool,
-) -> GpuImage {
-    source.validate_runtime(runtime).unwrap();
-    let mut p =
-        plan(source.width(), source.height(), source.channels(), o, &runtime.device().limits())
-            .unwrap();
-    frozen_plan(&mut p, unpacked_gradients);
-    assert!(
-        p.gradient_bytes
-            <= runtime
-                .device()
-                .limits()
-                .max_buffer_size
-                .min(u64::from(runtime.device().limits().max_storage_buffer_binding_size))
-    );
-    let mut scratch = ScratchBuffers::new(runtime);
-    let work = Work::acquire(&mut scratch, &p);
-    let output = create_texture(runtime, source.width(), source.height(), "canny-previous-output");
-    let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("canny-previous-params"),
-        contents: bytemuck::bytes_of(&p.params),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
-    let group = work.bind(
-        runtime,
-        cache,
-        &uniform,
-        &source.view(),
-        &output.create_view(&Default::default()),
-    );
-    let mut encoder = runtime.device().create_command_encoder(&Default::default());
-    let indices = pass_indices(o.aperture_size);
-    encode(cache, &group, p.params.groups, indices, &mut encoder, None);
-    scratch.submit_and_recycle(encoder);
-    let mut receipt = source.receipt().clone();
-    for &index in indices {
-        let bytes = match index {
-            0 | 2 => p.gradient_bytes,
-            1 => p.horizontal_bytes,
-            3 => 3 * p.pixel_bytes,
-            5 => 2 * p.pixel_bytes,
-            _ => p.pixel_bytes,
-        };
-        receipt.record_gpu_to_gpu(bytes, STAGES[index]);
-    }
-    GpuImage::from_parts(
-        runtime,
-        source.width(),
-        source.height(),
-        1,
-        output,
-        source.metadata(),
-        receipt,
-    )
-    .unwrap()
-}
+#[path = "canny_frozen.rs"]
+mod frozen;
+use frozen::*;
 
 #[test]
 fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
     let runtime = WgpuRuntime::new_headless().unwrap();
     let previous = previous_pipelines(&runtime);
     let horizontal_previous = previous_horizontal_pipelines(&runtime);
+    let state_previous = previous_state_flags_pipelines(&runtime);
     let (mut calls, mut bytes) = (0, 0);
     for (w, h) in [(1, 1), (1, 37), (37, 1), (2, 3), (17, 19), (65, 33)] {
         for profile in 0..4 {
@@ -193,7 +72,7 @@ fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
                         result.receipt().validate_resident_chain((w * h * 4) as u64).unwrap();
                         assert_eq!(
                             result.receipt().gpu_to_gpu_bytes(),
-                            (w * h * if aperture_size == 3 { 36 } else { 40 }) as u64
+                            (w * h * if aperture_size == 3 { 32 } else { 36 }) as u64
                         );
                         assert_eq!(
                             result.readback_u8::<1>(&runtime).unwrap(),
@@ -216,6 +95,18 @@ fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
                             "horizontal {w}x{h} profile={profile} {o:?}"
                         );
                         horizontal_old.recycle(&runtime);
+                        let mut state_old =
+                            previous_state_flags_canny(&runtime, &source, o, &state_previous);
+                        assert_eq!(
+                            state_old.readback_u8::<1>(&runtime).unwrap(),
+                            expected,
+                            "state flags {w}x{h} profile={profile} {o:?}"
+                        );
+                        assert_eq!(
+                            state_old.receipt().gpu_to_gpu_bytes(),
+                            (w * h * if aperture_size == 3 { 36 } else { 40 }) as u64
+                        );
+                        state_old.recycle(&runtime);
                         calls += 1;
                         bytes += w * h;
                     }
@@ -230,6 +121,7 @@ fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
 struct Snapshot {
     gradients: Vec<[i32; 4]>,
     horizontal: Vec<[i32; 2]>,
+    state_words: Vec<u32>,
     states: Vec<u32>,
     roots: Vec<u32>,
     flags: Vec<u32>,
@@ -253,15 +145,15 @@ fn snapshot_with_cache(
     o: GpuCannyOptions,
     mask: Option<&[u32]>,
     force_one_group: bool,
-    previous: Option<(&CannyPipelines, bool)>,
+    previous: Option<(&CannyPipelines, FrozenLayout)>,
 ) -> Snapshot {
     let source = GpuImage::upload_u8(runtime, image.view()).unwrap();
     let mut p = plan(source.width(), source.height(), 1, o, &runtime.device().limits()).unwrap();
     if force_one_group {
         p.params.groups = 1;
     }
-    if let Some((_, unpacked)) = previous {
-        frozen_plan(&mut p, unpacked);
+    if let Some((_, layout)) = previous {
+        frozen_plan(&mut p, layout);
     }
     let horizontal_bytes =
         if o.aperture_size != 3 && mask.is_none() { p.horizontal_bytes } else { 0 };
@@ -270,19 +162,33 @@ fn snapshot_with_cache(
     });
     let mut scratch = ScratchBuffers::new(runtime);
     let work = Work::acquire(&mut scratch, &p);
+    let strong = previous.is_some().then(|| scratch.acquire("canny-strong-roots", p.pixel_bytes));
+    runtime.queue().write_buffer(&work.states, 0, &vec![0xff; p.pixel_bytes as usize]);
     let output = create_texture(runtime, source.width(), source.height(), "canny-test-output");
     let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: None,
         contents: bytemuck::bytes_of(&p.params),
         usage: wgpu::BufferUsages::UNIFORM,
     });
-    let group = work.bind(
-        runtime,
-        cache,
-        &uniform,
-        &source.view(),
-        &output.create_view(&Default::default()),
-    );
+    let group = if let Some(strong) = &strong {
+        bind_legacy(
+            runtime,
+            cache,
+            &work,
+            strong,
+            &uniform,
+            &source.view(),
+            &output.create_view(&Default::default()),
+        )
+    } else {
+        work.bind(
+            runtime,
+            cache,
+            &uniform,
+            &source.view(),
+            &output.create_view(&Default::default()),
+        )
+    };
     let staging = runtime.device().create_buffer(&wgpu::BufferDescriptor {
         label: None,
         size: p.gradient_bytes + 3 * p.pixel_bytes + horizontal_bytes,
@@ -308,7 +214,11 @@ fn snapshot_with_cache(
         (&work.gradients, 0, p.gradient_bytes),
         (&work.states, p.gradient_bytes, p.pixel_bytes),
         (&work.parent, p.gradient_bytes + p.pixel_bytes, p.pixel_bytes),
-        (&work.strong, p.gradient_bytes + 2 * p.pixel_bytes, p.pixel_bytes),
+        (
+            strong.as_ref().unwrap_or(&work.states),
+            p.gradient_bytes + 2 * p.pixel_bytes,
+            p.pixel_bytes,
+        ),
     ] {
         encoder.copy_buffer_to_buffer(buffer, 0, &staging, offset, bytes);
     }
@@ -333,7 +243,7 @@ fn snapshot_with_cache(
     let words = bytemuck::cast_slice::<u8, u32>(&mapped);
     let n = p.params.pixels as usize;
     let gradient_words = p.gradient_bytes as usize / 4;
-    let gradients = if previous.map(|(_, unpacked)| unpacked).unwrap_or(false) {
+    let gradients = if previous.is_some_and(|(_, layout)| layout == FrozenLayout::Unpacked) {
         words[..gradient_words]
             .chunks_exact(4)
             .map(|v| [v[0] as i32, v[1] as i32, v[2] as i32, v[3] as i32])
@@ -344,11 +254,17 @@ fn snapshot_with_cache(
             .map(|v| [i32::from(v[0] as i16), i32::from((v[0] >> 16) as i16), v[1] as i32, 0])
             .collect()
     };
-    let states = words[gradient_words..gradient_words + n].to_vec();
+    let state_words = words[gradient_words..gradient_words + n].to_vec();
+    let states =
+        state_words.iter().map(|&word| if previous.is_some() { word } else { word & 3 }).collect();
     let roots = words[gradient_words + n..gradient_words + 2 * n].to_vec();
-    let flags = words[gradient_words + 2 * n..gradient_words + 3 * n].to_vec();
+    let flags = words[gradient_words + 2 * n..gradient_words + 3 * n]
+        .iter()
+        .map(|&word| if previous.is_some() { word } else { (word >> 2) & 1 })
+        .collect();
     let horizontal_words = &words[gradient_words + 3 * n..];
-    let horizontal = if previous.is_some() {
+    let horizontal = if previous.is_some_and(|(_, layout)| layout != FrozenLayout::PackedHorizontal)
+    {
         horizontal_words.chunks_exact(2).map(|v| [v[0] as i32, v[1] as i32]).collect()
     } else {
         horizontal_words
@@ -371,7 +287,7 @@ fn snapshot_with_cache(
     let edges = output.readback_u8::<1>(runtime).unwrap();
     output.recycle(runtime);
     source.recycle(runtime);
-    Snapshot { gradients, horizontal, states, roots, flags, edges }
+    Snapshot { gradients, horizontal, state_words, states, roots, flags, edges }
 }
 
 fn choose(n: usize, k: isize) -> i64 {
@@ -560,8 +476,14 @@ fn owned_snapshots_match_direct_f64_gradients_nms_and_bfs_roots() {
                 assert_eq!(observed.roots, roots);
                 assert_eq!(observed.flags, flags);
                 assert_eq!(observed.edges.as_slice(), edges);
-                let old =
-                    snapshot_with_cache(&runtime, &image, o, None, true, Some((&previous, true)));
+                let old = snapshot_with_cache(
+                    &runtime,
+                    &image,
+                    o,
+                    None,
+                    true,
+                    Some((&previous, FrozenLayout::Unpacked)),
+                );
                 let horizontal = reference_horizontal(&image, o);
                 assert_eq!(observed.horizontal, horizontal);
                 assert_eq!(old.horizontal, horizontal);
@@ -576,7 +498,7 @@ fn owned_snapshots_match_direct_f64_gradients_nms_and_bfs_roots() {
                     o,
                     None,
                     true,
-                    Some((&horizontal_previous, false)),
+                    Some((&horizontal_previous, FrozenLayout::PackedGradients)),
                 );
                 assert_eq!(horizontal_old.horizontal, horizontal);
                 assert_eq!(horizontal_old.gradients, observed.gradients);
@@ -664,7 +586,7 @@ fn plan_and_invalid_public_inputs_reject_before_resource_initialization() {
             7 => bad.max_compute_workgroups_per_dimension = 0,
             8 => bad.max_bind_groups = 0,
             9 => bad.max_bindings_per_bind_group = 7,
-            10 => bad.max_storage_buffers_per_shader_stage = 4,
+            10 => bad.max_storage_buffers_per_shader_stage = 3,
             11 => bad.max_uniform_buffers_per_shader_stage = 0,
             12 => bad.max_sampled_textures_per_shader_stage = 0,
             _ => bad.max_storage_textures_per_shader_stage = 0,
@@ -685,8 +607,8 @@ fn plan_and_invalid_public_inputs_reject_before_resource_initialization() {
         let p = plan(3840, 2160, 1, o, &exact).unwrap();
         assert_eq!(p.gradient_bytes, 66_355_200);
         assert_eq!(
-            p.gradient_bytes + p.horizontal_bytes + 3 * p.pixel_bytes,
-            if aperture_size == 3 { 165_888_008 } else { 199_065_600 }
+            p.gradient_bytes + p.horizontal_bytes + 2 * p.pixel_bytes,
+            if aperture_size == 3 { 132_710_408 } else { 165_888_000 }
         );
         assert!(plan(3840, 2161, 1, o, &exact).is_err());
         exact.max_storage_buffer_binding_size = 40;
@@ -902,7 +824,7 @@ fn aperture_seven_ties_even_rounding_matches_all_possible_raw_derivatives() {
     let count = (2 * MAX_RAW + 1) as usize;
     let values: Vec<[i32; 2]> =
         (0..count.div_ceil(512) * 512).map(|i| [i as i32 - MAX_RAW, 0]).collect();
-    let shader = "@compute @workgroup_size(256) fn probe(@builtin(global_invocation_id) id:vec3<u32>) { for(var index=id.x;index<params.pixels;index=advance(index)) { gradients[index].magnitude=u32(scaled(i32(gradients[index].components))); states[index]=0u; } }";
+    let shader = "@compute @workgroup_size(256) fn probe(@builtin(global_invocation_id) id:vec3<u32>) { for(var index=id.x;index<params.pixels;index=advance(index)) { gradients[index].magnitude=u32(scaled(i32(gradients[index].components))); atomicStore(&states[index],0u); } }";
     let (words, _) = gradient_probe(&runtime, &values, count, shader);
     for (i, value) in values.iter().take(count).enumerate() {
         assert_eq!(words[2 * i + 1], rounded_even(f64::from(value[0]) / 16.0), "raw index={i}");
@@ -915,7 +837,7 @@ fn packed_components_preserve_every_signed_sixteen_bit_value_and_word_layout() {
     let runtime = WgpuRuntime::new_headless().unwrap();
     let values: Vec<[i32; 2]> =
         (0..65536).map(|i| [i - 32768, ((i * 257 + 17) & 65535) - 32768]).collect();
-    let shader = "@compute @workgroup_size(256) fn probe(@builtin(global_invocation_id) id:vec3<u32>) { for(var index=id.x;index<params.pixels;index=advance(index)) { let g=vec2<i32>(i32(gradients[index].components),i32(gradients[index].magnitude)); let packed=pack_components(g); let decoded=unpack_components(packed); gradients[index]=Gradient(u32(decoded.x),u32(decoded.y)); states[index]=packed; } }";
+    let shader = "@compute @workgroup_size(256) fn probe(@builtin(global_invocation_id) id:vec3<u32>) { for(var index=id.x;index<params.pixels;index=advance(index)) { let g=vec2<i32>(i32(gradients[index].components),i32(gradients[index].magnitude)); let packed=pack_components(g); let decoded=unpack_components(packed); gradients[index]=Gradient(u32(decoded.x),u32(decoded.y)); atomicStore(&states[index],packed); } }";
     let (words, packed) = gradient_probe(&runtime, &values, values.len(), shader);
     for (i, &[x, y]) in values.iter().enumerate() {
         assert_eq!(&words[2 * i..2 * i + 2], &[x, y], "signed index={i}");
@@ -967,3 +889,6 @@ mod compact_benchmark;
 
 #[path = "canny_horizontal_tests.rs"]
 mod horizontal_tests;
+
+#[path = "canny_state_flags_tests.rs"]
+mod state_flags_tests;

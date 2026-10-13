@@ -135,7 +135,7 @@ fn plan(
         || limits.max_compute_workgroups_per_dimension == 0
         || limits.max_bind_groups == 0
         || limits.max_bindings_per_bind_group < 8
-        || limits.max_storage_buffers_per_shader_stage < 5
+        || limits.max_storage_buffers_per_shader_stage < 4
         || limits.max_uniform_buffers_per_shader_stage == 0
         || limits.max_sampled_textures_per_shader_stage == 0
         || limits.max_storage_textures_per_shader_stage == 0
@@ -178,44 +178,7 @@ pub(crate) struct CannyPipelines {
 
 impl CannyPipelines {
     fn new(device: &wgpu::Device) -> Self {
-        let types: Vec<_> = (0..8)
-            .map(|binding| match binding {
-                0 => wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                1 => wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Uint,
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    multisampled: false,
-                },
-                7 => wgpu::BindingType::StorageTexture {
-                    access: wgpu::StorageTextureAccess::WriteOnly,
-                    format: wgpu::TextureFormat::Rgba8Uint,
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                },
-                _ => wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Storage { read_only: false },
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-            })
-            .collect();
-        let entries: Vec<_> = types
-            .into_iter()
-            .enumerate()
-            .map(|(binding, ty)| wgpu::BindGroupLayoutEntry {
-                binding: binding as u32,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty,
-                count: None,
-            })
-            .collect();
-        let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("canny-layout"),
-            entries: &entries,
-        });
+        let layout = binding_layout(device, false);
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("canny-pipeline-layout"),
             bind_group_layouts: &[&layout],
@@ -239,12 +202,52 @@ impl CannyPipelines {
     }
 }
 
+// The optional fifth buffer is used only by frozen-shader test references.
+fn binding_layout(device: &wgpu::Device, separate_strong: bool) -> wgpu::BindGroupLayout {
+    let entries: Vec<_> = (0..8)
+        .filter(|&binding| separate_strong || binding != 6)
+        .map(|binding| {
+            let ty = match binding {
+                0 => wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                1 => wgpu::BindingType::Texture {
+                    sample_type: wgpu::TextureSampleType::Uint,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
+                },
+                7 => wgpu::BindingType::StorageTexture {
+                    access: wgpu::StorageTextureAccess::WriteOnly,
+                    format: wgpu::TextureFormat::Rgba8Uint,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                },
+                _ => wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: false },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+            };
+            wgpu::BindGroupLayoutEntry {
+                binding,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty,
+                count: None,
+            }
+        })
+        .collect();
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("canny-layout"),
+        entries: &entries,
+    })
+}
+
 struct Work {
     gradients: wgpu::Buffer,
     horizontal: wgpu::Buffer,
     states: wgpu::Buffer,
     parent: wgpu::Buffer,
-    strong: wgpu::Buffer,
 }
 
 impl Work {
@@ -254,7 +257,6 @@ impl Work {
             horizontal: scratch.acquire("canny-horizontal", p.horizontal_bytes),
             states: scratch.acquire("canny-states", p.pixel_bytes),
             parent: scratch.acquire("canny-parents", p.pixel_bytes),
-            strong: scratch.acquire("canny-strong-roots", p.pixel_bytes),
         }
     }
 
@@ -266,7 +268,7 @@ impl Work {
         source: &wgpu::TextureView,
         output: &wgpu::TextureView,
     ) -> wgpu::BindGroup {
-        let buffers = [&self.gradients, &self.horizontal, &self.states, &self.parent, &self.strong];
+        let buffers = [&self.gradients, &self.horizontal, &self.states, &self.parent];
         let mut entries = vec![
             wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
             wgpu::BindGroupEntry {
@@ -391,7 +393,7 @@ fn canny_impl(
         let bytes = match index {
             0 | 2 => p.gradient_bytes,
             1 => p.horizontal_bytes,
-            3 => 3 * p.pixel_bytes,
+            3 => 2 * p.pixel_bytes,
             5 => 2 * p.pixel_bytes,
             _ => p.pixel_bytes,
         };

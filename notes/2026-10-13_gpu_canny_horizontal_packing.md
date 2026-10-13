@@ -3,6 +3,12 @@
 Date: 2026-10-13. Named slice: exact unrounded horizontal derivative/smoothing
 pairs in the existing resident 5/7-aperture image Canny implementation.
 
+This records PR #183 with separate classification/root flags. The later
+[shared-state implementation](2026-10-13_gpu_canny_shared_state_flags.md) removes
+that flag allocation. The historical horizontal benchmark now explicitly runs
+frozen PR #181 and PR #183 layouts, preserving this comparison independently of
+current production code.
+
 ## Bounds and execution
 
 For aperture 5, the horizontal derivative's positive coefficient sum is 3 and
