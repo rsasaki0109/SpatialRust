@@ -8,6 +8,9 @@ use wgpu::util::DeviceExt;
 
 const RESULT_BYTES: u64 = 176;
 
+#[path = "icp_geometry_preparation.rs"]
+mod geometry_preparation;
+
 #[path = "icp_trim.rs"]
 pub(crate) mod trim;
 
@@ -57,24 +60,7 @@ fn plan(count: u64, limits: &wgpu::Limits) -> SpatialResult<u32> {
 }
 
 fn geometry(points: &[[f32; 3]]) -> SpatialResult<([f32; 4], f64)> {
-    if points.iter().flatten().any(|v| !v.is_finite()) {
-        return Err(invalid());
-    }
-    if points.is_empty() {
-        return Ok(([0.0; 4], 0.0));
-    }
-    let mut anchor = [0.0; 4];
-    let mut extent_squared = 0.0;
-    for axis in 0..3 {
-        let lo = points.iter().map(|p| p[axis]).fold(f32::INFINITY, f32::min);
-        let hi = points.iter().map(|p| p[axis]).fold(f32::NEG_INFINITY, f32::max);
-        anchor[axis] = ((f64::from(lo) + f64::from(hi)) * 0.5) as f32;
-        extent_squared += (f64::from(hi) - f64::from(lo)).powi(2);
-    }
-    if !(extent_squared as f32).is_finite() {
-        return Err(invalid());
-    }
-    Ok((anchor, extent_squared))
+    geometry_preparation::prepare(points)
 }
 
 /// Explicitly uploaded source and target for reusable device ICP moments.
@@ -96,6 +82,9 @@ impl GpuIcpInput {
     /// source bytes, 32*T target bytes (tree order plus original order), and
     /// 32*M tree-node bytes. The combined normalization extent must have a normal
     /// finite f32 square; coincident source/target sets use scale 1.
+    /// Derived zero frame anchors use +0 consistently; uploaded original XYZ
+    /// bits, including signed zeros, are preserved. Nonzero anchors and scales
+    /// retain their f64 preparation arithmetic.
     pub fn upload(
         runtime: &WgpuRuntime,
         source: &[[f32; 3]],
@@ -419,6 +408,10 @@ impl GpuIcpMoments {
     /// zero. Terms 0..5 are normalized source/target centroid offsets; 6..14
     /// normalized centered cross-covariance; 15 normalized squared-error sum.
     /// Scale is the input bounding-box diagonal; fitness scale is distance^2.
+    /// Upload geometry canonicalizes derived zero anchors to +0. Earlier
+    /// builds could expose either signed zero from CPU min/max preparation;
+    /// the arithmetic value is unchanged. Transformed anchors follow the
+    /// requested GPU pose arithmetic.
     /// Invalid or zero-match results have all-zero payload (status retained).
     #[must_use]
     pub fn buffer(&self) -> &wgpu::Buffer {
