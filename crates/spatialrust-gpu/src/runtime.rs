@@ -53,6 +53,9 @@ pub struct WgpuRuntime {
     #[cfg(feature = "gpu-image")]
     pub(crate) image_blur_pipeline: OnceLock<crate::image::kernels::box_blur::BlurPipeline>,
     #[cfg(feature = "gpu-image")]
+    pub(crate) image_gaussian_pipelines:
+        OnceLock<crate::image::kernels::gaussian::GaussianPipelines>,
+    #[cfg(feature = "gpu-image")]
     pub(crate) image_spatial_pipelines: OnceLock<crate::image::kernels::spatial::SpatialPipelines>,
     #[cfg(feature = "gpu-image")]
     pub(crate) image_ai_pack_pipeline: OnceLock<crate::image::ai_tensor::AiPackPipeline>,
@@ -244,6 +247,7 @@ impl WgpuRuntime {
     pub fn initialized_image_pipeline_count(&self) -> usize {
         usize::from(self.image_gray_pipeline.get().is_some())
             + usize::from(self.image_blur_pipeline.get().is_some())
+            + usize::from(self.image_gaussian_pipelines.get().is_some())
             + usize::from(self.image_spatial_pipelines.get().is_some())
             + usize::from(self.image_ai_pack_pipeline.get().is_some())
             + usize::from(self.image_histogram_pipelines.get().is_some())
@@ -423,6 +427,8 @@ impl WgpuRuntime {
             image_gray_pipeline: OnceLock::new(),
             #[cfg(feature = "gpu-image")]
             image_blur_pipeline: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_gaussian_pipelines: OnceLock::new(),
             #[cfg(feature = "gpu-image")]
             image_spatial_pipelines: OnceLock::new(),
             #[cfg(feature = "gpu-image")]

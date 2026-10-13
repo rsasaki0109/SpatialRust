@@ -62,7 +62,7 @@ pub(crate) const fn items_per_worker(independent_items: usize, workers: usize) -
 }
 
 /// Selects packed one/three-channel `u8` execution without weakening fallbacks.
-#[cfg(any(feature = "resize", feature = "imgproc-filter", feature = "imgproc-morphology", test))]
+#[cfg(any(feature = "resize", test))]
 #[inline]
 pub(crate) fn is_packed_u8_fast_path<const CHANNELS: usize>(
     input_width: usize,
