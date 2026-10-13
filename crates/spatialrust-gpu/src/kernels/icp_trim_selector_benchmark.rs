@@ -1,4 +1,4 @@
-//! Isolated paired completed selection and full/prepared moment calls.
+//! Historical paired completed PR #181/#182 selection and moment calls.
 use super::*;
 use std::time::Instant;
 
@@ -123,7 +123,8 @@ fn completed_selector_and_moment_calls() {
     let old = WgpuRuntime::new_headless().unwrap();
     let new = WgpuRuntime::new_headless().unwrap();
     old.icp_trim_pipelines.set(frozen_cache(&old)).unwrap_or_else(|_| panic!("fresh cache"));
-    let current = new.icp_trim_pipelines.get_or_init(|| TrimPipelines::new(new.device()));
+    new.icp_trim_pipelines.set(frozen_wide_cache(&new)).unwrap_or_else(|_| panic!("fresh cache"));
+    let current = new.icp_trim_pipelines.get().unwrap();
     let previous = old.icp_trim_pipelines.get().unwrap();
     let info = old.adapter_info();
     assert_eq!(info.backend, new.adapter_info().backend);

@@ -2,12 +2,22 @@
 use super::*;
 
 pub(super) fn frozen_cache(runtime: &WgpuRuntime) -> TrimPipelines {
+    source_cache(
+        runtime,
+        include_str!("../../tests/fixtures/icp_trim_selector_previous.wgsl"),
+        false,
+    )
+}
+
+pub(super) fn frozen_wide_cache(runtime: &WgpuRuntime) -> TrimPipelines {
+    source_cache(runtime, include_str!("../../tests/fixtures/icp_trim_tree_previous.wgsl"), true)
+}
+
+fn source_cache(runtime: &WgpuRuntime, source: &str, wide: bool) -> TrimPipelines {
     let mut cache = TrimPipelines::new(runtime.device());
     let module = runtime.device().create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("frozen-trim-selector"),
-        source: wgpu::ShaderSource::Wgsl(
-            include_str!("../../tests/fixtures/icp_trim_selector_previous.wgsl").into(),
-        ),
+        source: wgpu::ShaderSource::Wgsl(source.into()),
     });
     let layout = runtime.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
@@ -26,8 +36,23 @@ pub(super) fn frozen_cache(runtime: &WgpuRuntime) -> TrimPipelines {
     });
     cache.histogram = histogram;
     cache.select = select;
-    // Preserve the frozen 64-lane selector even on wide-capable devices.
-    cache.wide_select.set(cache.select.clone()).unwrap();
+    let wide_select = if wide && use_wide_selector(64, &runtime.device().limits()) {
+        let constants = std::collections::HashMap::from([("select_lanes".to_owned(), 256.0)]);
+        runtime.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("frozen-wide-selector"),
+            layout: Some(&layout),
+            module: &module,
+            entry_point: Some("select_digit"),
+            compilation_options: wgpu::PipelineCompilationOptions {
+                constants: &constants,
+                ..Default::default()
+            },
+            cache: None,
+        })
+    } else {
+        cache.select.clone()
+    };
+    cache.wide_select.set(wide_select).unwrap();
     cache
 }
 
@@ -191,6 +216,7 @@ fn every_digit_matches_frozen_selector_and_u64_prefixes_through_maximum_mass() {
     let runtime = WgpuRuntime::new_headless().unwrap();
     let current = TrimPipelines::new(runtime.device());
     let previous = frozen_cache(&runtime);
+    let previous_wide = frozen_wide_cache(&runtime);
     let mut comparisons = 0;
     for groups in [1, 2, 63, 64, 65, 255, 256] {
         for profile in 0..4 {
@@ -226,6 +252,9 @@ fn every_digit_matches_frozen_selector_and_u64_prefixes_through_maximum_mass() {
                     let actual = digit_snapshot(&runtime, &current, params, &histogram, initial);
                     let old = digit_snapshot(&runtime, &previous, params, &histogram, initial);
                     assert_eq!(actual, old, "groups={groups} profile={profile} step={step}");
+                    let wide =
+                        digit_snapshot(&runtime, &previous_wide, params, &histogram, initial);
+                    assert_eq!(actual, wide, "wide groups={groups} profile={profile} step={step}");
                     let mut expected = initial;
                     if step == 0 {
                         expected[0] = mass as u32;
@@ -258,3 +287,6 @@ fn every_digit_matches_frozen_selector_and_u64_prefixes_through_maximum_mass() {
 
 #[path = "icp_trim_selector_benchmark.rs"]
 mod benchmark;
+
+#[path = "icp_trim_tree_tests.rs"]
+mod tree_tests;

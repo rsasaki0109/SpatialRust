@@ -149,6 +149,7 @@ fn stable_radix_selection_matches_independent_sort_with_ties_missing_and_boundar
     let runtime = WgpuRuntime::new_headless().unwrap();
     let cache = TrimPipelines::new(runtime.device());
     let previous = selector_tests::frozen_cache(&runtime);
+    let previous_wide = selector_tests::frozen_wide_cache(&runtime);
     for n in [1, 3, 63, 64, 65, 257, 4032, 4033, 4096, 4097, 16384, 16385, 65537, 262145] {
         for kind in 0..3 {
             let matches: Vec<[u32; 2]> = (0..n)
@@ -226,6 +227,19 @@ fn stable_radix_selection_matches_independent_sort_with_ties_missing_and_boundar
                     ),
                 );
                 assert_eq!(actual, old, "frozen n={n} kind={kind} fraction={fraction}");
+                let wide = selector_tests::selection_snapshot(
+                    &runtime,
+                    &previous_wide,
+                    &input,
+                    TrimParams::new(
+                        n as u32,
+                        plan_trim(n as u64, &runtime.device().limits()).unwrap(),
+                        fraction,
+                        1.0,
+                        31,
+                    ),
+                );
+                assert_eq!(actual, wide, "wide n={n} kind={kind} fraction={fraction}");
                 let k = (order.len() as f64 * fraction).floor() as usize;
                 assert_eq!((actual[0] as usize, actual[1] as usize), (order.len(), k));
                 if k > 0 {

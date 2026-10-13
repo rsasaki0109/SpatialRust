@@ -45,14 +45,18 @@ is no payload readback or fallback. GPU distance rounding can change selection
 near ties compared with CPU, even when retained counts agree. See
 [initial resident trimming evidence](../notes/2026-10-13_gpu_icp_resident_trimming.md).
 
-Trim digit selection retains the same single-workgroup integer reduction and
-ascending-bin rank walk, but uses 256 lanes (one bin per lane) when there are
+Trim digit selection uses 256 lanes (one bin per lane) when there are
 at least 64 partial histogram groups and the device supports 256 invocations
-and x lanes. Other inputs/devices retain 64 lanes (four bins per lane).
-The wide selector is separately lazy per runtime. Histogram group counts,
-256 KiB maximum histogram scratch, barriers, digit/pass count, tie ordering,
-binary64 retained-count arithmetic and fixed result readbacks are unchanged.
-See [selector execution evidence](../notes/2026-10-13_gpu_icp_trim_selector.md).
+and x lanes. This separately lazy wide pipeline builds a 255-node integer sum
+tree in eight synchronized levels, then selects the byte and within-bin rank
+with eight decisions. It reuses the declared histogram workgroup array beside
+the bin totals: 2 KiB shared storage under the existing planning requirement,
+with eight additional workgroup barriers. Other inputs/devices retain the
+64-lane linear rank walk (four bins per lane). Histogram group counts, 256 KiB
+maximum global histogram scratch, digit/pass count, tie ordering, binary64
+retained-count arithmetic and fixed result readbacks are unchanged. See
+[histogram lane evidence](../notes/2026-10-13_gpu_icp_trim_selector.md) and
+[selection tree evidence](../notes/2026-10-13_gpu_icp_trim_selection_tree.md).
 
 Resident trimming now defaults to `GpuIcpTrimPrecision::DoubleSingle`. Integer
 24x24-bit products retain residuals, and a private runtime zero word in dependent

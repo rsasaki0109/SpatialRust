@@ -4,6 +4,11 @@ Date: 2026-10-13. Named slice: one-bin-per-lane integer gathering in the existin
 resident stable Trimmed ICP selector. No CPU placement, pose solver, transform,
 nearest search, precision choice or public API is changed.
 
+This records PR #182's linear rank walk. Later execution uses the
+[selection tree](2026-10-13_gpu_icp_trim_selection_tree.md) in the capable-device
+wide pipeline. The historical benchmark explicitly compiles frozen PR #181 and
+PR #182 selectors, preserving this comparison independently of current code.
+
 ## Execution
 
 The histogram producer still launches min(ceil(N/64),256) 64-lane workgroups.
