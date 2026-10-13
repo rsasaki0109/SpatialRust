@@ -1,5 +1,10 @@
 # Resident point-to-plane ICP equations — 2026-10-13
 
+The scratch layout and measurements below describe the initial implementation.
+The subsequent [query/row reuse slice](2026-10-13_gpu_plane_reuse_transformed_queries.md)
+reduces nonempty private scratch from 56*S + 240*G to 40*S + 240*G without
+changing the public API, arithmetic, pass count or transfer contract.
+
 This slice adds `PointToPlaneIcp::align_with_gpu_reduction` under the optional
 `register-icp-point-to-plane-gpu` feature. Original source positions, target
 positions/tree and raw target normals remain resident across evaluations. GPU

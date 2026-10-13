@@ -21,6 +21,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse point-to-plane GPU ICP transformed queries for rotation Jacobian/residual
+  rows after nearest matching. Private per-source scratch drops from 56 to 40
+  bytes (16 bytes saved per source), with unchanged partials, five passes,
+  compensated math, explicit transfers and owned 256-byte equations. Prepare
+  each local pair before storing its two rows once, including zero rows for
+  rejected pairs. Frozen GPU word parity, poisoned reuse, exact allocation/limit
+  checks, queued and
+  concurrent calls, registration precision and paired completed-call surveys
+  cover the change; see `notes/2026-10-13_gpu_plane_reuse_transformed_queries.md`.
+
 - Reuse resident GPU Canny's completed horizontal-row storage for later
   classification/root flags, preserving exact unrounded values until vertical
   gradients finish. Remove the horizontal binding and aperture-3 dummy: private
