@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit resident GPU ICP trimming under `register-icp-gpu`. Stable
+  distance/source-index selection retains floor(trim_fraction*gated_count)
+  pairs for moments while all gated pairs still define fitness/stopping.
+  Integer device arithmetic preserves binary64 fraction rounding and floor;
+  no point/match readback, repeated payload upload or CPU sorting is required.
+  Each evaluation downloads 176 bytes, and fraction one uses canonical
+  untrimmed kernels. CPU target-tree/Horn solving and convergence remain.
+
 - Add explicit bounded parallel KD-tree construction under search `parallel`
   and facade `search-parallel`. Disjoint preorder node/point ranges retain exact
   canonical partition order and search ties, without unsafe, per-worker trees

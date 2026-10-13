@@ -53,11 +53,12 @@ pub use device::{GpuDevice, WgpuDevice};
 #[cfg(feature = "gpu-wgpu")]
 pub use kernels::{
     GpuFpfhDescriptors, GpuFpfhInput, GpuFpfhNeighborhoods, GpuGicpEquations, GpuGicpInput,
-    GpuGicpNormalEquations, GpuIcpInput, GpuIcpMoments, GpuIcpStatistics, GpuIssInput,
-    GpuIssKeypoints, GpuIssNeighborhoods, GpuMlsDiagnostics, GpuMlsInput, GpuMlsMode,
-    GpuMlsNeighborhoods, GpuMlsPositions, GpuMlsReadback, GpuNeighborhoodKind,
-    GpuNeighborhoodReadback, GpuNeighborhoods, GpuPointToPlaneEquations, GpuPointToPlaneInput,
-    GpuPointToPlaneNormalEquations, GpuQueryBatch, GPU_FPFH_DESCRIPTOR_LEN, MAX_GPU_K_NEIGHBORS,
+    GpuGicpNormalEquations, GpuIcpInput, GpuIcpMoments, GpuIcpStatistics, GpuIcpTrimmedMoments,
+    GpuIcpTrimmedStatistics, GpuIssInput, GpuIssKeypoints, GpuIssNeighborhoods, GpuMlsDiagnostics,
+    GpuMlsInput, GpuMlsMode, GpuMlsNeighborhoods, GpuMlsPositions, GpuMlsReadback,
+    GpuNeighborhoodKind, GpuNeighborhoodReadback, GpuNeighborhoods, GpuPointToPlaneEquations,
+    GpuPointToPlaneInput, GpuPointToPlaneNormalEquations, GpuQueryBatch, GPU_FPFH_DESCRIPTOR_LEN,
+    MAX_GPU_K_NEIGHBORS,
 };
 
 #[cfg(feature = "gpu-wgpu")]

@@ -60,7 +60,9 @@ pub(crate) mod icp_reduction;
 pub use gicp_reduction::{GpuGicpEquations, GpuGicpInput, GpuGicpNormalEquations};
 pub(crate) mod iss;
 pub(crate) mod mls;
-pub use icp_reduction::{GpuIcpInput, GpuIcpMoments, GpuIcpStatistics};
+pub use icp_reduction::{
+    GpuIcpInput, GpuIcpMoments, GpuIcpStatistics, GpuIcpTrimmedMoments, GpuIcpTrimmedStatistics,
+};
 pub use iss::{GpuIssInput, GpuIssKeypoints, GpuIssNeighborhoods};
 pub use mls::{
     GpuMlsDiagnostics, GpuMlsInput, GpuMlsMode, GpuMlsNeighborhoods, GpuMlsPositions,
