@@ -672,6 +672,15 @@ readback or re-upload occurs. This path requires covariance_radius=None,
 k=3..=64 and epsilon=1e-4..=1; CPU builds trees and solves 6x6 equations.
 See [resident covariance measurements](notes/2026-10-13_gpu_gicp_resident_covariances.md).
 
+`GicpRegistration::align_with_gpu_resident_radius_covariances(&runtime, &source,
+&target, neighbor_capacity)` prepares radius neighborhoods and covariances
+without CPU readback/re-upload. Set `covariance_radius=Some(radius)` and choose
+a positive capacity including self/duplicates; overflow rejects the result.
+Radius must have a finite normal f32 square, epsilon must be in 1e-4..=1.
+Sparse neighborhoods retain the grid route's epsilon*I fallback. CPU tree
+construction and 6x6 solves remain; only 256-byte equations are downloaded.
+See [resident radius evidence](notes/2026-10-13_gpu_gicp_resident_radius_covariances.md).
+
 Point-to-plane ICP also exposes
 `PointToPlaneIcp::align_with_gpu_reduction(&runtime, &source, &target)` under
 `register-icp-point-to-plane-gpu`. Transforms, nearest matching and plane

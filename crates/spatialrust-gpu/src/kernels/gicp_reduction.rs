@@ -365,7 +365,8 @@ impl GpuGicpNormalEquations {
     /// are Hessian upper triangle by row, 21..26 gradient and 27 Euclidean error
     /// normalized by distance squared. Status bits 1/2/4/8 indicate transform,
     /// match, nonfinite arithmetic and unsupported covariance conditioning;
-    /// bit 16 indicates invalid resident covariance preparation.
+    /// bit 16 indicates invalid resident covariance preparation, including
+    /// radius neighborhood capacity overflow. No truncated rows are consumed.
     /// Any nonzero status invalidates ALL payload, which is zeroed on device.
     /// GPU consumers must check status and preserve immutable application data.
     #[must_use]

@@ -12,6 +12,15 @@ struct Params {
     targets: u32,
     neighbors: u32,
     epsilon: f32,
+    radius_squared: f32,
+    radius_mode: u32,
+    padding: [u32; 2],
+}
+
+#[derive(Clone, Copy)]
+enum Preparation {
+    Knn(u32),
+    Radius { radius: f32, capacity: u32 },
 }
 
 fn covariance_plan(
@@ -21,17 +30,26 @@ fn covariance_plan(
     epsilon: f32,
     limits: &wgpu::Limits,
 ) -> SpatialResult<u64> {
-    if source == 0
-        || target == 0
-        || !(3..=MAX_GPU_K_NEIGHBORS).contains(&k)
-        || !(1e-4..=1.0).contains(&epsilon)
-    {
+    if !(3..=MAX_GPU_K_NEIGHBORS).contains(&k) {
+        return Err(invalid());
+    }
+    bounded_covariance_plan(source, target, k, epsilon, limits)
+}
+
+fn bounded_covariance_plan(
+    source: u64,
+    target: u64,
+    capacity: u32,
+    epsilon: f32,
+    limits: &wgpu::Limits,
+) -> SpatialResult<u64> {
+    if source == 0 || target == 0 || capacity == 0 || !(1e-4..=1.0).contains(&epsilon) {
         return Err(invalid());
     }
     let total = source.checked_add(target).and_then(|v| v.checked_add(1)).ok_or_else(invalid)?;
     plan(source, total, limits)?;
     let bound = limits.max_buffer_size.min(u64::from(limits.max_storage_buffer_binding_size));
-    let stride = 8 + 8 * u64::from(k);
+    let stride = 8 + 8 * u64::from(capacity);
     for count in [source, target] {
         if count > u64::from(u32::MAX)
             || count.div_ceil(64) > u64::from(limits.max_compute_workgroups_per_dimension)
@@ -48,6 +66,10 @@ fn covariance_plan(
         return Err(invalid());
     }
     Ok(total * 32)
+}
+
+fn valid_radius(radius: f32) -> bool {
+    radius.is_finite() && radius > 0.0 && (radius * radius).is_normal()
 }
 
 impl GpuGicpInput {
@@ -71,15 +93,57 @@ impl GpuGicpInput {
         k: u32,
         epsilon: f32,
     ) -> SpatialResult<Self> {
+        Self::upload_prepared(runtime, source, target, Preparation::Knn(k), epsilon)
+    }
+
+    /// Uploads original positions/trees and prepares complete inclusive radius
+    /// neighborhoods and plane covariances on GPU, without payload readback.
+    /// `capacity` is a positive per-point bound, including self and duplicates.
+    /// Overflow invalidates both covariance sets and every equation download;
+    /// rows are never silently truncated. Radius must be finite/positive with
+    /// a normal f32 square; epsilon must be in 1e-4..=1.
+    /// Fewer than three neighbors use epsilon*I, as in the existing grid route.
+    /// Other rows use centered/scaled compensated sums and 32 max-pivot Jacobi
+    /// steps with physical 1e-20 stopping on the unnormalized central sum.
+    /// f32 arithmetic, traversal order and repeated eigenvalues can differ
+    /// from the legacy grid's raw means and 16 three-pivot sweeps.
+    /// Transfers, ownership and CPU solve boundaries match the k-NN method.
+    pub fn upload_with_gpu_radius_covariances(
+        runtime: &WgpuRuntime,
+        source: &KdTree,
+        target: &KdTree,
+        radius: f32,
+        capacity: u32,
+        epsilon: f32,
+    ) -> SpatialResult<Self> {
+        if !valid_radius(radius) {
+            return Err(invalid());
+        }
+        Self::upload_prepared(
+            runtime,
+            source,
+            target,
+            Preparation::Radius { radius, capacity },
+            epsilon,
+        )
+    }
+
+    fn upload_prepared(
+        runtime: &WgpuRuntime,
+        source: &KdTree,
+        target: &KdTree,
+        preparation: Preparation,
+        epsilon: f32,
+    ) -> SpatialResult<Self> {
         let (x, y, z) = source.layout().positions();
         let targets = target.layout().positions().0.len();
-        let bytes = covariance_plan(
-            x.len() as u64,
-            targets as u64,
-            k,
-            epsilon,
-            &runtime.device().limits(),
-        )?;
+        let (capacity, radius) = match preparation {
+            Preparation::Knn(k) => (k, None),
+            Preparation::Radius { radius, capacity } => (capacity, Some(radius)),
+        };
+        let planner = if radius.is_some() { bounded_covariance_plan } else { covariance_plan };
+        let bytes =
+            planner(x.len() as u64, targets as u64, capacity, epsilon, &runtime.device().limits())?;
         let bound = runtime
             .device()
             .limits()
@@ -93,16 +157,42 @@ impl GpuGicpInput {
         let points: Vec<_> = (0..x.len()).map(|i| [x[i], y[i], z[i]]).collect();
         let positions = GpuIcpInput::upload(runtime, &points, target)?;
         let source_tree = GpuKdTree::upload(runtime, source)?;
-        let source_neighbors = source_tree.nearest_k_resident(runtime, &positions.source, k)?;
-        let target_neighbors = positions.tree.nearest_k_resident(runtime, &positions.target, k)?;
+        let (source_neighbors, target_neighbors) = if let Some(radius) = radius {
+            (
+                source_tree.radius_neighbors_resident(
+                    runtime,
+                    &positions.source,
+                    radius,
+                    capacity,
+                )?,
+                positions.tree.radius_neighbors_resident(
+                    runtime,
+                    &positions.target,
+                    radius,
+                    capacity,
+                )?,
+            )
+        } else {
+            (
+                source_tree.nearest_k_resident(runtime, &positions.source, capacity)?,
+                positions.tree.nearest_k_resident(runtime, &positions.target, capacity)?,
+            )
+        };
         let covariances = runtime.device().create_buffer(&wgpu::BufferDescriptor {
             label: Some("gicp-resident-covariances"),
             size: bytes,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
-        let params =
-            Params { sources: x.len() as u32, targets: targets as u32, neighbors: k, epsilon };
+        let params = Params {
+            sources: x.len() as u32,
+            targets: targets as u32,
+            neighbors: capacity,
+            epsilon,
+            radius_squared: radius.map_or(0.0, |r| r * r),
+            radius_mode: u32::from(radius.is_some()),
+            padding: [0; 2],
+        };
         encode_covariances(
             runtime,
             &positions,
