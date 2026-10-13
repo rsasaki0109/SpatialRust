@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Parallelize resident Trimmed ICP histogram-bin gathering with a lazy 256-lane
+  selector on capable devices from 64 partial groups. The existing 64-lane path
+  handles smaller inputs and lower workgroup limits. Stable distance/source-index
+  selection, exact retained counts, moment precision, scratch, pass counts and
+  explicit transfers remain; native paired measurements retain adverse cases.
+
 - Halve resident GPU Canny gradient storage from 16 to 8 bytes per pixel by
   packing bounded signed derivatives exactly and retaining full u32 magnitude.
   Private scratch falls to 20*N+8 bytes for aperture 3 or 28*N for 5/7, saving
