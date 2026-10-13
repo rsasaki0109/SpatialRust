@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Replace the capable-device resident Trimmed ICP selector's linear bin walk
+  with an exact 256-bin integer sum tree and eight rank decisions. The wide
+  pipeline uses 2 KiB shared storage under the existing limit and adds eight
+  workgroup barriers; global scratch, digit passes, retained pairs, moment math
+  and explicit transfers retain behavior. Paired completed-call evidence records
+  the limited synthetic moment improvement, inconclusive selectors and adverse
+  full-call cases.
+
 - Halve resident GPU Canny's unrounded horizontal derivative/smoothing storage
   from 8 to 4 bytes per pixel for apertures 5/7, preserving signed integer values
   and final rounding. Private scratch falls from 28*N to 24*N, saving another

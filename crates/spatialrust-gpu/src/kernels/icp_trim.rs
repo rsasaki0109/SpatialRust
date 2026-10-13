@@ -140,7 +140,10 @@ impl TrimPipelines {
                 bind_group_layouts: &[&self.layout],
                 push_constant_ranges: &[],
             });
-            let constants = std::collections::HashMap::from([("select_lanes".to_owned(), 256.0)]);
+            let constants = std::collections::HashMap::from([
+                ("select_lanes".to_owned(), 256.0),
+                ("select_tree".to_owned(), 1.0),
+            ]);
             device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: Some("icp-trim-wide-selector"),
                 layout: Some(&layout),

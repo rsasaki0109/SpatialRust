@@ -16,6 +16,7 @@ struct Selection {
 var<workgroup> histogram: array<atomic<u32>,256>;
 var<workgroup> totals: array<u32,256>;
 override select_lanes: u32 = 64u;
+override select_tree: u32 = 0u;
 
 fn multiply_wide(a: u32, b: u32) -> vec2<u32> {
     let a0=a&65535u; let a1=a>>16u; let b0=b&65535u; let b1=b>>16u;
@@ -94,21 +95,56 @@ fn histogram_prefix(@builtin(workgroup_id) group: vec3<u32>, @builtin(local_invo
 @compute @workgroup_size(select_lanes)
 fn select_digit(@builtin(local_invocation_index) lane: u32) {
     // A capable device can assign one lane per bin instead of four bins per
-    // lane, without changing integer sums, scratch, barriers or pass count.
+    // lane, without changing integer sums, global scratch or pass count.
     for (var digit=lane;digit<256u;digit+=select_lanes) {
         var total=0u;
         for (var g=0u;g<params.groups;g+=1u) { total+=histograms[g*256u+digit]; }
         totals[digit]=total;
     }
     workgroupBarrier();
+    if select_tree!=0u {
+        // Reuse the producer's existing workgroup histogram as a 255-node
+        // binary sum tree. Each level reads only the preceding completed level.
+        var nodes=128u;
+        loop {
+            for(var i=lane;i<nodes;i+=select_lanes) {
+                let node=nodes-1u+i;
+                var total=0u;
+                if nodes==128u { total=totals[2u*i]+totals[2u*i+1u]; }
+                else { total=atomicLoad(&histogram[2u*node+1u])+atomicLoad(&histogram[2u*node+2u]); }
+                atomicStore(&histogram[node],total);
+            }
+            workgroupBarrier();
+            if nodes==1u { break; }
+            nodes>>=1u;
+        }
+    }
     if lane!=0u { return; }
     if params.step==0u {
         var gated=0u;
-        for (var digit=0u;digit<256u;digit+=1u) { gated+=totals[digit]; }
+        if select_tree!=0u { gated=atomicLoad(&histogram[0]); }
+        else { for (var digit=0u;digit<256u;digit+=1u) { gated+=totals[digit]; } }
         selection.gated=gated; selection.retained=retained_count(gated);
         selection.rank=select(0u,selection.retained-1u,selection.retained>0u);
     }
     if selection.retained==0u { return; }
+    if select_tree!=0u {
+        var rank=selection.rank; var node=0u; var digit=0u;
+        for(var depth=0u;depth<8u;depth+=1u) {
+            let left=2u*node+1u;
+            var count=0u;
+            if depth<7u { count=atomicLoad(&histogram[left]); }
+            else { count=totals[2u*digit]; }
+            let right=rank>=count;
+            if right { rank-=count; }
+            node=left+u32(right); digit=2u*digit+u32(right);
+        }
+        selection.rank=rank;
+        let shift=24u-(params.step%4u)*8u;
+        if params.step<4u { selection.distance|=digit<<shift; }
+        else { selection.source_index|=digit<<shift; }
+        return;
+    }
     var preceding=0u;
     for (var digit=0u;digit<256u;digit+=1u) {
         if selection.rank-preceding<totals[digit] {
