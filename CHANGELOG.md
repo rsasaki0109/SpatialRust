@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit resident Gaussian blur under `gpu-image`, with 1..=4 logical
+  channels, 3/5/7 kernels, five border modes and optional two-pass timestamps.
+  Q8/Q15 weights and wide integer final sums preserve specialized CPU u8
+  quantization/rounding. Private scratch stays on device through one submission;
+  output metadata and explicit transfer receipts are retained. Image payload
+  readbacks and CPU/GPU placement remain caller-controlled.
+
 - Improve resident trimmed ICP moment precision with a default DoubleSingle
   route: integer product residuals and preserved f32 rounding carry two words
   through coordinate normalization, centroid division and covariance products.

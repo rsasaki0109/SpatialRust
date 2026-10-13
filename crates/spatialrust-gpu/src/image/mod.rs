@@ -19,7 +19,8 @@ pub use histogram::{
     GpuImageCdf, GpuImageHistogram,
 };
 pub use kernels::{
-    box_blur_gpu, copy_gpu_image, morphology_gpu, resize_nearest_gpu, rgb_to_gray_gpu, sobel_gpu,
+    box_blur_gpu, copy_gpu_image, gaussian_blur_gpu, gaussian_blur_gpu_profiled, morphology_gpu,
+    resize_nearest_gpu, rgb_to_gray_gpu, sobel_gpu, GpuGaussianBlurOptions, GpuGaussianBorder,
     GpuImageBorder, GpuMorphology,
 };
 pub use vision_chain::{

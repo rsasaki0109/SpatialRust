@@ -318,6 +318,25 @@ The separable pair is lazy within the existing spatial pipeline family.
 The resident Vision chain records six passes for small workloads and one extra
 for each separable blur/morphology path (up to eight), reserving all timestamp
 capacity before recording.
+
+`gaussian_blur_gpu` / `gaussian_blur_gpu_profiled` add an explicit resident
+Gaussian filter under `gpu-image`. `GpuGaussianBlurOptions` admits 3/5/7 kernels,
+finite positive sigmas, and replicate/reflect/reflect101/wrap/constant borders.
+All 1..=4 logical channels retain their ordering and metadata. The host prepares
+two small normalized integer kernels in binary64, matching specialized CPU u8
+quantization: Q8 for 3/5 calls, Q15 for both axes when either axis uses 7.
+Two GPU passes compute unrounded horizontal sums and the final weighted result;
+Q15 products/sums use two u32 limbs and round half-up only at the final byte.
+Each pixel requires `4*channels` private scratch bytes, leased through one
+submission. No image payload readback, intermediate upload or host wait occurs.
+The 128-byte uniform holds control/kernel coefficients and is excluded from
+payload receipts; device writes count scratch plus the RGBA8 output texture.
+Runtime/dimension/coordinate/index/buffer/binding/workgroup and optional two-stage
+profiler limits are checked before resource allocation or lazy cache setup.
+Oversized scratch requests reject; the caller controls placement. Returned images
+compose with gray/Sobel/AI stages through the existing resident image API. See
+[Gaussian execution evidence](../notes/2026-10-13_gpu_gaussian_blur.md).
+
 GPU nearest resize and Sobel validate their runtime identity, positive source/
 output dimensions, signed coordinates, texture/compute/binding limits and one
 free profiler stage before output allocation or spatial-pipeline initialization.
