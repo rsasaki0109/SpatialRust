@@ -103,7 +103,8 @@ impl GpuImageReceipt {
         self.host_to_device_bytes
     }
 
-    /// Returns physical bytes copied or written by device-side stages.
+    /// Returns copied bytes or destination storage footprints of device stages.
+    /// Repeated in-place atomic updates and reads are not a bandwidth measurement.
     #[must_use]
     pub const fn gpu_to_gpu_bytes(&self) -> u64 {
         self.gpu_to_gpu_bytes

@@ -337,6 +337,31 @@ Oversized scratch requests reject; the caller controls placement. Returned image
 compose with gray/Sobel/AI stages through the existing resident image API. See
 [Gaussian execution evidence](../notes/2026-10-13_gpu_gaussian_blur.md).
 
+`canny_gpu` / `canny_gpu_profiled` extend the resident grayscale image API with
+complete device Canny. `GpuCannyOptions` accepts 3/5/7 Sobel apertures, finite
+nonnegative binary64 thresholds and L1/squared-L2 comparison. CPU-compatible
+replicate gradients and directional asymmetric NMS ties use integer arithmetic;
+aperture 7 rounds scaled signed derivatives to even and scales thresholds by
+1/16. A direct aperture-3 pass or two separable 5/7 passes precede classification.
+Four forward neighbor edges enumerate the entire undirected eight-neighbor graph
+of weak pixels. Atomic CAS hooks only a current higher root to a lower one;
+path halving preserves this acyclic forest. After all unions, weak roots are
+compressed and flagged when any member touches a strong pixel. Strong pixels
+are retained directly, and only flagged weak components survive. This is
+equivalent to full hysteresis while avoiding strong-only union work. There is no
+weak-edge propagation cutoff or host convergence
+readback. Five/six ordered passes share one submission and return an owned
+binary `GpuImage`; blur/grayscale conversion remain explicit caller stages.
+Private scratch requires `28*N+8` bytes for aperture 3 or `36*N` for 5/7.
+The largest binding is `16*N`; five storage buffers and a 96-byte control uniform
+are required. Runtime/dimension/signed-coordinate/index/buffer/binding/workgroup
+and profiler checks precede cache/output/scratch allocation. Receipts retain
+exact image upload/readback bytes and count per-stage destination storage
+footprints (44*N or 52*N), rather than repeated in-place atomic traffic.
+Near-constant or sparse edge geometry affects union cost; device capacity or
+CPU/GPU placement is not selected automatically. See
+[Canny execution evidence](../notes/2026-10-13_gpu_canny.md).
+
 GPU nearest resize and Sobel validate their runtime identity, positive source/
 output dimensions, signed coordinates, texture/compute/binding limits and one
 free profiler stage before output allocation or spatial-pipeline initialization.
