@@ -115,21 +115,18 @@ fn concurrent_root_markers_preserve_low_bits_and_all_seeded_components() {
 }
 
 #[test]
-fn four_storage_buffers_and_smaller_working_footprint_are_exact() {
-    let mut limits = wgpu::Limits { max_storage_buffers_per_shader_stage: 4, ..Default::default() };
+fn three_storage_buffers_and_reused_working_footprint_are_exact() {
+    let mut limits = wgpu::Limits { max_storage_buffers_per_shader_stage: 3, ..Default::default() };
     for aperture_size in [3, 5, 7] {
         let p =
             plan(3840, 2160, 1, GpuCannyOptions { aperture_size, ..Default::default() }, &limits)
                 .unwrap();
         let n = 3840 * 2160;
-        assert_eq!(
-            p.gradient_bytes + p.horizontal_bytes + 2 * p.pixel_bytes,
-            if aperture_size == 3 { 16 * n + 8 } else { 20 * n }
-        );
+        assert_eq!(p.gradient_bytes + 2 * p.pixel_bytes, 16 * n);
         assert_eq!(p.pixel_bytes, 33_177_600);
         assert_eq!(pass_indices(aperture_size).len(), if aperture_size == 3 { 5 } else { 6 });
     }
-    limits.max_storage_buffers_per_shader_stage = 3;
+    limits.max_storage_buffers_per_shader_stage = 2;
     assert!(plan(1, 1, 1, Default::default(), &limits).is_err());
     assert!(!SHADER.contains("binding(6)"));
     assert!(SHADER.contains("states:array<atomic<u32>>"));

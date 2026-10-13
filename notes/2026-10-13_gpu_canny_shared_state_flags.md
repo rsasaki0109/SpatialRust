@@ -5,6 +5,12 @@ while preserving resident Canny's exact gradients, classification and complete
 weak-component hysteresis. Public options, metadata and explicit upload/readback
 boundaries retain behavior.
 
+This records PR #185 with separate horizontal-row storage. The later
+[row/state lifetime reuse](2026-10-13_gpu_canny_reuse_horizontal_state.md) removes
+that allocation. The historical shared-state benchmark explicitly compares
+frozen PR #183 and #185 layouts, preserving this comparison independently of
+current production code.
+
 ## Execution and memory
 
 A single atomic u32 per pixel stores classification in bits 0..1 (0 background,

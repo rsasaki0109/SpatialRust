@@ -106,9 +106,9 @@ fn plan(
     // Both scaled signed derivatives fit i16; magnitude remains a full u32.
     let gradient_bytes = pixels.checked_mul(8).ok_or_else(invalid)?;
     let pixel_bytes = pixels.checked_mul(4).ok_or_else(invalid)?;
-    // Unrounded 5/7 horizontal derivative and smoothing sums also fit i16.
-    let horizontal_bytes =
-        if options.aperture_size == 3 { 8 } else { pixels.checked_mul(4).ok_or_else(invalid)? };
+    // Horizontal destinations share the later state/flag binding. Aperture 3
+    // does not run a horizontal pass or allocate a dummy row buffer.
+    let horizontal_bytes = if options.aperture_size == 3 { 0 } else { pixel_bytes };
     let bound = limits.max_buffer_size.min(u64::from(limits.max_storage_buffer_binding_size));
     if width == 0
         || height == 0
@@ -135,7 +135,7 @@ fn plan(
         || limits.max_compute_workgroups_per_dimension == 0
         || limits.max_bind_groups == 0
         || limits.max_bindings_per_bind_group < 8
-        || limits.max_storage_buffers_per_shader_stage < 4
+        || limits.max_storage_buffers_per_shader_stage < 3
         || limits.max_uniform_buffers_per_shader_stage == 0
         || limits.max_sampled_textures_per_shader_stage == 0
         || limits.max_storage_textures_per_shader_stage == 0
@@ -178,7 +178,7 @@ pub(crate) struct CannyPipelines {
 
 impl CannyPipelines {
     fn new(device: &wgpu::Device) -> Self {
-        let layout = binding_layout(device, false);
+        let layout = binding_layout(device, false, false);
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("canny-pipeline-layout"),
             bind_group_layouts: &[&layout],
@@ -202,10 +202,16 @@ impl CannyPipelines {
     }
 }
 
-// The optional fifth buffer is used only by frozen-shader test references.
-fn binding_layout(device: &wgpu::Device, separate_strong: bool) -> wgpu::BindGroupLayout {
+// Separate row/strong buffers are used only by frozen-shader test references.
+fn binding_layout(
+    device: &wgpu::Device,
+    separate_horizontal: bool,
+    separate_strong: bool,
+) -> wgpu::BindGroupLayout {
     let entries: Vec<_> = (0..8)
-        .filter(|&binding| separate_strong || binding != 6)
+        .filter(|&binding| {
+            (separate_horizontal || binding != 3) && (separate_strong || binding != 6)
+        })
         .map(|binding| {
             let ty = match binding {
                 0 => wgpu::BindingType::Buffer {
@@ -245,7 +251,6 @@ fn binding_layout(device: &wgpu::Device, separate_strong: bool) -> wgpu::BindGro
 
 struct Work {
     gradients: wgpu::Buffer,
-    horizontal: wgpu::Buffer,
     states: wgpu::Buffer,
     parent: wgpu::Buffer,
 }
@@ -254,7 +259,6 @@ impl Work {
     fn acquire(scratch: &mut ScratchBuffers<'_>, p: &Plan) -> Self {
         Self {
             gradients: scratch.acquire("canny-gradients", p.gradient_bytes),
-            horizontal: scratch.acquire("canny-horizontal", p.horizontal_bytes),
             states: scratch.acquire("canny-states", p.pixel_bytes),
             parent: scratch.acquire("canny-parents", p.pixel_bytes),
         }
@@ -268,7 +272,7 @@ impl Work {
         source: &wgpu::TextureView,
         output: &wgpu::TextureView,
     ) -> wgpu::BindGroup {
-        let buffers = [&self.gradients, &self.horizontal, &self.states, &self.parent];
+        let buffers = [(2, &self.gradients), (4, &self.states), (5, &self.parent)];
         let mut entries = vec![
             wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
             wgpu::BindGroupEntry {
@@ -276,8 +280,8 @@ impl Work {
                 resource: wgpu::BindingResource::TextureView(source),
             },
         ];
-        entries.extend(buffers.iter().enumerate().map(|(i, b)| wgpu::BindGroupEntry {
-            binding: i as u32 + 2,
+        entries.extend(buffers.iter().map(|&(binding, b)| wgpu::BindGroupEntry {
+            binding,
             resource: b.as_entire_binding(),
         }));
         entries.push(wgpu::BindGroupEntry {

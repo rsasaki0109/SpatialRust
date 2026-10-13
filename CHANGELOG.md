@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse resident GPU Canny's completed horizontal-row storage for later
+  classification/root flags, preserving exact unrounded values until vertical
+  gradients finish. Remove the horizontal binding and aperture-3 dummy: private
+  scratch is 16*N bytes for all apertures, saving another 33,177,600 bytes at 4K
+  for 5/7. Three storage buffers suffice; five/six passes, stage destination
+  receipts, edge bytes, metadata and explicit image transfers retain behavior.
+
 - Share resident GPU Canny classification and root-neighbor flags in one atomic
   u32 per pixel, preserving classification bits during concurrent root marking.
   Remove the separate flag buffer for every aperture: private scratch falls to

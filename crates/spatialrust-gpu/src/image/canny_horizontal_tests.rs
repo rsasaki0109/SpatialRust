@@ -68,11 +68,8 @@ fn packed_horizontal_footprints_keep_exact_gradient_binding_limits() {
         let o = GpuCannyOptions { aperture_size, ..Default::default() };
         let p = plan(3840, 2160, 1, o, &limits).unwrap();
         assert_eq!(p.gradient_bytes, 66_355_200);
-        assert_eq!(p.horizontal_bytes, if aperture_size == 3 { 8 } else { 33_177_600 });
-        assert_eq!(
-            p.gradient_bytes + p.horizontal_bytes + 2 * p.pixel_bytes,
-            if aperture_size == 3 { 132_710_408 } else { 165_888_000 }
-        );
+        assert_eq!(p.horizontal_bytes, if aperture_size == 3 { 0 } else { 33_177_600 });
+        assert_eq!(p.gradient_bytes + 2 * p.pixel_bytes, 132_710_400);
         let mut smaller = limits.clone();
         smaller.max_storage_buffer_binding_size = 66_355_199;
         assert!(plan(3840, 2160, 1, o, &smaller).is_err());

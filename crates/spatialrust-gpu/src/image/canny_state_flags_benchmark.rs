@@ -1,10 +1,11 @@
-//! Paired completed calls against PR #183's separate classification/root flags.
+//! Historical paired completed calls between frozen PR #183 and #185 layouts.
 use super::*;
 use std::time::Instant;
 
 fn measure(
     runtimes: [&WgpuRuntime; 2],
     previous: &CannyPipelines,
+    shared: &CannyPipelines,
     w: usize,
     h: usize,
     profile: u32,
@@ -29,7 +30,7 @@ fn measure(
             let mut output = if variant == 0 {
                 previous_state_flags_canny(runtime, source, o, previous)
             } else {
-                canny_gpu(runtime, source, o).unwrap()
+                previous_reuse_rows_canny(runtime, source, o, shared)
             };
             let elapsed;
             if stage < 2 {
@@ -81,6 +82,7 @@ fn completed_state_flag_calls() {
     let old = WgpuRuntime::new_headless().unwrap();
     let new = WgpuRuntime::new_headless().unwrap();
     let previous = previous_state_flags_pipelines(&old);
+    let shared = previous_reuse_rows_pipelines(&new);
     let info = old.adapter_info();
     assert_eq!(info.backend, new.adapter_info().backend);
     assert_eq!(info.device_type, new.adapter_info().device_type);
@@ -105,6 +107,7 @@ fn completed_state_flag_calls() {
         measure(
             [&old, &new],
             &previous,
+            &shared,
             w,
             h,
             profile,

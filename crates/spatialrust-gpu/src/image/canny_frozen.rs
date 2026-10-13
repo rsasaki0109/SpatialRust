@@ -1,4 +1,4 @@
-//! Actual frozen Canny shaders and their original five-buffer execution boundary.
+//! Actual frozen Canny shaders with original separate row/flag execution boundaries.
 use super::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -6,10 +6,41 @@ pub(super) enum FrozenLayout {
     Unpacked,
     PackedGradients,
     PackedHorizontal,
+    SharedFlags,
+}
+
+impl FrozenLayout {
+    pub(super) fn separate_flags(self) -> bool {
+        self != Self::SharedFlags
+    }
+    pub(super) fn packed_rows(self) -> bool {
+        matches!(self, Self::PackedHorizontal | Self::SharedFlags)
+    }
+}
+
+pub(super) fn previous_reuse_rows_pipelines(runtime: &WgpuRuntime) -> CannyPipelines {
+    source_pipelines(
+        runtime,
+        include_str!("../../tests/fixtures/canny_reuse_rows_previous.wgsl"),
+        FrozenLayout::SharedFlags,
+    )
+}
+
+pub(super) fn previous_reuse_rows_canny(
+    runtime: &WgpuRuntime,
+    source: &GpuImage,
+    o: GpuCannyOptions,
+    cache: &CannyPipelines,
+) -> GpuImage {
+    frozen_canny(runtime, source, o, cache, FrozenLayout::SharedFlags)
 }
 
 pub(super) fn previous_state_flags_pipelines(runtime: &WgpuRuntime) -> CannyPipelines {
-    source_pipelines(runtime, include_str!("../../tests/fixtures/canny_state_flags_previous.wgsl"))
+    source_pipelines(
+        runtime,
+        include_str!("../../tests/fixtures/canny_state_flags_previous.wgsl"),
+        FrozenLayout::PackedHorizontal,
+    )
 }
 
 pub(super) fn previous_state_flags_canny(
@@ -25,20 +56,24 @@ pub(super) fn bind_legacy(
     runtime: &WgpuRuntime,
     cache: &CannyPipelines,
     work: &Work,
-    strong: &wgpu::Buffer,
+    legacy: (&wgpu::Buffer, Option<&wgpu::Buffer>),
     uniform: &wgpu::Buffer,
     source: &wgpu::TextureView,
     output: &wgpu::TextureView,
 ) -> wgpu::BindGroup {
-    let buffers = [&work.gradients, &work.horizontal, &work.states, &work.parent, strong];
+    let buffers = [(2, &work.gradients), (3, legacy.0), (4, &work.states), (5, &work.parent)];
     let mut entries = vec![
         wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
         wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(source) },
     ];
-    entries.extend(buffers.iter().enumerate().map(|(i, b)| wgpu::BindGroupEntry {
-        binding: i as u32 + 2,
-        resource: b.as_entire_binding(),
-    }));
+    entries.extend(
+        buffers
+            .iter()
+            .map(|&(binding, b)| wgpu::BindGroupEntry { binding, resource: b.as_entire_binding() }),
+    );
+    if let Some(strong) = legacy.1 {
+        entries.push(wgpu::BindGroupEntry { binding: 6, resource: strong.as_entire_binding() });
+    }
     entries.push(wgpu::BindGroupEntry {
         binding: 7,
         resource: wgpu::BindingResource::TextureView(output),
@@ -52,16 +87,28 @@ pub(super) fn bind_legacy(
 
 // Frozen PR #180 shader from d5f73a5b263bba9262e2bb3526943168088f02ab.
 pub(super) fn previous_pipelines(runtime: &WgpuRuntime) -> CannyPipelines {
-    source_pipelines(runtime, include_str!("../../tests/fixtures/canny_unpacked_previous.wgsl"))
+    source_pipelines(
+        runtime,
+        include_str!("../../tests/fixtures/canny_unpacked_previous.wgsl"),
+        FrozenLayout::Unpacked,
+    )
 }
 
 // Frozen PR #181: compact gradients but the original eight-byte horizontal rows.
 pub(super) fn previous_horizontal_pipelines(runtime: &WgpuRuntime) -> CannyPipelines {
-    source_pipelines(runtime, include_str!("../../tests/fixtures/canny_horizontal_previous.wgsl"))
+    source_pipelines(
+        runtime,
+        include_str!("../../tests/fixtures/canny_horizontal_previous.wgsl"),
+        FrozenLayout::PackedGradients,
+    )
 }
 
-pub(super) fn source_pipelines(runtime: &WgpuRuntime, shader: &str) -> CannyPipelines {
-    let binding_layout = binding_layout(runtime.device(), true);
+pub(super) fn source_pipelines(
+    runtime: &WgpuRuntime,
+    shader: &str,
+    frozen: FrozenLayout,
+) -> CannyPipelines {
+    let binding_layout = binding_layout(runtime.device(), true, frozen.separate_flags());
     let module = runtime.device().create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("canny-frozen-shader"),
         source: wgpu::ShaderSource::Wgsl(shader.into()),
@@ -108,9 +155,11 @@ pub(super) fn frozen_plan(p: &mut Plan, layout: FrozenLayout) {
     if layout == FrozenLayout::Unpacked {
         p.gradient_bytes *= 2;
     }
-    if p.params.aperture != 3 && layout != FrozenLayout::PackedHorizontal {
-        p.horizontal_bytes = u64::from(p.params.pixels) * 8;
-    }
+    p.horizontal_bytes = if p.params.aperture == 3 {
+        8
+    } else {
+        u64::from(p.params.pixels) * if layout.packed_rows() { 4 } else { 8 }
+    };
 }
 
 fn frozen_canny(
@@ -135,7 +184,9 @@ fn frozen_canny(
     );
     let mut scratch = ScratchBuffers::new(runtime);
     let work = Work::acquire(&mut scratch, &p);
-    let strong = scratch.acquire("canny-strong-roots", p.pixel_bytes);
+    let horizontal = scratch.acquire("canny-horizontal", p.horizontal_bytes);
+    let strong =
+        layout.separate_flags().then(|| scratch.acquire("canny-strong-roots", p.pixel_bytes));
     let output = create_texture(runtime, source.width(), source.height(), "canny-previous-output");
     let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("canny-previous-params"),
@@ -146,7 +197,7 @@ fn frozen_canny(
         runtime,
         cache,
         &work,
-        &strong,
+        (&horizontal, strong.as_ref()),
         &uniform,
         &source.view(),
         &output.create_view(&Default::default()),
@@ -160,7 +211,7 @@ fn frozen_canny(
         let bytes = match index {
             0 | 2 => p.gradient_bytes,
             1 => p.horizontal_bytes,
-            3 => 3 * p.pixel_bytes,
+            3 => (if layout.separate_flags() { 3 } else { 2 }) * p.pixel_bytes,
             5 => 2 * p.pixel_bytes,
             _ => p.pixel_bytes,
         };
