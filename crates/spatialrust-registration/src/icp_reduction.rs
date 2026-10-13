@@ -6,7 +6,7 @@ use crate::{kabsch::estimate_rigid_transform_from_moments, RegistrationResult};
 use spatialrust_core::{
     HasPositions3, PointCloud, SpatialError, SpatialResult, TransferDirection, TransferStats,
 };
-use spatialrust_gpu::{GpuIcpInput, GpuIcpStatistics, WgpuRuntime};
+use spatialrust_gpu::{GpuIcpInput, GpuIcpTrimmedStatistics, WgpuRuntime};
 use spatialrust_search::KdTree;
 
 /// Explicit resident-transform/reduction ICP result and fixed-size transfer receipt.
@@ -27,8 +27,8 @@ impl IcpRegistration {
     /// bytes are downloaded per evaluation; pose solving and convergence stay CPU.
     /// Reuses post-update moments for the next update and final fitness. No point
     /// or correspondence readback, repeated payload upload or CPU fallback occurs.
-    /// Requires trim_fraction=1; the existing correspondence GPU API supports
-    /// trimming. f32 transforms/reductions can change matches, pose, fitness and
+    /// Requires trim_fraction=1; `align_with_gpu_trimmed_reduction` supports
+    /// resident trimming. f32 transforms/reductions can change matches, pose, fitness and
     /// stopping near numerical/geometry degeneracy compared with CPU f64 sums.
     #[cfg(feature = "register-icp-gpu")]
     pub fn align_with_gpu_reduction(
@@ -37,8 +37,35 @@ impl IcpRegistration {
         source: &PointCloud,
         target: &PointCloud,
     ) -> SpatialResult<GpuIcpReductionDiagnostics> {
+        self.align_reduction_impl(runtime, source, target, false)
+    }
+
+    /// Aligns using GPU stable distance/source-index trimming and resident
+    /// moments. floor(trim_fraction * gated_count) pairs contribute to each
+    /// pose solve. Post-update fitness/stopping use ALL gated pairs. Only 176
+    /// bytes cross to CPU per evaluation; source/target/search/selection remain
+    /// resident. CPU target-tree construction, Horn solve and convergence remain.
+    /// A fraction of one uses the canonical untrimmed GPU evaluation. f32 device
+    /// matching/moments can differ from CPU near gates, ties or degeneracy.
+    #[cfg(feature = "register-icp-gpu")]
+    pub fn align_with_gpu_trimmed_reduction(
+        &self,
+        runtime: &WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+    ) -> SpatialResult<GpuIcpReductionDiagnostics> {
+        self.align_reduction_impl(runtime, source, target, true)
+    }
+
+    fn align_reduction_impl(
+        &self,
+        runtime: &WgpuRuntime,
+        source: &PointCloud,
+        target: &PointCloud,
+        trimmed: bool,
+    ) -> SpatialResult<GpuIcpReductionDiagnostics> {
         self.validate_inputs(source, target)?;
-        if self.trim_fraction != 1.0 {
+        if !trimmed && self.trim_fraction != 1.0 {
             return Err(SpatialError::InvalidArgument("GPU ICP reduction requires trim_fraction=1; use the explicit correspondence API for trimming".to_owned()));
         }
         let (sx, sy, sz) = source.positions3()?;
@@ -48,13 +75,18 @@ impl IcpRegistration {
         let input = GpuIcpInput::upload(runtime, &source_positions, &tree)?;
         let mut transfers = input.upload_transfers();
         let mut evaluation_batches = 0;
-        let mut evaluate = |pose| -> SpatialResult<GpuIcpStatistics> {
+        let mut evaluate = |pose| -> SpatialResult<GpuIcpTrimmedStatistics> {
             let statistics = input
-                .moments_resident(runtime, pose, self.config.max_correspondence_distance)?
+                .trimmed_moments_resident(
+                    runtime,
+                    pose,
+                    self.config.max_correspondence_distance,
+                    self.trim_fraction,
+                )?
                 .download(runtime)?;
             transfers.record(
                 TransferDirection::DeviceToHost,
-                statistics.transfers.device_to_host_bytes(),
+                statistics.moments.transfers.device_to_host_bytes(),
             );
             evaluation_batches += 1;
             Ok(statistics)
@@ -66,18 +98,25 @@ impl IcpRegistration {
         let mut converged = false;
         let mut stop_reason = IcpStopReason::IterationLimit;
         for iteration in 1..=self.config.max_iterations {
-            let count = moments.correspondences as usize;
+            let evaluated = moments.evaluated_correspondences as usize;
+            let count = moments.moments.correspondences as usize;
+            if evaluated < self.config.min_correspondences {
+                return Err(SpatialError::InvalidArgument(format!(
+                    "ICP found only {evaluated} correspondences, minimum is {}",
+                    self.config.min_correspondences
+                )));
+            }
             if count < self.config.min_correspondences {
                 return Err(SpatialError::InvalidArgument(format!(
-                    "ICP found only {count} correspondences, minimum is {}",
+                    "trim_fraction retains only {count} of {evaluated} correspondences, minimum is {}",
                     self.config.min_correspondences
                 )));
             }
             let delta = estimate_rigid_transform_from_moments(
                 count,
-                moments.source_centroid,
-                moments.target_centroid,
-                moments.cross_covariance,
+                moments.moments.source_centroid,
+                moments.moments.target_centroid,
+                moments.moments.cross_covariance,
             )
             .ok_or_else(|| {
                 SpatialError::InvalidArgument("ICP failed to estimate a rigid transform".to_owned())
@@ -91,7 +130,7 @@ impl IcpRegistration {
             history.push(IcpIteration {
                 iteration,
                 correspondences: count,
-                evaluated_correspondences: moments.correspondences as usize,
+                evaluated_correspondences: moments.evaluated_correspondences as usize,
                 fitness,
                 fitness_change: previous_fitness.map(|previous| previous - fitness),
                 translation_delta,
@@ -128,10 +167,10 @@ impl IcpRegistration {
     }
 }
 
-fn fitness(statistics: &GpuIcpStatistics) -> f64 {
-    if statistics.correspondences == 0 {
+fn fitness(statistics: &GpuIcpTrimmedStatistics) -> f64 {
+    if statistics.evaluated_correspondences == 0 {
         f64::MAX
     } else {
-        statistics.squared_error_sum / f64::from(statistics.correspondences)
+        statistics.moments.squared_error_sum / f64::from(statistics.evaluated_correspondences)
     }
 }

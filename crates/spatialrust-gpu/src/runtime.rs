@@ -30,6 +30,7 @@ pub struct WgpuRuntime {
     pub(crate) mls_pipelines: OnceLock<crate::kernels::mls::MlsPipelines>,
     pub(crate) icp_reduction_pipelines:
         OnceLock<crate::kernels::icp_reduction::IcpReductionPipelines>,
+    pub(crate) icp_trim_pipelines: OnceLock<crate::kernels::icp_reduction::trim::TrimPipelines>,
     pub(crate) point_to_plane_reduction_pipelines:
         OnceLock<crate::kernels::point_to_plane_reduction::PointToPlaneReductionPipelines>,
     pub(crate) gicp_covariance_pipelines:
@@ -405,6 +406,7 @@ impl WgpuRuntime {
             iss_pipelines: OnceLock::new(),
             mls_pipelines: OnceLock::new(),
             icp_reduction_pipelines: OnceLock::new(),
+            icp_trim_pipelines: OnceLock::new(),
             gicp_reduction_pipelines: OnceLock::new(),
             gicp_covariance_pipelines: OnceLock::new(),
             gicp_grid_covariance_pipelines: OnceLock::new(),

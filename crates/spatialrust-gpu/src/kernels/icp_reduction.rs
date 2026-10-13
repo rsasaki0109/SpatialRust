@@ -8,6 +8,9 @@ use wgpu::util::DeviceExt;
 
 const RESULT_BYTES: u64 = 176;
 
+#[path = "icp_trim.rs"]
+pub(crate) mod trim;
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Params {
@@ -162,6 +165,40 @@ impl GpuIcpInput {
         transform: Isometry3<f32>,
         max_distance: f32,
     ) -> SpatialResult<GpuIcpMoments> {
+        self.moments_impl(runtime, transform, max_distance, None)
+    }
+
+    /// Submits stable GPU selection of the lowest-distance floor(fraction*N)
+    /// gated pairs, breaking distance ties by original source index. Moments
+    /// use retained pairs; fitness uses ALL gated pairs. Binary64 fraction
+    /// multiplication/floor is emulated with integer limbs on the device.
+    /// No match/point payload readback or host wait occurs. A fraction of one
+    /// delegates to the canonical untrimmed kernels; no CPU fallback occurs.
+    pub fn trimmed_moments_resident(
+        &self,
+        runtime: &WgpuRuntime,
+        transform: Isometry3<f32>,
+        max_distance: f32,
+        fraction: f64,
+    ) -> SpatialResult<GpuIcpTrimmedMoments> {
+        if !fraction.is_finite() || fraction <= 0.0 || fraction > 1.0 {
+            return Err(SpatialError::InvalidArgument(
+                "trim_fraction must be finite and in (0, 1]".to_owned(),
+            ));
+        }
+        let trimmed = fraction < 1.0;
+        let inner =
+            self.moments_impl(runtime, transform, max_distance, trimmed.then_some(fraction))?;
+        Ok(GpuIcpTrimmedMoments { inner, trimmed })
+    }
+
+    fn moments_impl(
+        &self,
+        runtime: &WgpuRuntime,
+        transform: Isometry3<f32>,
+        max_distance: f32,
+        fraction: Option<f64>,
+    ) -> SpatialResult<GpuIcpMoments> {
         let q = transform.rotation();
         let t = transform.translation();
         let norm = f64::from(q.x).hypot(f64::from(q.y)).hypot(f64::from(q.z)).hypot(f64::from(q.w));
@@ -180,7 +217,11 @@ impl GpuIcpInput {
             return Err(invalid());
         }
         let count = self.source_count();
-        let groups = plan(u64::from(count), &runtime.device().limits())?;
+        let groups = if fraction.is_some() {
+            trim::plan_trim(u64::from(count), &runtime.device().limits())?
+        } else {
+            plan(u64::from(count), &runtime.device().limits())?
+        };
         let output = GpuIcpMoments {
             buffer: runtime.device().create_buffer(&wgpu::BufferDescriptor {
                 label: Some("icp-moments"),
@@ -223,10 +264,18 @@ impl GpuIcpInput {
         let queries = scratch.acquire("icp-transformed", u64::from(count) * 16);
         let matches = scratch.acquire("icp-matches", u64::from(count) * 8);
         let partials = scratch.acquire("icp-partials", u64::from(groups) * 144);
-        let cache = runtime
-            .icp_reduction_pipelines
-            .get_or_init(|| IcpReductionPipelines::new(runtime.device()));
-        let buffers = [
+        let selection = fraction.map(|_| scratch.acquire("icp-trim-selection", 32));
+        let cache = if fraction.is_some() {
+            &runtime
+                .icp_trim_pipelines
+                .get_or_init(|| trim::TrimPipelines::new(runtime.device()))
+                .reduction
+        } else {
+            runtime
+                .icp_reduction_pipelines
+                .get_or_init(|| IcpReductionPipelines::new(runtime.device()))
+        };
+        let mut buffers = vec![
             &uniform,
             self.source.buffer().unwrap(),
             self.target.buffer().unwrap(),
@@ -235,6 +284,9 @@ impl GpuIcpInput {
             &partials,
             &output.buffer,
         ];
+        if let Some(selection) = &selection {
+            buffers.push(selection);
+        }
         let entries: Vec<_> = buffers
             .iter()
             .enumerate()
@@ -251,6 +303,17 @@ impl GpuIcpInput {
         let mut encoder = runtime.device().create_command_encoder(&Default::default());
         dispatch(&mut encoder, &cache.pipelines[0], &group, count.div_ceil(64), 1);
         self.tree.encode_nearest(runtime, &mut encoder, &queries, count, bound, &matches)?;
+        if let Some(fraction) = fraction {
+            trim::encode_selection(
+                runtime,
+                &mut encoder,
+                &mut scratch,
+                &params,
+                fraction,
+                &matches,
+                selection.as_ref().unwrap(),
+            );
+        }
         for (index, x, y) in [(1, groups, 7), (2, 1, 1), (3, groups, 9), (4, 1, 1)] {
             dispatch(&mut encoder, &cache.pipelines[index], &group, x, y);
         }
@@ -278,7 +341,8 @@ fn dispatch(
 /// Decoded device ICP moments in physical units, with explicit transfer receipt.
 #[derive(Clone, Debug, PartialEq)]
 pub struct GpuIcpStatistics {
-    /// Number of gated nearest correspondences; zero yields all-zero moments.
+    /// Pairs contributing to centroids/covariance; ordinary moments use every
+    /// gated match. Zero yields zero centroids/covariance.
     pub correspondences: u32,
     /// Arithmetic source centroid after applying the requested transform.
     pub source_centroid: [f64; 3],
@@ -286,7 +350,8 @@ pub struct GpuIcpStatistics {
     pub target_centroid: [f64; 3],
     /// Unnormalized centered sum of source[i] * target[j], row-major.
     pub cross_covariance: [[f64; 3]; 3],
-    /// Sum of squared matched residual lengths (not a mean).
+    /// Sum of squared matched residual lengths (not a mean). In the containing
+    /// trimmed statistics, use its all-gated count as the fitness denominator.
     pub squared_error_sum: f64,
     /// Payload copied by this explicit download, independent of input upload.
     pub transfers: TransferStats,
@@ -338,6 +403,14 @@ impl GpuIcpMoments {
     /// Copies the fixed-size moments/status, waits, then validates and decodes
     /// compensated f32 sums in f64. No point/query/match payload is downloaded.
     pub fn download(&self, runtime: &WgpuRuntime) -> SpatialResult<GpuIcpStatistics> {
+        self.download_impl(runtime, false).map(|(statistics, _)| statistics)
+    }
+
+    fn download_impl(
+        &self,
+        runtime: &WgpuRuntime,
+        trimmed: bool,
+    ) -> SpatialResult<(GpuIcpStatistics, u32)> {
         if !Arc::ptr_eq(&self.identity, &runtime.profiling_identity()) {
             return Err(invalid());
         }
@@ -369,10 +442,14 @@ impl GpuIcpMoments {
             staging.unmap();
             transfers.record(TransferDirection::DeviceToHost, RESULT_BYTES);
         }
+        let evaluated = if trimmed { words[2] } else { words[1] };
         if words[0] != 0
-            || words[1] > self.count
-            || words[2..4] != [0, 0]
-            || (words[1] == 0 && words[4..].iter().any(|&v| v != 0))
+            || words[1] > evaluated
+            || evaluated > self.count
+            || words[3] != 0
+            || (!trimmed && words[2] != 0)
+            || (evaluated == 0 && words[4..].iter().any(|&v| v != 0))
+            || (words[1] == 0 && words[4..42].iter().any(|&v| v != 0))
         {
             return Err(SpatialError::InvalidArgument(format!(
                 "GPU ICP reduction invalid status/count: {:?}",
@@ -400,14 +477,69 @@ impl GpuIcpMoments {
         if squared_error_sum < 0.0 {
             return Err(invalid());
         }
-        Ok(GpuIcpStatistics {
-            correspondences: words[1],
-            source_centroid,
-            target_centroid,
-            cross_covariance,
-            squared_error_sum,
-            transfers,
-        })
+        Ok((
+            GpuIcpStatistics {
+                correspondences: words[1],
+                source_centroid,
+                target_centroid,
+                cross_covariance,
+                squared_error_sum,
+                transfers,
+            },
+            evaluated,
+        ))
+    }
+}
+
+/// Fixed-size selected moments plus the all-gated fitness denominator.
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuIcpTrimmedStatistics {
+    /// Retained-pair centroids/covariance, ALL-gated residual sum, and readback receipt.
+    pub moments: GpuIcpStatistics,
+    /// Number of all gated matches used for fitness (before trimming).
+    pub evaluated_correspondences: u32,
+}
+
+/// Owned 176-byte trimmed moments/status; no point or match readback is implicit.
+pub struct GpuIcpTrimmedMoments {
+    inner: GpuIcpMoments,
+    trimmed: bool,
+}
+
+impl GpuIcpTrimmedMoments {
+    /// Device storage layout matches ordinary moments, except word 2 is the
+    /// all-gated count. Word 1 is retained count. Terms 0..14 use retained pairs;
+    /// term 15 uses every gated pair. Zero retained count zeros terms 0..14 and
+    /// anchors but preserves all-gated fitness. Any invalid status zeros payload.
+    /// Fraction one retains ordinary moments' two reserved zeros.
+    #[must_use]
+    pub fn buffer(&self) -> &wgpu::Buffer {
+        self.inner.buffer()
+    }
+
+    /// Explicit fixed readback size, zero for empty source and 176 otherwise.
+    #[must_use]
+    pub const fn readback_bytes(&self) -> u64 {
+        self.inner.readback_bytes()
+    }
+
+    /// Physical coordinate scale for normalized centroid/covariance words.
+    #[must_use]
+    pub const fn normalization_scale(&self) -> f32 {
+        self.inner.normalization_scale()
+    }
+
+    /// Physical squared-distance scale for normalized all-gated residual sum.
+    #[must_use]
+    pub const fn squared_distance_scale(&self) -> f32 {
+        self.inner.squared_distance_scale()
+    }
+
+    /// Explicitly copies/waits/validates only the fixed-size moments and counts.
+    pub fn download(&self, runtime: &WgpuRuntime) -> SpatialResult<GpuIcpTrimmedStatistics> {
+        let (moments, evaluated_correspondences) =
+            self.inner.download_impl(runtime, self.trimmed)?;
+        Ok(GpuIcpTrimmedStatistics { moments, evaluated_correspondences })
     }
 }
 
@@ -417,7 +549,11 @@ pub(crate) struct IcpReductionPipelines {
 }
 impl IcpReductionPipelines {
     fn new(device: &wgpu::Device) -> Self {
-        let entries: Vec<_> = (0..7)
+        Self::with_shader(device, include_str!("../shaders/icp_reduction.wgsl"), false)
+    }
+
+    fn with_shader(device: &wgpu::Device, shader_source: &str, trimmed: bool) -> Self {
+        let entries: Vec<_> = (0..if trimmed { 8 } else { 7 })
             .map(|binding| wgpu::BindGroupLayoutEntry {
                 binding,
                 visibility: wgpu::ShaderStages::COMPUTE,
@@ -425,7 +561,9 @@ impl IcpReductionPipelines {
                     ty: if binding == 0 {
                         wgpu::BufferBindingType::Uniform
                     } else {
-                        wgpu::BufferBindingType::Storage { read_only: matches!(binding, 1 | 2 | 4) }
+                        wgpu::BufferBindingType::Storage {
+                            read_only: matches!(binding, 1 | 2 | 4 | 7),
+                        }
                     },
                     has_dynamic_offset: false,
                     min_binding_size: None,
@@ -444,7 +582,7 @@ impl IcpReductionPipelines {
         });
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("icp-reduction-shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/icp_reduction.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
         let pipelines = [
             "transform_source",

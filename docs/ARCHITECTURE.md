@@ -26,9 +26,26 @@ transformed/match/partial scratch is leased through one submission. CPU Horn's
 small eigensolve, transform composition and stopping remain. Post-update moments
 serve the next update and final fitness, avoiding duplicate search/readback.
 There is no point/match readback, repeated payload upload or CPU fallback.
-Trimming requires the existing correspondence path; f32 transforms/reductions
-can change matching, pose and stopping near gates or degenerate geometry. See
+f32 transforms/reductions can change matching, pose and stopping near gates or
+numerically degenerate geometry. See
 [resident ICP evidence](../notes/2026-10-13_gpu_icp_reduction.md).
+
+`align_with_gpu_trimmed_reduction` and `GpuIcpInput::trimmed_moments_resident`
+extend the resident path with stable MSD selection by device distance and original
+source index. Four distance bytes and the necessary source-index bytes determine
+an exact retained threshold without sorting or copying matches to CPU. Device
+integer limbs emulate binary64 multiplication/round-to-nearest-even/floor for
+`trim_fraction*gated_count`; casting the fraction to f32 is avoided. Retained
+pairs define centroids/covariance, while ALL gated pairs define fitness and its
+stopping denominator. A 176-byte result adds the all-gated count in reserved word
+2; fraction one delegates to ordinary kernels with both reserved words zero.
+Private histogram/selection scratch stays leased through the same submission.
+CPU target-tree construction/Horn solving/composition/convergence remain; there
+is no payload readback or fallback. GPU distance rounding can change selection
+near ties compared with CPU, even when retained counts agree. A measured large
+partially gated case exceeds CPU pose-agreement tolerance; the evidence retains
+its error/fitness and does not classify its speed as accuracy-qualified. See
+[resident trimming evidence](../notes/2026-10-13_gpu_icp_resident_trimming.md).
 
 GICP reuses this search through its own explicit GPU entry point, retaining
 unbounded nearest matching before the existing host gate and ordered CPU
