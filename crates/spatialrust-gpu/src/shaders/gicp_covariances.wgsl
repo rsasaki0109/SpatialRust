@@ -1,4 +1,4 @@
-struct Params { sources:u32, targets:u32, neighbors:u32, epsilon:f32 }
+struct Params { sources:u32, targets:u32, neighbors:u32, epsilon:f32, radius_squared:f32, radius_mode:u32, padding:vec2<u32> }
 struct Covariance { diagonal:vec4<f32>, off:vec4<f32> }
 struct Covariances { status:atomic<u32>, reserved:array<u32,7>, rows:array<Covariance> }
 @group(0) @binding(0) var<uniform> params:Params;
@@ -61,8 +61,13 @@ fn build_covariances(@builtin(global_invocation_id) id:vec3<u32>) {
     result.rows[index]=Covariance(vec4<f32>(0.0),vec4<f32>(0.0));
     let second=index>=params.sources;let i=select(index,index-params.sources,second);let size=select(params.sources,params.targets,second);
     let base=i*(2u+2u*params.neighbors);let stored=word(base,second);let total=word(base+1u,second);
-    if stored!=min(size,params.neighbors)||total!=stored {atomicOr(&result.status,1u);return;}
-    for(var j=0u;j<stored;j+=1u) {let neighbor=word(base+2u+2u*j,second);let distance=bitcast<f32>(word(base+3u+2u*j,second));if neighbor>=size||!(distance>=0.0)||!finite(distance) {atomicOr(&result.status,1u);return;}}
+    if params.radius_mode!=0u {
+        if total>params.neighbors {atomicOr(&result.status,8u);return;}
+        if total==0u||total>size||stored!=total {atomicOr(&result.status,1u);return;}
+    } else if stored!=min(size,params.neighbors)||total!=stored {atomicOr(&result.status,1u);return;}
+    for(var j=0u;j<stored;j+=1u) {let neighbor=word(base+2u+2u*j,second);let distance=bitcast<f32>(word(base+3u+2u*j,second));if neighbor>=size||!(distance>=0.0)||!finite(distance)||(params.radius_mode!=0u&&distance>params.radius_squared) {atomicOr(&result.status,1u);return;}}
+    // Preserve the radius grid's sparse isotropic fallback, including self.
+    if params.radius_mode!=0u&&stored<3u {result.rows[index]=Covariance(vec4<f32>(vec3<f32>(params.epsilon),0.0),vec4<f32>(0.0));return;}
     // CPU's single-neighbor fallback uses identity covariance, regularized on X.
     if stored<2u {emit(index,vec3<f32>(1.0,0.0,0.0));return;}
     let origin=point(i,second);var scale=0.0;
@@ -80,9 +85,10 @@ fn build_covariances(@builtin(global_invocation_id) id:vec3<u32>) {
         let products=array<f32,6>(d.x*d.x,d.y*d.y,d.z*d.z,d.x*d.y,d.x*d.z,d.y*d.z);
         for(var a=0u;a<6u;a+=1u) {sums[a]=add(sums[a],products[a]);}
     }
-    var cov:array<f32,6>;for(var a=0u;a<6u;a+=1u) {cov[a]=(sums[a].x+sums[a].y)/f32(stored-1u);if !finite(cov[a]) {atomicOr(&result.status,2u);return;}}
+    let divisor=select(f32(stored-1u),1.0,params.radius_mode!=0u);
+    var cov:array<f32,6>;for(var a=0u;a<6u;a+=1u) {cov[a]=(sums[a].x+sums[a].y)/divisor;if !finite(cov[a]) {atomicOr(&result.status,2u);return;}}
     let matrix=array<vec3<f32>,3>(vec3<f32>(cov[0],cov[3],cov[4]),vec3<f32>(cov[3],cov[1],cov[5]),vec3<f32>(cov[4],cov[5],cov[2]));
-    let n=normal(matrix,1e-12/scale_squared);
+    let n=normal(matrix,select(1e-12,1e-20,params.radius_mode!=0u)/scale_squared);
     if !finite3(n) {atomicOr(&result.status,2u);return;}emit(index,n);
 }
 

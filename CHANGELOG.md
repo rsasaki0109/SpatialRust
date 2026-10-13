@@ -21,6 +21,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit resident radius covariance preparation for GICP under
+  `register-gicp-gpu`. Inclusive bounded GPU neighborhoods, centered/scaled
+  compensated central sums and plane eigenvectors feed resident equations
+  without covariance readback/re-upload. Caller capacity includes self and
+  duplicates; overflow rejects all output without truncation. Sparse rows
+  preserve epsilon*I. Radius must be positive finite with normal f32 square,
+  epsilon=1e-4..=1. CPU trees/6x6 solves remain; legacy routes retain behavior.
+  Device f32 accumulation and Jacobi iteration can differ from grid results.
+
 - Add explicit resident k-NN covariance preparation for GICP under
   `register-gicp-gpu`. GPU bounded neighborhoods, centered/scaled sample
   covariance and plane eigenvectors feed the existing resident equation loop

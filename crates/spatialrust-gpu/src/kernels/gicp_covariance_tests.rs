@@ -89,7 +89,7 @@ fn matrix(c: [f32; 6]) -> Mat3<f64> {
 
 #[test]
 fn resident_covariance_plans_bound_counts_arity_epsilon_and_dispatch() {
-    assert_eq!(std::mem::size_of::<Params>(), 16);
+    assert_eq!(std::mem::size_of::<Params>(), 32);
     let limits = wgpu::Limits::default();
     assert_eq!(
         covariance_plan(65537, 65554, 20, 0.001, &limits).unwrap(),
@@ -296,76 +296,106 @@ fn malformed_resident_neighbor_rows_invalidate_both_covariance_sets() {
     let source = [[0.0; 3], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
     let st = tree(&source);
     let tt = tree(&source[..2]);
-    for second in [false, true] {
-        for case in 0..3 {
-            let positions = GpuIcpInput::upload(&runtime, &source, &tt).unwrap();
-            let source_tree = GpuKdTree::upload(&runtime, &st).unwrap();
-            let sn = source_tree.nearest_k_resident(&runtime, &positions.source, 3).unwrap();
-            let tn = positions.tree.nearest_k_resident(&runtime, &positions.target, 3).unwrap();
-            let statement = match case {
-                0 => "data[0]=0u;",
-                1 => "data[2]=0xffffffffu;",
-                _ => "data[3]=0x7f800000u;",
-            };
-            let shader=runtime.device().create_shader_module(wgpu::ShaderModuleDescriptor{label:None,source:wgpu::ShaderSource::Wgsl(format!("@group(0) @binding(0) var<storage,read_write> data:array<u32>; @compute @workgroup_size(1) fn main() {{{statement}}}").into())});
-            let pipeline =
-                runtime.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+    for radius_mode in [0, 1] {
+        for second in [false, true] {
+            for case in 0..if radius_mode == 0 { 3 } else { 6 } {
+                let positions = GpuIcpInput::upload(&runtime, &source, &tt).unwrap();
+                let source_tree = GpuKdTree::upload(&runtime, &st).unwrap();
+                let sn = if radius_mode == 0 {
+                    source_tree.nearest_k_resident(&runtime, &positions.source, 3).unwrap()
+                } else {
+                    source_tree
+                        .radius_neighbors_resident(&runtime, &positions.source, 2.0, 3)
+                        .unwrap()
+                };
+                let tn = if radius_mode == 0 {
+                    positions.tree.nearest_k_resident(&runtime, &positions.target, 3).unwrap()
+                } else {
+                    positions
+                        .tree
+                        .radius_neighbors_resident(&runtime, &positions.target, 2.0, 3)
+                        .unwrap()
+                };
+                let statement = match case {
+                    0 => "data[0]=0u;",
+                    1 => "data[2]=0xffffffffu;",
+                    2 => "data[3]=0x7f800000u;",
+                    3 => "data[3]=0x40a00000u;",
+                    4 => "data[1]=0u;",
+                    _ => "data[1]=3u;data[0]=3u;data[2]=0xffffffffu;",
+                };
+                let shader=runtime.device().create_shader_module(wgpu::ShaderModuleDescriptor{label:None,source:wgpu::ShaderSource::Wgsl(format!("@group(0) @binding(0) var<storage,read_write> data:array<u32>; @compute @workgroup_size(1) fn main() {{{statement}}}").into())});
+                let pipeline =
+                    runtime.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                        label: None,
+                        layout: None,
+                        module: &shader,
+                        entry_point: Some("main"),
+                        compilation_options: Default::default(),
+                        cache: None,
+                    });
+                let buffer = if second { tn.buffer() } else { sn.buffer() };
+                let group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
                     label: None,
-                    layout: None,
-                    module: &shader,
-                    entry_point: Some("main"),
-                    compilation_options: Default::default(),
-                    cache: None,
+                    layout: &pipeline.get_bind_group_layout(0),
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: buffer.as_entire_binding(),
+                    }],
                 });
-            let buffer = if second { tn.buffer() } else { sn.buffer() };
-            let group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &pipeline.get_bind_group_layout(0),
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buffer.as_entire_binding(),
-                }],
-            });
-            let mut encoder = runtime.device().create_command_encoder(&Default::default());
-            {
-                let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                let mut encoder = runtime.device().create_command_encoder(&Default::default());
+                {
+                    let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                        label: None,
+                        timestamp_writes: None,
+                    });
+                    pass.set_pipeline(&pipeline);
+                    pass.set_bind_group(0, &group, &[]);
+                    pass.dispatch_workgroups(1, 1, 1);
+                }
+                runtime.queue().submit(Some(encoder.finish()));
+                let covariances = runtime.device().create_buffer(&wgpu::BufferDescriptor {
                     label: None,
-                    timestamp_writes: None,
+                    size: 6 * 32,
+                    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                    mapped_at_creation: false,
                 });
-                pass.set_pipeline(&pipeline);
-                pass.set_bind_group(0, &group, &[]);
-                pass.dispatch_workgroups(1, 1, 1);
+                encode_covariances(
+                    &runtime,
+                    &positions,
+                    [&sn, &tn],
+                    &covariances,
+                    Params {
+                        sources: 3,
+                        targets: 2,
+                        neighbors: 3,
+                        epsilon: 0.001,
+                        radius_squared: 4.0,
+                        radius_mode,
+                        padding: [0; 2],
+                    },
+                );
+                let cov = words(&runtime, &covariances);
+                assert_eq!(cov[0], 1);
+                assert!(cov[1..].iter().all(|&v| v == 0));
+                let transfers = positions.upload_transfers();
+                let input = GpuGicpInput {
+                    positions,
+                    covariances,
+                    weight_scale: 6000.0,
+                    covariance_offset: 1,
+                    transfers,
+                };
+                let output =
+                    input.equations_resident(&runtime, Isometry3::identity(), 2.0).unwrap();
+                let w = words(&runtime, output.buffer());
+                assert_eq!(w[0], 16);
+                assert!(w[1..].iter().all(|&v| v == 0));
+                assert!(output.download(&runtime).is_err());
             }
-            runtime.queue().submit(Some(encoder.finish()));
-            let covariances = runtime.device().create_buffer(&wgpu::BufferDescriptor {
-                label: None,
-                size: 6 * 32,
-                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-                mapped_at_creation: false,
-            });
-            encode_covariances(
-                &runtime,
-                &positions,
-                [&sn, &tn],
-                &covariances,
-                Params { sources: 3, targets: 2, neighbors: 3, epsilon: 0.001 },
-            );
-            let cov = words(&runtime, &covariances);
-            assert_eq!(cov[0], 1);
-            assert!(cov[1..].iter().all(|&v| v == 0));
-            let transfers = positions.upload_transfers();
-            let input = GpuGicpInput {
-                positions,
-                covariances,
-                weight_scale: 6000.0,
-                covariance_offset: 1,
-                transfers,
-            };
-            let output = input.equations_resident(&runtime, Isometry3::identity(), 2.0).unwrap();
-            let w = words(&runtime, output.buffer());
-            assert_eq!(w[0], 16);
-            assert!(w[1..].iter().all(|&v| v == 0));
-            assert!(output.download(&runtime).is_err());
         }
     }
 }
+
+#[path = "gicp_radius_covariance_tests.rs"]
+mod radius;

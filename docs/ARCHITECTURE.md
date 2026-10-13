@@ -67,6 +67,19 @@ epsilon=1e-4..=1 path requires covariance_radius=None; f32 covariance and
 repeated eigenvalues can change poses/stopping relative to old raw products.
 See [resident covariance evidence](../notes/2026-10-13_gpu_gicp_resident_covariances.md).
 
+`align_with_gpu_resident_radius_covariances` and
+`GpuGicpInput::upload_with_gpu_radius_covariances` extend this preparation
+boundary to complete inclusive radius rows with an explicit positive capacity.
+Self/duplicates count toward capacity. Overflow zeros BOTH covariance sets
+and propagates equation status 16; no truncated neighborhood is consumed.
+Sparse rows (fewer than three samples) retain epsilon*I. Other rows use
+centered/scaled compensated central sums and 32 max-pivot Jacobi iterations
+with physical 1e-20 stopping, so grid accumulation/sweeps and degenerate
+eigenvectors may differ. Finite positive radius with normal f32 square and
+epsilon=1e-4..=1 are required. Upload/download ownership and receipts match
+resident k-NN. CPU trees/6x6 updates remain; legacy preparation is unchanged.
+See [resident radius evidence](../notes/2026-10-13_gpu_gicp_resident_radius_covariances.md).
+
 `PointToPlaneIcp::align_with_gpu_reduction` under the optional
 `register-icp-point-to-plane-gpu` feature retains original positions/tree and
 raw target normals. Five passes transform originals, perform the existing
