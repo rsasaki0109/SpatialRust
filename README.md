@@ -690,6 +690,14 @@ the existing cell/device limits; choose the bounded radius method explicitly
 for sparse extents. Only 256-byte equations are downloaded per evaluation.
 See [resident grid evidence](notes/2026-10-13_gpu_gicp_resident_grid_covariances.md).
 
+`KdTree::from_slices_parallel` / `from_point_cloud_parallel` under
+`spatialrust-search/parallel` (facade `search-parallel`) build large trees with
+bounded scoped CPU workers while retaining exact point order, node layout and
+search ties. Below 32,768 points, one-worker hosts and WASM keep serial builds;
+ordinary constructors remain serial. Resident GPU GICP uses this preparation
+without changing device data, equations or transfer receipts. See
+[parallel tree evidence](notes/2026-10-13_parallel_kdtree_build.md).
+
 Point-to-plane ICP also exposes
 `PointToPlaneIcp::align_with_gpu_reduction(&runtime, &source, &target)` under
 `register-icp-point-to-plane-gpu`. Transforms, nearest matching and plane

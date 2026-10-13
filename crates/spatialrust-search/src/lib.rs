@@ -45,6 +45,9 @@ pub use parallel_chunked::{
 #[cfg(feature = "search-kdtree")]
 pub use kdtree::{KdTree, KdTreeLayout, KdTreeNode};
 
+#[cfg(all(feature = "search-kdtree", feature = "parallel"))]
+pub use kdtree::PARALLEL_KDTREE_BUILD_MIN_POINTS;
+
 #[cfg(feature = "search-graph")]
 pub use graph::{knn_graph, radius_graph, NeighborGraph};
 

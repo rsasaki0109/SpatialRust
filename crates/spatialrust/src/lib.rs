@@ -138,7 +138,7 @@ pub use spatialrust_search::{
 pub use spatialrust_search::{
     nearest_k_spatial_tensor_parallel, nearest_k_spatial_tensor_parallel_into,
     radius_search_spatial_tensor_parallel, radius_search_spatial_tensor_parallel_into,
-    PARALLEL_CHUNK_QUERY_MIN_POINTS,
+    PARALLEL_CHUNK_QUERY_MIN_POINTS, PARALLEL_KDTREE_BUILD_MIN_POINTS,
 };
 
 #[cfg(feature = "search-graph")]

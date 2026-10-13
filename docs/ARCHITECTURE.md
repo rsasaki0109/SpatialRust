@@ -93,6 +93,16 @@ bytes per grid offset entry. CPU grid construction/target tree/6x6 solve remain;
 dense-grid cell limits reject without automatically selecting another route.
 See [resident grid evidence](../notes/2026-10-13_gpu_gicp_resident_grid_covariances.md).
 
+The optional CPU search `parallel` feature exposes explicit KD-tree construction
+with bounded scoped subtree workers. One exact-sized preorder node array and
+the point permutation are split into disjoint ranges, with no unsafe, locks,
+per-worker trees or node merge. Canonical axis/partition code preserves all
+layout/query bits. Ordinary constructors stay serial; small/one-worker/WASM
+parallel calls use them directly. Resident GPU GICP opts into this host
+preparation without altering device staging or equations. No production
+dependency or core model change is introduced. See
+[parallel tree evidence](../notes/2026-10-13_parallel_kdtree_build.md).
+
 `PointToPlaneIcp::align_with_gpu_reduction` under the optional
 `register-icp-point-to-plane-gpu` feature retains original positions/tree and
 raw target normals. Five passes transform originals, perform the existing

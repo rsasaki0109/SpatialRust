@@ -12,6 +12,13 @@ const SEARCH_STACK_SIZE: usize = 64;
 const AXIS_LEAF: u8 = u8::MAX;
 const INVALID_NODE: u32 = u32::MAX;
 
+#[cfg(feature = "parallel")]
+#[path = "kdtree_build.rs"]
+mod parallel_build;
+
+#[cfg(feature = "parallel")]
+pub use parallel_build::PARALLEL_KDTREE_BUILD_MIN_POINTS;
+
 /// Cache-friendly KD-tree for 3D point clouds.
 #[derive(Clone, Debug)]
 pub struct KdTree {
@@ -722,6 +729,10 @@ mod nearest_tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "kdtree_nearest_benchmark.rs"]
 mod nearest_benchmark;
+
+#[cfg(all(test, feature = "parallel", not(target_arch = "wasm32")))]
+#[path = "kdtree_build_benchmark.rs"]
+mod build_benchmark;
 
 fn partition_by_axis(
     x: &[f32],

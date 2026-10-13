@@ -431,6 +431,16 @@ workspace because its build requires a Python toolchain.
   work. Accepted f32 bounds, the exact cell cap and positive-infinite-radius
   one-cell behavior remain compatible. See
   [grid validation regression receipt](../notes/2026-10-12_validated_grid_bounds.md).
+- `spatialrust-search/parallel` adds explicit `KdTree::from_slices_parallel`
+  and `from_point_cloud_parallel`, also exposed under facade `search-parallel`.
+  Native subtrees use disjoint point/node ranges in one preallocated preorder
+  array, reusing canonical axis/partition code. Layout, split bits and query
+  ties remain exact. From 32,768 points, workers are bounded by available CPU
+  parallelism and one per 16,384 points; small/one-worker/WASM calls stay serial.
+  Ordinary constructors retain serial placement. Resident GICP GPU methods
+  opt into this host preparation; GPU math and receipts are unchanged. This
+  is a per-call worker bound, not a global thread/stack budget. See
+  [parallel tree measurements](../notes/2026-10-13_parallel_kdtree_build.md).
 - Shared CPU `build_grid` uses stable reverse scattering and one cell-offset
   table, eliminating the auxiliary cursor clone. Logical live heap payload
   drops by `4 * (cells + 1)` bytes; returned CSR order/sentinels and GPU uploads
