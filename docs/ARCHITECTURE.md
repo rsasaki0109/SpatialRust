@@ -371,13 +371,17 @@ so each private gradient occupies eight bytes. Unrounded horizontal derivative/
 smoothing pairs are bounded by 765/4080 (5) and 2550/16320 (7); they also use
 two exact signed 16-bit halves, occupying four bytes per pixel. Vertical
 accumulation reconstructs them before the unchanged final scale/rounding.
+The horizontal pass temporarily stores those packed pairs in the later atomic
+state/flag binding. Vertical gradients finish before classification overwrites
+the rows, so disjoint lifetimes share storage without a copy or additional pass.
 Classification and root-neighbor flags share one atomic u32 per pixel: low
 two bits classify, bit 2 marks a weak root touching a strong pixel. Classification
 overwrites all bits before connectivity; later readers mask the low bits while
 markers atomically OR only bit 2. Full-width parent indices and the complete
-union/root rules remain. Private scratch requires `16*N+8` bytes for aperture 3
-or `20*N` for 5/7, eliminating another `4*N` allocation for every aperture.
-The largest binding is `8*N`; four storage buffers and a 96-byte control uniform
+union/root rules remain. Private scratch requires `16*N` bytes for every aperture:
+gradients `8*N`, shared rows/states/flags `4*N`, and parents `4*N`. The separate
+horizontal allocation and aperture-3 dummy are removed. The largest binding is
+`8*N`; three storage buffers and a 96-byte control uniform
 are required. Runtime/dimension/signed-coordinate/index/buffer/binding/workgroup
 and profiler checks precede cache/output/scratch allocation. Receipts retain
 exact image upload/readback bytes and count per-stage destination storage
@@ -387,7 +391,8 @@ CPU/GPU placement is not selected automatically. See
 [Canny execution evidence](../notes/2026-10-13_gpu_canny.md) and
 [compact-gradient evidence](../notes/2026-10-13_gpu_canny_compact_gradients.md) and
 [horizontal-packing evidence](../notes/2026-10-13_gpu_canny_horizontal_packing.md) and
-[shared-state evidence](../notes/2026-10-13_gpu_canny_shared_state_flags.md).
+[shared-state evidence](../notes/2026-10-13_gpu_canny_shared_state_flags.md) and
+[row/state lifetime evidence](../notes/2026-10-13_gpu_canny_reuse_horizontal_state.md).
 
 GPU nearest resize and Sobel validate their runtime identity, positive source/
 output dimensions, signed coordinates, texture/compute/binding limits and one

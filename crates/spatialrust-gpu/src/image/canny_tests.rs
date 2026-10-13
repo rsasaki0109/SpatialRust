@@ -44,6 +44,7 @@ fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
     let previous = previous_pipelines(&runtime);
     let horizontal_previous = previous_horizontal_pipelines(&runtime);
     let state_previous = previous_state_flags_pipelines(&runtime);
+    let rows_previous = previous_reuse_rows_pipelines(&runtime);
     let (mut calls, mut bytes) = (0, 0);
     for (w, h) in [(1, 1), (1, 37), (37, 1), (2, 3), (17, 19), (65, 33)] {
         for profile in 0..4 {
@@ -107,6 +108,18 @@ fn all_apertures_norms_thresholds_and_strips_match_cpu_edge_bytes() {
                             (w * h * if aperture_size == 3 { 36 } else { 40 }) as u64
                         );
                         state_old.recycle(&runtime);
+                        let mut row_old =
+                            previous_reuse_rows_canny(&runtime, &source, o, &rows_previous);
+                        assert_eq!(
+                            row_old.readback_u8::<1>(&runtime).unwrap(),
+                            expected,
+                            "reuse rows {w}x{h} profile={profile} {o:?}"
+                        );
+                        assert_eq!(
+                            row_old.receipt().gpu_to_gpu_bytes(),
+                            (w * h * if aperture_size == 3 { 32 } else { 36 }) as u64
+                        );
+                        row_old.recycle(&runtime);
                         calls += 1;
                         bytes += w * h;
                     }
@@ -162,7 +175,10 @@ fn snapshot_with_cache(
     });
     let mut scratch = ScratchBuffers::new(runtime);
     let work = Work::acquire(&mut scratch, &p);
-    let strong = previous.is_some().then(|| scratch.acquire("canny-strong-roots", p.pixel_bytes));
+    let horizontal_buffer =
+        previous.map(|_| scratch.acquire("canny-horizontal", p.horizontal_bytes));
+    let separate_flags = previous.is_some_and(|(_, layout)| layout.separate_flags());
+    let strong = separate_flags.then(|| scratch.acquire("canny-strong-roots", p.pixel_bytes));
     runtime.queue().write_buffer(&work.states, 0, &vec![0xff; p.pixel_bytes as usize]);
     let output = create_texture(runtime, source.width(), source.height(), "canny-test-output");
     let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -170,12 +186,12 @@ fn snapshot_with_cache(
         contents: bytemuck::bytes_of(&p.params),
         usage: wgpu::BufferUsages::UNIFORM,
     });
-    let group = if let Some(strong) = &strong {
+    let group = if let Some(horizontal) = &horizontal_buffer {
         bind_legacy(
             runtime,
             cache,
             &work,
-            strong,
+            (horizontal, strong.as_ref()),
             &uniform,
             &source.view(),
             &output.create_view(&Default::default()),
@@ -207,6 +223,18 @@ fn snapshot_with_cache(
         });
         encoder.copy_buffer_to_buffer(&uploaded, 0, &work.states, 0, p.pixel_bytes);
         encode(cache, &group, p.params.groups, &[4, 5, 6], &mut encoder, None);
+    } else if previous.is_none() && o.aperture_size != 3 {
+        // The row lifetime ends before classification overwrites this binding.
+        // This test-only copy records exact unrounded rows while still leased.
+        encode(cache, &group, p.params.groups, &[1, 2], &mut encoder, None);
+        encoder.copy_buffer_to_buffer(
+            &work.states,
+            0,
+            &staging,
+            p.gradient_bytes + 3 * p.pixel_bytes,
+            horizontal_bytes,
+        );
+        encode(cache, &group, p.params.groups, &[3, 4, 5, 6], &mut encoder, None);
     } else {
         encode(cache, &group, p.params.groups, pass_indices(o.aperture_size), &mut encoder, None);
     }
@@ -222,9 +250,9 @@ fn snapshot_with_cache(
     ] {
         encoder.copy_buffer_to_buffer(buffer, 0, &staging, offset, bytes);
     }
-    if horizontal_bytes != 0 {
+    if let Some(horizontal) = horizontal_buffer.as_ref().filter(|_| horizontal_bytes != 0) {
         encoder.copy_buffer_to_buffer(
-            &work.horizontal,
+            horizontal,
             0,
             &staging,
             p.gradient_bytes + 3 * p.pixel_bytes,
@@ -256,15 +284,14 @@ fn snapshot_with_cache(
     };
     let state_words = words[gradient_words..gradient_words + n].to_vec();
     let states =
-        state_words.iter().map(|&word| if previous.is_some() { word } else { word & 3 }).collect();
+        state_words.iter().map(|&word| if separate_flags { word } else { word & 3 }).collect();
     let roots = words[gradient_words + n..gradient_words + 2 * n].to_vec();
     let flags = words[gradient_words + 2 * n..gradient_words + 3 * n]
         .iter()
-        .map(|&word| if previous.is_some() { word } else { (word >> 2) & 1 })
+        .map(|&word| if separate_flags { word } else { (word >> 2) & 1 })
         .collect();
     let horizontal_words = &words[gradient_words + 3 * n..];
-    let horizontal = if previous.is_some_and(|(_, layout)| layout != FrozenLayout::PackedHorizontal)
-    {
+    let horizontal = if previous.is_some_and(|(_, layout)| !layout.packed_rows()) {
         horizontal_words.chunks_exact(2).map(|v| [v[0] as i32, v[1] as i32]).collect()
     } else {
         horizontal_words
@@ -586,7 +613,7 @@ fn plan_and_invalid_public_inputs_reject_before_resource_initialization() {
             7 => bad.max_compute_workgroups_per_dimension = 0,
             8 => bad.max_bind_groups = 0,
             9 => bad.max_bindings_per_bind_group = 7,
-            10 => bad.max_storage_buffers_per_shader_stage = 3,
+            10 => bad.max_storage_buffers_per_shader_stage = 2,
             11 => bad.max_uniform_buffers_per_shader_stage = 0,
             12 => bad.max_sampled_textures_per_shader_stage = 0,
             _ => bad.max_storage_textures_per_shader_stage = 0,
@@ -606,10 +633,7 @@ fn plan_and_invalid_public_inputs_reject_before_resource_initialization() {
         let o = GpuCannyOptions { aperture_size, ..o };
         let p = plan(3840, 2160, 1, o, &exact).unwrap();
         assert_eq!(p.gradient_bytes, 66_355_200);
-        assert_eq!(
-            p.gradient_bytes + p.horizontal_bytes + 2 * p.pixel_bytes,
-            if aperture_size == 3 { 132_710_408 } else { 165_888_000 }
-        );
+        assert_eq!(p.gradient_bytes + 2 * p.pixel_bytes, 132_710_400);
         assert!(plan(3840, 2161, 1, o, &exact).is_err());
         exact.max_storage_buffer_binding_size = 40;
         assert!(plan(5, 1, 1, o, &exact).is_ok());
@@ -892,3 +916,6 @@ mod horizontal_tests;
 
 #[path = "canny_state_flags_tests.rs"]
 mod state_flags_tests;
+
+#[path = "canny_reuse_rows_tests.rs"]
+mod reuse_rows_tests;

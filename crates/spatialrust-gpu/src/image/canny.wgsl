@@ -11,8 +11,9 @@ struct Gradient { components:u32,magnitude:u32 }
 @group(0) @binding(2) var<storage,read_write> gradients:array<Gradient>;
 // Horizontal derivative/smoothing bounds are 765/4080 (5), 2550/16320 (7).
 // Keep both unrounded integer values exactly in the existing signed halves.
-@group(0) @binding(3) var<storage,read_write> horizontal:array<u32>;
-// Low two bits classify pixels; bit 2 flags a weak root touching a strong pixel.
+// During gradient passes this word stores the packed horizontal pair. After
+// vertical gradients complete, low two bits classify pixels and bit 2 flags
+// a weak root touching a strong pixel. Ordered passes separate both lifetimes.
 // Atomic access preserves classification while root markers run concurrently.
 @group(0) @binding(4) var<storage,read_write> states:array<atomic<u32>>;
 @group(0) @binding(5) var<storage,read_write> parent:array<atomic<u32>>;
@@ -90,7 +91,7 @@ fn gradient_horizontal(@builtin(global_invocation_id) id:vec3<u32>) {
             let value=pixel(x+i32(tap)-i32(params.aperture/2u),y);
             total+=value*vec2<i32>(params.derivative[tap/4u][tap%4u],params.smoothing_weights[tap/4u][tap%4u]);
         }
-        horizontal[index]=pack_components(total);
+        atomicStore(&states[index],pack_components(total));
     }
 }
 @compute @workgroup_size(256)
@@ -100,7 +101,7 @@ fn gradient_vertical(@builtin(global_invocation_id) id:vec3<u32>) {
         var total=vec2<i32>(0);
         for(var tap=0u;tap<params.aperture;tap+=1u) {
             let sy=u32(clamp(y+i32(tap)-i32(params.aperture/2u),0,i32(params.height)-1));
-            total+=unpack_components(horizontal[sy*params.width+x])*vec2<i32>(params.smoothing_weights[tap/4u][tap%4u],params.derivative[tap/4u][tap%4u]);
+            total+=unpack_components(atomicLoad(&states[sy*params.width+x]))*vec2<i32>(params.smoothing_weights[tap/4u][tap%4u],params.derivative[tap/4u][tap%4u]);
         }
         let g=vec2<i32>(scaled(total.x),scaled(total.y));
         gradients[index]=Gradient(pack_components(g),magnitude(g));
@@ -125,7 +126,7 @@ fn classify(@builtin(global_invocation_id) id:vec3<u32>) {
         if g.magnitude>params.low && directional_maximum(i32(index%params.width),i32(index/params.width),g) {
             state=select(1u,2u,g.magnitude>params.high);
         }
-        // Overwrite every bit, including stale root flags in recycled scratch.
+        // Vertical gradients are complete: replace all row bits and stale flags.
         atomicStore(&states[index],state);
         atomicStore(&parent[index],index);
     }
