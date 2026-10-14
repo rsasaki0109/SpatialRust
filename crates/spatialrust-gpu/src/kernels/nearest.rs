@@ -13,6 +13,10 @@ mod tree_staging;
 #[path = "tree_gpu_gather.rs"]
 pub(crate) mod tree_gpu_gather;
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "registration_gather_upload_tests.rs"]
+mod registration_gather_tests;
+
 #[path = "neighborhoods.rs"]
 mod neighborhoods;
 pub(crate) use neighborhoods::NeighborhoodPipelines;

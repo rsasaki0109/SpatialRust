@@ -135,6 +135,35 @@ impl GpuGicpInput {
         target: &KdTree,
         target_covariances: &[[f32; 6]],
     ) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, source, source_covariances, target, target_covariances, false)
+    }
+
+    /// Explicitly uses shared GPU gathering for target tree points/queries.
+    /// Host payload is 48*S + 48*T + 32*M bytes, compared with 48*S + 64*T + 32*M
+    /// for `upload`; device output bytes are 32*T. Covariance validation/packing and weight scale are unchanged.
+    /// Source/geometry preparation remains on CPU. Two transient inputs add
+    /// 16*T GPU bytes; host target packing totaling 32*T payload bytes over
+    /// construction is removed. No readback or completion wait is added.
+    /// Placement is explicit; small inputs may be slower and existing device
+    /// requirements apply. See `GpuIcpInput::upload_with_gpu_gather`.
+    pub fn upload_with_gpu_gather(
+        runtime: &WgpuRuntime,
+        source: &[[f32; 3]],
+        source_covariances: &[[f32; 6]],
+        target: &KdTree,
+        target_covariances: &[[f32; 6]],
+    ) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, source, source_covariances, target, target_covariances, true)
+    }
+
+    fn upload_impl(
+        runtime: &WgpuRuntime,
+        source: &[[f32; 3]],
+        source_covariances: &[[f32; 6]],
+        target: &KdTree,
+        target_covariances: &[[f32; 6]],
+        gpu_gather: bool,
+    ) -> SpatialResult<Self> {
         if source.len() != source_covariances.len()
             || target.layout().positions().0.len() != target_covariances.len()
         {
@@ -146,7 +175,11 @@ impl GpuGicpInput {
         plan(source.len() as u64, total, &runtime.device().limits())?;
         let (packed, weight_scale) =
             upload_preparation::prepare(source_covariances, target_covariances)?;
-        let positions = GpuIcpInput::upload(runtime, source, target)?;
+        let positions = if gpu_gather {
+            GpuIcpInput::upload_with_gpu_gather(runtime, source, target)?
+        } else {
+            GpuIcpInput::upload(runtime, source, target)?
+        };
         let covariances = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("gicp-covariances"),
             contents: bytemuck::cast_slice(&packed),
@@ -539,3 +572,7 @@ pub(crate) mod resident_grid_covariances;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "gicp_reduction_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "gicp_reduction_gather_reference.rs"]
+pub(crate) mod gather_reference;

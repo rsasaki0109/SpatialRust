@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit GPU gather constructors for ICP, GICP and point-to-plane ICP
+  reduction inputs. Share target tree/original-order query construction,
+  reducing target host payload by 16 bytes per point, with 32 target bytes per
+  point recorded as device output. Preserve default placement, geometry,
+  covariance/normal preparation and reduction kernels. See
+  `notes/2026-10-15_gpu_registration_input_gather.md`.
+
 - Validate large FPFH, ISS and MLS GPU inputs with at most four native CPU
   workers, combining finite coordinate scans with per-band bounds and checking
   FPFH unit normals in the same workers. Preserve f64 extent arithmetic, errors,
