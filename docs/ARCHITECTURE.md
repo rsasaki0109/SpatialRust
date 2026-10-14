@@ -16,6 +16,19 @@ or dispatch sizes reject before device resource use; ordinary ICP placement is
 unchanged. This is a native synchronous search boundary, not a claim that the
 entire registration loop is device resident.
 
+Large public `GpuQueryBatch::upload` calls prepare original-order AoS queries
+with bounded native CPU workers: at least 524,288 points, useful 262,144-point
+bands and a four-worker/available-CPU cap. Each band validates finite XYZ and
+writes unchanged coordinate bits plus positive-zero padding into disjoint
+parts of the existing 16*N-byte host payload. Small/one-worker/WASM inputs keep
+the original serial scan and collector; small calls avoid CPU-count queries.
+Device limits are checked first and all scoped work finishes before device
+resource creation. Large invalid inputs can allocate/zero the payload before
+rejection. Worker handles/stacks add bounded overhead; no additional point-sized
+copy, GPU pass, wait, readback or transfer is introduced. Registration source
+uploads share this preparation; it does not change algorithm placement or make
+whole registration device resident. See [AoS query staging evidence](../notes/2026-10-15_parallel_aos_query_staging.md).
+
 Large `GpuKdTree::upload` calls validate original coordinates and gather
 16-byte XYZ/original-index records in bounded native CPU bands. At least
 524,288 points use available CPUs and useful 131,072-point bands, capped at
