@@ -360,3 +360,6 @@ mod benchmark;
 
 #[path = "feature_gpu_upload_tests.rs"]
 mod gpu_gather;
+
+#[path = "fpfh_fused_upload_tests.rs"]
+mod fpfh_fused;

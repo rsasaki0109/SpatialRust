@@ -49,19 +49,35 @@ APIs expose a transfer/memory tradeoff whose latency depends on input size; see
 `GpuFpfhInput`, `GpuIssInput` and `GpuMlsInput` expose explicit
 `upload_with_gpu_gather` constructors using those shared tree/query outputs.
 ISS/MLS host payload becomes 16*N + 32*M bytes, with 32*N device output bytes.
-FPFH uploads raw original-order normals (12*N bytes) and runs a second integer
-pass to assemble its unchanged 32-byte position/normal samples from resident
-queries and normals. Its host payload becomes 28*N + 32*M bytes, with 64*N
+Below 1,048,576 points, FPFH combines borrowed original-order coordinates and raw normals in one
+24*N-byte mapped input, beside the 4*N-byte permutation. One integer pass
+generates traversal-order tree points, queries and unchanged 32-byte
+position/normal samples together. Larger inputs retain the previous two-pass
+tree/query then sample construction. Host payload is 28*N + 32*M bytes, with 64*N
 device output bytes. CPU finite/unit-normal/extent validation and node staging
 remain; compute kernels and default upload/high-level placement are preserved.
-No readback or host wait is added. The FPFH sample pipeline is lazy per runtime,
-and both submitted passes retain their own inputs. Relative to owned buffers,
-transient GPU inputs add up to 28*N bytes for FPFH and 16*N for ISS/MLS, while
+No readback or host wait is added. The fused variant is lazy in the runtime's
+shared tree-gather cache; the separate sample stage remains for large inputs.
+Each submitted pass retains its inputs. Relative to owned buffers,
+transient GPU inputs use 28*N bytes for fused FPFH (up to 28*N for the large
+two-pass path) and 16*N for ISS/MLS, while
 host packing allocations totaling 64*N and 32*N payload bytes respectively
 are removed over construction; these sums are not peak-memory savings. Backend staging
 overhead is additional. These constructors require the existing feature device
 limits; small inputs may be slower. See
 [feature gather evidence](../notes/2026-10-14_gpu_feature_input_gather.md).
+
+The fused FPFH path retains the existing five-storage/six-binding
+device requirements. Its private planner checks 32*N sample bytes, which also
+bound the combined 24*N input and 16*N outputs, and the full query dispatch
+count before allocation. The cutoff preserves the previous large-input path
+after unconditional fusion regressed shuffled million-point calls in both
+surveys; it is a conservative policy, not a universal performance threshold.
+Tree-only/paired query entry points, public methods,
+default FPFH upload, unit-normal/extent validation, nodes and descriptor kernels
+are preserved. Complete two-pass/fused input comparisons, including adverse and
+inconclusive cases, are recorded in
+[FPFH pass fusion evidence](../notes/2026-10-14_fused_fpfh_input_gather.md).
 
 The same feature adds `align_with_gpu_reduction` for untrimmed point-to-point
 ICP. `GpuIcpInput` explicitly uploads original source, original-order target

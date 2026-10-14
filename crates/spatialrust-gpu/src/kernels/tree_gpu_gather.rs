@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 use wgpu::util::DeviceExt;
 
 pub(crate) struct TreeGatherPipeline {
-    pipelines: [OnceLock<wgpu::ComputePipeline>; 2],
+    pipelines: [OnceLock<wgpu::ComputePipeline>; 3],
 }
 
 impl TreeGatherPipeline {
@@ -14,8 +14,14 @@ impl TreeGatherPipeline {
         Self { pipelines: std::array::from_fn(|_| OnceLock::new()) }
     }
 
-    fn pipeline(&self, device: &wgpu::Device, with_queries: bool) -> &wgpu::ComputePipeline {
-        self.pipelines[usize::from(with_queries)].get_or_init(|| {
+    fn pipeline(
+        &self,
+        device: &wgpu::Device,
+        with_queries: bool,
+        with_samples: bool,
+    ) -> &wgpu::ComputePipeline {
+        let variant = if with_samples { 2 } else { usize::from(with_queries) };
+        self.pipelines[variant].get_or_init(|| {
             let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("tree-point-gather-shader"),
                 source: wgpu::ShaderSource::Wgsl(
@@ -26,7 +32,13 @@ impl TreeGatherPipeline {
                 label: Some("tree-point-gather-pipeline"),
                 layout: None,
                 module: &shader,
-                entry_point: Some(if with_queries { "gather_with_queries" } else { "gather" }),
+                entry_point: Some(if with_samples {
+                    "gather_with_samples"
+                } else if with_queries {
+                    "gather_with_queries"
+                } else {
+                    "gather"
+                }),
                 compilation_options: Default::default(),
                 cache: None,
             })
@@ -54,11 +66,37 @@ pub(super) fn upload(
     order: &[u32],
     with_queries: bool,
 ) -> SpatialResult<(wgpu::Buffer, Option<wgpu::Buffer>)> {
+    upload_impl(runtime, axes, order, with_queries, None)
+        .map(|(points, queries, _)| (points, queries))
+}
+
+pub(super) fn upload_with_samples(
+    runtime: &WgpuRuntime,
+    axes: [&[f32]; 3],
+    order: &[u32],
+    normals: &[[f32; 3]],
+) -> SpatialResult<(wgpu::Buffer, Option<wgpu::Buffer>, Option<wgpu::Buffer>)> {
+    upload_impl(runtime, axes, order, true, Some(normals))
+}
+
+fn upload_impl(
+    runtime: &WgpuRuntime,
+    axes: [&[f32]; 3],
+    order: &[u32],
+    with_queries: bool,
+    normals: Option<&[[f32; 3]]>,
+) -> SpatialResult<(wgpu::Buffer, Option<wgpu::Buffer>, Option<wgpu::Buffer>)> {
     let count = axes[0].len();
     if axes.iter().any(|axis| axis.len() != count) || order.len() != count || count == 0 {
         return Err(invalid());
     }
     let (bytes, groups) = plan(count as u64, &runtime.device().limits())?;
+    if let Some(normals) = normals {
+        if normals.len() != count || !with_queries {
+            return Err(invalid());
+        }
+        check_samples(count as u64, &runtime.device().limits())?;
+    }
     tree_staging::validate(axes)?;
     let upload = |label, data: &[u8]| {
         runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -71,7 +109,7 @@ pub(super) fn upload(
     // This needs no host concatenation vector or per-point CPU gather.
     let positions = runtime.device().create_buffer(&wgpu::BufferDescriptor {
         label: Some("tree-gather-soa"),
-        size: count as u64 * 12,
+        size: count as u64 * if normals.is_some() { 24 } else { 12 },
         usage: wgpu::BufferUsages::STORAGE,
         mapped_at_creation: true,
     });
@@ -81,6 +119,9 @@ pub(super) fn upload(
         for (axis, values) in axes.iter().enumerate() {
             mapped[axis * axis_bytes..(axis + 1) * axis_bytes]
                 .copy_from_slice(bytemuck::cast_slice(values));
+        }
+        if let Some(normals) = normals {
+            mapped[3 * axis_bytes..].copy_from_slice(bytemuck::cast_slice(normals));
         }
     }
     positions.unmap();
@@ -99,16 +140,27 @@ pub(super) fn upload(
             mapped_at_creation: false,
         })
     });
+    let samples = normals.map(|_| {
+        runtime.device().create_buffer(&wgpu::BufferDescriptor {
+            label: Some("fpfh-samples"),
+            size: count as u64 * 32,
+            usage: wgpu::BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        })
+    });
     let params = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("tree-gather-params"),
         contents: bytemuck::cast_slice(&[count as u32, 0, 0, 0]),
         usage: wgpu::BufferUsages::UNIFORM,
     });
     let cache = runtime.tree_gather_pipeline.get_or_init(TreeGatherPipeline::new);
-    let pipeline = cache.pipeline(runtime.device(), with_queries);
+    let pipeline = cache.pipeline(runtime.device(), with_queries, normals.is_some());
     let mut buffers = vec![&params, &positions, &order, &output];
     if let Some(queries) = queries.as_ref() {
         buffers.push(queries);
+    }
+    if let Some(samples) = samples.as_ref() {
+        buffers.push(samples);
     }
     let entries: Vec<_> = buffers
         .iter()
@@ -134,11 +186,21 @@ pub(super) fn upload(
         pass.dispatch_workgroups(groups, 1, 1);
     }
     runtime.queue().submit(Some(encoder.finish()));
-    Ok((output, queries))
+    Ok((output, queries, samples))
 }
 
 pub(super) fn check(count: u64, limits: &wgpu::Limits) -> SpatialResult<()> {
     plan(count, limits).map(|_| ())
+}
+
+pub(super) fn check_samples(count: u64, limits: &wgpu::Limits) -> SpatialResult<()> {
+    check(count, limits)?;
+    check_compute(limits, count)?;
+    buffer_bytes(count, 32, limits)?;
+    if limits.max_storage_buffers_per_shader_stage < 5 || limits.max_bindings_per_bind_group < 6 {
+        return Err(invalid());
+    }
+    Ok(())
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]

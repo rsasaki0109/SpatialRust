@@ -3,6 +3,108 @@ use super::*;
 use std::{hint::black_box, time::Instant};
 
 #[test]
+fn sample_gather_plan_reuses_feature_limits_and_checks_each_output() {
+    let limits = wgpu::Limits::default();
+    let max = (u64::from(limits.max_storage_buffer_binding_size) / 32)
+        .min(limits.max_buffer_size / 32)
+        .min(u64::from(limits.max_compute_workgroups_per_dimension) * 64);
+    assert!(check_samples(0, &limits).is_ok());
+    assert!(check_samples(max, &limits).is_ok());
+    assert!(check_samples(max + 1, &limits).is_err());
+    assert!(check_samples(u64::MAX, &limits).is_err());
+    let mut narrow = limits.clone();
+    narrow.max_compute_workgroups_per_dimension = 1;
+    assert!(check(65, &narrow).is_ok());
+    assert!(check_samples(65, &narrow).is_err());
+    narrow = limits.clone();
+    narrow.max_storage_buffers_per_shader_stage = 4;
+    assert!(check(1, &narrow).is_ok());
+    assert!(check_samples(1, &narrow).is_err());
+    narrow = limits.clone();
+    narrow.max_bindings_per_bind_group = 5;
+    assert!(check(1, &narrow).is_ok());
+    assert!(check_samples(1, &narrow).is_err());
+    narrow = limits;
+    narrow.max_buffer_size = 64;
+    narrow.max_storage_buffer_binding_size = 64;
+    assert!(check_samples(2, &narrow).is_ok());
+    assert!(check(3, &narrow).is_ok());
+    assert!(check_samples(3, &narrow).is_err());
+}
+
+#[test]
+#[ignore = "requires native GPU adapter"]
+fn fused_sample_words_keep_tree_nodes_original_queries_and_lazy_variant() {
+    let r = WgpuRuntime::new_headless().unwrap();
+    let (empty, queries, samples) =
+        GpuKdTree::upload_with_gpu_samples(&r, &fixture(0, 0), &[]).unwrap();
+    assert!(empty.points.is_none() && queries.buffer().is_none() && samples.is_none());
+    assert!(r.tree_gather_pipeline.get().is_none());
+    assert!(GpuKdTree::upload_with_gpu_samples(&r, &fixture(0, 0), &[[0.0, 0.0, 1.0]]).is_err());
+    for (axes, order, normals) in [
+        ([&[0.0][..], &[][..], &[0.0][..]], &[0][..], &[[0.0, 0.0, 1.0]][..]),
+        ([&[0.0][..]; 3], &[][..], &[[0.0, 0.0, 1.0]][..]),
+        ([&[0.0][..]; 3], &[0][..], &[][..]),
+    ] {
+        assert!(upload_with_samples(&r, axes, order, normals).is_err());
+    }
+    assert!(r.tree_gather_pipeline.get().is_none());
+    let probe = Probe::new(&r);
+    let mut words = 0;
+    for n in [1, 65, 65_537, 1_048_577] {
+        for profile in 0..4 {
+            let tree = fixture(n, profile);
+            let (x, y, z) = tree.layout().positions();
+            let normals: Vec<_> =
+                (0..n).map(|i| [0.6, 0.8, f32::from_bits((i as u32 & 1) << 31)]).collect();
+            let expected_query: Vec<_> =
+                (0..n).flat_map(|i| [x[i].to_bits(), y[i].to_bits(), z[i].to_bits(), 0]).collect();
+            let expected_sample: Vec<_> = (0..n)
+                .flat_map(|i| {
+                    [
+                        x[i].to_bits(),
+                        y[i].to_bits(),
+                        z[i].to_bits(),
+                        0,
+                        normals[i][0].to_bits(),
+                        normals[i][1].to_bits(),
+                        normals[i][2].to_bits(),
+                        0,
+                    ]
+                })
+                .collect();
+            let old = GpuKdTree::upload(&r, &tree).unwrap();
+            let (new, queries, samples) =
+                GpuKdTree::upload_with_gpu_samples(&r, &tree, &normals).unwrap();
+            assert_eq!(new.root, old.root);
+            assert_eq!(
+                new.upload_transfers().host_to_device_bytes(),
+                old.upload_transfers().host_to_device_bytes()
+            );
+            assert_eq!(new.upload_transfers().device_to_device_bytes(), n as u64 * 16);
+            assert_eq!(queries.upload_transfers().device_to_device_bytes(), n as u64 * 16);
+            drop(tree);
+            drop(normals);
+            assert_eq!(
+                probe.read(&r, new.points.as_ref().unwrap()),
+                probe.read(&r, old.points.as_ref().unwrap())
+            );
+            assert_eq!(
+                probe.read(&r, new.nodes.as_ref().unwrap()),
+                probe.read(&r, old.nodes.as_ref().unwrap())
+            );
+            assert_eq!(probe.read(&r, queries.buffer().unwrap()), expected_query);
+            assert_eq!(probe.read(&r, samples.as_ref().unwrap()), expected_sample);
+            words += n * 16 + new.nodes.as_ref().unwrap().size() as usize / 4;
+        }
+    }
+    let cache = r.tree_gather_pipeline.get().unwrap();
+    assert!(cache.pipelines[0].get().is_none() && cache.pipelines[1].get().is_none());
+    assert!(cache.pipelines[2].get().is_some());
+    println!("FPFH_FUSED_TREE_WORDS {words}");
+}
+
+#[test]
 fn gather_plan_checks_capabilities_bytes_and_capped_grid_stride() {
     let limits = wgpu::Limits::default();
     assert_eq!(plan(0, &limits).unwrap(), (0, 0));

@@ -10,8 +10,16 @@ use crate::{scratch::ScratchBuffers, GpuKdTree, GpuNeighborhoods, GpuQueryBatch,
 #[path = "fpfh_sample_gather.rs"]
 pub(crate) mod sample_gather;
 
+#[path = "fpfh_two_pass_reference.rs"]
+#[cfg(all(test, not(target_arch = "wasm32")))]
+pub(crate) mod two_pass_reference;
+
 /// Three eleven-bin angular histograms per FPFH descriptor.
 pub const GPU_FPFH_DESCRIPTOR_LEN: usize = 33;
+
+// Preserve the previous two-pass large-input path: unconditional fusion
+// regressed large shuffled uploads in both isolated completed-call surveys.
+const FUSED_POINT_LIMIT: u32 = 1_048_576;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -85,12 +93,16 @@ impl GpuFpfhInput {
     }
 
     /// Explicitly generates tree points, original-order queries and padded
-    /// position/normal samples on GPU using integer copies. Host payload is
+    /// position/normal samples using integer copies. Below 1,048,576 points,
+    /// one pass generates all three outputs; larger inputs retain two passes.
+    /// Host payload is
     /// 28*N + 32*M bytes (axes, indices, raw normals and nodes), compared with
     /// 64*N + 32*M for `upload`. Device output bytes are 64*N, with no readback
     /// or completion wait. CPU partitioning, validation and node staging remain.
-    /// Removes 64*N host packing bytes; transient GPU inputs add up to 28*N
-    /// bytes beside owned outputs. Small inputs may be slower; placement is
+    /// Removes host packing allocations totaling 64*N payload bytes over
+    /// construction; fused inputs use two transient buffers totaling 28*N
+    /// bytes, while the large two-pass path uses up to 28*N beside owned outputs.
+    /// Small inputs may be slower than default upload; placement is
     /// explicit and existing FPFH device requirements apply.
     pub fn upload_with_gpu_gather(
         runtime: &WgpuRuntime,
@@ -136,10 +148,19 @@ impl GpuFpfhInput {
                 return Err(invalid());
             }
         }
-        let (tree, queries) = if gpu_gather {
-            GpuKdTree::upload_and_queries_with_gpu_gather(runtime, tree)?
+        let (tree, queries, gathered_samples) = if gpu_gather {
+            if points < FUSED_POINT_LIMIT {
+                GpuKdTree::upload_with_gpu_samples(runtime, tree, normals)?
+            } else {
+                let (tree, queries) = GpuKdTree::upload_and_queries_with_gpu_gather(runtime, tree)?;
+                (tree, queries, None)
+            }
         } else {
-            (GpuKdTree::upload(runtime, tree)?, GpuQueryBatch::upload_soa(runtime, [x, y, z])?)
+            (
+                GpuKdTree::upload(runtime, tree)?,
+                GpuQueryBatch::upload_soa(runtime, [x, y, z])?,
+                None,
+            )
         };
         let mut transfers = tree.upload_transfers();
         transfers.record(
@@ -155,7 +176,10 @@ impl GpuFpfhInput {
         } else if gpu_gather {
             transfers.record(TransferDirection::HostToDevice, u64::from(points) * 12);
             transfers.record(TransferDirection::DeviceToDevice, u64::from(points) * 32);
-            Some(sample_gather::upload(runtime, &queries, normals))
+            Some(
+                gathered_samples
+                    .unwrap_or_else(|| sample_gather::upload(runtime, &queries, normals)),
+            )
         } else {
             let samples: Vec<_> = x
                 .iter()
