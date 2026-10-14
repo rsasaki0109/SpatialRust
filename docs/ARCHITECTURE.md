@@ -56,6 +56,18 @@ position/normal samples together. Larger inputs retain the previous two-pass
 tree/query then sample construction. Host payload is 28*N + 32*M bytes, with 64*N
 device output bytes. CPU finite/unit-normal/extent validation and node staging
 remain; compute kernels and default upload/high-level placement are preserved.
+Feature input validation uses bounded native CPU bands for at least 524,288
+points: useful 131,072-point bands, available CPU count and a four-worker cap.
+Each band scans every original SoA coordinate for finite values while finding
+axis extrema; FPFH unit normals are checked in those same workers using the
+original f32 multiplication/addition order and tolerance. Bounds merge before
+the original axis-ordered f64 difference/square/sum and finite f32 extent gate.
+This adds only worker-sized metadata, with no coordinate copy, device resource,
+readback or transfer. Small/one-worker/WASM inputs retain serial scans. Feature
+planners and normal-length precedence remain before validation; feature-specific
+errors are preserved and device resources are created after successful validation.
+See [feature validation evidence](../notes/2026-10-14_parallel_feature_validation.md).
+
 No readback or host wait is added. The fused variant is lazy in the runtime's
 shared tree-gather cache; the separate sample stage remains for large inputs.
 Each submitted pass retains its inputs. Relative to owned buffers,

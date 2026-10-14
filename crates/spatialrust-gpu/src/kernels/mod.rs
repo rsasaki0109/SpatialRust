@@ -50,6 +50,7 @@ mod voxel_segments_gpu;
 mod voxel_gather;
 
 pub(crate) mod cluster_union;
+mod feature_validation;
 pub(crate) mod fpfh;
 pub(crate) mod gicp_reduction;
 pub(crate) mod point_to_plane_reduction;
