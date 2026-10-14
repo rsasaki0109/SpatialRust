@@ -7,6 +7,9 @@ use wgpu::util::DeviceExt;
 
 use crate::{scratch::ScratchBuffers, GpuKdTree, GpuNeighborhoods, GpuQueryBatch, WgpuRuntime};
 
+#[path = "fpfh_sample_gather.rs"]
+pub(crate) mod sample_gather;
+
 /// Three eleven-bin angular histograms per FPFH descriptor.
 pub const GPU_FPFH_DESCRIPTOR_LEN: usize = 33;
 
@@ -78,6 +81,31 @@ impl GpuFpfhInput {
         tree: &KdTree,
         normals: &[[f32; 3]],
     ) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, tree, normals, false)
+    }
+
+    /// Explicitly generates tree points, original-order queries and padded
+    /// position/normal samples on GPU using integer copies. Host payload is
+    /// 28*N + 32*M bytes (axes, indices, raw normals and nodes), compared with
+    /// 64*N + 32*M for `upload`. Device output bytes are 64*N, with no readback
+    /// or completion wait. CPU partitioning, validation and node staging remain.
+    /// Removes 64*N host packing bytes; transient GPU inputs add up to 28*N
+    /// bytes beside owned outputs. Small inputs may be slower; placement is
+    /// explicit and existing FPFH device requirements apply.
+    pub fn upload_with_gpu_gather(
+        runtime: &WgpuRuntime,
+        tree: &KdTree,
+        normals: &[[f32; 3]],
+    ) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, tree, normals, true)
+    }
+
+    fn upload_impl(
+        runtime: &WgpuRuntime,
+        tree: &KdTree,
+        normals: &[[f32; 3]],
+        gpu_gather: bool,
+    ) -> SpatialResult<Self> {
         let layout = tree.layout();
         let (x, y, z) = layout.positions();
         let (points, _) = plan(x.len() as u64, &runtime.device().limits())?;
@@ -108,15 +136,26 @@ impl GpuFpfhInput {
                 return Err(invalid());
             }
         }
-        let tree = GpuKdTree::upload(runtime, tree)?;
-        let queries = GpuQueryBatch::upload_soa(runtime, [x, y, z])?;
+        let (tree, queries) = if gpu_gather {
+            GpuKdTree::upload_and_queries_with_gpu_gather(runtime, tree)?
+        } else {
+            (GpuKdTree::upload(runtime, tree)?, GpuQueryBatch::upload_soa(runtime, [x, y, z])?)
+        };
         let mut transfers = tree.upload_transfers();
         transfers.record(
             TransferDirection::HostToDevice,
             queries.upload_transfers().host_to_device_bytes(),
         );
+        transfers.record(
+            TransferDirection::DeviceToDevice,
+            queries.upload_transfers().device_to_device_bytes(),
+        );
         let samples = if points == 0 {
             None
+        } else if gpu_gather {
+            transfers.record(TransferDirection::HostToDevice, u64::from(points) * 12);
+            transfers.record(TransferDirection::DeviceToDevice, u64::from(points) * 32);
+            Some(sample_gather::upload(runtime, &queries, normals))
         } else {
             let samples: Vec<_> = x
                 .iter()
@@ -152,7 +191,8 @@ impl GpuFpfhInput {
         self.points
     }
 
-    /// Payload bytes explicitly uploaded at construction.
+    /// Payload bytes explicitly transferred at construction, including device
+    /// output bytes when the GPU gather constructor is selected.
     #[must_use]
     pub const fn upload_transfers(&self) -> TransferStats {
         self.transfers

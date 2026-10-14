@@ -68,6 +68,21 @@ impl GpuMlsInput {
     /// also the covariance position buffer: 32 bytes per point plus 32 per tree
     /// node, with no duplicate sample upload. Finite f32 extent squares required.
     pub fn upload(runtime: &WgpuRuntime, tree: &KdTree) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, tree, false)
+    }
+
+    /// Explicitly generates tree points and original-order query/position
+    /// records in one integer GPU pass. Host payload is 16*N + 32*M bytes,
+    /// compared with 32*N + 32*M for `upload`; device output bytes are 32*N.
+    /// No readback or completion wait. CPU partitioning, validation and node
+    /// staging remain. Removes 32*N host packing bytes, with 16*N transient
+    /// GPU input bytes beside owned outputs. Small inputs may be slower;
+    /// placement is explicit and existing MLS device requirements apply.
+    pub fn upload_with_gpu_gather(runtime: &WgpuRuntime, tree: &KdTree) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, tree, true)
+    }
+
+    fn upload_impl(runtime: &WgpuRuntime, tree: &KdTree, gpu_gather: bool) -> SpatialResult<Self> {
         let layout = tree.layout();
         let (x, y, z) = layout.positions();
         let count = plan(x.len() as u64, &runtime.device().limits())?;
@@ -87,12 +102,19 @@ impl GpuMlsInput {
                 return Err(invalid());
             }
         }
-        let tree = GpuKdTree::upload(runtime, tree)?;
-        let queries = GpuQueryBatch::upload_soa(runtime, [x, y, z])?;
+        let (tree, queries) = if gpu_gather {
+            GpuKdTree::upload_and_queries_with_gpu_gather(runtime, tree)?
+        } else {
+            (GpuKdTree::upload(runtime, tree)?, GpuQueryBatch::upload_soa(runtime, [x, y, z])?)
+        };
         let mut transfers = tree.upload_transfers();
         transfers.record(
             TransferDirection::HostToDevice,
             queries.upload_transfers().host_to_device_bytes(),
+        );
+        transfers.record(
+            TransferDirection::DeviceToDevice,
+            queries.upload_transfers().device_to_device_bytes(),
         );
         Ok(Self {
             tree,
@@ -110,7 +132,8 @@ impl GpuMlsInput {
         self.count
     }
 
-    /// Payload explicitly uploaded at construction (zero for empty input).
+    /// Payload explicitly transferred at construction (zero for empty input),
+    /// including device output bytes for the GPU gather constructor.
     #[must_use]
     pub const fn upload_transfers(&self) -> TransferStats {
         self.transfers

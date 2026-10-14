@@ -30,7 +30,7 @@ impl Probe {
     fn new(r: &WgpuRuntime) -> Self {
         let shader = r.device().create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("feature-upload-word-probe"),
-            source: wgpu::ShaderSource::Wgsl("@group(0) @binding(0) var<storage,read> src:array<u32>; @group(0) @binding(1) var<storage,read_write> dst:array<u32>; @compute @workgroup_size(64) fn probe(@builtin(global_invocation_id) id:vec3<u32>){if id.x<arrayLength(&src){dst[id.x]=src[id.x];}}".into()),
+            source: wgpu::ShaderSource::Wgsl("@group(0) @binding(0) var<storage,read> src:array<u32>; @group(0) @binding(1) var<storage,read_write> dst:array<u32>; @compute @workgroup_size(64) fn probe(@builtin(global_invocation_id) id:vec3<u32>,@builtin(num_workgroups) groups:vec3<u32>){for(var i=id.x;i<arrayLength(&src);i+=groups.x*64u){dst[i]=src[i];}}".into()),
         });
         Self {
             pipeline: r.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
@@ -70,7 +70,7 @@ impl Probe {
             let mut pass = encoder.begin_compute_pass(&Default::default());
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &group, &[]);
-            pass.dispatch_workgroups((bytes as u32 / 4).div_ceil(64), 1, 1);
+            pass.dispatch_workgroups((bytes as u32 / 4).div_ceil(64).min(256), 1, 1);
         }
         encoder.copy_buffer_to_buffer(&output, 0, &staging, 0, bytes);
         r.queue().submit(Some(encoder.finish()));
@@ -357,3 +357,6 @@ fn direct_soa_preserves_resident_outputs_status_and_input_drop_ownership() {
 
 #[path = "feature_soa_upload_benchmark.rs"]
 mod benchmark;
+
+#[path = "feature_gpu_upload_tests.rs"]
+mod gpu_gather;
