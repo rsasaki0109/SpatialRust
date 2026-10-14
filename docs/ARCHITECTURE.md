@@ -105,6 +105,23 @@ f32 transforms/reductions can change matching, pose and stopping near gates or
 numerically degenerate geometry. See
 [resident ICP evidence](../notes/2026-10-13_gpu_icp_reduction.md).
 
+`GpuIcpInput`, `GpuGicpInput` and `GpuPointToPlaneInput` also expose explicit
+`upload_with_gpu_gather` constructors. The shared target tree/query integer
+gather uploads 16*T + 32*M bytes and generates 32*T device output bytes,
+removing separate target host packing allocations totaling 32*T payload bytes
+over construction. Two transient buffers add 16*T device bytes beside owned
+outputs; this is a transfer/allocation tradeoff, not a peak-memory saving.
+Total host payload is 16*S + 16*T + 32*M for ICP, 48*S + 48*T + 32*M for GICP
+and 16*S + 32*T + 32*M for point-to-plane. Source packing, finite/extent/anchor
+preparation, CPU target partitioning and node staging remain. GICP SPD
+covariance preparation and point-to-plane common normal scaling keep their
+order and arithmetic. Outputs and both device output receipts remain owned;
+no wait/readback is added. Existing device requirements apply. Default inputs,
+high-level placement and reduction kernels remain; small inputs may be slower.
+Latency depends on input size/order and backend, and can regress even for large
+calls; completed-upload measurements retain those cases without auto-selection.
+See [registration gather evidence](../notes/2026-10-15_gpu_registration_input_gather.md).
+
 The shared `GpuIcpInput` upload geometry preparation checks finite XYZ and
 collects per-axis bounds in bounded native chunks, at most one worker per
 65,536 points and available CPU parallelism. Source and target are prepared

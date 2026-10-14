@@ -90,6 +90,33 @@ impl GpuIcpInput {
         source: &[[f32; 3]],
         target: &KdTree,
     ) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, source, target, false)
+    }
+
+    /// Explicitly gathers target tree points and original-order target queries
+    /// together on GPU. Host payload is 16*S + 16*T + 32*M bytes, compared
+    /// with 16*S + 32*T + 32*M for `upload`; device output bytes are 32*T.
+    /// Source packing, CPU geometry validation/partitioning and node staging
+    /// remain. Integer copies preserve input bits, anchors, scale and ordering.
+    /// Two transient inputs add 16*T GPU bytes beside owned outputs; host
+    /// target point/query packing vectors totaling 32*T payload bytes over
+    /// construction are removed. This is not a peak-memory reduction claim.
+    /// There is no readback or completion wait. Placement is explicit;
+    /// small inputs may be slower and existing device requirements apply.
+    pub fn upload_with_gpu_gather(
+        runtime: &WgpuRuntime,
+        source: &[[f32; 3]],
+        target: &KdTree,
+    ) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, source, target, true)
+    }
+
+    fn upload_impl(
+        runtime: &WgpuRuntime,
+        source: &[[f32; 3]],
+        target: &KdTree,
+        gpu_gather: bool,
+    ) -> SpatialResult<Self> {
         plan(source.len() as u64, &runtime.device().limits())?;
         let layout = target.layout();
         let (x, y, z) = layout.positions();
@@ -104,9 +131,17 @@ impl GpuIcpInput {
             return Err(invalid());
         }
         let scale = if extent == 0.0 { 1.0 } else { extent.sqrt() as f32 };
-        let tree = GpuKdTree::upload(runtime, target)?;
+        let (tree, gathered_target) = if gpu_gather {
+            let (tree, queries) = GpuKdTree::upload_and_queries_with_gpu_gather(runtime, target)?;
+            (tree, Some(queries))
+        } else {
+            (GpuKdTree::upload(runtime, target)?, None)
+        };
         let source = GpuQueryBatch::upload(runtime, source)?;
-        let target = GpuQueryBatch::upload_soa(runtime, [x, y, z])?;
+        let target = match gathered_target {
+            Some(queries) => queries,
+            None => GpuQueryBatch::upload_soa(runtime, [x, y, z])?,
+        };
         let mut transfers = tree.upload_transfers();
         transfers.record(
             TransferDirection::HostToDevice,
@@ -115,6 +150,10 @@ impl GpuIcpInput {
         transfers.record(
             TransferDirection::HostToDevice,
             target.upload_transfers().host_to_device_bytes(),
+        );
+        transfers.record(
+            TransferDirection::DeviceToDevice,
+            target.upload_transfers().device_to_device_bytes(),
         );
         Ok(Self {
             source,
@@ -635,3 +674,7 @@ impl IcpReductionPipelines {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "icp_reduction_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "icp_reduction_gather_reference.rs"]
+pub(crate) mod gather_reference;

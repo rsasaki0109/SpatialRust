@@ -95,6 +95,33 @@ impl GpuPointToPlaneInput {
         target: &KdTree,
         target_normals: &[[f32; 3]],
     ) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, source, target, target_normals, false)
+    }
+
+    /// Explicitly uses shared GPU gathering for target tree points/queries.
+    /// Host payload is 16*S + 32*T + 32*M bytes, compared with 16*S + 48*T + 32*M
+    /// for `upload`; device output bytes are 32*T. Raw-normal validation/packing and common normal scale are unchanged.
+    /// Source/geometry preparation remains on CPU. Two transient inputs add
+    /// 16*T GPU bytes; host target packing totaling 32*T payload bytes over
+    /// construction is removed. No readback or completion wait is added.
+    /// Placement is explicit; small inputs may be slower and existing device
+    /// requirements apply. See `GpuIcpInput::upload_with_gpu_gather`.
+    pub fn upload_with_gpu_gather(
+        runtime: &WgpuRuntime,
+        source: &[[f32; 3]],
+        target: &KdTree,
+        target_normals: &[[f32; 3]],
+    ) -> SpatialResult<Self> {
+        Self::upload_impl(runtime, source, target, target_normals, true)
+    }
+
+    fn upload_impl(
+        runtime: &WgpuRuntime,
+        source: &[[f32; 3]],
+        target: &KdTree,
+        target_normals: &[[f32; 3]],
+        gpu_gather: bool,
+    ) -> SpatialResult<Self> {
         if target.layout().positions().0.len() != target_normals.len() {
             return Err(invalid());
         }
@@ -120,7 +147,11 @@ impl GpuPointToPlaneInput {
             }
             packed.push([row[0], row[1], row[2], 0.0]);
         }
-        let positions = GpuIcpInput::upload(runtime, source, target)?;
+        let positions = if gpu_gather {
+            GpuIcpInput::upload_with_gpu_gather(runtime, source, target)?
+        } else {
+            GpuIcpInput::upload(runtime, source, target)?
+        };
         let normals = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("point-to-plane-normals"),
             contents: bytemuck::cast_slice(&packed),
@@ -507,3 +538,7 @@ impl PointToPlaneReductionPipelines {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "point_to_plane_reduction_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "point_to_plane_reduction_gather_reference.rs"]
+pub(crate) mod gather_reference;
