@@ -232,6 +232,16 @@ GPU consumers must inspect counts before using rows. Target/query payloads
 remain resident between passes. This adds no core/search dependency and does
 not change ordinary feature algorithm placement; explicit device consumers follow.
 
+FPFH, ISS and MLS upload constructors now pass the CPU KD-tree's borrowed
+original-order SoA coordinates directly to the existing private query packer.
+FPFH samples zip those coordinates with the original unit normals. This removes
+one 12*N-byte host position vector per upload; padded query/sample staging and
+the caller's CPU tree/normal storage remain. Original coordinate/normal bits,
+positive-zero padding, validation order, device records, transfers and kernels
+are preserved. This is a CPU staging/allocation improvement at the explicit
+upload boundary, not a new GPU algorithm or CPU parallel placement change. See
+[direct feature staging evidence](../notes/2026-10-14_direct_soa_feature_upload.md).
+
 FPFH device computation now consumes this radius-row representation through
 `GpuFpfhInput` and neighborhoods tied to that exact uploaded input. Explicit
 input upload retains original positions/unit normals plus target/query buffers.

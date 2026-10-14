@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack FPFH, ISS and MLS GPU query inputs directly from the CPU KD-tree's
+  original-order SoA coordinates, removing a 12-byte-per-point host position
+  vector. Pack FPFH samples from those same coordinates and unit normals;
+  preserve input bits, validation, GPU payloads, kernels and owned results.
+  See `notes/2026-10-14_direct_soa_feature_upload.md`.
+
 - Reduce resident GPU bilateral byte rounding to a proposed byte verified by
   exact integer midpoint comparisons, retaining bounded integer search for
   rejected candidates and unchanged CPU-compatible results. Preserve the
