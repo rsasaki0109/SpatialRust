@@ -457,6 +457,15 @@ row bands for large images and retain the original per-pixel math; small,
 single-row, one-worker and WASM calls keep the original serial loop. See
 [bilateral execution evidence](../notes/2026-10-14_gpu_bilateral_filter.md).
 
+Bilateral final byte rounding now proposes a candidate using the normalized
+high mantissa words and a bounded normal f32 scale. Exact binary64 division
+midpoint comparisons verify the lower/upper byte boundaries before any result
+returns; a rejected candidate narrows a bounded integer search. Float estimates
+never decide output correctness. Zero and extreme exponent gaps use exact
+guards. Accumulation, coefficients, preparation, passes, scratch, limits and
+explicit transfer receipts retain their existing contracts. See
+[byte-candidate evidence](../notes/2026-10-14_gpu_bilateral_byte_candidates.md).
+
 `canny_gpu` / `canny_gpu_profiled` extend the resident grayscale image API with
 complete device Canny. `GpuCannyOptions` accepts 3/5/7 Sobel apertures, finite
 nonnegative binary64 thresholds and L1/squared-L2 comparison. CPU-compatible

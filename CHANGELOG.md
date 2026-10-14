@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reduce resident GPU bilateral byte rounding to a proposed byte verified by
+  exact integer midpoint comparisons, retaining bounded integer search for
+  rejected candidates and unchanged CPU-compatible results. Preserve the
+  existing reusable coefficients, single pass, owned outputs and transfers.
+  See `notes/2026-10-14_gpu_bilateral_byte_candidates.md`.
+
 - Parallelize large generic CPU bilateral filters with bounded native output
   bands while retaining their circular support, squared L1 color metric,
   original f64 FMA/exp/reduction order, conversions and metadata. Small,

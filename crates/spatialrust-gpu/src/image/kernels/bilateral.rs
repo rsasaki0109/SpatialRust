@@ -276,6 +276,9 @@ pub(crate) struct BilateralPipeline {
 }
 impl BilateralPipeline {
     fn new(device: &wgpu::Device) -> Self {
+        Self::with_shader(device, SHADER)
+    }
+    fn with_shader(device: &wgpu::Device, shader: &str) -> Self {
         let buffer = |binding, ty| wgpu::BindGroupLayoutEntry {
             binding,
             visibility: wgpu::ShaderStages::COMPUTE,
@@ -311,7 +314,7 @@ impl BilateralPipeline {
         });
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("bilateral-shader"),
-            source: wgpu::ShaderSource::Wgsl(SHADER.into()),
+            source: wgpu::ShaderSource::Wgsl(shader.into()),
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("bilateral-pipeline-layout"),
