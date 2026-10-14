@@ -46,9 +46,7 @@ impl GpuQueryBatch {
         let limits = runtime.device().limits();
         let bytes = buffer_bytes(queries.len() as u64, 16, &limits)?;
         check_compute(&limits, queries.len() as u64)?;
-        if queries.iter().flatten().any(|v| !v.is_finite()) {
-            return Err(invalid());
-        }
+        let packed = aos_query_staging::prepare(queries)?;
         let mut batch = Self {
             buffer: None,
             count: queries.len() as u32,
@@ -56,7 +54,6 @@ impl GpuQueryBatch {
             transfers: TransferStats::default(),
         };
         if !queries.is_empty() {
-            let packed: Vec<_> = queries.iter().map(|p| [p[0], p[1], p[2], 0.0]).collect();
             batch.buffer =
                 Some(runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("neighborhood-queries"),
@@ -519,3 +516,14 @@ impl GpuKdTree {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "neighborhood_tests.rs"]
 mod tests;
+
+#[path = "aos_query_staging.rs"]
+mod aos_query_staging;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "aos_query_upload_reference.rs"]
+pub(crate) mod aos_upload_reference;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "aos_query_upload_tests.rs"]
+mod aos_upload_tests;

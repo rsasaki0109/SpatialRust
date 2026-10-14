@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Prepare large original-order AoS GPU query inputs with bounded native CPU
+  workers, combining finite validation and exact padded-row packing in disjoint
+  bands. Preserve bits, errors, payloads and explicit transfer receipts; small,
+  one-worker and WASM calls retain serial preparation. See
+  `notes/2026-10-15_parallel_aos_query_staging.md`.
+
 - Prepare large point-to-plane GPU input normals with bounded native CPU
   workers: merge finite absolute maxima, then validate and pack scaled rows in
   disjoint original-order bands. Preserve exact division, common scale, errors,
