@@ -56,6 +56,8 @@ pub struct WgpuRuntime {
     pub(crate) image_gaussian_pipelines:
         OnceLock<crate::image::kernels::gaussian::GaussianPipelines>,
     #[cfg(feature = "gpu-image")]
+    pub(crate) image_median_pipelines: OnceLock<crate::image::kernels::median::MedianPipelines>,
+    #[cfg(feature = "gpu-image")]
     pub(crate) image_canny_pipelines: OnceLock<crate::image::canny::CannyPipelines>,
     #[cfg(feature = "gpu-image")]
     pub(crate) image_spatial_pipelines: OnceLock<crate::image::kernels::spatial::SpatialPipelines>,
@@ -250,6 +252,7 @@ impl WgpuRuntime {
         usize::from(self.image_gray_pipeline.get().is_some())
             + usize::from(self.image_blur_pipeline.get().is_some())
             + usize::from(self.image_gaussian_pipelines.get().is_some())
+            + usize::from(self.image_median_pipelines.get().is_some())
             + usize::from(self.image_canny_pipelines.get().is_some())
             + usize::from(self.image_spatial_pipelines.get().is_some())
             + usize::from(self.image_ai_pack_pipeline.get().is_some())
@@ -432,6 +435,8 @@ impl WgpuRuntime {
             image_blur_pipeline: OnceLock::new(),
             #[cfg(feature = "gpu-image")]
             image_gaussian_pipelines: OnceLock::new(),
+            #[cfg(feature = "gpu-image")]
+            image_median_pipelines: OnceLock::new(),
             #[cfg(feature = "gpu-image")]
             image_canny_pipelines: OnceLock::new(),
             #[cfg(feature = "gpu-image")]

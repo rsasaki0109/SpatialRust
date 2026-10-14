@@ -452,6 +452,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Added
 
+- Add `median_blur_gpu` for exact per-channel 3x3/5x5 median filtering of
+  resident u8 images under `gpu-image`. Preserve 1..=4 logical channels and
+  metadata, including independent alpha filtering; support replicate and zero
+  borders with one integer comparison-network pass and explicit transfers.
+  See `notes/2026-10-14_gpu_median_filter.md`.
+
 - Explicit bounded native keyframe study adapters retain a fixed keyframe or
   promote an already accepted pose using input-only geometric support. A
   separate coarse-SVD/fine-plane variant records each objective. Four official
