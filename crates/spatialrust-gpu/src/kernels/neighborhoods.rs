@@ -101,15 +101,11 @@ impl GpuQueryBatch {
 }
 
 fn pack_soa(axes: [&[f32]; 3]) -> SpatialResult<Vec<[f32; 4]>> {
-    let [x, y, z] = axes;
-    if x.len() != y.len()
-        || x.len() != z.len()
-        || axes.iter().any(|axis| axis.iter().any(|v| !v.is_finite()))
-    {
-        return Err(invalid());
-    }
-    Ok(x.iter().zip(y).zip(z).map(|((&x, &y), &z)| [x, y, z, 0.0]).collect())
+    query_staging::prepare(axes)
 }
+
+#[path = "query_staging.rs"]
+mod query_staging;
 
 /// Immutable GPU-resident bounded neighborhoods. Creating this result submits
 /// GPU search without payload uploads/readbacks or a completion wait. Query/target
