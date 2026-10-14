@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit GPU integer gathering for KD-tree point records, plus shared
+  tree/original-order query construction. The shared API uploads axes/indices
+  once, reducing point/query host payload from 32*N to 16*N bytes, with separate
+  device output receipts. Existing constructors and algorithm placement remain.
+  See `notes/2026-10-14_gpu_tree_point_gather.md` for correctness, memory costs
+  and completed-upload measurements, including small-input overhead.
+
 - Prepare large GPU KD-tree point inputs with bounded native CPU workers,
   retaining original coordinate bits and original indices in leaf traversal
   order. At least 524,288 points use useful 131,072-point bands and at most

@@ -16,8 +16,8 @@ pub enum GpuNeighborhoodKind {
     Radius,
 }
 
-/// Immutable, explicitly uploaded finite query positions, reusable across trees
-/// and neighborhood passes on the same runtime. No readback occurs at upload.
+/// Immutable finite query positions, explicitly uploaded or generated from a
+/// tree on GPU. Reusable across trees and passes on the same runtime.
 pub struct GpuQueryBatch {
     buffer: Option<wgpu::Buffer>,
     count: u32,
@@ -26,6 +26,16 @@ pub struct GpuQueryBatch {
 }
 
 impl GpuQueryBatch {
+    pub(super) fn from_gathered(
+        runtime: &WgpuRuntime,
+        buffer: Option<wgpu::Buffer>,
+        count: u32,
+    ) -> Self {
+        let mut transfers = TransferStats::default();
+        transfers.record(TransferDirection::DeviceToDevice, u64::from(count) * 16);
+        Self { buffer, count, identity: runtime.profiling_identity(), transfers }
+    }
+
     pub(crate) fn buffer(&self) -> Option<&wgpu::Buffer> {
         self.buffer.as_ref()
     }
@@ -93,7 +103,8 @@ impl GpuQueryBatch {
         self.count
     }
 
-    /// Payload bytes transferred during explicit upload.
+    /// Payload bytes transferred during explicit construction. GPU-generated
+    /// queries report device-to-device output bytes and zero host upload bytes.
     #[must_use]
     pub const fn upload_transfers(&self) -> TransferStats {
         self.transfers
