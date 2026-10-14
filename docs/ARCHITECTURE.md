@@ -413,6 +413,21 @@ Oversized scratch requests reject; the caller controls placement. Returned image
 compose with gray/Sobel/AI stages through the existing resident image API. See
 [Gaussian execution evidence](../notes/2026-10-13_gpu_gaussian_blur.md).
 
+`median_blur_gpu` under `gpu-image` applies exact per-component 3x3/5x5
+median selection to resident `rgba8uint` images with 1..=4 logical channels.
+Replicate and constant-zero borders match CPU median sampling; alpha is filtered
+as an independent component and metadata is retained. A generated, pruned
+bitonic comparison network selects the median from 9/25 byte vectors padded
+with the maximum byte. Static integer min/max comparisons avoid data-dependent
+sorting loops and dynamic private-array indexing. One device pass returns an
+owned image with four physical output bytes per pixel; no image-sized scratch,
+payload upload/readback or host completion wait is hidden. Dimension, signed
+coordinate, dispatch, texture/binding and 16-byte uniform limits are checked
+before output allocation or lazy cache creation. The two kernel pipelines are
+independently lazy within one runtime-owned family. Caller-selected CPU median
+placement and generic CPU kernel/border support remain unchanged. See
+[median execution evidence](../notes/2026-10-14_gpu_median_filter.md).
+
 `canny_gpu` / `canny_gpu_profiled` extend the resident grayscale image API with
 complete device Canny. `GpuCannyOptions` accepts 3/5/7 Sobel apertures, finite
 nonnegative binary64 thresholds and L1/squared-L2 comparison. CPU-compatible
