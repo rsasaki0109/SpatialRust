@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add explicit GPU gather constructors for FPFH, ISS and MLS inputs. Share
+  tree/query uploads and pack FPFH position/normal samples with integer GPU
+  copies, reducing point host payload from 64*N to 28*N bytes for FPFH and
+  from 32*N to 16*N for ISS/MLS. Preserve default placement, validation and
+  computation, with complete host/device receipts and owned outputs.
+  See `notes/2026-10-14_gpu_feature_input_gather.md`.
+
 - Add explicit GPU integer gathering for KD-tree point records, plus shared
   tree/original-order query construction. The shared API uploads axes/indices
   once, reducing point/query host payload from 32*N to 16*N bytes, with separate

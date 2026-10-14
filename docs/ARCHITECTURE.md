@@ -46,6 +46,23 @@ search kernels and feature/registration placement are preserved. These explicit
 APIs expose a transfer/memory tradeoff whose latency depends on input size; see
 [GPU gather evidence](../notes/2026-10-14_gpu_tree_point_gather.md).
 
+`GpuFpfhInput`, `GpuIssInput` and `GpuMlsInput` expose explicit
+`upload_with_gpu_gather` constructors using those shared tree/query outputs.
+ISS/MLS host payload becomes 16*N + 32*M bytes, with 32*N device output bytes.
+FPFH uploads raw original-order normals (12*N bytes) and runs a second integer
+pass to assemble its unchanged 32-byte position/normal samples from resident
+queries and normals. Its host payload becomes 28*N + 32*M bytes, with 64*N
+device output bytes. CPU finite/unit-normal/extent validation and node staging
+remain; compute kernels and default upload/high-level placement are preserved.
+No readback or host wait is added. The FPFH sample pipeline is lazy per runtime,
+and both submitted passes retain their own inputs. Relative to owned buffers,
+transient GPU inputs add up to 28*N bytes for FPFH and 16*N for ISS/MLS, while
+host packing allocations totaling 64*N and 32*N payload bytes respectively
+are removed over construction; these sums are not peak-memory savings. Backend staging
+overhead is additional. These constructors require the existing feature device
+limits; small inputs may be slower. See
+[feature gather evidence](../notes/2026-10-14_gpu_feature_input_gather.md).
+
 The same feature adds `align_with_gpu_reduction` for untrimmed point-to-point
 ICP. `GpuIcpInput` explicitly uploads original source, original-order target
 and target tree once. Six ordered passes per evaluation transform originals,
