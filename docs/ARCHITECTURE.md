@@ -122,6 +122,19 @@ Latency depends on input size/order and backend, and can regress even for large
 calls; completed-upload measurements retain those cases without auto-selection.
 See [registration gather evidence](../notes/2026-10-15_gpu_registration_input_gather.md).
 
+Both point-to-plane upload routes prepare large raw-normal inputs in two bounded
+native CPU phases. From 262,144 rows, available CPU count and useful 65,536-row
+bands select at most four workers. Finite absolute maxima merge exactly before
+the existing zero/normal-scale gate. Disjoint output bands then retain the
+original three f32 divisions, nonzero-component underflow rejection, original
+order and zero padding. The 16*T-byte host payload allocation remains; parallel
+packing zero-initializes it and adds worker-sized metadata and thread stacks.
+All scopes join before device construction. Count/device guards still precede
+normal preparation and geometry validation still follows it. Small/one-worker/
+WASM calls remain serial. Reduction math, GPU passes, ownership and explicit
+receipts are preserved. See
+[normal staging evidence](../notes/2026-10-15_parallel_plane_normal_staging.md).
+
 The shared `GpuIcpInput` upload geometry preparation checks finite XYZ and
 collects per-axis bounds in bounded native chunks, at most one worker per
 65,536 points and available CPU parallelism. Source and target are prepared

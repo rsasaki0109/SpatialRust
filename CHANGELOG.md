@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Prepare large point-to-plane GPU input normals with bounded native CPU
+  workers: merge finite absolute maxima, then validate and pack scaled rows in
+  disjoint original-order bands. Preserve exact division, common scale, errors,
+  payloads and receipts for both upload routes; small/one-worker/WASM calls
+  remain serial. See `notes/2026-10-15_parallel_plane_normal_staging.md`.
+
 - Add explicit GPU gather constructors for ICP, GICP and point-to-plane ICP
   reduction inputs. Share target tree/original-order query construction,
   reducing target host payload by 16 bytes per point, with 32 target bytes per
