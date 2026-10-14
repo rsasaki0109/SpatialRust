@@ -22,8 +22,8 @@ pub use histogram::{
 };
 pub use kernels::{
     box_blur_gpu, copy_gpu_image, gaussian_blur_gpu, gaussian_blur_gpu_profiled, median_blur_gpu,
-    morphology_gpu, resize_nearest_gpu, rgb_to_gray_gpu, sobel_gpu, GpuGaussianBlurOptions,
-    GpuGaussianBorder, GpuImageBorder, GpuMorphology,
+    morphology_gpu, resize_nearest_gpu, rgb_to_gray_gpu, sobel_gpu, GpuBilateralFilter,
+    GpuBilateralOptions, GpuGaussianBlurOptions, GpuGaussianBorder, GpuImageBorder, GpuMorphology,
 };
 pub use vision_chain::{
     run_gpu_vision_chain, run_gpu_vision_chain_profiled, GpuVisionChainOptions,

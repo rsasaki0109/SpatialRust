@@ -440,6 +440,23 @@ and explicit CPU/GPU placement are preserved. GPU measurements against this
 improved CPU baseline are recorded in
 [CPU median execution evidence](../notes/2026-10-14_parallel_cpu_median.md).
 
+`GpuBilateralFilter::prepare` under `gpu-image` explicitly uploads immutable,
+image-independent coefficients for 1..=4 u8 channels, diameters 1..=7 and
+replicate/constant-zero borders. A circular radius `floor(diameter/2)` and the
+squared joint L1 color distance, including alpha, match CPU bilateral sampling.
+Host binary64 FMA/exp prepares shared distance rows; normal-or-zero weights and
+finite factors are admitted. The runtime-bound plan is reusable across image
+sizes; its coefficient transfer receipt is separate from image payload receipts.
+`filter` performs color-distance calculation, ordered integer-word binary64
+weighted sums and exact byte rounding in one device pass. Comparing against
+half-byte division-rounding boundaries avoids native shader float64 and a full
+software quotient. There is no image-sized scratch, payload transfer or host
+completion wait. Ownership, channel and resource/coordinate/dispatch limits
+reject before output/cache allocation. CPU bilateral calls use bounded native
+row bands for large images and retain the original per-pixel math; small,
+single-row, one-worker and WASM calls keep the original serial loop. See
+[bilateral execution evidence](../notes/2026-10-14_gpu_bilateral_filter.md).
+
 `canny_gpu` / `canny_gpu_profiled` extend the resident grayscale image API with
 complete device Canny. `GpuCannyOptions` accepts 3/5/7 Sobel apertures, finite
 nonnegative binary64 thresholds and L1/squared-L2 comparison. CPU-compatible

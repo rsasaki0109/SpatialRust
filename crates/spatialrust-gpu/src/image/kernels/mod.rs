@@ -1,5 +1,6 @@
 //! Chainable GPU image compute kernels.
 
+pub(crate) mod bilateral;
 pub(crate) mod box_blur;
 mod copy;
 pub(crate) mod gaussian;
@@ -7,6 +8,7 @@ pub(crate) mod gray;
 pub(crate) mod median;
 pub(crate) mod spatial;
 
+pub use bilateral::{GpuBilateralFilter, GpuBilateralOptions};
 pub use box_blur::{box_blur_gpu, GpuImageBorder};
 pub use copy::copy_gpu_image;
 pub use gaussian::{

@@ -114,7 +114,7 @@ pub use image::{
     gaussian_blur_gpu_profiled, histogram_cdf_gpu, histogram_cdf_gpu_profiled, histogram_u8_gpu,
     histogram_u8_gpu_profiled, median_blur_gpu, morphology_gpu, pack_ai_chw_gpu,
     resize_nearest_gpu, rgb_to_gray_gpu, run_gpu_vision_chain, run_gpu_vision_chain_profiled,
-    sobel_gpu, GpuAiTensor, GpuCannyOptions, GpuGaussianBlurOptions, GpuGaussianBorder, GpuImage,
-    GpuImageBorder, GpuImageCdf, GpuImageHistogram, GpuImageReceipt, GpuMorphology,
-    GpuVisionChainOptions,
+    sobel_gpu, GpuAiTensor, GpuBilateralFilter, GpuBilateralOptions, GpuCannyOptions,
+    GpuGaussianBlurOptions, GpuGaussianBorder, GpuImage, GpuImageBorder, GpuImageCdf,
+    GpuImageHistogram, GpuImageReceipt, GpuMorphology, GpuVisionChainOptions,
 };
