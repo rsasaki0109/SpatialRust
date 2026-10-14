@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Prepare large GPU KD-tree point inputs with bounded native CPU workers,
+  retaining original coordinate bits and original indices in leaf traversal
+  order. At least 524,288 points use useful 131,072-point bands and at most
+  four workers; small/one-worker/WASM calls remain serial. Keep one 16-byte
+  staging record per point, serial node packing and explicit transfer receipts.
+  See `notes/2026-10-14_parallel_gpu_tree_staging.md`.
+
 - Prepare large shared SoA GPU query uploads with bounded native CPU workers:
   at least 524,288 points, 262,144 points per useful worker and at most four
   workers. Preserve coordinate bits/order, zero padding and explicit transfers

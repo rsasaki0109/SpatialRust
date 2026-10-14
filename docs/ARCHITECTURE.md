@@ -16,6 +16,19 @@ or dispatch sizes reject before device resource use; ordinary ICP placement is
 unchanged. This is a native synchronous search boundary, not a claim that the
 entire registration loop is device resident.
 
+Large `GpuKdTree::upload` calls validate original coordinates and gather
+16-byte XYZ/original-index records in bounded native CPU bands. At least
+524,288 points use available CPUs and useful 131,072-point bands, capped at
+four workers. Finite validation covers every original coordinate independently
+of the tree's point permutation; disjoint writes retain leaf traversal order
+and original indices. The existing 16*N point allocation and 32*M node staging
+remain, with worker-sized metadata and serial node packing. Small/one-worker/
+WASM inputs retain serial finite scans and point gathering. Device limits
+precede host packing, and all workers succeed before device buffers are created;
+large invalid inputs may first allocate bounded host point storage. Root,
+nodes, ties, payloads, transfers and search kernels are preserved. See
+[tree input staging evidence](../notes/2026-10-14_parallel_gpu_tree_staging.md).
+
 The same feature adds `align_with_gpu_reduction` for untrimmed point-to-point
 ICP. `GpuIcpInput` explicitly uploads original source, original-order target
 and target tree once. Six ordered passes per evaluation transform originals,

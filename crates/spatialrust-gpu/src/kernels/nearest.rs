@@ -7,6 +7,9 @@ use wgpu::util::DeviceExt;
 
 use crate::{scratch::ScratchBuffers, WgpuRuntime};
 
+#[path = "tree_staging.rs"]
+mod tree_staging;
+
 #[path = "neighborhoods.rs"]
 mod neighborhoods;
 pub(crate) use neighborhoods::NeighborhoodPipelines;
@@ -201,9 +204,7 @@ impl GpuKdTree {
         let point_bytes = buffer_bytes(x.len() as u64, 16, &limits)?;
         let node_bytes = buffer_bytes(layout.nodes().len() as u64, 32, &limits)?;
         check_compute(&limits, 0)?;
-        if x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
-            return Err(invalid());
-        }
+        let points = tree_staging::prepare([x, y, z], layout.point_order())?;
         let mut target = Self {
             nodes: None,
             points: None,
@@ -232,14 +233,6 @@ impl GpuKdTree {
                     }
                 }
                 output
-            })
-            .collect();
-        let points: Vec<_> = layout
-            .point_order()
-            .iter()
-            .map(|&index| {
-                let i = index as usize;
-                Point { xyz: [x[i], y[i], z[i]], index }
             })
             .collect();
         let upload = |label, data: &[u8]| {
