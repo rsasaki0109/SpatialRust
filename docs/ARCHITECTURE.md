@@ -46,6 +46,19 @@ boundary also serves GICP, point-to-plane and resident covariance constructors.
 Payload, input layouts, kernels, result ownership and receipts remain unchanged.
 See [registration geometry evidence](../notes/2026-10-14_parallel_gpu_registration_geometry.md).
 
+Shared registration input upload now prepares target bounds directly from the
+CPU KD-tree's borrowed original-order SoA coordinates and packs those coordinates
+directly into the existing 16-byte query records. This removes the intermediate
+12*T host-byte AoS target vector; the 16*T padded query staging and tree-order
+point staging remain. Target geometry retains the same native worker bounds,
+serial small/WASM placement, f64 arithmetic and canonical zero anchors. Private
+SoA helpers reject unequal coordinate lengths and nonfinite values; count/device
+limits precede query packing, and target geometry errors precede device input
+allocation. Source staging, original target indices, device layouts and shaders
+are unchanged. Upload remains 16*S + 32*T + 32*M bytes, with no additional device
+copy or readback. See
+[direct target staging evidence](../notes/2026-10-14_direct_soa_registration_upload.md).
+
 `align_with_gpu_trimmed_reduction` and `GpuIcpInput::trimmed_moments_resident`
 extend the resident path with stable MSD selection by device distance and original
 source index. Four distance bytes and the necessary source-index bytes determine

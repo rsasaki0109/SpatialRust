@@ -1,6 +1,74 @@
 use super::*;
 use spatialrust_search::{KdTree, NearestNeighborIndex, RadiusSearchIndex};
 
+#[test]
+fn soa_query_packing_preserves_point_order_bits_and_zero_padding() {
+    assert!(pack_soa([&[], &[], &[]]).unwrap().is_empty());
+    for mask in 0..8_u32 {
+        let points = [
+            std::array::from_fn(|axis| f32::from_bits(((mask >> axis) & 1) << 31)),
+            [f32::from_bits(1), -f32::from_bits(2), f32::MAX],
+            [17.25, -43.5, 0.0625],
+        ];
+        let axes: [Vec<_>; 3] =
+            std::array::from_fn(|axis| points.iter().map(|p| p[axis]).collect());
+        let packed = pack_soa([&axes[0], &axes[1], &axes[2]]).unwrap();
+        assert_eq!(packed.len(), points.len());
+        for (row, p) in packed.iter().zip(points) {
+            assert_eq!(row.map(f32::to_bits), [p[0].to_bits(), p[1].to_bits(), p[2].to_bits(), 0]);
+        }
+    }
+    for axes in [[&[][..], &[1.0][..], &[][..]], [&[1.0][..], &[][..], &[1.0][..]]] {
+        assert!(pack_soa(axes).is_err());
+    }
+    for axis in 0..3 {
+        for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let mut axes = [[1.0, 2.0]; 3];
+            axes[axis][1] = value;
+            assert!(pack_soa([&axes[0], &axes[1], &axes[2]]).is_err());
+        }
+    }
+}
+
+#[test]
+fn soa_query_upload_matches_aos_search_counts_receipts_and_runtime_checks() {
+    let runtime = WgpuRuntime::new_headless().unwrap();
+    let other = WgpuRuntime::new_headless().unwrap();
+    let empty = GpuQueryBatch::upload_soa(&runtime, [&[], &[], &[]]).unwrap();
+    assert_eq!(empty.query_count(), 0);
+    assert!(empty.buffer().is_none());
+    assert_eq!(empty.upload_transfers(), TransferStats::default());
+    assert!(GpuQueryBatch::upload_soa(&runtime, [&[1.0], &[], &[1.0]]).is_err());
+    assert!(GpuQueryBatch::upload_soa(&runtime, [&[0.0], &[f32::NAN], &[0.0]]).is_err());
+    for n in [1, 17, 65, 257, 513] {
+        for kind in 0..4 {
+            let (tree, points) = fixture(n, kind);
+            let target = GpuKdTree::upload(&runtime, &tree).unwrap();
+            let axes: [Vec<_>; 3] =
+                std::array::from_fn(|axis| points.iter().map(|p| p[axis]).collect());
+            let aos = GpuQueryBatch::upload(&runtime, &points).unwrap();
+            let soa = GpuQueryBatch::upload_soa(&runtime, [&axes[0], &axes[1], &axes[2]]).unwrap();
+            assert_eq!(aos.query_count(), soa.query_count());
+            assert_eq!(aos.upload_transfers(), soa.upload_transfers());
+            assert!(target.nearest_k_resident(&other, &soa, 1).is_err());
+            for k in [1, 6, 16] {
+                let a = target
+                    .nearest_k_resident(&runtime, &aos, k)
+                    .unwrap()
+                    .download(&runtime)
+                    .unwrap();
+                let b = target
+                    .nearest_k_resident(&runtime, &soa, k)
+                    .unwrap()
+                    .download(&runtime)
+                    .unwrap();
+                assert_eq!(a.complete_rows().unwrap(), b.complete_rows().unwrap());
+                assert_eq!(a.transfers(), b.transfers());
+            }
+        }
+    }
+}
+
 fn fixture(n: usize, kind: usize) -> (KdTree, Vec<[f32; 3]>) {
     let points: Vec<_> = (0..n)
         .map(|i| {

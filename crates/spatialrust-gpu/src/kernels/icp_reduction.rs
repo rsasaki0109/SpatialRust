@@ -97,9 +97,8 @@ impl GpuIcpInput {
         if x.is_empty() {
             return Err(invalid());
         }
-        let target_positions: Vec<_> = (0..x.len()).map(|i| [x[i], y[i], z[i]]).collect();
         let (source_anchor, source_extent) = geometry(source)?;
-        let (target_anchor, target_extent) = geometry(&target_positions)?;
+        let (target_anchor, target_extent) = geometry_preparation::prepare_soa([x, y, z])?;
         let extent = source_extent.max(target_extent);
         if extent > 0.0 && (extent as f32) < f32::MIN_POSITIVE {
             return Err(invalid());
@@ -107,7 +106,7 @@ impl GpuIcpInput {
         let scale = if extent == 0.0 { 1.0 } else { extent.sqrt() as f32 };
         let tree = GpuKdTree::upload(runtime, target)?;
         let source = GpuQueryBatch::upload(runtime, source)?;
-        let target = GpuQueryBatch::upload(runtime, &target_positions)?;
+        let target = GpuQueryBatch::upload_soa(runtime, [x, y, z])?;
         let mut transfers = tree.upload_transfers();
         transfers.record(
             TransferDirection::HostToDevice,

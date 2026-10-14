@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack shared GPU registration targets directly from the CPU KD-tree's original
+  SoA coordinates, removing the intermediate 12-byte-per-target host vector.
+  Preserve exact geometry, original point bits/order, device records and explicit
+  transfer receipts across ICP, GICP and point-to-plane input uploads.
+  See `notes/2026-10-14_direct_soa_registration_upload.md`.
+
 - Prepare large explicit GPU registration input geometry with bounded native
   CPU workers, sharing finite-XYZ/bounds scans across ICP, GICP and point-to-plane
   uploads. Preserve exact nonzero anchors/extents and original point bits;

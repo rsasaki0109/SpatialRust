@@ -58,6 +58,35 @@ impl GpuQueryBatch {
         Ok(batch)
     }
 
+    // Registration's target tree already owns original-order SoA positions.
+    // Pack directly into the existing device record, avoiding an AoS copy.
+    pub(crate) fn upload_soa(runtime: &WgpuRuntime, axes: [&[f32]; 3]) -> SpatialResult<Self> {
+        let count = axes[0].len();
+        if axes.iter().any(|axis| axis.len() != count) {
+            return Err(invalid());
+        }
+        let limits = runtime.device().limits();
+        let bytes = buffer_bytes(count as u64, 16, &limits)?;
+        check_compute(&limits, count as u64)?;
+        let packed = pack_soa(axes)?;
+        let mut batch = Self {
+            buffer: None,
+            count: count as u32,
+            identity: runtime.profiling_identity(),
+            transfers: TransferStats::default(),
+        };
+        if count != 0 {
+            batch.buffer =
+                Some(runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("neighborhood-queries"),
+                    contents: bytemuck::cast_slice(&packed),
+                    usage: wgpu::BufferUsages::STORAGE,
+                }));
+            batch.transfers.record(TransferDirection::HostToDevice, bytes);
+        }
+        Ok(batch)
+    }
+
     /// Number of XYZ query records.
     #[must_use]
     pub const fn query_count(&self) -> u32 {
@@ -69,6 +98,17 @@ impl GpuQueryBatch {
     pub const fn upload_transfers(&self) -> TransferStats {
         self.transfers
     }
+}
+
+fn pack_soa(axes: [&[f32]; 3]) -> SpatialResult<Vec<[f32; 4]>> {
+    let [x, y, z] = axes;
+    if x.len() != y.len()
+        || x.len() != z.len()
+        || axes.iter().any(|axis| axis.iter().any(|v| !v.is_finite()))
+    {
+        return Err(invalid());
+    }
+    Ok(x.iter().zip(y).zip(z).map(|((&x, &y), &z)| [x, y, z, 0.0]).collect())
 }
 
 /// Immutable GPU-resident bounded neighborhoods. Creating this result submits
