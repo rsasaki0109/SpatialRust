@@ -39,6 +39,56 @@ fn worker_count(len: usize, available: usize) -> usize {
     }
 }
 
+// The GPU gather uploads original SoA axes directly. Validate without allocating
+// a point-sized packed vector, using the same bounded native scan policy.
+pub(super) fn validate(axes: [&[f32]; 3]) -> SpatialResult<()> {
+    #[cfg(not(target_arch = "wasm32"))]
+    let available = if axes[0].len() < PARALLEL_MIN_POINTS {
+        1
+    } else {
+        spatialrust_search::parallel_worker_count_with_chunk(axes[0].len(), POINTS_PER_WORKER)
+    };
+    #[cfg(target_arch = "wasm32")]
+    let available = 1;
+    validate_with_workers(axes, available)
+}
+
+fn validate_with_workers(axes: [&[f32]; 3], available: usize) -> SpatialResult<()> {
+    let [x, y, z] = axes;
+    if x.len() != y.len() || x.len() != z.len() {
+        return Err(invalid());
+    }
+    let workers = worker_count(x.len(), available);
+    #[cfg(not(target_arch = "wasm32"))]
+    if workers > 1 {
+        let chunk = x.len().div_ceil(workers);
+        return std::thread::scope(|scope| -> SpatialResult<()> {
+            let mut handles = Vec::with_capacity(workers);
+            for start in (0..x.len()).step_by(chunk) {
+                let end = (start + chunk).min(x.len());
+                let axes = [&x[start..end], &y[start..end], &z[start..end]];
+                handles.push(scope.spawn(move || {
+                    if axes.iter().any(|axis| axis.iter().any(|v| !v.is_finite())) {
+                        Err(invalid())
+                    } else {
+                        Ok(())
+                    }
+                }));
+            }
+            for handle in handles {
+                handle.join().expect("tree validation worker panicked")?;
+            }
+            Ok(())
+        });
+    }
+    let _ = workers;
+    if x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+        Err(invalid())
+    } else {
+        Ok(())
+    }
+}
+
 fn prepare_with_workers(
     axes: [&[f32]; 3],
     order: &[u32],

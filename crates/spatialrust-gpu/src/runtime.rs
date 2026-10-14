@@ -24,6 +24,8 @@ pub struct WgpuRuntime {
     pub(crate) ransac_plane_pipelines: OnceLock<crate::kernels::RansacPlanePipelines>,
     pub(crate) cluster_pipelines: OnceLock<crate::kernels::cluster_union::ClusterPipelines>,
     pub(crate) nearest_pipeline: OnceLock<crate::kernels::nearest::NearestPipeline>,
+    pub(crate) tree_gather_pipeline:
+        OnceLock<crate::kernels::nearest::tree_gpu_gather::TreeGatherPipeline>,
     pub(crate) neighborhood_pipelines: OnceLock<crate::kernels::nearest::NeighborhoodPipelines>,
     pub(crate) fpfh_pipelines: OnceLock<crate::kernels::fpfh::FpfhPipelines>,
     pub(crate) iss_pipelines: OnceLock<crate::kernels::iss::IssPipelines>,
@@ -415,6 +417,7 @@ impl WgpuRuntime {
             ransac_plane_pipelines: OnceLock::new(),
             cluster_pipelines: OnceLock::new(),
             nearest_pipeline: OnceLock::new(),
+            tree_gather_pipeline: OnceLock::new(),
             neighborhood_pipelines: OnceLock::new(),
             fpfh_pipelines: OnceLock::new(),
             iss_pipelines: OnceLock::new(),

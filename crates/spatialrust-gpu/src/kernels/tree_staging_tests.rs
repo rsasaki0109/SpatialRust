@@ -23,6 +23,35 @@ fn worker_counts_respect_cpu_grain_threshold_and_maximum() {
     }
 }
 
+#[test]
+fn scan_only_validation_matches_packing_without_output_allocation() {
+    for n in [0, 1, 17, 524_287, 524_288, 524_289] {
+        let mut data = fixture(n, 3);
+        let indices = order(n);
+        for workers in [0, 1, 2, 3, 4, 12] {
+            let axes = [&data[0][..], &data[1][..], &data[2][..]];
+            assert!(validate_with_workers(axes, workers).is_ok());
+            assert!(validate(axes).is_ok());
+            if n != 0 {
+                for axis in 0..3 {
+                    for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+                        let i = n - 1;
+                        let old = data[axis][i];
+                        data[axis][i] = bad;
+                        let axes = [&data[0][..], &data[1][..], &data[2][..]];
+                        assert_eq!(
+                            validate_with_workers(axes, workers).err().unwrap(),
+                            previous_prepare(axes, &indices).err().unwrap()
+                        );
+                        data[axis][i] = old;
+                    }
+                }
+            }
+        }
+    }
+    assert!(validate([&[0.0], &[], &[0.0]]).is_err());
+}
+
 fn compare(axes: [&[f32]; 3], order: &[u32], rows: &[Point]) {
     assert_eq!(rows.len(), order.len());
     for (row, &index) in rows.iter().zip(order) {

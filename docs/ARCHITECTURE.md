@@ -29,6 +29,23 @@ large invalid inputs may first allocate bounded host point storage. Root,
 nodes, ties, payloads, transfers and search kernels are preserved. See
 [tree input staging evidence](../notes/2026-10-14_parallel_gpu_tree_staging.md).
 
+The additive `GpuKdTree::upload_with_gpu_gather` explicitly uploads original
+SoA axes and the CPU tree's permutation, then copies integer words into the
+unchanged traversal-order point records on GPU. The companion
+`upload_and_queries_with_gpu_gather` produces padded original-order queries in
+the same pass. CPU partitioning, bounded finite scans and serial node staging
+remain. Combined tree/query host payload becomes 16*N + 32*M bytes, compared
+with 32*N + 32*M for separate uploads; tree and query receipts each record
+16*N device output bytes. Uniform controls are excluded. Two transient input
+buffers add 16*N device bytes beside owned outputs; host point/query packing
+vectors are removed. The queue retains transient resources and orders searches
+without a host wait or readback. Pipeline variants initialize lazily per runtime.
+Empty inputs allocate no resources. Existing buffer/compute requirements apply;
+the paired API also checks the complete query dispatch count. Default upload,
+search kernels and feature/registration placement are preserved. These explicit
+APIs expose a transfer/memory tradeoff whose latency depends on input size; see
+[GPU gather evidence](../notes/2026-10-14_gpu_tree_point_gather.md).
+
 The same feature adds `align_with_gpu_reduction` for untrimmed point-to-point
 ICP. `GpuIcpInput` explicitly uploads original source, original-order target
 and target tree once. Six ordered passes per evaluation transform originals,

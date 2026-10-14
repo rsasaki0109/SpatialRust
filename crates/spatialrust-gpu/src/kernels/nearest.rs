@@ -10,6 +10,9 @@ use crate::{scratch::ScratchBuffers, WgpuRuntime};
 #[path = "tree_staging.rs"]
 mod tree_staging;
 
+#[path = "tree_gpu_gather.rs"]
+pub(crate) mod tree_gpu_gather;
+
 #[path = "neighborhoods.rs"]
 mod neighborhoods;
 pub(crate) use neighborhoods::NeighborhoodPipelines;
@@ -246,6 +249,103 @@ impl GpuKdTree {
         target.points = Some(upload("nearest-points", bytemuck::cast_slice(&points)));
         target.upload_transfers.record(TransferDirection::HostToDevice, point_bytes + node_bytes);
         Ok(target)
+    }
+
+    /// Explicitly uploads original SoA axes/indices and gathers point records on GPU.
+    /// CPU partitioning, finite validation and node packing remain. Existing
+    /// nearest-search device requirements apply; unsupported limits reject.
+    /// The pass copies integer words, preserving coordinate bits and leaf/tie order.
+    /// Host upload is 16*N + 32*M bytes; the gather records 16*N device-to-device
+    /// bytes. There is no download or host completion wait.
+    /// Two transient inputs use 16*N extra device bytes beside the owned output;
+    /// there is no 16*N host point-packing vector. Submission retains inputs until
+    /// completion, and later searches on this runtime follow queue ordering.
+    pub fn upload_with_gpu_gather(runtime: &WgpuRuntime, tree: &KdTree) -> SpatialResult<Self> {
+        Self::upload_gathered(runtime, tree, false).map(|(target, _)| target)
+    }
+
+    /// Uploads the tree and generates queries for every point in original input
+    /// order, sharing the same integer gather pass and uploaded SoA axes/indices.
+    /// Combined host upload is 16*N + 32*M bytes, compared with 32*N + 32*M
+    /// for separate tree/query uploads. Each returned object records 16*N
+    /// device-to-device output bytes; queries record zero host upload bytes.
+    /// CPU partitioning, finite validation and node packing remain. No readback
+    /// or completion wait occurs. Both outputs are owned and reusable; the CPU
+    /// tree may be dropped. Two transient inputs use 16*N extra device bytes;
+    /// no host point/query packing vectors are created. Device requirements
+    /// match nearest search, with an additional query dispatch-size check.
+    pub fn upload_and_queries_with_gpu_gather(
+        runtime: &WgpuRuntime,
+        tree: &KdTree,
+    ) -> SpatialResult<(Self, GpuQueryBatch)> {
+        let (target, queries) = Self::upload_gathered(runtime, tree, true)?;
+        Ok((target, queries.unwrap()))
+    }
+
+    fn upload_gathered(
+        runtime: &WgpuRuntime,
+        tree: &KdTree,
+        with_queries: bool,
+    ) -> SpatialResult<(Self, Option<GpuQueryBatch>)> {
+        let layout = tree.layout();
+        let (x, y, z) = layout.positions();
+        let limits = runtime.device().limits();
+        let point_bytes = buffer_bytes(x.len() as u64, 16, &limits)?;
+        let node_bytes = buffer_bytes(layout.nodes().len() as u64, 32, &limits)?;
+        check_compute(&limits, 0)?;
+        tree_gpu_gather::check(x.len() as u64, &limits)?;
+        if with_queries {
+            check_compute(&limits, x.len() as u64)?;
+        }
+        let mut target = Self {
+            nodes: None,
+            points: None,
+            root: layout.root(),
+            identity: runtime.profiling_identity(),
+            upload_transfers: TransferStats::default(),
+        };
+        if x.is_empty() {
+            return Ok((
+                target,
+                with_queries.then(|| GpuQueryBatch::from_gathered(runtime, None, 0)),
+            ));
+        }
+        let (points, queries) =
+            tree_gpu_gather::upload(runtime, [x, y, z], layout.point_order(), with_queries)?;
+        target.points = Some(points);
+        let queries = queries
+            .map(|buffer| GpuQueryBatch::from_gathered(runtime, Some(buffer), x.len() as u32));
+        let nodes: Vec<_> = layout
+            .nodes()
+            .map(|node| {
+                let mut output = Node::zeroed();
+                match node {
+                    KdTreeNode::Leaf { start, end } => {
+                        output.axis = u32::MAX;
+                        output.start = start;
+                        output.end = end;
+                    }
+                    KdTreeNode::Branch { axis, split, left, right } => {
+                        output.axis = u32::from(axis);
+                        output.split = split;
+                        output.left = left;
+                        output.right = right;
+                    }
+                }
+                output
+            })
+            .collect();
+        let upload = |label, data: &[u8]| {
+            runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(label),
+                contents: data,
+                usage: wgpu::BufferUsages::STORAGE,
+            })
+        };
+        target.nodes = Some(upload("nearest-nodes", bytemuck::cast_slice(&nodes)));
+        target.upload_transfers.record(TransferDirection::HostToDevice, point_bytes + node_bytes);
+        target.upload_transfers.record(TransferDirection::DeviceToDevice, point_bytes);
+        Ok((target, queries))
     }
 
     /// Bytes transferred when this target was explicitly uploaded.
