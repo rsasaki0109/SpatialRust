@@ -428,6 +428,18 @@ independently lazy within one runtime-owned family. Caller-selected CPU median
 placement and generic CPU kernel/border support remain unchanged. See
 [median execution evidence](../notes/2026-10-14_gpu_median_filter.md).
 
+The CPU `median_blur` retains generic component conversions and `f64::total_cmp`
+ordering. Windows larger than 3x3 use middle-element selection; tiny windows
+retain the library's optimized full sort. Native calls with at least 262,144
+logical components and multiple rows use contiguous output bands, bounded by
+the current Rayon pool and height.
+Each band reuses one kernel-sized f64 sample vector per channel; bands write
+disjoint parts of one final output vector. Small, single-row, one-worker and
+WASM calls run on the caller. Border modes, odd apertures, strided views, metadata
+and explicit CPU/GPU placement are preserved. GPU measurements against this
+improved CPU baseline are recorded in
+[CPU median execution evidence](../notes/2026-10-14_parallel_cpu_median.md).
+
 `canny_gpu` / `canny_gpu_profiled` extend the resident grayscale image API with
 complete device Canny. `GpuCannyOptions` accepts 3/5/7 Sobel apertures, finite
 nonnegative binary64 thresholds and L1/squared-L2 comparison. CPU-compatible
