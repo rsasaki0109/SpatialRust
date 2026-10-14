@@ -6,6 +6,9 @@ use spatialrust_search::KdTree;
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
+#[path = "point_to_plane_normal_preparation.rs"]
+mod normal_preparation;
+
 const RESULT_BYTES: u64 = 256;
 
 #[repr(C)]
@@ -126,27 +129,7 @@ impl GpuPointToPlaneInput {
             return Err(invalid());
         }
         plan(source.len() as u64, target_normals.len() as u64, &runtime.device().limits())?;
-        let mut normal_scale = 0.0_f32;
-        for &v in target_normals.iter().flatten() {
-            if !v.is_finite() {
-                return Err(invalid());
-            }
-            normal_scale = normal_scale.max(v.abs());
-        }
-        if normal_scale == 0.0 {
-            normal_scale = 1.0;
-        }
-        if normal_scale < f32::MIN_POSITIVE {
-            return Err(invalid());
-        }
-        let mut packed = Vec::with_capacity(target_normals.len());
-        for n in target_normals {
-            let row = n.map(|v| v / normal_scale);
-            if (0..3).any(|i| n[i] != 0.0 && row[i].abs() < f32::MIN_POSITIVE) {
-                return Err(invalid());
-            }
-            packed.push([row[0], row[1], row[2], 0.0]);
-        }
+        let (packed, normal_scale) = normal_preparation::prepare(target_normals)?;
         let positions = if gpu_gather {
             GpuIcpInput::upload_with_gpu_gather(runtime, source, target)?
         } else {
@@ -542,3 +525,11 @@ mod tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "point_to_plane_reduction_gather_reference.rs"]
 pub(crate) mod gather_reference;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "point_to_plane_preparation_reference.rs"]
+pub(crate) mod preparation_reference;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "point_to_plane_normal_upload_tests.rs"]
+mod normal_upload_tests;
