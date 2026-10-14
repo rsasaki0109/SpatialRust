@@ -86,21 +86,8 @@ impl GpuMlsInput {
         let layout = tree.layout();
         let (x, y, z) = layout.positions();
         let count = plan(x.len() as u64, &runtime.device().limits())?;
-        if x.iter().chain(y).chain(z).any(|v| !v.is_finite()) {
+        if !super::feature_validation::valid([x, y, z], None) {
             return Err(invalid());
-        }
-        if count > 0 {
-            let extent: f64 = [x, y, z]
-                .iter()
-                .map(|axis| {
-                    let lo = axis.iter().copied().fold(f32::INFINITY, f32::min);
-                    let hi = axis.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-                    (f64::from(hi) - f64::from(lo)).powi(2)
-                })
-                .sum();
-            if !(extent as f32).is_finite() {
-                return Err(invalid());
-            }
         }
         let (tree, queries) = if gpu_gather {
             GpuKdTree::upload_and_queries_with_gpu_gather(runtime, tree)?
@@ -497,3 +484,7 @@ mod tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "mls_soa_upload_reference.rs"]
 pub(crate) mod soa_upload_reference;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "mls_validation_reference.rs"]
+pub(crate) mod validation_reference;

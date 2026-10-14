@@ -3,6 +3,9 @@ use crate::{GpuFpfhInput, GpuIssInput, GpuMlsInput, WgpuRuntime};
 use spatialrust_core::TransferStats;
 use spatialrust_search::KdTree;
 
+#[path = "feature_validation_upload_tests.rs"]
+mod validation;
+
 fn fixture(n: usize, profile: usize) -> (KdTree, Vec<[f32; 3]>, Vec<[f32; 3]>) {
     let points: Vec<_> = (0..n)
         .map(|i| {

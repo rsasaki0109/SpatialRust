@@ -127,26 +127,8 @@ impl GpuFpfhInput {
                 found: normals.len(),
             });
         }
-        if x.iter().chain(y).chain(z).any(|v| !v.is_finite())
-            || normals.iter().any(|n| {
-                let norm = n[0] * n[0] + n[1] * n[1] + n[2] * n[2];
-                n.iter().any(|v| !v.is_finite()) || !norm.is_finite() || (norm - 1.0).abs() > 1e-3
-            })
-        {
+        if !super::feature_validation::valid([x, y, z], Some(normals)) {
             return Err(invalid());
-        }
-        if points > 0 {
-            let extent: f64 = [x, y, z]
-                .iter()
-                .map(|axis| {
-                    let lo = axis.iter().copied().fold(f32::INFINITY, f32::min);
-                    let hi = axis.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-                    (f64::from(hi) - f64::from(lo)).powi(2)
-                })
-                .sum();
-            if !(extent as f32).is_finite() {
-                return Err(invalid());
-            }
         }
         let (tree, queries, gathered_samples) = if gpu_gather {
             if points < FUSED_POINT_LIMIT {
@@ -500,3 +482,7 @@ mod tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "fpfh_soa_upload_reference.rs"]
 pub(crate) mod soa_upload_reference;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "fpfh_validation_reference.rs"]
+pub(crate) mod validation_reference;

@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Validate large FPFH, ISS and MLS GPU inputs with at most four native CPU
+  workers, combining finite coordinate scans with per-band bounds and checking
+  FPFH unit normals in the same workers. Preserve f64 extent arithmetic, errors,
+  uploads and transfer receipts; small/one-worker/WASM inputs remain serial.
+  See `notes/2026-10-14_parallel_feature_validation.md`.
+
 - Fuse explicit FPFH GPU input construction below 1,048,576 points into one integer pass that emits
   traversal-order tree points, original-order queries and position/normal
   samples. Upload coordinates/normals in one mapped buffer beside indices,
