@@ -287,6 +287,28 @@ impl GpuKdTree {
         tree: &KdTree,
         with_queries: bool,
     ) -> SpatialResult<(Self, Option<GpuQueryBatch>)> {
+        Self::upload_gathered_impl(runtime, tree, with_queries, None)
+            .map(|(target, queries, _)| (target, queries))
+    }
+
+    // FPFH validates unit normals first, then records their 12*N host bytes and
+    // the 32*N sample output separately. Tree/query receipts keep their contract.
+    pub(crate) fn upload_with_gpu_samples(
+        runtime: &WgpuRuntime,
+        tree: &KdTree,
+        normals: &[[f32; 3]],
+    ) -> SpatialResult<(Self, GpuQueryBatch, Option<wgpu::Buffer>)> {
+        let (target, queries, samples) =
+            Self::upload_gathered_impl(runtime, tree, true, Some(normals))?;
+        Ok((target, queries.unwrap(), samples))
+    }
+
+    fn upload_gathered_impl(
+        runtime: &WgpuRuntime,
+        tree: &KdTree,
+        with_queries: bool,
+        normals: Option<&[[f32; 3]]>,
+    ) -> SpatialResult<(Self, Option<GpuQueryBatch>, Option<wgpu::Buffer>)> {
         let layout = tree.layout();
         let (x, y, z) = layout.positions();
         let limits = runtime.device().limits();
@@ -296,6 +318,12 @@ impl GpuKdTree {
         tree_gpu_gather::check(x.len() as u64, &limits)?;
         if with_queries {
             check_compute(&limits, x.len() as u64)?;
+        }
+        if let Some(normals) = normals {
+            if normals.len() != x.len() {
+                return Err(invalid());
+            }
+            tree_gpu_gather::check_samples(x.len() as u64, &limits)?;
         }
         let mut target = Self {
             nodes: None,
@@ -308,10 +336,16 @@ impl GpuKdTree {
             return Ok((
                 target,
                 with_queries.then(|| GpuQueryBatch::from_gathered(runtime, None, 0)),
+                None,
             ));
         }
-        let (points, queries) =
-            tree_gpu_gather::upload(runtime, [x, y, z], layout.point_order(), with_queries)?;
+        let (points, queries, samples) = if let Some(normals) = normals {
+            tree_gpu_gather::upload_with_samples(runtime, [x, y, z], layout.point_order(), normals)?
+        } else {
+            let (points, queries) =
+                tree_gpu_gather::upload(runtime, [x, y, z], layout.point_order(), with_queries)?;
+            (points, queries, None)
+        };
         target.points = Some(points);
         let queries = queries
             .map(|buffer| GpuQueryBatch::from_gathered(runtime, Some(buffer), x.len() as u32));
@@ -345,7 +379,7 @@ impl GpuKdTree {
         target.nodes = Some(upload("nearest-nodes", bytemuck::cast_slice(&nodes)));
         target.upload_transfers.record(TransferDirection::HostToDevice, point_bytes + node_bytes);
         target.upload_transfers.record(TransferDirection::DeviceToDevice, point_bytes);
-        Ok((target, queries))
+        Ok((target, queries, samples))
     }
 
     /// Bytes transferred when this target was explicitly uploaded.

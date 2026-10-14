@@ -21,6 +21,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Fuse explicit FPFH GPU input construction below 1,048,576 points into one integer pass that emits
+  traversal-order tree points, original-order queries and position/normal
+  samples. Upload coordinates/normals in one mapped buffer beside indices,
+  reducing three temporary inputs to two and two compute submissions to one.
+  Keep larger inputs on the existing two-pass path after measured regressions
+  with unconditional fusion. Preserve bits, validation, receipts and default feature placement.
+  See `notes/2026-10-14_fused_fpfh_input_gather.md`.
+
 - Add explicit GPU gather constructors for FPFH, ISS and MLS inputs. Share
   tree/query uploads and pack FPFH position/normal samples with integer GPU
   copies, reducing point host payload from 64*N to 28*N bytes for FPFH and
