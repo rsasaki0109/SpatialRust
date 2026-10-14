@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Parallelize large generic CPU bilateral filters with bounded native output
+  bands while retaining their circular support, squared L1 color metric,
+  original f64 FMA/exp/reduction order, conversions and metadata. Small,
+  single-row, one-worker and WASM calls keep the original serial loop.
+  See `notes/2026-10-14_gpu_bilateral_filter.md`.
+
 - Parallelize large CPU `median_blur` images in bounded native Rayon row bands
   and select the middle element for windows larger than 3x3. Preserve exact
   generic conversions, total ordering, borders, strided views and metadata;
@@ -458,6 +464,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   Python file alignment with intensity, labels, timestamps and rotated normals.
 
 ### Added
+
+- Add `GpuBilateralFilter::prepare` / `filter` under `gpu-image` for exact
+  resident u8 filtering with explicit reusable coefficient uploads. Support
+  1..=4 channels, diameters 1..=7 and replicate/zero borders; match CPU byte
+  rounding using integer-word binary64 sums and quotient boundary comparisons.
+  Reject nonfinite factors and positive subnormal coefficients before device
+  allocation. Preserve image metadata and caller-controlled transfers.
 
 - Add `median_blur_gpu` for exact per-channel 3x3/5x5 median filtering of
   resident u8 images under `gpu-image`. Preserve 1..=4 logical channels and

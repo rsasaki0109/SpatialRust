@@ -4,7 +4,6 @@ use pulp::Arch;
 use rayon::prelude::*;
 use spatialrust_image::{Image, ImageView};
 
-use crate::border::fetch;
 use crate::dispatch::{
     bounded_workers, items_per_worker, LARGE_PARALLEL_COMPONENTS, ROW_PARALLEL_COMPONENTS,
 };
@@ -13,6 +12,8 @@ use crate::{
     PixelComponent, VisionError, VisionResult,
 };
 
+#[path = "bilateral.rs"]
+mod bilateral;
 #[path = "median.rs"]
 mod median;
 
@@ -32,7 +33,8 @@ pub fn median_blur<T: PixelComponent, const CHANNELS: usize>(
 ///
 /// Color distance is the squared sum of per-channel absolute differences,
 /// matching OpenCV's CPU implementation. The operation is out-of-place and
-/// never performs a device transfer.
+/// never performs a device transfer. Large native images use bounded row bands;
+/// small, single-row, one-worker and WASM calls retain the original serial loop.
 pub fn bilateral_filter<T: PixelComponent, const CHANNELS: usize>(
     input: ImageView<'_, T, CHANNELS>,
     diameter: usize,
@@ -40,48 +42,8 @@ pub fn bilateral_filter<T: PixelComponent, const CHANNELS: usize>(
     sigma_space: f64,
     border: BorderMode<T, CHANNELS>,
 ) -> VisionResult<Image<T, CHANNELS>> {
-    if diameter == 0 {
-        return Err(VisionError::InvalidParameter("bilateral diameter must be non-zero".into()));
-    }
-    validate_positive_finite(sigma_color, "sigma_color")?;
-    validate_positive_finite(sigma_space, "sigma_space")?;
-    let radius = (diameter / 2) as isize;
-    let color_factor = -0.5 / (sigma_color * sigma_color);
-    let space_factor = -0.5 / (sigma_space * sigma_space);
-    let mut output = Vec::with_capacity(input.width() * input.height() * CHANNELS);
-    for y in 0..input.height() {
-        for x in 0..input.width() {
-            let center = fetch(input, x as isize, y as isize, border);
-            let mut sums = [0.0; CHANNELS];
-            let mut total_weight = 0.0;
-            for dy in -radius..=radius {
-                for dx in -radius..=radius {
-                    let dx_f64 = dx as f64;
-                    let dy_f64 = dy as f64;
-                    let spatial_distance = dx_f64.mul_add(dx_f64, dy_f64 * dy_f64);
-                    if spatial_distance > (radius as f64) * (radius as f64) {
-                        continue;
-                    }
-                    let pixel = fetch(input, x as isize + dx, y as isize + dy, border);
-                    let color_distance = (0..CHANNELS)
-                        .map(|channel| pixel[channel].to_f64() - center[channel].to_f64())
-                        .map(f64::abs)
-                        .sum::<f64>();
-                    let weight = ((color_distance * color_distance)
-                        .mul_add(color_factor, spatial_distance * space_factor))
-                    .exp();
-                    for channel in 0..CHANNELS {
-                        sums[channel] += pixel[channel].to_f64() * weight;
-                    }
-                    total_weight += weight;
-                }
-            }
-            output.extend(sums.map(|sum| T::from_f64(sum / total_weight)));
-        }
-    }
-    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+    bilateral::run(input, diameter, sigma_color, sigma_space, border)
 }
-
 /// Computes a Sobel derivative as signed `f32` values.
 pub fn sobel<T: PixelComponent, const CHANNELS: usize>(
     input: ImageView<'_, T, CHANNELS>,
