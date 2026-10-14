@@ -58,6 +58,9 @@ pub use point_to_plane_reduction::{
 };
 pub(crate) mod icp_reduction;
 pub use gicp_reduction::{GpuGicpEquations, GpuGicpInput, GpuGicpNormalEquations};
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "feature_soa_upload_tests.rs"]
+mod feature_soa_upload_tests;
 pub(crate) mod iss;
 pub(crate) mod mls;
 pub use icp_reduction::trim::GpuIcpTrimPrecision;

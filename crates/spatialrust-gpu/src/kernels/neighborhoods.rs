@@ -58,7 +58,7 @@ impl GpuQueryBatch {
         Ok(batch)
     }
 
-    // Registration's target tree already owns original-order SoA positions.
+    // Registration and point-feature trees own original-order SoA positions.
     // Pack directly into the existing device record, avoiding an AoS copy.
     pub(crate) fn upload_soa(runtime: &WgpuRuntime, axes: [&[f32]; 3]) -> SpatialResult<Self> {
         let count = axes[0].len();

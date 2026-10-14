@@ -90,9 +90,8 @@ impl GpuIssInput {
                 return Err(invalid());
             }
         }
-        let positions: Vec<_> = (0..x.len()).map(|i| [x[i], y[i], z[i]]).collect();
         let tree = GpuKdTree::upload(runtime, tree)?;
-        let queries = GpuQueryBatch::upload(runtime, &positions)?;
+        let queries = GpuQueryBatch::upload_soa(runtime, [x, y, z])?;
         let mut transfers = tree.upload_transfers();
         transfers.record(
             TransferDirection::HostToDevice,
@@ -467,3 +466,7 @@ impl IssPipelines {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "iss_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "iss_soa_upload_reference.rs"]
+pub(crate) mod soa_upload_reference;
