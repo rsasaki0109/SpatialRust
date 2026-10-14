@@ -242,6 +242,17 @@ are preserved. This is a CPU staging/allocation improvement at the explicit
 upload boundary, not a new GPU algorithm or CPU parallel placement change. See
 [direct feature staging evidence](../notes/2026-10-14_direct_soa_feature_upload.md).
 
+The shared SoA query packer uses bounded native CPU workers for at least
+524,288 points. Useful workers require 262,144 points each and are capped by
+available CPUs and four workers. Each worker validates finite axes and fills
+its disjoint band of the existing 16*N-byte padded query allocation; all bands
+finish successfully before a device buffer is created. Original point bits,
+order and positive-zero padding are retained, with only worker-sized dispatch
+metadata and no point-sized join allocation. Small/one-worker/WASM packing
+keeps the serial scan and collection. The explicit GPU upload boundary, limits,
+receipts and consumer kernels remain the same. See
+[query staging evidence](../notes/2026-10-14_parallel_soa_query_staging.md).
+
 FPFH device computation now consumes this radius-row representation through
 `GpuFpfhInput` and neighborhoods tied to that exact uploaded input. Explicit
 input upload retains original positions/unit normals plus target/query buffers.

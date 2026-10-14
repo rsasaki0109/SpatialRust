@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Prepare large shared SoA GPU query uploads with bounded native CPU workers:
+  at least 524,288 points, 262,144 points per useful worker and at most four
+  workers. Preserve coordinate bits/order, zero padding and explicit transfers
+  with disjoint writes into the existing 16-byte-per-point staging allocation;
+  small, one-worker and WASM calls retain serial packing.
+  See `notes/2026-10-14_parallel_soa_query_staging.md`.
+
 - Pack FPFH, ISS and MLS GPU query inputs directly from the CPU KD-tree's
   original-order SoA coordinates, removing a 12-byte-per-point host position
   vector. Pack FPFH samples from those same coordinates and unit normals;
