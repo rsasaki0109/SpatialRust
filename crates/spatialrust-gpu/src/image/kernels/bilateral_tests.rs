@@ -253,6 +253,7 @@ fn proof(@builtin(global_invocation_id) id:vec3<u32>) {if id.x>=arrayLength(&tes
     println!("GPU_BILATERAL_ROUND exact_ratios={}", expected.len());
 }
 fn images<const C: usize>(runtime: &WgpuRuntime) -> (usize, usize) {
+    let frozen = candidate_tests::frozen_pipeline(runtime);
     let mut calls = 0;
     let mut bytes = 0;
     for diameter in [1, 2, 3, 5, 7] {
@@ -269,13 +270,18 @@ fn images<const C: usize>(runtime: &WgpuRuntime) -> (usize, usize) {
                             bilateral_filter(image.view(), diameter as usize, sc, ss, border(b))
                                 .unwrap();
                         let mut result = plan.filter(runtime, &source).unwrap();
+                        let mut previous =
+                            candidate_tests::filter_frozen(&plan, runtime, &source, &frozen)
+                                .unwrap();
                         let receipt = result.receipt().clone();
                         assert_eq!(result.readback_u8::<C>(runtime).unwrap(),expected,"C={C} d={diameter} sigmas={sc}/{ss} border={b:?} shape={w}x{h} profile={p}");
+                        assert_eq!(previous.readback_u8::<C>(runtime).unwrap(), expected);
                         assert_eq!(receipt.host_to_device_bytes(), (w * h * 4) as u64);
                         assert_eq!(receipt.gpu_to_gpu_bytes(), (w * h * 4) as u64);
                         assert_eq!(result.receipt().device_to_host_bytes(), (w * h * 4) as u64);
                         source.recycle(runtime);
                         result.recycle(runtime);
+                        previous.recycle(runtime);
                         calls += 1;
                         bytes += w * h * C;
                     }
@@ -511,3 +517,6 @@ fn prove_sums(@builtin(global_invocation_id) id:vec3<u32>) {
 }
 #[path = "bilateral_benchmark.rs"]
 mod benchmark;
+
+#[path = "bilateral_candidate_tests.rs"]
+mod candidate_tests;
