@@ -21,6 +21,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Parallelize large CPU `median_blur` images in bounded native Rayon row bands
+  and select the middle element for windows larger than 3x3. Preserve exact
+  generic conversions, total ordering, borders, strided views and metadata;
+  retain small/one-worker/single-row/WASM execution on the caller. Remeasure GPU
+  median performance against the improved CPU baseline.
+  See `notes/2026-10-14_parallel_cpu_median.md`.
+
 - Pack shared GPU registration targets directly from the CPU KD-tree's original
   SoA coordinates, removing the intermediate 12-byte-per-target host vector.
   Preserve exact geometry, original point bits/order, device records and explicit

@@ -13,39 +13,19 @@ use crate::{
     PixelComponent, VisionError, VisionResult,
 };
 
+#[path = "median.rs"]
+mod median;
+
 /// Applies a per-channel median filter with an odd square aperture.
+/// Uses the original f64 conversion/total ordering, selecting the median without
+/// fully sorting windows larger than 3x3. Large native images use bounded Rayon row
+/// bands; small/single-row/one-worker images and WASM retain caller execution.
 pub fn median_blur<T: PixelComponent, const CHANNELS: usize>(
     input: ImageView<'_, T, CHANNELS>,
     kernel_size: usize,
     border: BorderMode<T, CHANNELS>,
 ) -> VisionResult<Image<T, CHANNELS>> {
-    validate_odd_size(kernel_size, "median")?;
-    let radius = (kernel_size / 2) as isize;
-    let area = kernel_size
-        .checked_mul(kernel_size)
-        .ok_or_else(|| VisionError::InvalidParameter("median kernel area overflows".into()))?;
-    let mut samples = (0..CHANNELS).map(|_| Vec::<f64>::with_capacity(area)).collect::<Vec<_>>();
-    let mut output = Vec::with_capacity(input.width() * input.height() * CHANNELS);
-    for y in 0..input.height() {
-        for x in 0..input.width() {
-            for channel in &mut samples {
-                channel.clear();
-            }
-            for dy in -radius..=radius {
-                for dx in -radius..=radius {
-                    let pixel = fetch(input, x as isize + dx, y as isize + dy, border);
-                    for channel in 0..CHANNELS {
-                        samples[channel].push(pixel[channel].to_f64());
-                    }
-                }
-            }
-            for channel in &mut samples {
-                channel.sort_by(f64::total_cmp);
-                output.push(T::from_f64(channel[area / 2]));
-            }
-        }
-    }
-    Ok(Image::try_new_with_metadata(input.width(), input.height(), output, input.metadata())?)
+    median::run(input, kernel_size, border)
 }
 
 /// Applies an edge-preserving bilateral filter.

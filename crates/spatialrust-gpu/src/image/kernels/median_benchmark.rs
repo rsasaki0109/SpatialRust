@@ -1,4 +1,4 @@
-//! Completed serial CPU, explicit full GPU and resident GPU median calls.
+//! Completed current CPU, explicit full GPU and resident GPU median calls.
 use super::*;
 use std::time::Instant;
 
