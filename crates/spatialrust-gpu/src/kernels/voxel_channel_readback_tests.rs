@@ -291,3 +291,6 @@ mod benchmark;
 
 #[path = "voxel_gather_submit_tests.rs"]
 mod coalesced_submit;
+
+#[path = "voxel_average_batch_tests.rs"]
+mod average_batch;

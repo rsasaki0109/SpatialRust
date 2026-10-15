@@ -181,3 +181,6 @@ mod voxel_u8_batch;
 
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_gather_submit;
+
+#[cfg(feature = "gpu-wgpu")]
+mod voxel_average_batch;
