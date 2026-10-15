@@ -422,6 +422,20 @@ decoding. These payload/capacity counts do not establish process peak memory
 or application latency. See
 [voxel XYZ readback evidence](../notes/2026-10-15_direct_mapped_voxel_xyz.md).
 
+Standalone `gather_voxel_first_f32_multi_gpu` and
+`reduce_voxel_average_f32_multi_gpu` copy mapped channel planes directly into
+their owned outputs through the existing unmap guard. A K-channel readback
+batch requests 4*K*N float payload bytes instead of 4*(2*K-1)*N, removing
+4*(K-1)*N repeated-copy bytes and excess first-channel capacity. Gather keeps
+its adapter-selected two/four-channel batches; reductions keep one aggregate
+readback. Four channels at 1,048,576 cells remove 12 MiB for a four-channel
+batch, or 8 MiB over two two-channel gather batches. These are requested
+payload/capacity counts, not RSS/peak-memory or latency guarantees. Channel
+ordering, empty/length validation, per-call uploads, dispatches, map/wait,
+GPU buffers, shaders and public signatures remain. Combined XYZ/attribute
+decoding retains its existing behavior. See
+[voxel channel readback evidence](../notes/2026-10-15_direct_mapped_voxel_channels.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

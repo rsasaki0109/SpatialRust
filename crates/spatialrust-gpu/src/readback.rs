@@ -80,6 +80,34 @@ pub(crate) fn read_staging_xyz(
     Ok((values[..cells].to_vec(), values[cells..cells * 2].to_vec(), values[cells * 2..].to_vec()))
 }
 
+pub(crate) fn read_staging_f32_channels(
+    device: &wgpu::Device,
+    staging_buffer: &wgpu::Buffer,
+    channels: usize,
+    cells: usize,
+) -> SpatialResult<Vec<Vec<f32>>> {
+    let slice = staging_buffer.slice(..);
+    let (sender, receiver) = std::sync::mpsc::channel();
+    slice.map_async(wgpu::MapMode::Read, move |result| {
+        let _ = sender.send(result);
+    });
+    device.poll(wgpu::Maintain::Wait);
+    receiver
+        .recv()
+        .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
+        .map_err(|error| {
+            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
+        })?;
+
+    let _unmap = StagingUnmap(staging_buffer);
+    let data = slice.get_mapped_range();
+    let values: &[f32] = bytemuck::cast_slice(&data);
+    let values = &values[..cells * channels];
+    Ok((0..channels)
+        .map(|channel| values[channel * cells..(channel + 1) * cells].to_vec())
+        .collect())
+}
+
 pub(crate) fn split_xyz_and_attribute_blocks(
     flat: Vec<f32>,
     attribute_count: usize,
