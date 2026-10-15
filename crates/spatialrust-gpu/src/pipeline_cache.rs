@@ -133,6 +133,7 @@ pub struct VoxelReducePipelines {
     /// Single-channel u8 voxel reduce pipeline.
     pub u8_pipeline: wgpu::ComputePipeline,
     fused_xyz_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
+    centroid_first_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
     _pipeline_layout: wgpu::PipelineLayout,
     _xyz_pipeline_layout: wgpu::PipelineLayout,
@@ -682,6 +683,7 @@ impl VoxelReducePipelines {
             u8_bind_group_layout,
             u8_pipeline,
             fused_xyz_attributes: std::sync::OnceLock::new(),
+            centroid_first_attributes: std::sync::OnceLock::new(),
             packed_u8_pipeline: std::sync::OnceLock::new(),
             _pipeline_layout: pipeline_layout,
             _xyz_pipeline_layout: xyz_pipeline_layout,
@@ -736,6 +738,39 @@ impl VoxelReducePipelines {
                 &pipeline_layout,
                 &shader,
                 "voxel-fused-average-pipeline",
+                "main",
+            );
+            (layout, pipeline)
+        })
+    }
+
+    pub(crate) fn centroid_first_attributes_pipeline(
+        &self,
+        device: &wgpu::Device,
+    ) -> &(wgpu::BindGroupLayout, wgpu::ComputePipeline) {
+        self.centroid_first_attributes.get_or_init(|| {
+            let mut entries = vec![uniform_entry(0)];
+            entries.extend((1..=9).map(|binding| storage_entry(binding, true)));
+            entries.push(storage_entry(10, false));
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-fused-centroid-first-layout"),
+                entries: &entries,
+            });
+            let shader = load_shader(
+                device,
+                "voxel-fused-centroid-first-shader",
+                include_str!("shaders/voxel_centroid_first.wgsl"),
+            );
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("voxel-fused-centroid-first-pipeline-layout"),
+                bind_group_layouts: &[&layout],
+                push_constant_ranges: &[],
+            });
+            let pipeline = build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-fused-centroid-first-pipeline",
                 "main",
             );
             (layout, pipeline)

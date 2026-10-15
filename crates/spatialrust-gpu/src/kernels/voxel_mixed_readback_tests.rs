@@ -395,3 +395,6 @@ mod fused_reduce;
 
 #[path = "voxel_first_average_tests.rs"]
 mod fused_first_average;
+
+#[path = "voxel_centroid_first_tests.rs"]
+mod fused_centroid_first;

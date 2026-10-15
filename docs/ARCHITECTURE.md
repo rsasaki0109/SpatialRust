@@ -492,6 +492,17 @@ mapped decoding and the separate fallback remain. Input uploads, device
 requirements and public APIs are unchanged. See
 [first-point average fusion evidence](../notes/2026-10-15_fused_voxel_first_average.md).
 
+`reduce_voxel_centroids_xyz_and_gather_first_multi_gpu` uses another independent
+lazy kernel with that same planner. One pass preserves original centroid
+sum-times-reciprocal math and copies one-to-four first-point float attributes.
+Empty XYZ stays positive zero; empty scalar attributes stay zero, while
+multi-gather attributes retain input point-zero bits. On supported devices,
+float passes fall from two to one and four-attribute copies from seven to one.
+The old three/four-channel dummy outputs are removed on this route. Active
+payloads, mapped output ownership and the original fallback remain; pooled
+uploads and post-readback recycling keep their existing boundary. See
+[centroid/first-attribute fusion evidence](../notes/2026-10-15_fused_voxel_centroid_first.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

@@ -3,6 +3,7 @@ use spatialrust_core::{SpatialError, SpatialResult};
 use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
+use crate::kernels::voxel_centroid_first_fused::record_fused_voxel_centroid_first;
 use crate::kernels::voxel_reduce_fused::{plan_fused_voxel_average, record_fused_voxel_average};
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::readback::{
@@ -449,6 +450,7 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
     let f32_channel_count = 3 + attribute_count;
     let u8_staging_len = packed_u8_output_staging_bytes(cells, u8_attribute_count);
     let u8_channel_len = packed_u8_output_staging_bytes(cells, 1);
+    let fused_plan = plan_fused_voxel_average(&device.limits(), cell_count, attribute_count);
     let staging_size = channel_len * f32_channel_count + u8_staging_len;
     let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-reduce-xyz-gather-attrs-staging"),
@@ -456,68 +458,90 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
         usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    let output_x = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-reduce-xyz-out-x"),
-        size: channel_len as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
-    let output_y = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-reduce-xyz-out-y"),
-        size: channel_len as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
-    let output_z = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("voxel-reduce-xyz-out-z"),
-        size: channel_len as u64,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-        mapped_at_creation: false,
-    });
-
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-reduce-xyz-gather-attrs-encoder"),
     });
     let mut upload_recycle = Vec::new();
-    record_voxel_reduce_xyz_pass(
-        &mut encoder,
-        runtime,
-        x,
-        y,
-        z,
-        segments.point_indices_buffer(),
-        segments.cell_starts_buffer(),
-        cell_count,
-        segments.point_count(),
-        &output_x,
-        &output_y,
-        &output_z,
-    )?;
-    encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
-    encoder.copy_buffer_to_buffer(
-        &output_y,
-        0,
-        &staging_buffer,
-        channel_len as u64,
-        channel_len as u64,
-    );
-    encoder.copy_buffer_to_buffer(
-        &output_z,
-        0,
-        &staging_buffer,
-        (channel_len * 2) as u64,
-        channel_len as u64,
-    );
+    if let Some(plan) = fused_plan {
+        let output = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-fused-centroid-first-output"),
+            size: plan.output_bytes,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        for channel in attribute_channels {
+            upload_recycle
+                .push(runtime.upload_f32_storage("voxel-gather-xyz-attrs-values", channel)?);
+        }
+        record_fused_voxel_centroid_first(
+            &mut encoder,
+            runtime,
+            [x, y, z],
+            &upload_recycle,
+            segments,
+            &output,
+        );
+        encoder.copy_buffer_to_buffer(&output, 0, &staging_buffer, 0, plan.output_bytes);
+    } else {
+        let output_x = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-reduce-xyz-out-x"),
+            size: channel_len as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        let output_y = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-reduce-xyz-out-y"),
+            size: channel_len as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        let output_z = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-reduce-xyz-out-z"),
+            size: channel_len as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
 
-    record_gather_f32_attribute_channels_to_staging(
-        &mut encoder,
-        runtime,
-        attribute_channels,
-        segments,
-        &staging_buffer,
-        channel_len as u64,
-        &mut upload_recycle,
-    )?;
+        record_voxel_reduce_xyz_pass(
+            &mut encoder,
+            runtime,
+            x,
+            y,
+            z,
+            segments.point_indices_buffer(),
+            segments.cell_starts_buffer(),
+            cell_count,
+            segments.point_count(),
+            &output_x,
+            &output_y,
+            &output_z,
+        )?;
+        encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
+        encoder.copy_buffer_to_buffer(
+            &output_y,
+            0,
+            &staging_buffer,
+            channel_len as u64,
+            channel_len as u64,
+        );
+        encoder.copy_buffer_to_buffer(
+            &output_z,
+            0,
+            &staging_buffer,
+            (channel_len * 2) as u64,
+            channel_len as u64,
+        );
+
+        record_gather_f32_attribute_channels_to_staging(
+            &mut encoder,
+            runtime,
+            attribute_channels,
+            segments,
+            &staging_buffer,
+            channel_len as u64,
+            &mut upload_recycle,
+        )?;
+    }
 
     let u8_region_offset = (channel_len * f32_channel_count) as u64;
     for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {

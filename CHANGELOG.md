@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Fuse GPU voxel centroid XYZ and one-to-four first-point float attributes
+  into one capability/size-gated pass. Preserve channel-specific empty-cell
+  values, original centroid math, pooled uploads and the separate fallback.
+  See `notes/2026-10-15_fused_voxel_centroid_first.md`.
+
 - Fuse GPU voxel first-point XYZ gathering and one-to-four float attribute
   averages into one capability/size-gated pass. Preserve empty-cell point-zero
   coordinates, coordinate bits, scalar division, fallback and packed byte path.
