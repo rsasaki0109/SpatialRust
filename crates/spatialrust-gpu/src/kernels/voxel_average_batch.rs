@@ -186,3 +186,103 @@ pub(crate) fn record_voxel_average_batch(
     pass.set_bind_group(0, &group, &[]);
     pass.dispatch_workgroups(segments.cell_count().div_ceil(256), 1, 1);
 }
+
+pub(crate) fn plan_voxel_attribute_average_batch(
+    limits: &wgpu::Limits,
+    cells: u32,
+    channels: usize,
+    target_bytes: u64,
+    offset: u64,
+) -> Option<AverageBatchPlan> {
+    plan_voxel_attribute_average_batch_with_host_limit(
+        limits,
+        cells,
+        channels,
+        target_bytes,
+        offset,
+        isize::MAX as u64,
+    )
+}
+
+pub(crate) fn plan_voxel_attribute_average_batch_with_host_limit(
+    limits: &wgpu::Limits,
+    cells: u32,
+    channels: usize,
+    target_bytes: u64,
+    offset: u64,
+    host_limit: u64,
+) -> Option<AverageBatchPlan> {
+    let plan = plan_voxel_average_batch_with_host_limit(limits, cells, channels, host_limit)?;
+    if offset % 4 != 0
+        || target_bytes > limits.max_buffer_size
+        || target_bytes > host_limit
+        || offset.checked_add(plan.staging_bytes)? > target_bytes
+    {
+        return None;
+    }
+    Some(plan)
+}
+
+pub(crate) fn try_record_voxel_attribute_averages_to_staging(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    channels: &[&[f32]],
+    segments: &GpuVoxelSegments,
+    staging: &wgpu::Buffer,
+    offset: u64,
+) -> SpatialResult<bool> {
+    if channels.len() < 2 {
+        return Ok(false);
+    }
+    let Some(plan) = plan_voxel_attribute_average_batch(
+        &runtime.device().limits(),
+        segments.cell_count(),
+        channels.len(),
+        staging.size(),
+        offset,
+    ) else {
+        return Ok(false);
+    };
+    let device = runtime.device();
+    for (batch, chunk) in channels.chunks(4).enumerate() {
+        let values: Vec<_> = chunk
+            .iter()
+            .map(|channel| {
+                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("voxel-reduce-xyz-attrs-values"),
+                    contents: bytemuck::cast_slice(channel),
+                    usage: wgpu::BufferUsages::STORAGE,
+                })
+            })
+            .collect();
+        let bytes = plan.channel_bytes * chunk.len() as u64;
+        let output = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-reduce-xyz-attrs-packed-output"),
+            size: bytes,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        if chunk.len() == 1 {
+            super::voxel_reduce::record_voxel_reduce_f32_pass(
+                encoder,
+                runtime,
+                &values[0],
+                segments.point_indices_buffer(),
+                segments.cell_starts_buffer(),
+                segments.cell_count(),
+                segments.point_count(),
+                &output,
+            )?;
+        } else {
+            record_voxel_average_batch(encoder, runtime, &values, segments, &output);
+        }
+        encoder.copy_buffer_to_buffer(
+            &output,
+            0,
+            staging,
+            offset + plan.channel_bytes * (batch * 4) as u64,
+            bytes,
+        );
+    }
+    Ok(true)
+}
