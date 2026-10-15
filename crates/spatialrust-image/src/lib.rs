@@ -481,6 +481,23 @@ impl<'a, T, const CHANNELS: usize> ImageView<'a, T, CHANNELS> {
         self.metadata
     }
 
+    /// Borrows exactly the logical pixels when they occupy one packed slice.
+    ///
+    /// Empty views return an empty slice. A single row is packed regardless of
+    /// its stride; multiple rows require a stride of `width * CHANNELS`.
+    /// Padding and pixels outside a subview are never included.
+    #[must_use]
+    pub fn as_packed_slice(&self) -> Option<&'a [T]> {
+        if self.width == 0 || self.height == 0 {
+            return Some(&self.data[..0]);
+        }
+        let row = self.width.checked_mul(CHANNELS)?;
+        if self.height > 1 && self.row_stride != row {
+            return None;
+        }
+        self.data.get(..row.checked_mul(self.height)?)
+    }
+
     /// Returns one pixel, or `None` outside image bounds.
     #[must_use]
     pub fn get(self, x: usize, y: usize) -> Option<&'a [T; CHANNELS]> {
@@ -1045,3 +1062,7 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+#[path = "packed_slice_tests.rs"]
+mod packed_slice_tests;

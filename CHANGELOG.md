@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Borrow packed four-channel image pixels during explicit GPU upload, removing
+  the framework's redundant RGBA host payload allocation and copy. Add
+  `ImageView::as_packed_slice` for exact logical slices; preserve strided
+  multi-row and 1..=3-channel packing, backend staging and transfer receipts.
+  See `notes/2026-10-15_borrow_packed_rgba_upload.md`.
+
 - Shorten resident GPU 3x3 median selection from 63 generated compare-exchange
   pairs to 19 while preserving exact per-channel bytes. Keep the 5x5 network,
   borders, one-pass ownership, explicit transfers and device limits. See
