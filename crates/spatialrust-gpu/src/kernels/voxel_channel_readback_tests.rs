@@ -294,3 +294,6 @@ mod coalesced_submit;
 
 #[path = "voxel_average_batch_tests.rs"]
 mod average_batch;
+
+#[path = "voxel_standalone_packed_tests.rs"]
+mod standalone_packed;

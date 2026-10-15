@@ -527,9 +527,10 @@ remain. See [batched byte evidence](../notes/2026-10-15_batched_voxel_u8_attribu
 
 Standalone multi-channel first-point voxel gathers coalesce at most two
 existing two/four-channel batches per submit/map/wait when combined staging
-fits device and host-slice limits. Existing passes, output copies, bit
-payloads and inactive slots remain; one-batch/unsupported calls retain the
-original loop. The live per-window input/output/staging set can double,
+fits device and host-slice limits. This submission policy preserves the
+original pass count; output packing below reduces copies and inactive slots.
+Unsupported calls retain the original loop. The live per-window
+input/output/staging set can double,
 bounded independently of total channel count. Input/output payloads and
 owned capacities remain; no shader, cache or public API change. See
 [coalesced gather evidence](../notes/2026-10-15_coalesced_voxel_gather_submit.md).
@@ -565,6 +566,17 @@ readback, wait or payload. Seven attributes with width four keep three float
 passes while reducing ten float copies to five and removing eight dummy
 outputs. Checked destination/device/host limits precede packed resources. See
 [packed first-attribute evidence](../notes/2026-10-16_packed_combined_voxel_gather.md).
+
+Standalone first-point voxel gathering also reuses that existing integer
+packed kernel, including every one-channel tail's point-zero empty-cell
+rule. One planar output/copy per original two/four-wide batch replaces
+separate active/dummy outputs, keeping bounded two-batch submission windows,
+unpooled input uploads, active payloads, owned capacities and map/wait counts.
+Seven channels at width four keep two passes/one submit while copies fall
+from seven to two and one inactive output plane disappears. Checked packed
+binding/index and original device/host limits retain the entire old fallback.
+No shader/cache variant or requested feature is added. See
+[standalone packed gather evidence](../notes/2026-10-16_packed_standalone_voxel_gather.md).
 
 | Area | Decision |
 | --- | --- |

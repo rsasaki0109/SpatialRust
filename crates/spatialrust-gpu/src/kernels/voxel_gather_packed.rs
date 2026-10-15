@@ -142,7 +142,7 @@ struct Uniform {
     _pad: u32,
 }
 
-fn record_packed_voxel_gather(
+pub(crate) fn record_packed_voxel_gather(
     encoder: &mut wgpu::CommandEncoder,
     runtime: &WgpuRuntime,
     values: &[wgpu::Buffer],

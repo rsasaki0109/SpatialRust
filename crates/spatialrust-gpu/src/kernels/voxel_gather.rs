@@ -132,6 +132,12 @@ pub fn gather_voxel_first_f32_multi_gpu(
         }
     }
 
+    if let Some(result) = super::voxel_standalone_packed::try_gather_voxel_channels_packed(
+        runtime, channels, segments,
+    ) {
+        return result;
+    }
+
     if let Some(result) =
         super::voxel_gather_submit::try_gather_voxel_channels_coalesced(runtime, channels, segments)
     {

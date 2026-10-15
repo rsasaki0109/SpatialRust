@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack standalone GPU voxel gather batches into one output/copy each, keeping
+  original submission windows, empty-cell bits and checked fallback.
+  See `notes/2026-10-16_packed_standalone_voxel_gather.md`.
+
 - Pack pairs of exact grayscale box-blur horizontal sums for separable
   kernel widths through 257, halving even-pixel scratch requests with
   unchanged wide/direct paths, final rounding and explicit work receipts.
