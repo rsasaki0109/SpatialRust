@@ -555,9 +555,12 @@ compose with gray/Sobel/AI stages through the existing resident image API. See
 `median_blur_gpu` under `gpu-image` applies exact per-component 3x3/5x5
 median selection to resident `rgba8uint` images with 1..=4 logical channels.
 Replicate and constant-zero borders match CPU median sampling; alpha is filtered
-as an independent component and metadata is retained. A generated, pruned
-bitonic comparison network selects the median from 9/25 byte vectors padded
-with the maximum byte. Static integer min/max comparisons avoid data-dependent
+as an independent component and metadata is retained. The 3x3 path uses 19
+compare-exchange pairs: sort three triples, then select the median of the
+largest minimum, middle median and smallest maximum. A threshold argument and
+all rank permutations validate exact order selection, including duplicates.
+The 5x5 path keeps its generated, pruned bitonic network with maximum-byte
+padding; its generated shader remains identical. Static integer min/max comparisons avoid data-dependent
 sorting loops and dynamic private-array indexing. One device pass returns an
 owned image with four physical output bytes per pixel; no image-sized scratch,
 payload upload/readback or host completion wait is hidden. Dimension, signed
@@ -565,7 +568,8 @@ coordinate, dispatch, texture/binding and 16-byte uniform limits are checked
 before output allocation or lazy cache creation. The two kernel pipelines are
 independently lazy within one runtime-owned family. Caller-selected CPU median
 placement and generic CPU kernel/border support remain unchanged. See
-[median execution evidence](../notes/2026-10-14_gpu_median_filter.md).
+[median execution evidence](../notes/2026-10-14_gpu_median_filter.md). See also
+[3x3 selection evidence](../notes/2026-10-15_gpu_median_nine_selection.md).
 
 The CPU `median_blur` retains generic component conversions and `f64::total_cmp`
 ordering. Windows larger than 3x3 use middle-element selection; tiny windows

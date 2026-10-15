@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Shorten resident GPU 3x3 median selection from 63 generated compare-exchange
+  pairs to 19 while preserving exact per-channel bytes. Keep the 5x5 network,
+  borders, one-pass ownership, explicit transfers and device limits. See
+  `notes/2026-10-15_gpu_median_nine_selection.md`.
+
 - Prepare large original-order AoS GPU query inputs with bounded native CPU
   workers, combining finite validation and exact padded-row packing in disjoint
   bands. Preserve bits, errors, payloads and explicit transfer receipts; small,

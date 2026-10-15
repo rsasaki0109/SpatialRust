@@ -57,9 +57,37 @@ struct Comparator {
     ascending: bool,
 }
 
-// Construct a bitonic sorting network, then retain only comparators feeding
-// the requested median output. Padding is 255, the largest byte in each lane.
+// Use a short 3x3 selection network. For 5x5, prune a padded bitonic sorting
+// network to the median output; padding is the largest byte in each lane.
 fn network(kernel: u32) -> Vec<Comparator> {
+    if kernel == 3 {
+        // Sort three triples; the median is the median of the largest minimum,
+        // middle median and smallest maximum. The three groups are disjoint.
+        return [
+            (0, 1),
+            (1, 2),
+            (0, 1),
+            (3, 4),
+            (4, 5),
+            (3, 4),
+            (6, 7),
+            (7, 8),
+            (6, 7),
+            (0, 3),
+            (3, 6),
+            (1, 4),
+            (4, 7),
+            (1, 4),
+            (5, 8),
+            (2, 5),
+            (2, 4),
+            (4, 6),
+            (2, 4),
+        ]
+        .into_iter()
+        .map(|(a, b)| Comparator { a, b, ascending: true })
+        .collect();
+    }
     let count = (kernel * kernel) as usize;
     let padded = count.next_power_of_two();
     let mut pairs = Vec::new();
@@ -263,3 +291,7 @@ pub fn median_blur_gpu(
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "median_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "median_nine_reference.rs"]
+mod nine_reference;
