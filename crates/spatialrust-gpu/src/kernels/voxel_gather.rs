@@ -132,6 +132,12 @@ pub fn gather_voxel_first_f32_multi_gpu(
         }
     }
 
+    if let Some(result) =
+        super::voxel_gather_submit::try_gather_voxel_channels_coalesced(runtime, channels, segments)
+    {
+        return result;
+    }
+
     let max_channels = runtime.max_gather_channels() as usize;
     let device = runtime.device();
     let empty = empty_storage_buffer(device)?;

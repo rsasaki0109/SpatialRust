@@ -288,3 +288,6 @@ fn concurrent_voxel_channels_keep_owned_results_independent() {
 
 #[path = "voxel_channel_readback_benchmark.rs"]
 mod benchmark;
+
+#[path = "voxel_gather_submit_tests.rs"]
+mod coalesced_submit;

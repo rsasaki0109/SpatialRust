@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Coalesce adjacent pairs of standalone GPU voxel gather batches into one
+  submit/readback, with bounded two-batch working sets and original fallback.
+  See `notes/2026-10-15_coalesced_voxel_gather_submit.md`.
+
 - Batch two-to-four GPU voxel byte attributes in one packed gather/average
   pass and output copy, preserving original rounding, payload and fallback.
   See `notes/2026-10-15_batched_voxel_u8_attributes.md`.

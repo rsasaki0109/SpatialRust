@@ -178,3 +178,6 @@ pub(crate) mod voxel_first_gather_fused;
 
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_u8_batch;
+
+#[cfg(feature = "gpu-wgpu")]
+mod voxel_gather_submit;
