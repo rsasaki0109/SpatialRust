@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Decode standalone multi-channel voxel gather/average readbacks directly into
+  owned attribute vectors, removing repeated channel copies and excess first
+  channel capacity. Preserve upload, dispatch and shader behavior. See
+  `notes/2026-10-15_direct_mapped_voxel_channels.md`.
+
 - Read standalone GPU voxel XYZ gather/centroid results directly into three
   owned coordinate vectors. Remove Y/Z re-copies and excess retained capacity
   from splitting a flat host vector, preserving shaders and explicit transfers.
