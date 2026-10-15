@@ -504,6 +504,15 @@ retain caller execution. Extra scheduling metadata scales with workers and the
 budget is per call, without a process-wide thread or stack limit. Unused upload
 components stay zero, ROI/host padding is excluded, and readback staging-row
 padding is skipped. Explicit device transfers and their receipts are unchanged.
+Image readback unpacks directly from the mapped padded staging buffer into the
+owned logical image. This removes one padded-row-times-height host vector and
+its whole-buffer copy for every channel count. The existing scoped unpacking
+workers finish while the mapping is live; the view drops before an unmap guard
+on success or decoder unwinding. The private mapping helper's owned-byte wrapper
+still returns a copy for existing tensor/histogram consumers. GPU staging,
+row padding, final output allocation, mapping wait, shaders, metadata and
+transfer receipts are preserved; the mapping now remains live during unpacking.
+See [direct mapped readback evidence](../notes/2026-10-15_direct_mapped_image_readback.md).
 RGB-to-gray retains the original 256-lane linear shader when its group count
 fits one dispatch axis. Larger inputs balance those flat groups across bounded
 dispatch rows. Padding groups return before pixel-index multiplication to prevent
