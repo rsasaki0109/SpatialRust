@@ -1,5 +1,9 @@
 //! GPU compute kernels for SpatialRust algorithms.
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_xyz_readback_tests.rs"]
+mod voxel_xyz_readback_tests;
+
 #[cfg(feature = "gpu-wgpu")]
 mod gpu_segments;
 

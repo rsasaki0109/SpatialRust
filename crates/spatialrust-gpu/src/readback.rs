@@ -46,11 +46,38 @@ pub(crate) fn split_channel_blocks(
     out
 }
 
-pub(crate) fn split_xyz_blocks(mut flat: Vec<f32>, cells: usize) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
-    let out_z = flat.split_off(cells * 2);
-    let out_y = flat.split_off(cells);
-    let out_x = flat;
-    (out_x, out_y, out_z)
+struct StagingUnmap<'a>(&'a wgpu::Buffer);
+
+impl Drop for StagingUnmap<'_> {
+    fn drop(&mut self) {
+        self.0.unmap();
+    }
+}
+
+pub(crate) fn read_staging_xyz(
+    device: &wgpu::Device,
+    staging_buffer: &wgpu::Buffer,
+    cells: usize,
+) -> SpatialResult<(Vec<f32>, Vec<f32>, Vec<f32>)> {
+    let slice = staging_buffer.slice(..);
+    let (sender, receiver) = std::sync::mpsc::channel();
+    slice.map_async(wgpu::MapMode::Read, move |result| {
+        let _ = sender.send(result);
+    });
+    device.poll(wgpu::Maintain::Wait);
+    receiver
+        .recv()
+        .map_err(|_| SpatialError::InvalidArgument("failed to receive wgpu map result".to_owned()))?
+        .map_err(|error| {
+            SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
+        })?;
+
+    // Declared before the view so it also unmaps after the view drops on unwind.
+    let _unmap = StagingUnmap(staging_buffer);
+    let data = slice.get_mapped_range();
+    let values: &[f32] = bytemuck::cast_slice(&data);
+    let values = &values[..cells * 3];
+    Ok((values[..cells].to_vec(), values[cells..cells * 2].to_vec(), values[cells * 2..].to_vec()))
 }
 
 pub(crate) fn split_xyz_and_attribute_blocks(

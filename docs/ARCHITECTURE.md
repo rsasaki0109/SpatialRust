@@ -408,6 +408,20 @@ Malformed/incomplete rows or evaluated local-extent underflow invalidate and
 zero all output; consumers must inspect the first five status words. See
 [MLS evidence](../notes/2026-10-13_gpu_mls_smoothing.md).
 
+Standalone resident-input `gather_voxel_first_xyz_gpu_buffers` and
+`reduce_voxel_centroids_xyz_gpu_buffers` decode their mapped XYZ planes directly
+into three owned coordinate vectors. The former flat vector and Y/Z splits
+requested 20*N host payload bytes across the returned vectors, with 8*N bytes
+copied again and retained as excess X capacity. Direct decoding requests 12*N
+bytes and performs one copy per plane. GPU output/staging, 12*N download bytes,
+compute/shader math, uploads and public signatures are preserved. A private
+unmap guard releases the view before unmapping on return or decoder unwind;
+the existing float cast and map diagnostics remain. Empty calls retain their
+resource-free return. Attribute-bearing combined calls retain their existing
+decoding. These payload/capacity counts do not establish process peak memory
+or application latency. See
+[voxel XYZ readback evidence](../notes/2026-10-15_direct_mapped_voxel_xyz.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
