@@ -11,10 +11,12 @@ use crate::{scratch::ScratchBuffers, GpuStageProfiler, WgpuRuntime};
 const WORKGROUP: u32 = 256;
 const SEPARABLE_MIN_AREA: u64 = 81;
 const SEPARABLE_MIN_SAMPLES: u64 = 65_536;
-const SHADERS: [&str; 3] = [
+const SHADERS: [&str; 5] = [
     include_str!("box_blur_serial.wgsl"),
     concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_horizontal.wgsl")),
     concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_vertical.wgsl")),
+    concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_packed_horizontal.wgsl")),
+    concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_packed_vertical.wgsl")),
 ];
 
 /// Border extrapolation for GPU image filters.
@@ -43,6 +45,8 @@ struct Plan {
     params: BlurParams,
     separable: bool,
     bytes: u64,
+    scratch_bytes: u64,
+    packed: bool,
 }
 
 pub(crate) fn blur_pass_count(
@@ -108,6 +112,9 @@ fn plan(
         .div_ceil(WORKGROUP)
         .min(4096)
         .min(limits.max_compute_workgroups_per_dimension);
+    // The original checks above still validate the full uncompressed extent.
+    let packed = separable && kw <= 257;
+    let scratch_bytes = if packed { count.div_ceil(2) * 4 } else { bytes };
     Ok(Plan {
         params: BlurParams {
             width,
@@ -121,6 +128,8 @@ fn plan(
         },
         separable,
         bytes,
+        scratch_bytes,
+        packed,
     })
 }
 
@@ -130,7 +139,7 @@ struct Variant {
 }
 
 pub(crate) struct BlurPipeline {
-    variants: [OnceLock<Variant>; 3],
+    variants: [OnceLock<Variant>; 5],
 }
 
 impl BlurPipeline {
@@ -157,12 +166,12 @@ impl BlurPipeline {
             };
             let types = [
                 buffer(wgpu::BufferBindingType::Uniform),
-                if index == 2 {
+                if matches!(index, 2 | 4) {
                     buffer(wgpu::BufferBindingType::Storage { read_only: true })
                 } else {
                     texture
                 },
-                if index == 1 {
+                if matches!(index, 1 | 3) {
                     buffer(wgpu::BufferBindingType::Storage { read_only: false })
                 } else {
                     output
@@ -216,20 +225,26 @@ fn encode(
     encoder: &mut wgpu::CommandEncoder,
     mut profiler: Option<&mut GpuStageProfiler>,
 ) {
-    let indices: &[usize] = if p.separable { &[1, 2] } else { &[0] };
+    let indices: &[usize] = if p.packed {
+        &[3, 4]
+    } else if p.separable {
+        &[1, 2]
+    } else {
+        &[0]
+    };
     for &index in indices {
         let variant = cache.variant(runtime.device(), index);
-        let input = if index == 2 {
+        let input = if matches!(index, 2 | 4) {
             sums.unwrap().as_entire_binding()
         } else {
             wgpu::BindingResource::TextureView(source)
         };
-        let target = if index == 1 {
+        let target = if matches!(index, 1 | 3) {
             sums.unwrap().as_entire_binding()
         } else {
             wgpu::BindingResource::TextureView(output)
         };
-        let stage = if index == 1 { "box_blur_horizontal_gpu" } else { "box_blur_gpu" };
+        let stage = if matches!(index, 1 | 3) { "box_blur_horizontal_gpu" } else { "box_blur_gpu" };
         let group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some(stage),
             layout: &variant.layout,
@@ -253,8 +268,9 @@ fn encode(
 ///
 /// Positive odd kernels round half upward once after summing the entire box.
 /// Boxes with area at least 81 and at least 65,536 total pixel/sample visits
-/// use two passes and four scratch bytes per pixel; smaller workloads use one
-/// pass. Both paths keep transfers explicit and bounded.
+/// use two passes. Widths up to 257 pack two exact horizontal sums per u32
+/// (four scratch bytes per pixel pair); wider kernels keep four bytes per
+/// pixel. Smaller workloads use one pass. Transfers stay explicit and bounded.
 pub fn box_blur_gpu(
     runtime: &WgpuRuntime,
     source: &GpuImage,
@@ -289,7 +305,7 @@ pub(crate) fn box_blur_gpu_with_profiler(
     )?;
     let cache = runtime.image_blur_pipeline.get_or_init(BlurPipeline::new);
     let mut scratch = ScratchBuffers::new(runtime);
-    let sums = p.separable.then(|| scratch.acquire("gpu-blur-horizontal-sums", p.bytes));
+    let sums = p.separable.then(|| scratch.acquire("gpu-blur-horizontal-sums", p.scratch_bytes));
     let output = create_texture(runtime, source.width(), source.height(), "gpu-image-blur-out");
     let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("gpu-image-blur-params"),
@@ -311,7 +327,7 @@ pub(crate) fn box_blur_gpu_with_profiler(
     scratch.submit_and_recycle(encoder);
     let mut receipt = source.receipt().clone();
     if p.separable {
-        receipt.record_gpu_to_gpu(p.bytes, "box_blur_horizontal_gpu");
+        receipt.record_gpu_to_gpu(p.scratch_bytes, "box_blur_horizontal_gpu");
     }
     receipt.record_gpu_to_gpu(p.bytes, "box_blur_gpu");
     GpuImage::from_parts(

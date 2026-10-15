@@ -321,7 +321,10 @@ fn retained_outputs_concurrent_cache_and_large_border_masses_stay_exact() {
     for mut output in outputs {
         assert_eq!(output.metadata(), source.metadata());
         assert_eq!(output.receipt().host_to_device_bytes(), 33 * 35 * 4);
-        assert_eq!(output.receipt().gpu_to_gpu_bytes(), 33 * 35 * 8);
+        assert_eq!(
+            output.receipt().gpu_to_gpu_bytes(),
+            (33_u64 * 35).div_ceil(2) * 4 + 33 * 35 * 4
+        );
         assert_eq!(output.receipt().device_to_host_bytes(), 0);
         assert_eq!(output.readback_u8::<1>(&runtime).unwrap().as_slice(), expected);
         output.recycle(&runtime);
@@ -339,7 +342,8 @@ fn retained_outputs_concurrent_cache_and_large_border_masses_stay_exact() {
     assert_eq!(runtime.scratch_buffer_pool_stats().allocation_count, before);
     let cache = runtime.image_blur_pipeline.get().unwrap();
     assert!(cache.variants[0].get().is_none());
-    assert!(cache.variants[1].get().is_some() && cache.variants[2].get().is_some());
+    assert!(cache.variants[1].get().is_none() && cache.variants[2].get().is_none());
+    assert!(cache.variants[3].get().is_some() && cache.variants[4].get().is_some());
     let single = fixture(1, 1, true);
     let gpu = GpuImage::upload_u8(&runtime, single.view()).unwrap();
     for (border, value) in [(GpuImageBorder::Replicate, 255), (GpuImageBorder::ConstantZero, 0)] {
@@ -350,3 +354,6 @@ fn retained_outputs_concurrent_cache_and_large_border_masses_stay_exact() {
 
 #[path = "box_blur_benchmark.rs"]
 mod benchmark;
+
+#[path = "box_blur_packed_tests.rs"]
+mod packed;
