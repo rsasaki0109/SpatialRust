@@ -56,7 +56,8 @@ fn compare_channels<const C: usize>(runtime: &WgpuRuntime) -> usize {
                         assert_eq!(output.receipt().host_to_device_bytes(), (w * h * 4) as u64);
                         assert_eq!(
                             output.receipt().gpu_to_gpu_bytes(),
-                            (w * h * (C + 1) * 4) as u64
+                            (w * h * (if kw == 7 || kh == 7 { C } else { C.div_ceil(2) }) * 4
+                                + w * h * 4) as u64
                         );
                         assert_eq!(output.receipt().device_to_host_bytes(), 0);
                         assert_eq!(
@@ -142,7 +143,7 @@ fn gaussian_plan_limits_cover_scratch_indices_and_preallocation() {
     let limits = wgpu::Limits::default();
     let o = GpuGaussianBlurOptions::default();
     assert_eq!(std::mem::size_of::<Params>(), 128);
-    assert_eq!(plan(257, 259, 4, o, &limits).unwrap().scratch_bytes, 257 * 259 * 16);
+    assert_eq!(plan(257, 259, 4, o, &limits).unwrap().scratch_bytes, 257 * 259 * 8);
     for (w, h, c) in
         [(0, 1, 1), (1, 0, 1), (1, 1, 0), (1, 1, 5), (8193, 1, 1), (u32::MAX, u32::MAX, 4)]
     {
@@ -330,3 +331,6 @@ fn grid_stride_tail_and_q15_high_limb_match_cpu() {
 
 #[path = "gaussian_benchmark.rs"]
 mod benchmark;
+
+#[path = "gaussian_packed_tests.rs"]
+mod packed;

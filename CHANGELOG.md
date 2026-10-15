@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack pairs of Q8 Gaussian horizontal sums without intermediate rounding,
+  reducing logical GPU scratch requests by 50% for two/four channels and one
+  third for three channels, with unchanged Q15 and explicit work receipts.
+  See `notes/2026-10-16_packed_gaussian_q8_scratch.md`.
+
 - Pack combined voxel first-attribute gather outputs per existing two/four-
   channel batch, reducing copies and removing dummy outputs while preserving
   scalar-tail empty rules, pooled uploads and fallback. See `notes/2026-10-16_packed_combined_voxel_gather.md`.
