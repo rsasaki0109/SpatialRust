@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Unpack GPU image readbacks directly from mapped staging into the owned host
+  image, removing the intermediate padded RGBA host vector and copy for all
+  logical channel counts. Release mappings before return, including decoder
+  unwinding; preserve row transforms, explicit transfers and receipts. See
+  `notes/2026-10-15_direct_mapped_image_readback.md`.
+
 - Borrow packed four-channel image pixels during explicit GPU upload, removing
   the framework's redundant RGBA host payload allocation and copy. Add
   `ImageView::as_packed_slice` for exact logical slices; preserve strided

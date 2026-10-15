@@ -240,6 +240,8 @@ impl GpuImage {
 
     /// Explicitly reads the texture back into an owned packed host image.
     /// Row padding, staging limits and host capacity are checked before work.
+    /// Pixels are unpacked directly from mapped staging into the owned output;
+    /// the mapping is released before returning.
     pub fn readback_u8<const CHANNELS: usize>(
         &mut self,
         runtime: &WgpuRuntime,
@@ -280,14 +282,15 @@ impl GpuImage {
             extent(self.width, self.height),
         );
         runtime.queue().submit(Some(encoder.finish()));
-        let rgba = read_staging_bytes(runtime.device(), &staging, plan.staging_len)?;
-        let data = unpack_rgba8::<CHANNELS>(
-            &rgba,
-            plan.row_bytes as usize / BYTES_PER_TEXEL as usize,
-            self.height as usize,
-            plan.padded_row as usize,
-            plan.output_len,
-        );
+        let data = with_staging_bytes(runtime.device(), &staging, plan.staging_len, |rgba| {
+            unpack_rgba8::<CHANNELS>(
+                rgba,
+                plan.row_bytes as usize / BYTES_PER_TEXEL as usize,
+                self.height as usize,
+                plan.padded_row as usize,
+                plan.output_len,
+            )
+        })?;
         self.receipt.record_device_to_host(self.storage_bytes, "readback_u8_texture");
         Image::try_new_with_metadata(self.width as usize, self.height as usize, data, self.metadata)
             .map_err(|error| SpatialError::InvalidArgument(error.to_string()))
@@ -407,6 +410,10 @@ mod transfer_packing_gpu_tests;
 #[path = "packed_upload_tests.rs"]
 mod packed_upload_tests;
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "mapped_readback_tests.rs"]
+mod mapped_readback_tests;
+
 pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> std::sync::Arc<()> {
     runtime.profiling_identity()
 }
@@ -416,6 +423,24 @@ pub(crate) fn read_staging_bytes(
     staging_buffer: &wgpu::Buffer,
     len: usize,
 ) -> SpatialResult<Vec<u8>> {
+    with_staging_bytes(device, staging_buffer, len, <[u8]>::to_vec)
+}
+
+// Declared before the mapped view, so unwinding drops the view before unmapping.
+struct StagingUnmap<'a>(&'a wgpu::Buffer);
+
+impl Drop for StagingUnmap<'_> {
+    fn drop(&mut self) {
+        self.0.unmap();
+    }
+}
+
+fn with_staging_bytes<T>(
+    device: &wgpu::Device,
+    staging_buffer: &wgpu::Buffer,
+    len: usize,
+    decode: impl FnOnce(&[u8]) -> T,
+) -> SpatialResult<T> {
     let slice = staging_buffer.slice(..);
     let (sender, receiver) = std::sync::mpsc::channel();
     slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -428,9 +453,7 @@ pub(crate) fn read_staging_bytes(
         .map_err(|error| {
             SpatialError::InvalidArgument(format!("failed to map wgpu texture: {error}"))
         })?;
+    let _unmap = StagingUnmap(staging_buffer);
     let data = slice.get_mapped_range();
-    let values = data[..len].to_vec();
-    drop(data);
-    staging_buffer.unmap();
-    Ok(values)
+    Ok(decode(&data[..len]))
 }
