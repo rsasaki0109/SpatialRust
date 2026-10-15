@@ -417,8 +417,7 @@ bytes and performs one copy per plane. GPU output/staging, 12*N download bytes,
 compute/shader math, uploads and public signatures are preserved. A private
 unmap guard releases the view before unmapping on return or decoder unwind;
 the existing float cast and map diagnostics remain. Empty calls retain their
-resource-free return. Attribute-bearing combined calls retain their existing
-decoding. These payload/capacity counts do not establish process peak memory
+resource-free return. These payload/capacity counts do not establish process peak memory
 or application latency. See
 [voxel XYZ readback evidence](../notes/2026-10-15_direct_mapped_voxel_xyz.md).
 
@@ -432,9 +431,21 @@ readback. Four channels at 1,048,576 cells remove 12 MiB for a four-channel
 batch, or 8 MiB over two two-channel gather batches. These are requested
 payload/capacity counts, not RSS/peak-memory or latency guarantees. Channel
 ordering, empty/length validation, per-call uploads, dispatches, map/wait,
-GPU buffers, shaders and public signatures remain. Combined XYZ/attribute
-decoding retains its existing behavior. See
+GPU buffers, shaders and public signatures remain. See
 [voxel channel readback evidence](../notes/2026-10-15_direct_mapped_voxel_channels.md).
+
+The four combined XYZ/float/u8 gather/average entry points also copy mapped
+planes directly into their final owned vectors. With F = 3 + float attributes,
+U byte attributes and N output cells, float payload capacity becomes 4*F*N
+instead of 4*(2*F-1)*N. Byte results decode the low eight bits of each staged
+u32 directly into each final byte channel, removing a 4*U*N raw host allocation
+and, for U > 1, a U*N flat-byte allocation over construction. GPU staging still
+uses four bytes per byte result. Transfers, compute/copy commands, submission,
+map/wait, fused four-attribute gather eligibility and public validation stay
+unchanged. The guard drops the mapped view before unmapping on return/unwind;
+upload recycling follows successful final host decoding. Counts exclude vector
+metadata and do not establish peak memory or latency. See
+[combined voxel readback evidence](../notes/2026-10-15_direct_mapped_voxel_mixed.md).
 
 | Area | Decision |
 | --- | --- |
