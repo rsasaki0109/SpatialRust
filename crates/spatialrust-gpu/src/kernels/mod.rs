@@ -166,3 +166,6 @@ pub use voxel_pipeline::{
 
 #[cfg(feature = "gpu-wgpu")]
 pub(crate) mod voxel_reduce_fused;
+
+#[cfg(feature = "gpu-wgpu")]
+pub(crate) mod voxel_first_average_fused;

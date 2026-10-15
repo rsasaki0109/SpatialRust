@@ -392,3 +392,6 @@ mod packed;
 
 #[path = "voxel_reduce_fused_tests.rs"]
 mod fused_reduce;
+
+#[path = "voxel_first_average_tests.rs"]
+mod fused_first_average;
