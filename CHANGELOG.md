@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Decode AI tensor readbacks directly from mapped staging into the owned
+  `Vec<f32>`, removing the intermediate host byte vector. Preserve native-endian
+  float bits, CHW order, transfer receipts and normalization kernels; reuse
+  the existing map lifetime guard. See
+  `notes/2026-10-15_direct_mapped_ai_readback.md`.
+
 - Unpack GPU image readbacks directly from mapped staging into the owned host
   image, removing the intermediate padded RGBA host vector and copy for all
   logical channel counts. Release mappings before return, including decoder

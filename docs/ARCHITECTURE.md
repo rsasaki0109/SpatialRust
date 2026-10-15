@@ -509,7 +509,8 @@ owned logical image. This removes one padded-row-times-height host vector and
 its whole-buffer copy for every channel count. The existing scoped unpacking
 workers finish while the mapping is live; the view drops before an unmap guard
 on success or decoder unwinding. The private mapping helper's owned-byte wrapper
-still returns a copy for existing tensor/histogram consumers. GPU staging,
+still returns a copy for native histogram and other owned-byte consumers;
+this wrapper is compiled only on native targets. GPU staging,
 row padding, final output allocation, mapping wait, shaders, metadata and
 transfer receipts are preserved; the mapping now remains live during unpacking.
 See [direct mapped readback evidence](../notes/2026-10-15_direct_mapped_image_readback.md).
@@ -530,6 +531,15 @@ scale/mean and finite nonzero standard deviations retain their existing contract
 the original f32 normalization and CHW shader, single pass, storage retention
 and explicit payload/query collection remain unchanged. Experimental channel-lane
 and fixed-channel kernels remain native test fixtures after completed-call measurements.
+`GpuAiTensor::readback_f32` decodes the mapped CHW bytes directly into its owned
+float vector through the same guarded mapping helper. This removes one
+4*channels*width*height-byte host intermediate and copy; staging and the final
+float allocation remain. Native-endian `f32::from_ne_bytes`, plane order,
+device checks, copy/map/wait and transfer receipts are preserved, with receipt
+recording still preceding float conversion. The mapping remains live through
+conversion and releases before return or decoder unwind. Shader normalization,
+packing and pool ownership are unchanged. See
+[direct AI readback evidence](../notes/2026-10-15_direct_mapped_ai_readback.md).
 Gray GPU box blur retains the integer full-box mean with one final half-up
 rounding. Boxes with area at least 81 and at least 65,536 total pixel/sample
 visits use horizontal unrounded u32 sums and a vertical reduction in one
