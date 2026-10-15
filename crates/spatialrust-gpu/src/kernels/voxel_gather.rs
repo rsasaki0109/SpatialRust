@@ -795,6 +795,18 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
         return Ok(());
     }
 
+    if super::voxel_gather_packed::try_record_packed_voxel_attributes(
+        encoder,
+        runtime,
+        attribute_channels,
+        segments,
+        staging_buffer,
+        channel_len * 3,
+        upload_recycle,
+    )? {
+        return Ok(());
+    }
+
     let device = runtime.device();
     let max_channels = runtime.max_gather_channels().max(1) as usize;
 

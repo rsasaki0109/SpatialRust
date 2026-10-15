@@ -407,3 +407,6 @@ mod voxel_u8_batch_tests;
 
 #[path = "voxel_combined_average_tests.rs"]
 mod combined_average;
+
+#[path = "voxel_packed_gather_tests.rs"]
+mod packed_gather;

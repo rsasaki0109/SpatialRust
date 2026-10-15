@@ -555,6 +555,17 @@ tails and full fallback. It records into existing staging without another
 submit/map/wait; XYZ, bytes, ownership and payloads remain. See
 [combined attribute average evidence](../notes/2026-10-16_combined_voxel_attribute_averages.md).
 
+Combined first-attribute voxel gathering packs each original two/four-channel
+batch into one planar output and one staging copy. Keeping the original
+runtime width preserves point-zero multi-channel empty rules versus positive-
+zero scalar tails. Existing XYZ fusion keeps priority, uploads stay pooled,
+and unsupported plans retain the original helper. A new lazy seven-storage/
+eight-binding integer gather removes dummy outputs without adding submit,
+readback, wait or payload. Seven attributes with width four keep three float
+passes while reducing ten float copies to five and removing eight dummy
+outputs. Checked destination/device/host limits precede packed resources. See
+[packed first-attribute evidence](../notes/2026-10-16_packed_combined_voxel_gather.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

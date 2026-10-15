@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack combined voxel first-attribute gather outputs per existing two/four-
+  channel batch, reducing copies and removing dummy outputs while preserving
+  scalar-tail empty rules, pooled uploads and fallback. See `notes/2026-10-16_packed_combined_voxel_gather.md`.
+
 - Batch float attribute averages in the separate-XYZ branches of both
   combined voxel average calls, reusing four-channel kernels and preserving
   original fused priority and fallback. See `notes/2026-10-16_combined_voxel_attribute_averages.md`.
