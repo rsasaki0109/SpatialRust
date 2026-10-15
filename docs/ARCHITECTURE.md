@@ -487,7 +487,16 @@ Receipts retain four physical bytes per pixel rather than staging-row padding;
 rejections leave them unchanged. Internal image construction also checks u64
 physical storage arithmetic. Plans do not impose a new retention/peak-memory
 budget or change successful transfers, metadata, kernels or public signatures.
-Host transfer transforms copy complete RGBA rows directly. Large native 1..=3
+`ImageView::as_packed_slice` borrows exactly the logical scalar elements of
+contiguous views, including empty and single-row views, without exposing
+trailing storage or ROI neighbors. `GpuImage::upload_u8` borrows those bytes
+for four-channel inputs through the existing queue write, removing one
+4*width*height-byte framework host vector and its copy. Single-row ROIs qualify
+regardless of stride. Backend staging and the explicit four-byte-per-pixel
+upload remain; no device copy, pass, wait or readback is added. Strided multi-row
+RGBA views retain complete-row host copies. See
+[packed RGBA upload evidence](../notes/2026-10-15_borrow_packed_rgba_upload.md).
+Large native 1..=3
 channel images use scoped disjoint row bands for RGBA packing and logical-channel
 unpacking from at least 1,048,576 pixels. Workers are capped by available CPUs,
 262,144-pixel work chunks and image height; single-row/small images and WASM

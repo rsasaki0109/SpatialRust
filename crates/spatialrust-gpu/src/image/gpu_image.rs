@@ -1,5 +1,7 @@
 //! Owned GPU image textures and named upload/readback.
 
+use std::borrow::Cow;
+
 use spatialrust_core::{SpatialError, SpatialResult};
 use spatialrust_image::{Image, ImageMetadata, ImageView};
 
@@ -66,6 +68,18 @@ fn upload_plan(
     let storage_bytes = texture_bytes(width, height)?;
     let packed_len = host_length(storage_bytes)?;
     Ok(UploadPlan { width, height, row_bytes, storage_bytes, packed_len })
+}
+
+fn upload_texels<const CHANNELS: usize>(
+    view: ImageView<'_, u8, CHANNELS>,
+    packed_len: usize,
+) -> Cow<'_, [u8]> {
+    if CHANNELS == 4 {
+        if let Some(pixels) = view.as_packed_slice() {
+            return Cow::Borrowed(pixels);
+        }
+    }
+    Cow::Owned(pack_rgba8(view, packed_len))
 }
 
 fn readback_plan(
@@ -184,6 +198,8 @@ pub struct GpuImage {
 impl GpuImage {
     /// Explicitly uploads a packed or strided `u8` image into a texture.
     /// Dimensions, row bytes and host capacity are checked before allocation.
+    /// Packed four-channel pixels are borrowed during the queue write; other
+    /// layouts use host packing. The backend still performs its own staging.
     pub fn upload_u8<const CHANNELS: usize>(
         runtime: &WgpuRuntime,
         view: ImageView<'_, u8, CHANNELS>,
@@ -191,7 +207,7 @@ impl GpuImage {
         let plan = upload_plan(view.width(), view.height(), CHANNELS, &runtime.device().limits())?;
         let (width, height) = (plan.width, plan.height);
         let texture = create_texture(runtime, width, height, "gpu-image-upload");
-        let texels = pack_rgba8(view, plan.packed_len);
+        let texels = upload_texels(view, plan.packed_len);
         runtime.queue().write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &texture,
@@ -386,6 +402,10 @@ mod transfer_tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "transfer_packing_gpu_tests.rs"]
 mod transfer_packing_gpu_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "packed_upload_tests.rs"]
+mod packed_upload_tests;
 
 pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> std::sync::Arc<()> {
     runtime.profiling_identity()
