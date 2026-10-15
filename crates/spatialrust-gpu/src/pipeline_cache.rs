@@ -161,6 +161,7 @@ pub struct VoxelGatherPipelines {
     pub u8_pipeline: wgpu::ComputePipeline,
     first_xyz_average: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     first_xyz_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
+    packed_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
     batched_u8: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     /// Bind group layout for 2-channel gather.
@@ -1087,6 +1088,7 @@ impl VoxelGatherPipelines {
             u8_pipeline,
             first_xyz_average: std::sync::OnceLock::new(),
             first_xyz_attributes: std::sync::OnceLock::new(),
+            packed_attributes: std::sync::OnceLock::new(),
             packed_u8_pipeline: std::sync::OnceLock::new(),
             batched_u8: std::sync::OnceLock::new(),
             multi_bind_group_layout,
@@ -1188,6 +1190,39 @@ impl VoxelGatherPipelines {
                 &pipeline_layout,
                 &shader,
                 "voxel-fused-first-average-pipeline",
+                "main",
+            );
+            (layout, pipeline)
+        })
+    }
+
+    pub(crate) fn packed_attributes_pipeline(
+        &self,
+        device: &wgpu::Device,
+    ) -> &(wgpu::BindGroupLayout, wgpu::ComputePipeline) {
+        self.packed_attributes.get_or_init(|| {
+            let mut entries = vec![uniform_entry(0)];
+            entries.extend((1..=6).map(|binding| storage_entry(binding, true)));
+            entries.push(storage_entry(7, false));
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-gather-attrs-packed-layout"),
+                entries: &entries,
+            });
+            let shader = load_shader(
+                device,
+                "voxel-gather-attrs-packed-shader",
+                include_str!("shaders/voxel_gather_multi_packed.wgsl"),
+            );
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("voxel-gather-attrs-packed-pipeline-layout"),
+                bind_group_layouts: &[&layout],
+                push_constant_ranges: &[],
+            });
+            let pipeline = build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-gather-attrs-packed-pipeline",
                 "main",
             );
             (layout, pipeline)
