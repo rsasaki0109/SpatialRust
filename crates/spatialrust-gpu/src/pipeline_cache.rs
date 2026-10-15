@@ -133,6 +133,7 @@ pub struct VoxelReducePipelines {
     /// Single-channel u8 voxel reduce pipeline.
     pub u8_pipeline: wgpu::ComputePipeline,
     fused_xyz_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
+    multi_average: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     centroid_first_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
     batched_u8: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
@@ -686,6 +687,7 @@ impl VoxelReducePipelines {
             u8_bind_group_layout,
             u8_pipeline,
             fused_xyz_attributes: std::sync::OnceLock::new(),
+            multi_average: std::sync::OnceLock::new(),
             centroid_first_attributes: std::sync::OnceLock::new(),
             packed_u8_pipeline: std::sync::OnceLock::new(),
             batched_u8: std::sync::OnceLock::new(),
@@ -696,6 +698,39 @@ impl VoxelReducePipelines {
             _xyz_shader: xyz_shader,
             _u8_shader: u8_shader,
         }
+    }
+
+    pub(crate) fn multi_average_pipeline(
+        &self,
+        device: &wgpu::Device,
+    ) -> &(wgpu::BindGroupLayout, wgpu::ComputePipeline) {
+        self.multi_average.get_or_init(|| {
+            let mut entries = vec![uniform_entry(0)];
+            entries.extend((1..=6).map(|binding| storage_entry(binding, true)));
+            entries.push(storage_entry(7, false));
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-reduce-multi-packed-layout"),
+                entries: &entries,
+            });
+            let shader = load_shader(
+                device,
+                "voxel-reduce-multi-packed-shader",
+                include_str!("shaders/voxel_reduce_multi_packed.wgsl"),
+            );
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("voxel-reduce-multi-packed-pipeline-layout"),
+                bind_group_layouts: &[&layout],
+                push_constant_ranges: &[],
+            });
+            let pipeline = build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-reduce-multi-packed-pipeline",
+                "main",
+            );
+            (layout, pipeline)
+        })
     }
 
     pub(crate) fn batched_u8_pipeline(

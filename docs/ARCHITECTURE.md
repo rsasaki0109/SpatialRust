@@ -533,6 +533,16 @@ bounded independently of total channel count. Input/output payloads and
 owned capacities remain; no shader, cache or public API change. See
 [coalesced gather evidence](../notes/2026-10-15_coalesced_voxel_gather_submit.md).
 
+Standalone multi-channel voxel float averages share point-index traversal
+in groups of up to four and write one planar f32 output per group. A lazy
+seven-storage/eight-binding kernel preserves sequential per-channel sums,
+scalar division and positive-zero empty cells. Passes/output copies fall
+from C to ceil(C/4); a one-channel tail keeps the original scalar recorder.
+The existing single submit/map/wait, active input/output/staging payloads,
+ownership and unpooled uploads remain. Checked group output, whole staging,
+host-slice and device limits retain the complete original fallback. See
+[batched average evidence](../notes/2026-10-15_batched_voxel_float_average.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

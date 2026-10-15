@@ -127,6 +127,12 @@ pub fn reduce_voxel_average_f32_multi_gpu(
         }
     }
 
+    if let Some(result) =
+        super::voxel_average_batch::try_reduce_voxel_average_batched(runtime, channels, segments)
+    {
+        return result;
+    }
+
     let device = runtime.device();
     let queue = runtime.queue();
     let cell_count = segments.cell_count();

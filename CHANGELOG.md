@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Batch standalone GPU voxel float averages in groups of up to four, sharing
+  index traversal and planar outputs while preserving scalar arithmetic and
+  the existing fallback. See `notes/2026-10-15_batched_voxel_float_average.md`.
+
 - Coalesce adjacent pairs of standalone GPU voxel gather batches into one
   submit/readback, with bounded two-batch working sets and original fallback.
   See `notes/2026-10-15_coalesced_voxel_gather_submit.md`.
