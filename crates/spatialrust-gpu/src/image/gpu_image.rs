@@ -435,7 +435,7 @@ impl Drop for StagingUnmap<'_> {
     }
 }
 
-fn with_staging_bytes<T>(
+pub(super) fn with_staging_bytes<T>(
     device: &wgpu::Device,
     staging_buffer: &wgpu::Buffer,
     len: usize,

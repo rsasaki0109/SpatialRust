@@ -3,7 +3,7 @@
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
 
-use super::gpu_image::{read_staging_bytes, runtime_device_key, GpuImage, GpuImageReceipt};
+use super::gpu_image::{runtime_device_key, with_staging_bytes, GpuImage, GpuImageReceipt};
 use crate::WgpuRuntime;
 
 const WORKGROUP_X: u32 = 16;
@@ -204,6 +204,8 @@ impl GpuAiTensor {
     }
 
     /// Explicitly reads planar values back to host memory.
+    /// Decodes mapped staging directly into the owned output without an
+    /// intermediate host byte vector; the mapping is released before return.
     pub fn readback_f32(&mut self, runtime: &WgpuRuntime) -> SpatialResult<Vec<f32>> {
         if !std::sync::Arc::ptr_eq(&self.device_key, &runtime_device_key(runtime)) {
             return Err(SpatialError::InvalidArgument(
@@ -222,12 +224,13 @@ impl GpuAiTensor {
             });
         encoder.copy_buffer_to_buffer(&self.buffer, 0, &staging, 0, self.byte_len);
         runtime.queue().submit(Some(encoder.finish()));
-        let bytes = read_staging_bytes(runtime.device(), &staging, self.byte_len as usize)?;
-        self.receipt.record_device_to_host(self.byte_len, "readback_ai_chw_f32");
-        Ok(bytes
-            .chunks_exact(std::mem::size_of::<f32>())
-            .map(|chunk| f32::from_ne_bytes(chunk.try_into().expect("four-byte f32 chunk")))
-            .collect())
+        with_staging_bytes(runtime.device(), &staging, self.byte_len as usize, |bytes| {
+            self.receipt.record_device_to_host(self.byte_len, "readback_ai_chw_f32");
+            bytes
+                .chunks_exact(std::mem::size_of::<f32>())
+                .map(|chunk| f32::from_ne_bytes(chunk.try_into().expect("four-byte f32 chunk")))
+                .collect()
+        })
     }
 
     /// Returns tensor storage to the runtime pool.
@@ -352,3 +355,7 @@ fn pack_dispatch(
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "ai_pack_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "ai_readback_tests.rs"]
+mod readback_tests;
