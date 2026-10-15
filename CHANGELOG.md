@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack pairs of exact grayscale box-blur horizontal sums for separable
+  kernel widths through 257, halving even-pixel scratch requests with
+  unchanged wide/direct paths, final rounding and explicit work receipts.
+  See `notes/2026-10-16_packed_box_blur_scratch.md`.
+
 - Pack pairs of Q8 Gaussian horizontal sums without intermediate rounding,
   reducing logical GPU scratch requests by 50% for two/four channels and one
   third for three channels, with unchanged Q15 and explicit work receipts.

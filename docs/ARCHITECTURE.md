@@ -702,8 +702,13 @@ Gray GPU box blur retains the integer full-box mean with one final half-up
 rounding. Boxes with area at least 81 and at least 65,536 total pixel/sample
 visits use horizontal unrounded u32 sums and a vertical reduction in one
 submission; smaller workloads retain one-pass traversal.
-The exclusive intermediate buffer is four bytes per pixel and uses submitted
-scratch leases. Oversized separable kernels scan only valid coordinates and
+For separable kernel widths at most 257, exact horizontal sums fit u16;
+one invocation packs two adjacent pixels into each u32 with a zero odd tail.
+The exclusive intermediate request becomes `4*ceil(pixels/2)` bytes, while
+wider kernels keep four bytes per pixel. Original full-size capacity guards,
+vertical arithmetic, final rounding and submitted scratch leases remain.
+Work receipts count the actual horizontal request and unchanged RGBA output.
+See [packed box-blur evidence](../notes/2026-10-16_packed_box_blur_scratch.md). Oversized separable kernels scan only valid coordinates and
 weight replicated edge pixels analytically; constant-zero padding retains the
 full kernel divisor. Pixel, coordinate, sum and device limits reject before
 allocation. Both paths use bounded grid strides and independently lazy runtime
