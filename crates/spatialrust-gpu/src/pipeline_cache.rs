@@ -158,6 +158,7 @@ pub struct VoxelGatherPipelines {
     /// Single-channel u8 gather pipeline.
     pub u8_pipeline: wgpu::ComputePipeline,
     first_xyz_average: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
+    first_xyz_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
     /// Bind group layout for 2-channel gather.
     pub multi_bind_group_layout: wgpu::BindGroupLayout,
@@ -1014,6 +1015,7 @@ impl VoxelGatherPipelines {
             u8_bind_group_layout,
             u8_pipeline,
             first_xyz_average: std::sync::OnceLock::new(),
+            first_xyz_attributes: std::sync::OnceLock::new(),
             packed_u8_pipeline: std::sync::OnceLock::new(),
             multi_bind_group_layout,
             multi_pipeline,
@@ -1081,6 +1083,39 @@ impl VoxelGatherPipelines {
                 &pipeline_layout,
                 &shader,
                 "voxel-fused-first-average-pipeline",
+                "main",
+            );
+            (layout, pipeline)
+        })
+    }
+
+    pub(crate) fn first_xyz_attributes_pipeline(
+        &self,
+        device: &wgpu::Device,
+    ) -> &(wgpu::BindGroupLayout, wgpu::ComputePipeline) {
+        self.first_xyz_attributes.get_or_init(|| {
+            let mut entries = vec![uniform_entry(0)];
+            entries.extend((1..=9).map(|binding| storage_entry(binding, true)));
+            entries.push(storage_entry(10, false));
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-fused-first-gather-layout"),
+                entries: &entries,
+            });
+            let shader = load_shader(
+                device,
+                "voxel-fused-first-gather-shader",
+                include_str!("shaders/voxel_first_gather.wgsl"),
+            );
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("voxel-fused-first-gather-pipeline-layout"),
+                bind_group_layouts: &[&layout],
+                push_constant_ranges: &[],
+            });
+            let pipeline = build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-fused-first-gather-pipeline",
                 "main",
             );
             (layout, pipeline)

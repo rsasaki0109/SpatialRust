@@ -4,6 +4,7 @@ use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_first_average_fused::record_fused_voxel_first_average;
+use crate::kernels::voxel_first_gather_fused::record_fused_voxel_first_gather;
 use crate::kernels::voxel_reduce_fused::plan_fused_voxel_average;
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::readback::{
@@ -214,6 +215,7 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
     let f32_channel_count = 3 + attribute_count;
     let u8_staging_len = packed_u8_output_staging_bytes(cells, u8_attribute_count);
     let u8_channel_len = packed_u8_output_staging_bytes(cells, 1);
+    let fused_plan = plan_fused_voxel_average(&device.limits(), cell_count, attribute_count);
     let staging_size = channel_len * f32_channel_count + u8_staging_len;
     let fused_xyz_attrs4 = attribute_count == 4
         && u8_attribute_count == 0
@@ -261,6 +263,26 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
             0,
             (channel_len * f32_channel_count) as u64,
         );
+    } else if let Some(plan) = fused_plan {
+        let output = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-fused-first-gather-output"),
+            size: plan.output_bytes,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        for channel in attribute_channels {
+            upload_recycle
+                .push(runtime.upload_f32_storage("voxel-gather-xyz-attrs-values", channel)?);
+        }
+        record_fused_voxel_first_gather(
+            &mut encoder,
+            runtime,
+            [x, y, z],
+            &upload_recycle,
+            segments,
+            &output,
+        );
+        encoder.copy_buffer_to_buffer(&output, 0, &staging_buffer, 0, plan.output_bytes);
     } else {
         let output_x = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("voxel-gather-xyz-out-x"),

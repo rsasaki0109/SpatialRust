@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Extend fused first-point GPU voxel XYZ/float gathering to one-to-three
+  attributes and mixed byte-channel calls. Preserve the existing four-float,
+  no-byte path, exact words, scalar/multi empty rules and pooled fallback.
+  See `notes/2026-10-15_fused_voxel_first_gather.md`.
+
 - Fuse GPU voxel centroid XYZ and one-to-four first-point float attributes
   into one capability/size-gated pass. Preserve channel-specific empty-cell
   values, original centroid math, pooled uploads and the separate fallback.
