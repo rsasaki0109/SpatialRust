@@ -354,37 +354,47 @@ pub fn reduce_voxel_centroids_xyz_and_average_multi_gpu(
     }
 
     let u8_region_offset = (channel_len * f32_channel_count) as u64;
-    for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {
-        let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("voxel-reduce-xyz-u8-values"),
-            contents: &pad_u8_for_gpu_storage(channel),
-            usage: wgpu::BufferUsages::STORAGE,
-        });
-        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-xyz-u8-output"),
-            size: u8_channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
+    if !crate::kernels::voxel_u8_batch::try_record_voxel_u8_batch_to_staging(
+        &mut encoder,
+        runtime,
+        u8_attribute_channels,
+        segments,
+        &staging_buffer,
+        u8_region_offset,
+        true,
+    ) {
+        for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {
+            let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("voxel-reduce-xyz-u8-values"),
+                contents: &pad_u8_for_gpu_storage(channel),
+                usage: wgpu::BufferUsages::STORAGE,
+            });
+            let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-reduce-xyz-u8-output"),
+                size: u8_channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
 
-        record_voxel_reduce_u8_packed_pass(
-            &mut encoder,
-            runtime,
-            &values_buffer,
-            segments.point_indices_buffer(),
-            segments.cell_starts_buffer(),
-            cell_count,
-            segments.point_count(),
-            &output_buffer,
-        )?;
+            record_voxel_reduce_u8_packed_pass(
+                &mut encoder,
+                runtime,
+                &values_buffer,
+                segments.point_indices_buffer(),
+                segments.cell_starts_buffer(),
+                cell_count,
+                segments.point_count(),
+                &output_buffer,
+            )?;
 
-        encoder.copy_buffer_to_buffer(
-            &output_buffer,
-            0,
-            &staging_buffer,
-            u8_region_offset + attribute_index as u64 * u8_channel_len as u64,
-            u8_channel_len as u64,
-        );
+            encoder.copy_buffer_to_buffer(
+                &output_buffer,
+                0,
+                &staging_buffer,
+                u8_region_offset + attribute_index as u64 * u8_channel_len as u64,
+                u8_channel_len as u64,
+            );
+        }
     }
 
     queue.submit(Some(encoder.finish()));
@@ -544,35 +554,45 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
     }
 
     let u8_region_offset = (channel_len * f32_channel_count) as u64;
-    for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {
-        let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("voxel-gather-xyz-u8-values"),
-            contents: &pad_u8_for_gpu_storage(channel),
-            usage: wgpu::BufferUsages::STORAGE,
-        });
-        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-u8-output"),
-            size: u8_channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        record_voxel_gather_u8_packed_pass(
-            &mut encoder,
-            runtime,
-            &values_buffer,
-            segments.point_indices_buffer(),
-            segments.cell_starts_buffer(),
-            cell_count,
-            segments.point_count(),
-            &output_buffer,
-        )?;
-        encoder.copy_buffer_to_buffer(
-            &output_buffer,
-            0,
-            &staging_buffer,
-            u8_region_offset + attribute_index as u64 * u8_channel_len as u64,
-            u8_channel_len as u64,
-        );
+    if !crate::kernels::voxel_u8_batch::try_record_voxel_u8_batch_to_staging(
+        &mut encoder,
+        runtime,
+        u8_attribute_channels,
+        segments,
+        &staging_buffer,
+        u8_region_offset,
+        false,
+    ) {
+        for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {
+            let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("voxel-gather-xyz-u8-values"),
+                contents: &pad_u8_for_gpu_storage(channel),
+                usage: wgpu::BufferUsages::STORAGE,
+            });
+            let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-u8-output"),
+                size: u8_channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            record_voxel_gather_u8_packed_pass(
+                &mut encoder,
+                runtime,
+                &values_buffer,
+                segments.point_indices_buffer(),
+                segments.cell_starts_buffer(),
+                cell_count,
+                segments.point_count(),
+                &output_buffer,
+            )?;
+            encoder.copy_buffer_to_buffer(
+                &output_buffer,
+                0,
+                &staging_buffer,
+                u8_region_offset + attribute_index as u64 * u8_channel_len as u64,
+                u8_channel_len as u64,
+            );
+        }
     }
 
     queue.submit(Some(encoder.finish()));

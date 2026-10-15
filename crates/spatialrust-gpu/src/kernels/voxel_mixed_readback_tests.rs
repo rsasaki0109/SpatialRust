@@ -401,3 +401,6 @@ mod fused_centroid_first;
 
 #[path = "voxel_first_gather_tests.rs"]
 mod fused_first_gather;
+
+#[path = "voxel_u8_batch_tests.rs"]
+mod voxel_u8_batch_tests;

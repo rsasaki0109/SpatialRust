@@ -175,3 +175,6 @@ pub(crate) mod voxel_centroid_first_fused;
 
 #[cfg(feature = "gpu-wgpu")]
 pub(crate) mod voxel_first_gather_fused;
+
+#[cfg(feature = "gpu-wgpu")]
+mod voxel_u8_batch;
