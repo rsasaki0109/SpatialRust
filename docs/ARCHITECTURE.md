@@ -476,7 +476,8 @@ downloads remain unchanged; there is still one submission and mapped readback.
 The private planner requires ten storage bindings, eleven total bindings,
 256-lane compute support, a valid dispatch count and a packed output that fits
 storage-binding/buffer/u32-index limits. Zero/more-than-four attributes and
-unsupported sizes/capabilities keep the original separate float path. No
+unsupported sizes/capabilities keep separate XYZ/attribute commands; the
+attribute-average branch may use the bounded four-channel batch below. No
 device feature/limit request, public API, input transfer or host packing is
 added. Inactive read-only attribute bindings alias the first active input;
 the shader skips them. See
@@ -542,6 +543,17 @@ The existing single submit/map/wait, active input/output/staging payloads,
 ownership and unpooled uploads remain. Checked group output, whole staging,
 host-slice and device limits retain the complete original fallback. See
 [batched average evidence](../notes/2026-10-15_batched_voxel_float_average.md).
+
+Both combined voxel average APIs also reuse the four-channel attribute
+kernel in their separate-XYZ branches. Original one-to-four-attribute XYZ
+fusion keeps priority; more-than-four and supported smaller-binding/size
+fallbacks use ceil(C/4) attribute passes/copies instead of C. Seven float
+attributes need three total float passes instead of eight. An append-only
+recorder validates destination offset/extent/alignment and whole target
+device/host limits before byte-identical uploads, with original scalar
+tails and full fallback. It records into existing staging without another
+submit/map/wait; XYZ, bytes, ownership and payloads remain. See
+[combined attribute average evidence](../notes/2026-10-16_combined_voxel_attribute_averages.md).
 
 | Area | Decision |
 | --- | --- |

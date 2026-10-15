@@ -404,3 +404,6 @@ mod fused_first_gather;
 
 #[path = "voxel_u8_batch_tests.rs"]
 mod voxel_u8_batch_tests;
+
+#[path = "voxel_combined_average_tests.rs"]
+mod combined_average;

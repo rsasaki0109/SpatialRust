@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Batch float attribute averages in the separate-XYZ branches of both
+  combined voxel average calls, reusing four-channel kernels and preserving
+  original fused priority and fallback. See `notes/2026-10-16_combined_voxel_attribute_averages.md`.
+
 - Batch standalone GPU voxel float averages in groups of up to four, sharing
   index traversal and planar outputs while preserving scalar arithmetic and
   the existing fallback. See `notes/2026-10-15_batched_voxel_float_average.md`.
