@@ -389,3 +389,6 @@ fn concurrent_voxel_mixed_returns_independent_owned_outputs() {
 
 #[path = "voxel_u8_packed_tests.rs"]
 mod packed;
+
+#[path = "voxel_reduce_fused_tests.rs"]
+mod fused_reduce;

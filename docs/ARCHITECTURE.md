@@ -464,6 +464,24 @@ per-workgroup scratch. Performance depends on workload/backend and barrier
 cost; requested device limits and public API validation remain unchanged.
 See [packed byte output evidence](../notes/2026-10-15_packed_voxel_u8_output.md).
 
+`reduce_voxel_centroids_xyz_and_average_multi_gpu` uses a lazy fused float
+pipeline for one-to-four float attributes when device limits permit. One lane
+per cell loads each point index once and accumulates XYZ and active attributes
+in their original order. XYZ retains sum-times-reciprocal arithmetic; float
+attributes retain sum-divided-by-count arithmetic. A planar output replaces
+the separate float outputs without changing their summed payload or download.
+For four attributes, float passes/bind groups/uniforms fall from five to one,
+and float output buffers/copies from seven to one. Byte passes and packed
+downloads remain unchanged; there is still one submission and mapped readback.
+The private planner requires ten storage bindings, eleven total bindings,
+256-lane compute support, a valid dispatch count and a packed output that fits
+storage-binding/buffer/u32-index limits. Zero/more-than-four attributes and
+unsupported sizes/capabilities keep the original separate float path. No
+device feature/limit request, public API, input transfer or host packing is
+added. Inactive read-only attribute bindings alias the first active input;
+the shader skips them. See
+[fused float average evidence](../notes/2026-10-15_fused_voxel_float_average.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
