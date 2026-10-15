@@ -524,6 +524,15 @@ unsupported devices/sizes keep their original per-channel loops. No wait,
 submission or hidden transfer is added; float fusion and pool boundaries
 remain. See [batched byte evidence](../notes/2026-10-15_batched_voxel_u8_attributes.md).
 
+Standalone multi-channel first-point voxel gathers coalesce at most two
+existing two/four-channel batches per submit/map/wait when combined staging
+fits device and host-slice limits. Existing passes, output copies, bit
+payloads and inactive slots remain; one-batch/unsupported calls retain the
+original loop. The live per-window input/output/staging set can double,
+bounded independently of total channel count. Input/output payloads and
+owned capacities remain; no shader, cache or public API change. See
+[coalesced gather evidence](../notes/2026-10-15_coalesced_voxel_gather_submit.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
