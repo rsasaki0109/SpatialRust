@@ -482,6 +482,16 @@ added. Inactive read-only attribute bindings alias the first active input;
 the shader skips them. See
 [fused float average evidence](../notes/2026-10-15_fused_voxel_float_average.md).
 
+`gather_voxel_first_xyz_and_average_multi_gpu` uses an independent lazy kernel
+under the same unchanged fused-output planner. It copies first-point XYZ
+without arithmetic while accumulating one-to-four attributes in the original
+order with scalar division. Empty cells retain input point-zero XYZ and
+positive-zero attributes. Four attributes need one float pass/output/copy
+instead of five passes and seven outputs/copies. Byte commands, payloads,
+mapped decoding and the separate fallback remain. Input uploads, device
+requirements and public APIs are unchanged. See
+[first-point average fusion evidence](../notes/2026-10-15_fused_voxel_first_average.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

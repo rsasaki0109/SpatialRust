@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Fuse GPU voxel first-point XYZ gathering and one-to-four float attribute
+  averages into one capability/size-gated pass. Preserve empty-cell point-zero
+  coordinates, coordinate bits, scalar division, fallback and packed byte path.
+  See `notes/2026-10-15_fused_voxel_first_average.md`.
+
 - Fuse GPU voxel XYZ centroid and one-to-four float attribute averages into
   one pass when binding, output-buffer and dispatch limits permit. Preserve
   scalar attribute division, XYZ reciprocal multiplication and the existing
