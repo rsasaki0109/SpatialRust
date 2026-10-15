@@ -163,3 +163,6 @@ pub use voxel_pipeline::{
     downsample_voxel_approximate_first_gpu, downsample_voxel_centroid_gpu,
     VoxelApproximateFirstGpuResult, VoxelCentroidGpuResult,
 };
+
+#[cfg(feature = "gpu-wgpu")]
+pub(crate) mod voxel_reduce_fused;

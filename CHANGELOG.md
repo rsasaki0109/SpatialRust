@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Fuse GPU voxel XYZ centroid and one-to-four float attribute averages into
+  one pass when binding, output-buffer and dispatch limits permit. Preserve
+  scalar attribute division, XYZ reciprocal multiplication and the existing
+  fallback/packed byte path. See `notes/2026-10-15_fused_voxel_float_average.md`.
+
 - Pack voxel u8 gather/average results on the GPU, four cells per output word.
   Combined XYZ/attribute calls download one padded byte per cell/channel instead
   of four bytes, preserving per-cell arithmetic and existing word pipelines.
