@@ -503,6 +503,16 @@ payloads, mapped output ownership and the original fallback remain; pooled
 uploads and post-readback recycling keep their existing boundary. See
 [centroid/first-attribute fusion evidence](../notes/2026-10-15_fused_voxel_centroid_first.md).
 
+`gather_voxel_first_xyz_and_multi_gpu` keeps its original four-attribute,
+no-byte fused branch and extends fusion to the remaining one-to-four-float
+cases accepted by the shared planner. An independent lazy integer-word kernel
+copies first-point XYZ/attributes without floating arithmetic. Scalar versus
+multi-channel empty-cell rules, pooled uploads and byte commands remain.
+Newly eligible calls use one float pass instead of two; four attributes mixed
+with bytes need one float copy instead of seven. The old fast branch and split
+fallback, active payloads, mapped decoding and recycling are preserved. See
+[broader first-point gather evidence](../notes/2026-10-15_fused_voxel_first_gather.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

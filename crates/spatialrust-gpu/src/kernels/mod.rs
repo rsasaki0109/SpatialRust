@@ -172,3 +172,6 @@ pub(crate) mod voxel_first_average_fused;
 
 #[cfg(feature = "gpu-wgpu")]
 pub(crate) mod voxel_centroid_first_fused;
+
+#[cfg(feature = "gpu-wgpu")]
+pub(crate) mod voxel_first_gather_fused;
