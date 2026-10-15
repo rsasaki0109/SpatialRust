@@ -513,6 +513,17 @@ with bytes need one float copy instead of seven. The old fast branch and split
 fallback, active payloads, mapped decoding and recycling are preserved. See
 [broader first-point gather evidence](../notes/2026-10-15_fused_voxel_first_gather.md).
 
+The four combined voxel XYZ/attribute calls batch two-to-four u8 channels
+into one packed planar output when seven storage/eight total bindings,
+256 lanes, 4KiB workgroup scratch, dispatch and complete output limits fit.
+Independent lazy first/average kernels share segment/index loads while
+preserving sequential f32 byte sums, division/rounding and zero byte tails.
+Byte passes/copies fall from channel count to one; host input padding,
+payloads and owned decoding remain. Zero/one/five-or-more byte channels and
+unsupported devices/sizes keep their original per-channel loops. No wait,
+submission or hidden transfer is added; float fusion and pool boundaries
+remain. See [batched byte evidence](../notes/2026-10-15_batched_voxel_u8_attributes.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

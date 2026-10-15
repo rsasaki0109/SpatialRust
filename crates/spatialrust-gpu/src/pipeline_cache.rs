@@ -135,6 +135,7 @@ pub struct VoxelReducePipelines {
     fused_xyz_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     centroid_first_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
+    batched_u8: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     _pipeline_layout: wgpu::PipelineLayout,
     _xyz_pipeline_layout: wgpu::PipelineLayout,
     _u8_pipeline_layout: wgpu::PipelineLayout,
@@ -160,6 +161,7 @@ pub struct VoxelGatherPipelines {
     first_xyz_average: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     first_xyz_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
+    batched_u8: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     /// Bind group layout for 2-channel gather.
     pub multi_bind_group_layout: wgpu::BindGroupLayout,
     /// 2-channel gather pipeline.
@@ -686,6 +688,7 @@ impl VoxelReducePipelines {
             fused_xyz_attributes: std::sync::OnceLock::new(),
             centroid_first_attributes: std::sync::OnceLock::new(),
             packed_u8_pipeline: std::sync::OnceLock::new(),
+            batched_u8: std::sync::OnceLock::new(),
             _pipeline_layout: pipeline_layout,
             _xyz_pipeline_layout: xyz_pipeline_layout,
             _u8_pipeline_layout: u8_pipeline_layout,
@@ -693,6 +696,39 @@ impl VoxelReducePipelines {
             _xyz_shader: xyz_shader,
             _u8_shader: u8_shader,
         }
+    }
+
+    pub(crate) fn batched_u8_pipeline(
+        &self,
+        device: &wgpu::Device,
+    ) -> &(wgpu::BindGroupLayout, wgpu::ComputePipeline) {
+        self.batched_u8.get_or_init(|| {
+            let mut entries = vec![uniform_entry(0)];
+            entries.extend((1..=6).map(|binding| storage_entry(binding, true)));
+            entries.push(storage_entry(7, false));
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-reduce-u8-batch-layout"),
+                entries: &entries,
+            });
+            let shader = load_shader(
+                device,
+                "voxel-reduce-u8-batch-shader",
+                include_str!("shaders/voxel_reduce_u8_batched.wgsl"),
+            );
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("voxel-reduce-u8-batch-pipeline-layout"),
+                bind_group_layouts: &[&layout],
+                push_constant_ranges: &[],
+            });
+            let pipeline = build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-reduce-u8-batch-pipeline",
+                "main",
+            );
+            (layout, pipeline)
+        })
     }
 
     pub(crate) fn packed_u8_pipeline(&self, device: &wgpu::Device) -> &wgpu::ComputePipeline {
@@ -1017,6 +1053,7 @@ impl VoxelGatherPipelines {
             first_xyz_average: std::sync::OnceLock::new(),
             first_xyz_attributes: std::sync::OnceLock::new(),
             packed_u8_pipeline: std::sync::OnceLock::new(),
+            batched_u8: std::sync::OnceLock::new(),
             multi_bind_group_layout,
             multi_pipeline,
             multi4_bind_group_layout,
@@ -1037,6 +1074,39 @@ impl VoxelGatherPipelines {
             _multi4_shader: multi4_shader,
             _xyz_attrs4_shader: xyz_attrs4_shader,
         }
+    }
+
+    pub(crate) fn batched_u8_pipeline(
+        &self,
+        device: &wgpu::Device,
+    ) -> &(wgpu::BindGroupLayout, wgpu::ComputePipeline) {
+        self.batched_u8.get_or_init(|| {
+            let mut entries = vec![uniform_entry(0)];
+            entries.extend((1..=6).map(|binding| storage_entry(binding, true)));
+            entries.push(storage_entry(7, false));
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-gather-u8-batch-layout"),
+                entries: &entries,
+            });
+            let shader = load_shader(
+                device,
+                "voxel-gather-u8-batch-shader",
+                include_str!("shaders/voxel_gather_u8_batched.wgsl"),
+            );
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("voxel-gather-u8-batch-pipeline-layout"),
+                bind_group_layouts: &[&layout],
+                push_constant_ranges: &[],
+            });
+            let pipeline = build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-gather-u8-batch-pipeline",
+                "main",
+            );
+            (layout, pipeline)
+        })
     }
 
     pub(crate) fn packed_u8_pipeline(&self, device: &wgpu::Device) -> &wgpu::ComputePipeline {

@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Batch two-to-four GPU voxel byte attributes in one packed gather/average
+  pass and output copy, preserving original rounding, payload and fallback.
+  See `notes/2026-10-15_batched_voxel_u8_attributes.md`.
+
 - Extend fused first-point GPU voxel XYZ/float gathering to one-to-three
   attributes and mixed byte-channel calls. Preserve the existing four-float,
   no-byte path, exact words, scalar/multi empty rules and pooled fallback.
