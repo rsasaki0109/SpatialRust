@@ -1,6 +1,10 @@
 //! GPU compute kernels for SpatialRust algorithms.
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_mixed_readback_tests.rs"]
+mod voxel_mixed_readback_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "voxel_channel_readback_tests.rs"]
 mod voxel_channel_readback_tests;
 

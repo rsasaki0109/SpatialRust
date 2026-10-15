@@ -5,9 +5,8 @@ use wgpu::util::DeviceExt;
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::readback::{
-    pad_u8_for_gpu_storage, read_staging_f32, read_staging_f32_and_u8, read_staging_f32_channels,
-    read_staging_xyz, split_u8_channel_blocks, split_xyz_and_attribute_blocks,
-    u8_output_staging_bytes, unpack_u8_outputs_from_u32_staging,
+    pad_u8_for_gpu_storage, read_staging_f32, read_staging_f32_channels, read_staging_xyz,
+    read_staging_xyz_and_attributes, u8_output_staging_bytes,
 };
 use crate::runtime::WgpuRuntime;
 
@@ -358,26 +357,14 @@ pub fn reduce_voxel_centroids_xyz_and_average_multi_gpu(
 
     queue.submit(Some(encoder.finish()));
 
-    let (flat, u8_raw) = read_staging_f32_and_u8(
+    let output = read_staging_xyz_and_attributes(
         device,
         &staging_buffer,
-        cells * f32_channel_count,
-        u8_staging_len,
+        cells,
+        attribute_count,
+        u8_attribute_count,
     )?;
-    let u8_flat = if u8_attribute_count == 0 {
-        Vec::new()
-    } else {
-        unpack_u8_outputs_from_u32_staging(u8_raw, cells, u8_attribute_count)
-    };
-    let (out_x, out_y, out_z, attributes) =
-        split_xyz_and_attribute_blocks(flat, attribute_count, cells);
-    Ok((
-        out_x,
-        out_y,
-        out_z,
-        attributes,
-        split_u8_channel_blocks(u8_flat, u8_attribute_count, cells),
-    ))
+    Ok(output)
 }
 
 /// Averages xyz and gathers the first f32/u8 attribute value per voxel with one readback.
@@ -533,29 +520,17 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
     }
 
     queue.submit(Some(encoder.finish()));
-    let (flat, u8_raw) = read_staging_f32_and_u8(
+    let output = read_staging_xyz_and_attributes(
         device,
         &staging_buffer,
-        cells * f32_channel_count,
-        u8_staging_len,
+        cells,
+        attribute_count,
+        u8_attribute_count,
     )?;
-    let u8_flat = if u8_attribute_count == 0 {
-        Vec::new()
-    } else {
-        unpack_u8_outputs_from_u32_staging(u8_raw, cells, u8_attribute_count)
-    };
-    let (out_x, out_y, out_z, attributes) =
-        split_xyz_and_attribute_blocks(flat, attribute_count, cells);
     for buffer in upload_recycle {
         runtime.recycle_storage(buffer.size(), buffer);
     }
-    Ok((
-        out_x,
-        out_y,
-        out_z,
-        attributes,
-        split_u8_channel_blocks(u8_flat, u8_attribute_count, cells),
-    ))
+    Ok(output)
 }
 
 pub(crate) fn record_voxel_reduce_f32_pass(

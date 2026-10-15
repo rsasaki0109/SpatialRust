@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Decode combined GPU voxel XYZ and float/u8 attributes directly into owned
+  channel vectors. Remove repeated float-plane copies, excess X capacity and
+  intermediate byte-output arrays across all four gather/average combinations.
+  See `notes/2026-10-15_direct_mapped_voxel_mixed.md`.
+
 - Decode standalone multi-channel voxel gather/average readbacks directly into
   owned attribute vectors, removing repeated channel copies and excess first
   channel capacity. Preserve upload, dispatch and shader behavior. See
