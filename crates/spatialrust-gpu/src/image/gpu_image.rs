@@ -418,6 +418,7 @@ pub(crate) fn runtime_device_key(runtime: &WgpuRuntime) -> std::sync::Arc<()> {
     runtime.profiling_identity()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn read_staging_bytes(
     device: &wgpu::Device,
     staging_buffer: &wgpu::Buffer,

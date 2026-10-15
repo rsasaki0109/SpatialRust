@@ -509,7 +509,8 @@ owned logical image. This removes one padded-row-times-height host vector and
 its whole-buffer copy for every channel count. The existing scoped unpacking
 workers finish while the mapping is live; the view drops before an unmap guard
 on success or decoder unwinding. The private mapping helper's owned-byte wrapper
-still returns a copy for histogram and other owned-byte consumers. GPU staging,
+still returns a copy for native histogram and other owned-byte consumers;
+this wrapper is compiled only on native targets. GPU staging,
 row padding, final output allocation, mapping wait, shaders, metadata and
 transfer receipts are preserved; the mapping now remains live during unpacking.
 See [direct mapped readback evidence](../notes/2026-10-15_direct_mapped_image_readback.md).

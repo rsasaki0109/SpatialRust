@@ -14,7 +14,9 @@ and backend staging allocation are not inferred from that count.
 
 Device identity, staging allocation, copy/submit/map/wait and error strings
 are unchanged. The shared decoder becomes visible only to sibling image
-modules; its body and unmap guard do not change. Mapped bytes remain live
+modules; its body and unmap guard do not change. The retained owned-byte
+wrapper is compiled only on native targets, matching its remaining callers.
+Mapped bytes remain live
 through conversion, with the view dropped before unmapping on return or
 unwinding. Transfer receipt recording still precedes float conversion, as in
 the parent. No mapped borrow escapes in the returned owned float vector.
@@ -79,8 +81,9 @@ samples suppress a row's ratio. No allocation count alone establishes speed.
   builds, formatting and diff checks passed.
 - 353 source/executable hashes were captured after validation. The frozen
   tensor method and complete original byte-wrapper/mapping/guard code match
-  the parent. Other than the tensor decoder and sibling visibility of the
-  shared helper, 346 other preexisting GPU/image sources and all 97 WGSL files
+  the parent. Other than the tensor decoder, sibling visibility of the
+  shared helper and native-only byte-wrapper compilation, 346 other preexisting
+  GPU/image sources and all 97 WGSL files
   are unchanged. The embedded CHW normalization shader is also identical.
 - The receipt stage remains before conversion; copying, map errors/wait,
   native-endian scalar conversion and public signatures retain their order
@@ -124,9 +127,23 @@ For 1920x1080 / 3, the old/new medians are 19.833500 / 12.665150 ms
 means of paired old/new ratios, rather than ratios of those medians. The
 smallest case does not establish a speed benefit. There are no zero samples.
 
-The source/executable hash manifest was verified after the measurement attempts
-and before documentation finalization: all 353 hashes matched, including the
-native benchmark executable. Raw attempts, the accepted eight-row survey,
+The measurement source/executable hash manifest was verified after the measurement
+attempts: all 353 hashes matched, including the native benchmark executable.
+The measured source is commit `ed5314c45787ef72f31d9a40d5b599b6d8495151`.
+The final revision additionally gates the owned-byte wrapper to native targets:
+CI's warnings-denied WASM build detected that its remaining histogram consumers
+are native-only. This attribute changes no native function body or measured
+native call path; the mapping and tensor decoder remain identical to the
+measured version. The original measurement manifest and executable are retained
+separately from the final source/executable hashes. Local WASM validation now
+denies warnings for both the facade and CI's exact `gpu-image,gpu-aoso-staging`
+GPU crate configuration. All 120 local tests, Clippy, CPU-only and both
+warnings-denied WASM configurations passed after the fix. A separate final
+353-file manifest was captured after validation. Its source audit confirms that
+every measured source except the wrapper's native-target attribute is unchanged;
+the archived measured executable still matches its original hash.
+
+Raw attempts, the accepted eight-row survey,
 bootstrap output, validation logs and hash manifest remain local under
 `C:/Users/rsasa/Workspace/SpatialRust/target/automation/` with the
 `ai-readback-` prefix. The published table contains every accepted condition
