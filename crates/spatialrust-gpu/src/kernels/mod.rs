@@ -187,3 +187,6 @@ mod voxel_average_batch;
 
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_gather_packed;
+
+#[cfg(feature = "gpu-wgpu")]
+mod voxel_standalone_packed;
