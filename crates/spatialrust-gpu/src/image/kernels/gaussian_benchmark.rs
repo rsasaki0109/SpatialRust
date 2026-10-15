@@ -89,7 +89,10 @@ fn measure<const C: usize>(runtime: &WgpuRuntime, w: usize, h: usize, size: u32,
     }
     let receipt = receipt.unwrap();
     assert_eq!(receipt.host_to_device_bytes(), (w * h * 4) as u64);
-    assert_eq!(receipt.gpu_to_gpu_bytes(), (w * h * (C + 1) * 4) as u64);
+    assert_eq!(
+        receipt.gpu_to_gpu_bytes(),
+        (w * h * (if size == 7 { C } else { C.div_ceil(2) }) * 4 + w * h * 4) as u64
+    );
     assert_eq!(receipt.device_to_host_bytes(), ((w * 4).div_ceil(256) * 256 * h) as u64);
     println!("GPU_GAUSSIAN_BENCH width={w} height={h} channels={C} kernel={size} hot={} h2d={} g2g={} d2h={} cpu_ms={cpu_ms:?} cpu_into_ms={cpu_into_ms:?} full_gpu_ms={full_gpu_ms:?} resident_ms={resident_ms:?}",u8::from(hot),receipt.host_to_device_bytes(),receipt.gpu_to_gpu_bytes(),receipt.device_to_host_bytes());
     source.recycle(runtime);

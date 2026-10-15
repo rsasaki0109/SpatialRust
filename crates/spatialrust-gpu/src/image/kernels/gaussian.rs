@@ -72,6 +72,7 @@ struct Params {
 struct Plan {
     params: Params,
     scratch_bytes: u64,
+    packed: bool,
 }
 
 // Same host binary64 normalization and center correction as gaussian_blur_u8.
@@ -150,6 +151,10 @@ fn plan(
         GpuGaussianBorder::Wrap => (3, [0; 4]),
         GpuGaussianBorder::Constant(pixel) => (4, pixel.map(u32::from)),
     };
+    // Keep the original capacity checks above, including error precedence.
+    let packed = bits == 8 && channels >= 2;
+    let words_per_pixel = if packed { channels.div_ceil(2) } else { channels };
+    let scratch_bytes = pixels * u64::from(words_per_pixel) * 4;
     Ok(Plan {
         params: Params {
             width,
@@ -164,27 +169,53 @@ fn plan(
             border,
             bits,
             channels,
-            padding: [0; 3],
+            padding: [if packed { words_per_pixel } else { 0 }, 0, 0],
             weights_x: weights(options.kernel_width, options.sigma_x, bits),
             weights_y: weights(options.kernel_height, options.sigma_y, bits),
             constant,
         },
         scratch_bytes,
+        packed,
     })
 }
 
 pub(crate) struct GaussianPipelines {
-    pipelines: [wgpu::ComputePipeline; 2],
+    pipelines: std::sync::OnceLock<[wgpu::ComputePipeline; 2]>,
+    packed: std::sync::OnceLock<[wgpu::ComputePipeline; 2]>,
 }
 
 impl GaussianPipelines {
-    fn new(device: &wgpu::Device) -> Self {
-        let shaders = [
-            concat!(include_str!("gaussian_params.wgsl"), include_str!("gaussian_horizontal.wgsl")),
-            concat!(include_str!("gaussian_params.wgsl"), include_str!("gaussian_vertical.wgsl")),
-        ];
-        Self {
-            pipelines: shaders.map(|source| {
+    fn new() -> Self {
+        Self { pipelines: std::sync::OnceLock::new(), packed: std::sync::OnceLock::new() }
+    }
+
+    fn pipelines(&self, device: &wgpu::Device, packed: bool) -> &[wgpu::ComputePipeline; 2] {
+        let cache = if packed { &self.packed } else { &self.pipelines };
+        cache.get_or_init(|| {
+            let shaders = if packed {
+                [
+                    concat!(
+                        include_str!("gaussian_params.wgsl"),
+                        include_str!("gaussian_packed_horizontal.wgsl")
+                    ),
+                    concat!(
+                        include_str!("gaussian_params.wgsl"),
+                        include_str!("gaussian_packed_vertical.wgsl")
+                    ),
+                ]
+            } else {
+                [
+                    concat!(
+                        include_str!("gaussian_params.wgsl"),
+                        include_str!("gaussian_horizontal.wgsl")
+                    ),
+                    concat!(
+                        include_str!("gaussian_params.wgsl"),
+                        include_str!("gaussian_vertical.wgsl")
+                    ),
+                ]
+            };
+            shaders.map(|source| {
                 let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
                     label: Some("gpu-gaussian-shader"),
                     source: wgpu::ShaderSource::Wgsl(source.into()),
@@ -197,8 +228,8 @@ impl GaussianPipelines {
                     compilation_options: Default::default(),
                     cache: None,
                 })
-            }),
-        }
+            })
+        })
     }
 }
 
@@ -206,8 +237,9 @@ impl GaussianPipelines {
 ///
 /// Matches `spatialrust_vision::gaussian_blur_u8` kernel quantization and final
 /// half-up rounding: Q8 for 3/5 kernels, Q15 for both axes when either is 7.
-/// Both weighted passes execute in one submission with private 4*channels bytes
-/// of scratch per pixel. There is no intermediate rounding, payload transfer,
+/// Both weighted passes execute in one submission. Q8 multi-channel calls use
+/// 4*ceil(channels/2) scratch bytes per pixel; other calls use 4*channels.
+/// There is no intermediate rounding, payload transfer,
 /// readback, host wait or CPU fallback. Source/output ownership and metadata are
 /// preserved; unsupported dimensions or device capacities return an error.
 pub fn gaussian_blur_gpu(
@@ -247,8 +279,7 @@ fn gaussian_impl(
     if let Some(ref profiler) = profiler {
         profiler.validate(runtime, 2)?;
     }
-    let cache =
-        runtime.image_gaussian_pipelines.get_or_init(|| GaussianPipelines::new(runtime.device()));
+    let cache = runtime.image_gaussian_pipelines.get_or_init(GaussianPipelines::new);
     let mut scratch = ScratchBuffers::new(runtime);
     let sums = scratch.acquire("gpu-gaussian-horizontal", p.scratch_bytes);
     let output = create_texture(runtime, source.width(), source.height(), "gpu-gaussian-output");
@@ -260,8 +291,8 @@ fn gaussian_impl(
     let source_view = source.view();
     let output_view = output.create_view(&Default::default());
     let mut encoder = runtime.device().create_command_encoder(&Default::default());
-    for index in 0..2 {
-        let pipeline = &cache.pipelines[index];
+    let pipelines = cache.pipelines(runtime.device(), p.packed);
+    for (index, pipeline) in pipelines.iter().enumerate() {
         let stage = if index == 0 { "gaussian_horizontal_gpu" } else { "gaussian_blur_gpu" };
         let image = if index == 0 { &source_view } else { &output_view };
         let group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {

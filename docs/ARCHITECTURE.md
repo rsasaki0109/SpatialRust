@@ -728,8 +728,15 @@ two small normalized integer kernels in binary64, matching specialized CPU u8
 quantization: Q8 for 3/5 calls, Q15 for both axes when either axis uses 7.
 Two GPU passes compute unrounded horizontal sums and the final weighted result;
 Q15 products/sums use two u32 limbs and round half-up only at the final byte.
-Each pixel requires `4*channels` private scratch bytes, leased through one
-submission. No image payload readback, intermediate upload or host wait occurs.
+Q8 multi-channel calls store two exact 16-bit sums per u32, requesting
+`4*ceil(channels/2)` private scratch bytes per pixel; single-channel/Q15 calls
+keep `4*channels`. Each invocation owns its pixel words, including zero odd
+high halves. Old planner limits remain before selecting the smaller scratch;
+old/packed pipeline pairs initialize independently on demand. Work receipts
+count actual horizontal bytes and the unchanged output texture. See
+[packed Q8 scratch evidence](../notes/2026-10-16_packed_gaussian_q8_scratch.md).
+Scratch stays leased through one submission. No image payload readback,
+intermediate upload or host wait occurs.
 The 128-byte uniform holds control/kernel coefficients and is excluded from
 payload receipts; device writes count scratch plus the RGBA8 output texture.
 Runtime/dimension/coordinate/index/buffer/binding/workgroup and optional two-stage
