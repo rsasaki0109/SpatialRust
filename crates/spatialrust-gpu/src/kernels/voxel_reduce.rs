@@ -5,8 +5,8 @@ use wgpu::util::DeviceExt;
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::readback::{
-    pad_u8_for_gpu_storage, read_staging_f32, read_staging_f32_and_u8, split_channel_blocks,
-    split_u8_channel_blocks, split_xyz_and_attribute_blocks, split_xyz_blocks,
+    pad_u8_for_gpu_storage, read_staging_f32, read_staging_f32_and_u8, read_staging_xyz,
+    split_channel_blocks, split_u8_channel_blocks, split_xyz_and_attribute_blocks,
     u8_output_staging_bytes, unpack_u8_outputs_from_u32_staging,
 };
 use crate::runtime::WgpuRuntime;
@@ -888,8 +888,7 @@ fn dispatch_voxel_reduce_xyz_f32(
     );
     queue.submit(Some(encoder.finish()));
 
-    let flat = read_staging_f32(device, &staging_buffer, cell_count as usize * 3)?;
-    Ok(split_xyz_blocks(flat, cell_count as usize))
+    read_staging_xyz(device, &staging_buffer, cell_count as usize)
 }
 
 #[cfg(test)]

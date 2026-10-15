@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Read standalone GPU voxel XYZ gather/centroid results directly into three
+  owned coordinate vectors. Remove Y/Z re-copies and excess retained capacity
+  from splitting a flat host vector, preserving shaders and explicit transfers.
+  See `notes/2026-10-15_direct_mapped_voxel_xyz.md`.
+
 - Decode AI tensor readbacks directly from mapped staging into the owned
   `Vec<f32>`, removing the intermediate host byte vector. Preserve native-endian
   float bits, CHW order, transfer receipts and normalization kernels; reuse
