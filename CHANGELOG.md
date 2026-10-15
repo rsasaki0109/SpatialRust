@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack voxel u8 gather/average results on the GPU, four cells per output word.
+  Combined XYZ/attribute calls download one padded byte per cell/channel instead
+  of four bytes, preserving per-cell arithmetic and existing word pipelines.
+  See `notes/2026-10-15_packed_voxel_u8_output.md`.
+
 - Decode combined GPU voxel XYZ and float/u8 attributes directly into owned
   channel vectors. Remove repeated float-plane copies, excess X capacity and
   intermediate byte-output arrays across all four gather/average combinations.

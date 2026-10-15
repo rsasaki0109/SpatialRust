@@ -132,6 +132,7 @@ pub struct VoxelReducePipelines {
     pub u8_bind_group_layout: wgpu::BindGroupLayout,
     /// Single-channel u8 voxel reduce pipeline.
     pub u8_pipeline: wgpu::ComputePipeline,
+    packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
     _pipeline_layout: wgpu::PipelineLayout,
     _xyz_pipeline_layout: wgpu::PipelineLayout,
     _u8_pipeline_layout: wgpu::PipelineLayout,
@@ -154,6 +155,7 @@ pub struct VoxelGatherPipelines {
     pub u8_bind_group_layout: wgpu::BindGroupLayout,
     /// Single-channel u8 gather pipeline.
     pub u8_pipeline: wgpu::ComputePipeline,
+    packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
     /// Bind group layout for 2-channel gather.
     pub multi_bind_group_layout: wgpu::BindGroupLayout,
     /// 2-channel gather pipeline.
@@ -677,6 +679,7 @@ impl VoxelReducePipelines {
             xyz_pipeline,
             u8_bind_group_layout,
             u8_pipeline,
+            packed_u8_pipeline: std::sync::OnceLock::new(),
             _pipeline_layout: pipeline_layout,
             _xyz_pipeline_layout: xyz_pipeline_layout,
             _u8_pipeline_layout: u8_pipeline_layout,
@@ -684,6 +687,23 @@ impl VoxelReducePipelines {
             _xyz_shader: xyz_shader,
             _u8_shader: u8_shader,
         }
+    }
+
+    pub(crate) fn packed_u8_pipeline(&self, device: &wgpu::Device) -> &wgpu::ComputePipeline {
+        self.packed_u8_pipeline.get_or_init(|| {
+            let shader = load_shader(
+                device,
+                "voxel-reduce-u8-packed-shader",
+                include_str!("shaders/voxel_reduce_u8_packed.wgsl"),
+            );
+            build_compute_pipeline(
+                device,
+                &self._u8_pipeline_layout,
+                &shader,
+                "voxel-reduce-u8-packed-pipeline",
+                "main",
+            )
+        })
     }
 }
 
@@ -922,6 +942,7 @@ impl VoxelGatherPipelines {
             xyz_pipeline,
             u8_bind_group_layout,
             u8_pipeline,
+            packed_u8_pipeline: std::sync::OnceLock::new(),
             multi_bind_group_layout,
             multi_pipeline,
             multi4_bind_group_layout,
@@ -942,6 +963,23 @@ impl VoxelGatherPipelines {
             _multi4_shader: multi4_shader,
             _xyz_attrs4_shader: xyz_attrs4_shader,
         }
+    }
+
+    pub(crate) fn packed_u8_pipeline(&self, device: &wgpu::Device) -> &wgpu::ComputePipeline {
+        self.packed_u8_pipeline.get_or_init(|| {
+            let shader = load_shader(
+                device,
+                "voxel-gather-u8-packed-shader",
+                include_str!("shaders/voxel_gather_u8_packed.wgsl"),
+            );
+            build_compute_pipeline(
+                device,
+                &self._u8_pipeline_layout,
+                &shader,
+                "voxel-gather-u8-packed-pipeline",
+                "main",
+            )
+        })
     }
 }
 

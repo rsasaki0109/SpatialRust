@@ -439,13 +439,30 @@ planes directly into their final owned vectors. With F = 3 + float attributes,
 U byte attributes and N output cells, float payload capacity becomes 4*F*N
 instead of 4*(2*F-1)*N. Byte results decode the low eight bits of each staged
 u32 directly into each final byte channel, removing a 4*U*N raw host allocation
-and, for U > 1, a U*N flat-byte allocation over construction. GPU staging still
-uses four bytes per byte result. Transfers, compute/copy commands, submission,
-map/wait, fused four-attribute gather eligibility and public validation stay
-unchanged. The guard drops the mapped view before unmapping on return/unwind;
+and, for U > 1, a U*N flat-byte allocation over construction. The guard drops
+the mapped view before unmapping on return/unwind;
 upload recycling follows successful final host decoding. Counts exclude vector
 metadata and do not establish peak memory or latency. See
 [combined voxel readback evidence](../notes/2026-10-15_direct_mapped_voxel_mixed.md).
+
+Combined XYZ/attribute calls now use packed u8 gather/average outputs. All
+256 lanes compute their original cell value in parallel, write a 1 KiB shared
+array, then reach one uniform workgroup barrier. The first 64 lanes each write
+four consecutive low-byte results as one u32; inactive tail lanes write zero.
+Each byte channel's output/copy/staging stride becomes 4*ceil(N/4) bytes,
+instead of 4*N. Float planes remain 4*F*N bytes. No compute pass, atomic,
+submission, readback wait or input transfer is added. Per-cell gather and
+sequential f32 average/round arithmetic remain identical to the original WGSL.
+The existing public word-output pipelines/layouts retain their behavior; two
+private packed variants initialize lazily per runtime using those same layouts.
+On little-endian hosts the mapped decoder copies byte planes into final owned
+vectors; big-endian hosts extract the corresponding u32 bit offsets. Neither
+route creates an intermediate host array. For 1,048,576 cells and three byte channels,
+byte downloads fall from 12 MiB to 3 MiB; byte device outputs and the byte part
+of staging each fall by 9 MiB. Counts exclude driver allocation overhead and
+per-workgroup scratch. Performance depends on workload/backend and barrier
+cost; requested device limits and public API validation remain unchanged.
+See [packed byte output evidence](../notes/2026-10-15_packed_voxel_u8_output.md).
 
 | Area | Decision |
 | --- | --- |
