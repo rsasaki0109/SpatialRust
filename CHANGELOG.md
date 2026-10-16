@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack four horizontal GPU morphology extrema per RGBA texel, reducing
+  separable scratch by 75% for widths divisible by four while preserving
+  exact output, pass counts and explicit work receipts.
+  See `notes/2026-10-16_packed_morphology_scratch.md`.
+
 - Pack standalone GPU voxel gather batches into one output/copy each, keeping
   original submission windows, empty-cell bits and checked fallback.
   See `notes/2026-10-16_packed_standalone_voxel_gather.md`.

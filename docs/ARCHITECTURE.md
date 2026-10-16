@@ -728,8 +728,15 @@ pipelines. GPU rectangular morphology retains odd kernels in `1..=31` and
 replicate borders. With box area at least 81 and at least 1,048,576 pixel/sample
 visits it reduces horizontal then vertical minima/maxima. Clipping valid
 coordinates is exact because repeated edge values do not alter an extremum.
-Both passes share one submission; the exclusive RGBA8 intermediate is four
-bytes per pixel and returns to the bounded image pool only after submission.
+Both passes share one submission. Separable widths greater than one pack
+four horizontal extrema into each RGBA8Uint texel, using an intermediate of
+ceil(width/4) by height; row-tail bytes stay zero. Vertical loads extract
+the matching byte before unchanged extrema. Widths divisible by four use
+75% less logical scratch. One-column images keep the original intermediate.
+Scratch returns to the bounded image pool with its actual extent only after
+submission; horizontal receipts count its actual bytes. Two independent lazy
+packed variants retain the old shaders, layouts, pass counts and transfers.
+See [packed morphology evidence](../notes/2026-10-16_packed_morphology_scratch.md).
 Small workloads keep the original full-box pass. Coordinate, texture, dispatch,
 uniform and workgroup limits reject before output/scratch/cache allocation.
 The separable pair is lazy within the existing spatial pipeline family.
