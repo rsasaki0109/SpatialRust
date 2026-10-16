@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse one private f32 output across voxel average attribute batches,
+  reducing output buffer requests while preserving original copies and math.
+  See `notes/2026-10-16_reused_voxel_average_output.md`.
+
 - Coalesce host XYZ voxel centroids into one submit/map/wait, sharing segment
   uploads and one scratch output while retaining original scalar math and fallback.
   See `notes/2026-10-16_coalesced_host_voxel_xyz.md`.

@@ -698,6 +698,16 @@ All axes remain live until submission and staging is larger; fewer requests
 do not imply peak-memory or latency savings. See
 [host XYZ batching evidence](../notes/2026-10-16_coalesced_host_voxel_xyz.md).
 
+Voxel attribute average recorders retain one private output sized for the
+largest four-channel batch, copying each active result to staging before
+reuse. Standalone average and both combined XYZ/average APIs share this
+policy, while the wide fused prefix keeps its existing separate output.
+Empty recorders remain no-ops. Existing planners, math, transfers, dispatch/
+copy counts, fallback and owned readback policy remain. Fewer GPU buffer
+requests and summed descriptor bytes are source accounting, without a
+physical allocation, peak-memory or latency claim. See
+[voxel average output reuse evidence](../notes/2026-10-16_reused_voxel_average_output.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
