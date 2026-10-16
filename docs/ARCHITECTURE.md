@@ -687,6 +687,17 @@ policies remain. Summed capacity reductions across channel temporaries are
 not peak-memory/RSS savings or latency evidence. See
 [reserved byte padding evidence](../notes/2026-10-16_reserved_voxel_u8_padding.md).
 
+The host XYZ centroid API shares indices/starts uploads across three
+unchanged scalar reductions, copying each axis from one private scratch
+output before reuse. One staging buffer and submit/map/wait replace three
+complete scalar calls. Checked scalar capabilities, source sizes, combined
+buffer/host and u32 limits select this batch; the original fallback and
+error/empty behavior remain. Payload H2D saves two repeated metadata uploads,
+D2H/math stay exact, and the existing owned XYZ reader/copy policy is reused.
+All axes remain live until submission and staging is larger; fewer requests
+do not imply peak-memory or latency savings. See
+[host XYZ batching evidence](../notes/2026-10-16_coalesced_host_voxel_xyz.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

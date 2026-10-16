@@ -934,6 +934,10 @@ pub fn reduce_voxel_centroids_xyz(
         return Err(SpatialError::BufferLengthMismatch { expected: x.len(), found: y.len() });
     }
 
+    if let Some(result) = super::voxel_host_xyz::try_reduce_host_xyz(runtime, [x, y, z], segments) {
+        return result;
+    }
+
     let out_x = reduce_voxel_average_f32(runtime, x, segments)?;
     let out_y = reduce_voxel_average_f32(runtime, y, segments)?;
     let out_z = reduce_voxel_average_f32(runtime, z, segments)?;

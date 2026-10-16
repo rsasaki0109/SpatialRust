@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Coalesce host XYZ voxel centroids into one submit/map/wait, sharing segment
+  uploads and one scratch output while retaining original scalar math and fallback.
+  See `notes/2026-10-16_coalesced_host_voxel_xyz.md`.
+
 - Reserve the padded voxel u8 upload capacity before copying, avoiding Vec
   growth for unaligned inputs while preserving borrowed aligned uploads.
   See `notes/2026-10-16_reserved_voxel_u8_padding.md`.
