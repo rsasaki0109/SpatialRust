@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Resize/Sobel and CHW image packing initialize private 32-/64-byte uniforms with
+mapped initial contents, as existing blur/morphology kernels do. A resident
+resize -> Sobel -> CHW chain removes three explicit `queue.write_buffer` calls
+while retaining three uniform buffers, three compute passes and three explicit
+submissions. Parameter delivery still occurs; internal backend staging/copies
+and latency are unmeasured. Kernels, validation, profiler events, pools, owned
+results and image/tensor payload receipts remain unchanged. See
+[image uniform initialization evidence](../notes/2026-10-16_initialized_image_uniforms.md).
+
 The optional `register-icp-gpu` correspondence API explicitly stages a borrowed,
 backend-neutral CPU KD-tree layout into an immutable runtime-owned `GpuKdTree`.
 Target buffers survive all ICP iterations; query uploads and nearest-result

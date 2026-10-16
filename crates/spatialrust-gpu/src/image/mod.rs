@@ -29,6 +29,9 @@ pub use vision_chain::{
     run_gpu_vision_chain, run_gpu_vision_chain_profiled, GpuVisionChainOptions,
 };
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod uniform_tests;
+
 #[cfg(test)]
 mod tests {
     use super::*;

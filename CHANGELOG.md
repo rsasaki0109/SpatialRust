@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Initialize resize/Sobel and CHW image uniforms at creation, removing separate
+  queue-write calls while preserving parameter bytes and explicit payload transfers.
+  See `notes/2026-10-16_initialized_image_uniforms.md`.
+
 - Batch five or more voxel byte attributes in groups of four for all combined
   XYZ APIs, reusing one packed output and preserving scalar one-channel tails.
   See `notes/2026-10-16_wide_voxel_u8_batches.md`.

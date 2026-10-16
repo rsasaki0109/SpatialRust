@@ -2,6 +2,7 @@
 
 use bytemuck::{Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult};
+use wgpu::util::DeviceExt;
 
 use super::gpu_image::{runtime_device_key, with_staging_bytes, GpuImage, GpuImageReceipt};
 use crate::WgpuRuntime;
@@ -306,13 +307,11 @@ fn pack_dispatch(
         std,
         _tail: [0.0; 3],
     };
-    let uniform = runtime.device().create_buffer(&wgpu::BufferDescriptor {
+    let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("gpu-ai-pack-params"),
-        size: std::mem::size_of::<AiPackParams>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
+        contents: bytemuck::bytes_of(&params),
+        usage: wgpu::BufferUsages::UNIFORM,
     });
-    runtime.queue().write_buffer(&uniform, 0, bytemuck::bytes_of(&params));
     let source_view = source.view();
     let bind_group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("gpu-ai-pack-bg"),
