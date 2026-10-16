@@ -589,6 +589,18 @@ owned XYZ capacities stay unchanged; output/staging data-buffer objects fall
 from four to two, with the same summed 24*N logical bytes. See
 [resident packed XYZ evidence](../notes/2026-10-16_packed_resident_voxel_xyz.md).
 
+All four combined XYZ/attribute voxel APIs also reuse the existing packed
+XYZ kernels in their separate-XYZ branches. Original fused plans retain
+priority; otherwise one XYZ output/copy replaces three within the existing
+encoder/staging, with no extra submit/map/wait. The append-only helper checks
+aligned offset/extent and whole destination/device/host limits before its
+output allocation, retaining the complete old XYZ block on rejection.
+XYZ math, attributes/bytes, upload recycling, useful payloads and owned
+capacities stay unchanged. Seven float attributes on a four-wide backend
+keep three float passes while copies fall from five to three. No shader or
+cache variant is added. See
+[combined packed XYZ evidence](../notes/2026-10-16_packed_combined_voxel_xyz.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

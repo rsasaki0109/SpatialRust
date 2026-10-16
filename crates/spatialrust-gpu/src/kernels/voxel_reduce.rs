@@ -276,54 +276,64 @@ pub fn reduce_voxel_centroids_xyz_and_average_multi_gpu(
         );
         encoder.copy_buffer_to_buffer(&output, 0, &staging_buffer, 0, plan.output_bytes);
     } else {
-        let output_x = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-xyz-out-x"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let output_y = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-xyz-out-y"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let output_z = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-xyz-out-z"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        record_voxel_reduce_xyz_pass(
+        if !super::voxel_xyz_packed::try_record_packed_xyz_to_staging(
             &mut encoder,
             runtime,
-            x,
-            y,
-            z,
-            segments.point_indices_buffer(),
-            segments.cell_starts_buffer(),
-            cell_count,
-            segments.point_count(),
-            &output_x,
-            &output_y,
-            &output_z,
-        )?;
+            [x, y, z],
+            segments,
+            &staging_buffer,
+            0,
+            super::voxel_xyz_packed::XyzMode::Centroid,
+        ) {
+            let output_x = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-reduce-xyz-out-x"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let output_y = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-reduce-xyz-out-y"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let output_z = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-reduce-xyz-out-z"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            record_voxel_reduce_xyz_pass(
+                &mut encoder,
+                runtime,
+                x,
+                y,
+                z,
+                segments.point_indices_buffer(),
+                segments.cell_starts_buffer(),
+                cell_count,
+                segments.point_count(),
+                &output_x,
+                &output_y,
+                &output_z,
+            )?;
 
-        encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
-        encoder.copy_buffer_to_buffer(
-            &output_y,
-            0,
-            &staging_buffer,
-            channel_len as u64,
-            channel_len as u64,
-        );
-        encoder.copy_buffer_to_buffer(
-            &output_z,
-            0,
-            &staging_buffer,
-            (channel_len * 2) as u64,
-            channel_len as u64,
-        );
+            encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
+            encoder.copy_buffer_to_buffer(
+                &output_y,
+                0,
+                &staging_buffer,
+                channel_len as u64,
+                channel_len as u64,
+            );
+            encoder.copy_buffer_to_buffer(
+                &output_z,
+                0,
+                &staging_buffer,
+                (channel_len * 2) as u64,
+                channel_len as u64,
+            );
+        }
 
         if !super::voxel_average_batch::try_record_voxel_attribute_averages_to_staging(
             &mut encoder,
@@ -508,54 +518,64 @@ pub fn reduce_voxel_centroids_xyz_and_gather_first_multi_gpu(
         );
         encoder.copy_buffer_to_buffer(&output, 0, &staging_buffer, 0, plan.output_bytes);
     } else {
-        let output_x = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-xyz-out-x"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let output_y = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-xyz-out-y"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let output_z = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-xyz-out-z"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-
-        record_voxel_reduce_xyz_pass(
+        if !super::voxel_xyz_packed::try_record_packed_xyz_to_staging(
             &mut encoder,
             runtime,
-            x,
-            y,
-            z,
-            segments.point_indices_buffer(),
-            segments.cell_starts_buffer(),
-            cell_count,
-            segments.point_count(),
-            &output_x,
-            &output_y,
-            &output_z,
-        )?;
-        encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
-        encoder.copy_buffer_to_buffer(
-            &output_y,
-            0,
+            [x, y, z],
+            segments,
             &staging_buffer,
-            channel_len as u64,
-            channel_len as u64,
-        );
-        encoder.copy_buffer_to_buffer(
-            &output_z,
             0,
-            &staging_buffer,
-            (channel_len * 2) as u64,
-            channel_len as u64,
-        );
+            super::voxel_xyz_packed::XyzMode::Centroid,
+        ) {
+            let output_x = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-reduce-xyz-out-x"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let output_y = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-reduce-xyz-out-y"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let output_z = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-reduce-xyz-out-z"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+
+            record_voxel_reduce_xyz_pass(
+                &mut encoder,
+                runtime,
+                x,
+                y,
+                z,
+                segments.point_indices_buffer(),
+                segments.cell_starts_buffer(),
+                cell_count,
+                segments.point_count(),
+                &output_x,
+                &output_y,
+                &output_z,
+            )?;
+            encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
+            encoder.copy_buffer_to_buffer(
+                &output_y,
+                0,
+                &staging_buffer,
+                channel_len as u64,
+                channel_len as u64,
+            );
+            encoder.copy_buffer_to_buffer(
+                &output_z,
+                0,
+                &staging_buffer,
+                (channel_len * 2) as u64,
+                channel_len as u64,
+            );
+        }
 
         record_gather_f32_attribute_channels_to_staging(
             &mut encoder,
