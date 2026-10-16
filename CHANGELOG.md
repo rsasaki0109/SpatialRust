@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Borrow voxel u8 attribute slices with lengths divisible by four, avoiding
+  temporary payload copies while preserving original zero-padded tails and GPU transfers.
+  See `notes/2026-10-16_borrowed_voxel_u8_uploads.md`.
+
 - Reuse bounded native CPU plane copies for large standalone GPU voxel first-value
   and average channel readback, preserving raw bits, exact capacities and map lifetime.
   See `notes/2026-10-16_parallel_standalone_voxel_readback.md`.

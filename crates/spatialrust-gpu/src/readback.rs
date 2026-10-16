@@ -180,6 +180,14 @@ pub(crate) fn pad_u8_for_gpu_storage(values: &[u8]) -> Vec<u8> {
     padded
 }
 
+pub(crate) fn u8_storage_upload_contents(values: &[u8]) -> std::borrow::Cow<'_, [u8]> {
+    if values.len() % 4 == 0 {
+        std::borrow::Cow::Borrowed(values)
+    } else {
+        std::borrow::Cow::Owned(pad_u8_for_gpu_storage(values))
+    }
+}
+
 const U32_OUTPUT_BYTES_PER_CELL: usize = std::mem::size_of::<u32>();
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
