@@ -91,7 +91,16 @@ pub(crate) fn record_packed_voxel_attributes(
     upload_recycle: &mut Vec<wgpu::Buffer>,
     plan: PackedGatherPlan,
 ) -> SpatialResult<()> {
+    if channels.is_empty() {
+        return Ok(());
+    }
     let device = runtime.device();
+    let output = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("voxel-gather-xyz-attrs-packed-output"),
+        size: plan.channel_bytes * channels.len().min(plan.width) as u64,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
     // Keep the original batch width: a scalar tail returns +0 for empty cells,
     // whereas the original multi-channel kernels gather input point zero.
     for (batch, chunk) in channels.chunks(plan.width).enumerate() {
@@ -102,12 +111,6 @@ pub(crate) fn record_packed_voxel_attributes(
         }
         let values = &upload_recycle[first_upload..];
         let bytes = plan.channel_bytes * chunk.len() as u64;
-        let output = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-attrs-packed-output"),
-            size: bytes,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
         if chunk.len() == 1 {
             super::voxel_gather::record_voxel_gather_f32_pass(
                 encoder,
@@ -122,6 +125,7 @@ pub(crate) fn record_packed_voxel_attributes(
         } else {
             record_packed_voxel_gather(encoder, runtime, values, segments, &output);
         }
+        // Preserve active planes before another batch overwrites the output.
         encoder.copy_buffer_to_buffer(
             &output,
             0,

@@ -111,7 +111,16 @@ pub(crate) fn record_packed_voxel_window(
     offset: u64,
     plan: PackedSubmissionPlan,
 ) {
+    if window.is_empty() {
+        return;
+    }
     let device = runtime.device();
+    let output = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("voxel-gather-packed-output"),
+        size: plan.channel_bytes * window.len().min(plan.width) as u64,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
     for (batch, chunk) in window.chunks(plan.width).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -124,16 +133,11 @@ pub(crate) fn record_packed_voxel_window(
             })
             .collect();
         let bytes = plan.channel_bytes * chunk.len() as u64;
-        let output = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-packed-output"),
-            size: bytes,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
         // Standalone one-channel tails also gather point zero in empty cells.
         super::voxel_gather_packed::record_packed_voxel_gather(
             encoder, runtime, &values, segments, &output,
         );
+        // Copy this batch before reuse, retaining the original bounded window.
         encoder.copy_buffer_to_buffer(
             &output,
             0,
@@ -143,3 +147,7 @@ pub(crate) fn record_packed_voxel_window(
         );
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_first_reuse_tests.rs"]
+mod reuse_tests;

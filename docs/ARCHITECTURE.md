@@ -708,6 +708,15 @@ requests and summed descriptor bytes are source accounting, without a
 physical allocation, peak-memory or latency claim. See
 [voxel average output reuse evidence](../notes/2026-10-16_reused_voxel_average_output.md).
 
+Packed voxel first-attribute recorders reuse one private output within each
+recording operation, preserving every active batch with its original staging
+copy before overwrite. Standalone submission windows retain at most two
+original batches; combined wide paths keep the existing fused prefix. Batch
+widths, scalar-versus-packed empty-cell behavior, upload recycling, transfers,
+math, fallback and owned CPU readers remain. Source descriptor reductions
+carry no physical allocation, peak-memory or latency claim. See
+[voxel first output reuse evidence](../notes/2026-10-16_reused_voxel_first_output.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
