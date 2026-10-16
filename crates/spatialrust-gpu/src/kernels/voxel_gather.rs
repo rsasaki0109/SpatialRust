@@ -654,6 +654,15 @@ pub fn gather_voxel_first_xyz_gpu_buffers(
         return Ok((Vec::new(), Vec::new(), Vec::new()));
     }
 
+    if let Some(result) = super::voxel_xyz_packed::try_voxel_xyz_packed(
+        runtime,
+        [x, y, z],
+        segments,
+        super::voxel_xyz_packed::XyzMode::First,
+    ) {
+        return result;
+    }
+
     let device = runtime.device();
     let queue = runtime.queue();
     let cell_count = segments.cell_count();

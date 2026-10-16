@@ -578,6 +578,17 @@ binding/index and original device/host limits retain the entire old fallback.
 No shader/cache variant or requested feature is added. See
 [standalone packed gather evidence](../notes/2026-10-16_packed_standalone_voxel_gather.md).
 
+Resident-input standalone voxel XYZ gather and centroid calls use one
+planar output/copy instead of three when the full binding/device/host limits
+fit. First-point gathering borrows axes into the existing integer packed
+kernel; centroids use an independent lazy kernel with the exact original
+sequential sums, reciprocal multiplication and zero-empty rule. Original
+eight-storage/nine-binding capability checks and complete old fallbacks
+remain. One pass/submit/map/wait, 12*N useful output/download bytes and exact
+owned XYZ capacities stay unchanged; output/staging data-buffer objects fall
+from four to two, with the same summed 24*N logical bytes. See
+[resident packed XYZ evidence](../notes/2026-10-16_packed_resident_voxel_xyz.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

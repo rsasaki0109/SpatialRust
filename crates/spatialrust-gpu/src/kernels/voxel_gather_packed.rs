@@ -142,10 +142,10 @@ struct Uniform {
     _pad: u32,
 }
 
-pub(crate) fn record_packed_voxel_gather(
+pub(crate) fn record_packed_voxel_gather<B: std::borrow::Borrow<wgpu::Buffer>>(
     encoder: &mut wgpu::CommandEncoder,
     runtime: &WgpuRuntime,
-    values: &[wgpu::Buffer],
+    values: &[B],
     segments: &GpuVoxelSegments,
     output: &wgpu::Buffer,
 ) {
@@ -162,7 +162,7 @@ pub(crate) fn record_packed_voxel_gather(
         usage: wgpu::BufferUsages::UNIFORM,
     });
     // Inactive read-only slots alias the first input and are never read.
-    let value = |i| values.get(i).unwrap_or(&values[0]);
+    let value = |i| values.get(i).unwrap_or(&values[0]).borrow();
     let buffers = [
         &control,
         segments.point_indices_buffer(),

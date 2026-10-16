@@ -240,3 +240,6 @@ fn concurrent_voxel_xyz_calls_keep_outputs_and_staging_independent() {
 
 #[path = "voxel_xyz_readback_benchmark.rs"]
 mod benchmark;
+
+#[path = "voxel_xyz_packed_tests.rs"]
+mod packed;
