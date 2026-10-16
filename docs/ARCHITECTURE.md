@@ -601,6 +601,16 @@ keep three float passes while copies fall from five to three. No shader or
 cache variant is added. See
 [combined packed XYZ evidence](../notes/2026-10-16_packed_combined_voxel_xyz.md).
 
+Combined first-XYZ/average-attributes and centroid/average-attributes voxel
+calls with more than four float attributes reuse existing fused kernels for
+XYZ plus the first four attributes, followed by original four-wide batches
+and scalar tails. Checked seven-plane binding, full target/host and dispatch
+guards precede helper uploads/recording; rejection retains the full previous
+split path. Float passes/output copies each fall from three to two for
+seven attributes, while math, upload payload, staging bytes, byte paths,
+one submit/map/wait and exact owned capacities remain. No shader/cache is
+added. See [wide voxel average evidence](../notes/2026-10-16_wide_voxel_average_fusion.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
