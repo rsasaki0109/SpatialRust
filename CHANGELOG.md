@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add native RGBA row-copy candidate fixtures and paired transfer diagnostics.
+  Defer the candidate after measurements fail to establish a latency benefit;
+  retain production packing and readback behavior. See
+  `notes/2026-10-17_owned_rgba_row_copies.md`.
+
 - Copy contiguous four-channel image readbacks directly into owned output,
   avoiding source-level zero initialization and per-row overwrite. Padded rows
   and other channels retain their original path.

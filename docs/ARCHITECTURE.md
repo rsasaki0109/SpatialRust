@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+The owned RGBA row-append candidate remains native-test-only after shared-host
+paired diagnostics failed to establish a latency benefit and included slower
+cases. Production row packing, padded readback, borrowed dense uploads and the
+contiguous readback shortcut retain the immediate-parent implementation. Frozen
+public/CPU comparisons and all diagnostic runs are in
+[deferred RGBA row evidence](../notes/2026-10-17_owned_rgba_row_copies.md).
+
 Image readback unpacking copies the validated mapped prefix directly into an
 owned vector for four logical channels with no staging row padding. Other
 layouts retain the original row helper and workers. The output allocation and
