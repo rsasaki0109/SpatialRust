@@ -80,6 +80,12 @@ fn reduce_batched(
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-reduce-multi-encoder"),
     });
+    let output = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("voxel-reduce-multi-packed-output"),
+        size: plan.channel_bytes * channels.len().min(4) as u64,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
     for (batch, chunk) in channels.chunks(4).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -92,12 +98,6 @@ fn reduce_batched(
             })
             .collect();
         let bytes = plan.channel_bytes * chunk.len() as u64;
-        let output = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-multi-packed-output"),
-            size: bytes,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
         if chunk.len() == 1 {
             super::voxel_reduce::record_voxel_reduce_f32_pass(
                 &mut encoder,
@@ -112,6 +112,7 @@ fn reduce_batched(
         } else {
             record_voxel_average_batch(&mut encoder, runtime, &values, segments, &output);
         }
+        // Preserve this batch before the next pass overwrites the same output.
         encoder.copy_buffer_to_buffer(
             &output,
             0,
@@ -264,7 +265,16 @@ pub(crate) fn record_voxel_attribute_averages_to_staging(
     offset: u64,
     channel_bytes: u64,
 ) -> SpatialResult<()> {
+    if channels.is_empty() {
+        return Ok(());
+    }
     let device = runtime.device();
+    let output = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("voxel-reduce-xyz-attrs-packed-output"),
+        size: channel_bytes * channels.len().min(4) as u64,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
     for (batch, chunk) in channels.chunks(4).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -277,12 +287,6 @@ pub(crate) fn record_voxel_attribute_averages_to_staging(
             })
             .collect();
         let bytes = channel_bytes * chunk.len() as u64;
-        let output = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-reduce-xyz-attrs-packed-output"),
-            size: bytes,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
         if chunk.len() == 1 {
             super::voxel_reduce::record_voxel_reduce_f32_pass(
                 encoder,
@@ -297,6 +301,7 @@ pub(crate) fn record_voxel_attribute_averages_to_staging(
         } else {
             record_voxel_average_batch(encoder, runtime, &values, segments, &output);
         }
+        // Copy only active planes, including a partial final batch.
         encoder.copy_buffer_to_buffer(
             &output,
             0,
@@ -307,3 +312,7 @@ pub(crate) fn record_voxel_attribute_averages_to_staging(
     }
     Ok(())
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_average_reuse_tests.rs"]
+mod reuse_tests;
