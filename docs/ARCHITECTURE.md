@@ -6,6 +6,16 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Wide byte-attribute recorders reuse consecutive identical 16-byte uniforms in
+both first-value and average modes. A private single-entry cache per invocation
+compares every original control word; changed keys create immutable buffers and
+earlier queued passes retain theirs. Each pass still selects its original
+pipeline. Small-batch wrappers retain fresh controls. Original f32 rounding,
+scalar tails, packed padding, planners and transfer/submit/map/wait counts remain.
+At nineteen byte channels, wide-recorder uniform requests become five to two;
+at twenty, five to one. These are source requests; latency is unmeasured. See
+[u8 control evidence](../notes/2026-10-17_reused_voxel_u8_controls.md).
+
 Batched f32 voxel averages reuse consecutive identical 16-byte controls within
 each standalone call or combined attribute recorder. A private single-entry
 cache compares every original uniform word; a changed key creates a new
