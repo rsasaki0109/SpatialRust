@@ -911,6 +911,15 @@ pub fn reduce_voxel_centroids_xyz_gpu_buffers(
     z: &wgpu::Buffer,
     segments: &GpuVoxelSegments,
 ) -> SpatialResult<(Vec<f32>, Vec<f32>, Vec<f32>)> {
+    if let Some(result) = super::voxel_xyz_packed::try_voxel_xyz_packed(
+        runtime,
+        [x, y, z],
+        segments,
+        super::voxel_xyz_packed::XyzMode::Centroid,
+    ) {
+        return result;
+    }
+
     dispatch_voxel_reduce_xyz_f32(
         runtime,
         x,

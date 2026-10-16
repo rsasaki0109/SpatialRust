@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack resident GPU voxel XYZ gather/centroid outputs into one planar
+  buffer/copy, preserving original math, owned capacities and checked fallback.
+  See `notes/2026-10-16_packed_resident_voxel_xyz.md`.
+
 - Pack four horizontal GPU morphology extrema per RGBA texel, reducing
   separable scratch by 75% for widths divisible by four while preserving
   exact output, pass counts and explicit work receipts.

@@ -190,3 +190,6 @@ mod voxel_gather_packed;
 
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_standalone_packed;
+
+#[cfg(feature = "gpu-wgpu")]
+mod voxel_xyz_packed;

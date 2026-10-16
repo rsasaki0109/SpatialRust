@@ -133,6 +133,7 @@ pub struct VoxelReducePipelines {
     /// Single-channel u8 voxel reduce pipeline.
     pub u8_pipeline: wgpu::ComputePipeline,
     fused_xyz_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
+    packed_xyz: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     multi_average: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     centroid_first_attributes: std::sync::OnceLock<(wgpu::BindGroupLayout, wgpu::ComputePipeline)>,
     packed_u8_pipeline: std::sync::OnceLock<wgpu::ComputePipeline>,
@@ -592,6 +593,39 @@ impl VoxelCompactPipelines {
 }
 
 impl VoxelReducePipelines {
+    pub(crate) fn packed_xyz_pipeline(
+        &self,
+        device: &wgpu::Device,
+    ) -> &(wgpu::BindGroupLayout, wgpu::ComputePipeline) {
+        self.packed_xyz.get_or_init(|| {
+            let mut entries = vec![uniform_entry(0)];
+            entries.extend((1..=5).map(|binding| storage_entry(binding, true)));
+            entries.push(storage_entry(6, false));
+            let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("voxel-reduce-xyz-packed-layout"),
+                entries: &entries,
+            });
+            let shader = load_shader(
+                device,
+                "voxel-reduce-xyz-packed-shader",
+                include_str!("shaders/voxel_reduce_xyz_packed.wgsl"),
+            );
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("voxel-reduce-xyz-packed-pipeline-layout"),
+                bind_group_layouts: &[&layout],
+                push_constant_ranges: &[],
+            });
+            let pipeline = build_compute_pipeline(
+                device,
+                &pipeline_layout,
+                &shader,
+                "voxel-reduce-xyz-packed-pipeline",
+                "main",
+            );
+            (layout, pipeline)
+        })
+    }
+
     fn new(device: &wgpu::Device) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("voxel-reduce-layout"),
@@ -688,6 +722,7 @@ impl VoxelReducePipelines {
             u8_bind_group_layout,
             u8_pipeline,
             fused_xyz_attributes: std::sync::OnceLock::new(),
+            packed_xyz: std::sync::OnceLock::new(),
             multi_average: std::sync::OnceLock::new(),
             centroid_first_attributes: std::sync::OnceLock::new(),
             packed_u8_pipeline: std::sync::OnceLock::new(),
