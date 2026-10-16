@@ -431,3 +431,6 @@ mod parallel_xyz;
 
 #[path = "voxel_u8_parallel_tests.rs"]
 mod parallel_u8;
+
+#[path = "voxel_u8_reserve_tests.rs"]
+mod reserved_u8;

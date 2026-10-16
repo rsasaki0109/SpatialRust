@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reserve the padded voxel u8 upload capacity before copying, avoiding Vec
+  growth for unaligned inputs while preserving borrowed aligned uploads.
+  See `notes/2026-10-16_reserved_voxel_u8_padding.md`.
+
 - Copy large packed u8 voxel attribute planes with bounded native CPU workers,
   preserving packed tails, exact owned results and sequential readback phases.
   See `notes/2026-10-16_parallel_voxel_u8_readback.md`.

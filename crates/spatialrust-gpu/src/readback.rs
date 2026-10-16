@@ -161,7 +161,8 @@ pub(crate) fn read_staging_xyz_and_attributes(
 
 pub(crate) fn pad_u8_for_gpu_storage(values: &[u8]) -> Vec<u8> {
     let padded_len = values.len().div_ceil(4) * 4;
-    let mut padded = values.to_vec();
+    let mut padded = Vec::with_capacity(padded_len);
+    padded.extend_from_slice(values);
     padded.resize(padded_len, 0);
     padded
 }
