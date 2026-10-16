@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Packed first-attribute recorders reuse consecutive identical 16-byte uniforms
+within each combined call or bounded standalone window. A private single-entry
+cache compares all original control words; changed parameters create a new
+immutable buffer, and queued commands retain earlier resources. Calls/windows
+do not share controls. Original packed/scalar tails, shaders, input/output
+ordering, planners and payload/submit/map/wait counts remain. Four-wide combined
+nineteen-attribute control requests become five to two; latency is unmeasured.
+See [packed control evidence](../notes/2026-10-17_reused_packed_gather_controls.md).
+
 Native image histogram and CDF readbacks decode their borrowed mapped bytes
 directly into owned `[u32; 256]` arrays using the shared unmap guard and original
 little-endian integer loop. Each call removes one intermediate host byte vector

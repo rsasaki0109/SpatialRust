@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse immutable packed voxel gather controls within combined recording calls
+  and standalone submission windows, preserving original tails and payloads.
+  See `notes/2026-10-17_reused_packed_gather_controls.md`.
+
 - Decode native GPU histogram and CDF readbacks directly from mapped staging
   into owned count arrays, removing the intermediate 1 KiB host byte vector.
   See `notes/2026-10-16_direct_mapped_histogram_readback.md`.

@@ -101,6 +101,7 @@ pub(crate) fn record_packed_voxel_attributes(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
+    let mut controls = PackedGatherControls::default();
     // Keep the original batch width: a scalar tail returns +0 for empty cells,
     // whereas the original multi-channel kernels gather input point zero.
     for (batch, chunk) in channels.chunks(plan.width).enumerate() {
@@ -123,7 +124,14 @@ pub(crate) fn record_packed_voxel_attributes(
                 &output,
             )?;
         } else {
-            record_packed_voxel_gather(encoder, runtime, values, segments, &output);
+            record_packed_voxel_gather_with_controls(
+                encoder,
+                runtime,
+                values,
+                segments,
+                &output,
+                &mut controls,
+            );
         }
         // Preserve active planes before another batch overwrites the output.
         encoder.copy_buffer_to_buffer(
@@ -138,12 +146,34 @@ pub(crate) fn record_packed_voxel_attributes(
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Pod, Zeroable)]
 struct Uniform {
     cells: u32,
     points: u32,
     channels: u32,
     _pad: u32,
+}
+
+/// One immutable control buffer for consecutive equal parameter sets.
+/// Scope this cache to a recorder invocation; commands retain earlier buffers
+/// when a different parameter set replaces the cached entry.
+#[derive(Default)]
+pub(crate) struct PackedGatherControls {
+    current: Option<(Uniform, wgpu::Buffer)>,
+}
+
+impl PackedGatherControls {
+    fn get(&mut self, device: &wgpu::Device, uniform: Uniform) -> &wgpu::Buffer {
+        if self.current.as_ref().map(|(key, _)| *key) != Some(uniform) {
+            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("voxel-gather-attrs-packed-uniform"),
+                contents: bytemuck::bytes_of(&uniform),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+            self.current = Some((uniform, buffer));
+        }
+        &self.current.as_ref().expect("packed gather control initialized").1
+    }
 }
 
 pub(crate) fn record_packed_voxel_gather<B: std::borrow::Borrow<wgpu::Buffer>>(
@@ -153,22 +183,39 @@ pub(crate) fn record_packed_voxel_gather<B: std::borrow::Borrow<wgpu::Buffer>>(
     segments: &GpuVoxelSegments,
     output: &wgpu::Buffer,
 ) {
+    record_packed_voxel_gather_with_controls(
+        encoder,
+        runtime,
+        values,
+        segments,
+        output,
+        &mut PackedGatherControls::default(),
+    );
+}
+
+pub(crate) fn record_packed_voxel_gather_with_controls<B: std::borrow::Borrow<wgpu::Buffer>>(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    values: &[B],
+    segments: &GpuVoxelSegments,
+    output: &wgpu::Buffer,
+    controls: &mut PackedGatherControls,
+) {
     let device = runtime.device();
     let (layout, pipeline) = runtime.pipelines().voxel_gather.packed_attributes_pipeline(device);
-    let control = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-gather-attrs-packed-uniform"),
-        contents: bytemuck::bytes_of(&Uniform {
+    let control = controls.get(
+        device,
+        Uniform {
             cells: segments.cell_count(),
             points: segments.point_count(),
             channels: values.len() as u32,
             _pad: 0,
-        }),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
+        },
+    );
     // Inactive read-only slots alias the first input and are never read.
     let value = |i| values.get(i).unwrap_or(&values[0]).borrow();
     let buffers = [
-        &control,
+        control,
         segments.point_indices_buffer(),
         segments.cell_starts_buffer(),
         value(0),
@@ -194,3 +241,7 @@ pub(crate) fn record_packed_voxel_gather<B: std::borrow::Borrow<wgpu::Buffer>>(
     pass.set_bind_group(0, &group, &[]);
     pass.dispatch_workgroups(segments.cell_count().div_ceil(256), 1, 1);
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_gather_control_tests.rs"]
+mod control_tests;
