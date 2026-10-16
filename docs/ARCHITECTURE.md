@@ -659,6 +659,16 @@ transfers, submits/maps/waits remain. No outer result Vec or point-sized
 scratch is added; thread metadata/stacks add bounded overhead. See
 [parallel XYZ readback evidence](../notes/2026-10-16_parallel_voxel_xyz_readback.md).
 
+All four combined voxel APIs reuse the same bounded XYZ copier after
+finishing their original float attribute and packed-byte copies. The phases
+remain sequential, so attribute and XYZ worker groups never overlap within
+a call. XYZ uses at most three native workers including the caller at
+1,048,576 cells; small/single-CPU/WASM paths stay serial. All source bounds
+are still checked before copying and the mapped view/guard enclose every
+scope. GPU bodies, math/layouts/transfers, submit/map/wait count and exact
+owned results remain; worker metadata/stacks add bounded overhead. See
+[combined parallel XYZ evidence](../notes/2026-10-16_parallel_combined_voxel_xyz_readback.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

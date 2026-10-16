@@ -109,7 +109,6 @@ pub(crate) fn read_staging_xyz_and_packed_attributes(
     let data = slice.get_mapped_range();
     let f32_bytes = cells * (3 + attribute_count) * std::mem::size_of::<f32>();
     let values: &[f32] = bytemuck::cast_slice(&data[..f32_bytes]);
-    let copy_plane = |channel| values[channel * cells..(channel + 1) * cells].to_vec();
     let words_per_channel = cells.div_ceil(4);
     let u8_bytes = packed_u8_output_staging_bytes(cells, u8_attribute_count);
     let words: &[u32] = bytemuck::cast_slice(&data[f32_bytes..f32_bytes + u8_bytes]);
@@ -130,7 +129,8 @@ pub(crate) fn read_staging_xyz_and_packed_attributes(
             }
         })
         .collect();
-    Ok((copy_plane(0), copy_plane(1), copy_plane(2), attributes, u8_attributes))
+    let (x, y, z) = crate::readback_planes::copy_owned_xyz_planes(&values[..cells * 3], cells);
+    Ok((x, y, z, attributes, u8_attributes))
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
