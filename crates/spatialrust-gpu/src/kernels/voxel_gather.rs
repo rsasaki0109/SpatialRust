@@ -295,7 +295,16 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
             &output,
         );
         encoder.copy_buffer_to_buffer(&output, 0, &staging_buffer, 0, plan.output_bytes);
-    } else {
+    } else if !super::voxel_wide_first::try_record_wide_voxel_first(
+        &mut encoder,
+        runtime,
+        [x, y, z],
+        attribute_channels,
+        segments,
+        &staging_buffer,
+        super::voxel_xyz_packed::XyzMode::First,
+        &mut upload_recycle,
+    )? {
         if !super::voxel_xyz_packed::try_record_packed_xyz_to_staging(
             &mut encoder,
             runtime,

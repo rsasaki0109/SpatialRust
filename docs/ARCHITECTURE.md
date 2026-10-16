@@ -611,6 +611,16 @@ seven attributes, while math, upload payload, staging bytes, byte paths,
 one submit/map/wait and exact owned capacities remain. No shader/cache is
 added. See [wide voxel average evidence](../notes/2026-10-16_wide_voxel_average_fusion.md).
 
+Combined first-XYZ/first-attributes and centroid/first-attributes voxel calls
+with more than four float attributes reuse the existing fused XYZ/first-four
+kernels, then the unchanged packed attribute gather recorder. Checked seven-
+plane binding, original batch width and full destination/host/dispatch guards
+precede helper uploads/recording; rejection keeps the complete previous path.
+Original scalar empty-cell tails, raw bits and pooled uploads/recycling remain.
+Seven float attributes at width four use two instead of three float passes/
+copies; useful payload, bytes, one submit/map/wait and ownership stay unchanged.
+See [wide first-attribute evidence](../notes/2026-10-16_wide_voxel_first_fusion.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
