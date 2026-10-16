@@ -86,6 +86,7 @@ fn reduce_batched(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
+    let mut controls = AverageBatchControls::default();
     for (batch, chunk) in channels.chunks(4).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -110,7 +111,14 @@ fn reduce_batched(
                 &output,
             )?;
         } else {
-            record_voxel_average_batch(&mut encoder, runtime, &values, segments, &output);
+            record_voxel_average_batch_with_controls(
+                &mut encoder,
+                runtime,
+                &values,
+                segments,
+                &output,
+                &mut controls,
+            );
         }
         // Preserve this batch before the next pass overwrites the same output.
         encoder.copy_buffer_to_buffer(
@@ -131,7 +139,7 @@ fn reduce_batched(
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Pod, Zeroable)]
 struct Uniform {
     cells: u32,
     points: u32,
@@ -139,6 +147,27 @@ struct Uniform {
     _pad: u32,
 }
 
+#[derive(Default)]
+struct AverageBatchControls {
+    current: Option<(Uniform, wgpu::Buffer)>,
+}
+
+impl AverageBatchControls {
+    fn get(&mut self, device: &wgpu::Device, uniform: Uniform) -> &wgpu::Buffer {
+        if self.current.as_ref().map(|(key, _)| *key) != Some(uniform) {
+            // Earlier encoded passes retain their original immutable control.
+            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("voxel-reduce-multi-packed-uniform"),
+                contents: bytemuck::bytes_of(&uniform),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+            self.current = Some((uniform, buffer));
+        }
+        &self.current.as_ref().expect("voxel average control initialized").1
+    }
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
 pub(crate) fn record_voxel_average_batch(
     encoder: &mut wgpu::CommandEncoder,
     runtime: &WgpuRuntime,
@@ -146,22 +175,39 @@ pub(crate) fn record_voxel_average_batch(
     segments: &GpuVoxelSegments,
     output: &wgpu::Buffer,
 ) {
+    record_voxel_average_batch_with_controls(
+        encoder,
+        runtime,
+        values,
+        segments,
+        output,
+        &mut AverageBatchControls::default(),
+    );
+}
+
+fn record_voxel_average_batch_with_controls(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    values: &[wgpu::Buffer],
+    segments: &GpuVoxelSegments,
+    output: &wgpu::Buffer,
+    controls: &mut AverageBatchControls,
+) {
     let device = runtime.device();
     let (layout, pipeline) = runtime.pipelines().voxel_reduce.multi_average_pipeline(device);
-    let control = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-reduce-multi-packed-uniform"),
-        contents: bytemuck::bytes_of(&Uniform {
+    let control = controls.get(
+        device,
+        Uniform {
             cells: segments.cell_count(),
             points: segments.point_count(),
             channels: values.len() as u32,
             _pad: 0,
-        }),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
+        },
+    );
     // Inactive read-only slots alias the first input; the shader skips them.
     let value = |i| values.get(i).unwrap_or(&values[0]);
     let buffers = [
-        &control,
+        control,
         segments.point_indices_buffer(),
         segments.cell_starts_buffer(),
         value(0),
@@ -275,6 +321,7 @@ pub(crate) fn record_voxel_attribute_averages_to_staging(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
+    let mut controls = AverageBatchControls::default();
     for (batch, chunk) in channels.chunks(4).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -299,7 +346,14 @@ pub(crate) fn record_voxel_attribute_averages_to_staging(
                 &output,
             )?;
         } else {
-            record_voxel_average_batch(encoder, runtime, &values, segments, &output);
+            record_voxel_average_batch_with_controls(
+                encoder,
+                runtime,
+                &values,
+                segments,
+                &output,
+                &mut controls,
+            );
         }
         // Copy only active planes, including a partial final batch.
         encoder.copy_buffer_to_buffer(
@@ -316,3 +370,7 @@ pub(crate) fn record_voxel_attribute_averages_to_staging(
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "voxel_average_reuse_tests.rs"]
 mod reuse_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_average_control_tests.rs"]
+mod control_tests;
