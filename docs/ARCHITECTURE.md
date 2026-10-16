@@ -649,6 +649,16 @@ Host pointer alignment is not a restriction on a byte slice. GPU/backend
 uploads still copy the original padded bytes. See
 [borrowed byte upload evidence](../notes/2026-10-16_borrowed_voxel_u8_uploads.md).
 
+Standalone voxel XYZ readback uses the shared checked plane policy at
+1,048,576 cells, capped at three native copy workers including the caller.
+One child copies X/Y for two CPUs; two children copy X and Y for three CPUs,
+while the caller copies Z. Small/single-CPU/WASM paths retain serial copies
+without small/WASM CPU-count queries. All scoped work joins under the
+original mapped view/guard. Exact XYZ bits/capacities and GPU layouts, math,
+transfers, submits/maps/waits remain. No outer result Vec or point-sized
+scratch is added; thread metadata/stacks add bounded overhead. See
+[parallel XYZ readback evidence](../notes/2026-10-16_parallel_voxel_xyz_readback.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

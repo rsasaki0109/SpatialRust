@@ -72,3 +72,51 @@ pub(crate) fn copy_with_plan(
     });
     output
 }
+
+pub(crate) fn copy_owned_xyz_planes(
+    values: &[f32],
+    cells: usize,
+) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
+    let words = cells.checked_mul(3).expect("XYZ plane extent overflow");
+    let values = &values[..words];
+    #[cfg(not(target_arch = "wasm32"))]
+    if cells >= MIN_PARALLEL_CELLS {
+        let available = std::thread::available_parallelism().map_or(1, |n| n.get());
+        if let Some(plan) = plan_plane_copy(cells, 3, available) {
+            return copy_xyz_with_workers(values, cells, plan.workers);
+        }
+    }
+    (values[..cells].to_vec(), values[cells..cells * 2].to_vec(), values[cells * 2..].to_vec())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn copy_xyz_with_workers(
+    values: &[f32],
+    cells: usize,
+    workers: usize,
+) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
+    assert!((2..=3).contains(&workers), "XYZ copies require two or three workers");
+    // Validate the complete source before scoped workers borrow mapped planes.
+    let words = cells.checked_mul(3).expect("XYZ plane extent overflow");
+    let values = &values[..words];
+    let (x, rest) = values.split_at(cells);
+    let (y, z) = rest.split_at(cells);
+    std::thread::scope(|scope| {
+        // The caller copies Z; no outer output Vec or point-sized scratch is needed.
+        if workers == 2 {
+            let xy = scope.spawn(|| (x.to_vec(), y.to_vec()));
+            let z = z.to_vec();
+            let (x, y) = xy.join().expect("XYZ copy worker panicked");
+            (x, y, z)
+        } else {
+            let x = scope.spawn(|| x.to_vec());
+            let y = scope.spawn(|| y.to_vec());
+            let z = z.to_vec();
+            (
+                x.join().expect("X copy worker panicked"),
+                y.join().expect("Y copy worker panicked"),
+                z,
+            )
+        }
+    })
+}
