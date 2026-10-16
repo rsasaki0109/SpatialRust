@@ -669,6 +669,16 @@ scope. GPU bodies, math/layouts/transfers, submit/map/wait count and exact
 owned results remain; worker metadata/stacks add bounded overhead. See
 [combined parallel XYZ evidence](../notes/2026-10-16_parallel_combined_voxel_xyz_readback.md).
 
+Combined voxel byte readback uses scoped channel bands for at least
+4,194,304 cells and two u8 channels, matching the existing four-MiB useful
+bytes per plane. The original checked plane planner bounds packed source
+bytes, available CPUs and at most four children. Absent/single/small/one-CPU/
+WASM paths stay serial. Float, byte and XYZ phases remain sequential under
+the original mapped view/guard. Endian-aware bytes, packed tail exclusion,
+exact owned capacities and all GPU math/layouts/transfers remain. Only
+worker metadata/stacks add bounded overhead; no latency or peak-memory gain
+is assumed. See [parallel byte readback evidence](../notes/2026-10-16_parallel_voxel_u8_readback.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

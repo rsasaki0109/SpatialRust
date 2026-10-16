@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Copy large packed u8 voxel attribute planes with bounded native CPU workers,
+  preserving packed tails, exact owned results and sequential readback phases.
+  See `notes/2026-10-16_parallel_voxel_u8_readback.md`.
+
 - Reuse bounded XYZ plane copies in all four combined voxel attribute APIs,
   preserving the original sequential attribute/byte/XYZ phases and mapped lifetime.
   See `notes/2026-10-16_parallel_combined_voxel_xyz_readback.md`.
