@@ -18,10 +18,10 @@ pub(crate) fn read_staging_f32(
             SpatialError::InvalidArgument(format!("failed to map wgpu buffer: {error}"))
         })?;
 
+    // Declared before the view so it also unmaps after the view drops on unwind.
+    let _unmap = StagingUnmap(staging_buffer);
     let data = slice.get_mapped_range();
     let values: Vec<f32> = bytemuck::cast_slice(&data)[..len].to_vec();
-    drop(data);
-    staging_buffer.unmap();
     Ok(values)
 }
 
@@ -185,3 +185,7 @@ pub(crate) fn u8_output_staging_bytes(cells: usize, channels: usize) -> usize {
 pub(crate) fn packed_u8_output_staging_bytes(cells: usize, channels: usize) -> usize {
     cells.div_ceil(4) * channels * U32_OUTPUT_BYTES_PER_CELL
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "readback_scalar_tests.rs"]
+mod scalar_tests;

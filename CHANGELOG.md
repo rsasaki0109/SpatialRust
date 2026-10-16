@@ -630,6 +630,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Fixed
 
+- Release scalar GPU readback maps during panic unwinding, allowing subsequent
+  maps and uploads while preserving successful reads and existing error behavior.
+  See `notes/2026-10-16_guarded_scalar_gpu_readback.md`.
+
 - Shared dense-grid bounds reject malformed axes, nonfinite coordinates,
   unrepresentable cell reciprocals/spans and overflowing dimensions before
   counting-sort or GPU work. Large dimensions can no longer wrap into small
