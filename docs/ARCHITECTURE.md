@@ -679,6 +679,14 @@ exact owned capacities and all GPU math/layouts/transfers remain. Only
 worker metadata/stacks add bounded overhead; no latency or peak-memory gain
 is assumed. See [parallel byte readback evidence](../notes/2026-10-16_parallel_voxel_u8_readback.md).
 
+Unaligned voxel byte uploads reserve the complete padded host Vec capacity
+before copying source bytes and appending zeros. This removes Vec growth
+requests and excess tested payload capacity; aligned inputs remain borrowed.
+Payload bytes, GPU math/layouts/transfers, public APIs and readback worker
+policies remain. Summed capacity reductions across channel temporaries are
+not peak-memory/RSS savings or latency evidence. See
+[reserved byte padding evidence](../notes/2026-10-16_reserved_voxel_u8_padding.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
