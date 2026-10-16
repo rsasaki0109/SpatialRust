@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse private GPU outputs for first-point voxel attribute batches, retaining
+  original bounded submissions, scalar empty-cell behavior and input recycling.
+  See `notes/2026-10-16_reused_voxel_first_output.md`.
+
 - Reuse one private f32 output across voxel average attribute batches,
   reducing output buffer requests while preserving original copies and math.
   See `notes/2026-10-16_reused_voxel_average_output.md`.
