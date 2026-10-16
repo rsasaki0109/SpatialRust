@@ -297,3 +297,6 @@ fn median_errors_do_not_allocate_and_cold_kernels_are_concurrent() {
 
 #[path = "median_nine_tests.rs"]
 mod nine;
+
+#[path = "median_five_tests.rs"]
+mod five;

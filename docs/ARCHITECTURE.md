@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Resident 5x5 median selection uses a padded odd-even merge network, removes
+maximal-byte identity comparisons and prunes to the median dependency cone.
+Generated compare-exchange pairs fall from 191 to 113; the 3x3 shader and shared
+API/planner/sampling/resource/transfer behavior remain. Exhaustive binary and
+complete parent/CPU checks plus paired GPU-pass/resident/full diagnostics,
+including adverse full-call results, are in
+[5x5 median evidence](../notes/2026-10-17_gpu_median_five_selection.md).
+
 The owned RGBA row-append candidate remains native-test-only after shared-host
 paired diagnostics failed to establish a latency benefit and included slower
 cases. Production row packing, padded readback, borrowed dense uploads and the

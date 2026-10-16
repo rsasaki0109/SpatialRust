@@ -57,8 +57,30 @@ struct Comparator {
     ascending: bool,
 }
 
-// Use a short 3x3 selection network. For 5x5, prune a padded bitonic sorting
-// network to the median output; padding is the largest byte in each lane.
+// Batcher's odd-even merge combines two recursively sorted interleaved halves.
+fn odd_even_merge(pairs: &mut Vec<Comparator>, start: usize, count: usize, stride: usize) {
+    let step = stride * 2;
+    if step < count {
+        odd_even_merge(pairs, start, count, step);
+        odd_even_merge(pairs, start + stride, count, step);
+        for a in (start + stride..start + count - stride).step_by(step) {
+            pairs.push(Comparator { a, b: a + stride, ascending: true });
+        }
+    } else {
+        pairs.push(Comparator { a: start, b: start + stride, ascending: true });
+    }
+}
+
+fn odd_even_sort(pairs: &mut Vec<Comparator>, start: usize, count: usize) {
+    if count > 1 {
+        odd_even_sort(pairs, start, count / 2);
+        odd_even_sort(pairs, start + count / 2, count / 2);
+        odd_even_merge(pairs, start, count, 1);
+    }
+}
+
+// Use a short 3x3 selection network. For 5x5, remove identity comparisons with
+// maximal byte padding, then retain only the odd-even network's median ancestors.
 fn network(kernel: u32) -> Vec<Comparator> {
     if kernel == 3 {
         // Sort three triples; the median is the median of the largest minimum,
@@ -91,20 +113,10 @@ fn network(kernel: u32) -> Vec<Comparator> {
     let count = (kernel * kernel) as usize;
     let padded = count.next_power_of_two();
     let mut pairs = Vec::new();
-    let mut width = 2;
-    while width <= padded {
-        let mut stride = width / 2;
-        while stride != 0 {
-            for a in 0..padded {
-                let b = a ^ stride;
-                if b > a {
-                    pairs.push(Comparator { a, b, ascending: a & width == 0 });
-                }
-            }
-            stride /= 2;
-        }
-        width *= 2;
-    }
+    odd_even_sort(&mut pairs, 0, padded);
+    // All pairs are ascending with a < b. A suffix of 255-valued padding stays
+    // maximal, so comparisons touching it are identities for every u8 lane.
+    pairs.retain(|pair| pair.b < count);
     let mut needed = vec![false; padded];
     needed[count / 2] = true;
     let mut selected = Vec::new();
@@ -295,3 +307,7 @@ mod tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "median_nine_reference.rs"]
 mod nine_reference;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "median_five_reference.rs"]
+mod five_reference;

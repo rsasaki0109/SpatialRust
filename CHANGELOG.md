@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Shorten exact resident GPU 5x5 median selection from 191 to 113 generated
+  compare-exchange pairs. Preserve 3x3 shader, borders, channels, ownership and
+  transfer accounting; validate every binary window and complete parent parity.
+  Paired GPU-pass/resident diagnostics improve, with mixed transfer-inclusive
+  results retained in `notes/2026-10-17_gpu_median_five_selection.md`.
+
 - Add native RGBA row-copy candidate fixtures and paired transfer diagnostics.
   Defer the candidate after measurements fail to establish a latency benefit;
   retain production packing and readback behavior. See
