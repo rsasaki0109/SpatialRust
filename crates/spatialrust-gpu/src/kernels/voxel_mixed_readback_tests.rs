@@ -425,3 +425,6 @@ mod parallel_attributes;
 
 #[path = "voxel_borrowed_u8_tests.rs"]
 mod borrowed_u8;
+
+#[path = "voxel_combined_xyz_parallel_tests.rs"]
+mod parallel_xyz;

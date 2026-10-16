@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse bounded XYZ plane copies in all four combined voxel attribute APIs,
+  preserving the original sequential attribute/byte/XYZ phases and mapped lifetime.
+  See `notes/2026-10-16_parallel_combined_voxel_xyz_readback.md`.
+
 - Copy large standalone voxel XYZ readbacks with at most three native CPU workers
   including the caller, preserving exact owned planes and mapped lifetime.
   See `notes/2026-10-16_parallel_voxel_xyz_readback.md`.
