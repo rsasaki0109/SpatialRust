@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse private output buffers across legacy coalesced voxel gather batches,
+  preserving original two/four-channel tails, bounded submissions and copies.
+  See `notes/2026-10-16_reused_legacy_voxel_outputs.md`.
+
 - Initialize resize/Sobel and CHW image uniforms at creation, removing separate
   queue-write calls while preserving parameter bytes and explicit payload transfers.
   See `notes/2026-10-16_initialized_image_uniforms.md`.
