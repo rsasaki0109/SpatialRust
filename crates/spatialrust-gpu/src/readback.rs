@@ -109,26 +109,12 @@ pub(crate) fn read_staging_xyz_and_packed_attributes(
     let data = slice.get_mapped_range();
     let f32_bytes = cells * (3 + attribute_count) * std::mem::size_of::<f32>();
     let values: &[f32] = bytemuck::cast_slice(&data[..f32_bytes]);
-    let words_per_channel = cells.div_ceil(4);
     let u8_bytes = packed_u8_output_staging_bytes(cells, u8_attribute_count);
     let words: &[u32] = bytemuck::cast_slice(&data[f32_bytes..f32_bytes + u8_bytes]);
     let attributes =
         crate::readback_planes::copy_owned_f32_planes(&values[cells * 3..], cells, attribute_count);
-    let u8_attributes = (0..u8_attribute_count)
-        .map(|channel| {
-            let plane = &words[channel * words_per_channel..(channel + 1) * words_per_channel];
-            #[cfg(target_endian = "little")]
-            {
-                bytemuck::cast_slice::<u32, u8>(plane)[..cells].to_vec()
-            }
-            #[cfg(target_endian = "big")]
-            {
-                (0..cells)
-                    .map(|cell| ((plane[cell / 4] >> ((cell % 4) * 8)) & 0xFF) as u8)
-                    .collect()
-            }
-        })
-        .collect();
+    let u8_attributes =
+        crate::readback_planes::copy_owned_packed_u8_planes(words, cells, u8_attribute_count);
     let (x, y, z) = crate::readback_planes::copy_owned_xyz_planes(&values[..cells * 3], cells);
     Ok((x, y, z, attributes, u8_attributes))
 }
