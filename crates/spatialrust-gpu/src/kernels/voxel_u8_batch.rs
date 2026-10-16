@@ -121,7 +121,7 @@ pub(crate) fn try_record_voxel_u8_batch_to_staging(
                 } else {
                     "voxel-gather-xyz-u8-values"
                 }),
-                contents: &crate::readback::pad_u8_for_gpu_storage(channel),
+                contents: &crate::readback::u8_storage_upload_contents(channel),
                 usage: wgpu::BufferUsages::STORAGE,
             })
         })

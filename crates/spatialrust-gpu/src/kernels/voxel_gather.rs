@@ -8,8 +8,8 @@ use crate::kernels::voxel_first_gather_fused::record_fused_voxel_first_gather;
 use crate::kernels::voxel_reduce_fused::plan_fused_voxel_average;
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::readback::{
-    packed_u8_output_staging_bytes, pad_u8_for_gpu_storage, read_staging_f32,
-    read_staging_f32_channels, read_staging_xyz, read_staging_xyz_and_packed_attributes,
+    packed_u8_output_staging_bytes, read_staging_f32, read_staging_f32_channels, read_staging_xyz,
+    read_staging_xyz_and_packed_attributes, u8_storage_upload_contents,
 };
 use crate::runtime::WgpuRuntime;
 
@@ -386,7 +386,7 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
         for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {
             let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("voxel-gather-xyz-u8-values"),
-                contents: &pad_u8_for_gpu_storage(channel),
+                contents: &u8_storage_upload_contents(channel),
                 usage: wgpu::BufferUsages::STORAGE,
             });
             let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -639,7 +639,7 @@ pub fn gather_voxel_first_xyz_and_average_multi_gpu(
         for (attribute_index, channel) in u8_attribute_channels.iter().enumerate() {
             let values_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("voxel-reduce-xyz-u8-values"),
-                contents: &pad_u8_for_gpu_storage(channel),
+                contents: &u8_storage_upload_contents(channel),
                 usage: wgpu::BufferUsages::STORAGE,
             });
             let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {

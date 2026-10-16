@@ -640,6 +640,15 @@ map/wait counts remain. Exact raw bits and N-element capacities persist.
 Thread metadata/stacks add bounded overhead; no latency reduction is claimed
 without isolated measurements. See [standalone parallel readback evidence](../notes/2026-10-16_parallel_standalone_voxel_readback.md).
 
+Combined voxel byte-attribute uploads borrow the caller's slice when its
+length is divisible by four, avoiding the temporary host padding Vec/copy.
+Other lengths retain the exact original owned zero-padding path. All five
+scalar/batched contents sites preserve DeviceExt snapshot semantics, GPU
+payloads/labels, kernels, transfers, submits/maps/waits and output ownership.
+Host pointer alignment is not a restriction on a byte slice. GPU/backend
+uploads still copy the original padded bytes. See
+[borrowed byte upload evidence](../notes/2026-10-16_borrowed_voxel_u8_uploads.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

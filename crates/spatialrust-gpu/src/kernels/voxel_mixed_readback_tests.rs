@@ -422,3 +422,6 @@ mod wide_first;
 
 #[path = "voxel_parallel_readback_tests.rs"]
 mod parallel_attributes;
+
+#[path = "voxel_borrowed_u8_tests.rs"]
+mod borrowed_u8;
