@@ -611,13 +611,11 @@ fn dispatch(
         operation,
         _pad: 0,
     };
-    let uniform = runtime.device().create_buffer(&wgpu::BufferDescriptor {
+    let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("gpu-image-spatial-params"),
-        size: std::mem::size_of::<SpatialParams>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
+        contents: bytemuck::bytes_of(&params),
+        usage: wgpu::BufferUsages::UNIFORM,
     });
-    runtime.queue().write_buffer(&uniform, 0, bytemuck::bytes_of(&params));
     let source_view = source.view();
     let output_view = output.create_view(&wgpu::TextureViewDescriptor::default());
     let bind_group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {
