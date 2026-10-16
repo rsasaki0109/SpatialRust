@@ -278,3 +278,145 @@ fn contiguous_rgba_public_readbacks_keep_current_parent_receipts_metadata_and_ow
 
 #[path = "rgba_readback_benchmark.rs"]
 mod contiguous_benchmark;
+
+#[path = "rgba_row_reference.rs"]
+mod row_parent;
+
+fn check_owned_rows<const C: usize>() -> usize {
+    let empty = ImageView::<u8, C>::new(0, 0, 0, &[]).unwrap();
+    assert!(pack_rgba8(empty, 0).is_empty());
+    assert!(unpack_rgba8::<C>(&[], 0, 0, 0, 0).is_empty());
+    assert!(row_parent::row_candidate_pack_rgba8(empty, 0).is_empty());
+    assert!(row_parent::row_candidate_unpack_rgba8::<C>(&[], 0, 0, 0, 0).is_empty());
+    let mut checked = 0;
+    for (w, h) in [
+        (1, 1),
+        (63, 3),
+        (64, 3),
+        (65, 3),
+        (127, 17),
+        (128, 17),
+        (129, 17),
+        (1024, 1025),
+        (1920, 1080),
+        (1921, 17),
+    ] {
+        for roi in [false, true] {
+            let (mut source, stride, metadata) = fixture::<C>(w, h, roi);
+            let input = view::<C>(w, h, roi, &source, stride, metadata);
+            let logical: Vec<_> =
+                (0..h).flat_map(|y| input.row(y).unwrap().iter().copied()).collect();
+            let mut rgba = Vec::new();
+            for pixel in logical.chunks_exact(C) {
+                rgba.extend_from_slice(pixel);
+                rgba.resize(rgba.len() + 4 - C, 0);
+            }
+            let actual = row_parent::row_candidate_pack_rgba8(input, rgba.len());
+            let prior = row_parent::row_parent_pack_rgba8(input, rgba.len());
+            assert_eq!(actual.capacity(), rgba.len());
+            assert_eq!(actual.capacity(), prior.capacity());
+            source.fill(7);
+            assert_eq!(actual, prior);
+            assert_eq!(actual, rgba);
+            let padded_row = (w * 4).div_ceil(256) * 256;
+            let mut staging = vec![253_u8; 13 + padded_row * h + 19];
+            for y in 0..h {
+                staging[13 + y * padded_row..13 + y * padded_row + w * 4]
+                    .copy_from_slice(&rgba[y * w * 4..(y + 1) * w * 4]);
+            }
+            let output = row_parent::row_candidate_unpack_rgba8::<C>(
+                &staging[13..],
+                w,
+                h,
+                padded_row,
+                logical.len(),
+            );
+            let old = row_parent::row_parent_unpack_rgba8::<C>(
+                &staging[13..],
+                w,
+                h,
+                padded_row,
+                logical.len(),
+            );
+            assert_eq!(output.capacity(), logical.len());
+            assert_eq!(output.capacity(), old.capacity());
+            staging.fill(231);
+            assert_eq!(output, old);
+            assert_eq!(output, logical);
+            checked += rgba.len() * 2 + logical.len() * 2;
+        }
+    }
+    checked
+}
+
+#[test]
+fn rgba_owned_rows_match_complete_parent_cpu_padding_and_all_channel_capacities() {
+    let checked = check_owned_rows::<1>()
+        + check_owned_rows::<2>()
+        + check_owned_rows::<3>()
+        + check_owned_rows::<4>();
+    eprintln!("RGBA_ROWS_RAW verified {checked} original/CPU bytes across 80 channel/layout cases, ROI, zero lanes, source guards and owned capacities");
+}
+
+#[test]
+fn rgba_owned_rows_public_transfers_keep_borrowing_receipts_metadata_and_runtime_drop() {
+    let r = WgpuRuntime::new_headless().unwrap();
+    let mut retained = Vec::new();
+    let mut checked = 0;
+    for (w, h) in [(64, 3), (65, 3), (1024, 1025), (1920, 1080), (1921, 17)] {
+        for roi in [false, true] {
+            let (mut current, mut prior, expected, metadata) = {
+                let (mut source, stride, metadata) = fixture::<4>(w, h, roi);
+                let input = view::<4>(w, h, roi, &source, stride, metadata);
+                let expected: Vec<_> =
+                    (0..h).flat_map(|y| input.row(y).unwrap().iter().copied()).collect();
+                assert_eq!(matches!(upload_texels(input, expected.len()), Cow::Borrowed(_)), !roi);
+                assert_eq!(
+                    matches!(
+                        row_parent::row_candidate_upload_texels(input, expected.len()),
+                        Cow::Borrowed(_)
+                    ),
+                    !roi
+                );
+                let current = GpuImage::row_candidate_upload_u8(&r, input).unwrap();
+                let prior = GpuImage::upload_u8(&r, input).unwrap();
+                source.fill(231);
+                (current, prior, expected, metadata)
+            };
+            let outputs = [
+                current.row_candidate_readback_u8::<4>(&r).unwrap(),
+                current.readback_u8::<4>(&r).unwrap(),
+                prior.row_candidate_readback_u8::<4>(&r).unwrap(),
+                prior.readback_u8::<4>(&r).unwrap(),
+            ];
+            for output in &outputs {
+                assert_eq!(output.as_slice(), expected);
+                assert_eq!(output.metadata(), metadata);
+            }
+            assert_eq!(current.receipt(), prior.receipt());
+            assert_eq!(current.receipt().host_to_device_bytes(), (w * h * 4) as u64);
+            assert_eq!(current.receipt().device_to_host_bytes(), (w * h * 8) as u64);
+            assert_eq!(current.receipt().gpu_to_gpu_bytes(), 0);
+            assert_eq!(
+                current.receipt().stages(),
+                &["upload_u8_texture", "readback_u8_texture", "readback_u8_texture"]
+            );
+            current.recycle(&r);
+            prior.recycle(&r);
+            r.clear_image_texture_pool();
+            checked += expected.len() * 4;
+            retained.push((outputs, expected, metadata));
+        }
+    }
+    drop(r);
+    for (outputs, expected, metadata) in retained {
+        for output in outputs {
+            assert_eq!(output.as_slice(), expected);
+            assert_eq!(output.metadata(), metadata);
+        }
+    }
+    eprintln!("RGBA_ROWS_PUBLIC verified {checked} original/CPU RGBA bytes across ten fixtures with four candidate/production upload/readback combinations each, packed borrowing, ROI, metadata, receipts and runtime drop");
+}
+
+#[path = "rgba_row_benchmark.rs"]
+mod row_benchmark;
