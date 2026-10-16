@@ -419,3 +419,6 @@ mod wide_average;
 
 #[path = "voxel_wide_first_tests.rs"]
 mod wide_first;
+
+#[path = "voxel_parallel_readback_tests.rs"]
+mod parallel_attributes;

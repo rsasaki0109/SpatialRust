@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Copy large mapped float attributes from combined GPU voxel calls with at most
+  four native CPU workers, preserving raw bits, owned capacities and map lifetime.
+  See `notes/2026-10-16_parallel_voxel_attribute_readback.md`.
+
 - Fuse XYZ with the first four float attributes in wide GPU voxel first-value
   calls, preserving raw bits, original scalar tails and pooled upload recycling.
   See `notes/2026-10-16_wide_voxel_first_fusion.md`.
