@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Image readback unpacking copies the validated mapped prefix directly into an
+owned vector for four logical channels with no staging row padding. Other
+layouts retain the original row helper and workers. The output allocation and
+copy remain; the source-level zero initialization and row overwrite loop are
+avoided. Transfer plans, mapping lifetime, receipts, metadata and GPU work stay
+unchanged. Immediate-parent CPU/public comparisons and paired host/completed-call
+diagnostics are recorded in [contiguous RGBA evidence](../notes/2026-10-17_contiguous_rgba_readback.md).
+
 The coalesced first-value fallback reuses consecutive identical 16-byte controls
 within each original two-batch window. Its private single-entry cache compares
 all uniform words and the descriptor label; changed keys create immutable

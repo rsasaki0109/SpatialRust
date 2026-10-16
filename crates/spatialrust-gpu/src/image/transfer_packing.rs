@@ -77,6 +77,10 @@ pub(super) fn unpack_rgba8<const CHANNELS: usize>(
     padded_row: usize,
     output_len: usize,
 ) -> Vec<u8> {
+    if CHANNELS == 4 && padded_row == width * 4 {
+        // Validated transfer plans make all logical pixels one contiguous span.
+        return rgba[..output_len].to_vec();
+    }
     unpack_with_workers::<CHANNELS>(
         rgba,
         width,
