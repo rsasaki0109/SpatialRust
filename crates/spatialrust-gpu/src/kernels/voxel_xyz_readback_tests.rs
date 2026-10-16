@@ -243,3 +243,6 @@ mod benchmark;
 
 #[path = "voxel_xyz_packed_tests.rs"]
 mod packed;
+
+#[path = "voxel_xyz_parallel_tests.rs"]
+mod parallel_xyz;
