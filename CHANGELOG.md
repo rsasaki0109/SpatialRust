@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse immutable voxel u8 controls across wide first-value and average batches,
+  preserving original rounding, scalar tails and packed transfers.
+  See `notes/2026-10-17_reused_voxel_u8_controls.md`.
+
 - Reuse immutable voxel average controls across equal-width attribute batches,
   preserving original f32 math, scalar tails and transfers.
   See `notes/2026-10-17_reused_voxel_average_controls.md`.

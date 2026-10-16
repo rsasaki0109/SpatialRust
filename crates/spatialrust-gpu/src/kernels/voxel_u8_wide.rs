@@ -67,6 +67,7 @@ pub(crate) fn try_record_wide_voxel_u8_to_staging(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
+    let mut controls = super::voxel_u8_batch::BatchedU8Controls::default();
     for (batch, chunk) in channels.chunks(4).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -99,8 +100,14 @@ pub(crate) fn try_record_wide_voxel_u8_to_staging(
                 &output,
             )?;
         } else {
-            super::voxel_u8_batch::record_voxel_u8_batch_pass(
-                encoder, runtime, &values, segments, &output, average,
+            super::voxel_u8_batch::record_voxel_u8_batch_pass_with_controls(
+                encoder,
+                runtime,
+                &values,
+                segments,
+                &output,
+                average,
+                &mut controls,
             );
         }
         // Preserve packed tails and copy each batch before reusing the output.

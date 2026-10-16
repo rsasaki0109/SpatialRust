@@ -36,12 +36,32 @@ pub(crate) fn plan_batched_voxel_u8(
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Pod, Zeroable)]
 struct Uniform {
     cells: u32,
     points: u32,
     channels: u32,
     _pad: u32,
+}
+
+#[derive(Default)]
+pub(crate) struct BatchedU8Controls {
+    current: Option<(Uniform, wgpu::Buffer)>,
+}
+
+impl BatchedU8Controls {
+    fn get(&mut self, device: &wgpu::Device, uniform: Uniform) -> &wgpu::Buffer {
+        if self.current.as_ref().map(|(key, _)| *key) != Some(uniform) {
+            // Earlier encoded passes retain their original immutable control.
+            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("voxel-u8-batch-uniform"),
+                contents: bytemuck::bytes_of(&uniform),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+            self.current = Some((uniform, buffer));
+        }
+        &self.current.as_ref().expect("voxel u8 control initialized").1
+    }
 }
 
 pub(crate) fn record_voxel_u8_batch_pass(
@@ -52,26 +72,45 @@ pub(crate) fn record_voxel_u8_batch_pass(
     output: &wgpu::Buffer,
     average: bool,
 ) {
+    record_voxel_u8_batch_pass_with_controls(
+        encoder,
+        runtime,
+        values,
+        segments,
+        output,
+        average,
+        &mut BatchedU8Controls::default(),
+    );
+}
+
+pub(crate) fn record_voxel_u8_batch_pass_with_controls(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    values: &[wgpu::Buffer],
+    segments: &GpuVoxelSegments,
+    output: &wgpu::Buffer,
+    average: bool,
+    controls: &mut BatchedU8Controls,
+) {
     let device = runtime.device();
     let (layout, pipeline) = if average {
         runtime.pipelines().voxel_reduce.batched_u8_pipeline(device)
     } else {
         runtime.pipelines().voxel_gather.batched_u8_pipeline(device)
     };
-    let control = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-u8-batch-uniform"),
-        contents: bytemuck::bytes_of(&Uniform {
+    let control = controls.get(
+        device,
+        Uniform {
             cells: segments.cell_count(),
             points: segments.point_count(),
             channels: values.len() as u32,
             _pad: 0,
-        }),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
+        },
+    );
     // Inactive read-only bindings alias an active channel and are never read.
     let value = |i| values.get(i).unwrap_or(&values[0]);
     let buffers = [
-        &control,
+        control,
         segments.point_indices_buffer(),
         segments.cell_starts_buffer(),
         value(0),
@@ -136,3 +175,7 @@ pub(crate) fn try_record_voxel_u8_batch_to_staging(
     encoder.copy_buffer_to_buffer(&output, 0, staging, offset, plan.output_bytes);
     true
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_u8_control_tests.rs"]
+mod control_tests;
