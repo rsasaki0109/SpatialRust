@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Batched f32 voxel averages reuse consecutive identical 16-byte controls within
+each standalone call or combined attribute recorder. A private single-entry
+cache compares every original uniform word; a changed key creates a new
+immutable buffer so queued passes retain their parameters. Shaders, scalar
+tails, planners, input/output ordering and payload/submit/map/wait counts remain.
+At a four-wide recorder receiving nineteen attributes, uniform creation requests
+become five to two; outer fused prefixes keep their controls. Latency is unmeasured.
+See [average control evidence](../notes/2026-10-17_reused_voxel_average_controls.md).
+
 Packed first-attribute recorders reuse consecutive identical 16-byte uniforms
 within each combined call or bounded standalone window. A private single-entry
 cache compares all original control words; changed parameters create a new

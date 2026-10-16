@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse immutable voxel average controls across equal-width attribute batches,
+  preserving original f32 math, scalar tails and transfers.
+  See `notes/2026-10-17_reused_voxel_average_controls.md`.
+
 - Reuse immutable packed voxel gather controls within combined recording calls
   and standalone submission windows, preserving original tails and payloads.
   See `notes/2026-10-17_reused_packed_gather_controls.md`.
