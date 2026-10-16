@@ -359,7 +359,7 @@ fn strided_roi_metadata_and_retained_concurrent_outputs_stay_exact() {
     for (i, mut output) in outputs.into_iter().enumerate() {
         assert_eq!(output.metadata(), metadata);
         assert_eq!(output.receipt().host_to_device_bytes(), 33 * 35 * 4);
-        assert_eq!(output.receipt().gpu_to_gpu_bytes(), 33 * 35 * 8);
+        assert_eq!(output.receipt().gpu_to_gpu_bytes(), 9 * 35 * 4 + 33 * 35 * 4);
         assert_eq!(output.receipt().device_to_host_bytes(), 0);
         assert_eq!(
             &output.receipt().stages()[1..],
@@ -390,7 +390,9 @@ fn strided_roi_metadata_and_retained_concurrent_outputs_stay_exact() {
         result.recycle(&runtime);
     }
     assert_eq!(runtime.image_texture_pool_stats().allocation_count, before.allocation_count);
-    assert!(runtime.image_spatial_pipelines.get().unwrap().separable_morphology.get().is_some());
+    let cache = runtime.image_spatial_pipelines.get().unwrap();
+    assert!(cache.separable_morphology.get().is_none());
+    assert!(cache.packed_morphology.get().is_some());
     runtime.set_image_texture_pool_budget(33 * 35 * 4);
     assert!(runtime.image_texture_pool_stats().cached_bytes <= 33 * 35 * 4);
     runtime.set_image_texture_pool_budget(0);
@@ -450,3 +452,6 @@ fn small_path_stays_single_pass_and_abandoned_scratch_is_not_pooled() {
         oracle(&image, 9, 9, GpuMorphology::Dilate)
     );
 }
+
+#[path = "morphology_packed_tests.rs"]
+mod packed;

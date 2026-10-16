@@ -73,6 +73,9 @@ struct MorphologyPlan {
     params: SpatialParams,
     separable: bool,
     bytes: u64,
+    packed: bool,
+    scratch_width: u32,
+    scratch_bytes: u64,
 }
 
 fn morphology_plan(
@@ -119,6 +122,11 @@ fn morphology_plan(
     {
         return Err(invalid());
     }
+    let separable = morphology_pass_count(width, height, kw, kh) == 2;
+    // A one-column texture has no unused per-row texels to remove.
+    let packed = separable && width > 1;
+    let scratch_width = if packed { width.div_ceil(4) } else { width };
+    let scratch_bytes = u64::from(scratch_width) * u64::from(height) * 4;
     Ok(MorphologyPlan {
         params: SpatialParams {
             source_width: width,
@@ -130,8 +138,11 @@ fn morphology_plan(
             operation: u32::from(operation == GpuMorphology::Dilate),
             _pad: 0,
         },
-        separable: morphology_pass_count(width, height, kw, kh) == 2,
+        separable,
         bytes,
+        packed,
+        scratch_width,
+        scratch_bytes,
     })
 }
 
@@ -230,9 +241,34 @@ pub(crate) struct SpatialPipelines {
     sobel: wgpu::ComputePipeline,
     morphology: wgpu::ComputePipeline,
     separable_morphology: OnceLock<[wgpu::ComputePipeline; 2]>,
+    packed_morphology: OnceLock<[wgpu::ComputePipeline; 2]>,
 }
 
 impl SpatialPipelines {
+    fn packed_morphology(&self, device: &wgpu::Device) -> &[wgpu::ComputePipeline; 2] {
+        self.packed_morphology.get_or_init(|| {
+            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("gpu-morphology-packed-shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("morphology_packed.wgsl").into()),
+            });
+            let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("gpu-morphology-packed-pl"),
+                bind_group_layouts: &[&self.layout],
+                push_constant_ranges: &[],
+            });
+            ["horizontal", "vertical"].map(|entry| {
+                device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                    label: Some(entry),
+                    layout: Some(&layout),
+                    module: &shader,
+                    entry_point: Some(entry),
+                    compilation_options: Default::default(),
+                    cache: None,
+                })
+            })
+        })
+    }
+
     fn separable_morphology(&self, device: &wgpu::Device) -> &[wgpu::ComputePipeline; 2] {
         self.separable_morphology.get_or_init(|| {
             let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -319,6 +355,7 @@ pub(crate) fn create_spatial_pipelines(device: &wgpu::Device) -> SpatialPipeline
         sobel: create("sobel"),
         morphology: create("morphology"),
         separable_morphology: OnceLock::new(),
+        packed_morphology: OnceLock::new(),
     }
 }
 
@@ -413,7 +450,8 @@ pub(crate) fn sobel_gpu_with_profiler(
 ///
 /// Odd kernels in `1..=31` use replicate borders. Boxes with area at least 81
 /// and at least 1,048,576 pixel/sample visits use two exact extrema passes and
-/// four scratch bytes per pixel; smaller workloads use the original single pass.
+/// four scratch bytes per group of up to four row pixels. One-column images
+/// retain four bytes per pixel; smaller workloads use the original single pass.
 pub fn morphology_gpu(
     runtime: &WgpuRuntime,
     source: &GpuImage,
@@ -446,7 +484,7 @@ pub(crate) fn morphology_gpu_with_profiler(
         runtime.image_spatial_pipelines.get_or_init(|| create_spatial_pipelines(runtime.device()));
     let output = create_texture(runtime, source.width(), source.height(), "gpu-morphology-out");
     let intermediate = p.separable.then(|| {
-        create_texture(runtime, source.width(), source.height(), "gpu-morphology-horizontal")
+        create_texture(runtime, p.scratch_width, source.height(), "gpu-morphology-horizontal")
     });
     let intermediate_view = intermediate.as_ref().map(|t| t.create_view(&Default::default()));
     let uniform = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -470,11 +508,11 @@ pub(crate) fn morphology_gpu_with_profiler(
     // Only submitted scratch is returned. Queue ordering protects later reuse;
     // an abandoned encoder drops its texture instead of publishing it to the pool.
     if let Some(texture) = intermediate {
-        runtime.recycle_image_texture(source.width(), source.height(), texture);
+        runtime.recycle_image_texture(p.scratch_width, source.height(), texture);
     }
     let mut receipt = source.receipt().clone();
     if p.separable {
-        receipt.record_gpu_to_gpu(p.bytes, "morphology_horizontal_gpu");
+        receipt.record_gpu_to_gpu(p.scratch_bytes, "morphology_horizontal_gpu");
     }
     receipt.record_gpu_to_gpu(p.bytes, "morphology_gpu");
     GpuImage::from_parts(
@@ -500,7 +538,13 @@ fn encode_morphology(
     encoder: &mut wgpu::CommandEncoder,
     mut profiler: Option<&mut crate::GpuStageProfiler>,
 ) {
-    let pipelines = p.separable.then(|| cache.separable_morphology(runtime.device()));
+    let pipelines = p.separable.then(|| {
+        if p.packed {
+            cache.packed_morphology(runtime.device())
+        } else {
+            cache.separable_morphology(runtime.device())
+        }
+    });
     for index in 0..if p.separable { 2 } else { 1 } {
         let pipeline = pipelines.map_or(&cache.morphology, |pipelines| &pipelines[index]);
         let input = if p.separable && index == 1 { intermediate.unwrap() } else { source };
@@ -529,7 +573,12 @@ fn encode_morphology(
         pass.set_pipeline(pipeline);
         pass.set_bind_group(0, &group, &[]);
         pass.dispatch_workgroups(
-            p.params.output_width.div_ceil(WORKGROUP_X),
+            (if p.separable && p.packed && index == 0 {
+                p.scratch_width
+            } else {
+                p.params.output_width
+            })
+            .div_ceil(WORKGROUP_X),
             p.params.output_height.div_ceil(WORKGROUP_Y),
             1,
         );
