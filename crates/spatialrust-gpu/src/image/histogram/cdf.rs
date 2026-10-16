@@ -236,6 +236,10 @@ fn invalid(message: &str) -> SpatialError {
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "mapped_readback_tests.rs"]
+mod mapped_readback_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use super::*;
     use crate::image::{histogram_u8_gpu, GpuImage};
