@@ -3,7 +3,10 @@ use wgpu::util::DeviceExt;
 
 use crate::{GpuVoxelSegments, WgpuRuntime};
 
-use super::voxel_gather::{record_voxel_gather_multi2_pass, record_voxel_gather_multi4_pass};
+use super::voxel_gather::{
+    record_voxel_gather_multi2_pass_with_controls, record_voxel_gather_multi4_pass_with_controls,
+    LegacyGatherControls,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct GatherSubmissionPlan {
@@ -140,6 +143,7 @@ fn record_window(
             })
         })
         .collect();
+    let mut controls = LegacyGatherControls::default();
     for (batch, chunk) in channels.chunks(plan.batch_width).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -156,24 +160,26 @@ fn record_window(
         if width == 4 {
             let inputs = std::array::from_fn(|i| values.get(i).unwrap_or(empty));
             let output_refs = std::array::from_fn(|i| &outputs[i]);
-            record_voxel_gather_multi4_pass(
+            record_voxel_gather_multi4_pass_with_controls(
                 encoder,
                 runtime,
                 &inputs,
                 segments,
                 &output_refs,
                 chunk.len() as u32,
+                &mut controls,
             )?;
         } else {
             let inputs = std::array::from_fn(|i| values.get(i).unwrap_or(empty));
             let output_refs = std::array::from_fn(|i| &outputs[i]);
-            record_voxel_gather_multi2_pass(
+            record_voxel_gather_multi2_pass_with_controls(
                 encoder,
                 runtime,
                 &inputs,
                 segments,
                 &output_refs,
                 chunk.len() as u32,
+                &mut controls,
             )?;
         }
         for (index, output) in outputs.iter().take(chunk.len()).enumerate() {

@@ -18,12 +18,39 @@ const MULTI2_CHANNELS: usize = 2;
 const MULTI4_CHANNELS: usize = 4;
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Pod, Zeroable)]
 struct GatherUniform {
     cell_count: u32,
     point_count: u32,
     channel_count: u32,
     _pad: u32,
+}
+
+#[derive(Default)]
+pub(crate) struct LegacyGatherControls {
+    current: Option<(GatherUniform, &'static str, wgpu::Buffer)>,
+}
+
+impl LegacyGatherControls {
+    fn get(
+        &mut self,
+        device: &wgpu::Device,
+        uniform: GatherUniform,
+        label: &'static str,
+    ) -> &wgpu::Buffer {
+        if self.current.as_ref().map(|(key, old_label, _)| (*key, *old_label))
+            != Some((uniform, label))
+        {
+            // Earlier encoded passes retain their original immutable control.
+            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(label),
+                contents: bytemuck::bytes_of(&uniform),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+            self.current = Some((uniform, label, buffer));
+        }
+        &self.current.as_ref().expect("legacy gather control initialized").2
+    }
 }
 
 /// Gathers the first point's `f32` value within each voxel cell on the GPU.
@@ -1043,16 +1070,32 @@ pub(crate) fn record_voxel_gather_multi2_pass(
     outputs: &[&wgpu::Buffer; MULTI2_CHANNELS],
     channel_count: u32,
 ) -> SpatialResult<()> {
+    record_voxel_gather_multi2_pass_with_controls(
+        encoder,
+        runtime,
+        values,
+        segments,
+        outputs,
+        channel_count,
+        &mut LegacyGatherControls::default(),
+    )
+}
+
+pub(crate) fn record_voxel_gather_multi2_pass_with_controls(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    values: &[&wgpu::Buffer; MULTI2_CHANNELS],
+    segments: &GpuVoxelSegments,
+    outputs: &[&wgpu::Buffer; MULTI2_CHANNELS],
+    channel_count: u32,
+    controls: &mut LegacyGatherControls,
+) -> SpatialResult<()> {
     let device = runtime.device();
     let pipelines = runtime.pipelines();
     let cell_count = segments.cell_count();
     let uniform =
         GatherUniform { cell_count, point_count: segments.point_count(), channel_count, _pad: 0 };
-    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-gather-multi-uniform"),
-        contents: bytemuck::bytes_of(&uniform),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
+    let uniform_buffer = controls.get(device, uniform, "voxel-gather-multi-uniform");
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("voxel-gather-multi-bind-group"),
         layout: &pipelines.voxel_gather.multi_bind_group_layout,
@@ -1090,6 +1133,26 @@ pub(crate) fn record_voxel_gather_multi4_pass(
     outputs: &[&wgpu::Buffer; MULTI4_CHANNELS],
     channel_count: u32,
 ) -> SpatialResult<()> {
+    record_voxel_gather_multi4_pass_with_controls(
+        encoder,
+        runtime,
+        values,
+        segments,
+        outputs,
+        channel_count,
+        &mut LegacyGatherControls::default(),
+    )
+}
+
+pub(crate) fn record_voxel_gather_multi4_pass_with_controls(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    values: &[&wgpu::Buffer; MULTI4_CHANNELS],
+    segments: &GpuVoxelSegments,
+    outputs: &[&wgpu::Buffer; MULTI4_CHANNELS],
+    channel_count: u32,
+    controls: &mut LegacyGatherControls,
+) -> SpatialResult<()> {
     let device = runtime.device();
     let pipelines = runtime.pipelines();
     let multi4_pipeline = pipelines.voxel_gather.multi4_pipeline.as_ref().ok_or_else(|| {
@@ -1102,11 +1165,7 @@ pub(crate) fn record_voxel_gather_multi4_pass(
     let cell_count = segments.cell_count();
     let uniform =
         GatherUniform { cell_count, point_count: segments.point_count(), channel_count, _pad: 0 };
-    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-gather-multi4-uniform"),
-        contents: bytemuck::bytes_of(&uniform),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
+    let uniform_buffer = controls.get(device, uniform, "voxel-gather-multi4-uniform");
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("voxel-gather-multi4-bind-group"),
         layout: multi4_layout,
@@ -1688,3 +1747,7 @@ mod dummy_tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "voxel_combined_reuse_tests.rs"]
 mod combined_reuse_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_legacy_control_tests.rs"]
+mod legacy_control_tests;
