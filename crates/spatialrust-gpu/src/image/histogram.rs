@@ -10,9 +10,9 @@ use spatialrust_core::{SpatialError, SpatialResult};
 use std::sync::OnceLock;
 use wgpu::util::DeviceExt;
 
-#[cfg(not(target_arch = "wasm32"))]
-use super::gpu_image::read_staging_bytes;
 use super::gpu_image::runtime_device_key;
+#[cfg(not(target_arch = "wasm32"))]
+use super::gpu_image::with_staging_bytes;
 use super::{GpuImage, GpuImageReceipt};
 use crate::{scratch::ScratchBuffers, GpuStageProfiler, WgpuRuntime};
 
@@ -276,12 +276,13 @@ fn readback_bins_u32(runtime: &WgpuRuntime, buffer: &wgpu::Buffer) -> SpatialRes
     });
     encoder.copy_buffer_to_buffer(buffer, 0, &staging, 0, HISTOGRAM_BYTES);
     runtime.queue().submit(Some(encoder.finish()));
-    let bytes = read_staging_bytes(runtime.device(), &staging, HISTOGRAM_BYTES as usize)?;
-    let mut result = [0; 256];
-    for (count, bytes) in result.iter_mut().zip(bytes.chunks_exact(4)) {
-        *count = u32::from_le_bytes(bytes.try_into().expect("four-byte histogram count"));
-    }
-    Ok(result)
+    with_staging_bytes(runtime.device(), &staging, HISTOGRAM_BYTES as usize, |bytes| {
+        let mut result = [0; 256];
+        for (count, bytes) in result.iter_mut().zip(bytes.chunks_exact(4)) {
+            *count = u32::from_le_bytes(bytes.try_into().expect("four-byte histogram count"));
+        }
+        result
+    })
 }
 
 /// Counts one logical channel (0..source.channels()) without leaving the GPU.

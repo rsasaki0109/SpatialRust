@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Native image histogram and CDF readbacks decode their borrowed mapped bytes
+directly into owned `[u32; 256]` arrays using the shared unmap guard and original
+little-endian integer loop. Each call removes one intermediate host byte vector
+and its 1,024-byte copy; the logical 1,024-byte download, staging/copy/submit/map/
+wait counts and success-only receipts remain. The unused byte-copy wrapper is
+test-only. This is host allocation/copy cleanup; latency is unmeasured. See
+[histogram readback evidence](../notes/2026-10-16_direct_mapped_histogram_readback.md).
+
 The combined XYZ/first-attribute fallback reuses one private active output array
 per recorder invocation. Every batch copies its active prefix to the original
 unified staging offset before a later batch overwrites it. Original scalar/two/

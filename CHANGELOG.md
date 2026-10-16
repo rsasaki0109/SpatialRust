@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Decode native GPU histogram and CDF readbacks directly from mapped staging
+  into owned count arrays, removing the intermediate 1 KiB host byte vector.
+  See `notes/2026-10-16_direct_mapped_histogram_readback.md`.
+
 - Reuse active output buffers across combined XYZ/first-attribute fallback
   batches, preserving original kernels, tail semantics and copy offsets.
   See `notes/2026-10-16_reused_combined_voxel_outputs.md`.
