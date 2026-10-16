@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse bounded native CPU plane copies for large standalone GPU voxel first-value
+  and average channel readback, preserving raw bits, exact capacities and map lifetime.
+  See `notes/2026-10-16_parallel_standalone_voxel_readback.md`.
+
 - Copy large mapped float attributes from combined GPU voxel calls with at most
   four native CPU workers, preserving raw bits, owned capacities and map lifetime.
   See `notes/2026-10-16_parallel_voxel_attribute_readback.md`.
