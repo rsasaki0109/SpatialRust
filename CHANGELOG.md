@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Fuse XYZ with the first four float attributes in wide GPU voxel first-value
+  calls, preserving raw bits, original scalar tails and pooled upload recycling.
+  See `notes/2026-10-16_wide_voxel_first_fusion.md`.
+
 - Fuse XYZ and the first four float attributes in wide GPU voxel average calls,
   removing one compute pass/output copy with unchanged math and checked fallback.
   See `notes/2026-10-16_wide_voxel_average_fusion.md`.

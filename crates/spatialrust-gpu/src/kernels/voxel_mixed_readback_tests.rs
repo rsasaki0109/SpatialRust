@@ -416,3 +416,6 @@ mod packed_xyz;
 
 #[path = "voxel_wide_average_tests.rs"]
 mod wide_average;
+
+#[path = "voxel_wide_first_tests.rs"]
+mod wide_first;
