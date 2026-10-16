@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Legacy combined XYZ/first-attribute gathers allocate only missing four-channel
+output bindings: one dummy for three active channels and none for four, rather
+than four dummies per batch. The extracted private block preserves active
+bindings, the existing empty read-only input, shader math and output copies;
+packed/fused priority, scalar/two-channel paths and transfer/wait counts remain.
+These are fewer source buffer requests rather than measured physical savings.
+See [inactive output evidence](../notes/2026-10-16_trimmed_voxel_gather_dummies.md).
+
 The legacy coalesced voxel first-value fallback reuses one two-/four-buffer
 output array per bounded two-batch submission window. Active planes copy to
 their original staging offsets before overwrite; original kernel selection,

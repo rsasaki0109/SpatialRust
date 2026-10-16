@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Allocate only missing output slots in legacy combined voxel attribute gathers,
+  removing unused three-/four-channel dummy buffers while preserving kernel math.
+  See `notes/2026-10-16_trimmed_voxel_gather_dummies.md`.
+
 - Reuse private output buffers across legacy coalesced voxel gather batches,
   preserving original two/four-channel tails, bounded submissions and copies.
   See `notes/2026-10-16_reused_legacy_voxel_outputs.md`.
