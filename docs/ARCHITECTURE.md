@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+The legacy coalesced voxel first-value fallback reuses one two-/four-buffer
+output array per bounded two-batch submission window. Active planes copy to
+their original staging offsets before overwrite; original kernel selection,
+point-zero empty-cell tails, uploads, planners and submit/map/wait counts remain.
+The preferred packed route keeps priority. Two full four-channel batches request
+four rather than eight outputs; these are source requests rather than measured
+physical/peak savings. See
+[legacy output reuse evidence](../notes/2026-10-16_reused_legacy_voxel_outputs.md).
+
 Scalar `f32` staging readback shares the existing scope-based unmap guard with
 XYZ/attribute readers. After a successful map, the view drops before unmapping
 on return or panic unwinding, so an internal bounds panic no longer leaves the

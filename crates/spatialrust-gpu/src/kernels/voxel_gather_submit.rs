@@ -121,7 +121,25 @@ fn record_window(
     staging: &wgpu::Buffer,
     plan: GatherSubmissionPlan,
 ) -> SpatialResult<()> {
+    if channels.is_empty() {
+        return Ok(());
+    }
     let device = runtime.device();
+    let output_width = if channels.len().min(plan.batch_width) > 2 { 4 } else { 2 };
+    let outputs: Vec<_> = (0..output_width)
+        .map(|_| {
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(if output_width == 4 {
+                    "voxel-gather-multi4-output"
+                } else {
+                    "voxel-gather-multi-output"
+                }),
+                size: plan.channel_bytes,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            })
+        })
+        .collect();
     for (batch, chunk) in channels.chunks(plan.batch_width).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -135,20 +153,6 @@ fn record_window(
             .collect();
         // Preserve the original two/four-output pipeline, including unused slots.
         let width = if chunk.len() > 2 { 4 } else { 2 };
-        let outputs: Vec<_> = (0..width)
-            .map(|_| {
-                device.create_buffer(&wgpu::BufferDescriptor {
-                    label: Some(if width == 4 {
-                        "voxel-gather-multi4-output"
-                    } else {
-                        "voxel-gather-multi-output"
-                    }),
-                    size: plan.channel_bytes,
-                    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-                    mapped_at_creation: false,
-                })
-            })
-            .collect();
         if width == 4 {
             let inputs = std::array::from_fn(|i| values.get(i).unwrap_or(empty));
             let output_refs = std::array::from_fn(|i| &outputs[i]);
@@ -185,3 +189,7 @@ fn record_window(
     }
     Ok(())
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_legacy_reuse_tests.rs"]
+mod reuse_tests;
