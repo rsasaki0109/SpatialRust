@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Batch five or more voxel byte attributes in groups of four for all combined
+  XYZ APIs, reusing one packed output and preserving scalar one-channel tails.
+  See `notes/2026-10-16_wide_voxel_u8_batches.md`.
+
 - Reuse private GPU outputs for first-point voxel attribute batches, retaining
   original bounded submissions, scalar empty-cell behavior and input recycling.
   See `notes/2026-10-16_reused_voxel_first_output.md`.

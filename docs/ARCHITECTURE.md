@@ -717,6 +717,15 @@ math, fallback and owned CPU readers remain. Source descriptor reductions
 carry no physical allocation, peak-memory or latency claim. See
 [voxel first output reuse evidence](../notes/2026-10-16_reused_voxel_first_output.md).
 
+Combined voxel APIs group more than four byte attributes into four-channel
+GPU batches with the existing gather/average shaders, one private packed
+output and original scalar single-channel tails. Checked capabilities,
+packed output indexing and complete staging/host/offset bounds retain the
+original fallback on unsupported calls. Small-byte routes, XYZ/float work,
+input payloads, packed readback and caller waits remain; fewer byte passes
+and allocation requests carry no physical-memory or latency claim. See
+[wide byte batch evidence](../notes/2026-10-16_wide_voxel_u8_batches.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |
