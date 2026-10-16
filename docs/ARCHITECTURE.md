@@ -621,6 +621,15 @@ Seven float attributes at width four use two instead of three float passes/
 copies; useful payload, bytes, one submit/map/wait and ownership stay unchanged.
 See [wide first-attribute evidence](../notes/2026-10-16_wide_voxel_first_fusion.md).
 
+Combined GPU voxel readback copies at least two float attribute planes with
+at least 1,048,576 cells in bounded native CPU bands, capped at four workers
+and available CPUs. Small/single-attribute/WASM paths retain serial copying;
+small calls skip CPU-count queries. Scoped workers join while the original
+mapped view/unmap guard remain alive. Original raw bits, owned capacities,
+XYZ/byte decoding, input/error order, GPU work/transfers and one submit/map/
+wait are unchanged. No point-sized scratch is added; worker stacks/metadata
+add bounded overhead. See [parallel attribute readback evidence](../notes/2026-10-16_parallel_voxel_attribute_readback.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

@@ -115,7 +115,8 @@ pub(crate) fn read_staging_xyz_and_packed_attributes(
     let words_per_channel = cells.div_ceil(4);
     let u8_bytes = packed_u8_output_staging_bytes(cells, u8_attribute_count);
     let words: &[u32] = bytemuck::cast_slice(&data[f32_bytes..f32_bytes + u8_bytes]);
-    let attributes = (0..attribute_count).map(|channel| copy_plane(3 + channel)).collect();
+    let attributes =
+        crate::readback_planes::copy_owned_f32_planes(&values[cells * 3..], cells, attribute_count);
     let u8_attributes = (0..u8_attribute_count)
         .map(|channel| {
             let plane = &words[channel * words_per_channel..(channel + 1) * words_per_channel];
