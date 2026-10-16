@@ -121,6 +121,7 @@ pub(crate) fn record_packed_voxel_window(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
+    let mut controls = super::voxel_gather_packed::PackedGatherControls::default();
     for (batch, chunk) in window.chunks(plan.width).enumerate() {
         let values: Vec<_> = chunk
             .iter()
@@ -134,8 +135,13 @@ pub(crate) fn record_packed_voxel_window(
             .collect();
         let bytes = plan.channel_bytes * chunk.len() as u64;
         // Standalone one-channel tails also gather point zero in empty cells.
-        super::voxel_gather_packed::record_packed_voxel_gather(
-            encoder, runtime, &values, segments, &output,
+        super::voxel_gather_packed::record_packed_voxel_gather_with_controls(
+            encoder,
+            runtime,
+            &values,
+            segments,
+            &output,
+            &mut controls,
         );
         // Copy this batch before reuse, retaining the original bounded window.
         encoder.copy_buffer_to_buffer(
