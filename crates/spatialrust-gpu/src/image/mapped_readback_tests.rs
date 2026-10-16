@@ -172,3 +172,109 @@ fn mapped_decoder_limits_the_borrow_and_unmaps_after_success_error_and_panic() {
 
 #[path = "mapped_readback_benchmark.rs"]
 mod benchmark;
+
+#[path = "rgba_readback_reference.rs"]
+mod contiguous_parent;
+
+fn check_contiguous_bytes<const C: usize>() -> usize {
+    let mut checked = 0;
+    for (w, h) in [
+        (0, 0),
+        (1, 1),
+        (63, 3),
+        (64, 3),
+        (65, 3),
+        (127, 17),
+        (128, 17),
+        (129, 17),
+        (1024, 1025),
+        (1920, 1080),
+        (1921, 17),
+        (3840, 17),
+    ] {
+        let padded_row = (w * 4_usize).div_ceil(256) * 256;
+        let mut storage = vec![253_u8; 13 + padded_row * h + 19];
+        let mut expected = Vec::new();
+        for y in 0..h {
+            for x in 0..w {
+                for c in 0..4 {
+                    let byte = ((x * 37 + y * 19 + c * 53) % 256) as u8;
+                    storage[13 + y * padded_row + x * 4 + c] = byte;
+                    if c < C {
+                        expected.push(byte);
+                    }
+                }
+            }
+        }
+        let actual = unpack_rgba8::<C>(&storage[13..], w, h, padded_row, expected.len());
+        let prior = contiguous_parent::baseline_unpack_rgba8::<C>(
+            &storage[13..],
+            w,
+            h,
+            padded_row,
+            expected.len(),
+        );
+        assert_eq!(actual.capacity(), expected.len());
+        assert_eq!(actual.capacity(), prior.capacity());
+        storage.fill(7);
+        assert_eq!(actual, prior);
+        assert_eq!(actual, expected);
+        checked += actual.len() * 2;
+    }
+    checked
+}
+
+#[test]
+fn contiguous_rgba_unpack_matches_complete_parent_cpu_prefix_and_owned_capacity() {
+    let checked = check_contiguous_bytes::<1>()
+        + check_contiguous_bytes::<2>()
+        + check_contiguous_bytes::<3>()
+        + check_contiguous_bytes::<4>();
+    eprintln!("RGBA_CONTIGUOUS_RAW verified {checked} original/CPU bytes across 48 channel/layout cases, guarded source prefixes/suffixes and owned capacities");
+}
+
+#[test]
+fn contiguous_rgba_public_readbacks_keep_current_parent_receipts_metadata_and_ownership() {
+    let r = WgpuRuntime::new_headless().unwrap();
+    let mut retained = Vec::new();
+    let mut checked = 0;
+    for (w, h) in [(64, 3), (65, 3), (1024, 1025), (1920, 1080), (1921, 17)] {
+        for roi in [false, true] {
+            let (mut current, mut prior, expected, metadata) = {
+                let (mut source, stride, metadata) = fixture::<4>(w, h, roi);
+                let input = view::<4>(w, h, roi, &source, stride, metadata);
+                let expected: Vec<_> =
+                    (0..h).flat_map(|y| input.row(y).unwrap().iter().copied()).collect();
+                let current = GpuImage::upload_u8(&r, input).unwrap();
+                let prior = GpuImage::upload_u8(&r, input).unwrap();
+                source.fill(231);
+                (current, prior, expected, metadata)
+            };
+            let actual = current.readback_u8::<4>(&r).unwrap();
+            let old = prior.baseline_contiguous_readback_u8::<4>(&r).unwrap();
+            assert_eq!(actual, old);
+            assert_eq!(actual.as_slice(), expected);
+            assert_eq!(actual.metadata(), metadata);
+            assert_eq!(current.receipt(), prior.receipt());
+            assert_eq!(current.receipt().host_to_device_bytes(), (w * h * 4) as u64);
+            assert_eq!(current.receipt().device_to_host_bytes(), (w * h * 4) as u64);
+            assert_eq!(current.receipt().gpu_to_gpu_bytes(), 0);
+            assert_eq!(current.receipt().stages(), &["upload_u8_texture", "readback_u8_texture"]);
+            current.recycle(&r);
+            prior.recycle(&r);
+            r.clear_image_texture_pool();
+            checked += expected.len() * 2;
+            retained.push((actual, old, expected, metadata));
+        }
+    }
+    drop(r);
+    for (actual, old, expected, metadata) in retained {
+        assert_eq!(actual, old);
+        assert_eq!(actual.as_slice(), expected);
+        assert_eq!(actual.metadata(), metadata);
+    }
+    eprintln!("RGBA_CONTIGUOUS_PUBLIC verified {checked} original/CPU RGBA bytes across ten complete readbacks, ROI, metadata, receipts and runtime drop");
+}
+
+#[path = "rgba_readback_benchmark.rs"]
+mod contiguous_benchmark;

@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Copy contiguous four-channel image readbacks directly into owned output,
+  avoiding source-level zero initialization and per-row overwrite. Padded rows
+  and other channels retain their original path.
+  See `notes/2026-10-17_contiguous_rgba_readback.md`.
+
 - Reuse immutable voxel gather controls within bounded legacy fallback windows,
   preserving original two/four-output tails and preferred packed selection.
   See `notes/2026-10-17_reused_legacy_gather_controls.md`.
