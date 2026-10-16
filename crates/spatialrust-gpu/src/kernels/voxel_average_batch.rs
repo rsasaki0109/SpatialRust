@@ -243,6 +243,27 @@ pub(crate) fn try_record_voxel_attribute_averages_to_staging(
     ) else {
         return Ok(false);
     };
+    record_voxel_attribute_averages_to_staging(
+        encoder,
+        runtime,
+        channels,
+        segments,
+        staging,
+        offset,
+        plan.channel_bytes,
+    )?;
+    Ok(true)
+}
+
+pub(crate) fn record_voxel_attribute_averages_to_staging(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    channels: &[&[f32]],
+    segments: &GpuVoxelSegments,
+    staging: &wgpu::Buffer,
+    offset: u64,
+    channel_bytes: u64,
+) -> SpatialResult<()> {
     let device = runtime.device();
     for (batch, chunk) in channels.chunks(4).enumerate() {
         let values: Vec<_> = chunk
@@ -255,7 +276,7 @@ pub(crate) fn try_record_voxel_attribute_averages_to_staging(
                 })
             })
             .collect();
-        let bytes = plan.channel_bytes * chunk.len() as u64;
+        let bytes = channel_bytes * chunk.len() as u64;
         let output = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("voxel-reduce-xyz-attrs-packed-output"),
             size: bytes,
@@ -280,9 +301,9 @@ pub(crate) fn try_record_voxel_attribute_averages_to_staging(
             &output,
             0,
             staging,
-            offset + plan.channel_bytes * (batch * 4) as u64,
+            offset + channel_bytes * (batch * 4) as u64,
             bytes,
         );
     }
-    Ok(true)
+    Ok(())
 }

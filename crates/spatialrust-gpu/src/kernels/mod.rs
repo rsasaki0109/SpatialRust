@@ -193,3 +193,6 @@ mod voxel_standalone_packed;
 
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_xyz_packed;
+
+#[cfg(feature = "gpu-wgpu")]
+mod voxel_wide_average;
