@@ -875,8 +875,38 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
         return Ok(());
     }
 
+    record_gather_f32_attribute_fallback_to_staging(
+        encoder,
+        runtime,
+        attribute_channels,
+        segments,
+        staging_buffer,
+        channel_len,
+        upload_recycle,
+    )
+}
+
+fn record_gather_f32_attribute_fallback_to_staging(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    attribute_channels: &[&[f32]],
+    segments: &GpuVoxelSegments,
+    staging_buffer: &wgpu::Buffer,
+    channel_len: u64,
+    upload_recycle: &mut Vec<wgpu::Buffer>,
+) -> SpatialResult<()> {
     let device = runtime.device();
     let max_channels = runtime.max_gather_channels().max(1) as usize;
+    let reusable_outputs: Vec<wgpu::Buffer> = (0..attribute_channels.len().min(max_channels))
+        .map(|_| {
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-attrs-output"),
+                size: channel_len,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            })
+        })
+        .collect();
 
     for chunk_start in (0..attribute_channels.len()).step_by(max_channels) {
         let chunk_end = (chunk_start + max_channels).min(attribute_channels.len());
@@ -890,16 +920,7 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
         }
         let value_buffers = &upload_recycle[chunk_upload_start..];
 
-        let output_buffers: Vec<wgpu::Buffer> = (0..channels_in_chunk)
-            .map(|_| {
-                device.create_buffer(&wgpu::BufferDescriptor {
-                    label: Some("voxel-gather-xyz-attrs-output"),
-                    size: channel_len,
-                    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-                    mapped_at_creation: false,
-                })
-            })
-            .collect();
+        let output_buffers = &reusable_outputs[..channels_in_chunk];
 
         match channels_in_chunk {
             1 => record_voxel_gather_f32_pass(
@@ -926,7 +947,7 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
                         runtime,
                         value_buffers,
                         segments,
-                        &output_buffers,
+                        output_buffers,
                         channel_len,
                     )?;
                 } else {
@@ -950,6 +971,7 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
             }
         }
 
+        // Preserve every active plane before the next batch overwrites it.
         for (local_index, output_buffer) in output_buffers.iter().enumerate() {
             encoder.copy_buffer_to_buffer(
                 output_buffer,
@@ -1662,3 +1684,7 @@ mod tests {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "voxel_gather_dummy_tests.rs"]
 mod dummy_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_combined_reuse_tests.rs"]
+mod combined_reuse_tests;

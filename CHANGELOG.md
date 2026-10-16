@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse active output buffers across combined XYZ/first-attribute fallback
+  batches, preserving original kernels, tail semantics and copy offsets.
+  See `notes/2026-10-16_reused_combined_voxel_outputs.md`.
+
 - Allocate only missing output slots in legacy combined voxel attribute gathers,
   removing unused three-/four-channel dummy buffers while preserving kernel math.
   See `notes/2026-10-16_trimmed_voxel_gather_dummies.md`.

@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+The combined XYZ/first-attribute fallback reuses one private active output array
+per recorder invocation. Every batch copies its active prefix to the original
+unified staging offset before a later batch overwrites it. Original scalar/two/
+four-channel kernels, tail rules, uploads and dummy bindings remain; preferred
+packed/fused priority and transfer/submit/map/wait counts are unchanged. Active
+output requests become `A -> min(A,W)` for attribute count `A` and original width
+`W`; descriptor sums do not establish physical memory or latency savings. See
+[combined output reuse evidence](../notes/2026-10-16_reused_combined_voxel_outputs.md).
+
 Legacy combined XYZ/first-attribute gathers allocate only missing four-channel
 output bindings: one dummy for three active channels and none for four, rather
 than four dummies per batch. The extracted private block preserves active
