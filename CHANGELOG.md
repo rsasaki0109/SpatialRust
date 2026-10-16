@@ -21,6 +21,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Pack separate XYZ regions in all four combined GPU voxel attribute calls
+  into one output/copy, preserving fused priority, attribute paths and ownership.
+  See `notes/2026-10-16_packed_combined_voxel_xyz.md`.
+
 - Pack resident GPU voxel XYZ gather/centroid outputs into one planar
   buffer/copy, preserving original math, owned capacities and checked fallback.
   See `notes/2026-10-16_packed_resident_voxel_xyz.md`.

@@ -410,3 +410,6 @@ mod combined_average;
 
 #[path = "voxel_packed_gather_tests.rs"]
 mod packed_gather;
+
+#[path = "voxel_combined_xyz_tests.rs"]
+mod packed_xyz;

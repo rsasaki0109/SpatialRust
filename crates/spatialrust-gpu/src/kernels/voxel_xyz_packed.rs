@@ -48,6 +48,53 @@ pub(crate) fn plan_packed_xyz(
     Some(XyzPlan { bytes })
 }
 
+pub(crate) fn plan_packed_xyz_to_staging(
+    limits: &wgpu::Limits,
+    cells: u32,
+    offset: u64,
+    target_bytes: u64,
+    host_limit: u64,
+) -> Option<XyzPlan> {
+    let plan = plan_packed_xyz(limits, cells, host_limit)?;
+    if offset % 4 != 0
+        || offset.checked_add(plan.bytes)? > target_bytes
+        || target_bytes > limits.max_buffer_size
+        || target_bytes > host_limit
+    {
+        return None;
+    }
+    Some(plan)
+}
+
+pub(crate) fn try_record_packed_xyz_to_staging(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    xyz: [&wgpu::Buffer; 3],
+    segments: &GpuVoxelSegments,
+    staging: &wgpu::Buffer,
+    offset: u64,
+    mode: XyzMode,
+) -> bool {
+    let Some(plan) = plan_packed_xyz_to_staging(
+        &runtime.device().limits(),
+        segments.cell_count(),
+        offset,
+        staging.size(),
+        isize::MAX as u64,
+    ) else {
+        return false;
+    };
+    let output = runtime.device().create_buffer(&wgpu::BufferDescriptor {
+        label: Some("voxel-combined-xyz-packed-output"),
+        size: plan.bytes,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
+    record_packed_xyz(encoder, runtime, xyz, segments, mode, &output);
+    encoder.copy_buffer_to_buffer(&output, 0, staging, offset, plan.bytes);
+    true
+}
+
 pub(crate) fn try_voxel_xyz_packed(
     runtime: &WgpuRuntime,
     xyz: [&wgpu::Buffer; 3],

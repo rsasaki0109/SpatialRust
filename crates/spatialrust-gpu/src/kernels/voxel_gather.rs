@@ -296,52 +296,62 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
         );
         encoder.copy_buffer_to_buffer(&output, 0, &staging_buffer, 0, plan.output_bytes);
     } else {
-        let output_x = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-out-x"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let output_y = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-out-y"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let output_z = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-out-z"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-
-        record_voxel_gather_xyz_pass(
+        if !super::voxel_xyz_packed::try_record_packed_xyz_to_staging(
             &mut encoder,
             runtime,
-            x,
-            y,
-            z,
+            [x, y, z],
             segments,
-            &output_x,
-            &output_y,
-            &output_z,
-        )?;
+            &staging_buffer,
+            0,
+            super::voxel_xyz_packed::XyzMode::First,
+        ) {
+            let output_x = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-out-x"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let output_y = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-out-y"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let output_z = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-out-z"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
 
-        encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
-        encoder.copy_buffer_to_buffer(
-            &output_y,
-            0,
-            &staging_buffer,
-            channel_len as u64,
-            channel_len as u64,
-        );
-        encoder.copy_buffer_to_buffer(
-            &output_z,
-            0,
-            &staging_buffer,
-            (channel_len * 2) as u64,
-            channel_len as u64,
-        );
+            record_voxel_gather_xyz_pass(
+                &mut encoder,
+                runtime,
+                x,
+                y,
+                z,
+                segments,
+                &output_x,
+                &output_y,
+                &output_z,
+            )?;
+
+            encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
+            encoder.copy_buffer_to_buffer(
+                &output_y,
+                0,
+                &staging_buffer,
+                channel_len as u64,
+                channel_len as u64,
+            );
+            encoder.copy_buffer_to_buffer(
+                &output_z,
+                0,
+                &staging_buffer,
+                (channel_len * 2) as u64,
+                channel_len as u64,
+            );
+        }
 
         record_gather_f32_attribute_channels_to_staging(
             &mut encoder,
@@ -502,51 +512,61 @@ pub fn gather_voxel_first_xyz_and_average_multi_gpu(
         );
         encoder.copy_buffer_to_buffer(&output, 0, &staging_buffer, 0, plan.output_bytes);
     } else {
-        let output_x = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-out-x"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let output_y = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-out-y"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let output_z = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("voxel-gather-xyz-out-z"),
-            size: channel_len as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-
-        record_voxel_gather_xyz_pass(
+        if !super::voxel_xyz_packed::try_record_packed_xyz_to_staging(
             &mut encoder,
             runtime,
-            x,
-            y,
-            z,
+            [x, y, z],
             segments,
-            &output_x,
-            &output_y,
-            &output_z,
-        )?;
-        encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
-        encoder.copy_buffer_to_buffer(
-            &output_y,
-            0,
             &staging_buffer,
-            channel_len as u64,
-            channel_len as u64,
-        );
-        encoder.copy_buffer_to_buffer(
-            &output_z,
             0,
-            &staging_buffer,
-            (channel_len * 2) as u64,
-            channel_len as u64,
-        );
+            super::voxel_xyz_packed::XyzMode::First,
+        ) {
+            let output_x = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-out-x"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let output_y = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-out-y"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+            let output_z = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-out-z"),
+                size: channel_len as u64,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+
+            record_voxel_gather_xyz_pass(
+                &mut encoder,
+                runtime,
+                x,
+                y,
+                z,
+                segments,
+                &output_x,
+                &output_y,
+                &output_z,
+            )?;
+            encoder.copy_buffer_to_buffer(&output_x, 0, &staging_buffer, 0, channel_len as u64);
+            encoder.copy_buffer_to_buffer(
+                &output_y,
+                0,
+                &staging_buffer,
+                channel_len as u64,
+                channel_len as u64,
+            );
+            encoder.copy_buffer_to_buffer(
+                &output_z,
+                0,
+                &staging_buffer,
+                (channel_len * 2) as u64,
+                channel_len as u64,
+            );
+        }
 
         if !super::voxel_average_batch::try_record_voxel_attribute_averages_to_staging(
             &mut encoder,
