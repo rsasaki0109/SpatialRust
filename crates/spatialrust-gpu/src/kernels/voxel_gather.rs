@@ -919,39 +919,15 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
                     [&output_buffers[0], &output_buffers[1]];
                 record_voxel_gather_multi2_pass(encoder, runtime, &values, segments, &outputs, 2)?;
             }
-            channel_count => {
+            _ => {
                 if runtime.pipelines().voxel_gather.multi4_pipeline.is_some() {
-                    let empty = empty_storage_buffer(device)?;
-                    let dummy_outputs: [wgpu::Buffer; MULTI4_CHANNELS] =
-                        std::array::from_fn(|_| {
-                            device.create_buffer(&wgpu::BufferDescriptor {
-                                label: Some("voxel-gather-xyz-attrs-dummy-output"),
-                                size: channel_len,
-                                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
-                                mapped_at_creation: false,
-                            })
-                        });
-                    let values: [&wgpu::Buffer; MULTI4_CHANNELS] = std::array::from_fn(|index| {
-                        if index < channel_count {
-                            &value_buffers[index]
-                        } else {
-                            &empty
-                        }
-                    });
-                    let outputs: [&wgpu::Buffer; MULTI4_CHANNELS] = std::array::from_fn(|index| {
-                        if index < channel_count {
-                            &output_buffers[index]
-                        } else {
-                            &dummy_outputs[index]
-                        }
-                    });
-                    record_voxel_gather_multi4_pass(
+                    record_voxel_gather_multi4_active_outputs(
                         encoder,
                         runtime,
-                        &values,
+                        value_buffers,
                         segments,
-                        &outputs,
-                        channel_count as u32,
+                        &output_buffers,
+                        channel_len,
                     )?;
                 } else {
                     for (local_index, channel) in chunk.iter().enumerate() {
@@ -985,6 +961,55 @@ pub(crate) fn record_gather_f32_attribute_channels_to_staging(
         }
     }
 
+    Ok(())
+}
+
+fn record_voxel_gather_multi4_active_outputs(
+    encoder: &mut wgpu::CommandEncoder,
+    runtime: &WgpuRuntime,
+    value_buffers: &[wgpu::Buffer],
+    segments: &GpuVoxelSegments,
+    output_buffers: &[wgpu::Buffer],
+    channel_len: u64,
+) -> SpatialResult<()> {
+    let device = runtime.device();
+    let channel_count = output_buffers.len();
+    let empty = empty_storage_buffer(device)?;
+    let dummy_outputs: Vec<wgpu::Buffer> = (channel_count..MULTI4_CHANNELS)
+        .map(|_| {
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("voxel-gather-xyz-attrs-dummy-output"),
+                size: channel_len,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            })
+        })
+        .collect();
+    let values: [&wgpu::Buffer; MULTI4_CHANNELS] =
+        std::array::from_fn(
+            |index| {
+                if index < channel_count {
+                    &value_buffers[index]
+                } else {
+                    &empty
+                }
+            },
+        );
+    let outputs: [&wgpu::Buffer; MULTI4_CHANNELS] = std::array::from_fn(|index| {
+        if index < channel_count {
+            &output_buffers[index]
+        } else {
+            &dummy_outputs[index - channel_count]
+        }
+    });
+    record_voxel_gather_multi4_pass(
+        encoder,
+        runtime,
+        &values,
+        segments,
+        &outputs,
+        channel_count as u32,
+    )?;
     Ok(())
 }
 
@@ -1633,3 +1658,7 @@ mod tests {
         assert!((multi[3][1] - 11.0).abs() < 1e-5);
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_gather_dummy_tests.rs"]
+mod dummy_tests;
