@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Packed Q8 Gaussian vertical filtering reads each word once for two independent
+channel sums. Nonnegative Q8 mass bounds make u32 accumulation and half-up
+rounding exact; inactive odd-channel output stays zero. Q15 and one-channel
+shaders, host planning/API/caches, scratch, passes and transfers remain unchanged.
+Full parent/u64-CPU checks and every paired vertical/resident/full diagnostic are
+in [paired Gaussian evidence](../notes/2026-10-17_paired_gaussian_q8_vertical.md).
+
 Resident 5x5 median selection uses a padded odd-even merge network, removes
 maximal-byte identity comparisons and prunes to the median dependency cone.
 Generated compare-exchange pairs fall from 191 to 113; the 3x3 shader and shared
