@@ -6,6 +6,16 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+The coalesced first-value fallback reuses consecutive identical 16-byte controls
+within each original two-batch window. Its private single-entry cache compares
+all uniform words and the descriptor label; changed keys create immutable
+buffers while earlier commands retain theirs. Single-pass wrappers keep fresh
+controls. Original pipeline availability errors, tails, bindings, output reuse,
+window bounds and transfer/submit/map/wait counts remain. The preferred packed
+route retains priority. Two full batches request one control instead of two;
+width-four nineteen-channel fallback windows use three instead of five. Latency
+is unmeasured. See [fallback control evidence](../notes/2026-10-17_reused_legacy_gather_controls.md).
+
 Wide byte-attribute recorders reuse consecutive identical 16-byte uniforms in
 both first-value and average modes. A private single-entry cache per invocation
 compares every original control word; changed keys create immutable buffers and
