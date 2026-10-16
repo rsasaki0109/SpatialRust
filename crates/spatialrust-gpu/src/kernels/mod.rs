@@ -202,3 +202,6 @@ mod voxel_wide_average;
 
 #[cfg(feature = "gpu-wgpu")]
 mod voxel_wide_first;
+
+#[cfg(feature = "gpu-wgpu")]
+mod voxel_u8_wide;

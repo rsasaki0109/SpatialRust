@@ -374,7 +374,15 @@ pub fn gather_voxel_first_xyz_and_multi_gpu(
     }
 
     let u8_region_offset = (channel_len * f32_channel_count) as u64;
-    if !crate::kernels::voxel_u8_batch::try_record_voxel_u8_batch_to_staging(
+    if !super::voxel_u8_wide::try_record_wide_voxel_u8_to_staging(
+        &mut encoder,
+        runtime,
+        u8_attribute_channels,
+        segments,
+        &staging_buffer,
+        u8_region_offset,
+        false,
+    )? && !crate::kernels::voxel_u8_batch::try_record_voxel_u8_batch_to_staging(
         &mut encoder,
         runtime,
         u8_attribute_channels,
@@ -627,7 +635,15 @@ pub fn gather_voxel_first_xyz_and_average_multi_gpu(
     }
 
     let u8_region_offset = (channel_len * f32_channel_count) as u64;
-    if !crate::kernels::voxel_u8_batch::try_record_voxel_u8_batch_to_staging(
+    if !super::voxel_u8_wide::try_record_wide_voxel_u8_to_staging(
+        &mut encoder,
+        runtime,
+        u8_attribute_channels,
+        segments,
+        &staging_buffer,
+        u8_region_offset,
+        true,
+    )? && !crate::kernels::voxel_u8_batch::try_record_voxel_u8_batch_to_staging(
         &mut encoder,
         runtime,
         u8_attribute_channels,
