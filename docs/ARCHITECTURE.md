@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Scalar `f32` staging readback shares the existing scope-based unmap guard with
+XYZ/attribute readers. After a successful map, the view drops before unmapping
+on return or panic unwinding, so an internal bounds panic no longer leaves the
+buffer mapped. Mapping errors, valid-prefix bits/capacity, public callers,
+shaders and transfer/wait counts remain unchanged. See
+[scalar readback lifetime evidence](../notes/2026-10-16_guarded_scalar_gpu_readback.md).
+
 Resize/Sobel and CHW image packing initialize private 32-/64-byte uniforms with
 mapped initial contents, as existing blur/morphology kernels do. A resident
 resize -> Sobel -> CHW chain removes three explicit `queue.write_buffer` calls
