@@ -82,9 +82,7 @@ pub(crate) fn read_staging_f32_channels(
     let data = slice.get_mapped_range();
     let values: &[f32] = bytemuck::cast_slice(&data);
     let values = &values[..cells * channels];
-    Ok((0..channels)
-        .map(|channel| values[channel * cells..(channel + 1) * cells].to_vec())
-        .collect())
+    Ok(crate::readback_planes::copy_owned_f32_planes(values, cells, channels))
 }
 
 pub(crate) fn read_staging_xyz_and_packed_attributes(

@@ -630,6 +630,16 @@ XYZ/byte decoding, input/error order, GPU work/transfers and one submit/map/
 wait are unchanged. No point-sized scratch is added; worker stacks/metadata
 add bounded overhead. See [parallel attribute readback evidence](../notes/2026-10-16_parallel_voxel_attribute_readback.md).
 
+Standalone GPU voxel first-value and average channel readback reuses the
+same bounded CPU plane copier per mapped window. At least 1,048,576 cells
+and two channels enable at most four native workers; small/single-channel/
+WASM paths stay serial. The original full mapped extent check, guard and
+view enclose scoped workers. GPU math, packed/coalesced/scalar fallback
+dispatch, two-batch gather windows, average batching, transfers and submit/
+map/wait counts remain. Exact raw bits and N-element capacities persist.
+Thread metadata/stacks add bounded overhead; no latency reduction is claimed
+without isolated measurements. See [standalone parallel readback evidence](../notes/2026-10-16_parallel_standalone_voxel_readback.md).
+
 | Area | Decision |
 | --- | --- |
 | Core model | `SpatialTensor` + `SpatialIndex` + `SpatialAlgorithm` + `SpatialRuntime` |

@@ -297,3 +297,6 @@ mod average_batch;
 
 #[path = "voxel_standalone_packed_tests.rs"]
 mod standalone_packed;
+
+#[path = "voxel_channel_parallel_tests.rs"]
+mod parallel_channels;
