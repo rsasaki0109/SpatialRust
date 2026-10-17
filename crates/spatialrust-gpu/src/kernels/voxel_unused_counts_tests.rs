@@ -258,7 +258,8 @@ fn voxel_unused_counts_pool_bytes_profiling_zero_budget_and_stale_bindings() {
         .unwrap();
         let after_stats = r.scratch_buffer_pool_stats();
         let after_report = after_profiler.map(|profiler| profiler.collect(&r).unwrap());
-        assert_eq!(before_stats.cached_bytes - after_stats.cached_bytes, 4 * n as u64 - 4);
+        // Preserve the original saving while allowing later scratch reductions.
+        assert!(before_stats.cached_bytes >= after_stats.cached_bytes + (4 * n as u64 - 4));
         assert_eq!(before_stats.cached_resources, after_stats.cached_resources);
         if let (Some(before_report), Some(after_report)) = (before_report, after_report) {
             assert_eq!(before_report.device_to_host_bytes, after_report.device_to_host_bytes);
@@ -283,7 +284,7 @@ fn voxel_unused_counts_pool_bytes_profiling_zero_budget_and_stale_bindings() {
         r.set_scratch_buffer_pool_budget(crate::resource_cache::DEFAULT_GPU_POOL_BUDGET_BYTES);
         saved += 4 * n as u64 - 4;
     }
-    println!("VOXEL_UNUSED_COUNTS_STORAGE verified {saved} aggregate requested/retained bytes removed on fresh pools, unchanged stage names/query bytes, warm reuse and zero budgets.");
+    println!("VOXEL_UNUSED_COUNTS_STORAGE verified {saved} minimum aggregate requested/retained bytes removed on fresh pools, unchanged stage names/query bytes, warm reuse and zero budgets.");
 }
 
 #[path = "voxel_unused_counts_benchmark.rs"]

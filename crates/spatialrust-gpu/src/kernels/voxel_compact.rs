@@ -67,7 +67,8 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
     let buffer_len = point_count as u64;
 
     let mut temporaries = crate::scratch::ScratchBuffers::new(runtime);
-    let flags_buffer = temporaries.acquire("voxel-compact-flags", buffer_len * 4);
+    // Owned indices hold boundary flags until the scan consumes them.
+    let flags_buffer = temporaries.acquire("voxel-compact-flags", 4);
     let inclusive_buffer = temporaries.acquire("voxel-compact-inclusive", buffer_len * 4);
     let scan_scratch_buffer = temporaries.acquire("voxel-compact-unused-scan-output", 4);
     let keys_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -98,12 +99,12 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
     let mark_resources = CompactBindResources {
         params: &mark_params,
         entries: entries_buffer,
-        flags: &flags_buffer,
+        flags: &indices_buffer,
         prefix: &inclusive_buffer,
         keys: &keys_buffer,
         starts: &starts_buffer,
         counts: &counts_buffer,
-        indices: &indices_buffer,
+        indices: &flags_buffer,
         scan_out: &scan_scratch_buffer,
     };
     let mark_bind_group = create_compact_bind_group(device, layout, &mark_resources);
@@ -129,7 +130,7 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
     super::voxel_scan::encode_inclusive_scan(
         runtime,
         &mut encoder,
-        &flags_buffer,
+        &indices_buffer,
         &inclusive_buffer,
         point_count,
         &mut profiler,
@@ -599,3 +600,7 @@ mod tests {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "voxel_unused_counts_tests.rs"]
 mod unused_counts;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_boundary_reuse_tests.rs"]
+mod boundary_reuse;
