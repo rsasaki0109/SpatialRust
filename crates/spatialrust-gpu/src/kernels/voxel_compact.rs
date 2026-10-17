@@ -82,7 +82,8 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
-    let counts_buffer = temporaries.acquire("voxel-compact-counts", buffer_len * 4);
+    // Counts are derived from starts on readback; retain only the unused ABI binding.
+    let counts_buffer = temporaries.acquire("voxel-compact-counts", 4);
     let indices_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("voxel-compact-indices"),
         size: buffer_len * std::mem::size_of::<u32>() as u64,
@@ -111,7 +112,6 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-compact-batched-encoder"),
     });
-    encoder.clear_buffer(&counts_buffer, 0, None);
 
     {
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -595,3 +595,7 @@ mod tests {
         assert!(stats.cached_bytes <= stats.budget_bytes);
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_unused_counts_tests.rs"]
+mod unused_counts;

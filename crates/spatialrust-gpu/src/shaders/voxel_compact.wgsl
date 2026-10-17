@@ -97,5 +97,5 @@ fn write_segments(@builtin(global_invocation_id) global_id: vec3<u32>) {
         cell_starts[cell_id] = i;
     }
 
-    atomicAdd(&cell_counts[cell_id], 1u);
+    // Per-cell lengths are already derived from starts; no counter is consumed.
 }

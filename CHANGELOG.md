@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Remove discarded per-point GPU voxel counter additions and their explicit
+  clear; request four compatibility bytes instead of a point-sized counter.
+  Owned segment buffers, starts-derived CPU counts and explicit transfers stay
+  exact. See `notes/2026-10-17_unused_gpu_voxel_counts.md` for parent/raw/pool
+  checks and all paired sparse/dense write/resident/full diagnostics.
+
 - Share symmetric Gaussian vertical weights across mirrored rows in packed Q8
   and split-digit Q15 stages, reducing weighted terms from 3/5/7 to 2/3/4.
   Exact parent/u64/CPU parity, unchanged execution contracts and all paired
