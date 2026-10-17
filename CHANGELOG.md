@@ -21,6 +21,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Share symmetric Gaussian vertical weights across mirrored rows in packed Q8
+  and split-digit Q15 stages, reducing weighted terms from 3/5/7 to 2/3/4.
+  Exact parent/u64/CPU parity, unchanged execution contracts and all paired
+  diagnostics are recorded in `notes/2026-10-17_symmetric_gpu_gaussian_vertical.md`.
+
 - Share exact symmetric Gaussian horizontal weights across mirrored pixels,
   reducing weighted terms from 3/5/7 to 2/3/4 while preserving all Q8/Q15 bytes,
   border behavior, packed scratch and public resource/transfer contracts.

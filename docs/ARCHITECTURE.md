@@ -6,10 +6,16 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Gaussian vertical filters share exact symmetric weights across mirrored rows.
+Packed Q8 decodes channel halves before addition; Q15 adds separately bounded
+base-65536 digits before multiplying. Final rounding, scratch, passes and explicit
+transfers retain their parent contracts. Exact raw/full-call checks and all paired
+vertical/resident/full timings are in [vertical symmetry evidence](../notes/2026-10-17_symmetric_gpu_gaussian_vertical.md).
+
 Gaussian horizontal filters combine mirrored pixels with their exact shared
 integer weight, keeping the center outside the pair loop. Nonnegative mass
 bounds preserve u32 sums and packed high halves exactly; both sides retain the
-original border mapping. Quantization, vertical stages, caches, resource/pass
+original border mapping. Quantization, caches, resource/pass
 counts and explicit transfers remain. Full parent/u64/CPU checks and all paired
 diagnostics are in [symmetric Gaussian evidence](../notes/2026-10-17_symmetric_gpu_gaussian_horizontal.md).
 

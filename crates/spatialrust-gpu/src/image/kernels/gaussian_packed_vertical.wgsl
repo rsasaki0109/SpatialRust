@@ -12,16 +12,24 @@ fn main(@builtin(global_invocation_id) id:vec3<u32>) {
         var value=vec4<u32>(0u);
         for(var pair=0u;pair<params.padding0;pair+=1u) {
             let c=2u*pair;
-            var total=vec2<u32>(0u);
-            for(var tap=0u;tap<params.kernel_height;tap+=1u) {
-                let sy=mapped(i32(y)+i32(tap)-i32(params.kernel_height/2u),params.height);
-                var horizontal=vec2<u32>(params.constant[c],params.constant[c+1u])<<vec2<u32>(8u);
-                if sy>=0 {
-                    let word=sums[(u32(sy)*params.width+x)*params.padding0+pair];
-                    horizontal=vec2<u32>(word&65535u,word>>16u);
+            let radius=params.kernel_height/2u;
+            let center=sums[(y*params.width+x)*params.padding0+pair];
+            var total=vec2<u32>(center&65535u,center>>16u)*params.weights_y[radius/4u][radius%4u];
+            for(var tap=0u;tap<radius;tap+=1u) {
+                let top=mapped(i32(y)+i32(tap)-i32(radius),params.height);
+                let bottom=mapped(i32(y)+i32(params.kernel_height-1u-tap)-i32(radius),params.height);
+                var a=vec2<u32>(params.constant[c],params.constant[c+1u])<<vec2<u32>(8u);
+                var b=a;
+                if top>=0 {
+                    let word=sums[(u32(top)*params.width+x)*params.padding0+pair];
+                    a=vec2<u32>(word&65535u,word>>16u);
                 }
-                let weight=params.weights_y[tap/4u][tap%4u];
-                total+=horizontal*weight;
+                if bottom>=0 {
+                    let word=sums[(u32(bottom)*params.width+x)*params.padding0+pair];
+                    b=vec2<u32>(word&65535u,word>>16u);
+                }
+                // Decode each half before addition to avoid cross-channel carries.
+                total+=(a+b)*params.weights_y[tap/4u][tap%4u];
             }
             let rounded=(total+vec2<u32>(32768u))>>vec2<u32>(16u);
             value[c]=min(255u,rounded.x);

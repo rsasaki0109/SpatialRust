@@ -11,16 +11,27 @@ fn main(@builtin(global_invocation_id) id:vec3<u32>) {
         let x=index%params.width; let y=index/params.width;
         var value=vec4<u32>(0u);
         for(var c=0u;c<params.channels;c+=1u) {
+            let radius=params.kernel_height/2u;
+            let center=sums[(y*params.width+x)*params.channels+c];
+            let center_weight=params.weights_y[radius/4u][radius%4u];
             var lo=0u; var hi=0u;
-            for(var tap=0u;tap<params.kernel_height;tap+=1u) {
-                let sy=mapped(i32(y)+i32(tap)-i32(params.kernel_height/2u),params.height);
-                var horizontal=params.constant[c]<<params.bits;
-                if sy>=0 { horizontal=sums[(u32(sy)*params.width+x)*params.channels+c]; }
+            if params.bits==8u { lo=center*center_weight; }
+            else {
+                lo=(center&65535u)*center_weight;
+                hi=(center>>16u)*center_weight;
+            }
+            for(var tap=0u;tap<radius;tap+=1u) {
+                let top=mapped(i32(y)+i32(tap)-i32(radius),params.height);
+                let bottom=mapped(i32(y)+i32(params.kernel_height-1u-tap)-i32(radius),params.height);
+                var a=params.constant[c]<<params.bits; var b=a;
+                if top>=0 { a=sums[(u32(top)*params.width+x)*params.channels+c]; }
+                if bottom>=0 { b=sums[(u32(bottom)*params.width+x)*params.channels+c]; }
                 let weight=params.weights_y[tap/4u][tap%4u];
-                if params.bits==8u { lo+=horizontal*weight; }
+                if params.bits==8u { lo+=(a+b)*weight; }
                 else {
-                    lo+=(horizontal&65535u)*weight;
-                    hi+=(horizontal>>16u)*weight;
+                    // Split before pairing: each digit's weighted mass stays bounded.
+                    lo+=((a&65535u)+(b&65535u))*weight;
+                    hi+=((a>>16u)+(b>>16u))*weight;
                 }
             }
             if params.bits==8u { value[c]=min(255u,(lo+32768u)>>16u); }
