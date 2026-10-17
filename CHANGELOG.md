@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Fuse voxel boundary generation into the first inclusive-scan block, removing
+  one mark pass and its full flag write/read. Preserve exact segments, scratch
+  requests, owned outputs and explicit payload transfers; account for one fewer
+  timestamp stage per compaction in frame preflight. Frozen parent/u64 checks
+  and all paired diagnostics are in `notes/2026-10-17_fused_gpu_voxel_boundary_scan.md`.
+
 - Reuse owned GPU voxel index storage for temporary boundary flags until the
   scan consumes them; recover write boundaries from adjacent prefix values.
   Reduce private flag requests from 4*N to four bytes with exact outputs, the

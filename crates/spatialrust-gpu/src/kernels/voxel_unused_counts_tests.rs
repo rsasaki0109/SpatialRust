@@ -248,7 +248,7 @@ fn voxel_unused_counts_pool_bytes_profiling_zero_budget_and_stale_bindings() {
         let before_report = before_profiler.map(|profiler| profiler.collect(&r).unwrap());
         r.clear_scratch_buffer_pool();
         let mut after_profiler =
-            r.timestamp_queries_enabled().then(|| GpuStageProfiler::new(&r, capacity).unwrap());
+            r.timestamp_queries_enabled().then(|| GpuStageProfiler::new(&r, capacity - 1).unwrap());
         let after = compact_voxel_segments_gpu_buffers_with_profiler(
             &r,
             &input,
@@ -262,10 +262,16 @@ fn voxel_unused_counts_pool_bytes_profiling_zero_budget_and_stale_bindings() {
         assert!(before_stats.cached_bytes >= after_stats.cached_bytes + (4 * n as u64 - 4));
         assert_eq!(before_stats.cached_resources, after_stats.cached_resources);
         if let (Some(before_report), Some(after_report)) = (before_report, after_report) {
-            assert_eq!(before_report.device_to_host_bytes, after_report.device_to_host_bytes);
+            assert_eq!(before_report.device_to_host_bytes, after_report.device_to_host_bytes + 16);
+            assert_eq!(after_report.device_to_host_bytes, u64::from(capacity - 1) * 16);
             assert_eq!(before_report.device_to_host_bytes, u64::from(capacity) * 16);
             assert_eq!(
-                before_report.stages.iter().map(|s| s.stage).collect::<Vec<_>>(),
+                before_report
+                    .stages
+                    .iter()
+                    .map(|s| s.stage)
+                    .filter(|&s| s != "voxel-compact-mark")
+                    .collect::<Vec<_>>(),
                 after_report.stages.iter().map(|s| s.stage).collect::<Vec<_>>()
             );
         }
@@ -284,7 +290,7 @@ fn voxel_unused_counts_pool_bytes_profiling_zero_budget_and_stale_bindings() {
         r.set_scratch_buffer_pool_budget(crate::resource_cache::DEFAULT_GPU_POOL_BUDGET_BYTES);
         saved += 4 * n as u64 - 4;
     }
-    println!("VOXEL_UNUSED_COUNTS_STORAGE verified {saved} minimum aggregate requested/retained bytes removed on fresh pools, unchanged stage names/query bytes, warm reuse and zero budgets.");
+    println!("VOXEL_UNUSED_COUNTS_STORAGE verified {saved} minimum aggregate requested/retained bytes removed on fresh pools, one fewer mark stage/query pair, warm reuse and zero budgets.");
 }
 
 #[path = "voxel_unused_counts_benchmark.rs"]

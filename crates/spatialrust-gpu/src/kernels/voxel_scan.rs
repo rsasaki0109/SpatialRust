@@ -17,6 +17,7 @@ struct ScanParams {
 pub(crate) struct PrefixScanPipelines {
     layout: wgpu::BindGroupLayout,
     blocks: wgpu::ComputePipeline,
+    boundaries: wgpu::ComputePipeline,
     offsets: wgpu::ComputePipeline,
 }
 
@@ -58,7 +59,26 @@ impl PrefixScanPipelines {
                 cache: None,
             })
         };
-        Self { blocks: build("scan_blocks"), offsets: build("add_block_offsets"), layout }
+        let boundary_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("voxel-boundary-scan-shader"),
+            source: wgpu::ShaderSource::Wgsl(
+                include_str!("../shaders/voxel_boundary_scan.wgsl").into(),
+            ),
+        });
+        let boundaries = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("voxel-boundary-scan"),
+            layout: Some(&pipeline_layout),
+            module: &boundary_shader,
+            entry_point: Some("scan_boundaries"),
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+            cache: None,
+        });
+        Self {
+            blocks: build("scan_blocks"),
+            boundaries,
+            offsets: build("add_block_offsets"),
+            layout,
+        }
     }
 }
 
@@ -80,6 +100,7 @@ pub(crate) fn scan_pass_count(mut count: u32) -> u32 {
     levels * 2 - 1
 }
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
 pub(super) fn encode_inclusive_scan(
     runtime: &WgpuRuntime,
     encoder: &mut wgpu::CommandEncoder,
@@ -88,6 +109,32 @@ pub(super) fn encode_inclusive_scan(
     count: u32,
     profiler: &mut Option<&mut GpuStageProfiler>,
     temporaries: &mut crate::scratch::ScratchBuffers<'_>,
+) {
+    encode_scan(runtime, encoder, input, output, count, profiler, temporaries, false);
+}
+
+pub(super) fn encode_boundary_inclusive_scan(
+    runtime: &WgpuRuntime,
+    encoder: &mut wgpu::CommandEncoder,
+    entries: &wgpu::Buffer,
+    output: &wgpu::Buffer,
+    count: u32,
+    profiler: &mut Option<&mut GpuStageProfiler>,
+    temporaries: &mut crate::scratch::ScratchBuffers<'_>,
+) {
+    encode_scan(runtime, encoder, entries, output, count, profiler, temporaries, true);
+}
+
+#[allow(clippy::too_many_arguments)]
+fn encode_scan(
+    runtime: &WgpuRuntime,
+    encoder: &mut wgpu::CommandEncoder,
+    input: &wgpu::Buffer,
+    output: &wgpu::Buffer,
+    count: u32,
+    profiler: &mut Option<&mut GpuStageProfiler>,
+    temporaries: &mut crate::scratch::ScratchBuffers<'_>,
+    mut boundary_source: bool,
 ) {
     if count == 0 {
         return;
@@ -105,7 +152,7 @@ pub(super) fn encode_inclusive_scan(
             runtime,
             encoder,
             pipelines,
-            &pipelines.blocks,
+            if boundary_source { &pipelines.boundaries } else { &pipelines.blocks },
             &source,
             &prefix,
             &sums,
@@ -113,6 +160,7 @@ pub(super) fn encode_inclusive_scan(
             profiler,
             "voxel-compact-scan-blocks",
         );
+        boundary_source = false;
         levels.push(ScanLevel { prefix, sums, count: current_count });
         if groups == 1 {
             break;
@@ -196,3 +244,7 @@ mod tests {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "voxel_scan_four_tests.rs"]
 mod four;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_boundary_fusion_tests.rs"]
+mod fused;

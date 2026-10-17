@@ -6,19 +6,21 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
-Voxel mark output temporarily occupies the owned point-index buffer until the
-scan consumes it. The write pass reconstructs boundaries from adjacent inclusive
-prefixes before writing final indices. A four-byte inactive binding replaces
-private point-sized flags; bindings stay distinct per pass and owned indices
-never enter the scratch pool. Stages, scalar sync and explicit transfers remain.
-Phased exactness, pool and timing evidence is in [boundary lifetime evidence](../notes/2026-10-17_reused_gpu_voxel_boundary_storage.md).
+Voxel compaction generates key boundaries inside its first inclusive-scan block.
+The original four-way tree, upper hierarchy and prefix-based segment writing
+preserve exact outputs. One mark pass/dispatch and its full flag write/read are
+removed; distinct bindings, owned outputs, scratch requests and four-byte scalar
+synchronization remain. Profiling records one fewer pass per grid, reflected in
+frame preflight. Exactness and all paired diagnostics are in
+[fused boundary evidence](../notes/2026-10-17_fused_gpu_voxel_boundary_scan.md).
 
 Voxel compaction omits discarded per-point atomic cell counters. Owned segments
 already retain keys/indices/starts, and existing readback derives lengths from
 adjacent starts. A four-byte unused compatibility binding replaces the private
-point-sized counter and its explicit clear; mark/scan/write, layout, pooling
-ownership and scalar synchronization stay. Exact outputs/storage checks and all
-paired diagnostics are in [unused counter evidence](../notes/2026-10-17_unused_gpu_voxel_counts.md).
+point-sized counter and its explicit clear; layout, pooling ownership and scalar
+synchronization stay. Boundary generation now shares the first scan block.
+Exact outputs/storage checks and all paired diagnostics are in
+[unused counter evidence](../notes/2026-10-17_unused_gpu_voxel_counts.md).
 
 Gaussian vertical filters share exact symmetric weights across mirrored rows.
 Packed Q8 decodes channel halves before addition; Q15 adds separately bounded
@@ -42,9 +44,10 @@ unchanged. See [radix candidate evidence](../notes/2026-10-17_four_way_gpu_radix
 
 Voxel boundary scans use a four-way exclusive tree before adding the original
 value, preserving every inclusive u32 prefix while halving tree-stage barriers.
-Tail lanes still participate, hierarchy/block offsets and compactor mark/write
-remain, with the same scratch, passes and scalar synchronization. Full parent,
-u64 and compactor checks plus all paired timing rows are in
+Tail lanes still participate; hierarchy/block offsets retain their original
+integer results. The first block now also generates boundaries; scratch ownership
+and scalar synchronization remain. Full parent, u64 and compactor checks
+plus all paired timing rows are in
 [four-way scan evidence](../notes/2026-10-17_four_way_gpu_voxel_scan.md).
 
 Point-parallel RANSAC count reduction uses four disjoint blocks per stage,
