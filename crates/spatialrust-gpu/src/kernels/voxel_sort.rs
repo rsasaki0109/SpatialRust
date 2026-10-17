@@ -4,7 +4,7 @@ use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_keys::VoxelKeyOutput;
-use crate::kernels::voxel_radix::sort_keys_radix_gpu;
+use crate::kernels::voxel_radix::{sort_entries_radix_gpu, sort_keys_radix_gpu};
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::runtime::WgpuRuntime;
 
@@ -51,21 +51,32 @@ pub fn build_voxel_segments_gpu_from_keys(
         SpatialError::InvalidArgument("voxel keys exceed the GPU point limit".to_owned())
     })?;
     validate_sort_size(runtime, point_count)?;
-    let key_outputs: Vec<_> = keys
-        .iter()
-        .map(|&(ix, iy, iz)| VoxelKeyOutput {
+    let entries = prepare_cpu_sort_entries(keys);
+    let entries_buffer = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("voxel-sort-entries-input"),
+        contents: bytemuck::cast_slice(&entries),
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+    });
+    let sorted = sort_entries_radix_gpu(runtime, entries_buffer, point_count, None);
+    super::voxel_compact::compact_voxel_segments_gpu_buffers_with_profiler(
+        runtime,
+        &sorted,
+        point_count,
+        None,
+    )
+}
+
+// The public caller validates the u32 count and device limits before preparation.
+fn prepare_cpu_sort_entries(keys: &[(i64, i64, i64)]) -> Vec<VoxelSortEntry> {
+    keys.iter()
+        .enumerate()
+        .map(|(index, &(ix, iy, iz))| VoxelSortEntry {
             ix: ix.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
             iy: iy.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
             iz: iz.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
-            _pad: 0,
+            point_index: index as u32,
         })
-        .collect();
-    let keys_buffer = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("voxel-sort-keys-input"),
-        contents: bytemuck::cast_slice(&key_outputs),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-    build_voxel_segments_gpu_from_keys_buffer(runtime, &keys_buffer, point_count, point_count)
+        .collect()
 }
 
 /// Builds GPU-resident voxel segments from a GPU keys buffer using stable radix sorting.
@@ -363,3 +374,7 @@ mod tests {
         assert!(build_voxel_segments_gpu_from_keys_buffer(&runtime, &non_storage, 1, 1).is_err());
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_cpu_entries_tests.rs"]
+mod cpu_entries;

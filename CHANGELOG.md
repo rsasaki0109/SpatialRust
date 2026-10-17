@@ -19,6 +19,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Upload CPU voxel keys directly as owned sort entries, constructing indices in
+  the existing clamp loop. Remove one 16*N device entry allocation and singleton
+  build setup with the same explicit transfers, stable order and scratch use.
+  401 native tests and all paired diagnostics in `notes/2026-10-18_uploaded_cpu_voxel_entries.md`.
+
 - Construct source point indices inside the first GPU voxel radix scatter while reading
   keys directly for non-singleton inputs. Remove one build pass/submission/uniform/group
   and its intermediate entry write while preserving exact signed/stable order,
