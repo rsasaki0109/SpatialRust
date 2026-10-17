@@ -334,3 +334,6 @@ mod benchmark;
 
 #[path = "gaussian_packed_tests.rs"]
 mod packed;
+
+#[path = "gaussian_pairs_tests.rs"]
+mod pairs;

@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Process packed Q8 Gaussian vertical channels in pairs, loading each word
+  once and preserving exact integer rounding and inactive output lanes. Keep
+  Q15/one-channel paths, passes, storage, transfers and API contracts unchanged.
+  Parent/CPU checks and paired vertical/resident/full diagnostics are in
+  `notes/2026-10-17_paired_gaussian_q8_vertical.md`.
+
 - Shorten exact resident GPU 5x5 median selection from 191 to 113 generated
   compare-exchange pairs. Preserve 3x3 shader, borders, channels, ownership and
   transfer accounting; validate every binary window and complete parent parity.
