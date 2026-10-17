@@ -1,0 +1,224 @@
+#![allow(dead_code, clippy::too_many_arguments)]
+use bytemuck::{Pod, Zeroable};
+use spatialrust_core::{SpatialError, SpatialResult};
+use wgpu::util::DeviceExt;
+
+use super::old_radix::{sort_entries_radix_gpu, ParentBuildPipelines, ParentRadixPipelines};
+use crate::kernels::gpu_segments::GpuVoxelSegments;
+use crate::kernels::voxel_keys::VoxelKeyOutput;
+use crate::kernels::voxel_segments::VoxelSegments;
+use crate::runtime::WgpuRuntime;
+
+const WORKGROUP_SIZE: u32 = 256;
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, Pod, Zeroable)]
+pub(crate) struct VoxelSortEntry {
+    ix: i32,
+    iy: i32,
+    iz: i32,
+    point_index: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+struct BuildEntriesParams {
+    point_count: u32,
+    padded_count: u32,
+    _pad0: u32,
+    _pad1: u32,
+}
+
+/// Stably radix-sorts per-point voxel keys on the GPU and compacts them into segments.
+///
+/// Coordinates are clamped to the signed i32 range supported by GPU voxel keys.
+pub fn build_voxel_segments_gpu(
+    radix: &ParentRadixPipelines,
+    build: &ParentBuildPipelines,
+    runtime: &WgpuRuntime,
+    keys: &[(i64, i64, i64)],
+) -> SpatialResult<VoxelSegments> {
+    let gpu_segments = build_voxel_segments_gpu_from_keys(radix, build, runtime, keys)?;
+    gpu_segments.to_voxel_segments(runtime)
+}
+
+/// Builds GPU-resident voxel segments from CPU-side keys.
+pub fn build_voxel_segments_gpu_from_keys(
+    radix: &ParentRadixPipelines,
+    build: &ParentBuildPipelines,
+    runtime: &WgpuRuntime,
+    keys: &[(i64, i64, i64)],
+) -> SpatialResult<GpuVoxelSegments> {
+    if keys.is_empty() {
+        return empty_gpu_segments(runtime);
+    }
+    let point_count = u32::try_from(keys.len()).map_err(|_| {
+        SpatialError::InvalidArgument("voxel keys exceed the GPU point limit".to_owned())
+    })?;
+    validate_sort_size(runtime, point_count)?;
+    let key_outputs: Vec<_> = keys
+        .iter()
+        .map(|&(ix, iy, iz)| VoxelKeyOutput {
+            ix: ix.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
+            iy: iy.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
+            iz: iz.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
+            _pad: 0,
+        })
+        .collect();
+    let keys_buffer = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("voxel-sort-keys-input"),
+        contents: bytemuck::cast_slice(&key_outputs),
+        usage: wgpu::BufferUsages::STORAGE,
+    });
+    build_voxel_segments_gpu_from_keys_buffer(
+        radix,
+        build,
+        runtime,
+        &keys_buffer,
+        point_count,
+        point_count,
+    )
+}
+
+/// Builds GPU-resident voxel segments from a GPU keys buffer using stable radix sorting.
+///
+/// `padded_count` is retained for compatibility and must be at least `point_count`.
+/// Only `point_count` entries are allocated and processed; no power-of-two padding
+/// or post-sort filtering is needed. Sorting performs no host readback. Segment
+/// compaction retains its existing scalar cell-count synchronization.
+pub fn build_voxel_segments_gpu_from_keys_buffer(
+    radix: &ParentRadixPipelines,
+    build: &ParentBuildPipelines,
+    runtime: &WgpuRuntime,
+    keys_buffer: &wgpu::Buffer,
+    point_count: u32,
+    padded_count: u32,
+) -> SpatialResult<GpuVoxelSegments> {
+    build_voxel_segments_gpu_from_keys_buffer_with_profiler(
+        radix,
+        build,
+        runtime,
+        keys_buffer,
+        point_count,
+        padded_count,
+        None,
+    )
+}
+
+pub(crate) fn build_voxel_segments_gpu_from_keys_buffer_with_profiler(
+    radix: &ParentRadixPipelines,
+    build: &ParentBuildPipelines,
+    runtime: &WgpuRuntime,
+    keys_buffer: &wgpu::Buffer,
+    point_count: u32,
+    padded_count: u32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> SpatialResult<GpuVoxelSegments> {
+    if point_count == 0 {
+        return empty_gpu_segments(runtime);
+    }
+    validate_sort_size(runtime, point_count)?;
+    if padded_count < point_count {
+        return Err(SpatialError::InvalidArgument(
+            "padded voxel count must be at least the point count".to_owned(),
+        ));
+    }
+    let key_bytes = u64::from(point_count) * std::mem::size_of::<VoxelKeyOutput>() as u64;
+    if keys_buffer.size() < key_bytes
+        || keys_buffer.size() > u64::from(runtime.device().limits().max_storage_buffer_binding_size)
+        || !keys_buffer.usage().contains(wgpu::BufferUsages::STORAGE)
+    {
+        return Err(SpatialError::InvalidArgument(
+            "voxel keys require a storage buffer containing every point".to_owned(),
+        ));
+    }
+
+    let entries = build_sort_entries_from_keys_gpu(
+        radix,
+        build,
+        runtime,
+        keys_buffer,
+        point_count,
+        profiler.as_deref_mut(),
+    );
+    let sorted =
+        sort_entries_radix_gpu(radix, runtime, entries, point_count, profiler.as_deref_mut());
+    crate::kernels::voxel_compact::compact_voxel_segments_gpu_buffers_with_profiler(
+        runtime,
+        &sorted,
+        point_count,
+        profiler,
+    )
+}
+
+fn validate_sort_size(runtime: &WgpuRuntime, point_count: u32) -> SpatialResult<()> {
+    let limits = runtime.device().limits();
+    let entry_bytes = u64::from(point_count) * std::mem::size_of::<VoxelSortEntry>() as u64;
+    if entry_bytes > u64::from(limits.max_storage_buffer_binding_size)
+        || entry_bytes > limits.max_buffer_size
+        || point_count.div_ceil(WORKGROUP_SIZE) > limits.max_compute_workgroups_per_dimension
+    {
+        return Err(SpatialError::InvalidArgument(
+            "voxel sort exceeds GPU buffer or dispatch limits".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+pub(super) fn build_sort_entries_from_keys_gpu(
+    _radix: &ParentRadixPipelines,
+    build: &ParentBuildPipelines,
+    runtime: &WgpuRuntime,
+    keys_buffer: &wgpu::Buffer,
+    point_count: u32,
+    mut profiler: Option<&mut crate::GpuStageProfiler>,
+) -> wgpu::Buffer {
+    let device = runtime.device();
+    let entries_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("voxel-sort-entries-build"),
+        size: u64::from(point_count) * std::mem::size_of::<VoxelSortEntry>() as u64,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
+    let params = BuildEntriesParams { point_count, padded_count: point_count, _pad0: 0, _pad1: 0 };
+    let params_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("voxel-sort-build-params"),
+        contents: bytemuck::bytes_of(&params),
+        usage: wgpu::BufferUsages::UNIFORM,
+    });
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("voxel-sort-build-bind-group"),
+        layout: &build.bind_group_layout,
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: params_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: keys_buffer.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 2, resource: entries_buffer.as_entire_binding() },
+        ],
+    });
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("voxel-sort-build-encoder"),
+    });
+    {
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some("voxel-sort-build-pass"),
+            timestamp_writes: crate::profiling::timestamp_writes(&mut profiler, "voxel-sort-build"),
+        });
+        pass.set_pipeline(&build.pipeline);
+        pass.set_bind_group(0, &bind_group, &[]);
+        pass.dispatch_workgroups(point_count.div_ceil(WORKGROUP_SIZE), 1, 1);
+    }
+    runtime.queue().submit(Some(encoder.finish()));
+    entries_buffer
+}
+
+fn empty_gpu_segments(runtime: &WgpuRuntime) -> SpatialResult<GpuVoxelSegments> {
+    let make_empty = || {
+        runtime.device().create_buffer(&wgpu::BufferDescriptor {
+            label: Some("voxel-sort-empty"),
+            size: 4,
+            usage: wgpu::BufferUsages::STORAGE,
+            mapped_at_creation: false,
+        })
+    };
+    Ok(GpuVoxelSegments::new(0, 0, make_empty(), make_empty(), make_empty(), 0))
+}

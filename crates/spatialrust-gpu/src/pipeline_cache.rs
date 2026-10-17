@@ -364,11 +364,31 @@ pub struct VoxelRadixPipelines {
     /// Scatters entries to their stable sorted positions.
     pub scatter: wgpu::ComputePipeline,
     cached_prefix: std::sync::OnceLock<[wgpu::ComputePipeline; 2]>,
+    build_scatter: std::sync::OnceLock<wgpu::ComputePipeline>,
     _pipeline_layout: wgpu::PipelineLayout,
     _shader: wgpu::ShaderModule,
 }
 
 impl VoxelRadixPipelines {
+    /// The first scatter reads keys directly and supplies source point indices.
+    pub(crate) fn build_scatter(&self, device: &wgpu::Device) -> &wgpu::ComputePipeline {
+        self.build_scatter.get_or_init(|| {
+            let shader = load_shader(
+                device,
+                "voxel-radix-build-scatter-shader",
+                include_str!("shaders/voxel_radix_build_scatter.wgsl"),
+            );
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("voxel-radix-build-scatter"),
+                layout: Some(&self._pipeline_layout),
+                module: &shader,
+                entry_point: Some("scatter"),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                cache: None,
+            })
+        })
+    }
+
     // At most eight group-count items per scan lane retain the legacy kernels.
     // The extra histogram barrier pays off only for larger prefix chunks.
     pub(crate) fn sort_pipelines(
@@ -440,6 +460,7 @@ impl VoxelRadixPipelines {
                 "scatter",
             ),
             cached_prefix: std::sync::OnceLock::new(),
+            build_scatter: std::sync::OnceLock::new(),
             bind_group_layout,
             _pipeline_layout: pipeline_layout,
             _shader: shader,

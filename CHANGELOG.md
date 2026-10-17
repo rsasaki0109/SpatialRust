@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Construct source point indices inside the first GPU voxel radix scatter while reading
+  keys directly for non-singleton inputs. Remove one build pass/submission/uniform/group
+  and its intermediate entry write while preserving exact signed/stable order,
+  ownership, scratch and explicit transfers. Update frame profiling capacity; 397 native
+  tests and all phased diagnostics in `notes/2026-10-17_fused_gpu_voxel_radix_build.md`.
+
 ### Changed
 
 - Fuse voxel boundary generation into the first inclusive-scan block, removing

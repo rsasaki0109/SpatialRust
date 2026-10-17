@@ -467,7 +467,7 @@ fn voxel_boundary_fusion_profiled_frame_accepts_exact_capacity_and_rejects_befor
     if !r.timestamp_queries_enabled() {
         return;
     }
-    for (n, required) in [(0, 0), (1, 9), (2, 153), (257, 157)] {
+    for (n, required) in [(0, 0), (1, 9), (2, 151), (257, 155)] {
         let points: Vec<[f32; 3]> =
             (0..n).map(|i| [(i % 17) as f32 * 0.1, (i / 17) as f32 * 0.1, 0.0]).collect();
         let mut buffers = PointBufferSet::new();
@@ -524,7 +524,7 @@ fn voxel_boundary_fusion_profiled_frame_accepts_exact_capacity_and_rejects_befor
         plain.recycle(&r).unwrap();
         current.recycle(&r).unwrap();
     }
-    println!("VOXEL_BOUNDARY_FUSION_FRAME verified exact 0/9/153/157 stage capacities and receipts for empty/singleton/two/257-point frames; undersized capacity is rejected before scratch/upload work.");
+    println!("VOXEL_BOUNDARY_FUSION_FRAME verified exact 0/9/151/155 stage capacities and receipts for empty/singleton/two/257-point frames; undersized capacity is rejected before scratch/upload work.");
 }
 
 #[path = "voxel_boundary_fusion_benchmark.rs"]
