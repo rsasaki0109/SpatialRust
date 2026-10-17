@@ -340,3 +340,6 @@ mod pairs;
 
 #[path = "gaussian_split_tests.rs"]
 mod split;
+
+#[path = "gaussian_mirror_tests.rs"]
+mod mirror;

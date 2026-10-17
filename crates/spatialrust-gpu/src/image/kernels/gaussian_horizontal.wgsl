@@ -7,12 +7,18 @@ fn main(@builtin(global_invocation_id) id:vec3<u32>) {
     loop {
         if index>=params.pixels { break; }
         let x=index%params.width; let y=index/params.width;
-        var total=vec4<u32>(0u);
-        for(var tap=0u;tap<params.kernel_width;tap+=1u) {
-            let sx=mapped(i32(x)+i32(tap)-i32(params.kernel_width/2u),params.width);
-            var value=params.constant;
-            if sx>=0 { value=textureLoad(source,vec2<i32>(sx,i32(y)),0); }
-            total+=value*params.weights_x[tap/4u][tap%4u];
+        // Symmetric nonnegative weights share one multiply per mirrored pair.
+        // Pair values are at most 510; total mass bounds every u32 partial sum.
+        let radius=params.kernel_width/2u;
+        let center=textureLoad(source,vec2<i32>(i32(x),i32(y)),0);
+        var total=center*params.weights_x[radius/4u][radius%4u];
+        for(var tap=0u;tap<radius;tap+=1u) {
+            let left=mapped(i32(x)+i32(tap)-i32(radius),params.width);
+            let right=mapped(i32(x)+i32(params.kernel_width-1u-tap)-i32(radius),params.width);
+            var a=params.constant; var b=params.constant;
+            if left>=0 { a=textureLoad(source,vec2<i32>(left,i32(y)),0); }
+            if right>=0 { b=textureLoad(source,vec2<i32>(right,i32(y)),0); }
+            total+=(a+b)*params.weights_x[tap/4u][tap%4u];
         }
         for(var c=0u;c<params.channels;c+=1u) { sums[index*params.channels+c]=total[c]; }
         let stride=params.groups*256u;

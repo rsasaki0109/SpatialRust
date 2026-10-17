@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Share exact symmetric Gaussian horizontal weights across mirrored pixels,
+  reducing weighted terms from 3/5/7 to 2/3/4 while preserving all Q8/Q15 bytes,
+  border behavior, packed scratch and public resource/transfer contracts.
+  Full parent/u64/CPU checks and every paired horizontal/resident/full result
+  are recorded in `notes/2026-10-17_symmetric_gpu_gaussian_horizontal.md`.
+
 - Add native four-way radix prefix candidate/parent fixtures, independent
   maximum-mass offsets, complete stable-sort checks and paired diagnostics.
   Defer production adoption after repeated large-input GPU regressions and no

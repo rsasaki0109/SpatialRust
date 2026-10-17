@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Gaussian horizontal filters combine mirrored pixels with their exact shared
+integer weight, keeping the center outside the pair loop. Nonnegative mass
+bounds preserve u32 sums and packed high halves exactly; both sides retain the
+original border mapping. Quantization, vertical stages, caches, resource/pass
+counts and explicit transfers remain. Full parent/u64/CPU checks and all paired
+diagnostics are in [symmetric Gaussian evidence](../notes/2026-10-17_symmetric_gpu_gaussian_horizontal.md).
+
 Retain binary cached radix prefix trees. The correct four-way candidate halves
 source tree barriers but repeats small large-input GPU regressions and does not
 establish a completed transfer-inclusive benefit. Parent/candidate fixtures,
