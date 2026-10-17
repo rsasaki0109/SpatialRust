@@ -333,3 +333,6 @@ fn cached_radix_pipelines_initialize_once_across_concurrent_sorts() {
         assert!(addresses.iter().all(|&a| a == addresses[0]));
     });
 }
+
+#[path = "voxel_radix_four_tests.rs"]
+mod four;

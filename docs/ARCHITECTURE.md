@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Retain binary cached radix prefix trees. The correct four-way candidate halves
+source tree barriers but repeats small large-input GPU regressions and does not
+establish a completed transfer-inclusive benefit. Parent/candidate fixtures,
+maximum-u32 offsets, stable full sorts and all phased measurements remain
+native-only; production thresholds, caches, scratch, API and transfers stay
+unchanged. See [radix candidate evidence](../notes/2026-10-17_four_way_gpu_radix_prefix.md).
+
 Voxel boundary scans use a four-way exclusive tree before adding the original
 value, preserving every inclusive u32 prefix while halving tree-stage barriers.
 Tail lanes still participate, hierarchy/block offsets and compactor mark/write

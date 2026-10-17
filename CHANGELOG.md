@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Add native four-way radix prefix candidate/parent fixtures, independent
+  maximum-mass offsets, complete stable-sort checks and paired diagnostics.
+  Defer production adoption after repeated large-input GPU regressions and no
+  established transfer-inclusive benefit; keep all production behavior unchanged.
+  See `notes/2026-10-17_four_way_gpu_radix_prefix.md`.
+
 - Scan GPU voxel boundaries with four-way exact integer trees, reducing
   upsweep/downsweep barriers from sixteen to eight while retaining hierarchy,
   pass/scratch/transfer counts and complete compactor behavior. Parent/u64/API
