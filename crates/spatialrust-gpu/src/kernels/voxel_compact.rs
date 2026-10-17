@@ -67,7 +67,7 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
     let buffer_len = point_count as u64;
 
     let mut temporaries = crate::scratch::ScratchBuffers::new(runtime);
-    // Owned indices hold boundary flags until the scan consumes them.
+    // The legacy flag binding is inactive in the final write pass.
     let flags_buffer = temporaries.acquire("voxel-compact-flags", 4);
     let inclusive_buffer = temporaries.acquire("voxel-compact-inclusive", buffer_len * 4);
     let scan_scratch_buffer = temporaries.acquire("voxel-compact-unused-scan-output", 4);
@@ -95,42 +95,15 @@ pub(crate) fn compact_voxel_segments_gpu_buffers_with_profiler(
     let pipelines = runtime.pipelines();
     let layout = &pipelines.voxel_compact.bind_group_layout;
 
-    let mark_params = create_params_buffer(device, point_count, 0);
-    let mark_resources = CompactBindResources {
-        params: &mark_params,
-        entries: entries_buffer,
-        flags: &indices_buffer,
-        prefix: &inclusive_buffer,
-        keys: &keys_buffer,
-        starts: &starts_buffer,
-        counts: &counts_buffer,
-        indices: &flags_buffer,
-        scan_out: &scan_scratch_buffer,
-    };
-    let mark_bind_group = create_compact_bind_group(device, layout, &mark_resources);
-
     let dispatch = point_count.div_ceil(WORKGROUP_SIZE);
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-compact-batched-encoder"),
     });
 
-    {
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("voxel-compact-mark-pass"),
-            timestamp_writes: crate::profiling::timestamp_writes(
-                &mut profiler,
-                "voxel-compact-mark",
-            ),
-        });
-        pass.set_pipeline(&pipelines.voxel_compact.mark);
-        pass.set_bind_group(0, &mark_bind_group, &[]);
-        pass.dispatch_workgroups(dispatch, 1, 1);
-    }
-
-    super::voxel_scan::encode_inclusive_scan(
+    super::voxel_scan::encode_boundary_inclusive_scan(
         runtime,
         &mut encoder,
-        &indices_buffer,
+        entries_buffer,
         &inclusive_buffer,
         point_count,
         &mut profiler,
