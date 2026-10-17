@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Large native CPU-key voxel uploads prepare disjoint original-order entry bands
+with at most four workers including the caller, one safely zeroed 16*N host
+buffer and worker-bounded metadata. Small, one-worker and WASM paths preserve
+the original collector; validation remains before preparation. GPU passes,
+scratch, ownership, explicit transfers and frame preflight retain their
+contracts. The existing bytemuck dependency enables its safe allocation helper.
+Exactness and all diagnostics are in
+[parallel CPU entry evidence](../notes/2026-10-18_parallel_cpu_voxel_preparation.md).
+
 CPU-key voxel construction uploads owned 16-byte sort entries with increasing
 source indices prepared in the existing signed clamp loop. The prebuilt radix
 route consumes that upload directly, removing the separate device entry

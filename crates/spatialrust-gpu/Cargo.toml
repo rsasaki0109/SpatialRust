@@ -22,7 +22,7 @@ spatialrust-search = { workspace = true }
 spatialrust-image = { workspace = true, optional = true }
 thiserror = { workspace = true }
 wgpu = { workspace = true, optional = true }
-bytemuck = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true, features = ["extern_crate_alloc"] }
 pollster = { version = "0.4", optional = true }
 
 [[bench]]

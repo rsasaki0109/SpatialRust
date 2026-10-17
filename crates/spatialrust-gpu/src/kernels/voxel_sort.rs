@@ -10,6 +10,9 @@ use crate::runtime::WgpuRuntime;
 
 const WORKGROUP_SIZE: u32 = 256;
 
+#[path = "voxel_entry_preparation.rs"]
+mod preparation;
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Pod, Zeroable)]
 pub(crate) struct VoxelSortEntry {
@@ -68,15 +71,7 @@ pub fn build_voxel_segments_gpu_from_keys(
 
 // The public caller validates the u32 count and device limits before preparation.
 fn prepare_cpu_sort_entries(keys: &[(i64, i64, i64)]) -> Vec<VoxelSortEntry> {
-    keys.iter()
-        .enumerate()
-        .map(|(index, &(ix, iy, iz))| VoxelSortEntry {
-            ix: ix.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
-            iy: iy.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
-            iz: iz.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
-            point_index: index as u32,
-        })
-        .collect()
+    preparation::prepare(keys)
 }
 
 /// Builds GPU-resident voxel segments from a GPU keys buffer using stable radix sorting.
