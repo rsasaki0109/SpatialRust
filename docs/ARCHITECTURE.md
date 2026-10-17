@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Q15 Gaussian vertical filtering accumulates the horizontal input's lower/upper
+base-65536 digits independently. Nonnegative mass 32768 bounds both sums to u32;
+one final carry and half-up shift reproduce the full weighted result exactly.
+One-channel Q8 keeps a bounded u32 sum; packed Q8, host planning/caches, scratch,
+passes and explicit transfers retain their contracts. Full parent/u64 checks
+and all paired timing rows are in [Q15 sum evidence](../notes/2026-10-17_split_gaussian_q15_sums.md).
+
 Packed Q8 Gaussian vertical filtering reads each word once for two independent
 channel sums. Nonnegative Q8 mass bounds make u32 accumulation and half-up
 rounding exact; inactive odd-channel output stays zero. Q15 and one-channel
@@ -1017,7 +1024,8 @@ All 1..=4 logical channels retain their ordering and metadata. The host prepares
 two small normalized integer kernels in binary64, matching specialized CPU u8
 quantization: Q8 for 3/5 calls, Q15 for both axes when either axis uses 7.
 Two GPU passes compute unrounded horizontal sums and the final weighted result;
-Q15 products/sums use two u32 limbs and round half-up only at the final byte.
+Q15 sums accumulate two bounded base-65536 digits in u32, combine the carry
+once and round half-up only at the final byte.
 Q8 multi-channel calls store two exact 16-bit sums per u32, requesting
 `4*ceil(channels/2)` private scratch bytes per pixel; single-channel/Q15 calls
 keep `4*channels`. Each invocation owns its pixel words, including zero odd

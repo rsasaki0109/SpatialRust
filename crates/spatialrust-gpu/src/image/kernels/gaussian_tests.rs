@@ -337,3 +337,6 @@ mod packed;
 
 #[path = "gaussian_pairs_tests.rs"]
 mod pairs;
+
+#[path = "gaussian_split_tests.rs"]
+mod split;

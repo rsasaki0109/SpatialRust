@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Accumulate Q15 Gaussian vertical sums as bounded base-65536 digits, with
+  one final carry/half-up step instead of a general wide product per tap.
+  Preserve exact bytes, scratch, passes, transfers and public API contracts.
+  Parent/u64 checks and paired pass/resident/full diagnostics are recorded in
+  `notes/2026-10-17_split_gaussian_q15_sums.md`.
+
 - Process packed Q8 Gaussian vertical channels in pairs, loading each word
   once and preserving exact integer rounding and inactive output lanes. Keep
   Q15/one-channel paths, passes, storage, transfers and API contracts unchanged.
