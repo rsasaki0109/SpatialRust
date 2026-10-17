@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Voxel mark output temporarily occupies the owned point-index buffer until the
+scan consumes it. The write pass reconstructs boundaries from adjacent inclusive
+prefixes before writing final indices. A four-byte inactive binding replaces
+private point-sized flags; bindings stay distinct per pass and owned indices
+never enter the scratch pool. Stages, scalar sync and explicit transfers remain.
+Phased exactness, pool and timing evidence is in [boundary lifetime evidence](../notes/2026-10-17_reused_gpu_voxel_boundary_storage.md).
+
 Voxel compaction omits discarded per-point atomic cell counters. Owned segments
 already retain keys/indices/starts, and existing readback derives lengths from
 adjacent starts. A four-byte unused compatibility binding replaces the private

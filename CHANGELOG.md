@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reuse owned GPU voxel index storage for temporary boundary flags until the
+  scan consumes them; recover write boundaries from adjacent prefix values.
+  Reduce private flag requests from 4*N to four bytes with exact outputs, the
+  same passes/transfers and retained ownership. Phased parent/CPU/guard checks
+  and all paired diagnostics are in `notes/2026-10-17_reused_gpu_voxel_boundary_storage.md`.
+
 - Remove discarded per-point GPU voxel counter additions and their explicit
   clear; request four compatibility bytes instead of a point-sized counter.
   Owned segment buffers, starts-derived CPU counts and explicit transfers stay

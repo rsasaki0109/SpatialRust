@@ -81,8 +81,13 @@ fn write_segments(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let boundary = flags[i];
     let inclusive_count = prefix[i];
+    // The inclusive prefix changes exactly at a boundary. This read-only
+    // prefix survives while the owned index buffer replaces its temporary flags.
+    var boundary = 1u;
+    if i > 0u {
+        boundary = select(0u, 1u, inclusive_count != prefix[i - 1u]);
+    }
     let cell_id = inclusive_count - 1u;
 
     point_indices[i] = entries[i].point_index;
