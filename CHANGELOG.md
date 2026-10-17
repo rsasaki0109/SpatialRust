@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Scan GPU voxel boundaries with four-way exact integer trees, reducing
+  upsweep/downsweep barriers from sixteen to eight while retaining hierarchy,
+  pass/scratch/transfer counts and complete compactor behavior. Parent/u64/API
+  checks and paired scan/resident/upload-readback diagnostics are recorded in
+  `notes/2026-10-17_four_way_gpu_voxel_scan.md`.
+
 - Reduce point-parallel GPU RANSAC plane counts in four-way stages, halving
   reduction barriers from eight to four while preserving exact integer scores
   and all model/distance arithmetic, API, resources and transfer boundaries.

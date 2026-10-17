@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Voxel boundary scans use a four-way exclusive tree before adding the original
+value, preserving every inclusive u32 prefix while halving tree-stage barriers.
+Tail lanes still participate, hierarchy/block offsets and compactor mark/write
+remain, with the same scratch, passes and scalar synchronization. Full parent,
+u64 and compactor checks plus all paired timing rows are in
+[four-way scan evidence](../notes/2026-10-17_four_way_gpu_voxel_scan.md).
+
 Point-parallel RANSAC count reduction uses four disjoint blocks per stage,
 halving its integer reduction barriers from eight to four. Bounded u32 totals
 preserve exact scores; model/distance arithmetic, serial fallback, caches,
