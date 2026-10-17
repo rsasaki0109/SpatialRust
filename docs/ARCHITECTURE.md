@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Voxel compaction omits discarded per-point atomic cell counters. Owned segments
+already retain keys/indices/starts, and existing readback derives lengths from
+adjacent starts. A four-byte unused compatibility binding replaces the private
+point-sized counter and its explicit clear; mark/scan/write, layout, pooling
+ownership and scalar synchronization stay. Exact outputs/storage checks and all
+paired diagnostics are in [unused counter evidence](../notes/2026-10-17_unused_gpu_voxel_counts.md).
+
 Gaussian vertical filters share exact symmetric weights across mirrored rows.
 Packed Q8 decodes channel halves before addition; Q15 adds separately bounded
 base-65536 digits before multiplying. Final rounding, scratch, passes and explicit
