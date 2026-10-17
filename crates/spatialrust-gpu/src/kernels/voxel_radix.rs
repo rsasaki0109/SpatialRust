@@ -17,10 +17,39 @@ struct RadixParams {
     shift: u32,
 }
 
+// The prebuilt-entry route remains useful for native exactness diagnostics.
+#[cfg(all(test, not(target_arch = "wasm32")))]
 pub(super) fn sort_entries_radix_gpu(
     runtime: &WgpuRuntime,
     entries: wgpu::Buffer,
     point_count: u32,
+    profiler: Option<&mut crate::GpuStageProfiler>,
+) -> wgpu::Buffer {
+    sort_radix_gpu(runtime, entries, point_count, None, profiler)
+}
+
+/// Caller validates a nonempty key buffer and handles the singleton separately.
+pub(super) fn sort_keys_radix_gpu(
+    runtime: &WgpuRuntime,
+    keys: &wgpu::Buffer,
+    point_count: u32,
+    profiler: Option<&mut crate::GpuStageProfiler>,
+) -> wgpu::Buffer {
+    debug_assert!(point_count > 1);
+    let entries = runtime.device().create_buffer(&wgpu::BufferDescriptor {
+        label: Some("voxel-sort-entries-build"),
+        size: u64::from(point_count) * 16,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
+    sort_radix_gpu(runtime, entries, point_count, Some(keys), profiler)
+}
+
+fn sort_radix_gpu(
+    runtime: &WgpuRuntime,
+    entries: wgpu::Buffer,
+    point_count: u32,
+    keys: Option<&wgpu::Buffer>,
     mut profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> wgpu::Buffer {
     if point_count <= 1 {
@@ -41,7 +70,7 @@ pub(super) fn sort_entries_radix_gpu(
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("voxel-radix-encoder"),
     });
-    let mut input = &entries;
+    let mut input = keys.unwrap_or(&entries);
     let mut output = &scratch;
 
     // Entry construction supplies increasing point indices. Stable passes on
@@ -66,12 +95,19 @@ pub(super) fn sort_entries_radix_gpu(
                     wgpu::BindGroupEntry { binding: 5, resource: ranks.as_entire_binding() },
                 ],
             });
+            // The first digit reads keys directly. Its scatter replaces the
+            // padding word with the increasing source point index.
+            let scatter = if keys.is_some() && axis == 2 && shift == 0 {
+                pipelines.build_scatter(device)
+            } else {
+                scatter_pipeline
+            };
             // Separate dispatches provide device-wide producer/consumer
             // ordering. All 24 digits are submitted together without readback.
             for (pipeline, groups, stage) in [
                 (histogram_pipeline, group_count, "voxel-radix-histogram"),
                 (prefix_pipeline, RADIX as u32, "voxel-radix-prefix"),
-                (scatter_pipeline, group_count, "voxel-radix-scatter"),
+                (scatter, group_count, "voxel-radix-scatter"),
             ] {
                 let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                     label: Some("voxel-radix-pass"),
@@ -81,7 +117,13 @@ pub(super) fn sort_entries_radix_gpu(
                 pass.set_bind_group(0, &bind_group, &[]);
                 pass.dispatch_workgroups(groups, 1, 1);
             }
-            std::mem::swap(&mut input, &mut output);
+            if axis == 2 && shift == 0 {
+                // The borrowed keys never become a writable ping-pong target.
+                input = &scratch;
+                output = &entries;
+            } else {
+                std::mem::swap(&mut input, &mut output);
+            }
         }
     }
     temporaries.submit_and_recycle(encoder);
@@ -93,3 +135,7 @@ pub(super) fn sort_entries_radix_gpu(
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "voxel_radix_tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_radix_build_tests.rs"]
+mod build;

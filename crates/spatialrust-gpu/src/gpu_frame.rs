@@ -423,10 +423,10 @@ pub fn run_aoso_voxel_normal_frame_profiled(
     let stages = if n == 0 {
         0
     } else {
-        // Keys + entry build + radix (24 digits * 3 phases) + fused boundary
+        // Keys + fused-build radix (or singleton entry build) + boundary
         // scan + segment writing, for two grids.
         let scan = crate::kernels::voxel_scan_pass_count(n);
-        2 * (3 + if n > 1 { 72 } else { 0 } + scan) + 1
+        2 * (2 + if n > 1 { 72 } else { 1 } + scan) + 1
     };
     profiler.validate(runtime, stages)?;
     let result = run_aoso_voxel_normal_frame_with_profiler(

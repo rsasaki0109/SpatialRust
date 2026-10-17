@@ -4,7 +4,7 @@ use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_keys::VoxelKeyOutput;
-use crate::kernels::voxel_radix::sort_entries_radix_gpu;
+use crate::kernels::voxel_radix::sort_keys_radix_gpu;
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::runtime::WgpuRuntime;
 
@@ -115,13 +115,11 @@ pub(crate) fn build_voxel_segments_gpu_from_keys_buffer_with_profiler(
         ));
     }
 
-    let entries = build_sort_entries_from_keys_gpu(
-        runtime,
-        keys_buffer,
-        point_count,
-        profiler.as_deref_mut(),
-    );
-    let sorted = sort_entries_radix_gpu(runtime, entries, point_count, profiler.as_deref_mut());
+    let sorted = if point_count == 1 {
+        build_sort_entries_from_keys_gpu(runtime, keys_buffer, point_count, profiler.as_deref_mut())
+    } else {
+        sort_keys_radix_gpu(runtime, keys_buffer, point_count, profiler.as_deref_mut())
+    };
     super::voxel_compact::compact_voxel_segments_gpu_buffers_with_profiler(
         runtime,
         &sorted,

@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Non-singleton GPU voxel sorts read keys directly for their first digit and
+construct source indices with one private cached scatter shader. The complete
+original radix shader, signed digits, stable ranks, later passes, owned outputs,
+scratch and explicit transfers retain their contracts. One build pass/submission,
+uniform/group and intermediate entry write disappear; singleton and empty
+routes stay unchanged. Frame preflight records the removed stage per grid.
+Exactness and all phased diagnostics are in [radix build evidence](../notes/2026-10-17_fused_gpu_voxel_radix_build.md).
+
 Voxel compaction generates key boundaries inside its first inclusive-scan block.
 The original four-way tree, upper hierarchy and prefix-based segment writing
 preserve exact outputs. One mark pass/dispatch and its full flag write/read are
