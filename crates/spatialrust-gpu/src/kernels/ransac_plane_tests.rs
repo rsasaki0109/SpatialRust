@@ -340,3 +340,6 @@ fn cold_pipeline_cache_concurrency_runtime_moves_and_recycled_xyz_are_independen
 
 #[path = "ransac_plane_benchmark.rs"]
 mod benchmark;
+
+#[path = "ransac_counts_tests.rs"]
+mod counts;

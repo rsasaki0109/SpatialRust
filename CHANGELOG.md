@@ -21,6 +21,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ### Changed
 
+- Reduce point-parallel GPU RANSAC plane counts in four-way stages, halving
+  reduction barriers from eight to four while preserving exact integer scores
+  and all model/distance arithmetic, API, resources and transfer boundaries.
+  Raw u64/parent checks and paired pass/full-API diagnostics are recorded in
+  `notes/2026-10-17_four_way_gpu_ransac_counts.md`.
+
 - Accumulate Q15 Gaussian vertical sums as bounded base-65536 digits, with
   one final carry/half-up step instead of a general wide product per tap.
   Preserve exact bytes, scratch, passes, transfers and public API contracts.

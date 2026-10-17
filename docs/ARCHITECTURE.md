@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Point-parallel RANSAC count reduction uses four disjoint blocks per stage,
+halving its integer reduction barriers from eight to four. Bounded u32 totals
+preserve exact scores; model/distance arithmetic, serial fallback, caches,
+dispatch/resources and explicit uploads/readback retain their contracts. Raw
+u64/parent/API checks and all paired pass/full-call timing rows are recorded in
+[RANSAC count evidence](../notes/2026-10-17_four_way_gpu_ransac_counts.md).
+
 Q15 Gaussian vertical filtering accumulates the horizontal input's lower/upper
 base-65536 digits independently. Nonnegative mass 32768 bounds both sums to u32;
 one final carry and half-up shift reproduce the full weighted result exactly.

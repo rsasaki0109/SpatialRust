@@ -70,8 +70,13 @@ fn main(@builtin(local_invocation_index) lane: u32,
         }
         counts[lane] = count;
         workgroupBarrier();
-        for (var stride = 128u; stride != 0u; stride /= 2u) {
-            if lane < stride { counts[lane] += counts[lane + stride]; }
+        // Four disjoint source blocks per stage; only the first block is written.
+        // Integer partial sums stay bounded by point_count, independent of order.
+        for (var stride = 64u; stride != 0u; stride /= 4u) {
+            if lane < stride {
+                counts[lane] += counts[lane + stride]
+                    + counts[lane + 2u * stride] + counts[lane + 3u * stride];
+            }
             workgroupBarrier();
         }
         if lane == 0u {
