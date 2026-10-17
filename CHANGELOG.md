@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Prepare large CPU voxel-key uploads with at most four scoped workers, keeping
+  original global indices and one exact-sized, safely zeroed output buffer.
+  Small/one-worker/WASM calls retain the original collector; GPU work and
+  transfers stay unchanged. 406 native tests and every paired diagnostic
+  are in `notes/2026-10-18_parallel_cpu_voxel_preparation.md`.
+
 - Upload CPU voxel keys directly as owned sort entries, constructing indices in
   the existing clamp loop. Remove one 16*N device entry allocation and singleton
   build setup with the same explicit transfers, stable order and scratch use.
