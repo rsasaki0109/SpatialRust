@@ -343,3 +343,6 @@ mod split;
 
 #[path = "gaussian_mirror_tests.rs"]
 mod mirror;
+
+#[path = "gaussian_vmirror_tests.rs"]
+mod vmirror;
