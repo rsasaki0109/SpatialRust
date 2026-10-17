@@ -12,7 +12,7 @@ struct ScanParams {
 
 var<workgroup> tree: array<u32, 256>;
 
-// Blelloch exclusive scan plus the original element gives an inclusive scan.
+// Four-way exclusive tree scan plus the original element gives an inclusive scan.
 // Every lane participates in every barrier, including the final partial block.
 @compute @workgroup_size(256)
 fn scan_blocks(
@@ -27,9 +27,12 @@ fn scan_blocks(
     tree[lane] = value;
     workgroupBarrier();
 
-    for (var stride = 1u; stride < 256u; stride *= 2u) {
-        let slot = (lane + 1u) * stride * 2u - 1u;
-        if slot < 256u { tree[slot] += tree[slot - stride]; }
+    for (var stride = 1u; stride < 256u; stride *= 4u) {
+        let slot = (lane + 1u) * stride * 4u - 1u;
+        if slot < 256u {
+            tree[slot] += tree[slot - 3u * stride]
+                + tree[slot - 2u * stride] + tree[slot - stride];
+        }
         workgroupBarrier();
     }
     if lane == 0u {
@@ -38,12 +41,19 @@ fn scan_blocks(
     }
     workgroupBarrier();
 
-    for (var stride = 128u; stride > 0u; stride /= 2u) {
-        let slot = (lane + 1u) * stride * 2u - 1u;
+    for (var stride = 64u; stride > 0u; stride /= 4u) {
+        let slot = (lane + 1u) * stride * 4u - 1u;
         if slot < 256u {
-            let left = tree[slot - stride];
-            tree[slot - stride] = tree[slot];
-            tree[slot] += left;
+            let a = tree[slot - 3u * stride];
+            let b = tree[slot - 2u * stride];
+            let c = tree[slot - stride];
+            let base = tree[slot];
+            let ab = base + a;
+            let abc = ab + b;
+            tree[slot - 3u * stride] = base;
+            tree[slot - 2u * stride] = ab;
+            tree[slot - stride] = abc;
+            tree[slot] = abc + c;
         }
         workgroupBarrier();
     }

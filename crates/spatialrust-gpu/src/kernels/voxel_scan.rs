@@ -192,3 +192,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "voxel_scan_four_tests.rs"]
+mod four;
