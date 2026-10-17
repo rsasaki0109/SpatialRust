@@ -17,8 +17,7 @@ struct RadixParams {
     shift: u32,
 }
 
-// The prebuilt-entry route remains useful for native exactness diagnostics.
-#[cfg(all(test, not(target_arch = "wasm32")))]
+// Sort owned entries whose source point indices are already initialized.
 pub(super) fn sort_entries_radix_gpu(
     runtime: &WgpuRuntime,
     entries: wgpu::Buffer,

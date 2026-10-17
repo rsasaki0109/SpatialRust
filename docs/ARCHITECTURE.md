@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+CPU-key voxel construction uploads owned 16-byte sort entries with increasing
+source indices prepared in the existing signed clamp loop. The prebuilt radix
+route consumes that upload directly, removing the separate device entry
+allocation and singleton build setup. Upload size, host vector capacity,
+scratch descriptors, stable ordering and explicit scalar/payload transfers
+retain their contracts; the GPU-key input route and frame preflight stay
+unchanged. Exactness, allocation accounting and all paired diagnostics are in
+[CPU entry upload evidence](../notes/2026-10-18_uploaded_cpu_voxel_entries.md).
+
 Non-singleton GPU voxel sorts read keys directly for their first digit and
 construct source indices with one private cached scatter shader. The complete
 original radix shader, signed digits, stable ranks, later passes, owned outputs,
