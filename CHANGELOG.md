@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Omit constant coordinate digits from CPU-key GPU voxel sorting, retaining one
+  constant digit when needed for even owned-buffer parity. Keep original signed
+  keys/tie order, upload/readback boundaries and device-key sorting; bound large
+  host digit summaries to four workers. 456 native tests and all 152 warm/eight
+  fresh-runtime comparisons are in `notes/2026-10-18_constant_cpu_voxel_radix_digits.md`.
+
 - Skip the redundant nearest resize in resident GPU Vision chains when both
   source/output dimensions match, preserving original admission and borrowed
   source ownership. Report the actual 5-7 passes, one fewer texture request and
