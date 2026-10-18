@@ -357,3 +357,6 @@ mod benchmark;
 
 #[path = "box_blur_packed_tests.rs"]
 mod packed;
+
+#[path = "box_blur_window_tests.rs"]
+mod windows;

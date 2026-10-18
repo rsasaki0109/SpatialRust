@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Packed GPU box blur horizontal passes reuse the first exact sum for adjacent
+same-row pixels by subtracting the outgoing byte and adding the incoming byte.
+One-tap widths load the source directly; row-crossing pairs keep complete sums
+and odd tails keep zero upper halves. Nonnegative windows and the original
+width bound of 257 samples preserve exact u16 packing and final rounding. Host
+planners, shaders for other variants, caches, passes, resources and explicit
+transfers keep their contracts. See
+[adjacent box window evidence](../notes/2026-10-18_reused_gpu_box_blur_windows.md).
+
 Non-singleton GPU voxel radix sorts optionally pack all 24 immutable controls
 into one aligned per-invocation uniform buffer, with 16-byte static bindings.
 Checked device limits and a 64KiB cap retain individual controls as fallback.

@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse adjacent same-row GPU box blur horizontal sums with exact outgoing/
+  incoming samples and a direct one-tap path. Preserve row-crossing/tail handling,
+  original integer output, planners, buffers, pipeline/pass counts and explicit
+  transfers. 419 native tests and all exploratory/final diagnostics are in
+  `notes/2026-10-18_reused_gpu_box_blur_windows.md`.
+
 - Batch 24 immutable GPU voxel radix controls into one aligned uniform buffer
   when a bounded layout fits, retaining original individual controls otherwise.
   Static 16-byte bindings, shaders, pass counts and payload receipts retain their
