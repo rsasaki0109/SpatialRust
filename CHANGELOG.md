@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Batch explicit GPU voxel metadata readback into one bounded staging buffer,
+  submission, mapping and wait while preserving transfer bytes, signed keys and
+  final index order. Keep the original serial reader beyond device/64MiB limits;
+  combined staging has a higher peak request. 424 native tests and all paired
+  readback/full diagnostics are in `notes/2026-10-18_batched_gpu_voxel_metadata_readback.md`.
+
 - Reuse adjacent same-row GPU box blur horizontal sums with exact outgoing/
   incoming samples and a direct one-tap path. Preserve row-crossing/tail handling,
   original integer output, planners, buffers, pipeline/pass counts and explicit
