@@ -7,6 +7,7 @@ use crate::runtime::WgpuRuntime;
 
 const WORKGROUP_SIZE: u32 = 256;
 const RADIX: u64 = 16;
+const ALL_DIGITS: u32 = (1 << 24) - 1;
 
 #[path = "voxel_radix_controls.rs"]
 mod controls;
@@ -27,7 +28,24 @@ pub(super) fn sort_entries_radix_gpu(
     point_count: u32,
     profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> wgpu::Buffer {
-    sort_radix_gpu(runtime, entries, point_count, None, profiler)
+    sort_radix_gpu(runtime, entries, point_count, None, profiler, ALL_DIGITS)
+}
+
+// CPU-derived masks include every varying nibble and an optional constant
+// nibble to keep ping-pong parity even. The uploaded entries remain the output.
+pub(super) fn sort_entries_radix_gpu_with_digits(
+    runtime: &WgpuRuntime,
+    entries: wgpu::Buffer,
+    point_count: u32,
+    digits: u32,
+    profiler: Option<&mut crate::GpuStageProfiler>,
+) -> wgpu::Buffer {
+    debug_assert_eq!(digits & !ALL_DIGITS, 0);
+    debug_assert_eq!(digits.count_ones() % 2, 0);
+    if digits == ALL_DIGITS {
+        return sort_entries_radix_gpu(runtime, entries, point_count, profiler);
+    }
+    sort_radix_gpu(runtime, entries, point_count, None, profiler, digits)
 }
 
 /// Caller validates a nonempty key buffer and handles the singleton separately.
@@ -44,7 +62,7 @@ pub(super) fn sort_keys_radix_gpu(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
-    sort_radix_gpu(runtime, entries, point_count, Some(keys), profiler)
+    sort_radix_gpu(runtime, entries, point_count, Some(keys), profiler, ALL_DIGITS)
 }
 
 fn sort_radix_gpu(
@@ -53,8 +71,10 @@ fn sort_radix_gpu(
     point_count: u32,
     keys: Option<&wgpu::Buffer>,
     mut profiler: Option<&mut crate::GpuStageProfiler>,
+    digits: u32,
 ) -> wgpu::Buffer {
-    if point_count <= 1 {
+    debug_assert!(keys.is_none() || digits == ALL_DIGITS);
+    if point_count <= 1 || digits == 0 {
         return entries;
     }
 
@@ -80,6 +100,9 @@ fn sort_radix_gpu(
     // z, y, x preserve that order for equal keys without sorting a fourth word.
     for axis in (0..3).rev() {
         for shift in (0..32).step_by(4) {
+            if digits & (1 << ((2 - axis) * 8 + shift / 4)) == 0 {
+                continue;
+            }
             let params = RadixParams { point_count, group_count, axis, shift };
             let uniform = controls.is_none().then(|| {
                 device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -112,7 +135,7 @@ fn sort_radix_gpu(
                 scatter_pipeline
             };
             // Separate dispatches provide device-wide producer/consumer
-            // ordering. All 24 digits are submitted together without readback.
+            // ordering. All selected digits are submitted without readback.
             for (pipeline, groups, stage) in [
                 (histogram_pipeline, group_count, "voxel-radix-histogram"),
                 (prefix_pipeline, RADIX as u32, "voxel-radix-prefix"),
@@ -137,7 +160,7 @@ fn sort_radix_gpu(
     }
     temporaries.submit_and_recycle(encoder);
 
-    // Twenty-four ping-pong passes finish in the original allocation.
+    // An even number of selected digits finishes in the original allocation.
     entries
 }
 

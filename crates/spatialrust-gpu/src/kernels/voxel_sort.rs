@@ -4,7 +4,9 @@ use wgpu::util::DeviceExt;
 
 use crate::kernels::gpu_segments::GpuVoxelSegments;
 use crate::kernels::voxel_keys::VoxelKeyOutput;
-use crate::kernels::voxel_radix::{sort_entries_radix_gpu, sort_keys_radix_gpu};
+#[cfg(all(test, not(target_arch = "wasm32")))]
+use crate::kernels::voxel_radix::sort_entries_radix_gpu;
+use crate::kernels::voxel_radix::{sort_entries_radix_gpu_with_digits, sort_keys_radix_gpu};
 use crate::kernels::voxel_segments::VoxelSegments;
 use crate::runtime::WgpuRuntime;
 
@@ -12,6 +14,9 @@ const WORKGROUP_SIZE: u32 = 256;
 
 #[path = "voxel_entry_preparation.rs"]
 mod preparation;
+
+#[path = "voxel_radix_digits.rs"]
+mod digits;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Pod, Zeroable)]
@@ -43,6 +48,8 @@ pub fn build_voxel_segments_gpu(
 }
 
 /// Builds GPU-resident voxel segments from CPU-side keys.
+/// Constant coordinate nibbles are omitted from the stable sort. One constant
+/// nibble may be retained to keep results in the original owned allocation.
 pub fn build_voxel_segments_gpu_from_keys(
     runtime: &WgpuRuntime,
     keys: &[(i64, i64, i64)],
@@ -55,12 +62,14 @@ pub fn build_voxel_segments_gpu_from_keys(
     })?;
     validate_sort_size(runtime, point_count)?;
     let entries = prepare_cpu_sort_entries(keys);
+    let digits = digits::plan(&entries);
     let entries_buffer = runtime.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("voxel-sort-entries-input"),
         contents: bytemuck::cast_slice(&entries),
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
     });
-    let sorted = sort_entries_radix_gpu(runtime, entries_buffer, point_count, None);
+    let sorted =
+        sort_entries_radix_gpu_with_digits(runtime, entries_buffer, point_count, digits, None);
     super::voxel_compact::compact_voxel_segments_gpu_buffers_with_profiler(
         runtime,
         &sorted,
