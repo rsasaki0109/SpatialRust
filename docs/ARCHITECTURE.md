@@ -30,16 +30,24 @@ history and report actual work with saturating counters. Changed shapes and
 standalone resize retain original behavior. See
 [identity-chain evidence](../notes/2026-10-18_identity_gpu_vision_chain_resize.md).
 
-Unpacked GPU box blurs with at least 65,536 pixels and kernel widths of at least
-4,099 share one complete u32 horizontal sum across up to four outputs through
+Eligible wide GPU box-blur rows use a workgroup-local exclusive u32 prefix:
+widths 512..4096, at least 128 rows and kernel width at least 259, with a 16KiB
+workgroup-storage capability guard. A sixth lazy horizontal pipeline retains
+the original bindings, dispatch, scratch, two passes and explicit transfers;
+all five original programs remain fallback. Exact prefix differences and
+original border masses preserve the final integer rounding. See
+[row-prefix evidence](../notes/2026-10-19_gpu_box_blur_row_prefixes.md)
+for bounds, ownership, complete-call and first-use costs.
+
+Fallback unpacked GPU box blurs with at least 65,536 pixels and kernel widths
+of at least 4,099 share one complete u32 horizontal sum across up to four outputs through
 exact outgoing/incoming updates. Row crossings recompute complete sums and
-partial final blocks write once per pixel. Original scalar/pair schedules and
-all production host code, five lazy variants, passes/resources and explicit
-transfers retain their contracts. Cold-call costs and rejected alternatives
+partial final blocks write once per pixel. Original scalar/pair schedules, the five original variants, passes/resources
+and explicit transfers retain their contracts. Cold-call costs and rejected alternatives
 are recorded in [four-window evidence](../notes/2026-10-18_four_wide_gpu_box_blur_horizontal_windows.md).
 
-Large unpacked GPU box blur horizontal passes share exact adjacent windows by
-subtracting the outgoing and adding the incoming byte. Row crossings use complete
+Fallback large unpacked GPU box blur horizontal passes share exact adjacent
+windows by subtracting the outgoing and adding the incoming byte. Row crossings use complete
 sums; below 65,536 pixels the original scalar schedule is retained. The cutoff is
 a private conservative heuristic. Full u32/signed bounds preserve rounding, host
 planners, dispatch/resources and explicit transfers. See

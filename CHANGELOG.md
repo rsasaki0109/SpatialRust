@@ -19,6 +19,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Compute eligible wide GPU box-blur row sums with exact workgroup-local u32
+  prefixes, preserving two passes, scratch/transfers and all original fallback
+  shaders. A lazy sixth program uses 16KiB shared memory. 188 native
+  executions and all 144 final warm/10 fresh-cache and 72 exploratory comparisons are in `notes/2026-10-19_gpu_box_blur_row_prefixes.md`.
+
 - Reuse checked CPU voxel digit-scan prefixes when a later omitted nibble
   changes. Preserve exact sign-class masks and GPU contracts while repeating
   at most the current 16,384-point block per worker. 282 native executions

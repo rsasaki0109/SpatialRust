@@ -526,3 +526,6 @@ mod benchmark;
 
 #[path = "box_blur_wide_hquad_tests.rs"]
 mod four_horizontal_windows;
+
+#[path = "box_blur_row_prefix_tests.rs"]
+mod row_prefix;
