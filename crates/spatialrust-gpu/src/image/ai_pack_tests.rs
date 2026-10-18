@@ -346,7 +346,7 @@ fn declared_output_limit_failure_happens_before_tensor_work() {
 }
 
 #[test]
-fn full_large_resident_vision_chain_keeps_six_stages_and_explicit_transfers() {
+fn full_large_resident_vision_chain_keeps_five_stages_and_explicit_transfers() {
     let runtime =
         WgpuRuntime::new_headless_with_timestamps(crate::WgpuPowerPreference::HighPerformance)
             .unwrap();
@@ -362,21 +362,21 @@ fn full_large_resident_vision_chain_keeps_six_stages_and_explicit_transfers() {
         std: [1.0; 4],
         ..Default::default()
     };
-    let mut profiler = crate::GpuStageProfiler::new(&runtime, 6).unwrap();
+    let mut profiler = crate::GpuStageProfiler::new(&runtime, 5).unwrap();
     let mut tensor =
         crate::run_gpu_vision_chain_profiled(&runtime, &source, options, &mut profiler).unwrap();
     assert_eq!(tensor.shape(), [1, 4096, 4096]);
     assert_eq!(tensor.receipt().host_to_device_bytes(), 67_108_864);
-    assert_eq!(tensor.receipt().gpu_to_gpu_bytes(), 402_653_184);
+    assert_eq!(tensor.receipt().gpu_to_gpu_bytes(), 335_544_320);
     assert_eq!(tensor.receipt().device_to_host_bytes(), 0);
     let report = profiler.collect(&runtime).unwrap();
-    assert_eq!(report.stages.len(), 6);
-    assert_eq!(report.device_to_host_bytes, 96);
+    assert_eq!(report.stages.len(), 5);
+    assert_eq!(report.device_to_host_bytes, 80);
     assert!(tensor.readback_f32(&runtime).unwrap().iter().all(|v| v.to_bits() == 0));
     assert_eq!(tensor.receipt().device_to_host_bytes(), 67_108_864);
     tensor.recycle(&runtime);
     source.recycle(&runtime);
-    eprintln!("Verified 16777216 exact zero tensor words in a 4096x4096 six-stage resident chain, 96 explicit query bytes.");
+    eprintln!("Verified 16777216 exact zero tensor words in a 4096x4096 five-stage resident chain, 80 explicit query bytes.");
 }
 
 #[path = "ai_pack_benchmark.rs"]

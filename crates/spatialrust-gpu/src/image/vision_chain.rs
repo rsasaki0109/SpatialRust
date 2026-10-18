@@ -43,6 +43,7 @@ impl Default for GpuVisionChainOptions {
 
 /// Runs resize → gray → blur → Sobel → morphology → planar AI packing.
 ///
+/// Matching source/output dimensions omit resize and its device transfer stage.
 /// The caller owns the uploaded source. Every intermediate is recycled after
 /// its consumer has been submitted, and no host readback occurs.
 pub fn run_gpu_vision_chain(
@@ -53,11 +54,12 @@ pub fn run_gpu_vision_chain(
     run_gpu_vision_chain_with_profiler(runtime, source, options, None)
 }
 
-/// Runs the resident image chain with six to eight compute-pass timing samples.
+/// Runs the resident image chain with five to eight compute-pass timing samples.
 ///
 /// Queries remain on the device until the caller explicitly collects the
-/// profiler. Small blur and morphology workloads need six unused stages. Blur
-/// boxes with area at least 81 and at least 65,536 pixel/sample visits add one
+/// profiler. Small blur/morphology workloads need five unused stages for matching
+/// dimensions or six when resizing. Blur boxes with area at least 81 and at
+/// least 65,536 pixel/sample visits add one
 /// for the unrounded horizontal-sum pass. Morphology with area at least 81
 /// and at least 1,048,576 visits adds a horizontal extrema sample.
 pub fn run_gpu_vision_chain_profiled(
@@ -68,17 +70,19 @@ pub fn run_gpu_vision_chain_profiled(
 ) -> SpatialResult<GpuAiTensor> {
     profiler.validate(
         runtime,
-        4 + super::kernels::box_blur::blur_pass_count(
-            options.width,
-            options.height,
-            options.blur_kernel,
-            options.blur_kernel,
-        ) + super::kernels::spatial::morphology_pass_count(
-            options.width,
-            options.height,
-            options.morphology_kernel,
-            options.morphology_kernel,
-        ),
+        3 + u32::from(source.width() != options.width || source.height() != options.height)
+            + super::kernels::box_blur::blur_pass_count(
+                options.width,
+                options.height,
+                options.blur_kernel,
+                options.blur_kernel,
+            )
+            + super::kernels::spatial::morphology_pass_count(
+                options.width,
+                options.height,
+                options.morphology_kernel,
+                options.morphology_kernel,
+            ),
     )?;
     let result = run_gpu_vision_chain_with_profiler(runtime, source, options, Some(profiler));
     profiler.finish_recording(&result);
@@ -91,19 +95,32 @@ pub(crate) fn run_gpu_vision_chain_with_profiler(
     options: GpuVisionChainOptions,
     mut profiler: Option<&mut crate::GpuStageProfiler>,
 ) -> SpatialResult<GpuAiTensor> {
-    let resized = super::kernels::spatial::resize_nearest_gpu_with_profiler(
-        runtime,
-        source,
-        options.width,
-        options.height,
-        profiler.as_deref_mut(),
-    )?;
+    let resized = if source.width() == options.width && source.height() == options.height {
+        // Preserve the original resize admission even when its identity copy is omitted.
+        source.validate_runtime(runtime)?;
+        super::kernels::spatial::validate_resize_dispatch(
+            [source.width(), source.height()],
+            [options.width, options.height],
+            &runtime.device().limits(),
+        )?;
+        None
+    } else {
+        Some(super::kernels::spatial::resize_nearest_gpu_with_profiler(
+            runtime,
+            source,
+            options.width,
+            options.height,
+            profiler.as_deref_mut(),
+        )?)
+    };
     let gray = super::kernels::gray::rgb_to_gray_gpu_with_profiler(
         runtime,
-        &resized,
+        resized.as_ref().unwrap_or(source),
         profiler.as_deref_mut(),
     )?;
-    resized.recycle(runtime);
+    if let Some(resized) = resized {
+        resized.recycle(runtime);
+    }
     let blurred = super::kernels::box_blur::box_blur_gpu_with_profiler(
         runtime,
         &gray,
@@ -139,3 +156,7 @@ pub(crate) fn run_gpu_vision_chain_with_profiler(
     morphology.recycle(runtime);
     Ok(tensor)
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "vision_chain_identity_tests.rs"]
+mod identity_tests;
