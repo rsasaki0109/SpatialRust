@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Batch 24 immutable GPU voxel radix controls into one aligned uniform buffer
+  when a bounded layout fits, retaining original individual controls otherwise.
+  Static 16-byte bindings, shaders, pass counts and payload receipts retain their
+  contracts; padding increases initializer bytes. 415 native tests and all
+  paired setup/resident/full diagnostics are in `notes/2026-10-18_batched_gpu_voxel_radix_controls.md`.
+
 - Share Q15 Gaussian vertical row/weight calculations across two/four channel
   lanes with exact digit sums and byte rounding. Retain original Q8/mono
   shaders, scratch, passes and transfers; lazily cache two optional vertical

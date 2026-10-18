@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Non-singleton GPU voxel radix sorts optionally pack all 24 immutable controls
+into one aligned per-invocation uniform buffer, with 16-byte static bindings.
+Checked device limits and a 64KiB cap retain individual controls as fallback.
+Shaders, pipeline layouts, passes, scratch and point-payload receipts keep their
+contracts; alignment padding increases internal initializer bytes while source
+uniform creation requests fall from 24 to one. Physical memory is unmeasured.
+See [batched radix control evidence](../notes/2026-10-18_batched_gpu_voxel_radix_controls.md).
+
 Q15 multi-channel Gaussian vertical filtering shares row mapping and weight
 selection across two lanes for two channels and four lanes for three/four
 channels. Exact componentwise base-65536 sums and original half-up rounding
