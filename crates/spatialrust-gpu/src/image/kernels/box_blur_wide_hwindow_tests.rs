@@ -523,3 +523,6 @@ fn box_wide_horizontal_concurrent_first_use_retains_outputs_after_clear_and_chan
 
 #[path = "box_blur_wide_hwindow_benchmark.rs"]
 mod benchmark;
+
+#[path = "box_blur_wide_hquad_tests.rs"]
+mod four_horizontal_windows;

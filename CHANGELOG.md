@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Share one exact horizontal window across up to four adjacent pixels for GPU
+  box blurs with at least 65,536 pixels and kernel widths of at least 4,099.
+  Preserve row crossings, partial tails and final rounding; original scalar/pair
+  schedules, five pipelines, host resources/passes and explicit transfers retain
+  their contracts. 181 native tests, warm/fresh-cache costs and rejected
+  alternatives are in `notes/2026-10-18_four_wide_gpu_box_blur_horizontal_windows.md`.
+
 - Reuse adjacent horizontal windows for large wide-kernel GPU box blurs,
   preserving the scalar schedule below 65,536 pixels, exact u32 sums, row-crossing
   fallback and final rounding. Host resources/passes and explicit transfers retain
