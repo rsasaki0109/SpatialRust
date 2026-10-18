@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Wide GPU box blur vertical passes share the original first window with the
+next row by subtracting one outgoing and adding one incoming horizontal sum.
+One-tap heights load directly; exact u32 bounds, signed coordinates and unique
+row-pair ownership preserve rounding and odd final rows. Host planners, dispatch
+requests, caches/resources and explicit transfers retain their contracts. See
+[shared wide vertical window evidence](../notes/2026-10-18_shared_wide_gpu_box_blur_vertical_windows.md).
+
 Packed GPU box blur vertical passes share the original first window with the
 next row by subtracting one outgoing and adding one incoming horizontal sum.
 One-tap heights load directly; exact u32 bounds, signed coordinates and unique
