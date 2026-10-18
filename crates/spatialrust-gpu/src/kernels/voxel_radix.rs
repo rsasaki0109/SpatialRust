@@ -8,6 +8,9 @@ use crate::runtime::WgpuRuntime;
 const WORKGROUP_SIZE: u32 = 256;
 const RADIX: u64 = 16;
 
+#[path = "voxel_radix_controls.rs"]
+mod controls;
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct RadixParams {
@@ -71,22 +74,29 @@ fn sort_radix_gpu(
     });
     let mut input = keys.unwrap_or(&entries);
     let mut output = &scratch;
+    let controls = controls::RadixControls::new(device, point_count, group_count);
 
     // Entry construction supplies increasing point indices. Stable passes on
     // z, y, x preserve that order for equal keys without sorting a fourth word.
     for axis in (0..3).rev() {
         for shift in (0..32).step_by(4) {
             let params = RadixParams { point_count, group_count, axis, shift };
-            let uniform = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("voxel-radix-params"),
-                contents: bytemuck::bytes_of(&params),
-                usage: wgpu::BufferUsages::UNIFORM,
+            let uniform = controls.is_none().then(|| {
+                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("voxel-radix-params"),
+                    contents: bytemuck::bytes_of(&params),
+                    usage: wgpu::BufferUsages::UNIFORM,
+                })
             });
+            let control = match &controls {
+                Some(batch) => batch.binding(axis, shift),
+                None => uniform.as_ref().expect("individual radix control").as_entire_binding(),
+            };
             let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("voxel-radix-bind-group"),
                 layout: &pipelines.bind_group_layout,
                 entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
+                    wgpu::BindGroupEntry { binding: 0, resource: control },
                     wgpu::BindGroupEntry { binding: 1, resource: input.as_entire_binding() },
                     wgpu::BindGroupEntry { binding: 2, resource: output.as_entire_binding() },
                     wgpu::BindGroupEntry { binding: 3, resource: histograms.as_entire_binding() },
