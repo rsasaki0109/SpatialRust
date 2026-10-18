@@ -26,6 +26,15 @@ fn window_sample(x: i32, y: u32) -> u32 {
     return textureLoad(input_px, vec2<i32>(clamp(x, 0, i32(params.width) - 1), i32(y)), 0).r;
 }
 
+fn adjacent(index: u32, value: u32) -> u32 {
+    let x = index % params.width;
+    if (x + 1u >= params.width) { return blur(index + 1u); }
+    let radius = i32(params.kernel_width / 2u);
+    let y = index / params.width;
+    return value - window_sample(i32(x) - radius, y) +
+        window_sample(i32(x) + radius + 1, y);
+}
+
 @compute @workgroup_size(256)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let stride = params.groups * 256u;
@@ -37,6 +46,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             horizontal[index] = blur(index);
             if (params.pixel_count - index <= stride) { break; }
             index += stride;
+        }
+        return;
+    }
+    // Four-output work is reserved for very wide windows; smaller widths
+    // retain the original adjacent-pair schedule. This cutoff is private.
+    if (params.kernel_width >= 4099u) {
+        let windows = params.pixel_count / 4u + select(0u, 1u, params.pixel_count % 4u != 0u);
+        var window = gid.x;
+        loop {
+            if (window >= windows) { break; }
+            let index = window * 4u;
+            let a = blur(index);
+            horizontal[index] = a;
+            if (params.pixel_count - index > 1u) {
+                let b = adjacent(index, a);
+                horizontal[index + 1u] = b;
+                if (params.pixel_count - index > 2u) {
+                    let c = adjacent(index + 1u, b);
+                    horizontal[index + 2u] = c;
+                    if (params.pixel_count - index > 3u) {
+                        horizontal[index + 3u] = adjacent(index + 2u, c);
+                    }
+                }
+            }
+            if (windows - window <= stride) { break; }
+            window += stride;
         }
         return;
     }

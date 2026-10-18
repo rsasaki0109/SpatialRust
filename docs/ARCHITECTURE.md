@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Unpacked GPU box blurs with at least 65,536 pixels and kernel widths of at least
+4,099 share one complete u32 horizontal sum across up to four outputs through
+exact outgoing/incoming updates. Row crossings recompute complete sums and
+partial final blocks write once per pixel. Original scalar/pair schedules and
+all production host code, five lazy variants, passes/resources and explicit
+transfers retain their contracts. Cold-call costs and rejected alternatives
+are recorded in [four-window evidence](../notes/2026-10-18_four_wide_gpu_box_blur_horizontal_windows.md).
+
 Large unpacked GPU box blur horizontal passes share exact adjacent windows by
 subtracting the outgoing and adding the incoming byte. Row crossings use complete
 sums; below 65,536 pixels the original scalar schedule is retained. The cutoff is
