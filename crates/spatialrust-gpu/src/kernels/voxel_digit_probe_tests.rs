@@ -238,3 +238,6 @@ fn voxel_probe_complete_outputs_profiles_admission_and_concurrent_ownership_matc
 
 #[path = "voxel_digit_probe_benchmark.rs"]
 mod benchmark;
+
+#[path = "voxel_digit_scan_tests.rs"]
+mod scan;

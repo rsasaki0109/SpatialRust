@@ -6,12 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
-CPU-key voxel digit probes can reuse a lightweight complete global summary
-when its mask equals the probe's sign-class mask: monotone class variation lies
-between these matching bounds. Original one-sign proofs and complete class
-fallback remain, with exact original masks and GPU work. See the
-[saturated-probe evidence](../notes/2026-10-18_saturated_cpu_voxel_digit_probe.md),
-including late-fallback costs and full-call measurements.
+Saturated CPU-key voxel digit scans now retain sign representatives of checked
+blocks. Omitted nibbles stay constant in each checked prefix; their AND/OR and
+observed signs therefore merge exactly with the class-summary suffix and other
+workers. Fallback repeats at most the current 16,384-point block per worker.
+Exact selected masks, GPU work and explicit transfers remain unchanged. See
+[checked-prefix evidence](../notes/2026-10-19_reuse_cpu_voxel_scan_prefixes.md)
+for proof, controls and complete-call measurements.
 
 CPU-key voxel sorting summarizes AND/OR variation separately by coordinate sign.
 It retains the most-significant digit when both signs occur and one optional

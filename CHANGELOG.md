@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse checked CPU voxel digit-scan prefixes when a later omitted nibble
+  changes. Preserve exact sign-class masks and GPU contracts while repeating
+  at most the current 16,384-point block per worker. 282 native executions
+  and all 144 warm/12 fresh-runtime comparisons, including controls, are in
+  `notes/2026-10-19_reuse_cpu_voxel_scan_prefixes.md`.
+
 - Reuse saturated mixed-sign voxel digit probes after a complete lightweight
   global summary proves the exact original mask. Keep original one-sign/late
   fallback, GPU schedules, transfers and ownership. 462 native tests and all
