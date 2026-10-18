@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Large batched GPU voxel metadata key conversions use disjoint original-order
+CPU bands at 524,288 occupied cells, bounded to four native workers including
+the caller. One safely initialized final tuple vector adds host writes; small,
+one-worker, WASM and serial-readback fallback keep original collectors. Mapping
+scopes, staging/cap, other planes, GPU work and explicit transfers retain their
+contracts. See [parallel metadata key evidence](../notes/2026-10-18_parallel_gpu_voxel_metadata_keys.md).
+
 Explicit GPU voxel segment readback optionally batches unique keys, cell starts
 and point indices into one staging allocation/submit/map/wait. Checked layout,
 device limits and a 64MiB cap keep the original serial reader as fallback.

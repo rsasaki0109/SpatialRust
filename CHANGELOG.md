@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Convert large mapped GPU voxel keys with at most four native CPU workers,
+  including the caller, preserving exact signed coordinates and key order.
+  Small/one-worker/WASM and serial-readback fallback retain original collectors.
+  One final vector adds safe zero-initialization writes; GPU transfers stay
+  unchanged. 429 native tests and all exploratory/final diagnostics are in
+  `notes/2026-10-18_parallel_gpu_voxel_metadata_keys.md`.
+
 - Batch explicit GPU voxel metadata readback into one bounded staging buffer,
   submission, mapping and wait while preserving transfer bytes, signed keys and
   final index order. Keep the original serial reader beyond device/64MiB limits;

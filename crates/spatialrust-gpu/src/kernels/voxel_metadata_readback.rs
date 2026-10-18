@@ -7,6 +7,9 @@ use super::{GpuVoxelSegments, SpatialError, SpatialResult, VoxelKeyOutput, WgpuR
 const MAX_BATCH_BYTES: u64 = 64 * 1024 * 1024;
 type Metadata = (Vec<(i64, i64, i64)>, Vec<u32>, Vec<u32>);
 
+#[path = "voxel_metadata_keys.rs"]
+mod keys;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Layout {
     starts_offset: u64,
@@ -93,10 +96,7 @@ fn read(
     let data = slice.get_mapped_range();
     let starts = plan.starts_offset as usize;
     let indices = plan.indices_offset as usize;
-    let keys = bytemuck::cast_slice::<u8, VoxelKeyOutput>(&data[..starts])
-        .iter()
-        .map(|key| (i64::from(key.ix), i64::from(key.iy), i64::from(key.iz)))
-        .collect();
+    let keys = keys::decode(bytemuck::cast_slice::<u8, VoxelKeyOutput>(&data[..starts]));
     let cell_starts = bytemuck::cast_slice::<u8, u32>(&data[starts..indices]).to_vec();
     let point_indices = bytemuck::cast_slice::<u8, u32>(&data[indices..]).to_vec();
     Ok((keys, cell_starts, point_indices))
