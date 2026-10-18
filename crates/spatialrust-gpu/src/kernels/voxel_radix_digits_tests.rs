@@ -13,7 +13,7 @@ mod old_radix;
 #[path = "voxel_radix_digits_reference.rs"]
 mod parent;
 
-fn fixture(n: usize, pattern: usize) -> Vec<(i64, i64, i64)> {
+pub(super) fn fixture(n: usize, pattern: usize) -> Vec<(i64, i64, i64)> {
     let mut seed = 0x3141_5926u32;
     (0..n)
         .map(|i| {
@@ -49,7 +49,7 @@ fn fixture(n: usize, pattern: usize) -> Vec<(i64, i64, i64)> {
         .collect()
 }
 
-fn expected(data: &[(i64, i64, i64)]) -> VoxelSegments {
+pub(super) fn expected(data: &[(i64, i64, i64)]) -> VoxelSegments {
     let clamp = |v: i64| v.clamp(i64::from(i32::MIN), i64::from(i32::MAX));
     let mut groups = BTreeMap::<_, Vec<u32>>::new();
     for (index, &(x, y, z)) in data.iter().enumerate() {
@@ -70,7 +70,7 @@ fn expected(data: &[(i64, i64, i64)]) -> VoxelSegments {
     result
 }
 
-fn upload(r: &WgpuRuntime, entries: &[VoxelSortEntry]) -> wgpu::Buffer {
+pub(super) fn upload(r: &WgpuRuntime, entries: &[VoxelSortEntry]) -> wgpu::Buffer {
     r.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("digit-fixture"),
         contents: if entries.is_empty() { &[0; 16] } else { bytemuck::cast_slice(entries) },
@@ -78,7 +78,7 @@ fn upload(r: &WgpuRuntime, entries: &[VoxelSortEntry]) -> wgpu::Buffer {
     })
 }
 
-fn read_words(r: &WgpuRuntime, source: &wgpu::Buffer) -> Vec<u32> {
+pub(super) fn read_words(r: &WgpuRuntime, source: &wgpu::Buffer) -> Vec<u32> {
     let staging = r.device().create_buffer(&wgpu::BufferDescriptor {
         label: None,
         size: source.size(),
@@ -100,7 +100,7 @@ fn read_words(r: &WgpuRuntime, source: &wgpu::Buffer) -> Vec<u32> {
     words
 }
 
-fn verify(r: &WgpuRuntime, result: &GpuVoxelSegments, oracle: &VoxelSegments) -> usize {
+pub(super) fn verify(r: &WgpuRuntime, result: &GpuVoxelSegments, oracle: &VoxelSegments) -> usize {
     assert_eq!(result.point_count() as usize, oracle.point_indices.len());
     assert_eq!(result.cell_count() as usize, oracle.keys.len());
     assert_eq!(
@@ -122,19 +122,23 @@ fn verify(r: &WgpuRuntime, result: &GpuVoxelSegments, oracle: &VoxelSegments) ->
     oracle.point_indices.len() + oracle.keys.len() * 5
 }
 
-fn required(entries: &[VoxelSortEntry]) -> u32 {
+pub(super) fn required(entries: &[VoxelSortEntry]) -> u32 {
     let mut mask = 0;
-    if let Some(first) = entries.first() {
-        let base = [first.ix, first.iy, first.iz];
-        for axis in 0..3 {
-            for nibble in 0..8 {
-                let original = (base[axis] as u32 >> (nibble * 4)) & 15;
-                if entries.iter().any(|e| {
-                    let value = [e.ix, e.iy, e.iz][axis];
-                    (value as u32 >> (nibble * 4)) & 15 != original
-                }) {
-                    mask |= 1 << ((2 - axis) * 8 + nibble);
-                }
+    for axis in 0..3 {
+        let values: Vec<_> = entries.iter().map(|e| [e.ix, e.iy, e.iz][axis]).collect();
+        let groups: [Vec<_>; 2] = std::array::from_fn(|sign| {
+            values.iter().copied().filter(|v| usize::from(*v < 0) == sign).collect()
+        });
+        for nibble in 0..8 {
+            let varies = groups.iter().any(|g| {
+                g.first().is_some_and(|first| {
+                    g.iter().any(|v| {
+                        ((*v as u32 >> (4 * nibble)) & 15) != ((*first as u32 >> (4 * nibble)) & 15)
+                    })
+                })
+            });
+            if varies || (nibble == 7 && groups.iter().all(|g| !g.is_empty())) {
+                mask |= 1 << ((2 - axis) * 8 + nibble);
             }
         }
     }

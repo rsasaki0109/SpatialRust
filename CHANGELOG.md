@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Omit CPU-key voxel radix digits constant within each sign while retaining
+  signed separation and even owned-output parity. Keep original GPU shaders,
+  preparation, transfers and GPU-key route; bound summaries to four native workers.
+  460 native tests and all 224 delivered/224 rejected warm and 12 fresh-runtime comparisons, including
+  CPU costs and same-count controls, are in `notes/2026-10-18_sign_class_gpu_voxel_radix_digits.md`.
+
 - Omit constant coordinate digits from CPU-key GPU voxel sorting, retaining one
   constant digit when needed for even owned-buffer parity. Keep original signed
   keys/tie order, upload/readback boundaries and device-key sorting; bound large

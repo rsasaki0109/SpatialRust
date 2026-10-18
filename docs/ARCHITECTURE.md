@@ -6,12 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
-CPU-key voxel sorting summarizes varying nibbles after original clamp/preparation,
-omitting stable constant-digit identity passes. An optional constant digit keeps
-even ping-pong parity and the original owned result allocation. A bounded probe
-retains full-width sorting; complete summaries use at most four native workers.
-GPU-key sorting, shaders and compaction retain their contracts. Host costs and
-all paired diagnostics are in [constant-digit evidence](../notes/2026-10-18_constant_cpu_voxel_radix_digits.md).
+CPU-key voxel sorting summarizes AND/OR variation separately by coordinate sign.
+It retains the most-significant digit when both signs occur and one optional
+within-class constant digit for even owned-output parity. A bounded probe keeps
+full-width sorting; complete summaries use at most four native workers. Explicit
+transfers, GPU-key sorting, shaders and compaction retain their contracts. Host
+costs and all diagnostics are in [sign-class evidence](../notes/2026-10-18_sign_class_gpu_voxel_radix_digits.md);
+see also the [original constant-digit evidence](../notes/2026-10-18_constant_cpu_voxel_radix_digits.md).
 
 Resident GPU Vision chains borrow the uploaded source directly for grayscale
 when both requested dimensions match, preserving original resize admission.
