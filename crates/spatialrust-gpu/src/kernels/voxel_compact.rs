@@ -8,6 +8,9 @@ use crate::runtime::WgpuRuntime;
 
 const WORKGROUP_SIZE: u32 = 256;
 
+#[path = "voxel_metadata_readback.rs"]
+mod metadata;
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 struct CompactParams {
@@ -202,14 +205,21 @@ pub(crate) fn read_segment_metadata(
     let queue = runtime.queue();
     let point_count = segments.point_count() as usize;
 
-    let key_values = read_keys(device, queue, segments.keys_buffer(), cell_count)?;
-    let keys = key_values
-        .iter()
-        .map(|key| (i64::from(key.ix), i64::from(key.iy), i64::from(key.iz)))
-        .collect();
-    let cell_starts = read_u32_buffer(device, queue, segments.cell_starts_buffer(), cell_count)?;
-    let point_indices =
-        read_u32_buffer(device, queue, segments.point_indices_buffer(), point_count)?;
+    let (keys, cell_starts, point_indices) =
+        if let Some(result) = metadata::try_read(runtime, segments, cell_count) {
+            result?
+        } else {
+            let key_values = read_keys(device, queue, segments.keys_buffer(), cell_count)?;
+            let keys = key_values
+                .iter()
+                .map(|key| (i64::from(key.ix), i64::from(key.iy), i64::from(key.iz)))
+                .collect();
+            let cell_starts =
+                read_u32_buffer(device, queue, segments.cell_starts_buffer(), cell_count)?;
+            let point_indices =
+                read_u32_buffer(device, queue, segments.point_indices_buffer(), point_count)?;
+            (keys, cell_starts, point_indices)
+        };
     let cell_counts = derive_cell_counts(&cell_starts, cell_count, point_count);
 
     Ok((keys, cell_starts, cell_counts, point_indices))

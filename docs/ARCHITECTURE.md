@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Explicit GPU voxel segment readback optionally batches unique keys, cell starts
+and point indices into one staging allocation/submit/map/wait. Checked layout,
+device limits and a 64MiB cap keep the original serial reader as fallback.
+Logical transfer bytes, construction scalar sync and final ordering retain their
+contracts; simultaneous staging requests grow, while one host key-record vector
+is removed. See [metadata readback evidence](../notes/2026-10-18_batched_gpu_voxel_metadata_readback.md).
+
 Packed GPU box blur horizontal passes reuse the first exact sum for adjacent
 same-row pixels by subtracting the outgoing byte and adding the incoming byte.
 One-tap widths load the source directly; row-crossing pairs keep complete sums
