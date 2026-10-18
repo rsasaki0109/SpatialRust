@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Share Q15 Gaussian vertical row/weight calculations across two/four channel
+  lanes with exact digit sums and byte rounding. Retain original Q8/mono
+  shaders, scratch, passes and transfers; lazily cache two optional vertical
+  programs. 410 native tests, cold-cache limits and all paired diagnostics
+  are in `notes/2026-10-18_shared_gpu_gaussian_q15_rows.md`.
+
 - Prepare large CPU voxel-key uploads with at most four scoped workers, keeping
   original global indices and one exact-sized, safely zeroed output buffer.
   Small/one-worker/WASM calls retain the original collector; GPU work and
