@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse saturated mixed-sign voxel digit probes after a complete lightweight
+  global summary proves the exact original mask. Keep original one-sign/late
+  fallback, GPU schedules, transfers and ownership. 462 native tests and all
+  144 warm/12 fresh-runtime comparisons, including late fallback costs, are in
+  `notes/2026-10-18_saturated_cpu_voxel_digit_probe.md`.
+
 - Omit CPU-key voxel radix digits constant within each sign while retaining
   signed separation and even owned-output parity. Keep original GPU shaders,
   preparation, transfers and GPU-key route; bound summaries to four native workers.

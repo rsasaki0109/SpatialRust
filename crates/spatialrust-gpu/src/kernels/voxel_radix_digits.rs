@@ -46,7 +46,9 @@ pub(super) fn plan(entries: &[VoxelSortEntry]) -> u32 {
     };
     #[cfg(target_arch = "wasm32")]
     let available = 1;
-    if prefix.iter().all(|classes| !classes.iter().all(|c| c.seen())) {
+    let global =
+        prefix.map(|classes| (classes[0].any | classes[1].any) ^ (classes[0].all & classes[1].all));
+    if varying_digits(global) == mask {
         let first = &entries[0];
         let differing = fold_with_workers(
             entries,
@@ -66,10 +68,12 @@ pub(super) fn plan(entries: &[VoxelSortEntry]) -> u32 {
                 }
             },
         );
-        // A one-sign probe is not a guarantee. Check the complete summary
-        // before using this cheaper path; a late opposite sign falls through.
-        if differing.iter().all(|value| value & 0x8000_0000 == 0) {
-            return even(varying_digits(differing));
+        let complete = varying_digits(differing);
+        // Prefix class digits are a lower bound; complete global digits are
+        // an upper bound. Equal masks prove the complete class mask exactly.
+        // The original one-sign proof also remains valid if later digits vary.
+        if complete == mask || differing.iter().all(|value| value & 0x8000_0000 == 0) {
+            return even(complete);
         }
     }
     plan_with_workers(entries, available)
