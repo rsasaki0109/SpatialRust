@@ -308,3 +308,6 @@ fn voxel_sign_digits_concurrent_results_survive_mutation_clear_and_changed_reuse
 
 #[path = "voxel_sign_digits_benchmark.rs"]
 mod benchmark;
+
+#[path = "voxel_digit_probe_tests.rs"]
+mod probe;

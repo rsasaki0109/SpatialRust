@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+CPU-key voxel digit probes can reuse a lightweight complete global summary
+when its mask equals the probe's sign-class mask: monotone class variation lies
+between these matching bounds. Original one-sign proofs and complete class
+fallback remain, with exact original masks and GPU work. See the
+[saturated-probe evidence](../notes/2026-10-18_saturated_cpu_voxel_digit_probe.md),
+including late-fallback costs and full-call measurements.
+
 CPU-key voxel sorting summarizes AND/OR variation separately by coordinate sign.
 It retains the most-significant digit when both signs occur and one optional
 within-class constant digit for even owned-output parity. A bounded probe keeps
