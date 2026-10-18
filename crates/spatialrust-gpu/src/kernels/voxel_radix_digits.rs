@@ -7,6 +7,7 @@ const PROBE_POINTS: usize = 256;
 const PARALLEL_MIN_POINTS: usize = 524_288;
 const POINTS_PER_WORKER: usize = 131_072;
 const MAX_WORKERS: usize = 4;
+const SCAN_BLOCK_POINTS: usize = 16_384;
 
 #[derive(Clone, Copy)]
 struct Class {
@@ -49,32 +50,7 @@ pub(super) fn plan(entries: &[VoxelSortEntry]) -> u32 {
     let global =
         prefix.map(|classes| (classes[0].any | classes[1].any) ^ (classes[0].all & classes[1].all));
     if varying_digits(global) == mask {
-        let first = &entries[0];
-        let differing = fold_with_workers(
-            entries,
-            available,
-            |band| {
-                let mut result = [0; 3];
-                for entry in band {
-                    result[0] |= (entry.ix as u32) ^ (first.ix as u32);
-                    result[1] |= (entry.iy as u32) ^ (first.iy as u32);
-                    result[2] |= (entry.iz as u32) ^ (first.iz as u32);
-                }
-                result
-            },
-            |result, other| {
-                for axis in 0..3 {
-                    result[axis] |= other[axis];
-                }
-            },
-        );
-        let complete = varying_digits(differing);
-        // Prefix class digits are a lower bound; complete global digits are
-        // an upper bound. Equal masks prove the complete class mask exactly.
-        // The original one-sign proof also remains valid if later digits vary.
-        if complete == mask || differing.iter().all(|value| value & 0x8000_0000 == 0) {
-            return even(complete);
-        }
+        return refine_with_workers(entries, available, mask);
     }
     plan_with_workers(entries, available)
 }
@@ -91,14 +67,68 @@ fn plan_with_workers(entries: &[VoxelSortEntry], available: usize) -> u32 {
     if entries.is_empty() {
         return 0;
     }
-    even(digits(fold_with_workers(entries, available, summarize, |result, other| {
-        for axis in 0..3 {
-            for sign in 0..2 {
-                result[axis][sign].all &= other[axis][sign].all;
-                result[axis][sign].any |= other[axis][sign].any;
-            }
+    even(digits(fold_with_workers(entries, available, summarize, merge)))
+}
+
+fn refine_with_workers(entries: &[VoxelSortEntry], available: usize, mask: u32) -> u32 {
+    let permitted = std::array::from_fn(|axis| {
+        (0..8)
+            .filter(|n| mask & (1 << ((2 - axis) * 8 + n)) != 0)
+            .fold(0, |bits, n| bits | (15 << (4 * n)))
+    });
+    let summary =
+        fold_with_workers(entries, available, |band| summarize_adaptively(band, permitted), merge);
+    even(mask | digits(summary))
+}
+
+fn summarize_adaptively(entries: &[VoxelSortEntry], permitted: [u32; 3]) -> Summary {
+    let first = &entries[0];
+    let mut differing = [0; 3];
+    for (block_index, block) in entries.chunks(SCAN_BLOCK_POINTS).enumerate() {
+        let mut block_differences = [0; 3];
+        for entry in block {
+            block_differences[0] |= (entry.ix as u32) ^ (first.ix as u32);
+            block_differences[1] |= (entry.iy as u32) ^ (first.iy as u32);
+            block_differences[2] |= (entry.iz as u32) ^ (first.iz as u32);
         }
-    })))
+        if block_differences.iter().zip(permitted).any(|(bits, allowed)| bits & !allowed != 0) {
+            let mut result = summarize(&entries[block_index * SCAN_BLOCK_POINTS..]);
+            if block_index != 0 {
+                merge(&mut result, constant_classes(first, differing));
+            }
+            return result;
+        }
+        for axis in 0..3 {
+            differing[axis] |= block_differences[axis];
+        }
+    }
+    constant_classes(first, differing)
+}
+
+fn constant_classes(first: &VoxelSortEntry, differing: [u32; 3]) -> Summary {
+    let mut result = [[Class::default(); 2]; 3];
+    for (axis, value) in [first.ix as u32, first.iy as u32, first.iz as u32].into_iter().enumerate()
+    {
+        let sign = (value >> 31) as usize;
+        result[axis][sign] = Class { all: value, any: value };
+        if differing[axis] & 0x8000_0000 != 0 {
+            let other = value ^ 0x8000_0000;
+            result[axis][1 - sign] = Class { all: other, any: other };
+        }
+    }
+    // All omitted nibbles in the checked prefix equal the first entry's.
+    // One representative for each observed sign therefore preserves them
+    // exactly. Differences in already-required nibbles are covered by mask.
+    result
+}
+
+fn merge(result: &mut Summary, other: Summary) {
+    for axis in 0..3 {
+        for sign in 0..2 {
+            result[axis][sign].all &= other[axis][sign].all;
+            result[axis][sign].any |= other[axis][sign].any;
+        }
+    }
 }
 
 fn fold_with_workers<S: Send>(
