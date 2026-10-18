@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse adjacent horizontal windows for large wide-kernel GPU box blurs,
+  preserving the scalar schedule below 65,536 pixels, exact u32 sums, row-crossing
+  fallback and final rounding. Host resources/passes and explicit transfers retain
+  their contracts. 444 native tests and all diagnostics are in
+  `notes/2026-10-18_shared_wide_gpu_box_blur_horizontal_windows.md`.
+
 - Reuse adjacent wide vertical GPU box blur windows with exact outgoing/incoming
   samples, one-tap direct loads and unique row-pair ownership. Preserve final
   integer rounding, odd tails, host planners/resources/passes and explicit
