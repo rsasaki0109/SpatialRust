@@ -48,8 +48,8 @@ pub fn build_voxel_segments_gpu(
 }
 
 /// Builds GPU-resident voxel segments from CPU-side keys.
-/// Constant coordinate nibbles are omitted from the stable sort. One constant
-/// nibble may be retained to keep results in the original owned allocation.
+/// Coordinate nibbles constant within each sign may be omitted. Sign separation
+/// and even pass parity preserve ordering and the original owned allocation.
 pub fn build_voxel_segments_gpu_from_keys(
     runtime: &WgpuRuntime,
     keys: &[(i64, i64, i64)],
