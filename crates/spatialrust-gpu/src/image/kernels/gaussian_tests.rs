@@ -346,3 +346,6 @@ mod mirror;
 
 #[path = "gaussian_vmirror_tests.rs"]
 mod vmirror;
+
+#[path = "gaussian_rows_tests.rs"]
+mod rows;

@@ -182,11 +182,18 @@ fn plan(
 pub(crate) struct GaussianPipelines {
     pipelines: std::sync::OnceLock<[wgpu::ComputePipeline; 2]>,
     packed: std::sync::OnceLock<[wgpu::ComputePipeline; 2]>,
+    q15_pairs: std::sync::OnceLock<wgpu::ComputePipeline>,
+    q15_rows: std::sync::OnceLock<wgpu::ComputePipeline>,
 }
 
 impl GaussianPipelines {
     fn new() -> Self {
-        Self { pipelines: std::sync::OnceLock::new(), packed: std::sync::OnceLock::new() }
+        Self {
+            pipelines: std::sync::OnceLock::new(),
+            packed: std::sync::OnceLock::new(),
+            q15_pairs: std::sync::OnceLock::new(),
+            q15_rows: std::sync::OnceLock::new(),
+        }
     }
 
     fn pipelines(&self, device: &wgpu::Device, packed: bool) -> &[wgpu::ComputePipeline; 2] {
@@ -228,6 +235,44 @@ impl GaussianPipelines {
                     compilation_options: Default::default(),
                     cache: None,
                 })
+            })
+        })
+    }
+
+    fn vertical_pipeline<'a>(
+        &'a self,
+        device: &wgpu::Device,
+        plan: &Plan,
+        standard: &'a wgpu::ComputePipeline,
+    ) -> &'a wgpu::ComputePipeline {
+        if plan.params.bits != 15 || plan.params.channels < 2 {
+            return standard;
+        }
+        let pairs = plan.params.channels == 2;
+        let cache = if pairs { &self.q15_pairs } else { &self.q15_rows };
+        cache.get_or_init(|| {
+            let source = if pairs {
+                concat!(
+                    include_str!("gaussian_params.wgsl"),
+                    include_str!("gaussian_q15_pairs.wgsl")
+                )
+            } else {
+                concat!(
+                    include_str!("gaussian_params.wgsl"),
+                    include_str!("gaussian_q15_rows.wgsl")
+                )
+            };
+            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("gpu-gaussian-q15-shared-shader"),
+                source: wgpu::ShaderSource::Wgsl(source.into()),
+            });
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("gpu-gaussian-q15-shared-pipeline"),
+                layout: None,
+                module: &shader,
+                entry_point: Some("main"),
+                compilation_options: Default::default(),
+                cache: None,
             })
         })
     }
@@ -292,7 +337,8 @@ fn gaussian_impl(
     let output_view = output.create_view(&Default::default());
     let mut encoder = runtime.device().create_command_encoder(&Default::default());
     let pipelines = cache.pipelines(runtime.device(), p.packed);
-    for (index, pipeline) in pipelines.iter().enumerate() {
+    let vertical = cache.vertical_pipeline(runtime.device(), &p, &pipelines[1]);
+    for (index, pipeline) in [&pipelines[0], vertical].into_iter().enumerate() {
         let stage = if index == 0 { "gaussian_horizontal_gpu" } else { "gaussian_blur_gpu" };
         let image = if index == 0 { &source_view } else { &output_view };
         let group = runtime.device().create_bind_group(&wgpu::BindGroupDescriptor {

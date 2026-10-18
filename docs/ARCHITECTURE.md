@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Q15 multi-channel Gaussian vertical filtering shares row mapping and weight
+selection across two lanes for two channels and four lanes for three/four
+channels. Exact componentwise base-65536 sums and original half-up rounding
+preserve bytes and zero inactive components. Two optional private vertical
+pipelines are lazily cached; original Q8/mono shaders, planner, buffers, passes,
+receipts and explicit transfers retain their contracts. Warm-call diagnostics
+and the additional cold-compilation/cache cost are recorded in
+[shared Q15 row evidence](../notes/2026-10-18_shared_gpu_gaussian_q15_rows.md).
+
 Large native CPU-key voxel uploads prepare disjoint original-order entry bands
 with at most four workers including the caller, one safely zeroed 16*N host
 buffer and worker-bounded metadata. Small, one-worker and WASM paths preserve
