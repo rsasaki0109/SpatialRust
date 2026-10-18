@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse adjacent vertical GPU box blur windows with exact outgoing/incoming
+  samples, one-tap direct loads and unique row-pair ownership. Preserve final
+  integer rounding, odd tails, host planners/resources/passes and explicit
+  transfers. 434 native tests and all exploratory/final diagnostics are in
+  `notes/2026-10-18_shared_gpu_box_blur_vertical_windows.md`.
+
 - Convert large mapped GPU voxel keys with at most four native CPU workers,
   including the caller, preserving exact signed coordinates and key order.
   Small/one-worker/WASM and serial-readback fallback retain original collectors.

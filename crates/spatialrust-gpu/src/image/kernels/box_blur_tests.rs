@@ -360,3 +360,6 @@ mod packed;
 
 #[path = "box_blur_window_tests.rs"]
 mod windows;
+
+#[path = "box_blur_vwindow_tests.rs"]
+mod vertical_windows;
