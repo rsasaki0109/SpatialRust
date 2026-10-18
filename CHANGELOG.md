@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Skip the redundant nearest resize in resident GPU Vision chains when both
+  source/output dimensions match, preserving original admission and borrowed
+  source ownership. Report the actual 5-7 passes, one fewer texture request and
+  `4*N` fewer accounted GPU write bytes; changed dimensions retain 6-8 passes.
+  185 native tests and all warm/fresh-cache diagnostics are in
+  `notes/2026-10-18_identity_gpu_vision_chain_resize.md`.
+
 - Share one exact horizontal window across up to four adjacent pixels for GPU
   box blurs with at least 65,536 pixels and kernel widths of at least 4,099.
   Preserve row crossings, partial tails and final rounding; original scalar/pair

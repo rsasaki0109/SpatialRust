@@ -43,7 +43,7 @@ fn validate_spatial_dispatch(
     Ok(())
 }
 
-fn validate_resize_dispatch(
+pub(in crate::image) fn validate_resize_dispatch(
     source: [u32; 2],
     output: [u32; 2],
     limits: &wgpu::Limits,

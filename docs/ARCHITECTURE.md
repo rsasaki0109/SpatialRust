@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Resident GPU Vision chains borrow the uploaded source directly for grayscale
+when both requested dimensions match, preserving original resize admission.
+Only owned intermediates are recycled. The omitted identity dispatch removes
+one texture acquire/write and profiling sample; receipts preserve incoming
+history and report actual work with saturating counters. Changed shapes and
+standalone resize retain original behavior. See
+[identity-chain evidence](../notes/2026-10-18_identity_gpu_vision_chain_resize.md).
+
 Unpacked GPU box blurs with at least 65,536 pixels and kernel widths of at least
 4,099 share one complete u32 horizontal sum across up to four outputs through
 exact outgoing/incoming updates. Row crossings recompute complete sums and
