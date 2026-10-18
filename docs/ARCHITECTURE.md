@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Large unpacked GPU box blur horizontal passes share exact adjacent windows by
+subtracting the outgoing and adding the incoming byte. Row crossings use complete
+sums; below 65,536 pixels the original scalar schedule is retained. The cutoff is
+a private conservative heuristic. Full u32/signed bounds preserve rounding, host
+planners, dispatch/resources and explicit transfers. See
+[shared wide horizontal evidence](../notes/2026-10-18_shared_wide_gpu_box_blur_horizontal_windows.md).
+
 Wide GPU box blur vertical passes share the original first window with the
 next row by subtracting one outgoing and adding one incoming horizontal sum.
 One-tap heights load directly; exact u32 bounds, signed coordinates and unique

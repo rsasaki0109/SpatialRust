@@ -366,3 +366,6 @@ mod vertical_windows;
 
 #[path = "box_blur_wide_vwindow_tests.rs"]
 mod wide_vertical_windows;
+
+#[path = "box_blur_wide_hwindow_tests.rs"]
+mod wide_horizontal_windows;
