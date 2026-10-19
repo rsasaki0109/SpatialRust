@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Resident GPU nearest-k search selects compile-time private candidate extents
+1/8/16/64 while preserving all original traversal, distance and stable tie rules.
+Batches below 1024 queries retain the original 64-entry array. Each requested nearest/radius program is lazy; mixed workloads may retain five
+programs instead of the original eager pair. Admission, row schema, zero padding,
+owned outputs and explicit transfers remain unchanged. See
+[capacity specialization evidence](../notes/2026-10-19_specialized_gpu_neighborhood_capacity.md)
+for complete parent/CPU comparisons and warm/first-use tradeoffs.
+
 Saturated CPU-key voxel digit scans now retain sign representatives of checked
 blocks. Omitted nibbles stay constant in each checked prefix; their AND/OR and
 observed signs therefore merge exactly with the class-summary suffix and other

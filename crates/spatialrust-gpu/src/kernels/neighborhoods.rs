@@ -1,5 +1,6 @@
 use super::{buffer_bytes, check_compute, invalid, Arc, GpuKdTree, Neighbor, Pod, Zeroable};
 use spatialrust_core::{SpatialError, SpatialResult, TransferDirection, TransferStats};
+use std::sync::OnceLock;
 use wgpu::util::DeviceExt;
 
 use crate::WgpuRuntime;
@@ -308,10 +309,26 @@ struct Params {
     bound: f32,
 }
 
+const NEAREST_CAPACITIES: [u32; 4] = [1, 8, 16, 64];
+
+const MIN_SPECIALIZED_QUERIES: u32 = 1024;
+
+fn nearest_variant(capacity: u32, queries: u32) -> usize {
+    if queries < MIN_SPECIALIZED_QUERIES {
+        return 3;
+    }
+    match capacity {
+        0..=1 => 0,
+        2..=8 => 1,
+        9..=16 => 2,
+        _ => 3,
+    }
+}
+
 pub(crate) struct NeighborhoodPipelines {
     layout: wgpu::BindGroupLayout,
-    nearest: wgpu::ComputePipeline,
-    radius: wgpu::ComputePipeline,
+    nearest: [OnceLock<wgpu::ComputePipeline>; 4],
+    radius: OnceLock<wgpu::ComputePipeline>,
 }
 
 impl NeighborhoodPipelines {
@@ -336,16 +353,37 @@ impl NeighborhoodPipelines {
             label: Some("neighborhood-layout"),
             entries: &entries,
         });
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("neighborhood-pipeline-layout"),
-            bind_group_layouts: &[&layout],
-            push_constant_ranges: &[],
-        });
-        let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("neighborhood-shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/neighborhoods.wgsl").into()),
-        });
-        let pipeline = |entry| {
+        Self { layout, nearest: std::array::from_fn(|_| OnceLock::new()), radius: OnceLock::new() }
+    }
+
+    fn pipeline(
+        &self,
+        device: &wgpu::Device,
+        kind: GpuNeighborhoodKind,
+        capacity: u32,
+        queries: u32,
+    ) -> &wgpu::ComputePipeline {
+        let (slot, entry, slots) = if kind == GpuNeighborhoodKind::NearestK {
+            let index = nearest_variant(capacity, queries);
+            (&self.nearest[index], "nearest_k", NEAREST_CAPACITIES[index])
+        } else {
+            (&self.radius, "radius_neighbors", MAX_GPU_K_NEIGHBORS)
+        };
+        slot.get_or_init(|| {
+            let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("neighborhood-pipeline-layout"),
+                bind_group_layouts: &[&self.layout],
+                push_constant_ranges: &[],
+            });
+            // A compile-time array extent preserves all traversal and tie rules.
+            let source = format!(
+                "const ACCUMULATOR_SIZE: u32 = {slots}u;\n{}",
+                include_str!("../shaders/neighborhoods.wgsl")
+            );
+            let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("neighborhood-shader"),
+                source: wgpu::ShaderSource::Wgsl(source.into()),
+            });
             device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: Some("neighborhood-pipeline"),
                 layout: Some(&pipeline_layout),
@@ -354,8 +392,7 @@ impl NeighborhoodPipelines {
                 compilation_options: Default::default(),
                 cache: None,
             })
-        };
-        Self { nearest: pipeline("nearest_k"), radius: pipeline("radius_neighbors"), layout }
+        })
     }
 }
 
@@ -500,11 +537,7 @@ impl GpuKdTree {
                 label: Some("neighborhood-search"),
                 timestamp_writes: None,
             });
-            pass.set_pipeline(if kind == GpuNeighborhoodKind::NearestK {
-                &cache.nearest
-            } else {
-                &cache.radius
-            });
+            pass.set_pipeline(cache.pipeline(runtime.device(), kind, capacity, queries.count));
             pass.set_bind_group(0, &group, &[]);
             pass.dispatch_workgroups(queries.count.div_ceil(64), 1, 1);
         }
@@ -527,3 +560,7 @@ pub(crate) mod aos_upload_reference;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "aos_query_upload_tests.rs"]
 mod aos_upload_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "neighborhood_capacity_tests.rs"]
+mod capacity_tests;

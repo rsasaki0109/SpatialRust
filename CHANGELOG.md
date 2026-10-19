@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Specialize resident GPU nearest-k candidate arrays to 1/8/16/64 slots and
+  lazily compile each requested nearest/radius program. Keep the original array below 1024 queries. Preserve traversal,
+  ties, output schema and explicit transfers. 75 native executions and all
+  120 warm/12 fresh-cache comparisons, including first-use tradeoffs, are in
+  `notes/2026-10-19_specialized_gpu_neighborhood_capacity.md`.
+
 - Compute eligible tall GPU box-blur columns with exact bounded u32 shared
   prefixes, preserving original scratch, two passes, receipts and explicit
   transfers. A seventh lazy program has a whole-column overflow guard. 191

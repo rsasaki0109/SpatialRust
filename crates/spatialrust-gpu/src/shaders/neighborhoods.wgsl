@@ -15,7 +15,7 @@ struct Neighbor { index: u32, distance: f32 }
 fn search(i: u32, radius: bool) {
     let q = queries[i].xyz;
     let base = i * (2u + 2u * params.capacity);
-    var best: array<Neighbor, 64>;
+    var best: array<Neighbor, ACCUMULATOR_SIZE>;
     var count = 0u;
     var total = 0u;
     var worst = 0.0;
