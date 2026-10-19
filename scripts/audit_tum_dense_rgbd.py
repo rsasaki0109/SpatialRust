@@ -10,6 +10,7 @@ from PIL import Image
 
 from dense_rgbd_protocol import CONTROLS, FINAL_ESTIMATOR, validate_dense_experiment_plan
 from causal_dense_rgbd_protocol import ESTIMATOR as CAUSAL_ESTIMATOR, validate_causal_dense_plan
+from open3d_rgbd_protocol import ESTIMATOR as OPEN3D_ESTIMATOR, validate_comparator_plan
 from evaluate_pose_reference import rigid
 from tum_sequence_reference import file_sha256, json_bytes, require_sha256, safe_relative
 
@@ -115,8 +116,10 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
     if file_sha256(prepared/'plan.json') != manifest['plan_sha256']:
         raise ValueError('prepared plan changed')
     plan = json.loads((prepared/'plan.json').read_text(encoding='utf-8'))
-    causal = plan.get('estimator') == CAUSAL_ESTIMATOR
-    plan = validate_causal_dense_plan(plan) if causal else validate_dense_experiment_plan(plan)
+    external = plan.get('estimator') == OPEN3D_ESTIMATOR
+    causal = external or plan.get('estimator') == CAUSAL_ESTIMATOR
+    plan = (validate_comparator_plan(plan) if external else
+            validate_causal_dense_plan(plan) if causal else validate_dense_experiment_plan(plan))
     if file_sha256(prepared/'calibration.json') != manifest['calibration_sha256'] or json.loads((prepared/'calibration.json').read_text(encoding='utf-8')) != plan['calibration']:
         raise ValueError('prepared calibration changed')
     frozen = json.loads(estimates.read_text(encoding='utf-8'))
@@ -150,6 +153,12 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
             report = row['registration']
             if plan['estimator'] in (FINAL_ESTIMATOR, CAUSAL_ESTIMATOR) and report.get('final_support_only') is not True:
                 raise ValueError('native final support policy receipt required')
+            if external:
+                information = np.asarray(report.get('open3d_information'), dtype=np.float64)
+                if (report.get('external_final_support_validation') is not True
+                        or report.get('open3d_package_version') != '0.19.0'
+                        or information.shape != (6, 6) or not np.all(np.isfinite(information))):
+                    raise ValueError('external CPU model/final-validation diagnostics required')
             pose = rigid(report['current_from_previous'])
             initial_error = check_causal_initialization(report, previous_relative, index) if causal else None
             reference = reference_statistics(previous[0], depth, previous[1], gray, pose, camera, CONTROLS)
