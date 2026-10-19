@@ -1023,7 +1023,7 @@ evidence, and fail-closed acceptance gates live in
 | Slice | Status | Scope | Evidence required |
 | --- | --- | --- | --- |
 | 146A | Complete: workflow; motion accuracy not accepted | Native forward/backward image tracking and explicit Python RGB-D/PnP adapter; both candidate and point-cloud baseline retain every public-data frame and independent scoring | 160 native/753 Python passes, stubtest/Clippy/WASM compile; both 798/798 generations but both fail unchanged 0.10m ATE limit; `docs/TUM_RGBD_MOTION_VALIDATION.md`; canonical Autoware calibration remains open |
-| 146B | Planned | Actual multi-adapter image and point-cloud conformance on fixed public inputs with explicit transfer/resource receipts | Execute both integrated and discrete device paths against independent CPU/geometry references; record backend, device class and capabilities without local adapter names |
+| 146B | Active | Actual multi-adapter image and point-cloud conformance on fixed public inputs with explicit transfer/resource receipts | Execute both integrated and discrete device paths against independent CPU/geometry references; record backend, device class and capabilities without local adapter names |
 
 The operational maturity target is 80% on the explicitly requested real-data,
 multi-GPU/OS and public-release criteria. Historical engineering estimates in

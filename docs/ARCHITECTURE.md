@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Public multi-adapter conformance uses fixed full RGB-D frames and explicit
+upload/readback calls. Scalar integer images, two-dimensional integral blur,
+float64 ordered voxel sums and brute-force radius counts are independent
+references. Device class/backend and resource receipts are recorded without
+local adapter names. Software execution is distinct from hardware coverage;
+no shader, runtime API or production selection changes. See
+[the fixed public GPU protocol](PUBLIC_GPU_RGBD_CONFORMANCE.md).
+
 Public RGB-D motion validation may explicitly combine native grayscale,
 Shi-Tomasi detection, forward/backward sparse LK and source-depth PnP through
 an additive Python adapter. Inputs are owned before native tracking releases

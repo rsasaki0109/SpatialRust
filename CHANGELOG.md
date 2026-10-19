@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a fixed public RGB-D multi-adapter conformance runner for image pixels,
+  box blur/histograms, complete voxel membership/centroids and resident radius
+  counts, with independent CPU references and explicit transfer/resource
+  receipts. Preserve all failed cases; backend/class evidence does not expose
+  local adapter names. See `docs/PUBLIC_GPU_RGBD_CONFORMANCE.md`.
+
 - Add owned Python forward/backward sparse image tracking and a separate
   hash-bound public TUM RGB-D/PnP motion workflow. Reject unrepresentable LK
   scales and avoid iterating image-sized-invalid windows. Preserve depth-only
