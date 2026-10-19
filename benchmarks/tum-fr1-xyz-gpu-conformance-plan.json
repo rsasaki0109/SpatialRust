@@ -1,0 +1,58 @@
+{
+  "schema": "spatialrust.public-gpu-conformance-plan.v1",
+  "date": "2026-10-19",
+  "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+  "prepared_manifest_sha256": "e7e98da77bed799ac281168bd6d81d737692cf7aa25b1c8443fb0485b0e87434",
+  "frame_indices": [
+    0,
+    399,
+    797
+  ],
+  "width": 640,
+  "height": 480,
+  "device_preferences": [
+    "high",
+    "low"
+  ],
+  "minimum_distinct_hardware_classes": 2,
+  "image": {
+    "grayscale": "BT.601 integer (77R+150G+29B+128)//256",
+    "boxes": [
+      [
+        11,
+        11
+      ],
+      [
+        259,
+        3
+      ]
+    ],
+    "border": "replicate",
+    "rounding": "integer nearest, ties upward",
+    "histogram": "256 bins of 11x11 blur",
+    "accepted_mismatches": 0
+  },
+  "points": {
+    "depth_range_m": [
+      0.1,
+      5.0
+    ],
+    "projection": "Publisher optical float64 formula; cast once to float32; preserve every valid source pixel in row order",
+    "voxel_leaf_m": 0.03125,
+    "voxel_origin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "maximum_centroid_coordinate_error_m": 1e-05,
+    "metadata_mismatches": 0,
+    "radius_m": 0.03125,
+    "radius_queries": 64,
+    "query_selection": "index i*point_count//64, float32 offset [0.00031,-0.00019,0.00011]",
+    "radius_count_mismatches": 0,
+    "radius_capacity": 0
+  },
+  "acceptance": "Every fixed frame and both hardware classes must pass; no missing/failed frame removal, no default change or threshold revision after first GPU execution.",
+  "resource_contract": "Upload explicitly; zero image mid-chain host readback; radius target/query uploads separate and traversal resident; retain count-only overflow; pool cached bytes <= declared budget.",
+  "scope": "Already observed development sequence, three selected frames; Windows hardware conformance and any separately identified OS/backend; no broad portability, timing rank or motion accuracy claim."
+}
