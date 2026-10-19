@@ -64,8 +64,11 @@ an experimental opt-in policy; it does not replace the raw default or solve rpy.
 `preprocessing="gaussian3-gray-only"` retain original full-resolution fitting
 depth while sharing the joint policy's Gaussian3 gray arithmetic and raw final
 admission. Ownership and preflight bounds stay explicit. The
-[separate component study](GRAY_GAUSSIAN_DENSE_RGBD_VALIDATION.md) awaits complete
-trajectory evidence; raw and joint defaults/results remain preserved.
+[separate component study](GRAY_GAUSSIAN_DENSE_RGBD_VALIDATION.md) completes
+798/798 xyz and 722/722 rpy poses. XYZ passes at ATE/RPE 0.091755/0.027265m;
+rpy ATE 0.120216m fails the fixed 0.10m gate despite RPE 0.048803m passing.
+All 1,518 causal/raw pairs and both score audits pass. The policy stays
+experimental; raw and joint defaults/results remain preserved.
 
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,

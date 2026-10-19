@@ -1,0 +1,696 @@
+{
+  "schema": "spatialrust.public-gray-gaussian3-dense-rgbd-receipt.v1",
+  "slice": "146M",
+  "date": "2026-10-20",
+  "date_timezone": "Asia/Tokyo",
+  "recorded_at_utc": "2026-10-19T22:06:16.511494+00:00",
+  "model_protocol_commit": "6dc3de1ce7cba02590c399fb167c62ac60cbdf85",
+  "workflow_source_commit": "d1388c6894ff0ce5f406ccf113d6188758f1944f",
+  "numerical_source_commit": "28d1f933cde015b35a5e6e8d74efb37814ee24d0",
+  "package_metadata_source_commit": "d1388c6894ff0ce5f406ccf113d6188758f1944f",
+  "protocol_files": [
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\CHANGELOG.md",
+      "bytes": 134544,
+      "sha256": "5dde8b6355889909dbaa7eb1658485805549e6835c818c6e4256ac76b3c9d151"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-gray-gaussian3-dense-plan.json",
+      "bytes": 5756,
+      "sha256": "89b66dfb944761ca655c7baa3317a46b370d9a360c9b1c4cf3fc9b93496fc871"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rgbd-wide-capture-plan.json",
+      "bytes": 4299,
+      "sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gray-gaussian3-dense-plan.json",
+      "bytes": 5756,
+      "sha256": "38477e8f30f301d195ee6e1ec723a213dafe73c728b79e5821434bd1314bfb79"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-wide-capture-plan.json",
+      "bytes": 4299,
+      "sha256": "03df039aea7c6b02069d2b5e673fbc65e080d7d407d78d476605a8d79d5725d5"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-causal-dense-plan.json",
+      "bytes": 5242,
+      "sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-dense-final-overlap-plan.json",
+      "bytes": 4670,
+      "sha256": "fbd41ca5c1357209483b244987fb34d013a198615780a26f80ca91795a90b266"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-dense-rgbd-plan.json",
+      "bytes": 4319,
+      "sha256": "162c74968e46fef2bf30f25d2df3625209e23855957aee7a8ef530ed438cff66"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-gaussian3-dense-plan.json",
+      "bytes": 5587,
+      "sha256": "854a10aad77c4994fab4f043681dd3b76579e3d6201678bb4a689509ab6fc42e"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-gray-gaussian3-dense-plan.json",
+      "bytes": 5756,
+      "sha256": "89b66dfb944761ca655c7baa3317a46b370d9a360c9b1c4cf3fc9b93496fc871"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "15bc4cb6d965b98514a0ce200da7309a627a30cddd4d9bb4d0d344d33d3bc16c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-causal-dense-plan.json",
+      "bytes": 5242,
+      "sha256": "347324b9e0198ae65b2717f54086e5637b112b490573d06d511d38f36ef75d1d"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-dense-final-overlap-plan.json",
+      "bytes": 4670,
+      "sha256": "37745182241f0638bf4d295c8cf698d4304428fd0c92659f99bbda3859b93e1a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-dense-rgbd-plan.json",
+      "bytes": 4319,
+      "sha256": "766cbfb99babd6e1ad3c48c60dee7a5719f9b4258f0173df415d84d60b2509f6"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gaussian3-dense-plan.json",
+      "bytes": 5587,
+      "sha256": "46aa954310006d5af573932f7723d9ab98a2a5c67610f403553f50ca386bd3a9"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gray-gaussian3-dense-plan.json",
+      "bytes": 5756,
+      "sha256": "38477e8f30f301d195ee6e1ec723a213dafe73c728b79e5821434bd1314bfb79"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "3d9e3b4b5a83a51f6c45c1ae7a850680e4b324857ed83c33dbf98b5abfee9313"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\spatialrust.pyi",
+      "bytes": 38427,
+      "sha256": "5cb1ca8ce79e854d8c67dda0224f5002e223f852b7a99f3bb8758937774bc765"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\src\\lib.rs",
+      "bytes": 198735,
+      "sha256": "ce0166f0d63ea8fadc29e778d4f680e8de8a8f6a3846be954f15ece1d276bb1f"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_gray_gaussian_dense_rgbd.py",
+      "bytes": 9182,
+      "sha256": "764ceb021ca067d945e91afe3db6cda1d4831574e68b044152fd3091d4853ad3"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-vision\\src\\dense_odometry.rs",
+      "bytes": 43986,
+      "sha256": "9b2aed82cd410151a866e7d1c8396a3dfda114d7549f7a1e64d7a8a70d709e4e"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\ARCHITECTURE.md",
+      "bytes": 139642,
+      "sha256": "9cc9478eb3761fa8f76e6e5a13a6bc149ca3895604235068734f0b6d9482fc11"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\FEATURE_MATRIX.md",
+      "bytes": 44068,
+      "sha256": "0e1de36dc2d7bbbd14a8e3e7d042574704ea1e78b6e0553287b161ec60232291"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\GRAY_GAUSSIAN_DENSE_RGBD_VALIDATION.md",
+      "bytes": 5255,
+      "sha256": "12ad31ff6848e323d3e2caed301f5e20aa51d009d10b45f5c770178521badcf0"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\ROADMAP.md",
+      "bytes": 166382,
+      "sha256": "0527193bae491db212eb00936d1acc0ccd9104da47ae5be163cd6a236f85a2a8"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\audit_tum_dense_rgbd.py",
+      "bytes": 14159,
+      "sha256": "669628fe92d1b5f123e004e37211e65924213efb7eba221a253c835dcf2a12c2"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\dense_rgbd_protocol.py",
+      "bytes": 4566,
+      "sha256": "c618a6e5183276cb67226ccef7486b2368baaee3d45970d0cea681fd5c51804c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\gray_gaussian_dense_rgbd_protocol.py",
+      "bytes": 2881,
+      "sha256": "fe99ec0261bc78dce9b0cc580c00686215c3b2ca86d45c50a4d70ffc55128e79"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_dense_rgbd.py",
+      "bytes": 4815,
+      "sha256": "c68166faffbed9ff640ebe7b7942eb5e349172b17e97ef2bfd699bd6737c576b"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_gray_gaussian_dense_rgbd.py",
+      "bytes": 3316,
+      "sha256": "fc1736ae7a76a2967c11cbd751a869b8563bbbe7bd4e9f50a7d616f9790de535"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_sequence.py",
+      "bytes": 19078,
+      "sha256": "500bef7e61a764055f34d7097ce84be4cf5c7a9b58d621f1d9abe44242ef4a85"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\wide_rgbd_protocol.py",
+      "bytes": 1520,
+      "sha256": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8"
+    }
+  ],
+  "study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\gray-gaussian3-dense-study-v1\\study.json",
+    "bytes": 1225429,
+    "sha256": "4a53be7d81f1521fc8ed78a2a96d4ed69d366649508babbd037aff9449d6240c"
+  },
+  "preparation": {
+    "path": "E:\\SpatialRustData\\maturity-80\\gray-gaussian3-dense-study-v1\\preparation.json",
+    "bytes": 72718,
+    "sha256": "52a25ff522a73fbd754b02034ea0bdb842698898b75a630eda6b6d0bae703900"
+  },
+  "all_estimates_frozen_at_utc": "2026-10-19T22:02:21.322379+00:00",
+  "freeze": {
+    "path": "E:\\SpatialRustData\\maturity-80\\gray-gaussian3-dense-study-v1\\all-estimates-frozen.json",
+    "bytes": 750,
+    "sha256": "57579e39a99568fbe85ba47183b0a13c9ecf07239ac629f635e50c101a7e120c"
+  },
+  "native_build": {
+    "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\frozen-package.json",
+    "bytes": 8174,
+    "sha256": "9103691052ff12c709ccdc5fc026416ce243501c471a0e0abf8cd91e6ba11416"
+  },
+  "native_extension": {
+    "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+    "bytes": 5408768,
+    "sha256": "f3a58c85172c8596630e18eaa010e7905a49e65ad5e849db0f7a0d63c1467abc"
+  },
+  "reused_wheel": {
+    "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl",
+    "bytes": 2271648,
+    "sha256": "026091cde997323078e453fdc4c0f941b623b6a4c6443de4e76e058fd78689c1"
+  },
+  "preserved_frozen_native_files": {
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+    "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+    "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+    "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f",
+    "E:/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libdrm.so.2": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libvulkan_dzn.so": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\share\\vulkan\\icd.d\\dzn_icd.x86_64.json": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\bison": "7791b07ce4e24d56c80f3df47c9a193b039392afc1eb02af726ff93591b1c6e7",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\flex": "4cabd101467c6b428e3fd9b5a7dee0785b3108657ae0a5d85947956329d7047b",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0": "ceb1e4eb7eb552e08022d821d632cb400de60e4d3201324ac1b7ec34268ac5f9",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0": "f177704aac79527908633213ba1bb3f298c32aabdc2b3bc231b46983d58587e8",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0": "92a30b5b3a96fb52bbdad4cc46b7796411ccffc22b5eb06f72dd3d2dcb90cd40",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libgallium-26.2.5.so": "e2c423620442bb6bfafd89a4550b39eab11a4245ab88eb85153a9f4750066e03",
+    "C:\\Users\\rsasa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\open3d\\cpu\\pybind.cp312-win_amd64.pyd": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "46f4434b0b6456a3ea564d2a7f1f7c4c942ce4979348d6a06e9eed36ef9611a6",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1baaf7a63e71cf153d5d2736e06e5f8bd87e3813e063a3f43d5bf5a8d930855b",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a58c85172c8596630e18eaa010e7905a49e65ad5e849db0f7a0d63c1467abc",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "026091cde997323078e453fdc4c0f941b623b6a4c6443de4e76e058fd78689c1"
+  },
+  "preserved_previous_json_count": 293,
+  "preserved_wheel_count": 7,
+  "dataset_downloads": 0,
+  "additional_image_payload_copies": 0,
+  "scope": "Explicit native gray-only Gaussian3 fitting with original full-resolution depth on two observed development scenes; raw final statistics and every causal/full-cloud/accuracy gate remain fixed",
+  "acceptance": {
+    "required_generation_fraction": 1.0,
+    "minimum_reference_fraction": 0.95,
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_1s_translation_rpe_rmse_m": 0.05,
+    "final_projective_minimum_fraction": 0.5,
+    "full_cloud_minimum_fraction": 0.5,
+    "full_cloud_distance_gate_m": 0.1,
+    "reference_used_for_generation": false
+  },
+  "cases": {
+    "xyz": {
+      "accepted": true,
+      "planned_poses": 798,
+      "generated_poses": 798,
+      "evaluated_poses": 795,
+      "failed_frames": 0,
+      "publisher_reference_gaps": 3,
+      "first_failed_frame_index": null,
+      "first_failure": null,
+      "first_pose_aligned_ate_rmse_m": 0.09175480309597174,
+      "one_second_translation_rpe_rmse_m": 0.027265054543374644,
+      "one_second_pairs": {
+        "evaluated": 762,
+        "planned": 768
+      },
+      "metrics_scope": "full planned trajectory",
+      "source_archive": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\rgbd_dataset_freiburg1_xyz.tgz",
+        "bytes": 448204271,
+        "sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98"
+      },
+      "plan": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gray-gaussian3-dense-plan.json",
+        "bytes": 5756,
+        "sha256": "38477e8f30f301d195ee6e1ec723a213dafe73c728b79e5821434bd1314bfb79"
+      },
+      "manifest": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-gray-gaussian3-dense-v1\\manifest.json",
+        "bytes": 739773,
+        "sha256": "abff0de8897423360aa818b12d7527dcafc170979e1e8f80cfbd85204b248fe6"
+      },
+      "calibration": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-gray-gaussian3-dense-v1\\calibration.json",
+        "bytes": 558,
+        "sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94"
+      },
+      "input_reuse": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-causal-dense-v1",
+        "manifest_sha256": "5b90a5ffe8034d270a830bd5fecc1bb352d3a17f313c9c4972dc92930466c5d7",
+        "storage": "hard links; original PNG/index payloads shared, source never edited",
+        "linked_files": 1598,
+        "linked_logical_bytes": 478351206,
+        "new_image_payload_bytes": 0,
+        "free_before_bytes": 677154910208,
+        "free_after_links_bytes": 677154385920
+      },
+      "estimates": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-gray-gaussian3-dense-v1\\estimates.json",
+        "bytes": 3644434,
+        "sha256": "b57e0d260d449e5034aa1b18f92771ba6581142fd30980bcf4ecdeacfc252d61"
+      },
+      "evaluation": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluate-gray-gaussian3-dense-v1\\accuracy.json",
+        "bytes": 491706,
+        "sha256": "ee326709e59b6afa45bc82bd7b248543ed314bc48e03bddff5f09817cca0f94b"
+      },
+      "projective_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\audit-gray-gaussian3-dense-projective-v1\\audit.json",
+        "bytes": 424141,
+        "sha256": "de6d160bdd64c017aa93f6888948acd46fe9f348ebbad97fe8614bc7416e265b"
+      },
+      "score_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\audit-gray-gaussian3-dense-v1\\audit.json",
+        "bytes": 1302,
+        "sha256": "6d4da08962b2c26ec6b5950b28c6985ff0221398aef57923cba4921bfdb636bf"
+      },
+      "audited_causal_pairs": 797,
+      "maximum_initial_pose_difference": 0.0,
+      "maximum_world_composition_difference": 3.441691376337985e-14,
+      "independent_projective_max_differences": {
+        "correspondence_fraction": 0.0,
+        "photometric_rmse": 2.1510571102112408e-16,
+        "depth_rmse_m": 6.071532165918825e-18
+      },
+      "independent_score_max_difference_m": 1.1136924715771102e-15,
+      "independent_score_max_difference_degrees": 4.263256414560601e-13,
+      "native_receipt_ranges": {
+        "working_bytes": {
+          "minimum": 22743840,
+          "maximum": 22743840
+        },
+        "input_copy_bytes": {
+          "minimum": 3072000,
+          "maximum": 3072000
+        },
+        "workers": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "correspondence_fraction": {
+          "minimum": 0.7367023929837041,
+          "maximum": 0.9748332198216088
+        },
+        "support_fraction": {
+          "minimum": 0.978884953739772,
+          "maximum": 1.0
+        }
+      },
+      "native_causal_control": {
+        "accepted": true,
+        "first_pose_aligned_ate_rmse_m": 0.08999275666147741,
+        "one_second_translation_rpe_rmse_m": 0.02659081522499142
+      },
+      "external_cpu_control": {
+        "accepted": true,
+        "first_pose_aligned_ate_rmse_m": 0.05117393895007759,
+        "one_second_translation_rpe_rmse_m": 0.02311022888937285
+      },
+      "joint_gaussian_control": {
+        "accepted": true,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "first_pose_aligned_ate_rmse_m": 0.08275511584416129,
+        "one_second_translation_rpe_rmse_m": 0.025186216864478278,
+        "metrics_scope": "full planned trajectory",
+        "first_failed_frame_index": null
+      }
+    },
+    "rpy": {
+      "accepted": false,
+      "planned_poses": 722,
+      "generated_poses": 722,
+      "evaluated_poses": 716,
+      "failed_frames": 0,
+      "publisher_reference_gaps": 6,
+      "first_failed_frame_index": null,
+      "first_failure": null,
+      "first_pose_aligned_ate_rmse_m": 0.12021550302789179,
+      "one_second_translation_rpe_rmse_m": 0.048802837801846743,
+      "one_second_pairs": {
+        "evaluated": 680,
+        "planned": 692
+      },
+      "metrics_scope": "full planned trajectory",
+      "source_archive": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\rgbd_dataset_freiburg1_rpy.tgz",
+        "bytes": 410268381,
+        "sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1"
+      },
+      "plan": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-gray-gaussian3-dense-plan.json",
+        "bytes": 5756,
+        "sha256": "89b66dfb944761ca655c7baa3317a46b370d9a360c9b1c4cf3fc9b93496fc871"
+      },
+      "manifest": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-gray-gaussian3-dense-v1\\manifest.json",
+        "bytes": 670349,
+        "sha256": "250ea7cd473a4fb5875fd7c66f8eda984253d2665987ff5d0e4420c2d346059b"
+      },
+      "calibration": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-gray-gaussian3-dense-v1\\calibration.json",
+        "bytes": 558,
+        "sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94"
+      },
+      "input_reuse": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-causal-dense-v1",
+        "manifest_sha256": "d57a48595c2ad892e9dc73bc35315ff6c76bb9069213578e1b3c680d36077295",
+        "storage": "hard links; original PNG/index payloads shared, source never edited",
+        "linked_files": 1447,
+        "linked_logical_bytes": 439798474,
+        "new_image_payload_bytes": 0,
+        "free_before_bytes": 677153628160,
+        "free_after_links_bytes": 677152710656
+      },
+      "estimates": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-gray-gaussian3-dense-v1\\estimates.json",
+        "bytes": 3293202,
+        "sha256": "f6d8b3c7018291cc3e23f2de42a8cc86e1d8d1017d306640ca5153178740dfac"
+      },
+      "evaluation": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluate-gray-gaussian3-dense-v1\\accuracy.json",
+        "bytes": 442483,
+        "sha256": "cac90cf361be14f94bd68903220b6a6daefd080df01a154ca96ff0e52e1211cd"
+      },
+      "projective_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\audit-gray-gaussian3-dense-projective-v1\\audit.json",
+        "bytes": 382720,
+        "sha256": "27feb500c20f790646c2991afb202cb46f89372fd52b635719519aace3a5b313"
+      },
+      "score_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\audit-gray-gaussian3-dense-v1\\audit.json",
+        "bytes": 1300,
+        "sha256": "f102f508ab04d6edd1762b24c937eec3fd942d153f3b9f896fbeabf12e4ded73"
+      },
+      "audited_causal_pairs": 721,
+      "maximum_initial_pose_difference": 0.0,
+      "maximum_world_composition_difference": 1.84297022087776e-14,
+      "independent_projective_max_differences": {
+        "correspondence_fraction": 0.0,
+        "photometric_rmse": 2.0122792321330962e-16,
+        "depth_rmse_m": 8.673617379884035e-18
+      },
+      "independent_score_max_difference_m": 8.881784197001252e-16,
+      "independent_score_max_difference_degrees": 4.689582056016661e-13,
+      "native_receipt_ranges": {
+        "working_bytes": {
+          "minimum": 22743840,
+          "maximum": 22743840
+        },
+        "input_copy_bytes": {
+          "minimum": 3072000,
+          "maximum": 3072000
+        },
+        "workers": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "correspondence_fraction": {
+          "minimum": 0.5424448742427554,
+          "maximum": 0.982282949790795
+        },
+        "support_fraction": {
+          "minimum": 0.9606277630415562,
+          "maximum": 1.0
+        }
+      },
+      "native_causal_control": {
+        "accepted": false,
+        "first_pose_aligned_ate_rmse_m": 0.11479303058830677,
+        "one_second_translation_rpe_rmse_m": 0.048144966825295156
+      },
+      "external_cpu_control": {
+        "accepted": true,
+        "first_pose_aligned_ate_rmse_m": 0.09968393517102346,
+        "one_second_translation_rpe_rmse_m": 0.04849437945595787
+      },
+      "joint_gaussian_control": {
+        "accepted": false,
+        "generated_poses": 349,
+        "planned_poses": 722,
+        "first_pose_aligned_ate_rmse_m": 0.11937353133338134,
+        "one_second_translation_rpe_rmse_m": 0.049937423030647125,
+        "metrics_scope": "surviving prefix only; not full-sequence accuracy",
+        "first_failed_frame_index": 349
+      }
+    }
+  },
+  "tests": {
+    "gray-gaussian3-focused-tests": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\gray-gaussian3-focused-tests.xml",
+        "bytes": 11175,
+        "sha256": "798271d9f6512f264a143e4d7b61a71222a94663d8eff82b458b5a922ff9a6ac"
+      },
+      "tests": 75,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0
+    },
+    "gray-gaussian3-full-tests": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\gray-gaussian3-full-tests.xml",
+        "bytes": 144453,
+        "sha256": "fb1718d58f474b97c85ae74d64f4702fdd720a9c554cb3e0ccfb99247493b909"
+      },
+      "tests": 1072,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    "native_rebuild_required": true,
+    "new_numerical_binary_frozen": true,
+    "new_gray_gaussian_cases": 26,
+    "python_passed": 1069,
+    "python38_syntax_checked": true
+  },
+  "unchanged_native_trees": {
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96"
+  },
+  "test_scratch_cleanup": {
+    "Schema": "spatialrust.gray-gaussian3-dense-pytest-scratch-cleanup.v1",
+    "VerifiedAtUtc": "2026-10-19T21:50:17.0119284Z",
+    "Paths": [
+      {
+        "Path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\pytest-focused-tests-v1",
+        "Files": 74,
+        "LogicalBytes": 81243572,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\gray-gaussian3-focused-tests.xml",
+        "XmlSha256": "798271d9f6512f264a143e4d7b61a71222a94663d8eff82b458b5a922ff9a6ac",
+        "Tests": 75,
+        "Skipped": 0
+      },
+      {
+        "Path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\pytest-full-tests-v1",
+        "Files": 1178,
+        "LogicalBytes": 397599962,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\gray-gaussian3-full-tests.xml",
+        "XmlSha256": "fb1718d58f474b97c85ae74d64f4702fdd720a9c554cb3e0ccfb99247493b909",
+        "Tests": 1072,
+        "Skipped": 3
+      }
+    ],
+    "AlreadyAbsent": [],
+    "LogicalBytesRemoved": 478843534,
+    "FreeBeforeBytes": 676674113536,
+    "FreeAfterBytes": 677154988032,
+    "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+  },
+  "storage": {
+    "result_logical_bytes": 315595702,
+    "recorded_result_logical_bytes": 315595702,
+    "maximum_result_bytes": 1073741824,
+    "minimum_free_bytes": 21474836480,
+    "maximum_command_seconds": 3600,
+    "minimum_sampled_free_bytes": 676840165376,
+    "free_after_bytes": {
+      "C": 78636085248,
+      "E": 676837740544
+    },
+    "retained_seed_payload_bytes": 128,
+    "memory_scope": "One retained float64 4x4 seed; excludes temporary copies, Python object overhead and process/thread memory",
+    "new_build_root": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1",
+    "reused_cache": "E:\\SpatialRustBuild\\maturity-80-target",
+    "final_new_build_root_logical_bytes": 20183940,
+    "final_incremental_cache_growth_bytes": 107317475,
+    "final_combined_build_and_cache_growth_bytes": 127501415,
+    "maximum_successful_command_sampled_build_and_cache_growth_bytes": 606333578,
+    "maximum_new_build_and_cache_growth_bytes": 2147483648,
+    "excluded_shared_png_and_index_logical_bytes": 918149680,
+    "new_image_payload_bytes": 0
+  },
+  "commands": [
+    {
+      "label": "generate-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T21:54:06.670198+00:00",
+      "finished_at_utc": "2026-10-19T21:57:59.435724+00:00"
+    },
+    {
+      "label": "generate-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T21:57:59.467837+00:00",
+      "finished_at_utc": "2026-10-19T22:02:21.296168+00:00"
+    },
+    {
+      "label": "projective-audit-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T22:02:21.359976+00:00",
+      "finished_at_utc": "2026-10-19T22:03:58.605515+00:00"
+    },
+    {
+      "label": "score-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T22:03:58.628178+00:00",
+      "finished_at_utc": "2026-10-19T22:04:05.938670+00:00"
+    },
+    {
+      "label": "score-audit-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T22:04:06.015784+00:00",
+      "finished_at_utc": "2026-10-19T22:04:08.356428+00:00"
+    },
+    {
+      "label": "projective-audit-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T22:04:08.554961+00:00",
+      "finished_at_utc": "2026-10-19T22:05:32.638880+00:00"
+    },
+    {
+      "label": "score-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T22:05:32.690303+00:00",
+      "finished_at_utc": "2026-10-19T22:05:39.240486+00:00"
+    },
+    {
+      "label": "score-audit-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T22:05:39.486610+00:00",
+      "finished_at_utc": "2026-10-19T22:05:41.823598+00:00"
+    }
+  ],
+  "remaining": [
+    "Both raw Linux hardware classes",
+    "canonical measured clock uncertainty and physical frame accuracy",
+    "canonical full mapping and semantic/release acceptance",
+    "held-out motion robustness",
+    "rpy full motion acceptance"
+  ],
+  "operational_80_percent_proven": false,
+  "fitting_policy": {
+    "preprocessing": "gaussian3-gray-only",
+    "kernel": [
+      1,
+      2,
+      1
+    ],
+    "divisor": 16,
+    "border": "replicate",
+    "depth_missing": "original raw depth validity; no neighborhood expansion",
+    "intensity_normalization": false,
+    "final_statistics": "original raw full-resolution images"
+  },
+  "validation": {
+    "native-tests": {
+      "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\native-tests.json",
+      "bytes": 1524,
+      "sha256": "dd614dd53b00fc2f4082732315454852e472867e5f8e34914c1a587079b360df"
+    },
+    "native-clippy": {
+      "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\native-clippy.json",
+      "bytes": 1578,
+      "sha256": "aa36ee69e87ff0d4fea334b699a82c395eabe4b1b707dccbccf0221e36ba43bf"
+    },
+    "python-clippy": {
+      "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\python-clippy.json",
+      "bytes": 1607,
+      "sha256": "71b0b10d3026b7b1199cf52990435b213fefcd6313091989f3b30620d9a5fb35"
+    },
+    "wasm-check": {
+      "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\wasm-check.json",
+      "bytes": 1561,
+      "sha256": "5864d91469da77ec6eaf2e26f1e68107c6fad199cee40561c2b2054ea53df7ae"
+    },
+    "focused-tests": {
+      "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\focused-tests.json",
+      "bytes": 2018,
+      "sha256": "dc93a965be6480db5709d7af7687193c0bbf0349af591e61e8373d1c8c52ee5e"
+    },
+    "full-tests": {
+      "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\full-tests.json",
+      "bytes": 2975,
+      "sha256": "567386e1632dacccc066de32be14cfd9ef12457e87a7c39b51ed1532efe56e9f"
+    },
+    "verify-wheel": {
+      "path": "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\verify-wheel.json",
+      "bytes": 1876,
+      "sha256": "098a20e3cafed37bc5ead11d4c34fac5904ebea9fea38c6b89527094559ff973"
+    }
+  },
+  "selector_regression": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\gray-gaussian3-compatibility-audit.json",
+    "bytes": 679,
+    "sha256": "7b298d0148e307c40028c637b39f2f1f22879dc10a491e946bf61162939ee767"
+  },
+  "thread_environment": {
+    "OMP_NUM_THREADS": "4",
+    "OPENBLAS_NUM_THREADS": "4",
+    "MKL_NUM_THREADS": "4",
+    "NUMEXPR_NUM_THREADS": "4",
+    "RAYON_NUM_THREADS": "4"
+  },
+  "cpu_worker_limit": 4,
+  "selector_regression_scope": "Ten synthetic cases across raw and joint policies; exact serialized numerical poses and original diagnostics; policy tags separately checked"
+}
