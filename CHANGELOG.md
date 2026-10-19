@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Decode large count-only GPU neighborhood readbacks with exact integer-OR
+  header validation and bulk owned row/count construction. Preserve original
+  fallback, GPU work, transfers and errors. 58 native executions and all 92
+  native/28 exploratory comparisons are in
+  `notes/2026-10-19_gpu_neighborhood_count_readback.md`.
+
 - Decode eligible explicit GPU neighborhood readbacks with at most four native
   CPU workers, preserving original row bits, counts, errors, ownership and
   transfer receipts. Keep the original collector for serial controls and WASM.

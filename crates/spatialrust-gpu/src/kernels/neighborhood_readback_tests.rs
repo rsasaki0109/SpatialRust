@@ -311,3 +311,6 @@ fn searched_rows_match_cpu_at_parallel_cutoff_with_overflow_and_empty_queries() 
 
 #[path = "neighborhood_readback_benchmark.rs"]
 mod benchmark;
+
+#[path = "neighborhood_count_readback_tests.rs"]
+mod count_tests;
