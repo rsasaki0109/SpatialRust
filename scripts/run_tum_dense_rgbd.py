@@ -17,14 +17,16 @@ def align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray,
 
 
 def _align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray, camera, controls,
-                     *, expected_final_support_only):
+                     *, expected_final_support_only, initial=None):
     if controls.get('dense_rgbd_odometry') != CONTROLS:
         raise ValueError('dense RGB-D controls differ from the fixed protocol')
     source = (previous_depth.astype(np.float64)*camera['depth_unit_m']).astype(np.float32)
     target = (current_depth.astype(np.float64)*camera['depth_unit_m']).astype(np.float32)
+    explicit_initial = initial is not None
+    initial = np.eye(4) if initial is None else rigid(initial).copy()
     rotation, translation, report = sr.estimate_dense_rgbd_odometry(
         previous_gray, source, current_gray, target,
-        camera['fx'], camera['fy'], camera['cx'], camera['cy'], initial=np.eye(4), **CONTROLS)
+        camera['fx'], camera['fy'], camera['cx'], camera['cy'], initial=initial, **CONTROLS)
     if type(report.get('final_support_only', False)) is not bool or report.get('final_support_only', False) != expected_final_support_only:
         raise ValueError('native dense support policy does not match this fixed experiment')
     valid = int(np.count_nonzero((source >= CONTROLS['min_depth']) & (source <= CONTROLS['max_depth'])))
@@ -46,7 +48,8 @@ def _align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray
         objective='native dense normalized photometric and projective metric depth residuals',
         current_from_previous=current_from_previous.tolist(),
         previous_from_current=previous_from_current.tolist(), dense_settings=CONTROLS,
-        initialization='identity per adjacent RGB-D pair; no reference read')
+        initialization=('explicit caller pose; no reference read' if explicit_initial
+                        else 'identity per adjacent RGB-D pair; no reference read'))
 
 
 def main():

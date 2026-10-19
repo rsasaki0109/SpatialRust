@@ -1,0 +1,109 @@
+{
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "sequence": "rgbd_dataset_freiburg1_rpy",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz",
+  "observed_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "calibration": {
+    "sensor_frame": "tum_rgb_optical",
+    "axes": "x right, y down, z forward",
+    "width": 640,
+    "height": 480,
+    "fx": 525.0,
+    "fy": 525.0,
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration."
+  },
+  "limits": {
+    "max_frames": 10000,
+    "max_members": 30000,
+    "max_member_bytes": 16777216,
+    "max_total_bytes": 8589934592
+  },
+  "controls": {
+    "rgb_max_gap_ns": 20000000,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "max_depth_m": 5.0,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "projection_tolerance_m": 1e-06,
+    "io_stride": 60,
+    "stages": [
+      {
+        "leaf_m": 0.1,
+        "gate_m": 0.2,
+        "iterations": 20
+      },
+      {
+        "leaf_m": 0.05,
+        "gate_m": 0.1,
+        "iterations": 20
+      }
+    ],
+    "evaluation_max_gap_ns": 20000000,
+    "rpe_delta_ns": 1000000000,
+    "rgbd_odometry": {
+      "max_features": 300,
+      "quality_level": 0.01,
+      "min_distance": 10.0,
+      "image_margin": 40,
+      "window_radius": 10,
+      "pyramid_levels": 4,
+      "max_iterations": 30,
+      "epsilon": 0.001,
+      "min_eigenvalue": 0.0001,
+      "max_forward_backward_error": 0.75,
+      "pnp_threshold": 2.0,
+      "min_tracks": 20,
+      "min_inliers": 15,
+      "min_inlier_fraction": 0.5
+    },
+    "dense_rgbd_odometry": {
+      "iterations": [
+        20,
+        10,
+        5
+      ],
+      "min_depth": 0.1,
+      "max_depth": 5.0,
+      "max_depth_difference": 0.03,
+      "depth_weight": 0.968,
+      "min_correspondences": 30,
+      "min_correspondence_fraction": 0.5,
+      "epsilon": 1e-07,
+      "max_working_bytes": 134217728
+    }
+  },
+  "generation": "Every indexed registered RGB-D frame with the same dense solver and numeric controls. Identity for the first pair; the exact previous returned source-to-target increment initializes the next adjacent pair. Retain only one proper 4x4 seed, with no time rescaling, retries, reference initialization, future-frame selection or lost-chain reset. Every subsequent call follows the original full-cloud and world-chain acceptance.",
+  "scope": "Two already observed development scenes, with both parent outcomes preserved. A separately fixed causal previous-increment hypothesis, not a settings search, held-out result or general accuracy claim. All final support, completeness and accuracy gates remain.",
+  "estimator": "spatialrust_causal_dense_rgbd_cpu",
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+  "acceptance": {
+    "minimum_generated_fraction": 1.0,
+    "minimum_evaluated_fraction": 0.95,
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_one_second_translation_rpe_rmse_m": 0.05,
+    "basis": "Unchanged engineering completeness/coverage/ATE/RPE limits from the previous plane study. Fixed before first image-tracking/PnP fitting; not publisher accuracy requirements or physical calibration guarantees."
+  },
+  "prior_algorithm_plan_sha256": "52af9d7601b73cefddd9a65d87ee7ccf1f1465e892afe5f695dc62fba84a7cdf",
+  "native_refinement_policy": "Same frozen final-overlap dense numerical binary and all controls; the explicit initial pose comes from the preceding accepted chain increment only. Require final_support_only and independently verify every reported initial pose.",
+  "prior_consensus_plan_sha256": "39275599e62e582aafd6a6f8e018fceed12dbed25721441fc2a8f1eaa16002b4",
+  "prior_dense_source_plan_sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781",
+  "prior_dense_protocol_sha256": "162c74968e46fef2bf30f25d2df3625209e23855957aee7a8ef530ed438cff66",
+  "dense_support_policy": "Minimum count and a nonsingular system for initial/intermediate hypotheses; the unchanged 0.5 full-resolution correspondence fraction applies to the returned pose. The independent full-cloud support and complete trajectory accuracy gates are unchanged.",
+  "prior_final_overlap_plan_sha256": "fbd41ca5c1357209483b244987fb34d013a198615780a26f80ca91795a90b266",
+  "dense_initialization": {
+    "first_pair": "identity",
+    "subsequent_pairs": "previous returned source-to-target increment",
+    "time_rescaling": false,
+    "reference_initialization": false,
+    "retries": false,
+    "reset_after_loss": false
+  }
+}

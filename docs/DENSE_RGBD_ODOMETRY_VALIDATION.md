@@ -180,6 +180,13 @@ Builds, caches, data and temporary files use E with the fixed 20GiB free floor.
 This adds an explicit CPU model and one accepted public development sequence.
 There is no GPU implementation or speed comparison for this dense solver yet.
 The failed rpy sequence, independent measured canonical clock/physical
-calibration, second hardware-class operation coverage and full release/mapping
+calibration, Linux GPU hardware operation coverage and full release/mapping
 acceptance remain open. These two previously observed development scenes do
 not establish held-out robustness, competitor parity or operational 80% maturity.
+
+The hardware wording above is corrected from the initially overly broad
+"second hardware-class" label: Windows already passes IntegratedGpu and
+DiscreteGpu public operation cases; Linux hardware operations remain unproven.
+No original measurement changes. The subsequent separately fixed
+[causal initialization study](CAUSAL_DENSE_RGBD_VALIDATION.md) retains both
+parent trajectories and reports its own full timelines and accuracy outcomes.
