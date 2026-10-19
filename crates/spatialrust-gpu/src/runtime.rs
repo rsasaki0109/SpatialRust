@@ -132,6 +132,17 @@ impl WgpuBackendSelection {
             Self::Gl => wgpu::Backends::GL,
         }
     }
+
+    fn validate_compiled_backends(self, available: wgpu::Backends) -> SpatialResult<()> {
+        // A WebGPU-only browser build ignores the requested instance mask.
+        // Reject before instance creation so an explicit GL request stays GL-only.
+        if self == Self::Gl && !available.contains(wgpu::Backends::GL) {
+            return Err(SpatialError::InvalidArgument(
+                "requested GL backend is not enabled for this build/platform".to_owned(),
+            ));
+        }
+        Ok(())
+    }
 }
 
 /// Explicit headless selection and optional profiling requests.
@@ -185,7 +196,8 @@ impl WgpuRuntime {
 
     /// Creates an owned runtime using explicit backend and profiling options.
     ///
-    /// GL support depends on the build/platform/adapter. Admission errors do not
+    /// GL must be compiled for the target and supported by the platform/adapter.
+    /// An uncompiled GL request fails before instance creation. Admission errors do not
     /// select another backend. Browser callers should use the async counterpart.
     pub fn new_headless_with_options(options: WgpuRuntimeOptions) -> SpatialResult<Self> {
         pollster::block_on(Self::new_headless_with_options_async(options))
@@ -428,6 +440,7 @@ impl WgpuRuntime {
     }
 
     async fn new_headless_impl(options: WgpuRuntimeOptions) -> SpatialResult<Self> {
+        options.backend.validate_compiled_backends(wgpu::Instance::enabled_backend_features())?;
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: options.backend.backends(),
             ..Default::default()
@@ -589,6 +602,30 @@ mod tests {
         assert_eq!(gl.backends(), wgpu::Backends::GL);
         assert!(!primary.backends().intersects(gl.backends()));
         assert_eq!((primary.as_str(), gl.as_str()), ("primary", "gl"));
+    }
+
+    #[test]
+    fn explicit_gl_rejects_builds_that_could_select_browser_webgpu() {
+        for available in
+            [wgpu::Backends::BROWSER_WEBGPU, wgpu::Backends::PRIMARY, wgpu::Backends::empty()]
+        {
+            let error = super::WgpuBackendSelection::Gl
+                .validate_compiled_backends(available)
+                .expect_err("explicit GL must not create an instance without GL support");
+            assert!(error.to_string().contains("requested GL backend is not enabled"));
+        }
+    }
+
+    #[test]
+    fn backend_admission_preserves_primary_and_accepts_compiled_gl() {
+        super::WgpuBackendSelection::Primary
+            .validate_compiled_backends(wgpu::Backends::BROWSER_WEBGPU)
+            .expect("original primary browser policy");
+        for available in [wgpu::Backends::GL, wgpu::Backends::GL | wgpu::Backends::BROWSER_WEBGPU] {
+            super::WgpuBackendSelection::Gl
+                .validate_compiled_backends(available)
+                .expect("compiled GL support");
+        }
     }
 
     #[test]

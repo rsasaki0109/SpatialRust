@@ -883,7 +883,124 @@
     "clippy_all_gpu_targets": true,
     "wasm_gpu_image_check": true,
     "workspace_fmt": true,
-    "python38_ast": true
+    "python38_ast": true,
+    "original_test_source_scope": "Frozen EBF release before the later admission-only compiled-backend guard; Python extension and all numerical kernels remain unchanged.",
+    "compiled_backend_guard": {
+      "metadata": {
+        "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-tests-compiled-backends-v3.json",
+        "bytes": 6003,
+        "sha256": "dd0d84962c96968b5a013c822ec9aa7c2db4a900339b7864bb50c5fbced5a02d"
+      },
+      "runtime_source_sha256": "caf2fc12f17083354659c7fdde5d94e54288816e8402289ecd39d54cf3cd77aa",
+      "working_base_commit": "d10e78e3feef1010fab33a924b1d75aba7fd6075",
+      "runtime_tests_passed": 9,
+      "example_tests_passed": 3,
+      "clippy_all_gpu_targets": true,
+      "wasm_gpu_image_check": true,
+      "commands": [
+        {
+          "label": "runtime-contracts-compiled-backends-v3",
+          "pid": 47696,
+          "arguments": [
+            "cargo",
+            "test",
+            "-p",
+            "spatialrust-gpu",
+            "--features",
+            "gpu-image",
+            "--locked",
+            "--offline",
+            "--lib",
+            "runtime::tests"
+          ],
+          "started_at_utc": "2026-10-19T17:33:38.773748+00:00",
+          "exit_status": 0,
+          "finished_at_utc": "2026-10-19T17:34:05.357332+00:00"
+        },
+        {
+          "label": "example-references-compiled-backends-v3",
+          "pid": 40612,
+          "arguments": [
+            "cargo",
+            "test",
+            "-p",
+            "spatialrust-gpu",
+            "--features",
+            "gpu-image",
+            "--locked",
+            "--offline",
+            "--example",
+            "gpu_public_rgbd_conformance"
+          ],
+          "started_at_utc": "2026-10-19T17:34:06.682965+00:00",
+          "exit_status": 0,
+          "finished_at_utc": "2026-10-19T17:34:13.240621+00:00"
+        },
+        {
+          "label": "clippy-compiled-backends-v3",
+          "pid": 50612,
+          "arguments": [
+            "cargo",
+            "clippy",
+            "-p",
+            "spatialrust-gpu",
+            "--features",
+            "gpu-image",
+            "--locked",
+            "--offline",
+            "--all-targets",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "started_at_utc": "2026-10-19T17:34:15.163988+00:00",
+          "exit_status": 0,
+          "finished_at_utc": "2026-10-19T17:34:28.215230+00:00"
+        },
+        {
+          "label": "wasm-check-compiled-backends-v3",
+          "pid": 8112,
+          "arguments": [
+            "cargo",
+            "check",
+            "-p",
+            "spatialrust-gpu",
+            "--features",
+            "gpu-image",
+            "--locked",
+            "--offline",
+            "--target",
+            "wasm32-unknown-unknown"
+          ],
+          "started_at_utc": "2026-10-19T17:34:29.689633+00:00",
+          "exit_status": 0,
+          "finished_at_utc": "2026-10-19T17:34:36.168212+00:00"
+        }
+      ],
+      "frozen_old_and_study_release_files_preserved": true,
+      "primary_policy_source": {
+        "path": "C:\\Users\\rsasa\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\wgpu-24.0.5\\src\\api\\instance.rs",
+        "bytes": 16136,
+        "sha256": "4065020df49080bc43515ba2c45bbb820fb6be3d6c4a41c6323dc7c4978b74b8"
+      },
+      "reason": "Reject explicit GL before instance creation unless GL is compiled for the target; WebGPU-only browser instance otherwise ignores the requested backend mask. Original Primary admission unchanged.",
+      "checks_before_instance": true,
+      "kernel_numeric_transfer_changes": false,
+      "raw_dataset_results_remain_source_bound_to_original_ebf_release": true,
+      "prior_helper_command_failure": {
+        "metadata": {
+          "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-tests-compiled-backends-v2.partial.json",
+          "bytes": 5235,
+          "sha256": "fa577db127f0f1236c95f41c903d0a199a0425e72eec99bff086dc659a0ee359"
+        },
+        "log": {
+          "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\clippy-compiled-backends-v2.log",
+          "bytes": 225,
+          "sha256": "4273302a99a22146177fe3f08e70a1e53219eaa8023bc616f35dbfb380a9e7a4"
+        },
+        "scope": "Incorrect diagnostic Cargo subcommand label; corrected in v3. No failed GPU operation is relabeled."
+      }
+    }
   },
   "preservation": {
     "all_frozen_native_files": {
@@ -927,6 +1044,14 @@
       "xml_sha256": "ed2e07861d1212306ada2b991e320ca5fec94aff4e99c9e9f02a8a4a0f8f7e55",
       "free_before_bytes": 679143964672,
       "free_after_bytes": 679420661760
+    },
+    "after_compiled_backend_guard": {
+      "recorded_at_utc": "2026-10-19T17:35:37.968534+00:00",
+      "controlled_build_cache_temp_bytes": 6038332371,
+      "free_e_bytes": 678822633472,
+      "free_c_bytes": 79006318592,
+      "dataset_downloads": 0,
+      "dataset_payload_copies": 0
     }
   },
   "remaining_gates": [

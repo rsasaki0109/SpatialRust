@@ -21,6 +21,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 - Add typed headless GPU runtime options with explicit GL selection while
   preserving primary backend defaults, shared runtime and timestamp admission.
+  Reject uncompiled GL before instance creation so WebGPU-only browser builds
+  cannot substitute a different backend.
   The public RGB-D example records requested/actual backends and accepts
   `--backend primary|gl`; report auditing retains original operation/transfer
   gates and raw hardware-class requirements. See

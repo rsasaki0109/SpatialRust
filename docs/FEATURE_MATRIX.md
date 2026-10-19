@@ -10,7 +10,9 @@ should normally depend on `spatialrust` and select only the profiles they need.
 `WgpuRuntime::new_headless_with_options` / `new_headless_with_options_async`.
 Existing constructors and the shared runtime retain primary/high-performance
 defaults and their timestamp contracts. Explicit GL selection requires platform
-support and does not select a different backend on failure. The public RGB-D
+support and does not select a different backend on failure. An explicit GL
+request is rejected before instance creation when GL is not compiled in, so
+WebGPU-only browser builds cannot substitute WebGPU. The public RGB-D
 example records requested/actual backends; its auditor keeps operation checks
 and distinct raw hardware-class coverage separate. See the
 [fixed GLES validation protocol](EXPLICIT_GLES_GPU_VALIDATION.md). The Windows

@@ -22,6 +22,10 @@ Map `Primary` to exactly the existing primary backend set and `Gl` to GL only.
 Use original instance flags, adapter admission, device limits and feature
 requests. Do not select a backend from global environment overrides, request
 software fallback, override Vulkan conformance flags or relabel adapter classes.
+Require compiled GL support before creating an instance for an explicit GL
+request. A WebGPU-only browser build otherwise lets wgpu select WebGPU despite
+the requested GL mask; return an argument error before that selection. Primary
+admission retains its original policy.
 No new heavy dependency, core change, unsafe code, shader or implicit device
 transfer. Driver/platform support can still reject an explicit GL request.
 
@@ -113,7 +117,12 @@ Two diagnostic launcher failures occurred before GPU calls and are also retained
 No driver replacement, version override, disabled validation, alternate backend
 fallback or class relabeling was used to make this result pass.
 
-Validation passes seven runtime tests, three example tests (including the
+After the frozen runs, review added the compiled-GL preflight described above;
+the receipt separately binds its final source and checks. The measured dataset
+results and executables remain frozen at the implementation commit above.
+This admission-only guard changes no kernel, numeric limit or transfer.
+
+Validation passes nine runtime tests, three example tests (including the
 independent CPU references), 34 report/backend cases, GPU all-target Clippy,
 WASM `gpu-image` checking and workspace formatting. The full Python suite passes
 973 tests with three optional ONNX skips. The numerical kernels and original
@@ -129,6 +138,9 @@ After diagnostics and cleanup, controlled build/cache/temp storage is
 4,965,811,047 logical bytes (16GiB cap); the result directory is 78,351 bytes
 (128MiB cap), with more than 632GiB free on E (20GiB floor). These are logical
 file counts and point-in-time free space, not peak process memory measurements.
+After the final compiled-backend guard checks, the separately recorded
+controlled total is 6,038,332,371 bytes, still below the same 16GiB cap with
+more than 632GiB free on E. All release executables are checked unchanged.
 
 Typed explicit GL selection is implemented. Linux hardware execution and both
 raw hardware classes remain open; this slice makes no GL conformance or
