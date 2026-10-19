@@ -127,6 +127,53 @@ before merge. Synthetic success alone cannot establish real accuracy.
 
 ## Results
 
-Pending execution of this committed protocol. Canonical Autoware measured clock
-and independent physical calibration, full mapping and broad GPU/OS acceptance
-are separate unresolved operational requirements.
+Fixed-policy protocol/source commit: `2df466ecdd149f5aaa95b756696972c0060644c6`.
+The official rpy archive matches its exact prior size/hash. Source imagery is
+shared through hard links; no native rebuild is performed. See
+[the complete compact record](receipts/2026-10-19_tum_keyframe_rgbd.json).
+
+| Method / scene | Generated | Evaluated | Prefix ATE RMSE (m) | Prefix 1s RPE RMSE (m) | Accepted |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Frozen parent stateless xyz | 798/798 | 795 | 0.120235 | 0.033505 | No: ATE |
+| Fixed keyframe xyz | 90/798 | 90 | 0.018775 | 0.021180 | No: completeness/coverage |
+| New stateless rpy | 2/722 | 2 | 0.010364 | unavailable | No: completeness/coverage/RPE |
+| Fixed keyframe rpy | 2/722 | 2 | 0.010364 | unavailable | No: completeness/coverage/RPE |
+
+These tiny prefixes cannot establish improved full-sequence accuracy or a
+method ranking. All **2,242 new planned rows** are present; once tracking is
+lost, later rows explicitly remain errors. Missing reference poses (three xyz,
+six rpy) and uncovered one-second pairs stay in the scorer's denominators.
+All three new independent audits and a new audit of the frozen parent pass
+unchanged 1e-8m/1e-6degree tolerances. Maximum new score differences are below
+8.80e-16m and 8.53e-14degree. Four generated typed IO audits pass exactly.
+
+XYZ loses tracking at zero-based row 90: the last accepted frame retains 18
+inliers, below the next call's unchanged 20-track minimum. The age-30 promotion
+would occur one call later. In rpy, the stateless row 2 PnP has 25/60 inliers,
+below the unchanged 0.5 fraction. Persistent rpy lacks 20 forward/backward
+tracks at the same row. Both failures show that a fixed interval alone is not
+a sufficient frontend. No threshold or default is changed to accept them.
+
+The xyz run starts independently while rpy downloads, and its completed frozen
+result is resumed without rerunning it. The orchestration's parent-source check
+initially assumes LF bytes for two older Windows files. Reconstructing their
+CRLF checkout bytes from the exact parent Git blobs matches the original full
+hashes; both identities and reconstruction are recorded. Data, plans and frozen
+results are not normalized or rewritten.
+
+Local validation passes 817 full-suite cases with three optional ONNX skips,
+plus one additional unique partial-mask case; all 17 new focused cases pass.
+The new files parse as Python 3.8. Hosted checks remain required before merge.
+
+The fixed failures above are preserved for the separate input-quality revision
+below. Canonical Autoware measured clock/physical calibration and full mapping
+remain unresolved, so these studies do not establish the 80% operational goal.
+
+## Input-quality revision
+
+Not fitted yet. A count-triggered early promotion was proposed from xyz input
+starvation before the new rpy image fits/reference scoring, with a fixed 60-track
+capacity margin (three times the existing minimum). The completed fixed study
+also exposes low rpy inlier support. The next separately committed protocol will
+combine that input-only promotion with local source-depth quality selection;
+retain every failed fixed result and the same completeness/support/accuracy gates.
