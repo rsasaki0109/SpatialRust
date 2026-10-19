@@ -106,7 +106,8 @@ def main():
     result = generate(args.prepared_dir,args.manifest_sha256,args.output_dir,
         rgbd_aligner=tracker.align,method=ESTIMATOR,additional_bindings=[__file__,
         Path(__file__).with_name('run_tum_keyframe_rgbd.py'),Path(__file__).with_name('run_tum_rgbd_odometry.py'),
-        FIXED_PLANS[plan['sequence']],PLAN_ROOT/'tum-fr1-xyz-rgbd-pnp-plan.json'])
+        FIXED_PLANS[plan['sequence']],PLAN_ROOT/'tum-fr1-xyz-rgbd-pnp-plan.json',
+        PLAN_ROOT/'tum-fr1-xyz-plan.json'])
     print('Frozen adaptive RGB-D {}/{} poses; estimates SHA-256 {}'.format(result['generated_poses'],result['planned_poses'],result['estimates_sha256']))
 
 
