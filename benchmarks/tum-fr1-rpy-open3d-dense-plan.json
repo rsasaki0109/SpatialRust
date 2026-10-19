@@ -1,0 +1,124 @@
+{
+  "acceptance": {
+    "basis": "Unchanged engineering completeness/coverage/ATE/RPE limits from the previous plane study. Fixed before first image-tracking/PnP fitting; not publisher accuracy requirements or physical calibration guarantees.",
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_one_second_translation_rpe_rmse_m": 0.05,
+    "minimum_evaluated_fraction": 0.95,
+    "minimum_generated_fraction": 1.0
+  },
+  "calibration": {
+    "axes": "x right, y down, z forward",
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration.",
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "fx": 525.0,
+    "fy": 525.0,
+    "height": 480,
+    "sensor_frame": "tum_rgb_optical",
+    "width": 640
+  },
+  "comparator_preprocessing": "Pinned Open3D full-resolution Gaussian3 gray/depth and initial-correspondence mean normalization to 0.5, followed by its own pyramids, sampling and derivatives. No equivalent implementation, stopping, memory or speed claim.",
+  "controls": {
+    "dense_rgbd_odometry": {
+      "depth_weight": 0.968,
+      "epsilon": 1e-07,
+      "iterations": [
+        20,
+        10,
+        5
+      ],
+      "max_depth": 5.0,
+      "max_depth_difference": 0.03,
+      "max_working_bytes": 134217728,
+      "min_correspondence_fraction": 0.5,
+      "min_correspondences": 30,
+      "min_depth": 0.1
+    },
+    "evaluation_max_gap_ns": 20000000,
+    "io_stride": 60,
+    "max_depth_m": 5.0,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "open3d_rgbd_odometry": {
+      "depth_diff_max": 0.03,
+      "depth_max": 5.0,
+      "depth_min": 0.1,
+      "iterations": [
+        20,
+        10,
+        5
+      ],
+      "jacobian": "RGBDOdometryJacobianFromHybridTerm",
+      "package_version": "0.19.0"
+    },
+    "projection_tolerance_m": 1e-06,
+    "rgb_max_gap_ns": 20000000,
+    "rgbd_odometry": {
+      "epsilon": 0.001,
+      "image_margin": 40,
+      "max_features": 300,
+      "max_forward_backward_error": 0.75,
+      "max_iterations": 30,
+      "min_distance": 10.0,
+      "min_eigenvalue": 0.0001,
+      "min_inlier_fraction": 0.5,
+      "min_inliers": 15,
+      "min_tracks": 20,
+      "pnp_threshold": 2.0,
+      "pyramid_levels": 4,
+      "quality_level": 0.01,
+      "window_radius": 10
+    },
+    "rpe_delta_ns": 1000000000,
+    "stages": [
+      {
+        "gate_m": 0.2,
+        "iterations": 20,
+        "leaf_m": 0.1
+      },
+      {
+        "gate_m": 0.1,
+        "iterations": 20,
+        "leaf_m": 0.05
+      }
+    ]
+  },
+  "dense_initialization": {
+    "first_pair": "identity",
+    "reference_initialization": false,
+    "reset_after_loss": false,
+    "retries": false,
+    "subsequent_pairs": "previous returned source-to-target increment",
+    "time_rescaling": false
+  },
+  "dense_support_policy": "Minimum count and a nonsingular system for initial/intermediate hypotheses; the unchanged 0.5 full-resolution correspondence fraction applies to the returned pose. The independent full-cloud support and complete trajectory accuracy gates are unchanged.",
+  "estimator": "open3d_causal_rgbd_cpu",
+  "generation": "All indexed original RGB-D frames. Use owned float32 grayscale/metric-depth CPU images with the pinned Open3D legacy hybrid estimator; initialize identity, then the preceding returned source-to-target increment. No reference read, retry, rescaling, frame selection or reset. Retain all rows and stop estimator calls after any loss.",
+  "limits": {
+    "max_frames": 10000,
+    "max_member_bytes": 16777216,
+    "max_members": 30000,
+    "max_total_bytes": 8589934592
+  },
+  "native_refinement_policy": "Separate Open3D CPU comparator, not the native dense solver. The inherited dense controls define unchanged raw full-resolution final validation only. Apply the original full-cloud/world/typed IO gates to every admitted estimate. Open3D information matrices are diagnostics, not physical calibration uncertainty.",
+  "observed_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz",
+  "open3d_cpu_module_sha256": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+  "prior_algorithm_plan_sha256": "52af9d7601b73cefddd9a65d87ee7ccf1f1465e892afe5f695dc62fba84a7cdf",
+  "prior_causal_dense_plan_sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544",
+  "prior_consensus_plan_sha256": "39275599e62e582aafd6a6f8e018fceed12dbed25721441fc2a8f1eaa16002b4",
+  "prior_dense_protocol_sha256": "162c74968e46fef2bf30f25d2df3625209e23855957aee7a8ef530ed438cff66",
+  "prior_dense_source_plan_sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781",
+  "prior_final_overlap_plan_sha256": "fbd41ca5c1357209483b244987fb34d013a198615780a26f80ca91795a90b266",
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "scope": "Full runs on the same two observed development scenes, with native controls and every failed result preserved. Freeze both complete timelines before either new reference score. Completeness, reference coverage, final support, ATE/RPE and calibration are unchanged; no post-score tuning or held-out generalization claim.",
+  "sequence": "rgbd_dataset_freiburg1_rpy",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz"
+}

@@ -6,6 +6,12 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A separately fixed CPU comparator owns its adjacent RGB-D inputs and one causal
+relative seed. The existing generator retains full-cloud/world/IO admission;
+bounded raw projective validation is separate from the external estimator's
+filtered objective. No production dependency, numerical binary or device
+ownership change; see [the comparator contract](OPEN3D_DENSE_RGBD_COMPARISON.md).
+
 Explicit headless runtime options retain the primary/high-performance default
 and expose GL as an opt-in backend set. Owned sync/async constructors retain
 original flags, adapter limits and optional timestamp admission. Explicit GL
