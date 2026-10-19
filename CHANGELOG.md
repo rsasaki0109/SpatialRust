@@ -19,6 +19,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add an explicit fixed wide-capture RGB-D experiment for both observed scenes
+  and stateless/adaptive frontends, reusing the native wheel and source images.
+  Existing defaults and all motion admission/accuracy limits stay unchanged.
+
 - Preserve the selected robust-PnP hypothesis when optional final refitting
   fails or worsens its original consensus objective. Keep strict rotation and
   input checks, thresholds, sampling and output order; reuse owned result buffers.

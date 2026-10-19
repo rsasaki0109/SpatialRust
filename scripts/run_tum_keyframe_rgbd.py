@@ -60,8 +60,12 @@ class KeyframeRgbdTracker:
         self.previous_from_keyframe = np.eye(4)
         self.lost = False
 
+    def tracking_settings(self):
+        """An explicit experimental adapter may provide a separately fixed capture plan."""
+        return DEFAULT_CONTROLS
+
     def seed(self, depth, gray, camera, controls):
-        settings = DEFAULT_CONTROLS
+        settings = self.tracking_settings()
         keypoints = sr.shi_tomasi_keypoints(gray, max_corners=settings['max_features'],
             quality_level=settings['quality_level'], min_distance=settings['min_distance'],
             block_size=3, gradient_size=3)
@@ -83,7 +87,7 @@ class KeyframeRgbdTracker:
             raise ValueError('keyframe RGB-D tracking lost; resets forbidden')
         try:
             settings = controls.get('rgbd_odometry')
-            if settings != DEFAULT_CONTROLS or controls.get('rgbd_keyframe') != KEYFRAME_CONTROLS:
+            if settings != self.tracking_settings() or controls.get('rgbd_keyframe') != KEYFRAME_CONTROLS:
                 raise ValueError('keyframe RGB-D controls differ from the fixed protocol')
             if self.previous_gray is not None and previous_gray is not self.previous_gray:
                 raise ValueError('previous image is not the last accepted frame')

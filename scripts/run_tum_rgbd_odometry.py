@@ -39,8 +39,13 @@ def validate_rgbd_plan(plan):
 
 def align_rgbd(previous_depth, previous_gray, current_gray, camera, controls):
     """Native PnP maps previous -> current; invert once for the existing world chain."""
+    return _align_rgbd(previous_depth, previous_gray, current_gray, camera, controls, DEFAULT_CONTROLS)
+
+
+def _align_rgbd(previous_depth, previous_gray, current_gray, camera, controls, expected_settings):
+    """Shared implementation; executable adapters supply their validated fixed settings."""
     settings = controls.get('rgbd_odometry')
-    if settings != DEFAULT_CONTROLS:
+    if settings != expected_settings:
         raise ValueError('RGB-D settings differ from the fixed protocol')
     keypoints = sr.shi_tomasi_keypoints(previous_gray, max_corners=settings['max_features'],
                                       quality_level=settings['quality_level'],

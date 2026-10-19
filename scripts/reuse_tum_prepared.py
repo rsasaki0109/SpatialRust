@@ -27,7 +27,9 @@ def external(path):
     return resolved
 
 
-def reuse(prepared, manifest_sha256, plan_path, output):
+def reuse(prepared, manifest_sha256, plan_path, output, *, capture_revision=False):
+    if type(capture_revision) is not bool:
+        raise ValueError('capture_revision must be an explicit boolean')
     if Path(output).is_symlink():
         raise ValueError('output cannot be a filesystem link')
     prepared, output = external(prepared), external(output)
@@ -55,7 +57,12 @@ def reuse(prepared, manifest_sha256, plan_path, output):
     plan = validate_plan(json.loads(plan_raw))
     if any(plan[key] != old_plan[key] for key in ('sequence','calibration','limits')) or json.loads(calibration_raw) != plan['calibration']:
         raise ValueError('reused sequence and calibration must stay identical')
-    if any(plan['controls'].get(key) != value for key, value in old_plan['controls'].items()):
+    if capture_revision:
+        from wide_rgbd_protocol import validate_capture_transition
+        if plan.get('prior_consensus_plan_sha256') != manifest['plan_sha256']:
+            raise ValueError('capture revision requires the exact prepared parent plan hash')
+        validate_capture_transition(old_plan,plan)
+    elif any(plan['controls'].get(key) != value for key, value in old_plan['controls'].items()):
         raise ValueError('original preparation controls cannot change')
     files = manifest.get('files')
     if not isinstance(files, dict) or not 2 <= len(files) <= old_plan['limits']['max_members']:
@@ -86,6 +93,9 @@ def reuse(prepared, manifest_sha256, plan_path, output):
                 raise ValueError('reused hard link identity changed')
         manifest['plan_sha256'] = hashlib.sha256(plan_raw).hexdigest()
         manifest['bindings'] = dict(manifest.get('bindings', {}), **{str(Path(__file__).resolve()):file_sha256(__file__)})
+        if capture_revision:
+            rule = Path(__file__).with_name('wide_rgbd_protocol.py').resolve()
+            manifest['bindings'][str(rule)] = file_sha256(rule)
         manifest['reused_input'] = dict(path=str(prepared), manifest_sha256=manifest_sha256,
             storage='hard links; original PNG/index payloads shared, source never edited',
             linked_files=len(sources), linked_logical_bytes=sum(e['bytes'] for _, _, e in sources),
@@ -108,8 +118,10 @@ def main():
     parser.add_argument('--manifest-sha256', required=True)
     parser.add_argument('--plan', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
+    parser.add_argument('--capture-revision',action='store_true',help='allow only the hash-bound fixed wider LK revision')
     args = parser.parse_args()
-    manifest = reuse(args.prepared_dir, args.manifest_sha256, args.plan, args.output_dir)
+    manifest = reuse(args.prepared_dir, args.manifest_sha256, args.plan, args.output_dir,
+                     capture_revision=args.capture_revision)
     print(json.dumps(dict(manifest_sha256=file_sha256(args.output_dir/'manifest.json'), reused=manifest['reused_input'])))
 
 

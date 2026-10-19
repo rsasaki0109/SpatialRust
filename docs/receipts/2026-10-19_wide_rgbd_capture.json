@@ -1,0 +1,1213 @@
+{
+  "all_estimates_frozen_at_utc": "2026-10-19T11:25:40.818720+00:00",
+  "baseline_files": [
+    {
+      "bytes": 30777932,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-rgbd-v1\\estimates.json",
+      "sha256": "009e365eb432ad189842cd8d4218716960a7eaba57c31ad5dd287d92f90156a0"
+    },
+    {
+      "bytes": 491844,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-rgbd-v1\\accuracy.json",
+      "sha256": "c6880691fe06b642041e800c88e6f1528d52e3dd4aff757723ec50137cc82c3d"
+    },
+    {
+      "bytes": 197712,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-rgbd-v1\\estimates.json",
+      "sha256": "9f4578901558b0174713dd9e9b2fcb62b9eb3071c442c113c38052b958fee336"
+    },
+    {
+      "bytes": 235821,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-rgbd-v1\\accuracy.json",
+      "sha256": "840eb3c3a3241b2f5d43c29e83a4322696323db2ad46c0fef98ad5a8d4a3bce1"
+    },
+    {
+      "bytes": 6721547,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-adaptive-rgbd-v1\\estimates.json",
+      "sha256": "de713573046835636ddb6ef2e43b98fe304114e8f17415ade7ce972167ed6e93"
+    },
+    {
+      "bytes": 326619,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-adaptive-rgbd-v1\\accuracy.json",
+      "sha256": "b28b820bd6099e9a9454c95dccaa74135f90fa3930193bbbe7eae055b41b09b2"
+    },
+    {
+      "bytes": 199094,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-adaptive-rgbd-v1\\estimates.json",
+      "sha256": "10233af136e320d8a003611a8e47675183fcf9c2fe75b9644fda0bd13a3441a5"
+    },
+    {
+      "bytes": 235818,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-adaptive-rgbd-v1\\accuracy.json",
+      "sha256": "89814a75dea98bc6eb1a47531bd36af767697a9823869cf03d75b1fcf278d91a"
+    },
+    {
+      "bytes": 30777610,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-rgbd-pnp-consensus-v1\\estimates.json",
+      "sha256": "d2f59d0000e4e6d085921385169ba981fcc2f26372e57653035084669305bf7d"
+    },
+    {
+      "bytes": 491796,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-rgbd-pnp-consensus-v1\\accuracy.json",
+      "sha256": "bde196cabc9ef1d44678f7886d5f6188019b624f6b78db23b9522f9736a10cf4"
+    },
+    {
+      "bytes": 22989831,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-adaptive-pnp-consensus-v1\\estimates.json",
+      "sha256": "4312af372c1a042fa970b412638f3bc12dd20d95c96be9e8fede1253732538ba"
+    },
+    {
+      "bytes": 491731,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-adaptive-pnp-consensus-v1\\accuracy.json",
+      "sha256": "b7c157b868d2f0a1c65517ce35638fe82fdc4c674694ef83dbe2c22cc9e728f2"
+    },
+    {
+      "bytes": 197719,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-rgbd-pnp-consensus-v1\\estimates.json",
+      "sha256": "95835699bc1dd8e67d07c81fef1788adb2e3674cb676ab7a9a1b0b2530b3b547"
+    },
+    {
+      "bytes": 235819,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-rgbd-pnp-consensus-v1\\accuracy.json",
+      "sha256": "a64d7864efbe3cb611afd3c6d19e0512553d0212c59b3d8405008cd55f079e2e"
+    },
+    {
+      "bytes": 199104,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-adaptive-pnp-consensus-v1\\estimates.json",
+      "sha256": "78b2e1ad3eca291a533e990f5a2bd5c2b38218b31f6d4e000ce2185c6ece700a"
+    },
+    {
+      "bytes": 235818,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-adaptive-pnp-consensus-v1\\accuracy.json",
+      "sha256": "e07ba6e33d700ebc7bd34ab460ab153ddc025728112590b647cf10900c93c8b7"
+    }
+  ],
+  "baselines": [
+    {
+      "files": [
+        {
+          "bytes": 197719,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-rgbd-pnp-consensus-v1\\estimates.json",
+          "sha256": "95835699bc1dd8e67d07c81fef1788adb2e3674cb676ab7a9a1b0b2530b3b547"
+        },
+        {
+          "bytes": 1620,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-rgbd-pnp-consensus-v1\\receipt.json",
+          "sha256": "85c415f35fcb74b5512f19086b06b687b51889d875de4f410d57b2e6a9ccfb16"
+        },
+        {
+          "bytes": 235819,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-rgbd-pnp-consensus-v1\\accuracy.json",
+          "sha256": "a64d7864efbe3cb611afd3c6d19e0512553d0212c59b3d8405008cd55f079e2e"
+        },
+        {
+          "bytes": 183674,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-rgbd-pnp-consensus-v1\\groundtruth.txt",
+          "sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989"
+        },
+        {
+          "bytes": 1279,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\audit-rgbd-pnp-consensus-v1\\audit.json",
+          "sha256": "bf2beef48d691d817dfcaf7cfcd132ffdc48d085d6464f1d39b6d0d8b54a6082"
+        }
+      ],
+      "label": "rpy-rgbd",
+      "score": {
+        "ate_first_pose_aligned_rmse_m": 0.011219610774410426,
+        "evaluated_poses": 2,
+        "generated_poses": 2,
+        "planned_poses": 722,
+        "rpe_evaluated_pairs": 0,
+        "rpe_planned_pairs": 692,
+        "rpe_translation_rmse_m": null,
+        "unmatched_reference_poses": 6
+      }
+    },
+    {
+      "files": [
+        {
+          "bytes": 199104,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-adaptive-pnp-consensus-v1\\estimates.json",
+          "sha256": "78b2e1ad3eca291a533e990f5a2bd5c2b38218b31f6d4e000ce2185c6ece700a"
+        },
+        {
+          "bytes": 2269,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-adaptive-pnp-consensus-v1\\receipt.json",
+          "sha256": "1c033ff9cadbb2c1207b1564b2f0565e5fb4be7181a86ff129cf7c01bc55c3db"
+        },
+        {
+          "bytes": 235818,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-adaptive-pnp-consensus-v1\\accuracy.json",
+          "sha256": "e07ba6e33d700ebc7bd34ab460ab153ddc025728112590b647cf10900c93c8b7"
+        },
+        {
+          "bytes": 183674,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-adaptive-pnp-consensus-v1\\groundtruth.txt",
+          "sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989"
+        },
+        {
+          "bytes": 1278,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\audit-adaptive-pnp-consensus-v1\\audit.json",
+          "sha256": "098f0d5fa7f513f72a761c644fad36cb25809fa7af7cdc047e119cc7ef1e59a0"
+        }
+      ],
+      "label": "rpy-adaptive",
+      "score": {
+        "ate_first_pose_aligned_rmse_m": 0.005036965022768888,
+        "evaluated_poses": 2,
+        "generated_poses": 2,
+        "planned_poses": 722,
+        "rpe_evaluated_pairs": 0,
+        "rpe_planned_pairs": 692,
+        "rpe_translation_rmse_m": null,
+        "unmatched_reference_poses": 6
+      }
+    },
+    {
+      "files": [
+        {
+          "bytes": 30777610,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-rgbd-pnp-consensus-v1\\estimates.json",
+          "sha256": "d2f59d0000e4e6d085921385169ba981fcc2f26372e57653035084669305bf7d"
+        },
+        {
+          "bytes": 1626,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-rgbd-pnp-consensus-v1\\receipt.json",
+          "sha256": "c711a03b2b7bdb533412f1504ad46c6fecf2ef10064b56b678c07b49d7d13322"
+        },
+        {
+          "bytes": 491796,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-rgbd-pnp-consensus-v1\\accuracy.json",
+          "sha256": "bde196cabc9ef1d44678f7886d5f6188019b624f6b78db23b9522f9736a10cf4"
+        },
+        {
+          "bytes": 201100,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-rgbd-pnp-consensus-v1\\groundtruth.txt",
+          "sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2"
+        },
+        {
+          "bytes": 1302,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\audit-rgbd-pnp-consensus-v1\\audit.json",
+          "sha256": "a5d688c35334dcaf849702f26f2219c4ddbe8c3115f9b7268ebd1934f6f58a83"
+        }
+      ],
+      "label": "xyz-rgbd",
+      "score": {
+        "ate_first_pose_aligned_rmse_m": 0.12226290525659882,
+        "evaluated_poses": 795,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "rpe_evaluated_pairs": 762,
+        "rpe_planned_pairs": 768,
+        "rpe_translation_rmse_m": 0.03583822253126945,
+        "unmatched_reference_poses": 3
+      }
+    },
+    {
+      "files": [
+        {
+          "bytes": 22989831,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-adaptive-pnp-consensus-v1\\estimates.json",
+          "sha256": "4312af372c1a042fa970b412638f3bc12dd20d95c96be9e8fede1253732538ba"
+        },
+        {
+          "bytes": 2275,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-adaptive-pnp-consensus-v1\\receipt.json",
+          "sha256": "9218aaafa131ce3bf8bc34e4ba45532cbf5d32da47ebd37be9a4b31eb01ad73b"
+        },
+        {
+          "bytes": 491731,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-adaptive-pnp-consensus-v1\\accuracy.json",
+          "sha256": "b7c157b868d2f0a1c65517ce35638fe82fdc4c674694ef83dbe2c22cc9e728f2"
+        },
+        {
+          "bytes": 201100,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-adaptive-pnp-consensus-v1\\groundtruth.txt",
+          "sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2"
+        },
+        {
+          "bytes": 1299,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\audit-adaptive-pnp-consensus-v1\\audit.json",
+          "sha256": "56e01b71f38e31156531124fb6fd84ca42c1510eda57555fef17fba78b8d3a5c"
+        }
+      ],
+      "label": "xyz-adaptive",
+      "score": {
+        "ate_first_pose_aligned_rmse_m": 0.11882143154621341,
+        "evaluated_poses": 795,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "rpe_evaluated_pairs": 762,
+        "rpe_planned_pairs": 768,
+        "rpe_translation_rmse_m": 0.02858461456984094,
+        "unmatched_reference_poses": 3
+      }
+    }
+  ],
+  "cases": [
+    {
+      "accepted": false,
+      "conditions": {
+        "ate": true,
+        "complete": false,
+        "coverage": false,
+        "rpe": false
+      },
+      "files": [
+        {
+          "bytes": 209980,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-rgbd-wide-capture-v1\\estimates.json",
+          "sha256": "901aeada3a3c63899d5aace3f939d2fd36c91aa05186b511e17c1000d3963280"
+        },
+        {
+          "bytes": 2552,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-rgbd-wide-capture-v1\\receipt.json",
+          "sha256": "fed3f406a32cd5cda34796fd97219c85b61348fbe4551dd2375659e0988b395c"
+        },
+        {
+          "bytes": 235821,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-rgbd-wide-capture-v1\\accuracy.json",
+          "sha256": "783213595ae42cd8a502bc5298c80e9cd806617b00cf2556174178aed387ccd4"
+        },
+        {
+          "bytes": 183674,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-rgbd-wide-capture-v1\\groundtruth.txt",
+          "sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989"
+        },
+        {
+          "bytes": 1280,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\audit-rgbd-wide-capture-v1\\audit.json",
+          "sha256": "e41c96a43bc13e856b7f1c48ee022fd5b32e6444e5332e11d24deb777872fb15"
+        }
+      ],
+      "generation": {
+        "bindings": {
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rgbd-pnp-consensus-plan.json": "39275599e62e582aafd6a6f8e018fceed12dbed25721441fc2a8f1eaa16002b4",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-plan.json": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-pnp-plan.json": "f85dd80fa03d8ec0651c748b246459e8bbdb560a6cd335bfc43cf08666dec10e",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\evaluate_pose_reference.py": "99b587c5ba40378eb97a83fca16b7eac6a3ff2e20edf9aea15b79f79f3fe3f0b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\realsense_reference.py": "3aa1260975342112150f0c776e45a157473b0dcd817deb4696257800c700e8f0",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_adaptive_rgbd.py": "910cac999f0d3049a67d4c42c94f237fdfa930371959a4f8b225acd01a1f3c1f",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_keyframe_rgbd.py": "63a42850f1a727115edcd90fa489131985bc520036aa567618ea6a3a5b8f51d9",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_rgbd_odometry.py": "c5f362512dbc1c9a6258db0fd9fec3ef40e8a5d5d4bb1cafd462e16bbd72022b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_sequence.py": "459ba3b2e30ab857d099169cfa053eb9828d9f72d4a73b3e22ff215ac3e3ecdb",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_wide_rgbd.py": "54e66d959d51bda126d7a5aa4c6cfc953f2dee985e50cd5a5e7af7edadd0c869",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\wide_rgbd_protocol.py": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8",
+          "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600"
+        },
+        "estimates_sha256": "901aeada3a3c63899d5aace3f939d2fd36c91aa05186b511e17c1000d3963280",
+        "generated_poses": 2,
+        "method": "spatialrust_wide_rgbd_pnp_cpu",
+        "numpy": "2.3.4",
+        "planned_poses": 722,
+        "projected_points": 436643,
+        "python": "3.12.10",
+        "reference_used_for_generation": false,
+        "schema": "spatialrust.tum-generation.v1",
+        "tracking_lost": true
+      },
+      "input_reuse": {
+        "free_after_links_bytes": 687164641280,
+        "free_before_bytes": 686387499008,
+        "linked_files": 1447,
+        "linked_logical_bytes": 439798474,
+        "manifest_sha256": "8a114eb477bd6165723d3316c3364e3d48691d032816ea082aa2a789fb5f7664",
+        "new_image_payload_bytes": 0,
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-rgbd-pnp-consensus-v1",
+        "storage": "hard links; original PNG/index payloads shared, source never edited"
+      },
+      "label": "rpy-rgbd",
+      "manifest_sha256": "c7746586fbc9cf7f995515bb43af21f56bad484b290034d0946edd457cfe9969",
+      "output": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-rgbd-wide-capture-v1",
+      "plan_sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781",
+      "prepared": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-rgbd-wide-capture-v1",
+      "score": {
+        "ate_first_pose_aligned_rmse_m": 0.015444902811546016,
+        "evaluated_poses": 2,
+        "generated_poses": 2,
+        "planned_poses": 722,
+        "rpe_evaluated_pairs": 0,
+        "rpe_planned_pairs": 692,
+        "rpe_translation_rmse_m": null,
+        "unmatched_reference_poses": 6
+      },
+      "source_sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1",
+      "verification": {
+        "accepted": false,
+        "conditions": {
+          "ate": true,
+          "complete": false,
+          "coverage": false,
+          "rpe": false
+        },
+        "early_promotions": 0,
+        "error": "RGB-D PnP has 56/126 inliers and 0 rejected depths",
+        "evaluated": 2,
+        "first_failure_index": 2,
+        "generated": 2,
+        "label": "rpy-rgbd",
+        "max_rotation_score_difference_degrees": 7.771561172376096e-16,
+        "max_translation_score_difference_m": 4.440892098500626e-16,
+        "planned": 722,
+        "typed_io_audits": 1,
+        "verified_source_landmark_rows": 125
+      }
+    },
+    {
+      "accepted": false,
+      "conditions": {
+        "ate": true,
+        "complete": false,
+        "coverage": false,
+        "rpe": false
+      },
+      "files": [
+        {
+          "bytes": 1821554,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-adaptive-wide-capture-v1\\estimates.json",
+          "sha256": "527dcebe2023d8b724e1150b42371021637ff78288f77132dc902e4df00d9f9f"
+        },
+        {
+          "bytes": 2737,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-adaptive-wide-capture-v1\\receipt.json",
+          "sha256": "2a0f764379ade14d55947de2a8f3b49cfd989e7aec8871fdfdafa7f34f3af6c5"
+        },
+        {
+          "bytes": 249328,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-adaptive-wide-capture-v1\\accuracy.json",
+          "sha256": "02d1f6a3e5cee3378e61d51574b388c69e198bb1de610ff57f52efc0c4e76959"
+        },
+        {
+          "bytes": 183674,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluation-adaptive-wide-capture-v1\\groundtruth.txt",
+          "sha256": "013296acadde7744afa2432d73d47b12e4462fc2a6f3342a5345e85a176fe989"
+        },
+        {
+          "bytes": 1295,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\audit-adaptive-wide-capture-v1\\audit.json",
+          "sha256": "ae952b0661151c9783417ef8b93ee2e649f306ace21bcf08eb29f860f0522b22"
+        }
+      ],
+      "generation": {
+        "bindings": {
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-adaptive-pnp-consensus-plan.json": "dd249811036b712c1e937abdc859092a68407153a79d3bc07b6a86f4ad669422",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-keyframe-rgbd-pnp-plan.json": "220fe7c749332909600d65193335787aac8418668a2ae658cbb444775769b133",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-plan.json": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-pnp-plan.json": "f85dd80fa03d8ec0651c748b246459e8bbdb560a6cd335bfc43cf08666dec10e",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\evaluate_pose_reference.py": "99b587c5ba40378eb97a83fca16b7eac6a3ff2e20edf9aea15b79f79f3fe3f0b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\realsense_reference.py": "3aa1260975342112150f0c776e45a157473b0dcd817deb4696257800c700e8f0",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_adaptive_rgbd.py": "910cac999f0d3049a67d4c42c94f237fdfa930371959a4f8b225acd01a1f3c1f",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_keyframe_rgbd.py": "63a42850f1a727115edcd90fa489131985bc520036aa567618ea6a3a5b8f51d9",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_rgbd_odometry.py": "c5f362512dbc1c9a6258db0fd9fec3ef40e8a5d5d4bb1cafd462e16bbd72022b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_sequence.py": "459ba3b2e30ab857d099169cfa053eb9828d9f72d4a73b3e22ff215ac3e3ecdb",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_wide_rgbd.py": "54e66d959d51bda126d7a5aa4c6cfc953f2dee985e50cd5a5e7af7edadd0c869",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\wide_rgbd_protocol.py": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8",
+          "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600"
+        },
+        "estimates_sha256": "527dcebe2023d8b724e1150b42371021637ff78288f77132dc902e4df00d9f9f",
+        "generated_poses": 59,
+        "method": "spatialrust_wide_adaptive_rgbd_pnp_cpu",
+        "numpy": "2.3.4",
+        "planned_poses": 722,
+        "projected_points": 13626384,
+        "python": "3.12.10",
+        "reference_used_for_generation": false,
+        "schema": "spatialrust.tum-generation.v1",
+        "tracking_lost": true
+      },
+      "input_reuse": {
+        "free_after_links_bytes": 687163559936,
+        "free_before_bytes": 687163953152,
+        "linked_files": 1447,
+        "linked_logical_bytes": 439798474,
+        "manifest_sha256": "1d12062307c3aea934ede99cee1bfaa172cd25e6f2e5c497139c15bcff634be9",
+        "new_image_payload_bytes": 0,
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-adaptive-pnp-consensus-v1",
+        "storage": "hard links; original PNG/index payloads shared, source never edited"
+      },
+      "label": "rpy-adaptive",
+      "manifest_sha256": "7f9d3e0c947c92126ebcd1b29c418cadab826d5d9a879ff82fff264e0b67f82d",
+      "output": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-adaptive-wide-capture-v1",
+      "plan_sha256": "471275eb8837947e473cafb125210edc600a06cd09d582b8f7b90bb26290d688",
+      "prepared": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-adaptive-wide-capture-v1",
+      "score": {
+        "ate_first_pose_aligned_rmse_m": 0.08448724411871057,
+        "evaluated_poses": 59,
+        "generated_poses": 59,
+        "planned_poses": 722,
+        "rpe_evaluated_pairs": 29,
+        "rpe_planned_pairs": 692,
+        "rpe_translation_rmse_m": 0.12461251332831194,
+        "unmatched_reference_poses": 6
+      },
+      "source_sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1",
+      "verification": {
+        "accepted": false,
+        "conditions": {
+          "ate": true,
+          "complete": false,
+          "coverage": false,
+          "rpe": false
+        },
+        "early_promotions": 9,
+        "error": "keyframe PnP lacks fixed inlier/depth support",
+        "evaluated": 59,
+        "first_failure_index": 59,
+        "generated": 59,
+        "label": "rpy-adaptive",
+        "max_rotation_score_difference_degrees": 9.947598300641403e-14,
+        "max_translation_score_difference_m": 9.71445146547012e-16,
+        "planned": 722,
+        "typed_io_audits": 1,
+        "verified_source_landmark_rows": 8363
+      }
+    },
+    {
+      "accepted": false,
+      "conditions": {
+        "ate": false,
+        "complete": true,
+        "coverage": true,
+        "rpe": true
+      },
+      "files": [
+        {
+          "bytes": 31846974,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-rgbd-wide-capture-v1\\estimates.json",
+          "sha256": "7b515a2457789712de402e5d225b0cbbed662cba8cfb1d726982fa05d7d190cb"
+        },
+        {
+          "bytes": 2558,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-rgbd-wide-capture-v1\\receipt.json",
+          "sha256": "07f3e8f7a53b304c476f376236c819af668befd555624933d6b7dad13fb5f83e"
+        },
+        {
+          "bytes": 491730,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-rgbd-wide-capture-v1\\accuracy.json",
+          "sha256": "592af758928595406f5d8ffc726beb0ca385c5a7986286ad3df709b91d7f2fed"
+        },
+        {
+          "bytes": 201100,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-rgbd-wide-capture-v1\\groundtruth.txt",
+          "sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2"
+        },
+        {
+          "bytes": 1301,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\audit-rgbd-wide-capture-v1\\audit.json",
+          "sha256": "1744f49ddd126642ea0ec7829b6d191700aa351964cef73ae2f50bd2c67feff4"
+        }
+      ],
+      "generation": {
+        "bindings": {
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-plan.json": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-pnp-consensus-plan.json": "71ac033ff9b99dcca1ffa7b6225d1e429dad81439e17fc565afb769ee3da5309",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-pnp-plan.json": "f85dd80fa03d8ec0651c748b246459e8bbdb560a6cd335bfc43cf08666dec10e",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\evaluate_pose_reference.py": "99b587c5ba40378eb97a83fca16b7eac6a3ff2e20edf9aea15b79f79f3fe3f0b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\realsense_reference.py": "3aa1260975342112150f0c776e45a157473b0dcd817deb4696257800c700e8f0",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_adaptive_rgbd.py": "910cac999f0d3049a67d4c42c94f237fdfa930371959a4f8b225acd01a1f3c1f",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_keyframe_rgbd.py": "63a42850f1a727115edcd90fa489131985bc520036aa567618ea6a3a5b8f51d9",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_rgbd_odometry.py": "c5f362512dbc1c9a6258db0fd9fec3ef40e8a5d5d4bb1cafd462e16bbd72022b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_sequence.py": "459ba3b2e30ab857d099169cfa053eb9828d9f72d4a73b3e22ff215ac3e3ecdb",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_wide_rgbd.py": "54e66d959d51bda126d7a5aa4c6cfc953f2dee985e50cd5a5e7af7edadd0c869",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\wide_rgbd_protocol.py": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8",
+          "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600"
+        },
+        "estimates_sha256": "7b515a2457789712de402e5d225b0cbbed662cba8cfb1d726982fa05d7d190cb",
+        "generated_poses": 798,
+        "method": "spatialrust_wide_rgbd_pnp_cpu",
+        "numpy": "2.3.4",
+        "planned_poses": 798,
+        "projected_points": 185553749,
+        "python": "3.12.10",
+        "reference_used_for_generation": false,
+        "schema": "spatialrust.tum-generation.v1",
+        "tracking_lost": false
+      },
+      "input_reuse": {
+        "free_after_links_bytes": 686389542912,
+        "free_before_bytes": 686390591488,
+        "linked_files": 1598,
+        "linked_logical_bytes": 478351206,
+        "manifest_sha256": "3888b6b63a56a1f4d2115119ae42ce0a4c9813852abf7b510bb570b70dbbdab9",
+        "new_image_payload_bytes": 0,
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-rgbd-pnp-consensus-v1",
+        "storage": "hard links; original PNG/index payloads shared, source never edited"
+      },
+      "label": "xyz-rgbd",
+      "manifest_sha256": "d3e766e6c229998ccfbdea36da1ace7f3ec8e7cafbc4cbef07d5e448ecdf831b",
+      "output": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-rgbd-wide-capture-v1",
+      "plan_sha256": "03df039aea7c6b02069d2b5e673fbc65e080d7d407d78d476605a8d79d5725d5",
+      "prepared": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-rgbd-wide-capture-v1",
+      "score": {
+        "ate_first_pose_aligned_rmse_m": 0.11455678155527385,
+        "evaluated_poses": 795,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "rpe_evaluated_pairs": 762,
+        "rpe_planned_pairs": 768,
+        "rpe_translation_rmse_m": 0.03845702110904157,
+        "unmatched_reference_poses": 3
+      },
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "verification": {
+        "accepted": false,
+        "conditions": {
+          "ate": false,
+          "complete": true,
+          "coverage": true,
+          "rpe": true
+        },
+        "early_promotions": 0,
+        "error": null,
+        "evaluated": 795,
+        "first_failure_index": null,
+        "generated": 798,
+        "label": "xyz-rgbd",
+        "max_rotation_score_difference_degrees": 3.126388037344441e-13,
+        "max_translation_score_difference_m": 1.0894063429134349e-15,
+        "planned": 798,
+        "typed_io_audits": 15,
+        "verified_source_landmark_rows": 177657
+      }
+    },
+    {
+      "accepted": false,
+      "conditions": {
+        "ate": false,
+        "complete": true,
+        "coverage": true,
+        "rpe": true
+      },
+      "files": [
+        {
+          "bytes": 25546111,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-adaptive-wide-capture-v1\\estimates.json",
+          "sha256": "e035c738e78e234edbd9bb344caec7fc9c4391f253712efd1e5c9527c0ee6a62"
+        },
+        {
+          "bytes": 2740,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-adaptive-wide-capture-v1\\receipt.json",
+          "sha256": "db6e696fae683196f0ee0aacdc40fb4a3f5193c265e5ac1b1a16fa7431b76405"
+        },
+        {
+          "bytes": 491985,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-adaptive-wide-capture-v1\\accuracy.json",
+          "sha256": "1763e4449e668a41123ce44e84b1ea16c55a301ba15cb667ec7ee6044f477aa8"
+        },
+        {
+          "bytes": 201100,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluation-adaptive-wide-capture-v1\\groundtruth.txt",
+          "sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2"
+        },
+        {
+          "bytes": 1299,
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\audit-adaptive-wide-capture-v1\\audit.json",
+          "sha256": "94e373ea5065305512b3be9caf94b4e5ceea6ae375ff3d823943b72dbdd40c81"
+        }
+      ],
+      "generation": {
+        "bindings": {
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-adaptive-pnp-consensus-plan.json": "e827c0e3888bba31b7e12380d940dbb80064115aa528637128245b5f3bec7f22",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-keyframe-rgbd-pnp-plan.json": "7180c354e79cf5e5729c9bde34353885c3134eb5f213ce524c3922555744f11f",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-plan.json": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-pnp-plan.json": "f85dd80fa03d8ec0651c748b246459e8bbdb560a6cd335bfc43cf08666dec10e",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\evaluate_pose_reference.py": "99b587c5ba40378eb97a83fca16b7eac6a3ff2e20edf9aea15b79f79f3fe3f0b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\realsense_reference.py": "3aa1260975342112150f0c776e45a157473b0dcd817deb4696257800c700e8f0",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_adaptive_rgbd.py": "910cac999f0d3049a67d4c42c94f237fdfa930371959a4f8b225acd01a1f3c1f",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_keyframe_rgbd.py": "63a42850f1a727115edcd90fa489131985bc520036aa567618ea6a3a5b8f51d9",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_rgbd_odometry.py": "c5f362512dbc1c9a6258db0fd9fec3ef40e8a5d5d4bb1cafd462e16bbd72022b",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_sequence.py": "459ba3b2e30ab857d099169cfa053eb9828d9f72d4a73b3e22ff215ac3e3ecdb",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_wide_rgbd.py": "54e66d959d51bda126d7a5aa4c6cfc953f2dee985e50cd5a5e7af7edadd0c869",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\timestamped_trajectory_reference.py": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\tum_sequence_reference.py": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36",
+          "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\wide_rgbd_protocol.py": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8",
+          "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600"
+        },
+        "estimates_sha256": "e035c738e78e234edbd9bb344caec7fc9c4391f253712efd1e5c9527c0ee6a62",
+        "generated_poses": 798,
+        "method": "spatialrust_wide_adaptive_rgbd_pnp_cpu",
+        "numpy": "2.3.4",
+        "planned_poses": 798,
+        "projected_points": 185553749,
+        "python": "3.12.10",
+        "reference_used_for_generation": false,
+        "schema": "spatialrust.tum-generation.v1",
+        "tracking_lost": false
+      },
+      "input_reuse": {
+        "free_after_links_bytes": 686388256768,
+        "free_before_bytes": 686388781056,
+        "linked_files": 1598,
+        "linked_logical_bytes": 478351206,
+        "manifest_sha256": "6b3253542fa323972c022169c3df90ed33231cd356c9b90c31db5078f3fb4bd8",
+        "new_image_payload_bytes": 0,
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-adaptive-pnp-consensus-v1",
+        "storage": "hard links; original PNG/index payloads shared, source never edited"
+      },
+      "label": "xyz-adaptive",
+      "manifest_sha256": "9211565e25138678b3b832db21bb078078bebe7a13bab14fc3b5d006ba430d53",
+      "output": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-adaptive-wide-capture-v1",
+      "plan_sha256": "bb3a3241fb86eeaf8fcc06462548882e14b6e56a8dbf6c1923fe1a8993daba11",
+      "prepared": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-adaptive-wide-capture-v1",
+      "score": {
+        "ate_first_pose_aligned_rmse_m": 0.14442362396020547,
+        "evaluated_poses": 795,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "rpe_evaluated_pairs": 762,
+        "rpe_planned_pairs": 768,
+        "rpe_translation_rmse_m": 0.03944752514740457,
+        "unmatched_reference_poses": 3
+      },
+      "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+      "verification": {
+        "accepted": false,
+        "conditions": {
+          "ate": false,
+          "complete": true,
+          "coverage": true,
+          "rpe": true
+        },
+        "early_promotions": 24,
+        "error": null,
+        "evaluated": 795,
+        "first_failure_index": null,
+        "generated": 798,
+        "label": "xyz-adaptive",
+        "max_rotation_score_difference_degrees": 3.410605131648481e-13,
+        "max_translation_score_difference_m": 9.783840404509192e-16,
+        "planned": 798,
+        "typed_io_audits": 15,
+        "verified_source_landmark_rows": 132290
+      }
+    }
+  ],
+  "execution_record": {
+    "bytes": 1887942,
+    "path": "E:\\SpatialRustData\\maturity-80\\wide-rgbd-study-v1\\study.json",
+    "sha256": "5f793ed57a41845f1c797c2206b62cfcd43f7ff40bac6d5dddd9324687a29222"
+  },
+  "finished_at_utc": "2026-10-19T11:26:16.452336+00:00",
+  "local_tests": {
+    "focused": {
+      "errors": 0,
+      "failures": 0,
+      "file": {
+        "bytes": 10463,
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\wide-rgbd-focused-v2-tests.xml",
+        "sha256": "ba275ca8d9928598c914a8eb7d6dc47ac1805bf12809511ae79adb679a780a01"
+      },
+      "passed": 71,
+      "skipped": 0,
+      "tests": 71
+    },
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "file": {
+        "bytes": 114637,
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\wide-rgbd-final-tests.xml",
+        "sha256": "34b88c3280994da08dd5e88ec8cd58436f65b17a10560a2a0d2a83e178688b70"
+      },
+      "passed": 868,
+      "skipped": 3,
+      "tests": 871
+    },
+    "native_source_and_public_api_unchanged": true,
+    "new_cases": 31,
+    "python38_syntax_passed": true
+  },
+  "native_build": {
+    "bytes": 6127,
+    "path": "E:\\SpatialRustBuild\\pnp-consensus-v1\\build.json",
+    "sha256": "4d876ea6a30d13e5474262b0148faa2d2bdbaef58a5986e167a86461a6d7d834"
+  },
+  "native_build_protocol_commit": "cf457fd84d241714f005502a920cad5c4ef2c1d8",
+  "native_extension": {
+    "bytes": 5280768,
+    "path": "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+    "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+    "sha256": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600"
+  },
+  "native_rebuild_performed": false,
+  "post_freeze_lk_comparison": {
+    "arrays": {
+      "bytes": 19176,
+      "path": "E:\\SpatialRustData\\maturity-80\\wide-rgbd-study-v1\\independent-rpy-lk-v1\\tracks.npz",
+      "sha256": "28d2229de3a99addbf5f08f1db76fd88b7014b0b7c6b7d482064708f4cfa8f55"
+    },
+    "frozen_study": {
+      "path": "E:\\SpatialRustData\\maturity-80\\wide-rgbd-study-v1\\study.json",
+      "sha256": "5f793ed57a41845f1c797c2206b62cfcd43f7ff40bac6d5dddd9324687a29222"
+    },
+    "initial_points": 203,
+    "native_pnp_on_native_tracks": {
+      "inlier_fraction": 0.4444444444444444,
+      "inliers": 56,
+      "median_reprojection_px": 2.7094544757493786,
+      "points": 126
+    },
+    "native_pnp_on_opencv_tracks": {
+      "inlier_fraction": 0.453125,
+      "inliers": 58,
+      "median_reprojection_px": 2.3270667287887337,
+      "points": 128
+    },
+    "native_tracking_settings": {
+      "epsilon": 0.001,
+      "max_forward_backward_error": 0.75,
+      "max_iterations": 30,
+      "min_eigenvalue": 0.0001,
+      "pyramid_levels": 4,
+      "window_radius": 10
+    },
+    "native_valid_tracks": 126,
+    "observed_at_utc": "2026-10-19T11:29:50.712938+00:00",
+    "opencv_tracking_settings": {
+      "epsilon": 0.001,
+      "forward_backward_limit_px": 0.75,
+      "maxLevel": 3,
+      "max_iterations": 30,
+      "minEigThreshold": 0.0001,
+      "window": [
+        21,
+        21
+      ]
+    },
+    "opencv_valid_tracks": 128,
+    "opencv_version": "4.13.0",
+    "protocol_commit": "a6acccc80e97aed46055a6cfede9898720ddc04f",
+    "reference_motion_used": false,
+    "schema": "spatialrust.post-freeze-rpy-lk-comparison.v1",
+    "scope": "One post-freeze failed interval, same images/initial native detector points/source depth. Different LK pyramids, gradients, numeric precision, border/eigen admission; not an equivalent-algorithm or trajectory accuracy claim. Both accepted track sets feed the same unchanged native PnP and 2px criterion. No settings search or production OpenCV dependency.",
+    "shared_target_disagreement_px": {
+      "above_2px": 2,
+      "maximum": 7.1522110918299475,
+      "median": 0.02238490193108398
+    },
+    "shared_valid_tracks": 118,
+    "source_depth": {
+      "bytes": 128573,
+      "path": "depth/1305031229.564442.png",
+      "sha256": "91071c853569915cc61cb982156f0c6a999eaea004a4e83f2d58110036b90f4c",
+      "timestamp_ns": 1305031229564442000
+    },
+    "source_frame_index": 1,
+    "source_rgb": {
+      "bytes": 394533,
+      "path": "rgb/1305031229.564425.png",
+      "sha256": "f2abae35696cc4a8127ddea96416d95ff4614f85c37b27e465227fef5ea2c6f0",
+      "timestamp_ns": 1305031229564425000
+    },
+    "target_frame_index": 2,
+    "target_rgb": {
+      "bytes": 415027,
+      "path": "rgb/1305031229.596600.png",
+      "sha256": "90028f942b861fa94c4d9e46001ed83bfa99bb66df364d1318f6dc6f53bbcdbe",
+      "timestamp_ns": 1305031229596600000
+    }
+  },
+  "post_freeze_pnp_comparison": {
+    "arrays": {
+      "bytes": 9639,
+      "path": "E:\\SpatialRustData\\maturity-80\\wide-rgbd-study-v1\\independent-rpy-pnp-v1\\correspondences.npz",
+      "sha256": "227c42b9aa9bf92f045d0b8852db2265418baa2427e7203cc6c6e71e694f27e8"
+    },
+    "comparator_contract": {
+      "comparison_rescore_precision": "float64 over the original rows",
+      "confidence": 0.99,
+      "iterations": 2000,
+      "native_minimal_points": 6,
+      "opencv_flag": "SOLVEPNP_EPNP",
+      "opencv_internal_input_precision": "float32 in the pinned legacy RANSAC implementation",
+      "opencv_minimal_points": 5,
+      "reference_documentation": "https://docs.opencv.org/4.13.0/d5/d1f/calib3d_solvePnP.html",
+      "seed": 0,
+      "source": "https://raw.githubusercontent.com/opencv/opencv/4.13.0/modules/calib3d/src/solvepnp.cpp",
+      "threshold_px": 2.0
+    },
+    "expected_native_admission_error": "RGB-D PnP has 56/126 inliers and 0 rejected depths",
+    "frozen_estimate": {
+      "bytes": 209980,
+      "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-rgbd-wide-capture-v1\\estimates.json",
+      "sha256": "901aeada3a3c63899d5aace3f939d2fd36c91aa05186b511e17c1000d3963280"
+    },
+    "input_plan_sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781",
+    "manifest_sha256": "c7746586fbc9cf7f995515bb43af21f56bad484b290034d0946edd457cfe9969",
+    "native_cold_fit_on_opencv_inliers": {
+      "error": "invalid parameter: absolute pose rotation must be a proper orthonormal matrix",
+      "returned_valid_model": false
+    },
+    "native_extension": {
+      "path": "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+      "sha256": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600"
+    },
+    "native_score": {
+      "all_row_median_residual_px": 2.7094544757493786,
+      "determinant": 1.0,
+      "inlier_fraction": 0.4444444444444444,
+      "inlier_residual_sum_px": 62.840381683200356,
+      "inliers": 56,
+      "orthogonality_max_error": 2.220446049250313e-16
+    },
+    "observed_at_utc": "2026-10-19T11:26:46.648905+00:00",
+    "opencv_reported_inliers": 53,
+    "opencv_rescored": {
+      "all_row_median_residual_px": 2.7393369308940487,
+      "determinant": 1.0,
+      "inlier_fraction": 0.4444444444444444,
+      "inlier_residual_sum_px": 65.7143477100979,
+      "inliers": 56,
+      "orthogonality_max_error": 1.1102230246251565e-16
+    },
+    "opencv_version": "4.13.0",
+    "points": 126,
+    "protocol_commit": "a6acccc80e97aed46055a6cfede9898720ddc04f",
+    "reference_motion_used": false,
+    "schema": "spatialrust.post-freeze-rpy-pnp-comparison.v1",
+    "scope": "One post-freeze failed interval, same rows/camera/2px criterion; different minimal model, fitting and sampling. Numerical feasibility only, not trajectory or physical calibration accuracy; no parameter search or production OpenCV dependency.",
+    "source_depth": {
+      "bytes": 128573,
+      "path": "depth/1305031229.564442.png",
+      "sha256": "91071c853569915cc61cb982156f0c6a999eaea004a4e83f2d58110036b90f4c",
+      "timestamp_ns": 1305031229564442000
+    },
+    "source_frame_index": 1,
+    "source_rgb": {
+      "bytes": 394533,
+      "path": "rgb/1305031229.564425.png",
+      "sha256": "f2abae35696cc4a8127ddea96416d95ff4614f85c37b27e465227fef5ea2c6f0",
+      "timestamp_ns": 1305031229564425000
+    },
+    "source_rgb_delta_ns": -17000,
+    "target_frame_index": 2,
+    "target_rgb": {
+      "bytes": 415027,
+      "path": "rgb/1305031229.596600.png",
+      "sha256": "90028f942b861fa94c4d9e46001ed83bfa99bb66df364d1318f6dc6f53bbcdbe",
+      "timestamp_ns": 1305031229596600000
+    },
+    "target_rgb_delta_ns": -17000
+  },
+  "previous_receipt": {
+    "bytes": 47013,
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\receipts\\2026-10-19_pnp_consensus.json",
+    "sha256": "1c0288b47fb1a1b3527e15ada59b6bc243d9d32d1f7fc3124c5264265c088a77"
+  },
+  "protocol_commit": "a6acccc80e97aed46055a6cfede9898720ddc04f",
+  "schema": "spatialrust.wide-rgbd-validation-summary.v1",
+  "scope": "One fixed wider LK setting on previously observed development scenes; all four outcomes and older baselines retained. No captured arrays in this receipt. Post-freeze OpenCV is a private diagnostic only, with distinct model, sampling and precision; no production dependency or accepted trajectory substitute.",
+  "started_at_utc": "2026-10-19T11:05:05.487818+00:00",
+  "storage": {
+    "basis": "Logical file sizes; not NTFS allocated clusters or free-space deltas. New wheel/venv/build cache recorded separately.",
+    "diagnostic_arrays": [
+      {
+        "bytes": 9639,
+        "path": "E:\\SpatialRustData\\maturity-80\\wide-rgbd-study-v1\\independent-rpy-pnp-v1\\correspondences.npz",
+        "sha256": "227c42b9aa9bf92f045d0b8852db2265418baa2427e7203cc6c6e71e694f27e8"
+      },
+      {
+        "bytes": 19176,
+        "path": "E:\\SpatialRustData\\maturity-80\\wide-rgbd-study-v1\\independent-rpy-lk-v1\\tracks.npz",
+        "sha256": "28d2229de3a99addbf5f08f1db76fd88b7014b0b7c6b7d482064708f4cfa8f55"
+      }
+    ],
+    "free_after_bytes": 686749954048,
+    "free_before_bytes": 687162863616,
+    "minimum_free_bytes": 21474836480,
+    "new_archive_bytes": 0,
+    "new_image_payload_bytes": 0,
+    "new_result_files": 88,
+    "new_result_logical_bytes": 410826962,
+    "scratch_cleanup": {
+      "records": [
+        {
+          "files": 886,
+          "logical_bytes": 194281598,
+          "path": "E:\\SpatialRustBuild\\pnp-consensus-v1\\pytest-wide-full-v1",
+          "test_xml": "wide-rgbd-full-tests.xml"
+        },
+        {
+          "files": 200,
+          "logical_bytes": 94944186,
+          "path": "E:\\SpatialRustBuild\\pnp-consensus-v1\\pytest-wide-focused-v1",
+          "test_xml": "wide-rgbd-focused-tests.xml"
+        },
+        {
+          "files": 290,
+          "logical_bytes": 95110304,
+          "path": "E:\\SpatialRustBuild\\pnp-consensus-v1\\pytest-wide-focused-v2",
+          "test_xml": "wide-rgbd-focused-v2-tests.xml"
+        },
+        {
+          "files": 976,
+          "logical_bytes": 194448101,
+          "path": "E:\\SpatialRustBuild\\pnp-consensus-v1\\pytest-wide-final-v1",
+          "test_xml": "wide-rgbd-final-tests.xml"
+        },
+        {
+          "files": 976,
+          "logical_bytes": 194447711,
+          "path": "E:\\SpatialRustBuild\\pnp-consensus-v1\\pytest-wide-full-v2",
+          "test_xml": "wide-rgbd-full-v2-tests.xml"
+        }
+      ],
+      "schema": "spatialrust.wide-rgbd-test-scratch-cleanup.v1",
+      "scope": "Completed dedicated pytest basetemps only. XML/logs, source datasets, frozen results, wheel/venv/native cache retained.",
+      "utc": "2026-10-19T10:58:56.7903825Z"
+    },
+    "shared_input_logical_bytes": 1836299360
+  },
+  "verification": {
+    "all_baselines_preserved": true,
+    "all_cases_accepted": false,
+    "all_pose_chains_masks_depths_verified": true,
+    "all_reference_audits_verified": true,
+    "all_source_links_verified": true,
+    "cases": [
+      {
+        "accepted": false,
+        "conditions": {
+          "ate": true,
+          "complete": false,
+          "coverage": false,
+          "rpe": false
+        },
+        "early_promotions": 0,
+        "error": "RGB-D PnP has 56/126 inliers and 0 rejected depths",
+        "evaluated": 2,
+        "first_failure_index": 2,
+        "generated": 2,
+        "label": "rpy-rgbd",
+        "max_rotation_score_difference_degrees": 7.771561172376096e-16,
+        "max_translation_score_difference_m": 4.440892098500626e-16,
+        "planned": 722,
+        "typed_io_audits": 1,
+        "verified_source_landmark_rows": 125
+      },
+      {
+        "accepted": false,
+        "conditions": {
+          "ate": true,
+          "complete": false,
+          "coverage": false,
+          "rpe": false
+        },
+        "early_promotions": 9,
+        "error": "keyframe PnP lacks fixed inlier/depth support",
+        "evaluated": 59,
+        "first_failure_index": 59,
+        "generated": 59,
+        "label": "rpy-adaptive",
+        "max_rotation_score_difference_degrees": 9.947598300641403e-14,
+        "max_translation_score_difference_m": 9.71445146547012e-16,
+        "planned": 722,
+        "typed_io_audits": 1,
+        "verified_source_landmark_rows": 8363
+      },
+      {
+        "accepted": false,
+        "conditions": {
+          "ate": false,
+          "complete": true,
+          "coverage": true,
+          "rpe": true
+        },
+        "early_promotions": 0,
+        "error": null,
+        "evaluated": 795,
+        "first_failure_index": null,
+        "generated": 798,
+        "label": "xyz-rgbd",
+        "max_rotation_score_difference_degrees": 3.126388037344441e-13,
+        "max_translation_score_difference_m": 1.0894063429134349e-15,
+        "planned": 798,
+        "typed_io_audits": 15,
+        "verified_source_landmark_rows": 177657
+      },
+      {
+        "accepted": false,
+        "conditions": {
+          "ate": false,
+          "complete": true,
+          "coverage": true,
+          "rpe": true
+        },
+        "early_promotions": 24,
+        "error": null,
+        "evaluated": 795,
+        "first_failure_index": null,
+        "generated": 798,
+        "label": "xyz-adaptive",
+        "max_rotation_score_difference_degrees": 3.410605131648481e-13,
+        "max_translation_score_difference_m": 9.783840404509192e-16,
+        "planned": 798,
+        "typed_io_audits": 15,
+        "verified_source_landmark_rows": 132290
+      }
+    ],
+    "protocol_byte_proofs": [
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_sequence.py",
+        "sha256": "459ba3b2e30ab857d099169cfa053eb9828d9f72d4a73b3e22ff215ac3e3ecdb"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_rgbd_odometry.py",
+        "sha256": "c5f362512dbc1c9a6258db0fd9fec3ef40e8a5d5d4bb1cafd462e16bbd72022b"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_keyframe_rgbd.py",
+        "sha256": "63a42850f1a727115edcd90fa489131985bc520036aa567618ea6a3a5b8f51d9"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_adaptive_rgbd.py",
+        "sha256": "910cac999f0d3049a67d4c42c94f237fdfa930371959a4f8b225acd01a1f3c1f"
+      },
+      {
+        "byte_proof": "exact CRLF checkout reconstructed from Git blob",
+        "path": "scripts/evaluate_tum_sequence.py",
+        "sha256": "401d567440f48bba406c1c6c813a4d3c4c9c3c38755f1322f704773fd449d852"
+      },
+      {
+        "byte_proof": "exact CRLF checkout reconstructed from Git blob",
+        "path": "scripts/audit_tum_trajectory.py",
+        "sha256": "c4a96c32d70d76d7f791471097d8743d594d26a881e114e00e4c2079dc4482d5"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/tum_sequence_reference.py",
+        "sha256": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36"
+      },
+      {
+        "byte_proof": "exact CRLF checkout reconstructed from Git blob",
+        "path": "scripts/realsense_reference.py",
+        "sha256": "3aa1260975342112150f0c776e45a157473b0dcd817deb4696257800c700e8f0"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/timestamped_trajectory_reference.py",
+        "sha256": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c"
+      },
+      {
+        "byte_proof": "exact CRLF checkout reconstructed from Git blob",
+        "path": "scripts/evaluate_pose_reference.py",
+        "sha256": "99b587c5ba40378eb97a83fca16b7eac6a3ff2e20edf9aea15b79f79f3fe3f0b"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_wide_rgbd.py",
+        "sha256": "54e66d959d51bda126d7a5aa4c6cfc953f2dee985e50cd5a5e7af7edadd0c869"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/wide_rgbd_protocol.py",
+        "sha256": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/reuse_tum_prepared.py",
+        "sha256": "e21f4d82b3c2891eb11bd864d5f8eff75ebdb605f984e6d46bd2c6c88e569626"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "CHANGELOG.md",
+        "sha256": "231d8d52a54f03360b03e72bd396bc0db86dad24e39c921e3022ddf99ff7582c"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "benchmarks/tum-fr1-rpy-adaptive-wide-capture-plan.json",
+        "sha256": "471275eb8837947e473cafb125210edc600a06cd09d582b8f7b90bb26290d688"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "benchmarks/tum-fr1-rpy-rgbd-wide-capture-plan.json",
+        "sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "benchmarks/tum-fr1-xyz-adaptive-wide-capture-plan.json",
+        "sha256": "bb3a3241fb86eeaf8fcc06462548882e14b6e56a8dbf6c1923fe1a8993daba11"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "benchmarks/tum-fr1-xyz-rgbd-wide-capture-plan.json",
+        "sha256": "03df039aea7c6b02069d2b5e673fbc65e080d7d407d78d476605a8d79d5725d5"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "crates/spatialrust-py/tests/test_tum_wide_rgbd.py",
+        "sha256": "923fd1893806186f7ced21d11e9df695696169965e4908a930255018da4ebdb7"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "021e7c652b3f1327e160efa318c28ef83f5fcc4cfc136dae34df6c7854ec3757"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "docs/ROADMAP.md",
+        "sha256": "ada6aa167146e8eac70ea449cdd3fc0690bc76b0945f7d48deb124521010bba2"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "docs/WIDE_RGBD_CAPTURE_VALIDATION.md",
+        "sha256": "38182eccaf1aa9192c63765ed88a744948be526218e1500345adac6478aca959"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/reuse_tum_prepared.py",
+        "sha256": "e21f4d82b3c2891eb11bd864d5f8eff75ebdb605f984e6d46bd2c6c88e569626"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_adaptive_rgbd.py",
+        "sha256": "910cac999f0d3049a67d4c42c94f237fdfa930371959a4f8b225acd01a1f3c1f"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_keyframe_rgbd.py",
+        "sha256": "63a42850f1a727115edcd90fa489131985bc520036aa567618ea6a3a5b8f51d9"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_rgbd_odometry.py",
+        "sha256": "c5f362512dbc1c9a6258db0fd9fec3ef40e8a5d5d4bb1cafd462e16bbd72022b"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_sequence.py",
+        "sha256": "459ba3b2e30ab857d099169cfa053eb9828d9f72d4a73b3e22ff215ac3e3ecdb"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/run_tum_wide_rgbd.py",
+        "sha256": "54e66d959d51bda126d7a5aa4c6cfc953f2dee985e50cd5a5e7af7edadd0c869"
+      },
+      {
+        "byte_proof": "exact Git blob",
+        "path": "scripts/wide_rgbd_protocol.py",
+        "sha256": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8"
+      }
+    ],
+    "protocol_commit": "a6acccc80e97aed46055a6cfede9898720ddc04f",
+    "schema": "spatialrust.wide-rgbd-verification.v1",
+    "storage": {
+      "basis": "Logical file sizes; not NTFS allocated clusters or free-space deltas. New wheel/venv/build cache recorded separately.",
+      "new_archive_bytes": 0,
+      "new_image_payload_bytes": 0,
+      "new_result_files": 88,
+      "new_result_logical_bytes": 410826962,
+      "shared_input_logical_bytes": 1836299360
+    }
+  }
+}
