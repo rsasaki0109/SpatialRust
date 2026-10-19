@@ -62,6 +62,13 @@ retains 1e-8m/1e-6degree tolerances and all reference gaps. Preserve both result
 and every earlier failure, including incomplete trajectories. No setting search,
 post-score gate revision, timing ranking or held-out generalization claim.
 
+Independent NumPy reprojection auditing checks every successful adjacent pair's
+complete valid-source count, four-corner target depth mask, final correspondence
+count and fraction, photometric RMSE and metric depth RMSE. Counts are exact;
+fraction tolerance is 1e-12 and RMSE tolerances are 1e-10. The inherited sparse
+control dictionary remains only for checked source-plan reuse; the dense model
+does not consume those detector, LK or PnP settings.
+
 Build/install only into a new E-drive environment. Preserve both frozen wheels
 and extensions, original GPU binaries, source archives and prior results. Data,
 build, cache and temporary outputs stay on E with a 20GiB free floor; cap new

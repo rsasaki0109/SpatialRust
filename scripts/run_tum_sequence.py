@@ -147,16 +147,21 @@ def decode_rgb_gray(raw, camera):
 
 
 def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
-             method='spatialrust_cpu', additional_bindings=(), rgbd_aligner=None):
+             method='spatialrust_cpu', additional_bindings=(), rgbd_aligner=None,
+             dense_rgbd_aligner=None):
     """Run native ICP by default; explicit adapters serve separate baseline studies."""
-    image_method = method in ('spatialrust_rgbd_pnp_cpu', 'spatialrust_keyframe_rgbd_pnp_cpu',
+    dense_method = method == 'spatialrust_dense_projective_rgbd_cpu'
+    image_method = dense_method or method in ('spatialrust_rgbd_pnp_cpu', 'spatialrust_keyframe_rgbd_pnp_cpu',
                               'spatialrust_adaptive_keyframe_rgbd_pnp_cpu',
                               'spatialrust_wide_rgbd_pnp_cpu',
                               'spatialrust_wide_adaptive_rgbd_pnp_cpu')
-    if image_method:
-        if rgbd_aligner is None or pair_aligner is not None:
+    if dense_method:
+        if dense_rgbd_aligner is None or rgbd_aligner is not None or pair_aligner is not None:
+            raise ValueError('dense RGB-D requires its explicit two-depth adapter only')
+    elif image_method:
+        if rgbd_aligner is None or pair_aligner is not None or dense_rgbd_aligner is not None:
             raise ValueError('RGB-D method requires its explicit image adapter only')
-    elif rgbd_aligner is not None or method not in ('spatialrust_cpu', 'open3d_cpu', 'spatialrust_point_to_plane_cpu',
+    elif dense_rgbd_aligner is not None or rgbd_aligner is not None or method not in ('spatialrust_cpu', 'open3d_cpu', 'spatialrust_point_to_plane_cpu',
                       'spatialrust_keyframe_point_to_plane_cpu',
                       'spatialrust_overlap_keyframe_point_to_plane_cpu',
                       'spatialrust_hybrid_keyframe_cpu') or (pair_aligner is None) != (method == 'spatialrust_cpu'):
@@ -191,7 +196,7 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
             Path(__file__).with_name('realsense_reference.py'),
             Path(__file__).with_name('timestamped_trajectory_reference.py'),
             Path(__file__).with_name('evaluate_pose_reference.py')]
-    adapter = rgbd_aligner if image_method else pair_aligner
+    adapter = dense_rgbd_aligner if dense_method else rgbd_aligner if image_method else pair_aligner
     if adapter is not None:
         import inspect
         adapter_source = inspect.getsourcefile(adapter)
@@ -233,7 +238,10 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
                     if frame['timestamp_ns']-previous_ns > controls['max_tracking_gap_ns']:
                         raise ValueError('depth interval exceeds preregistered tracking gap')
                     if image_method:
-                        transform, report = rgbd_aligner(previous_depth, previous_gray, gray, camera, controls)
+                        if dense_method:
+                            transform, report = dense_rgbd_aligner(previous_depth, depth, previous_gray, gray, camera, controls)
+                        else:
+                            transform, report = rgbd_aligner(previous_depth, previous_gray, gray, camera, controls)
                         count, fraction, rmse = sr.distance_gated_support(
                             sr.apply_transform(cloud, transform.astype(np.float32)), previous,
                             controls['stages'][-1]['gate_m'])
