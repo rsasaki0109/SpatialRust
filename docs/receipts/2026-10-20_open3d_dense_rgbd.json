@@ -647,5 +647,82 @@
       "C": 78720118784,
       "E": 678105444352
     }
+  },
+  "post_study_optional_comparator_wheel_validation": {
+    "failed_ci_source_commit": "b866c817226fc5255c1c59c6f74b9122f8ea9d84",
+    "policy": "Only the exact external legacy-image ownership test module/name and unavailable open3d.cpu.pybind import reason may add one skip. Baseline expected skip count, all failures, duplicate/other skips and actual installed-wheel byte/ICP/PCD checks retain strict rejection.",
+    "source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tools\\verify_installed_wheel.py",
+      "bytes": 5111,
+      "sha256": "41730f41ec99005fbcf7ce4d07e761d6418c480921589b8a0d6ac69f6e361058"
+    },
+    "tests_source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_installed_wheel_junit.py",
+      "bytes": 2366,
+      "sha256": "0b07a4c51fa33736836fa1767958eabbd7f3a752a9f72022efc0fcd1a2ee9a4c"
+    },
+    "local_full_tests": {
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v4.xml",
+        "bytes": 136733,
+        "sha256": "4f9a76d93ffc89a38ddfe11fd4d80e82ad50b78c221ce7038ec5354937986b6e"
+      },
+      "tests": 1021,
+      "passed": 1018,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0,
+      "new_wheel_admission_cases": 9
+    },
+    "deliberately_simulated_external_module_absence": true,
+    "unavailable_comparator_tests": {
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-absent-tests.xml",
+        "bytes": 5312,
+        "sha256": "e57830412176e86a30a94371496194982ba4bc8ab36577243cdfade7cb46d61a"
+      },
+      "tests": 35,
+      "passed": 34,
+      "skipped": 1
+    },
+    "actual_installed_wheel_validation": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-absent-wheel-validation.json",
+      "bytes": 1203,
+      "sha256": "e66add16b0d9544617d17b484f1c0d704e181c27c668a337262c3d03366cddeb"
+    },
+    "installed_wheel_bytes_icp_support_and_exact_pcd_verified": true,
+    "scratch_cleanup": {
+      "Schema": "spatialrust.open3d-dense-wheel-skip-pytest-scratch-cleanup.v1",
+      "VerifiedAtUtc": "2026-10-19T20:12:29.0981611Z",
+      "Paths": [
+        {
+          "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-full-v4",
+          "Files": 1104,
+          "LogicalBytes": 316354148,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v4.xml",
+          "XmlSha256": "4f9a76d93ffc89a38ddfe11fd4d80e82ad50b78c221ce7038ec5354937986b6e",
+          "Tests": 1021,
+          "Skipped": 3
+        },
+        {
+          "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-open3d-absent-v1",
+          "Files": 47,
+          "LogicalBytes": 40674911,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-absent-tests.xml",
+          "XmlSha256": "e57830412176e86a30a94371496194982ba4bc8ab36577243cdfade7cb46d61a",
+          "Tests": 35,
+          "Skipped": 1
+        }
+      ],
+      "AlreadyAbsent": [],
+      "LogicalBytesRemoved": 357029059,
+      "FreeBeforeBytes": 677746106368,
+      "FreeAfterBytes": 678104920064,
+      "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+    },
+    "total_passing_scratch_logical_bytes_removed": 1427823793,
+    "scientific_outputs_and_plans_preserved": true,
+    "scientific_refit": false,
+    "native_rebuild": false
   }
 }

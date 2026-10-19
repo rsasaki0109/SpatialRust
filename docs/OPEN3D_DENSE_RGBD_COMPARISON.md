@@ -156,3 +156,23 @@ passing scratch cleanup reclaims another 316,349,249 logical bytes, bringing
 total passing-scratch reclamation to 1,070,794,734 bytes. Original measurements
 and the initial three cleanup records stay intact; the receipt appends separate
 source identities, XML, cleanup and scientific-output preservation checks.
+
+### Optional external test in installed-wheel validation
+
+Linux then passed every test but the wheel receipt expected only the existing
+three optional ONNX skips. The external image-ownership smoke also skips when
+Open3D is absent from that fresh environment. Wheel validation now identifies
+only this exact test module/name and its unavailable `open3d.cpu.pybind` import
+reason as one additional optional skip. Baseline skip counts stay fixed; wrong
+names/modules/reasons, duplicates, absent cases, failures and all other extra
+skips reject. Installed package/native bytes, ICP/support and exact PCD checks
+still run.
+
+Nine wheel-admission regressions bring full local validation to 1,018 passes and
+three existing optional ONNX skips. A separate process deliberately hiding only
+Open3D produces 34 passes/one identified external skip and successfully validates
+the actual installed frozen wheel and runtime. This simulates module absence;
+it is separate from the real Linux CI. Both passing scratch roots were removed
+after XML/path/reparse checks, bringing total logical reclamation to
+1,427,823,793 bytes. The receipt appends their separate evidence; no scientific
+plan, estimate, score or numerical binary changed and no fitting was repeated.
