@@ -70,6 +70,19 @@ rpy ATE 0.120216m fails the fixed 0.10m gate despite RPE 0.048803m passing.
 All 1,518 causal/raw pairs and both score audits pass. The policy stays
 experimental; raw and joint defaults/results remain preserved.
 
+`DenseRgbdPreprocessing::Gaussian3GrayOnlyPairMean` and Python
+`preprocessing="gaussian3-gray-only-pair-mean"` scale fitting gray once from
+the initial native correspondence means, retaining original depth and raw
+final statistics. Means/gains require finite positive values and minimum count;
+streaming sums add no pixel-sized buffer. The
+[fixed pair-mean study](PAIR_MEAN_DENSE_RGBD_VALIDATION.md) has native 20,
+focused Python 106 and full Python 1,100 passes/3 skips before fitting, plus
+exact 15-case old/new regression across the three older selectors. Both full
+trajectories finish: xyz ATE/RPE 0.086962/0.025649m passes; rpy
+0.130595/0.048722m fails the fixed 0.10m ATE gate. All 1,518 causal/raw pairs
+and both score audits pass, but this does not establish an rpy accuracy benefit
+or change the raw default.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree

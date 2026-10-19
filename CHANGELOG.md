@@ -19,6 +19,22 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add explicit initial-correspondence pair-mean gray fitting with original
+  depth and raw final admission. Keep older selectors, defaults and all gates;
+  native 20/focused Python 106/full Python 1,100 passes with 3 optional skips,
+  Clippy/WASM and exact 15-case old/new selector regression pass before fitting.
+  Preserve the initial test-type compile failure and reclaim 560MB of verified
+  passing scratch. Both full scenes finish: xyz ATE/RPE 0.086962/0.025649m
+  passes; rpy 0.130595/0.048722m fails ATE. All 1,518 causal/raw pairs and
+  both score audits pass. Preserve all controls with 317MB scientific output,
+  25MB final new package/cache and zero image copies. See
+  `docs/PAIR_MEAN_DENSE_RGBD_VALIDATION.md`.
+  Preserve Python 3.8 CI on supported Ubuntu 24.04 and isolate tiny synthetic
+  audit storage from host free space. Three production 20GiB boundary tests
+  bring the updated suite to 1,103 passes/3 skips; all four native wheel lanes
+  remain. Preserve original measurements and CI failure logs; combined verified
+  passing scratch cleanup is 1.16GB.
+
 - Add an explicit gray-only Gaussian3 dense fitting policy with original depth,
   unchanged raw final admission and bounded deterministic CPU execution. Keep
   raw/joint selectors and defaults; native 15, focused Python 75, full Python

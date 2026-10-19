@@ -6,6 +6,12 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+An explicit initial-correspondence intensity policy scales fitting gray planes
+once before pyramid construction, while retaining original fitting depth and
+raw final admission. Streaming means and independent gain application keep
+owned memory and CPU/device boundaries explicit. See the
+[fixed pair-mean protocol](PAIR_MEAN_DENSE_RGBD_VALIDATION.md).
+
 A separate gray-only fitting policy preserves original full-resolution depth
 while sharing the prior Gaussian3 gray arithmetic and raw final admission.
 Typed selection, preflighted owned planes and defaults retain their contracts;

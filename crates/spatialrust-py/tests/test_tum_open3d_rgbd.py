@@ -192,7 +192,7 @@ def test_comparator_contract_rejects_changed_acceptance_or_model(change):
 
 
 @pytest.mark.parametrize('reject_support',[False,True])
-def test_generator_preserves_world_io_and_no_call_after_loss(tmp_path,monkeypatch,reject_support):
+def test_generator_preserves_world_io_and_no_call_after_loss(tmp_path,monkeypatch,reject_support,synthetic_dense_audit_space):
     archive,digest=fixture(tmp_path,count=3);prepared=tmp_path/'prepared'
     prepare(archive,digest,PLAN,prepared);calls=[]
     def compute(*args):calls.append(args[4].copy());return True,np.eye(4),np.eye(6)

@@ -26,8 +26,8 @@ def _align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray
     initial = np.eye(4) if initial is None else rigid(initial).copy()
     native_controls = dict(CONTROLS)
     if preprocessing is not None:
-        if preprocessing not in ('gaussian3','gaussian3-gray-only'):
-            raise ValueError('explicit dense fitting policy must be gaussian3 or gaussian3-gray-only')
+        if preprocessing not in ('gaussian3','gaussian3-gray-only','gaussian3-gray-only-pair-mean'):
+            raise ValueError('explicit dense fitting policy must be a supported Gaussian3 policy')
         native_controls['preprocessing'] = preprocessing
     rotation, translation, report = sr.estimate_dense_rgbd_odometry(
         previous_gray, source, current_gray, target,
