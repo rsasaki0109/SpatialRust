@@ -1,7 +1,7 @@
 //! Execute fixed public RGB-D image/point checks with explicit device transfers.
 //!
 //! Input preparation and source provenance are documented with the fixed plan.
-//! Usage: gpu_public_rgbd_conformance INPUT_DIRECTORY MANIFEST_SHA256 high|low
+//! Usage: gpu_public_rgbd_conformance INPUT_DIRECTORY MANIFEST_SHA256 high|low [--backend primary|gl]
 
 use std::{collections::BTreeMap, error::Error, fs, io, path::Path};
 
@@ -9,8 +9,8 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use spatialrust_gpu::{
     box_blur_gpu, downsample_voxel_centroid_gpu, histogram_u8_gpu, rgb_to_gray_gpu, GpuImage,
-    GpuImageBorder, GpuKdTree, GpuQueryBatch, GpuResourcePoolStats, WgpuPowerPreference,
-    WgpuRuntime,
+    GpuImageBorder, GpuKdTree, GpuQueryBatch, GpuResourcePoolStats, WgpuBackendSelection,
+    WgpuPowerPreference, WgpuRuntime, WgpuRuntimeOptions,
 };
 use spatialrust_image::Image;
 use spatialrust_search::KdTree;
@@ -302,16 +302,34 @@ fn run_frame(runtime: &WgpuRuntime, directory: &Path, frame: &Value) -> Result<V
             && maximum_centroid_error <= CENTROID_TOLERANCE && radius_errors == 0 && resource_ok}))
 }
 
-fn main() -> Result<()> {
-    let arguments: Vec<_> = std::env::args().collect();
-    if arguments.len() != 4 {
-        return Err(invalid("usage: INPUT_DIRECTORY MANIFEST_SHA256 high|low"));
+fn runtime_options(arguments: &[String]) -> Result<WgpuRuntimeOptions> {
+    if arguments.len() != 4 && arguments.len() != 6 {
+        return Err(invalid(
+            "usage: INPUT_DIRECTORY MANIFEST_SHA256 high|low [--backend primary|gl]",
+        ));
     }
-    let preference = match arguments[3].as_str() {
+    let mut options = WgpuRuntimeOptions::default();
+    options.power_preference = match arguments[3].as_str() {
         "high" => WgpuPowerPreference::HighPerformance,
         "low" => WgpuPowerPreference::LowPower,
         _ => return Err(invalid("power preference must be high or low")),
     };
+    if arguments.len() == 6 {
+        if arguments[4] != "--backend" {
+            return Err(invalid("expected trailing --backend primary|gl"));
+        }
+        options.backend = match arguments[5].as_str() {
+            "primary" => WgpuBackendSelection::Primary,
+            "gl" => WgpuBackendSelection::Gl,
+            _ => return Err(invalid("backend must be primary or gl")),
+        };
+    }
+    Ok(options)
+}
+
+fn main() -> Result<()> {
+    let arguments: Vec<_> = std::env::args().collect();
+    let options = runtime_options(&arguments)?;
     let directory = Path::new(&arguments[1]).canonicalize()?;
     let raw_manifest = fs::read(directory.join("manifest.json"))?;
     if sha(&raw_manifest) != arguments[2] {
@@ -328,7 +346,7 @@ fn main() -> Result<()> {
     {
         return Err(invalid("manifest differs from fixed dataset, geometry or frame indices"));
     }
-    let runtime = WgpuRuntime::new_headless_with_preference(preference)?;
+    let runtime = WgpuRuntime::new_headless_with_options(options)?;
     let mut outcomes = Vec::new();
     for frame in frames {
         outcomes.push(match run_frame(&runtime, &directory, frame) {
@@ -345,7 +363,8 @@ fn main() -> Result<()> {
         "{}",
         serde_json::to_string_pretty(&json!({
             "schema":"spatialrust.public-gpu-conformance.v1","manifest_sha256":arguments[2],
-            "preference":arguments[3],"backend":info.backend,"device_type":info.device_type,
+            "preference":arguments[3],"requested_backend":options.backend.as_str(),
+            "backend":info.backend,"device_type":info.device_type,
             "os":std::env::consts::OS,"architecture":std::env::consts::ARCH,
             "limits":{"max_storage_buffers_per_shader_stage":limits.max_storage_buffers_per_shader_stage,
                 "max_texture_dimension_2d":limits.max_texture_dimension_2d,
@@ -363,6 +382,26 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn backend_parser_preserves_legacy_selection_and_rejects_malformed_flags() {
+        let args = |tail: &[&str]| tail.iter().map(|arg| arg.to_string()).collect::<Vec<_>>();
+        let legacy = runtime_options(&args(&["runner", "missing", "hash", "low"])).unwrap();
+        assert_eq!(legacy.backend, WgpuBackendSelection::Primary);
+        assert_eq!(legacy.power_preference, WgpuPowerPreference::LowPower);
+        assert!(!legacy.request_timestamps);
+        let gl = runtime_options(&args(&["runner", "missing", "hash", "high", "--backend", "gl"]))
+            .unwrap();
+        assert_eq!(gl.backend, WgpuBackendSelection::Gl);
+        for invalid in [
+            vec!["runner", "missing", "hash", "high", "--backend"],
+            vec!["runner", "missing", "hash", "high", "--backend", "vulkan"],
+            vec!["runner", "missing", "hash", "high", "--other", "gl"],
+            vec!["runner", "missing", "hash", "other"],
+        ] {
+            assert!(runtime_options(&args(&invalid)).is_err());
+        }
+    }
 
     #[test]
     fn integral_box_matches_hand_computed_replicate_borders() {

@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add typed headless GPU runtime options with explicit GL selection while
+  preserving primary backend defaults, shared runtime and timestamp admission.
+  The public RGB-D example records requested/actual backends and accepts
+  `--backend primary|gl`; report auditing retains original operation/transfer
+  gates and raw hardware-class requirements. See
+  `docs/EXPLICIT_GLES_GPU_VALIDATION.md` for the fixed execution contract.
+
 - Add a separately fixed causal dense RGB-D workflow that supplies the previous
   returned relative increment as the next explicit native seed. Retain the
   same numerical binary and output/accuracy gates, with independent seed,

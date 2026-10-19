@@ -32,6 +32,54 @@ def test_actual_linux_software_reports_pass_operations_but_not_hardware():
     assert result["accepted_hardware_classes"] == []
 
 
+def gl_schema_runs():
+    # Synthetic backend metadata over frozen measurements tests validation only.
+    # These rows are never presented as evidence of actual GL execution.
+    runs = prior_runs()
+    for run in runs:
+        run['report'].update(backend='Gl', requested_backend='gl')
+    return runs
+
+
+def test_explicit_gl_expectation_is_separate_from_default_vulkan():
+    runs = gl_schema_runs()
+    assert audit_runs(runs, MANIFEST, 'windows', expected_backend='Gl')['hardware_coverage_accepted']
+    assert not audit_runs(runs, MANIFEST, 'windows')['all_operation_reports_passed']
+
+
+@pytest.mark.parametrize('selection_request', [None, 'primary', True])
+def test_gl_receipt_requires_the_explicit_request(selection_request):
+    runs = gl_schema_runs()
+    if selection_request is None:
+        runs[0]['report'].pop('requested_backend')
+    else:
+        runs[0]['report']['requested_backend'] = selection_request
+    result = audit_runs(runs, MANIFEST, 'windows', expected_backend='Gl')
+    assert not result['all_operation_reports_passed']
+
+
+def test_actual_backend_cannot_be_substituted_by_the_requested_label():
+    runs = gl_schema_runs()
+    runs[0]['report']['backend'] = 'Vulkan'
+    assert not audit_runs(runs, MANIFEST, 'windows', expected_backend='Gl')['all_operation_reports_passed']
+
+
+@pytest.mark.parametrize('backend', ['gl', 'Dx12', None, False])
+def test_unknown_or_ambiguous_expected_backend_is_rejected(backend):
+    with pytest.raises(ValueError):
+        audit_runs(prior_runs(), MANIFEST, 'windows', expected_backend=backend)
+
+
+def test_gl_other_class_does_not_become_verified_hardware():
+    runs = gl_schema_runs()
+    for run in runs:
+        run['report']['device_type'] = 'Other'
+    result = audit_runs(runs, MANIFEST, 'windows', expected_backend='Gl')
+    assert result['all_operation_reports_passed']
+    assert not result['hardware_coverage_accepted']
+    assert result['accepted_hardware_classes'] == []
+
+
 @pytest.mark.parametrize("change", [
     lambda r: r.pop(),
     lambda r: r.reverse(),

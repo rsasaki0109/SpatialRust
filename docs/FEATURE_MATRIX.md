@@ -6,6 +6,15 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+`gpu-wgpu` exposes `WgpuBackendSelection`, `WgpuRuntimeOptions` and owned
+`WgpuRuntime::new_headless_with_options` / `new_headless_with_options_async`.
+Existing constructors and the shared runtime retain primary/high-performance
+defaults and their timestamp contracts. Explicit GL selection requires platform
+support and does not select a different backend on failure. The public RGB-D
+example records requested/actual backends; its auditor keeps operation checks
+and distinct raw hardware-class coverage separate. See the
+[fixed GLES validation protocol](EXPLICIT_GLES_GPU_VALIDATION.md).
+
 `vision-odometry-dense` exposes checked borrowed `DenseRgbdFrame` views and
 `estimate_dense_rgbd_odometry` through `spatialrust-vision/odometry-dense`.
 Both grayscale/metric-depth frames and the initial proper pose are explicit.

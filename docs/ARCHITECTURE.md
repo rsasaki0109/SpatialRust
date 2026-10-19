@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Explicit headless runtime options retain the primary/high-performance default
+and expose GL as an opt-in backend set. Owned sync/async constructors retain
+original flags, adapter limits and optional timestamp admission. Requested and
+actual backends are separate receipts; raw hardware classes retain their
+meaning. Shader work, core dependencies and CPU/GPU transfers are unchanged.
+See the [fixed GLES protocol](EXPLICIT_GLES_GPU_VALIDATION.md).
+
 A separately fixed experimental dense adapter retains one owned proper relative
 pose as the next initial seed, starting with identity. Native and full-cloud
 admission remain; a lost chain makes no later call. Independent auditing checks
