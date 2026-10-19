@@ -9,12 +9,12 @@ This subjective scale is not interchangeable with the earlier engineering
 progress estimates below; neither is measured PCL/Open3D/OpenCV feature parity.
 The earlier 87% number alone cannot establish this operational target.
 
-Native image tracking now connects to RGB-D/PnP and passes installed-wheel,
-configuration, lifetime, public-data and independent scoring checks. Both new
-and current point-to-plane trajectories generate 798/798 poses; the image path
-has 0.120235 m ATE and 0.033505 m RPE, versus 0.124992/0.043715 m for the current
-baseline. Both fail the unchanged 0.10 m ATE limit. No defaults or thresholds
-are changed to count this as accepted motion. Integrated and discrete Vulkan
+The preceding image-motion study connects native tracking to RGB-D/PnP and
+passes installed-wheel, configuration, lifetime, public-data and independent
+scoring checks. Its image and point-to-plane trajectories generate 798/798
+poses; the image path has 0.120235 m ATE and 0.033505 m RPE, versus
+0.124992/0.043715 m for that baseline. Both fail the unchanged 0.10 m ATE limit.
+No defaults or thresholds are changed to count this as accepted motion. Integrated and discrete Vulkan
 devices now execute all three fixed public frames: image pixels/histograms,
 voxel membership and radius counts match independent references exactly;
 centroid coordinate error stays below the fixed 1e-5m limit. This is selected
@@ -37,9 +37,24 @@ both rpy candidates stop at 2/722. All five new cases fail unchanged acceptance
 and remain visible. All new score audits pass, and 33,203 retained landmark
 rows satisfy independent source-depth checks. A short post-freeze diagnostic
 identifies a native final-refit error despite a numerically valid 54/93 PnP
-hypothesis; it does not establish accurate motion or fix the production solver.
+hypothesis; that diagnostic alone did not establish accurate motion or fix the
+production solver.
 The operational estimate stays **63%**. See
 [all keyframe outcomes and the next numerical boundary](TUM_KEYFRAME_RGBD_VALIDATION.md).
+
+Robust PnP now retains its selected valid hypothesis through failing or worse
+optional final refits, with strict model/row validation and unchanged frontend
+controls. Both procedural parent failures and a pinned 93-point real numerical
+error reproduce; the new native/wheel returns a valid 54-inlier model. Adaptive
+xyz now completes 798/798 instead of 240/798, but its 0.118821m ATE still exceeds
+the unchanged 0.10m limit. Stateless xyz remains complete and changes from
+0.120235m to 0.122263m ATE; both rpy methods still stop at 2/722. Every one of the
+3,040 planned rows and all old failures/scores remain. Four independent scoring
+audits, 288,068 source-landmark checks and 32 exact typed IO audits pass. Native
+Vision passes 166 units/13 properties and installed Python passes 837 cases
+with three optional skips. All four real cases still fail at least one original
+motion gate, so the operational assessment stays **63%**. See
+[the numerical fix and every full/prefix result](PNP_CONSENSUS_VALIDATION.md).
 
 The operational goal stays active. See [public GPU evidence](PUBLIC_GPU_RGBD_CONFORMANCE.md).
 See [the complete protocol and failures](TUM_RGBD_MOTION_VALIDATION.md).

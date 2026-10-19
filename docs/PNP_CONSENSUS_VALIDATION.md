@@ -92,11 +92,69 @@ no previous estimate or evaluation is rewritten.
 
 ## Results
 
-Before public fitting: the new native regression fails on the parent and passes
-after the fix. Full native Vision has 166 passes, 13 property passes, two ignored
-isolated performance probes, and Clippy/format checks pass. Parent installed
-Python has two expected failures on the new public-API regression. Candidate
-wheel and real-motion outcomes are pending.
+Implementation and all four plans were fixed at source/protocol commit
+`cf457fd84d241714f005502a920cad5c4ef2c1d8` before candidate fitting. The
+[compact complete record](receipts/2026-10-19_pnp_consensus.json) binds source,
+compiler, both lockfiles, wheel/loaded-extension hashes, every case and original
+baseline. The original extension remains byte-identical in its separate venv.
+
+| Method / scene | Generated | Evaluated | ATE RMSE (m) | 1s RPE RMSE (m) | Accepted |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Frozen parent xyz-rgbd | 798/798 | 795 | 0.120235 | 0.033505 | No |
+| Frozen parent xyz-adaptive | 240/798 | 237 | 0.056469 | 0.030103 | No |
+| Frozen parent rpy-rgbd | 2/722 | 2 | 0.010364 | unavailable | No |
+| Frozen parent rpy-adaptive | 2/722 | 2 | 0.007455 | unavailable | No |
+| Candidate xyz-rgbd | 798/798 | 795 | 0.122263 | 0.035838 | No: ate |
+| Candidate xyz-adaptive | 798/798 | 795 | 0.118821 | 0.028585 | No: ate |
+| Candidate rpy-rgbd | 2/722 | 2 | 0.011220 | unavailable | No: complete, coverage, rpe |
+| Candidate rpy-adaptive | 2/722 | 2 | 0.005037 | unavailable | No: complete, coverage, rpe |
+
+ATE/RPE on incomplete cases describe only the accepted prefix. They cannot be
+compared as complete-motion accuracy or count toward the unchanged full-motion
+gate. Every one of the 3040 planned rows is retained, including failure,
+reference-gap and uncovered RPE rows. 0 of four candidate cases meet all
+original limits. No threshold, reference initializer, scale fit or reset changed.
+
+Adaptive xyz extends the preserved parent 240-frame prefix to all 798 frames,
+but still misses ATE. Stateless xyz ATE changes from 0.120235m to 0.122263m;
+this fix does not improve its full-motion accuracy. Rpy loses the connected
+chain at zero-based row 2: stateless has 25/60 PnP inliers below the unchanged
+0.5 fraction, while adaptive fails its fixed inlier/depth-support guard. Later
+failure rows are preserved and no disconnected segment is restarted.
+
+All four independent SciPy scoring audits pass the original 1e-8m/1e-6degree
+tolerances. Independent checks verify original pixel IDs, f32 metric source
+depths (including adaptive 3x3 medians), returned-pose PnP masks and world/keyframe
+composition across 288,068 source landmark rows. All 32 typed IO roundtrips are
+exact, and all old estimate/score hashes remain unchanged.
+
+The separately pinned 93-row input reproduces the parent's public proper-rotation
+error. The candidate returns 54/93 inliers, determinant 1, orthogonality error
+2.23e-16 or less and independent residual disagreement below 5.51e-14px. Owned
+outputs survive input mutation. This checks numerical validity, not physical
+pose accuracy; this wider-LK diagnostic is not a new full-motion candidate.
+
+Installed-wheel Python passes all 837 cases with three optional ONNX skips,
+including both contiguous/strided procedural regressions. Parent Python has two
+expected failures on these inputs, and the native parent regression also fails.
+Candidate native Vision passes 166 unit cases and 13 properties; two isolated
+performance probes remain ignored. Clippy and formatting pass. WASM compilation
+passes; no WASM execution is claimed. Hosted checks remain required before merge.
+
+The first wheel launch cannot find the installed maturin script. A retry's
+cp932 log printer fails before compilation; the stopped child and empty output
+are checked before a UTF-8 retry uses the existing absolute launcher. The final
+build/install succeeds without a package download or old-environment overwrite.
+Python tests overlap real generation on a shared host; no throughput ranking is
+made.
+
+Source images share hard links: 1,836,299,360 logical input bytes avoid copies,
+with zero new archive/image payload bytes. New run/evaluation/audit files total
+403,485,954 logical bytes; the record separately identifies the new wheel/venv
+and reused native build cache. This is not NTFS allocated space or a free-space
+delta claim. Only the successful dedicated pytest basetemp is removed
+(167,190,822 logical bytes); XML/logs, old/new wheels, source data and frozen
+results remain. The output free-space floor stays 20 GiB.
 
 Canonical Autoware measured clock/physical calibration, accurate complete real
 motion, Linux hardware-GPU execution and the public-release operational boundary
