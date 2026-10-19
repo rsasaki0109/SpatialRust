@@ -24,8 +24,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   row tiles. The raw default and final statistics on original images retain
   their contracts. Native 13 tests, focused Python 49 tests, full Python 1,043
   passes/3 optional skips, native/bridge Clippy and exact five-case old/new raw
-  regression pass before fitting; complete-scene evidence follows the fixed
-  `docs/GAUSSIAN_DENSE_RGBD_VALIDATION.md` protocol.
+  regression pass before fitting. Complete xyz passes at ATE/RPE
+  0.082755/0.025186m; rpy remains unaccepted at 349/722 poses after raw support
+  0.497388 fails the fixed 0.5 gate. Retain all failures, raw/external controls,
+  unchanged defaults and independent raw/seed/world/score audits in
+  `docs/GAUSSIAN_DENSE_RGBD_VALIDATION.md`.
 
 - Add a fixed full-scene Open3D CPU RGB-D comparator with owned adjacent images,
   one causal relative seed and independent raw projective/world/score auditing.

@@ -97,3 +97,54 @@ verification was repeated successfully with disappearing-entry-aware inventory.
 No fit/model/threshold was altered. Passing scratch alone reclaimed 397,598,601
 logical bytes; keep all XML/logs and both startup/observer records. These checks
 precede complete-scene estimation and do not establish trajectory acceptance.
+
+## Complete planned experiment outcomes (2026-10-20 JST)
+
+Workflow source `e311d87` freezes both timelines at
+`2026-10-19T21:12:54.861663+00:00` before either new reference score. The
+[source, storage and measurement receipt](receipts/2026-10-20_gaussian3_dense_rgbd.json)
+binds the separately frozen numerical package, all plans/inputs, original raw
+controls, every estimate/error, both independent audits and the failed rpy chain.
+
+| Implementation / scene | Generated | First-pose ATE RMSE (m) | 1s RPE RMSE (m) | Existing gates |
+| --- | ---: | ---: | ---: | --- |
+| Native raw causal / xyz | 798/798 | 0.089993 | 0.026591 | Pass |
+| External CPU / xyz | 798/798 | 0.051174 | 0.023110 | Pass |
+| Native Gaussian3 / xyz | 798/798 | 0.082755 | 0.025186 | Pass |
+| Native raw causal / rpy | 722/722 | 0.114793 | 0.048145 | ATE fails |
+| External CPU / rpy | 722/722 | 0.099684 | 0.048494 | Pass |
+| Native Gaussian3 / rpy | 349/722 | 0.119374 (prefix) | 0.049937 (prefix) | Incomplete; fails |
+
+XYZ independently evaluates 795/798 reference poses and 762/768 one-second pairs.
+RPY retains all 722 planned rows: 349 poses and 373 errors. Its reported prefix
+errors cover only those generated poses and 319/692 planned one-second pairs;
+they do not establish full-trajectory accuracy. All three/six publisher reference
+gaps stay explicit in the full denominators.
+
+RPY first fails at zero-based index 349. Returned-pose raw support is
+120,612/242,491 = 0.49738753190840074, below the unchanged 0.5 gate. No pose is
+admitted at that frame, and no later estimator call/reset occurs. Do not waive
+this as rounding or lower the threshold. The policy improves xyz against the
+raw control but does not resolve rpy. It stays an explicit experimental choice;
+the raw default remains unchanged. A future separately fixed model can isolate
+gray filtering from depth filtering; these outcomes identify no single cause.
+
+All 797+348 admitted causal/projective pairs pass independent original-raw
+recomputation. Counts/fractions and preceding seeds agree exactly; maximum
+gray/depth RMSE differences are 2.09e-16 / 1.05e-17, world-composition difference
+4.52e-14, and independent trajectory score differences 1.11e-15m / 2.56e-13
+degrees. All eight generation/audit/score commands complete successfully,
+including scientific recording of the rejected rpy chain. Numerical receipts
+report four workers, 22,743,840 charged working bytes and 3,072,000 owned input
+copy bytes on every admitted pair; these are logical native payloads, not RSS.
+
+Final scientific output plus new preparation metadata is 229,398,835 logical
+bytes under the fixed 1GiB budget. Existing PNG/index payloads share 918,149,680
+logical bytes through 3,045 checked links; new image copies/downloads are zero.
+The final new build root plus incremental reused-cache growth is 655,029,109
+logical bytes, with maximum successful-command sample 1,048,366,695, under 2GiB.
+Keep the original observer/startup failures and their logs; sampling is not a
+continuous peak measurement. All old/new frozen native files, six wheels and
+271 old JSON files remain unchanged. Passing scratch alone reclaimed
+397,598,601 bytes. Rpy/held-out, canonical calibration, Linux raw classes and full
+mapping/semantic/release acceptance remain open; this does not prove 80%.

@@ -55,7 +55,10 @@ The explicit native `DenseRgbdPreprocessing::Gaussian3` policy and Python
 default and final raw image admission remain; checked working bytes charge
 retained original levels. Gaussian3 shares bounded deterministic CPU row tiles.
 See [the prospective native preprocessing study](GAUSSIAN_DENSE_RGBD_VALIDATION.md).
-This optional policy awaits complete-scene accuracy evidence.
+The full xyz run passes at ATE 0.082755m/RPE 0.025186m. Rpy loses tracking at
+index 349 when original raw final support is 0.497388 < 0.5; all 373 failed
+remaining rows are retained and the 349/722 result is unaccepted. This remains
+an experimental opt-in policy; it does not replace the raw default or solve rpy.
 
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
