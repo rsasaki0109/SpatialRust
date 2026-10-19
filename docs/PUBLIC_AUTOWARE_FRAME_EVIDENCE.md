@@ -113,5 +113,44 @@ binary hashes and invocation/exit status. Existing gate conditions are retained.
 
 ## Execution results
 
-Pending execution of this committed protocol. Missing clock evidence is an
-expected retained blocker, not a successful calibrated mapping result.
+Protocol/source commit: `3a9eec871a12bb03c864d85b4507bd1bdfe5d388`.
+Run: 2026-10-19, with existing Windows release executables and Python 3.12.10,
+PyYAML 6.0.3. Full result provenance and receipt identities are in
+[the compact record](receipts/2026-10-19_public_autoware_frames.json).
+
+| Check | Observed outcome |
+| --- | --- |
+| Canonical source identity | Exact size and complete SHA-256 match |
+| Every front/rear header | 768/767 checked; expected frames and nondecreasing stamps |
+| Publisher source configuration | All six complete file hashes match the pinned revision |
+| Readiness inventory | Frame registered, clock not registered, overall false; exit 1 |
+| Native frame graph | Two source-bound accepted edges and ready root paths |
+| Native clock/overall | No samples or clock artifact; registration false; exit 2 |
+| Wrong frame source SHA | `source_mismatch`, frame graph false, overall false; exit 2 |
+| Independent manifest rehash | All ten entries across the two native manifests match |
+| Python regressions | 801 passed, three optional ONNX tests skipped; 35 new focused cases included |
+| Python compatibility | Both new files parse with Python 3.8 syntax; hosted runtime checks still required before merge |
+
+The audit runner originally expected exit 1 for the native evidence command;
+the implementation uses exit 2 for its error result. Original outputs were
+preserved and verified, then the runner resumed only the unexecuted wrong-source
+probe. Gate conditions and the committed adapter/protocol did not change.
+
+The 20 external result files total **72,203 bytes**, including run receipts and
+the preserved partial control receipt. No native rebuild, bag copy or new bulk
+download was needed for execution. Free bytes were 507,830,841,344 before and
+512,271,282,176 after; shared-drive activity prevents attributing that difference
+to this run. Use measured file sizes for its footprint.
+
+Local output paths:
+
+- `E:\SpatialRustData\maturity-80\autoware-canonical-frame-v1\frame-evidence.json`
+- `E:\SpatialRustData\maturity-80\autoware-canonical-frame-v1\manifest.json`
+- `E:\SpatialRustData\maturity-80\autoware-canonical-native-v1\readiness.json`
+- `E:\SpatialRustData\maturity-80\autoware-canonical-native-v1\publisher-frame\calibration-evidence.json`
+- `E:\SpatialRustData\maturity-80\autoware-canonical-native-v1\wrong-source\calibration-evidence.json`
+- `E:\SpatialRustData\maturity-80\autoware-canonical-native-v1\run.json`
+
+Missing clock evidence remains an expected retained blocker. Publisher-configured
+frame paths and correct rejection do not establish physically calibrated full-bag
+mapping, accurate motion, or completion of the operational 80% target.
