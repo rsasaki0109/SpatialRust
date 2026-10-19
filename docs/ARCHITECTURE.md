@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Public canonical frame evidence is an explicit offline adaptation of pinned
+publisher configuration. Complete source hashes and every bounded sensor header
+are checked before emitting the existing frame schema outside the repository.
+It adds no runtime/core dependency, clock correction, or implicit transfer.
+Publisher-configured extrinsics do not establish independently measured physical
+accuracy; the existing missing-clock registration gate remains closed. See
+[public frame provenance](PUBLIC_AUTOWARE_FRAME_EVIDENCE.md).
+
 Public multi-adapter conformance uses fixed full RGB-D frames and explicit
 upload/readback calls. Scalar integer images, two-dimensional integral blur,
 float64 ordered voxel sums and brute-force radius counts are independent

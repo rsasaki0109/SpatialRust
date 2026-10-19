@@ -1,0 +1,258 @@
+{
+  "environment": {
+    "architecture": "AMD64",
+    "os": "Windows",
+    "python": "3.12.10",
+    "pyyaml": "6.0.3",
+    "sqlite": "3.49.1"
+  },
+  "evidence_level": "publisher demo configuration; not independently measured physical accuracy",
+  "finished_at_utc": "2026-10-19T07:54:56.337934+00:00",
+  "frame_artifact": {
+    "bytes": 1123,
+    "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-frame-v1\\frame-evidence.json",
+    "sha256": "3427b41ce77b0fb3d005824b11cb9f6e6a33725856244931808586f02626141d"
+  },
+  "native_executables": [
+    {
+      "bytes": 1876992,
+      "path": "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\rosbag2_calibration_readiness.exe",
+      "sha256": "8e4a2ac2865e3c8df8bd36fe5f09ed952105fb93f84653be76d6a26ef4bd72b1"
+    },
+    {
+      "bytes": 589824,
+      "path": "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\rosbag2_calibration_evidence.exe",
+      "sha256": "d5df1023db51841117c9f0de3d69371904b809fbdf0e4642ce41107a14052d89"
+    }
+  ],
+  "native_source_unchanged_from_parent": true,
+  "parent_commit": "3d9bf5a5b509a9aecc222c96e0beebb5c10fd938",
+  "preparation_sha256": "b76401cf8959109325d33431071fe1a82db9967707cfe2e49d6e4265bbb14c48",
+  "protocol_commit": "3a9eec871a12bb03c864d85b4507bd1bdfe5d388",
+  "quaternion_norms": {
+    "lidar_front": 1.0000000270152296,
+    "lidar_rear": 0.9999999603651542
+  },
+  "result_files": [
+    {
+      "bytes": 1123,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-frame-v1\\frame-evidence.json",
+      "sha256": "3427b41ce77b0fb3d005824b11cb9f6e6a33725856244931808586f02626141d"
+    },
+    {
+      "bytes": 4385,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-frame-v1\\manifest.json",
+      "sha256": "71ec74836714522db6433b9f5ec224d26d6471a0cd01e17d04d6bee645d69bbd"
+    },
+    {
+      "bytes": 0,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\prepare.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 238,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\prepare.stdout",
+      "sha256": "f5654d2760dc80399670af36fdb960a9bc268cc456c32a7204a79224232cc94a"
+    },
+    {
+      "bytes": 8861,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\publisher-frame\\calibration-evidence.html",
+      "sha256": "d25353584b8b2053340a2f9c9578584cb8c389e33d804dea539aff4c4f8c5cce"
+    },
+    {
+      "bytes": 2848,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\publisher-frame\\calibration-evidence.json",
+      "sha256": "151a5dba0945e29cbe0a2a74d9fd1dcfed08b248b498da4bbbff5a8dea5cc3f9"
+    },
+    {
+      "bytes": 1356,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\publisher-frame\\calibration-evidence.manifest.json",
+      "sha256": "ef00f1d075c9f7d124ad71f4f6df3b9898e9a0d7a4a799878f77fa12534cd0c5"
+    },
+    {
+      "bytes": 2366,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\readiness.json",
+      "sha256": "ed454f008897f903adc54fd8e0b5c299bc898f16ca53afc22de839644551abf5"
+    },
+    {
+      "bytes": 79,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\readiness.stderr",
+      "sha256": "234032b89fb52f58057b1e97a4824de381e1b299bbd9de64c536818f9119a04d"
+    },
+    {
+      "bytes": 2448,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\readiness.stdout",
+      "sha256": "27ff002c6fd5dcb41e7ed8338cb238b3dfde1ce60156df13279090fd9bda6977"
+    },
+    {
+      "bytes": 112,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\valid-frame.stderr",
+      "sha256": "4c23f98f68c034fbf4c90aa0c1df89a5f4464ef0923bbe3f81c43a25e31a9ef7"
+    },
+    {
+      "bytes": 3453,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\valid-frame.stdout",
+      "sha256": "cac72bdf7b501b7b616f771fc277665d0ab7ce8ed78c5447900cff605103ea35"
+    },
+    {
+      "bytes": 8481,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\wrong-source\\calibration-evidence.html",
+      "sha256": "8a156aa4bb764e38e4f993fdde8e7c72d3c3e520517dd2a7c814e8604a9342e8"
+    },
+    {
+      "bytes": 2089,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\wrong-source\\calibration-evidence.json",
+      "sha256": "70b50f3bac4410a28167babe1d039189a996cf324b64166e66ef74c326d4eec0"
+    },
+    {
+      "bytes": 1355,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\wrong-source\\calibration-evidence.manifest.json",
+      "sha256": "64b917d3baa54b572fab54ddc6636e8914e309429e1ffa913ef38ed7172b3436"
+    },
+    {
+      "bytes": 1168,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\wrong-source-frame.json",
+      "sha256": "31977c3debd78f4e7786839abe02f6d41829fa83333d07848365fef335938ac7"
+    },
+    {
+      "bytes": 112,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\wrong-source.stderr",
+      "sha256": "4c23f98f68c034fbf4c90aa0c1df89a5f4464ef0923bbe3f81c43a25e31a9ef7"
+    },
+    {
+      "bytes": 2646,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-canonical-native-v1\\wrong-source.stdout",
+      "sha256": "b3080fe9a1e45b4a57e1975d89f84f2ad5129c43825d72fe747605933fb02d09"
+    }
+  ],
+  "runner_correction": "The audit runner initially expected exit 1 for native evidence. Its actual documented error exit is 2. Existing valid outputs were preserved, checked and resumed only for the unexecuted wrong-source probe; gate conditions did not change.",
+  "runs": [
+    {
+      "exit_status": 0,
+      "label": "prepare"
+    },
+    {
+      "exit_status": 1,
+      "label": "readiness"
+    },
+    {
+      "exit_status": 2,
+      "label": "valid-frame"
+    },
+    {
+      "exit_status": 2,
+      "label": "wrong-source"
+    }
+  ],
+  "schema": "spatialrust.public-autoware-frame-summary.v1",
+  "source": {
+    "bytes": 713670656,
+    "path": "E:\\SpatialRustData\\maturity-80\\autoware-astuff-2020\\rosbag2_2020_09_23-15_58_07\\rosbag2_2020_09_23-15_58_07.db3",
+    "sha256": "b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8"
+  },
+  "started_at_utc": "2026-10-19T07:53:01.370095+00:00",
+  "storage": {
+    "external_results_bytes": 72203,
+    "external_results_files": 20,
+    "floor_bytes": 21474836480,
+    "free_after_bytes": 512271282176,
+    "free_before_bytes": 507830841344,
+    "new_bulk_download": false,
+    "new_native_build": false
+  },
+  "topics": [
+    {
+      "frame_id": "lidar_front",
+      "header_max_ns": 1600901964375735604,
+      "header_min_ns": 1600901887522903301,
+      "messages": 768,
+      "topic": "/lidar_front/points_raw"
+    },
+    {
+      "frame_id": "lidar_rear",
+      "header_max_ns": 1600901964366750677,
+      "header_min_ns": 1600901887615339245,
+      "messages": 767,
+      "topic": "/lidar_rear/points_raw"
+    }
+  ],
+  "upstream_files": [
+    {
+      "bytes": 8450,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-public-configs-v1\\launch.py",
+      "sha256": "5af895daa6b87aef2db5fa38e1f500083fb5fcf17f68e57a3f81a8fbebfa5cea",
+      "url": "https://gitlab.com/autowarefoundation/autoware.auto/AutowareAuto/-/raw/15d2e91a2b3c8cd61b20b7e6e79da32919c2cbcd/src/launch/autoware_demos/launch/localization_rosbag.launch.py"
+    },
+    {
+      "bytes": 1669,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-public-configs-v1\\filter.yaml",
+      "sha256": "af1e4edcdf0640fd11097dfa26de3969f1233311172511687d79433684d61ebf",
+      "url": "https://gitlab.com/autowarefoundation/autoware.auto/AutowareAuto/-/raw/15d2e91a2b3c8cd61b20b7e6e79da32919c2cbcd/src/perception/filters/point_cloud_filter_transform_nodes/param/vlp16_lexus_filter_transform.param.yaml"
+    },
+    {
+      "bytes": 8187,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-public-configs-v1\\filter-transform.cpp",
+      "sha256": "327cf688c9ca7c84f3a2363fb92805edbd39571bffc38a0490fe757087635df5",
+      "url": "https://gitlab.com/autowarefoundation/autoware.auto/AutowareAuto/-/raw/15d2e91a2b3c8cd61b20b7e6e79da32919c2cbcd/src/perception/filters/point_cloud_filter_transform_nodes/src/point_cloud_filter_transform_node.cpp"
+    },
+    {
+      "bytes": 4615,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-public-configs-v1\\filter-node.hpp",
+      "sha256": "6d4a3ff8ff811dc18f9c825438d826101ffe5d3f9e716d445749fd67c1079b45",
+      "url": "https://gitlab.com/autowarefoundation/autoware.auto/AutowareAuto/-/raw/15d2e91a2b3c8cd61b20b7e6e79da32919c2cbcd/src/perception/filters/point_cloud_filter_transform_nodes/include/point_cloud_filter_transform_nodes/point_cloud_filter_transform_node.hpp"
+    },
+    {
+      "bytes": 10465,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-public-configs-v1\\point-cloud-utils.cpp",
+      "sha256": "b8c8eb65a9572129c20ebb22dc2cb9318b488c14cd20a386c9d7e5f88e635d1e",
+      "url": "https://gitlab.com/autowarefoundation/autoware.auto/AutowareAuto/-/raw/15d2e91a2b3c8cd61b20b7e6e79da32919c2cbcd/src/common/lidar_utils/src/point_cloud_utils.cpp"
+    },
+    {
+      "bytes": 12619,
+      "path": "E:\\SpatialRustData\\maturity-80\\autoware-public-configs-v1\\point-cloud-utils.hpp",
+      "sha256": "9130ceee210c0f7bb8c822680c8a45883cc1593d447b1b412e5f4d6dbc2ea511",
+      "url": "https://gitlab.com/autowarefoundation/autoware.auto/AutowareAuto/-/raw/15d2e91a2b3c8cd61b20b7e6e79da32919c2cbcd/src/common/lidar_utils/include/lidar_utils/point_cloud_utils.hpp"
+    }
+  ],
+  "upstream_revision": "15d2e91a2b3c8cd61b20b7e6e79da32919c2cbcd",
+  "valid_frame": {
+    "blockers": [
+      "calibration readiness registration is incomplete",
+      "readiness: clock calibration artifact is not_registered",
+      "clock evidence file was not supplied",
+      "clock evidence registration is incomplete"
+    ],
+    "clock_samples": 0,
+    "clock_status": "not_registered",
+    "edges": 2,
+    "frame_artifact_status": "registered",
+    "frame_graph_ready": true,
+    "registration_ready": false,
+    "source_bound": true,
+    "source_identity_matches": true
+  },
+  "validation": {
+    "checked_distinct_files": 28,
+    "clock_status": "not_registered",
+    "focused_cases": 35,
+    "frame_edges": 2,
+    "frame_graph_ready": true,
+    "header_messages": 1535,
+    "no_new_native_build": true,
+    "protocol_commit": "3a9eec871a12bb03c864d85b4507bd1bdfe5d388",
+    "python_expected_skipped": 3,
+    "python_passed": 801,
+    "registration_ready": false,
+    "schema": "spatialrust.public-autoware-frame-verification.v1",
+    "source_identity_matches": true,
+    "total_external_result_bytes": 72203,
+    "total_external_result_files": 20,
+    "verified_native_manifest_entries": 10,
+    "wrong_source_status": "source_mismatch"
+  },
+  "wrong_source": {
+    "frame_artifact_status": "source_mismatch",
+    "frame_graph_ready": false,
+    "registration_ready": false
+  }
+}

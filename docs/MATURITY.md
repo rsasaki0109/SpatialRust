@@ -21,6 +21,15 @@ centroid coordinate error stays below the fixed 1e-5m limit. This is selected
 operation/scene coverage, not full-motion or universal GPU portability. The
 same cases pass on software Vulkan under Ubuntu/WSL2; Linux hardware-GPU
 execution remains unproven.
+The exact canonical Autoware bag is now available from its official public
+archive. Six pinned publisher source/configuration files and all 1,535 sensor
+headers establish configured front/rear frame paths through the existing native
+gate; a wrong source hash is rejected. Independent physical extrinsic accuracy
+and measured clock evidence remain unavailable, and overall registration stays
+blocked. This closes a configuration-provenance gap, not physical calibration
+or full mapping. The operational estimate stays **63%**. See
+[public canonical frame evidence](PUBLIC_AUTOWARE_FRAME_EVIDENCE.md).
+
 The operational goal stays active. See [public GPU evidence](PUBLIC_GPU_RGBD_CONFORMANCE.md).
 See [the complete protocol and failures](TUM_RGBD_MOTION_VALIDATION.md).
 

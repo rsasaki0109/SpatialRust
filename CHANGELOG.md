@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Bind the exact public canonical Autoware bag to hash-pinned publisher
+  front/rear LiDAR configuration with an offline, disk-bounded frame-evidence
+  adapter. Preserve the missing clock gate and distinguish configured
+  extrinsics from independently measured calibration accuracy. See
+  `docs/PUBLIC_AUTOWARE_FRAME_EVIDENCE.md`.
+
 - Add a fixed public RGB-D multi-adapter conformance runner for image pixels,
   box blur/histograms, complete voxel membership/centroids and resident radius
   counts, with independent CPU references and explicit transfer/resource

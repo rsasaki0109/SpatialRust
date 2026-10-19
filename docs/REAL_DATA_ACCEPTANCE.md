@@ -1,6 +1,6 @@
 # SpatialRust v1.3 real-data acceptance contract
 
-Status: active baseline, observed 2026-08-03. This document defines the
+Status: active baseline, observed 2026-08-03; public frame update 2026-10-19. This document defines the
 external-data acceptance boundary for the post-Epic-140 operational program;
 it does not claim that the full downstream mapping or semantic pipeline has
 already passed.
@@ -48,7 +48,7 @@ The rosbag2 SQLite snapshot is:
 | --- | --- |
 | Storage | `sqlite3` |
 | Size | `713670656` bytes |
-| SHA-256 | `b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c` |
+| SHA-256 | `b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8` |
 | Duration | `76854162986` ns |
 | Starting timestamp | `1600901887524769241` ns since epoch |
 | Total messages | `1535` |
@@ -249,6 +249,32 @@ It re-hashed the canonical input as
 `/tf_static`, and `/odom` are absent, and exited non-zero with both calibration
 artifacts `not_registered`. No candidate was registered or treated as usable
 for mapping. The separate `all-sensors-bag1` receipt remains diagnostic only.
+
+## 141C public canonical source and publisher frame update (2026-10-19)
+
+The [official localization demo](https://autowarefoundation.gitlab.io/autoware.auto/AutowareAuto/rosbag-localization-howto.html)
+still distributes the exact canonical bag. A new read-only copy at
+`E:\SpatialRustData\maturity-80\autoware-astuff-2020\rosbag2_2020_09_23-15_58_07\rosbag2_2020_09_23-15_58_07.db3`
+matches the complete canonical byte size and SHA-256. The earlier external-SSD
+survey above remains a historical observation, not a current public-source claim.
+
+Pinned Autoware.Auto demo sources associate the same bag with explicit
+`lidar_front`/`lidar_rear` to `base_link` numeric transforms. The offline adapter
+verifies all six complete upstream file hashes and all 768 front/767 rear
+CDR headers before writing a source-bound two-edge frame artifact outside the
+repository. The original snapshot's truncated checksum is corrected above.
+
+The existing native evidence gate accepts the publisher-configured graph,
+rejects a wrong source SHA, and keeps overall registration false because no
+clock artifact exists. This establishes configuration provenance and graph
+admission, not independent physical calibration accuracy. The preparation and
+both native result manifests are verified; 801 Python tests pass with three
+optional ONNX skips. New external results total 72,203 bytes and reuse existing
+native builds. The 20 GiB storage floor remains in force.
+
+See [the fixed protocol, directions and complete source identities](PUBLIC_AUTOWARE_FRAME_EVIDENCE.md)
+and [the compact result receipt](receipts/2026-10-19_public_autoware_frames.json).
+Canonical calibrated-world mapping and full v1.3 acceptance remain blocked.
 
 ## 145A source-bound Spatial Studio dashboard
 
@@ -693,12 +719,12 @@ The comparison receipt is
 | Performance receipt | Stage wall time, bounded memory observations, and explicit host/device transfer counters | Accepted as 144A smoke |
 | Bounded sync | Eight-bundle smoke preview stays within the declared point/byte/time limits | Accepted |
 | Bounded vertical E2E | rosbag2 → records → sync → ICP → TSDF → semantic → Viewer/glTF receipt | Accepted as 143A smoke only |
-| Calibration/frame readiness | External inventory receipt for required topics and registered calibration artifacts | Recorded as 143B blocker; not ready |
+| Calibration/frame readiness | External inventory receipt for required topics and registered calibration artifacts | Frame graph ready with publisher configuration (141C); missing clock blocks overall |
 | Source-bound TF inventory | Exact input SHA, bounded `/tf_static` CDR decode, and required-frame receipt | Accepted as separate-source parser evidence; not canonical calibration |
-| Canonical artifact availability | Clock and front/rear frame artifacts matching the canonical input identity | Blocked; read-only SSD survey found no matching artifacts |
+| Canonical artifact availability | Clock and front/rear frame artifacts matching the canonical input identity | Publisher frame artifact found and source-bound (141C); clock artifact still missing |
 | Clock calibration | Calibrated clock model and uncertainty receipt | Not accepted; no calibration evidence |
-| Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Not accepted; no extrinsic evidence |
-| Mapping/reconstruction | Bounded full-bag, frame-aware odometry, pose graph, TSDF, and mesh receipt on this input | Implementation gate recorded by 145K-A; canonical admission remains blocked by missing clock/frame evidence |
+| Frame calibration | Explicit front/rear `FrameGraph` path and extrinsic provenance | Partial: publisher-configured graph/provenance accepted (141C); independent physical accuracy unverified |
+| Mapping/reconstruction | Bounded full-bag, frame-aware odometry, pose graph, TSDF, and mesh receipt on this input | Implementation gate recorded by 145K-A; canonical admission remains blocked by missing clock and unresolved physical acceptance |
 | Semantic/Viewer/interchange | Record semantic entities, Viewer layer, and glTF/OpenUSD receipt on this input | Not accepted; deterministic adapter smoke only |
 | Data hygiene | No sensor or derived artifacts in the repository; all paths are external | Accepted |
 
@@ -724,12 +750,12 @@ Every future E2E run must record:
 
 ## Next implementation gates
 
-1. Provide matching clock calibration and front/rear extrinsic JSON evidence
-   documents for the canonical input, register them with both
-   `rosbag2_calibration_readiness` and `rosbag2_calibration_evidence`, and
-   preserve their external file receipts. The separate `all-sensors-bag1` TF
-   receipt cannot satisfy this gate, and the latest survey receipt records both
-   canonical artifacts as missing.
+1. Provide matching measured clock calibration with uncertainty for the canonical
+   input, and establish the physical accuracy/acceptance of the publisher frame
+   configuration now registered by 141C. Preserve both source-bound artifact
+   receipts in `rosbag2_calibration_readiness` and `rosbag2_calibration_evidence`.
+   The separate `all-sensors-bag1` TF receipt and recording/header latency cannot
+   supply canonical clock evidence.
 2. Run `rosbag2_full_bag_mapping` with those source-bound artifacts and accept
    its complete-record/point/byte, corrected-clock, frame-path, odometry, and
    TSDF/glTF receipts. The implementation and canonical blocked receipt now
