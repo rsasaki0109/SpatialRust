@@ -90,6 +90,15 @@ this contract incrementally.
 
 ## Algorithm crates
 
+The additive Python `track_points_forward_backward` surface and public-data
+RGB-D/PnP study adapter are provisional. Tracking owns uint8 grayscale frames
+and finite float64 Nx2 points before releasing the GIL, preserves input row
+order and returns an explicit validity/error plane. Native LK levels are
+limited to the representable 1..=32 range and windows must fit isize. Neither
+tracking validity nor PnP inliers certify a physically accurate pose; retain
+the independent reference and full-timeline acceptance gates in
+`docs/TUM_RGBD_MOTION_VALIDATION.md`.
+
 Each algorithm crate follows:
 
 ```

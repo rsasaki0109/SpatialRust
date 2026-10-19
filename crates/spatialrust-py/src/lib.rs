@@ -129,6 +129,10 @@ use spatialrust::vision::{
     ThresholdType, TrackState,
 };
 use spatialrust::vision::{
+    track_points_forward_backward as track_points_forward_backward_op, LucasKanadeOptions,
+    RobustTrackOptions,
+};
+use spatialrust::vision::{
     dense_flow_block_match as dense_flow_native, DenseFlowOptions,
     MultiObjectTracker as NativeMultiObjectTracker, MultiObjectTrackerOptions,
 };
@@ -3937,6 +3941,67 @@ fn orb_features<'py>(
     Ok((keypoints, descriptors))
 }
 
+/// Tracks grayscale uint8 images with owned inputs and native forward/backward LK.
+///
+/// Returns next pixel coordinates, validity and round-trip pixel errors in input
+/// row order. Invalid tracks may have infinite errors; only valid rows are usable.
+#[pyfunction]
+#[pyo3(signature = (previous, next_image, points, *, window_radius=5, pyramid_levels=3, max_iterations=30, epsilon=1e-3, min_eigenvalue=1e-4, max_forward_backward_error=1.0))]
+#[allow(clippy::too_many_arguments)] // Named native algorithm and consistency controls.
+fn track_points_forward_backward<'py>(
+    py: Python<'py>,
+    previous: PyReadonlyArray2<'_, u8>,
+    next_image: PyReadonlyArray2<'_, u8>,
+    points: PyReadonlyArray2<'_, f64>,
+    window_radius: usize,
+    pyramid_levels: usize,
+    max_iterations: usize,
+    epsilon: f64,
+    min_eigenvalue: f64,
+    max_forward_backward_error: f64,
+) -> PyResult<(Bound<'py, PyArray2<f64>>, Bound<'py, PyArray1<bool>>, Bound<'py, PyArray1<f64>>)> {
+    let lucas_kanade = LucasKanadeOptions {
+        window_radius,
+        pyramid_levels,
+        max_iterations,
+        epsilon,
+        min_eigenvalue,
+    }
+    .validate()
+    .map_err(to_py_err)?;
+    if !max_forward_backward_error.is_finite() || max_forward_backward_error < 0.0 {
+        return Err(PyValueError::new_err(
+            "max_forward_backward_error must be finite and non-negative",
+        ));
+    }
+    let source = points.as_array();
+    if source.shape()[1] != 2 || source.iter().any(|value| !value.is_finite()) {
+        return Err(PyValueError::new_err("points must be a finite Nx2 float64 array"));
+    }
+    let owned_points =
+        source.outer_iter().map(|row| Vec2 { x: row[0], y: row[1] }).collect::<Vec<_>>();
+    let previous = gray_u8_image_from_numpy(previous)?;
+    let next_image = gray_u8_image_from_numpy(next_image)?;
+    let tracked = py
+        .allow_threads(|| {
+            track_points_forward_backward_op(
+                previous.view(),
+                next_image.view(),
+                &owned_points,
+                RobustTrackOptions { lucas_kanade, max_forward_backward_error },
+            )
+        })
+        .map_err(to_py_err)?;
+    let coordinates = tracked.next_points().iter().flat_map(|point| [point.x, point.y]).collect();
+    Ok((
+        Array2::from_shape_vec((owned_points.len(), 2), coordinates)
+            .map_err(to_py_err)?
+            .into_pyarray_bound(py),
+        numpy::PyArray1::from_vec_bound(py, tracked.status().to_vec()),
+        numpy::PyArray1::from_vec_bound(py, tracked.forward_backward_errors().to_vec()),
+    ))
+}
+
 fn correspondences_from_numpy(
     source: PyReadonlyArray2<'_, f64>,
     target: PyReadonlyArray2<'_, f64>,
@@ -4994,6 +5059,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(shi_tomasi_keypoints, m)?)?;
     m.add_function(wrap_pyfunction!(fast_keypoints, m)?)?;
     m.add_function(wrap_pyfunction!(orb_features, m)?)?;
+    m.add_function(wrap_pyfunction!(track_points_forward_backward, m)?)?;
     m.add_function(wrap_pyfunction!(estimate_homography_ransac, m)?)?;
     m.add_function(wrap_pyfunction!(solve_pnp, m)?)?;
     m.add_function(wrap_pyfunction!(solve_pnp_ransac, m)?)?;

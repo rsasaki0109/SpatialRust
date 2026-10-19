@@ -1016,7 +1016,19 @@ evidence, and fail-closed acceptance gates live in
 | 143 | Active | 141–142 | Full rosbag2 → records → sync → odometry → TSDF → semantic → Viewer/glTF/OpenUSD E2E |
 | 144 | Complete | 142–143 | Memory/transfer/latency budgets, benchmark receipts, failure recovery, and deterministic rerun comparison |
 | 145 | Active | 143–144 | ROS 2 publish, edge/distributed partition execution, and optional AI runtime boundaries |
-| 146 | Planned | 141–145 | API stability, Python/docs/CI updates, security review, and v1.3 release receipt |
+| 146 | Active | 141–145 | API stability, Python/docs/CI updates, security review, and v1.3 release receipt |
+
+### Epic 146 operational acceptance slices
+
+| Slice | Status | Scope | Evidence required |
+| --- | --- | --- | --- |
+| 146A | Active | Connect native forward/backward image tracking to the Python RGB-D motion workflow; retain full public-data timelines, reference-free generation and independent pose scoring | Analytic tracking/configuration/ownership tests, installed-wheel checks, fixed public TUM inputs and complete generation/accuracy receipts; does not replace canonical Autoware calibration |
+
+The operational maturity target is 80% on the explicitly requested real-data,
+multi-GPU/OS and public-release criteria. Historical engineering estimates in
+`docs/MATURITY.md` use a different subjective scale and cannot by themselves
+prove this target. Configured jobs, fixture-only success and a generation count
+without accurate reference motion do not establish operational acceptance.
 
 ### Epic 141 acceptance slices
 

@@ -11,5 +11,6 @@ Cargo.lock
 # Python / maturin
 .venv/
 __pycache__/
+.pytest_cache/
 *.egg-info/
 *.so

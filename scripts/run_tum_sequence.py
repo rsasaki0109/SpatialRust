@@ -119,10 +119,41 @@ def checked_depth(prepared, entry, limit):
     return raw
 
 
+def checked_rgb(prepared, entry, limit):
+    """Verify a registered RGB PNG without accepting path or checksum aliases."""
+    if not isinstance(entry, dict):
+        raise ValueError('RGB-D motion requires a timestamp-associated RGB image')
+    relative = safe_relative(entry['path'])
+    if len(relative.parts) != 2 or relative.parts[0] != 'rgb' or relative.suffix != '.png':
+        raise ValueError('RGB entry requires a relative RGB PNG path')
+    path = (prepared / str(relative)).resolve()
+    path.relative_to(prepared.resolve())
+    if type(entry['bytes']) is not int or not 0 < entry['bytes'] <= limit or path.stat().st_size != entry['bytes']:
+        raise ValueError('invalid RGB size')
+    raw = path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != require_sha256(entry['sha256']):
+        raise ValueError('RGB differs from prepared image hash')
+    return raw
+
+
+def decode_rgb_gray(raw, camera):
+    from PIL import Image
+    with Image.open(io.BytesIO(raw)) as image:
+        if image.format != 'PNG' or image.mode != 'RGB' or image.size != (camera['width'], camera['height']) or getattr(image, 'n_frames', 1) != 1:
+            raise ValueError('unsupported registered RGB image geometry/type')
+        image.load()
+        rgb = np.array(image, dtype=np.uint8, copy=True)
+    return sr.rgb_to_gray_image(rgb)
+
+
 def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
-             method='spatialrust_cpu', additional_bindings=()):
+             method='spatialrust_cpu', additional_bindings=(), rgbd_aligner=None):
     """Run native ICP by default; explicit adapters serve separate baseline studies."""
-    if method not in ('spatialrust_cpu', 'open3d_cpu', 'spatialrust_point_to_plane_cpu',
+    image_method = method == 'spatialrust_rgbd_pnp_cpu'
+    if image_method:
+        if rgbd_aligner is None or pair_aligner is not None:
+            raise ValueError('RGB-D method requires its explicit image adapter only')
+    elif rgbd_aligner is not None or method not in ('spatialrust_cpu', 'open3d_cpu', 'spatialrust_point_to_plane_cpu',
                       'spatialrust_keyframe_point_to_plane_cpu',
                       'spatialrust_overlap_keyframe_point_to_plane_cpu',
                       'spatialrust_hybrid_keyframe_cpu') or (pair_aligner is None) != (method == 'spatialrust_cpu'):
@@ -157,9 +188,10 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
             Path(__file__).with_name('realsense_reference.py'),
             Path(__file__).with_name('timestamped_trajectory_reference.py'),
             Path(__file__).with_name('evaluate_pose_reference.py')]
-    if pair_aligner is not None:
+    adapter = rgbd_aligner if image_method else pair_aligner
+    if adapter is not None:
         import inspect
-        adapter_source = inspect.getsourcefile(pair_aligner)
+        adapter_source = inspect.getsourcefile(adapter)
         if adapter_source is None or not additional_bindings:
             raise ValueError('baseline adapter requires source and native-library bindings')
         code += [Path(adapter_source)] + [Path(p) for p in additional_bindings]
@@ -170,8 +202,9 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
     bindings = {str(p.resolve()):file_sha256(p) for p in code+native}
     output.mkdir(parents=True, exist_ok=False)
     chain, previous, previous_ns = TrackingChain(), None, None
+    previous_depth, previous_gray = None, None
     dense = np.empty((camera['height'], camera['width'], 3), np.float32)
-    poses, points, used_images = [], 0, []
+    poses, points, used_images, used_rgb = [], 0, [], []
     with (output/'frames.jsonl').open('x', encoding='utf-8') as checkpoint:
         for i, frame in enumerate(frames):
             row = dict(timestamp_ns=frame['timestamp_ns'], depth_sha256=frame['depth']['sha256'], status='error')
@@ -182,13 +215,30 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
                 used_images.append(frame['depth'])
                 depth = decode_depth(image_raw, camera)
                 cloud, xyz, valid, error = project(depth, camera, controls, dense)
+                gray = None
+                if image_method:
+                    entry = frame['rgb']
+                    if not isinstance(entry, dict) or type(frame['rgb_delta_ns']) is not int or type(entry.get('timestamp_ns')) is not int or entry['timestamp_ns']-frame['timestamp_ns'] != frame['rgb_delta_ns'] or abs(frame['rgb_delta_ns']) > controls['rgb_max_gap_ns']:
+                        raise ValueError('RGB association exceeds the fixed timestamp gap')
+                    gray = decode_rgb_gray(checked_rgb(prepared, entry, plan['limits']['max_member_bytes']), camera)
+                    used_rgb.append(entry)
+                    row.update(rgb_sha256=entry['sha256'], rgb_timestamp_ns=entry['timestamp_ns'], rgb_delta_ns=frame['rgb_delta_ns'])
                 if previous is None:
                     world = chain.accept()
                     row['identity_anchor'] = True
                 else:
                     if frame['timestamp_ns']-previous_ns > controls['max_tracking_gap_ns']:
                         raise ValueError('depth interval exceeds preregistered tracking gap')
-                    transform, report = pair_aligner(cloud, previous, controls)
+                    if image_method:
+                        transform, report = rgbd_aligner(previous_depth, previous_gray, gray, camera, controls)
+                        count, fraction, rmse = sr.distance_gated_support(
+                            sr.apply_transform(cloud, transform.astype(np.float32)), previous,
+                            controls['stages'][-1]['gate_m'])
+                        if count < 3 or fraction < controls['min_support_fraction'] or rmse is None:
+                            raise ValueError('RGB-D pose lacks fixed point support: count={}, fraction={}, rmse={}'.format(count, fraction, rmse))
+                        report.update(support_count=count, support_fraction=fraction, support_rmse_m=rmse)
+                    else:
+                        transform, report = pair_aligner(cloud, previous, controls)
                     world = chain.accept(transform)
                     row['registration'] = report
                 if i % controls['io_stride'] == 0 or i == len(frames)-1:
@@ -202,6 +252,8 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
                     row['io'] = dict(input_sha256=file_sha256(path), restored_sha256=file_sha256(restored),
                                      exact_typed_attributes=True)
                 previous, previous_ns = cloud, frame['timestamp_ns']
+                if image_method:
+                    previous_depth, previous_gray = depth, gray
                 row.update(status='success', world_from_sensor=world.tolist(), points=len(cloud),
                            projection_max_error_m=error)
                 points += len(cloud)
@@ -211,9 +263,13 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
             checkpoint.write(json.dumps(row, sort_keys=True, allow_nan=False)+'\n')
             checkpoint.flush()
             poses.append(row)
+            if image_method and (i % 60 == 0 or i == len(frames)-1):
+                print('RGB-D frame {}/{}: {}'.format(i+1, len(frames), row['status']), flush=True)
     # Check all inputs actually used and code again before publishing the frozen estimates.
     for image in used_images:
         checked_depth(prepared, image, plan['limits']['max_member_bytes'])
+    for image in used_rgb:
+        checked_rgb(prepared, image, plan['limits']['max_member_bytes'])
     if (prepared/'manifest.json').read_bytes() != raw or (prepared/'plan.json').read_bytes() != plan_raw or (prepared/'calibration.json').read_bytes() != calibration_raw:
         raise ValueError('prepared metadata changed during generation')
     if any(file_sha256(p) != sha for p, sha in bindings.items()):
