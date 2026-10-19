@@ -579,5 +579,73 @@
     "Canonical full mapping and semantic/release acceptance",
     "Held-out motion robustness"
   ],
-  "operational_80_percent_proven": false
+  "operational_80_percent_proven": false,
+  "post_study_checkout_identity_validation": {
+    "policy": "Admit only the exact registered parent byte content in uniform LF or CRLF form; preserve declared original raw identity. Reject mixed endings, stray CR, added whitespace and changed controls.",
+    "failed_ci_source_commit": "16cdaaa0821ff9a9bfeb9b6d20384a1d3aff1392",
+    "parent_encodings": {
+      "xyz": {
+        "lf_sha256": "10fc2b663545b9f26a210ced3dadd3838fa9e2e76cc8b7bbb6c43b3582478847",
+        "crlf_sha256": "347324b9e0198ae65b2717f54086e5637b112b490573d06d511d38f36ef75d1d",
+        "recorded_parent_sha256": "347324b9e0198ae65b2717f54086e5637b112b490573d06d511d38f36ef75d1d"
+      },
+      "rpy": {
+        "lf_sha256": "b6d5d39345b164d454658d89c0033d6ab81dfb057156885dd6c597aae0b269ec",
+        "crlf_sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544",
+        "recorded_parent_sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544"
+      }
+    },
+    "source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\open3d_rgbd_protocol.py",
+      "bytes": 3826,
+      "sha256": "4e282bee7822b61561960a73bbe1cf5434844783a3d9a490315057a3cabd992a"
+    },
+    "tests_source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_tum_open3d_rgbd.py",
+      "bytes": 10950,
+      "sha256": "5bcaaa0d754f631673ccce52fac45d0a0ea30a457d37a6e19c4f61202690decf"
+    },
+    "tests": {
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v3.xml",
+        "bytes": 135492,
+        "sha256": "c39a423d1457dbc4ba8348133aa5d99729a30ea2f32d5e993f5035745054a3b9"
+      },
+      "tests": 1012,
+      "passed": 1009,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0,
+      "new_checkout_cases": 10,
+      "total_comparator_cases": 35
+    },
+    "scratch_cleanup": {
+      "Schema": "spatialrust.open3d-dense-portability-pytest-scratch-cleanup.v1",
+      "VerifiedAtUtc": "2026-10-19T20:03:43.4197902Z",
+      "Paths": [
+        {
+          "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-full-v3",
+          "Files": 1095,
+          "LogicalBytes": 316349249,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v3.xml",
+          "XmlSha256": "c39a423d1457dbc4ba8348133aa5d99729a30ea2f32d5e993f5035745054a3b9",
+          "Tests": 1012,
+          "Skipped": 3
+        }
+      ],
+      "AlreadyAbsent": [],
+      "LogicalBytesRemoved": 316349249,
+      "FreeBeforeBytes": 677787430912,
+      "FreeAfterBytes": 678105444352,
+      "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+    },
+    "total_passing_scratch_logical_bytes_removed": 1070794734,
+    "scientific_outputs_and_plans_preserved": true,
+    "numerical_rebuild": false,
+    "scientific_refit": false,
+    "free_after_bytes": {
+      "C": 78720118784,
+      "E": 678105444352
+    }
+  }
 }

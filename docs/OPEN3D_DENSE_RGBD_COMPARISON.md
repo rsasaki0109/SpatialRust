@@ -138,3 +138,21 @@ scratch directories were removed, reclaiming 754,445,485 logical bytes. The
 receipt observes 678,105,968,640 bytes free on E after completion. Preserve both
 initial API failures and all successful results. This comparison leaves the
 remaining canonical, hardware-class and full mapping/semantic/release gates open.
+
+### Checkout identity portability follow-up
+
+Initial Linux CI found that the fixed child plans recorded the pre-existing
+Windows parent's CRLF SHA despite the repository's LF checkout rule. Parent
+validation now accepts only those identical bytes in uniform LF or CRLF form,
+retaining the original declared identity. Mixed endings, stray CR, extra
+whitespace, wrong hashes and changed model/acceptance fields reject. The child
+plans, all scientific outputs and original generation/auditor bindings remain
+fixed at their recorded source versions; this repair changes no fitting or
+scoring math and requires no new run.
+
+Ten checkout regressions bring local validation to 1,009 Python passes and three
+existing optional ONNX skips, including 35 comparator cases. Their separate
+passing scratch cleanup reclaims another 316,349,249 logical bytes, bringing
+total passing-scratch reclamation to 1,070,794,734 bytes. Original measurements
+and the initial three cleanup records stay intact; the receipt appends separate
+source identities, XML, cleanup and scientific-output preservation checks.

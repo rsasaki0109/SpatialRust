@@ -22,6 +22,33 @@ from test_tum_sequence_reference import fixture
 PLAN = ROOT/'benchmarks/tum-fr1-xyz-open3d-dense-plan.json'
 
 
+@pytest.mark.parametrize('scene', ['xyz','rpy'])
+@pytest.mark.parametrize('ending', ['lf','crlf'])
+def test_fixed_parent_identity_survives_uniform_checkout_endings(tmp_path,monkeypatch,scene,ending):
+    plan=json.loads((ROOT/'benchmarks'/('tum-fr1-'+scene+'-open3d-dense-plan.json')).read_text())
+    original=PARENTS[plan['sequence']].read_bytes().replace(b'\r\n',b'\n')
+    raw=original if ending=='lf' else original.replace(b'\n',b'\r\n')
+    parent=tmp_path/'parent.json';parent.write_bytes(raw)
+    monkeypatch.setitem(PARENTS,plan['sequence'],parent)
+    assert validate_comparator_plan(plan) is plan
+    assert parent.read_bytes()==raw
+    bad=copy.deepcopy(plan);bad['prior_causal_dense_plan_sha256']='0'*64
+    with pytest.raises(ValueError):validate_comparator_plan(bad)
+
+
+@pytest.mark.parametrize('scene', ['xyz','rpy'])
+@pytest.mark.parametrize('damage', ['whitespace','mixed_endings','stray_cr'])
+def test_fixed_parent_identity_rejects_non_checkout_byte_changes(tmp_path,monkeypatch,scene,damage):
+    plan=json.loads((ROOT/'benchmarks'/('tum-fr1-'+scene+'-open3d-dense-plan.json')).read_text())
+    raw=PARENTS[plan['sequence']].read_bytes().replace(b'\r\n',b'\n')
+    if damage=='whitespace':raw=b' '+raw
+    elif damage=='mixed_endings':raw=raw.replace(b'\n',b'\r\n',1)
+    else:raw=raw.replace(b'\n',b'\r',1)
+    parent=tmp_path/'parent.json';parent.write_bytes(raw)
+    monkeypatch.setitem(PARENTS,plan['sequence'],parent)
+    with pytest.raises(ValueError):validate_comparator_plan(plan)
+
+
 def inputs():
     camera = dict(width=8, height=8, fx=20., fy=20., cx=3.5, cy=3.5, depth_unit_m=.0002)
     depth = np.full((8, 8), 5000, np.uint16)

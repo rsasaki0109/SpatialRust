@@ -1,10 +1,11 @@
 """Fixed CPU RGB-D comparator; no Open3D import or estimator execution."""
 import copy
+import hashlib
 import json
 from pathlib import Path
 
 from causal_dense_rgbd_protocol import INITIALIZATION, validate_causal_dense_plan
-from tum_sequence_reference import file_sha256, validate_plan
+from tum_sequence_reference import validate_plan
 from wide_rgbd_protocol import exact_json
 
 ESTIMATOR = 'open3d_causal_rgbd_cpu'
@@ -47,8 +48,18 @@ def validate_comparator_plan(plan):
     path = PARENTS.get(plan.get('sequence'))
     if path is None:
         raise ValueError('require either fixed full-scene RGB-D comparator input')
-    parent = validate_causal_dense_plan(json.loads(path.read_text(encoding='utf-8')))
-    expected = comparator_plan(parent, file_sha256(path))
+    raw = path.read_bytes()
+    lf = raw.replace(b'\r\n', b'\n')
+    crlf = lf.replace(b'\n', b'\r\n')
+    declared = plan.get('prior_causal_dense_plan_sha256')
+    # The recorded parent was a pre-existing CRLF working copy despite the LF
+    # checkout rule. Retain that exact identity and admit only its LF equivalent;
+    # never canonicalize JSON content, mixed endings, whitespace or field values.
+    if (b'\r' in lf or raw not in (lf, crlf)
+            or declared not in {hashlib.sha256(lf).hexdigest(), hashlib.sha256(crlf).hexdigest()}):
+        raise ValueError('require the exact parent bytes with uniform LF or CRLF endings')
+    parent = validate_causal_dense_plan(json.loads(raw))
+    expected = comparator_plan(parent, declared)
     if exact_json(plan) != exact_json(expected):
         raise ValueError('comparator package, model, causal seed and all final gates are fixed')
     return plan

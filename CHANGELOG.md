@@ -24,8 +24,9 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   Both complete development runs pass existing gates (xyz ATE/RPE
   0.051174/0.023110m; rpy 0.099684/0.048494m). Preserve native rpy's ATE failure,
   all initial API failures, unchanged binaries and original acceptance limits.
-  Python 999 passes/3 optional skips, no image copies/downloads, bounded E
-  output and 754MB passing scratch reclaimed. See
+  Preserve parent identities across uniform LF/CRLF checkout while rejecting
+  other byte/model changes. Python 1,009 passes/3 optional skips, no image
+  copies/downloads, bounded E output and 1.07GB passing scratch reclaimed. See
   `docs/OPEN3D_DENSE_RGBD_COMPARISON.md` and its measurement receipt.
 
 - Validate the frozen public image/point executable on privately staged Mesa
