@@ -14,6 +14,9 @@ WASM is serial. Python owns all four inputs before releasing the GIL and returns
 pose/error/support/working-buffer receipts. Original sparse APIs and device
 transfers retain their contracts. See the
 [fixed full-sequence protocol](DENSE_RGBD_ODOMETRY_VALIDATION.md).
+The frozen final-overlap variant passes the original accuracy/coverage gates on
+TUM fr1/xyz (798/798 poses); fr1/rpy remains incomplete (40/722). This is an
+experimental CPU capability with bounded resources, not full motion acceptance.
 
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,

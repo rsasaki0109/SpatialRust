@@ -100,3 +100,86 @@ strict-policy wheel/extension and results; build a new E-drive wheel/environment
 and use fresh `prepared/run/evaluation/audit` directories. Freeze both revised
 estimates before new scores, and rerun independent projective/trajectory audits.
 The original source and plans remain reproducible with their frozen old binary.
+
+## Frozen full-scene outcomes
+
+Both revised estimates were frozen at `2026-10-19T14:51:43.464678+00:00`
+before either revised reference score. Source commit
+`1e56c9352f6b91aaccec97e946b10b5feec651c0` and the loaded extension SHA-256
+`f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88`
+bind the actual numerical implementation. The earlier strict variant remains
+bound to `ece33c25513c757958f5b7b1780bdd087125cade` and extension
+`f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4`.
+
+| Fixed method / scene | Generated / planned | Reference evaluated | ATE RMSE, m | 1s RPE translation RMSE, m | Acceptance |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Strict iteration / xyz | 75/798 | 75 | 0.023091* | 0.016479* | Fail: incomplete |
+| Strict iteration / rpy | 1/722 | 1 | Anchor only | No pairs | Fail: incomplete |
+| Final-pose overlap / xyz | 798/798 | 795 | 0.090314 | 0.025987 | Pass this development scene |
+| Final-pose overlap / rpy | 40/722 | 40 | 0.055276* | 0.115722* | Fail: incomplete and RPE |
+
+`*` denotes a surviving prefix, not a full-sequence accuracy result. The initial
+rpy numerical ATE of zero is only its sole identity anchor. Original reference
+gaps remain three xyz and six rpy rows. Revised xyz evaluates 762/768 requested
+one-second pairs; rpy evaluates 10/692. No failed frame is dropped from either
+1,520-row experiment, and no trajectory restarts after loss.
+
+At revised rpy index 40 (zero based), the returned full-resolution hypothesis
+has 95,855/228,114 correspondences, fraction 0.4202065633849742. The unchanged
+0.5 acceptance gate rejects it; all 682 failed rows remain. The protocol does
+not justify further gate changes or a physical diagnosis of this loss.
+
+All four independent final-projective audits pass: 74/0 successful adjacent
+pairs in the original xyz/rpy runs and 797/39 in the revised runs. They check
+all source rows and the causal world composition. All four SciPy trajectory
+audits pass their fixed score tolerances. Passing a score audit establishes
+correct arithmetic and coverage accounting; rpy remains unaccepted.
+
+The native implementation passes 175 tests (two existing ignored tests), 13
+vision property tests, Clippy with warnings denied, the explicit facade feature
+check and `wasm32-unknown-unknown` compilation. The low-initial-overlap rendered
+regression fails on the strict parent and passes after the solver revision;
+a separate exact-residual/low-overlap regression verifies rejection at return.
+Python tests cover owned and strided inputs, concurrent calls, typed failures,
+policy mismatches, independent residuals and inverse/world composition.
+
+The distribution check also reproduces and corrects four pre-existing missing
+public names in the stub `__all__`. Commit
+`43ad0ddfa94b02d2575c4862caf7cfa9d5be6e9d` changes only typing metadata and
+its contract test after scientific results are frozen. A fresh wheel contains
+the identical numerical extension above; every wheel RECORD digest and all 135
+public export names are verified. Original experiment environments are preserved.
+The final wheel passes 942 Python tests with three existing optional ONNX skips
+and the repository's runtime/stub comparison command.
+
+## Storage, reproducibility and remaining scope
+
+The compact [machine receipt](receipts/2026-10-19_dense_rgbd_odometry.json)
+records exact plans, manifests, estimates, audits, wheels, tests and storage
+counts. Original evidence remains under the absolute directories
+`E:/SpatialRustData/maturity-80/dense-rgbd-study-v1/` and
+`E:/SpatialRustData/maturity-80/dense-final-overlap-study-v1/`; each contains
+`study.json`, preparation, freeze and process logs. Use the original source
+commit and wheel for the strict-policy CLI; the revised CLI explicitly requires
+the native `final_support_only` receipt. New estimates and both audit CLIs require
+fresh output directories and the exact prepared-manifest/estimate hashes.
+
+Each preparation reuses 1,598 xyz and 1,447 rpy existing PNG/index files as checked
+hard links. Dataset downloads and additional image payload copies are zero. The
+original study retains 32,570,302 logical result bytes and the revised study
+169,843,273 bytes, each below its 1GiB cap. At 640x480 the solver reports
+12,913,440 logical pyramid/reduction bytes plus 3,072,000 Python input-copy
+bytes per call, with at most four native CPU workers. Thread stacks, allocator
+overhead and peak process memory are outside these counters.
+
+Only completed, passing, explicitly owned pytest scratch directories are
+eligible for cleanup after absolute-path and no-reparse checks. Their XML/log
+evidence, all old results, source archives, wheels and native/GPU binaries remain.
+Builds, caches, data and temporary files use E with the fixed 20GiB free floor.
+
+This adds an explicit CPU model and one accepted public development sequence.
+There is no GPU implementation or speed comparison for this dense solver yet.
+The failed rpy sequence, independent measured canonical clock/physical
+calibration, second hardware-class operation coverage and full release/mapping
+acceptance remain open. These two previously observed development scenes do
+not establish held-out robustness, competitor parity or operational 80% maturity.
