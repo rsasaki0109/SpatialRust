@@ -1,0 +1,177 @@
+{
+  "schema": "spatialrust.public-rgbd-image-motion.v1",
+  "date": "2026-10-19",
+  "protocol_commit": "0cbd2a60c7945d700ea33bb2c5dfa7b7bed90f2a",
+  "protocol_sha256": "f85dd80fa03d8ec0651c748b246459e8bbdb560a6cd335bfc43cf08666dec10e",
+  "source": {
+    "sequence": "TUM RGB-D freiburg1_xyz",
+    "bytes": 448204271,
+    "sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+    "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+    "license": "CC BY 4.0",
+    "publisher": "Sturm et al., A Benchmark for the Evaluation of RGB-D SLAM Systems, IROS 2012"
+  },
+  "methods": {
+    "rgbd": {
+      "method": "spatialrust_rgbd_pnp_cpu",
+      "counts": {
+        "planned_poses": 798,
+        "generated_poses": 798,
+        "evaluated_poses": 795,
+        "unmatched_reference_poses": 3,
+        "rpe_planned_pairs": 768,
+        "rpe_evaluated_pairs": 762
+      },
+      "projected_points": 185553749,
+      "typed_io_audits": 15,
+      "first_pose_ate_rmse_m": 0.12023483162080109,
+      "one_second_translation_rpe_rmse_m": 0.03350526742502193,
+      "conditions": {
+        "complete": true,
+        "coverage": true,
+        "ate": false,
+        "rpe": true
+      },
+      "accepted": false,
+      "estimates_sha256": "009e365eb432ad189842cd8d4218716960a7eaba57c31ad5dd287d92f90156a0",
+      "evaluation_sha256": "c6880691fe06b642041e800c88e6f1528d52e3dd4aff757723ec50137cc82c3d",
+      "audit_receipt_sha256": "2e4b231b49e94ad4f0a7b2f5a5f4a5e08fd24afd1d1554e2251525300ba2740a",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "reference_not_used_for_generation": true,
+      "independent_audit": {
+        "independent_method": "SciPy quaternion SLERP/rotation magnitude; independently parsed Decimal times and pose coverage",
+        "scipy": "1.17.1",
+        "numpy": "2.3.4",
+        "max_translation_score_difference_m": 1.096345236817342e-15,
+        "max_rotation_score_difference_degrees": 4.831690603168681e-13,
+        "translation_tolerance_m": 1e-08,
+        "rotation_tolerance_degrees": 1e-06
+      },
+      "bindings": {
+        "benchmarks/tum-fr1-xyz-plan.json": {
+          "local_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+          "protocol_blob_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b"
+        },
+        "scripts/evaluate_pose_reference.py": {
+          "local_sha256": "99b587c5ba40378eb97a83fca16b7eac6a3ff2e20edf9aea15b79f79f3fe3f0b",
+          "protocol_blob_sha256": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e"
+        },
+        "scripts/realsense_reference.py": {
+          "local_sha256": "3aa1260975342112150f0c776e45a157473b0dcd817deb4696257800c700e8f0",
+          "protocol_blob_sha256": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73"
+        },
+        "scripts/run_tum_rgbd_odometry.py": {
+          "local_sha256": "7215864021c35558ab949c8e7d82a749b7d156c675ccc429636a65b51fdf6064",
+          "protocol_blob_sha256": "7215864021c35558ab949c8e7d82a749b7d156c675ccc429636a65b51fdf6064"
+        },
+        "scripts/run_tum_sequence.py": {
+          "local_sha256": "0152ac412012b159ab8841d2c2234bf7283d5cbe7e62f438f332293604e3038d",
+          "protocol_blob_sha256": "0152ac412012b159ab8841d2c2234bf7283d5cbe7e62f438f332293604e3038d"
+        },
+        "scripts/timestamped_trajectory_reference.py": {
+          "local_sha256": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+          "protocol_blob_sha256": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c"
+        },
+        "scripts/tum_sequence_reference.py": {
+          "local_sha256": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36",
+          "protocol_blob_sha256": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36"
+        },
+        "installed-native-binary": {
+          "local_sha256": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1"
+        }
+      }
+    },
+    "plane": {
+      "method": "spatialrust_point_to_plane_cpu",
+      "counts": {
+        "planned_poses": 798,
+        "generated_poses": 798,
+        "evaluated_poses": 795,
+        "unmatched_reference_poses": 3,
+        "rpe_planned_pairs": 768,
+        "rpe_evaluated_pairs": 762
+      },
+      "projected_points": 185553749,
+      "typed_io_audits": 15,
+      "first_pose_ate_rmse_m": 0.12499176809546808,
+      "one_second_translation_rpe_rmse_m": 0.04371471662318631,
+      "conditions": {
+        "complete": true,
+        "coverage": true,
+        "ate": false,
+        "rpe": true
+      },
+      "accepted": false,
+      "estimates_sha256": "99b6c4af3d8685be5bc4e043a274ea94e4cdf4a3f766f5c2a406dcaa41d0beae",
+      "evaluation_sha256": "7ad42a9e4d091ed1f8aa463e8de2889a7dc7eb3e5d99c4d2f1adc7475cd81703",
+      "audit_receipt_sha256": "e2768bce4f0a1ee806c0b1c0c2ac0ec85f837bc726afb999235c7f8e3c9c82d1",
+      "reference_sha256": "aac0319a6ef4e1cdf61e779d2152b95aa7e9f7b1749d6d18717b43ddabffede2",
+      "reference_not_used_for_generation": true,
+      "independent_audit": {
+        "independent_method": "SciPy quaternion SLERP/rotation magnitude; independently parsed Decimal times and pose coverage",
+        "scipy": "1.17.1",
+        "numpy": "2.3.4",
+        "max_translation_score_difference_m": 9.922618282587337e-16,
+        "max_rotation_score_difference_degrees": 6.821210263296962e-13,
+        "translation_tolerance_m": 1e-08,
+        "rotation_tolerance_degrees": 1e-06
+      },
+      "bindings": {
+        "scripts/evaluate_pose_reference.py": {
+          "local_sha256": "99b587c5ba40378eb97a83fca16b7eac6a3ff2e20edf9aea15b79f79f3fe3f0b",
+          "protocol_blob_sha256": "2fbba0c9ac8c762d7b81f836970480f0e1428eb80a71d1c1d7f91fcfccddee0e"
+        },
+        "scripts/realsense_reference.py": {
+          "local_sha256": "3aa1260975342112150f0c776e45a157473b0dcd817deb4696257800c700e8f0",
+          "protocol_blob_sha256": "0b7a8cd90b332d9092ab2aea83e9f394cb9536bf01f0400ef2b129f89e86cc73"
+        },
+        "scripts/run_tum_point_to_plane.py": {
+          "local_sha256": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58",
+          "protocol_blob_sha256": "2650e160cc44f32db3a528c3d92596ab87b738e28caa4136920900a25ca4fb58"
+        },
+        "scripts/run_tum_sequence.py": {
+          "local_sha256": "0152ac412012b159ab8841d2c2234bf7283d5cbe7e62f438f332293604e3038d",
+          "protocol_blob_sha256": "0152ac412012b159ab8841d2c2234bf7283d5cbe7e62f438f332293604e3038d"
+        },
+        "scripts/timestamped_trajectory_reference.py": {
+          "local_sha256": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c",
+          "protocol_blob_sha256": "92919e8cf4ca0768716e60f1b24e4eb00ed9e6ca7496f395cdff5164fd3acc0c"
+        },
+        "scripts/tum_sequence_reference.py": {
+          "local_sha256": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36",
+          "protocol_blob_sha256": "7733d4541dd2e0ea15a90e701839c96fbe57d4c2f8c76fcec2fb6e0cea40ad36"
+        },
+        "installed-native-binary": {
+          "local_sha256": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1"
+        }
+      }
+    }
+  },
+  "validation": {
+    "native_vision_passed": 160,
+    "native_benchmark_ignored": 2,
+    "focused_python_passed": 100,
+    "full_python_passed": 753,
+    "optional_onnx_skipped": 3,
+    "native_and_binding_clippy": "pass with warnings denied",
+    "wasm": "all-feature vision compilation with warnings denied; execution not claimed",
+    "type_stubs": "installed-wheel stubtest passed"
+  },
+  "runtime": {
+    "os": "Windows",
+    "architecture": "x86_64",
+    "rustc": "1.98.1",
+    "python": "3.12.10",
+    "numpy": "2.3.4",
+    "scipy": "1.17.1",
+    "profile": "release; thin LTO; one codegen unit",
+    "native_sha256": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "wheel_sha256": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042"
+  },
+  "unisolated_generation_wall_seconds": {
+    "rgbd": 346.91,
+    "plane": 194.27
+  },
+  "timing_limit": "Single unisolated observations; own regression/probe activity overlaps candidate generation; methods do different work; no speed ranking.",
+  "scope": "Already observed development sequence, no new holdout; both methods fail unchanged ATE limit; public sensor/derived artifacts remain external; does not certify canonical Autoware calibration, multi-GPU execution or operational maturity 80%."
+}

@@ -1,6 +1,25 @@
 # Maturity assessment
 
-Current assessment (2026-10-12): **87%, provisional**. This is a subjective
+Current operational target (2026-10-19): **80%, active**. The current discussion
+uses an approximately **60% provisional baseline** for calibrated real-data
+completion, multiple-GPU/OS validation and the v1.3 public-release boundary.
+This subjective scale is not interchangeable with the earlier engineering
+progress estimates below; neither is measured PCL/Open3D/OpenCV feature parity.
+The earlier 87% number alone cannot establish this operational target.
+
+Native image tracking now connects to RGB-D/PnP and passes installed-wheel,
+configuration, lifetime, public-data and independent scoring checks. Both new
+and current point-to-plane trajectories generate 798/798 poses; the image path
+has 0.120235 m ATE and 0.033505 m RPE, versus 0.124992/0.043715 m for the current
+baseline. Both fail the unchanged 0.10 m ATE limit. No defaults or thresholds
+are changed to count this as accepted motion. Native adapter selection can
+initialize integrated and discrete Vulkan devices, but this is not yet actual
+multi-GPU image/point-cloud conformance. The operational goal stays active.
+See [the complete protocol and failures](TUM_RGBD_MOTION_VALIDATION.md).
+
+## Historical engineering progress assessments
+
+Historical assessment (2026-10-12): **87%, provisional**. This is a subjective
 engineering progress estimate, not measured feature parity with PCL, OpenCV or
 Open3D, not the fraction of their functionality implemented, and not a claim
 of equivalent production readiness. The long-term target remains 90%.

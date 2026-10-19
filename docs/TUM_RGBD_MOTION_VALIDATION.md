@@ -1,7 +1,7 @@
 # Native image-tracking RGB-D motion protocol
 
-Date: 2026-10-19. Operational v1.3 slice 146A. The first image-tracking fit is
-pending; this protocol does not establish successful real-motion accuracy.
+Date: 2026-10-19. Operational v1.3 slice 146A. Both trajectories complete,
+but both fail the unchanged 0.10 m ATE acceptance limit.
 
 The existing depth-only study processes the public TUM RGB-D Freiburg 1 XYZ
 sequence but its point-to-plane trajectory exceeds the fixed 0.10 m ATE limit.
@@ -95,3 +95,65 @@ plan and `scripts/run_tum_point_to_plane.py`.
 The canonical Autoware clock/front/rear calibration gates remain separate and
 unresolved. This public-data study cannot certify those artifacts, broad GPU
 coverage or the complete operational maturity target.
+
+
+## Observed results and independent audit
+
+The protocol was committed as `0cbd2a60c7945d700ea33bb2c5dfa7b7bed90f2a` before first
+image-tracking/PnP fitting. Both full trajectories were frozen before reading
+reference pose contents for this study. No failed/unmatched row was removed,
+and neither limits nor fitting settings were revised after the result.
+
+| Measurement | Native RGB-D image/PnP | Native point-to-plane |
+| --- | ---: | ---: |
+| Planned poses | 798 | 798 |
+| Generated poses | 798 | 798 |
+| Reference matched poses | 795 | 795 |
+| Unmatched reference poses | 3 | 3 |
+| Planned 1 s RPE pairs | 768 | 768 |
+| Evaluated RPE pairs | 762 | 762 |
+| Projected points | 185553749 | 185553749 |
+| Exact typed IO audit frames | 15 | 15 |
+| First-pose ATE RMSE (m), limit 0.10 | 0.120234832 | 0.124991768 |
+| 1 s translation RPE RMSE (m), limit 0.05 | 0.033505267 | 0.043714717 |
+| All acceptance conditions | **fail: ATE** | **fail: ATE** |
+| Unisolated generation wall (s), not a speed ranking | 346.91 | 194.27 |
+
+Both methods preserve all 798 planned poses and 795 reference matches. Three
+unmatched poses at indices 201, 202 and 203 cross the existing 110.1 ms
+reference gap; six planned RPE pairs remain unevaluated. Generation success and
+lower error in this one study do not establish accurate-motion acceptance.
+The image adapter remains explicit; the ordinary depth-only default is unchanged.
+
+Separate SciPy 1.17.1 recomputation agrees with both complete score/coverage
+records under the unchanged 1e-8 m / 1e-6 degree tolerances. Those are numerical
+audit tolerances, not physical sensor uncertainty. The single observed wall
+times include file/source checks and different work; own regression/probe work
+overlapped candidate generation. They cannot establish a throughput ranking.
+
+Local validation passes 160 native vision library tests, 753 full Python tests
+and installed-wheel stubtest. Three optional ONNX tests skip; the two ignored
+native cases are isolated performance surveys. The separate 100-case focused
+run is a subset and is not added to the full Python count. Both native/binding
+Clippy runs deny warnings; all-feature WASM vision compiles with warnings denied.
+WASM execution is not claimed. Native runtime is Windows x86_64, Rust 1.98.1,
+CPython 3.12.10, NumPy 2.3.4, release/thin-LTO/one-codegen-unit.
+
+The [compact receipt](receipts/2026-10-19_tum_rgbd_image_motion.json) records
+every aggregate, condition, estimate/evaluation/audit hash and source/native
+binding. Local source hashes retain actual checkout bytes; protocol-commit
+blob hashes also verify the same source after LF/CRLF normalization. Dataset
+protocol JSON retains exact committed LF bytes under existing `.gitattributes`.
+Four restored local CRLF protocol files initially failed original hash checks;
+restoring their unchanged Git bytes fixes the checks without relaxing identity.
+
+Full trajectories, source images, raw logs and score audits remain under
+`E:/SpatialRustData/maturity-80/tum-fr1-xyz/`, in separate `run-rgbd-v1`,
+`run-plane-v1`, `evaluation-*-v1` and `audit-*-v1` directories. The input-only
+preparation withheld ground-truth and accelerometer contents. The installed
+native binary is hash-checked against its exact wheel before and after fitting.
+No local adapter model name is recorded in published evidence.
+
+This closes the native image/Python workflow and auditability slice. The
+operational 80% target remains active: accurate motion, actual multi-GPU
+execution and the complete v1.3 public-release boundary still require evidence.
