@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Retain a test-only direct parallel neighborhood row decoder and defer its
+  production adoption after mixed complete-call measurements. Production retains
+  the parent decoder, GPU work and explicit transfers. 61 final native
+  executions and all 160 native/6 exploratory comparisons, including
+  adverse and inconclusive results, are in
+  `notes/2026-10-19_direct_parallel_neighborhood_rows.md`.
+
 - Decode large count-only GPU neighborhood readbacks with exact integer-OR
   header validation and bulk owned row/count construction. Preserve original
   fallback, GPU work, transfers and errors. 58 native executions and all 92

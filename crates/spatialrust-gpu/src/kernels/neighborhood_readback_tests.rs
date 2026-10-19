@@ -314,3 +314,6 @@ mod benchmark;
 
 #[path = "neighborhood_count_readback_tests.rs"]
 mod count_tests;
+
+#[path = "neighborhood_row_readback_tests.rs"]
+mod row_tests;
