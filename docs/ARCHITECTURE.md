@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Count-only GPU neighborhood readbacks at 65,536 or more queries use complete
+integer-OR header validation before bulk owned outputs. Capacity-zero radius
+counts preserve all u32 values; nearest-k requires both headers zero. Smaller
+and nonzero-capacity results retain the parent decoder and worker policy. GPU
+work, ownership and explicit transfers are unchanged. See
+[count-only evidence](../notes/2026-10-19_gpu_neighborhood_count_readback.md)
+for all native/exploratory comparisons and host-pass costs.
+
 Explicit GPU neighborhood downloads may decode completed maps with at most four
 native CPU workers per call. A bounded density/region probe selects large work;
 all headers retain original validation, and every worker joins before unmapping.

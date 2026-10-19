@@ -7,6 +7,7 @@ const MIN_ROWS: usize = 65_536;
 const MIN_NEIGHBORS: usize = 524_288;
 const PROBE_ROWS: usize = 64;
 const MAX_WORKERS: usize = 4;
+const MIN_COUNT_ROWS: usize = 65_536;
 
 pub(super) fn decode(
     words: &[u32],
@@ -14,6 +15,9 @@ pub(super) fn decode(
     capacity: u32,
     kind: GpuNeighborhoodKind,
 ) -> SpatialResult<Decoded> {
+    if capacity == 0 && words.len() / 2 >= MIN_COUNT_ROWS {
+        return counts(words, kind);
+    }
     if !eligible(words, stride, capacity) {
         return serial(words, stride, capacity, kind);
     }
@@ -22,6 +26,28 @@ pub(super) fn decode(
     #[cfg(target_arch = "wasm32")]
     let available = 1;
     decode_with_workers(words, stride, capacity, kind, available)
+}
+
+fn counts(words: &[u32], kind: GpuNeighborhoodKind) -> SpatialResult<Decoded> {
+    // Capacity zero has exactly two header words per row and no neighbors.
+    // Validate every header before allocating output, including unused totals
+    // for nearest-k. Radius totals may contain any u32 value.
+    let invalid = match kind {
+        GpuNeighborhoodKind::NearestK => words.iter().fold(0, |bits, &word| bits | word),
+        GpuNeighborhoodKind::Radius => words.chunks_exact(2).fold(0, |bits, row| bits | row[0]),
+    };
+    if invalid != 0 {
+        return Err(SpatialError::InvalidArgument(
+            "GPU neighborhood metadata is invalid".to_owned(),
+        ));
+    }
+    let n = words.len() / 2;
+    let rows = (0..n).map(|_| Vec::new()).collect();
+    let totals = match kind {
+        GpuNeighborhoodKind::NearestK => vec![0; n],
+        GpuNeighborhoodKind::Radius => words.chunks_exact(2).map(|row| row[1]).collect(),
+    };
+    Ok((rows, totals))
 }
 
 fn eligible(words: &[u32], stride: usize, capacity: u32) -> bool {
