@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Public RGB-D motion validation may explicitly combine native grayscale,
+Shi-Tomasi detection, forward/backward sparse LK and source-depth PnP through
+an additive Python adapter. Inputs are owned before native tracking releases
+the GIL. RGB/depth checksums and timestamp associations, previous/current pose
+direction, original full-cloud support and complete lost-frame timelines are
+preserved. Estimates are frozen before independent reference scoring; the
+depth-only default and canonical Autoware calibration boundary remain. See
+[the fixed image-motion protocol](TUM_RGBD_MOTION_VALIDATION.md).
+
 Parallel neighborhood readback keeps the parent production decoder. A native
 test-only direct-row candidate moves unchanged validation and collection into
 the worker loop, but complete-call improvement did not repeat across initial

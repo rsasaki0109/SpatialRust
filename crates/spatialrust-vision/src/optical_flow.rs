@@ -35,14 +35,14 @@ impl Default for LucasKanadeOptions {
 impl LucasKanadeOptions {
     /// Validates window, pyramid, and numerical thresholds.
     pub fn validate(self) -> VisionResult<Self> {
-        if self.window_radius == 0 {
+        if self.window_radius == 0 || self.window_radius > isize::MAX as usize {
             return Err(VisionError::InvalidParameter(
-                "Lucas–Kanade window_radius must be positive".into(),
+                "Lucas–Kanade window_radius must be positive and fit isize".into(),
             ));
         }
-        if self.pyramid_levels == 0 {
+        if self.pyramid_levels == 0 || self.pyramid_levels > u32::BITS as usize {
             return Err(VisionError::InvalidParameter(
-                "Lucas–Kanade pyramid_levels must be positive".into(),
+                "Lucas–Kanade pyramid_levels must be in 1..=32".into(),
             ));
         }
         if self.max_iterations == 0 {
@@ -150,6 +150,9 @@ fn track_one_level(
     mut next_point: Vec2<f64>,
     options: LucasKanadeOptions,
 ) -> VisionResult<Vec2<f64>> {
+    if options.window_radius >= previous.width().min(previous.height()) {
+        return Err(VisionError::InvalidParameter("Lucas–Kanade patch exceeds the image".into()));
+    }
     let radius = options.window_radius as f64;
     for _ in 0..options.max_iterations {
         let mut gxx = 0.0;
@@ -289,6 +292,36 @@ mod tests {
     use super::{track_points_lucas_kanade, LucasKanadeOptions};
     use spatialrust_image::Image;
     use spatialrust_math::Vec2;
+
+    #[test]
+    fn rejects_unrepresentable_scales_and_windows_before_pyramid_allocation() {
+        for levels in [0, 33, usize::MAX] {
+            let options = LucasKanadeOptions { pyramid_levels: levels, ..Default::default() };
+            assert!(options.validate().is_err());
+        }
+        for radius in [0, isize::MAX as usize + 1, usize::MAX] {
+            let options = LucasKanadeOptions { window_radius: radius, ..Default::default() };
+            assert!(options.validate().is_err());
+        }
+        assert!(LucasKanadeOptions { pyramid_levels: 32, ..Default::default() }.validate().is_ok());
+    }
+
+    #[test]
+    fn oversized_representable_patch_fails_without_iterating_the_window() {
+        let image = Image::<u8, 1>::try_new(8, 8, vec![0; 64]).unwrap();
+        let result = track_points_lucas_kanade(
+            image.view(),
+            image.view(),
+            &[Vec2 { x: 4.0, y: 4.0 }],
+            LucasKanadeOptions {
+                window_radius: isize::MAX as usize,
+                pyramid_levels: 1,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(result.status(), &[false]);
+    }
 
     #[test]
     fn tracks_integer_translation() {

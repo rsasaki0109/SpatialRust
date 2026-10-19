@@ -19,7 +19,7 @@ __all__: list[str] = [
     "DbscanResult", "GroundResult", "MultiPlaneResult", "SphereResult",
     "CylinderResult", "RegistrationResult", "MultiObjectTracker", "read_image",
     "tensor_copy_from_numpy", "tensor_view_from_dlpack", "harris_keypoints",
-    "shi_tomasi_keypoints", "fast_keypoints", "orb_features",
+    "shi_tomasi_keypoints", "fast_keypoints", "orb_features", "track_points_forward_backward",
     "estimate_homography_ransac", "solve_pnp", "solve_pnp_ransac", "estimate_rgbd_odometry", "stereo_block_match",
     "match_binary_descriptors", "match_float_descriptors", "write_image", "read",
     "open_point_cloud_stream",
@@ -976,6 +976,21 @@ def orb_features(
     patch_size: int = ...,
     score_type: str = ...,
 ) -> tuple[list[Keypoint2], _U8Array]: ...
+def track_points_forward_backward(
+    previous: _U8Array,
+    next_image: _U8Array,
+    points: _F64Array,
+    *, window_radius: int = ..., pyramid_levels: int = ...,
+    max_iterations: int = ..., epsilon: float = ..., min_eigenvalue: float = ...,
+    max_forward_backward_error: float = ...,
+) -> tuple[_F64Array, _BoolArray, _F64Array]:
+    """Owned next coordinates, validity and round-trip pixel errors in row order.
+
+    Inputs are copied before native work releases the GIL. Invalid tracks can
+    have infinite errors; only valid coordinates may be used for motion fitting.
+    Pyramid levels are 1..32; points must be a finite Nx2 float64 array.
+    """
+    ...
 def estimate_homography_ransac(
     source: _F64Array,
     target: _F64Array,

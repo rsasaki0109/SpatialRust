@@ -1016,7 +1016,20 @@ evidence, and fail-closed acceptance gates live in
 | 143 | Active | 141–142 | Full rosbag2 → records → sync → odometry → TSDF → semantic → Viewer/glTF/OpenUSD E2E |
 | 144 | Complete | 142–143 | Memory/transfer/latency budgets, benchmark receipts, failure recovery, and deterministic rerun comparison |
 | 145 | Active | 143–144 | ROS 2 publish, edge/distributed partition execution, and optional AI runtime boundaries |
-| 146 | Planned | 141–145 | API stability, Python/docs/CI updates, security review, and v1.3 release receipt |
+| 146 | Active | 141–145 | API stability, Python/docs/CI updates, security review, and v1.3 release receipt |
+
+### Epic 146 operational acceptance slices
+
+| Slice | Status | Scope | Evidence required |
+| --- | --- | --- | --- |
+| 146A | Complete: workflow; motion accuracy not accepted | Native forward/backward image tracking and explicit Python RGB-D/PnP adapter; both candidate and point-cloud baseline retain every public-data frame and independent scoring | 160 native/753 Python passes, stubtest/Clippy/WASM compile; both 798/798 generations but both fail unchanged 0.10m ATE limit; `docs/TUM_RGBD_MOTION_VALIDATION.md`; canonical Autoware calibration remains open |
+| 146B | Planned | Actual multi-adapter image and point-cloud conformance on fixed public inputs with explicit transfer/resource receipts | Execute both integrated and discrete device paths against independent CPU/geometry references; record backend, device class and capabilities without local adapter names |
+
+The operational maturity target is 80% on the explicitly requested real-data,
+multi-GPU/OS and public-release criteria. Historical engineering estimates in
+`docs/MATURITY.md` use a different subjective scale and cannot by themselves
+prove this target. Configured jobs, fixture-only success and a generation count
+without accurate reference motion do not establish operational acceptance.
 
 ### Epic 141 acceptance slices
 

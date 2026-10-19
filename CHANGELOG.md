@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add owned Python forward/backward sparse image tracking and a separate
+  hash-bound public TUM RGB-D/PnP motion workflow. Reject unrepresentable LK
+  scales and avoid iterating image-sized-invalid windows. Preserve depth-only
+  defaults, full failure timelines, point support and independent pose scoring;
+  see `docs/TUM_RGBD_MOTION_VALIDATION.md` for the fixed protocol and results.
+
 - Retain a test-only direct parallel neighborhood row decoder and defer its
   production adoption after mixed complete-call measurements. Production retains
   the parent decoder, GPU work and explicit transfers. 61 final native
