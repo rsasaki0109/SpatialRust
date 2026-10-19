@@ -1,0 +1,1037 @@
+{
+  "schema": "spatialrust.public-multi-adapter-evidence.v1",
+  "date": "2026-10-19",
+  "protocol_commit": "df647b5e9f5b72aaa44f26d5cf74053cf79ecbcc",
+  "source_bindings": {
+    "crates/spatialrust-gpu/Cargo.toml": {
+      "checkout_sha256": "a9253087e86fb141b55f72b2a75e3c29f51511725d4a809c2d20e7d21d3ecee8",
+      "protocol_blob_sha256": "a9253087e86fb141b55f72b2a75e3c29f51511725d4a809c2d20e7d21d3ecee8"
+    },
+    "benchmarks/tum-fr1-xyz-gpu-conformance-plan.json": {
+      "checkout_sha256": "a06bf77f3e8f3403ddee394b88eb75a3f8e10b30844281e8ee03d733637cb30f",
+      "protocol_blob_sha256": "a06bf77f3e8f3403ddee394b88eb75a3f8e10b30844281e8ee03d733637cb30f"
+    },
+    "crates/spatialrust-gpu/examples/gpu_public_rgbd_conformance.rs": {
+      "checkout_sha256": "6bb586db3269716d160121ee161baa9a84521049a77908a979c61ab0845b6481",
+      "protocol_blob_sha256": "6bb586db3269716d160121ee161baa9a84521049a77908a979c61ab0845b6481"
+    },
+    "crates/spatialrust-py/tests/test_public_gpu_rgbd.py": {
+      "checkout_sha256": "00c2da7af88aee360dd8de7a3d101f5d1b7aa98bd27c54892e27299f96cf03d4",
+      "protocol_blob_sha256": "00c2da7af88aee360dd8de7a3d101f5d1b7aa98bd27c54892e27299f96cf03d4"
+    },
+    "scripts/prepare_public_gpu_rgbd.py": {
+      "checkout_sha256": "c4bfd01c7350c30762a87ed22d5c30587caa5c5c03efef9e083545bda5edc1d6",
+      "protocol_blob_sha256": "c4bfd01c7350c30762a87ed22d5c30587caa5c5c03efef9e083545bda5edc1d6"
+    }
+  },
+  "source_sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98",
+  "source_license": "CC BY 4.0",
+  "attribution": "Sturm et al., RGB-D SLAM benchmark, IROS 2012",
+  "prepared_manifest_sha256": "e7e98da77bed799ac281168bd6d81d737692cf7aa25b1c8443fb0485b0e87434",
+  "gpu_input_manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+  "cargo_lock_sha256": "6b7bc5c64861ec82eed78b683e8a05269175fdd5a4ecd397833090a34d5c3f8d",
+  "windows_hardware_accepted": true,
+  "windows_rustc": "1.98.1",
+  "windows_architecture": "x86_64",
+  "wgpu": "24.0.5",
+  "cpu_reference_tests": 2,
+  "input_preparation_tests": 13,
+  "clippy": "pass with warnings denied",
+  "windows_reports": [
+    {
+      "receipt_sha256": "947db7930818db4f68fe233707017428ca388e188e04b5d64d34a49a4d087020",
+      "executable_sha256": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+      "report": {
+        "accepted": true,
+        "architecture": "x86_64",
+        "backend": "Vulkan",
+        "device_type": "DiscreteGpu",
+        "frames": [
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "d37a0e1bb7ddcb947001afcc94ae2e8aa019aea7b2b44504b76484cb71d53ec3",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "7df404a522b83575f75e1a216fe6f0531fce4c60e4c4bc8879da5523a553d09c",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "4d4871ae880f3d9dc8fa09727280cc9823e36376ddc745343fbcc158fafa56c6",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 0,
+            "pools": {
+              "buffer": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6437524,
+                "cached_resources": 5,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "scratch": {
+                "allocations": 15,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6825020,
+                "cached_resources": 15,
+                "discarded": 0,
+                "reuses": 1
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 25093,
+              "tree_host_to_device_bytes": 4726544
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 67992,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2758500,
+              "maximum_centroid_coordinate_error_m": 2.462569981487306e-06,
+              "metadata_device_to_host_bytes": 1032820,
+              "metadata_mismatches": 0,
+              "occupied_cells": 5666,
+              "point_count": 229875
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "7a088200c08999a50109aeb3688f2a4e0383d4db1f0dd028695f819c9b0df591",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "cc926af6ada20e394f80c84daa86675e789e7adabf1ce0b4c0b0b6d1f182f65a",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "52f71d5b6baae66102dbf777c8821e23e5fe8f884c727343987daf920d0c9892",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 399,
+            "pools": {
+              "buffer": {
+                "allocations": 7,
+                "budget_bytes": 67108864,
+                "cached_bytes": 12931872,
+                "cached_resources": 9,
+                "discarded": 0,
+                "reuses": 1
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 4
+              },
+              "scratch": {
+                "allocations": 21,
+                "budget_bytes": 67108864,
+                "cached_bytes": 11587192,
+                "cached_resources": 21,
+                "discarded": 0,
+                "reuses": 11
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 38648,
+              "tree_host_to_device_bytes": 4759600
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 52788,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2783292,
+              "maximum_centroid_coordinate_error_m": 2.8974309409512955e-06,
+              "metadata_device_to_host_bytes": 1015744,
+              "metadata_mismatches": 0,
+              "occupied_cells": 4399,
+              "point_count": 231941
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "020d1df9085fb907fe3e5eb00c0ae3f799a079aaa6dac5fa579190fb075af9c7",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "60f6896732225d0b910fc748953197efb98784322d0dca0eda7464cd09078ad4",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "a423fc78805268c61383a1d3cfbe74cfed470c0881c62af8403b6b335feb180f",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 797,
+            "pools": {
+              "buffer": {
+                "allocations": 10,
+                "budget_bytes": 67108864,
+                "cached_bytes": 19383520,
+                "cached_resources": 13,
+                "discarded": 0,
+                "reuses": 2
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 8
+              },
+              "scratch": {
+                "allocations": 27,
+                "budget_bytes": 67108864,
+                "cached_bytes": 16318048,
+                "cached_resources": 27,
+                "discarded": 0,
+                "reuses": 21
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 51389,
+              "tree_host_to_device_bytes": 4735200
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 29100,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2764992,
+              "maximum_centroid_coordinate_error_m": 3.817541470718666e-06,
+              "metadata_device_to_host_bytes": 970164,
+              "metadata_mismatches": 0,
+              "occupied_cells": 2425,
+              "point_count": 230416
+            }
+          }
+        ],
+        "limits": {
+          "max_compute_workgroup_storage_size": 49152,
+          "max_storage_buffers_per_shader_stage": 1048576,
+          "max_texture_dimension_2d": 32768
+        },
+        "manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+        "os": "windows",
+        "preference": "high",
+        "schema": "spatialrust.public-gpu-conformance.v1",
+        "scope": "Three fixed development frames; no timing/accuracy or all-algorithm portability claim. Transfer payloads exclude uniforms/driver staging; pool counters exclude live/driver/staging allocations."
+      }
+    },
+    {
+      "receipt_sha256": "77e91ad0539097d6fa9da32ca21029e72fe8935c3f301558c0c0279622e39689",
+      "executable_sha256": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+      "report": {
+        "accepted": true,
+        "architecture": "x86_64",
+        "backend": "Vulkan",
+        "device_type": "IntegratedGpu",
+        "frames": [
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "d37a0e1bb7ddcb947001afcc94ae2e8aa019aea7b2b44504b76484cb71d53ec3",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "7df404a522b83575f75e1a216fe6f0531fce4c60e4c4bc8879da5523a553d09c",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "4d4871ae880f3d9dc8fa09727280cc9823e36376ddc745343fbcc158fafa56c6",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 0,
+            "pools": {
+              "buffer": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6437524,
+                "cached_resources": 5,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "scratch": {
+                "allocations": 15,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6825020,
+                "cached_resources": 15,
+                "discarded": 0,
+                "reuses": 1
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 25093,
+              "tree_host_to_device_bytes": 4726544
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 67992,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2758500,
+              "maximum_centroid_coordinate_error_m": 2.5535884656813224e-06,
+              "metadata_device_to_host_bytes": 1032820,
+              "metadata_mismatches": 0,
+              "occupied_cells": 5666,
+              "point_count": 229875
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "7a088200c08999a50109aeb3688f2a4e0383d4db1f0dd028695f819c9b0df591",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "cc926af6ada20e394f80c84daa86675e789e7adabf1ce0b4c0b0b6d1f182f65a",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "52f71d5b6baae66102dbf777c8821e23e5fe8f884c727343987daf920d0c9892",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 399,
+            "pools": {
+              "buffer": {
+                "allocations": 7,
+                "budget_bytes": 67108864,
+                "cached_bytes": 12931872,
+                "cached_resources": 9,
+                "discarded": 0,
+                "reuses": 1
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 4
+              },
+              "scratch": {
+                "allocations": 21,
+                "budget_bytes": 67108864,
+                "cached_bytes": 11587192,
+                "cached_resources": 21,
+                "discarded": 0,
+                "reuses": 11
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 38648,
+              "tree_host_to_device_bytes": 4759600
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 52788,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2783292,
+              "maximum_centroid_coordinate_error_m": 2.837826296175905e-06,
+              "metadata_device_to_host_bytes": 1015744,
+              "metadata_mismatches": 0,
+              "occupied_cells": 4399,
+              "point_count": 231941
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "020d1df9085fb907fe3e5eb00c0ae3f799a079aaa6dac5fa579190fb075af9c7",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "60f6896732225d0b910fc748953197efb98784322d0dca0eda7464cd09078ad4",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "a423fc78805268c61383a1d3cfbe74cfed470c0881c62af8403b6b335feb180f",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 797,
+            "pools": {
+              "buffer": {
+                "allocations": 10,
+                "budget_bytes": 67108864,
+                "cached_bytes": 19383520,
+                "cached_resources": 13,
+                "discarded": 0,
+                "reuses": 2
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 8
+              },
+              "scratch": {
+                "allocations": 27,
+                "budget_bytes": 67108864,
+                "cached_bytes": 16318048,
+                "cached_resources": 27,
+                "discarded": 0,
+                "reuses": 21
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 51389,
+              "tree_host_to_device_bytes": 4735200
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 29100,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2764992,
+              "maximum_centroid_coordinate_error_m": 3.936750760269447e-06,
+              "metadata_device_to_host_bytes": 970164,
+              "metadata_mismatches": 0,
+              "occupied_cells": 2425,
+              "point_count": 230416
+            }
+          }
+        ],
+        "limits": {
+          "max_compute_workgroup_storage_size": 32768,
+          "max_storage_buffers_per_shader_stage": 200,
+          "max_texture_dimension_2d": 16384
+        },
+        "manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+        "os": "windows",
+        "preference": "low",
+        "schema": "spatialrust.public-gpu-conformance.v1",
+        "scope": "Three fixed development frames; no timing/accuracy or all-algorithm portability claim. Transfer payloads exclude uniforms/driver staging; pool counters exclude live/driver/staging allocations."
+      }
+    }
+  ],
+  "linux_status": "All fixed cases passed on software Vulkan under Ubuntu 22.04 / WSL2; not Linux hardware-GPU coverage.",
+  "scope": "Three fixed full development frames per device. No motion-accuracy, timing-rank, full scene/algorithm portability, peak-memory or canonical Autoware calibration claim.",
+  "linux_rustc": "1.95.0",
+  "linux_hardware_classes": [],
+  "linux_reports": [
+    {
+      "receipt_sha256": "4914417b47883aeb17d381c0514c578069550d3dc3afd8cd49e8642ffb27afa9",
+      "executable_sha256": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+      "report": {
+        "accepted": true,
+        "architecture": "x86_64",
+        "backend": "Vulkan",
+        "device_type": "Cpu",
+        "frames": [
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "d37a0e1bb7ddcb947001afcc94ae2e8aa019aea7b2b44504b76484cb71d53ec3",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "7df404a522b83575f75e1a216fe6f0531fce4c60e4c4bc8879da5523a553d09c",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "4d4871ae880f3d9dc8fa09727280cc9823e36376ddc745343fbcc158fafa56c6",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 0,
+            "pools": {
+              "buffer": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6437524,
+                "cached_resources": 5,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "scratch": {
+                "allocations": 15,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6825020,
+                "cached_resources": 15,
+                "discarded": 0,
+                "reuses": 1
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 25093,
+              "tree_host_to_device_bytes": 4726544
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 67992,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2758500,
+              "maximum_centroid_coordinate_error_m": 2.5535884656813224e-06,
+              "metadata_device_to_host_bytes": 1032820,
+              "metadata_mismatches": 0,
+              "occupied_cells": 5666,
+              "point_count": 229875
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "7a088200c08999a50109aeb3688f2a4e0383d4db1f0dd028695f819c9b0df591",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "cc926af6ada20e394f80c84daa86675e789e7adabf1ce0b4c0b0b6d1f182f65a",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "52f71d5b6baae66102dbf777c8821e23e5fe8f884c727343987daf920d0c9892",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 399,
+            "pools": {
+              "buffer": {
+                "allocations": 7,
+                "budget_bytes": 67108864,
+                "cached_bytes": 12931872,
+                "cached_resources": 9,
+                "discarded": 0,
+                "reuses": 1
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 4
+              },
+              "scratch": {
+                "allocations": 21,
+                "budget_bytes": 67108864,
+                "cached_bytes": 11587192,
+                "cached_resources": 21,
+                "discarded": 0,
+                "reuses": 11
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 38648,
+              "tree_host_to_device_bytes": 4759600
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 52788,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2783292,
+              "maximum_centroid_coordinate_error_m": 2.837826296175905e-06,
+              "metadata_device_to_host_bytes": 1015744,
+              "metadata_mismatches": 0,
+              "occupied_cells": 4399,
+              "point_count": 231941
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "020d1df9085fb907fe3e5eb00c0ae3f799a079aaa6dac5fa579190fb075af9c7",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "60f6896732225d0b910fc748953197efb98784322d0dca0eda7464cd09078ad4",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "a423fc78805268c61383a1d3cfbe74cfed470c0881c62af8403b6b335feb180f",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 797,
+            "pools": {
+              "buffer": {
+                "allocations": 10,
+                "budget_bytes": 67108864,
+                "cached_bytes": 19383520,
+                "cached_resources": 13,
+                "discarded": 0,
+                "reuses": 2
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 8
+              },
+              "scratch": {
+                "allocations": 27,
+                "budget_bytes": 67108864,
+                "cached_bytes": 16318048,
+                "cached_resources": 27,
+                "discarded": 0,
+                "reuses": 21
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 51389,
+              "tree_host_to_device_bytes": 4735200
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 29100,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2764992,
+              "maximum_centroid_coordinate_error_m": 3.817541470718666e-06,
+              "metadata_device_to_host_bytes": 970164,
+              "metadata_mismatches": 0,
+              "occupied_cells": 2425,
+              "point_count": 230416
+            }
+          }
+        ],
+        "limits": {
+          "max_compute_workgroup_storage_size": 32768,
+          "max_storage_buffers_per_shader_stage": 1000000,
+          "max_texture_dimension_2d": 16384
+        },
+        "manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+        "os": "linux",
+        "preference": "high",
+        "schema": "spatialrust.public-gpu-conformance.v1",
+        "scope": "Three fixed development frames; no timing/accuracy or all-algorithm portability claim. Transfer payloads exclude uniforms/driver staging; pool counters exclude live/driver/staging allocations."
+      }
+    },
+    {
+      "receipt_sha256": "4d49f65ec5c51ca0e7c6cb3e64bc4268a9556f5f1e945d528b73deff0d692ef8",
+      "executable_sha256": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+      "report": {
+        "accepted": true,
+        "architecture": "x86_64",
+        "backend": "Vulkan",
+        "device_type": "Cpu",
+        "frames": [
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "d37a0e1bb7ddcb947001afcc94ae2e8aa019aea7b2b44504b76484cb71d53ec3",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "7df404a522b83575f75e1a216fe6f0531fce4c60e4c4bc8879da5523a553d09c",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "4d4871ae880f3d9dc8fa09727280cc9823e36376ddc745343fbcc158fafa56c6",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 0,
+            "pools": {
+              "buffer": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6437524,
+                "cached_resources": 5,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "scratch": {
+                "allocations": 15,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6825020,
+                "cached_resources": 15,
+                "discarded": 0,
+                "reuses": 1
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 25093,
+              "tree_host_to_device_bytes": 4726544
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 67992,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2758500,
+              "maximum_centroid_coordinate_error_m": 2.5535884656813224e-06,
+              "metadata_device_to_host_bytes": 1032820,
+              "metadata_mismatches": 0,
+              "occupied_cells": 5666,
+              "point_count": 229875
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "7a088200c08999a50109aeb3688f2a4e0383d4db1f0dd028695f819c9b0df591",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "cc926af6ada20e394f80c84daa86675e789e7adabf1ce0b4c0b0b6d1f182f65a",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "52f71d5b6baae66102dbf777c8821e23e5fe8f884c727343987daf920d0c9892",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 399,
+            "pools": {
+              "buffer": {
+                "allocations": 7,
+                "budget_bytes": 67108864,
+                "cached_bytes": 12931872,
+                "cached_resources": 9,
+                "discarded": 0,
+                "reuses": 1
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 4
+              },
+              "scratch": {
+                "allocations": 21,
+                "budget_bytes": 67108864,
+                "cached_bytes": 11587192,
+                "cached_resources": 21,
+                "discarded": 0,
+                "reuses": 11
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 38648,
+              "tree_host_to_device_bytes": 4759600
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 52788,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2783292,
+              "maximum_centroid_coordinate_error_m": 2.837826296175905e-06,
+              "metadata_device_to_host_bytes": 1015744,
+              "metadata_mismatches": 0,
+              "occupied_cells": 4399,
+              "point_count": 231941
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "020d1df9085fb907fe3e5eb00c0ae3f799a079aaa6dac5fa579190fb075af9c7",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "60f6896732225d0b910fc748953197efb98784322d0dca0eda7464cd09078ad4",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "a423fc78805268c61383a1d3cfbe74cfed470c0881c62af8403b6b335feb180f",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 797,
+            "pools": {
+              "buffer": {
+                "allocations": 10,
+                "budget_bytes": 67108864,
+                "cached_bytes": 19383520,
+                "cached_resources": 13,
+                "discarded": 0,
+                "reuses": 2
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 8
+              },
+              "scratch": {
+                "allocations": 27,
+                "budget_bytes": 67108864,
+                "cached_bytes": 16318048,
+                "cached_resources": 27,
+                "discarded": 0,
+                "reuses": 21
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 51389,
+              "tree_host_to_device_bytes": 4735200
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 29100,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2764992,
+              "maximum_centroid_coordinate_error_m": 3.817541470718666e-06,
+              "metadata_device_to_host_bytes": 970164,
+              "metadata_mismatches": 0,
+              "occupied_cells": 2425,
+              "point_count": 230416
+            }
+          }
+        ],
+        "limits": {
+          "max_compute_workgroup_storage_size": 32768,
+          "max_storage_buffers_per_shader_stage": 1000000,
+          "max_texture_dimension_2d": 16384
+        },
+        "manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+        "os": "linux",
+        "preference": "low",
+        "schema": "spatialrust.public-gpu-conformance.v1",
+        "scope": "Three fixed development frames; no timing/accuracy or all-algorithm portability claim. Transfer payloads exclude uniforms/driver staging; pool counters exclude live/driver/staging allocations."
+      }
+    }
+  ],
+  "cpu_reference_test_execution": "The same two reference tests pass on Windows and Linux; not four unique cases."
+}

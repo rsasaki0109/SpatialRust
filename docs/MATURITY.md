@@ -1,8 +1,10 @@
 # Maturity assessment
 
-Current operational target (2026-10-19): **80%, active**. The current discussion
-uses an approximately **60% provisional baseline** for calibrated real-data
-completion, multiple-GPU/OS validation and the v1.3 public-release boundary.
+Current operational assessment (2026-10-19): **63%, provisional**. The 80%
+operational target remains active. The initial approximately 60% baseline covers
+calibrated real-data completion, multiple-GPU/OS validation and the v1.3
+public-release boundary; limited real execution on two GPU classes now adds
+evidence. These percentages remain subjective progress estimates.
 This subjective scale is not interchangeable with the earlier engineering
 progress estimates below; neither is measured PCL/Open3D/OpenCV feature parity.
 The earlier 87% number alone cannot establish this operational target.
@@ -12,9 +14,14 @@ configuration, lifetime, public-data and independent scoring checks. Both new
 and current point-to-plane trajectories generate 798/798 poses; the image path
 has 0.120235 m ATE and 0.033505 m RPE, versus 0.124992/0.043715 m for the current
 baseline. Both fail the unchanged 0.10 m ATE limit. No defaults or thresholds
-are changed to count this as accepted motion. Native adapter selection can
-initialize integrated and discrete Vulkan devices, but this is not yet actual
-multi-GPU image/point-cloud conformance. The operational goal stays active.
+are changed to count this as accepted motion. Integrated and discrete Vulkan
+devices now execute all three fixed public frames: image pixels/histograms,
+voxel membership and radius counts match independent references exactly;
+centroid coordinate error stays below the fixed 1e-5m limit. This is selected
+operation/scene coverage, not full-motion or universal GPU portability. The
+same cases pass on software Vulkan under Ubuntu/WSL2; Linux hardware-GPU
+execution remains unproven.
+The operational goal stays active. See [public GPU evidence](PUBLIC_GPU_RGBD_CONFORMANCE.md).
 See [the complete protocol and failures](TUM_RGBD_MOTION_VALIDATION.md).
 
 ## Historical engineering progress assessments

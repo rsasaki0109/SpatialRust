@@ -1,7 +1,8 @@
 # Public RGB-D multi-adapter conformance
 
 Date: 2026-10-19. Operational slice 146B. This protocol is fixed before first
-dataset execution. Results are pending; initialization alone is not execution.
+dataset execution. Windows integrated/discrete execution passes all fixed cases;
+Linux software-Vulkan execution also passes all fixed cases.
 
 The [fixed plan](../benchmarks/tum-fr1-xyz-gpu-conformance-plan.json) selects
 depth indices 0, 399 and 797 from the already observed public TUM RGB-D
@@ -81,3 +82,64 @@ not a timing ranking, full algorithm/scene portability certificate, calibrated
 canonical Autoware acceptance, accurate motion, or completion of the operational
 80% target. The failed motion results in
 [the image-motion study](TUM_RGBD_MOTION_VALIDATION.md) remain unchanged.
+
+
+## Observed Windows execution
+
+Protocol/source commit `df647b5e9f5b72aaa44f26d5cf74053cf79ecbcc` precedes the first
+public GPU execution. Both preferences executed all three frames without
+changing source, executable, inputs, tolerance or frame selection.
+
+| Device class / backend | Frame | Full projected points | Occupied cells | Radius matches, 64 queries | Maximum centroid coordinate error (m) | Result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| DiscreteGpu / Vulkan | 0 | 229875 | 5666 | 25093 | 2.462569981e-06 | pass |
+| DiscreteGpu / Vulkan | 399 | 231941 | 4399 | 38648 | 2.897430941e-06 | pass |
+| DiscreteGpu / Vulkan | 797 | 230416 | 2425 | 51389 | 3.817541471e-06 | pass |
+| IntegratedGpu / Vulkan | 0 | 229875 | 5666 | 25093 | 2.553588466e-06 | pass |
+| IntegratedGpu / Vulkan | 399 | 231941 | 4399 | 38648 | 2.837826296e-06 | pass |
+| IntegratedGpu / Vulkan | 797 | 230416 | 2425 | 51389 | 3.93675076e-06 | pass |
+
+All six cases have zero gray, 11x11/259x3 blur-pixel, histogram-bin,
+voxel-key/membership and radius-count mismatches. The largest centroid
+coordinate error is 3.936750761e-6m, below the fixed 1e-5m limit. Corresponding
+image output hashes match across both hardware classes. This is conformance
+for these selected frames/operations, not complete 798-frame GPU odometry.
+
+Every frame reports 1228800 bytes of physical image upload, zero mid-chain
+host readback, 3687424 bytes of explicit image/histogram readbacks, four bytes
+of voxel construction synchronization and 512 bytes of explicit radius-count
+readback. Query upload is 1024 bytes, separate from tree upload and resident
+search. Each pool's retained bytes stay below its 67108864-byte budget.
+Largest observed image/scratch/buffer retention is 4915200/16318048/19383520
+bytes, respectively; these are not peak live or driver memory measurements.
+
+Local validation passes two independent Rust reference tests, thirteen Python
+projection/PNG/source-identity/rejection tests and warnings-denied Clippy.
+The example declares `test = true`, so feature-enabled ordinary Cargo tests
+also execute its CPU references. A preliminary Python run could not create
+its sandboxed external temporary directory; rerunning with the intended
+external-directory access passes all thirteen cases. The failure XML is kept
+locally and is not counted as an algorithm/conformance failure. Windows uses
+Rust 1.98.1, wgpu 24.0.5 and the release/thin-LTO/one-codegen-unit profile.
+
+The [compact receipt](receipts/2026-10-19_public_multi_adapter_rgbd.json) retains
+all frame outcomes, payload/source/executable hashes, limits, transfers and
+pool snapshots, without local adapter model names or performance rankings.
+Source hashes bind actual checkout bytes and normalized protocol Git blobs.
+The local resolved Cargo lock digest is recorded; source/output conformance
+is claimed, not guaranteed reproduction of identical executable bytes under
+future dependency resolution.
+
+Original/derived input payloads are under
+`E:/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/`.
+The complete stdout/stderr receipts remain under
+`E:/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-v1/`.
+Linux build/execution is tracked separately. Ubuntu 22.04 under WSL2, Rust
+1.95.0 and software Vulkan (`Cpu`) pass all three frames for both preferences.
+Both preferences select the software class; they do not add two physical GPUs.
+All image hashes match Windows, all exact mismatch counts are zero, and the
+largest Linux centroid-coordinate error is 3.817541471e-6m. The same two Rust
+reference tests also pass on Linux with compiler warnings denied. GPU hardware
+execution is observed on Windows only; Linux hardware GPU support is unproven.
+The compact receipt includes all six additional software cases and capabilities.
+Accurate motion and full operational v1.3 acceptance remain open.
