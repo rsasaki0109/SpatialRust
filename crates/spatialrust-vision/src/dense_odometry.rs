@@ -16,6 +16,8 @@ pub enum DenseRgbdPreprocessing {
     Raw,
     /// Replicated-edge Gaussian3 gray/depth; any missing depth tap stays missing.
     Gaussian3,
+    /// The same Gaussian3 gray inputs, with original full-resolution fitting depth.
+    Gaussian3GrayOnly,
 }
 
 impl DenseRgbdPreprocessing {
@@ -24,6 +26,7 @@ impl DenseRgbdPreprocessing {
         match self {
             Self::Raw => "raw",
             Self::Gaussian3 => "gaussian3",
+            Self::Gaussian3GrayOnly => "gaussian3-gray-only",
         }
     }
 }
@@ -232,11 +235,12 @@ pub fn estimate_dense_rgbd_odometry_with_preprocessing(
     )?;
     let (source, target, raw) = match preprocessing {
         DenseRgbdPreprocessing::Raw => (pyramid(source, options), pyramid(target, options), None),
-        DenseRgbdPreprocessing::Gaussian3 => {
+        DenseRgbdPreprocessing::Gaussian3 | DenseRgbdPreprocessing::Gaussian3GrayOnly => {
+            let filter_depth = preprocessing == DenseRgbdPreprocessing::Gaussian3;
             let a = base_level(source, options);
             let b = base_level(target, options);
-            let source = pyramid_from_level(gaussian3(&a), options);
-            let target = pyramid_from_level(gaussian3(&b), options);
+            let source = pyramid_from_level(gaussian3(&a, filter_depth), options);
+            let target = pyramid_from_level(gaussian3(&b, filter_depth), options);
             (source, target, Some((a, b)))
         }
     };
@@ -322,7 +326,13 @@ fn base_level(frame: DenseRgbdFrame<'_>, options: &DenseRgbdOdometryOptions) -> 
     Level { width, height, color, depth }
 }
 
-fn gaussian3_tile(raw: &Level, color: &mut [f64], depth: &mut [f64], start_row: usize) {
+fn gaussian3_tile(
+    raw: &Level,
+    color: &mut [f64],
+    depth: &mut [f64],
+    start_row: usize,
+    filter_depth: bool,
+) {
     for (i, (intensity, z)) in color.iter_mut().zip(depth.iter_mut()).enumerate() {
         let (x, y) = (i % raw.width, start_row + i / raw.width);
         let (mut isum, mut zsum, mut finite) = (0.0, 0.0, true);
@@ -332,16 +342,24 @@ fn gaussian3_tile(raw: &Level, color: &mut [f64], depth: &mut [f64], start_row: 
                 let sy = (y + dy).saturating_sub(1).min(raw.height - 1);
                 let index = sy * raw.width + sx;
                 isum += wx * wy * raw.color[index];
-                zsum += wx * wy * raw.depth[index];
-                finite &= raw.depth[index].is_finite();
+                if filter_depth {
+                    zsum += wx * wy * raw.depth[index];
+                    finite &= raw.depth[index].is_finite();
+                }
             }
         }
         *intensity = isum / 16.0;
-        *z = if finite { zsum / 16.0 } else { f64::NAN };
+        *z = if !filter_depth {
+            raw.depth[y * raw.width + x]
+        } else if finite {
+            zsum / 16.0
+        } else {
+            f64::NAN
+        };
     }
 }
 
-fn gaussian3(raw: &Level) -> Level {
+fn gaussian3(raw: &Level, filter_depth: bool) -> Level {
     let mut output = Level {
         width: raw.width,
         height: raw.height,
@@ -359,7 +377,7 @@ fn gaussian3(raw: &Level) -> Level {
                 .zip(output.depth.par_chunks_mut(tile_pixels))
                 .enumerate()
                 .for_each(|(block, (color, depth))| {
-                    gaussian3_tile(raw, color, depth, block * TILE_ROWS)
+                    gaussian3_tile(raw, color, depth, block * TILE_ROWS, filter_depth)
                 });
         });
         return output;
@@ -367,7 +385,7 @@ fn gaussian3(raw: &Level) -> Level {
     for (block, (color, depth)) in
         output.color.chunks_mut(tile_pixels).zip(output.depth.chunks_mut(tile_pixels)).enumerate()
     {
-        gaussian3_tile(raw, color, depth, block * TILE_ROWS);
+        gaussian3_tile(raw, color, depth, block * TILE_ROWS, filter_depth);
     }
     output
 }
@@ -665,10 +683,66 @@ mod tests {
     use spatialrust_image::Image;
 
     #[test]
+    fn gray_only_preserves_original_depth_bits_and_joint_gray_arithmetic() {
+        let mut raw = Level {
+            width: 5,
+            height: 5,
+            color: (0..25).map(|i| (i * 17 % 251) as f64 / 255.0).collect(),
+            depth: (0..25).map(|i| 1.0 + (i % 3) as f64 / 10.0).collect(),
+        };
+        raw.depth[12] = f64::NAN;
+        let joint = gaussian3(&raw, true);
+        let gray = gaussian3(&raw, false);
+        assert_eq!(gray.color, joint.color);
+        assert!(gray.depth.iter().zip(&raw.depth).all(|(a, b)| a.to_bits() == b.to_bits()));
+        assert_eq!(gray.depth.iter().filter(|z| z.is_nan()).count(), 1);
+        assert_eq!(joint.depth.iter().filter(|z| z.is_nan()).count(), 9);
+        let options = DenseRgbdOdometryOptions::default();
+        assert_eq!(
+            options
+                .required_working_bytes_with_preprocessing(
+                    96,
+                    72,
+                    DenseRgbdPreprocessing::Gaussian3GrayOnly
+                )
+                .unwrap(),
+            options
+                .required_working_bytes_with_preprocessing(
+                    96,
+                    72,
+                    DenseRgbdPreprocessing::Gaussian3
+                )
+                .unwrap()
+        );
+        assert_eq!(DenseRgbdPreprocessing::Gaussian3GrayOnly.as_str(), "gaussian3-gray-only");
+    }
+
+    #[test]
+    fn gray_only_identity_keeps_raw_statistics_with_missing_original_depth() {
+        let (gray, _) = images(0.0, 2.0);
+        let mut values = vec![2.0; 96 * 72];
+        values[36 * 96 + 48] = f32::NAN;
+        let depth = Image::<f32, 1>::try_new(96, 72, values).unwrap();
+        let frame = DenseRgbdFrame::try_new(gray.view(), depth.view()).unwrap();
+        let result = estimate_dense_rgbd_odometry_with_preprocessing(
+            frame,
+            frame,
+            camera(),
+            identity(),
+            &Default::default(),
+            DenseRgbdPreprocessing::Gaussian3GrayOnly,
+        )
+        .unwrap();
+        assert_eq!(result.valid_source_pixels, 96 * 72 - 1);
+        assert!(result.pose.translation().length() < 1e-10);
+        assert!(result.photometric_rmse < 1e-12 && result.depth_rmse_m < 1e-12);
+    }
+
+    #[test]
     fn gaussian3_impulses_borders_and_missing_depth_are_explicit() {
         let mut raw = Level { width: 5, height: 5, color: vec![0.0; 25], depth: vec![2.0; 25] };
         raw.color[12] = 1.0;
-        let filtered = gaussian3(&raw);
+        let filtered = gaussian3(&raw, true);
         assert_eq!(filtered.color[12], 4.0 / 16.0);
         assert_eq!(filtered.color[11], 2.0 / 16.0);
         assert_eq!(filtered.color[6], 1.0 / 16.0);
@@ -676,7 +750,7 @@ mod tests {
         raw.color.fill(0.0);
         raw.color[0] = 1.0;
         raw.depth[12] = f64::NAN;
-        let filtered = gaussian3(&raw);
+        let filtered = gaussian3(&raw, true);
         assert_eq!(filtered.color[0], 9.0 / 16.0);
         assert_eq!(filtered.color[1], 3.0 / 16.0);
         assert_eq!(filtered.depth.iter().filter(|z| z.is_nan()).count(), 9);
@@ -703,7 +777,7 @@ mod tests {
         assert_eq!(result.valid_source_pixels, 96 * 72 - 1);
         assert!(result.pose.translation().length() < 1e-10);
         assert!(result.photometric_rmse < 1e-12 && result.depth_rmse_m < 1e-12);
-        let filtered = gaussian3(&base_level(frame, &Default::default()));
+        let filtered = gaussian3(&base_level(frame, &Default::default()), true);
         assert_eq!(filtered.depth.iter().filter(|z| z.is_finite()).count(), 96 * 72 - 9);
     }
 
@@ -757,16 +831,20 @@ mod tests {
             depth: (0..width * height).map(|i| 1.0 + (i % 17) as f64 / 100.0).collect(),
         };
         raw.depth[80 * width + 50] = f64::NAN;
-        let parallel = gaussian3(&raw);
-        let mut color = vec![0.0; width * height];
-        let mut depth = vec![0.0; width * height];
-        for (block, (a, b)) in
-            color.chunks_mut(width * TILE_ROWS).zip(depth.chunks_mut(width * TILE_ROWS)).enumerate()
-        {
-            gaussian3_tile(&raw, a, b, block * TILE_ROWS);
+        for filter_depth in [true, false] {
+            let parallel = gaussian3(&raw, filter_depth);
+            let mut color = vec![0.0; width * height];
+            let mut depth = vec![0.0; width * height];
+            for (block, (a, b)) in color
+                .chunks_mut(width * TILE_ROWS)
+                .zip(depth.chunks_mut(width * TILE_ROWS))
+                .enumerate()
+            {
+                gaussian3_tile(&raw, a, b, block * TILE_ROWS, filter_depth);
+            }
+            assert_eq!(parallel.color, color);
+            assert!(parallel.depth.iter().zip(depth).all(|(a, b)| a.to_bits() == b.to_bits()));
         }
-        assert_eq!(parallel.color, color);
-        assert!(parallel.depth.iter().zip(depth).all(|(a, b)| a.to_bits() == b.to_bits()));
     }
 
     fn identity() -> AbsolutePose {

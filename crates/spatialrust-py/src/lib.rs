@@ -4238,7 +4238,8 @@ fn estimate_dense_rgbd_odometry<'py>(
     let preprocessing = match preprocessing {
         "raw" => DenseRgbdPreprocessing::Raw,
         "gaussian3" => DenseRgbdPreprocessing::Gaussian3,
-        _ => return Err(PyValueError::new_err("dense preprocessing must be raw or gaussian3")),
+        "gaussian3-gray-only" => DenseRgbdPreprocessing::Gaussian3GrayOnly,
+        _ => return Err(PyValueError::new_err("dense preprocessing must be raw, gaussian3, or gaussian3-gray-only")),
     };
     let (sg, sd, tg, td) = (
         source_gray.as_array(),

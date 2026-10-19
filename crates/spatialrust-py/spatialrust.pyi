@@ -1056,7 +1056,8 @@ def estimate_dense_rgbd_odometry(
     """Own four CPU inputs before releasing the GIL; return source-to-target pose.
 
     Depth is already metric. Logical working bytes exclude input copies and
-    allocator/thread overhead. preprocessing is raw (default) or gaussian3;
+    allocator/thread overhead. preprocessing is raw (default), gaussian3, or
+    gaussian3-gray-only (original fitting depth with Gaussian3 gray inputs);
     final statistics always use original raw images. Filtered mode charges its
     retained raw levels before allocation. Original sparse APIs/device transfers remain.
     """
