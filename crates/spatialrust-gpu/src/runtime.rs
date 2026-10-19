@@ -143,6 +143,15 @@ impl WgpuBackendSelection {
         }
         Ok(())
     }
+
+    fn validate_compute_support(self, available: wgpu::DownlevelFlags) -> SpatialResult<()> {
+        if self == Self::Gl && !available.contains(wgpu::DownlevelFlags::COMPUTE_SHADERS) {
+            return Err(SpatialError::InvalidArgument(
+                "requested GL adapter does not support compute shaders".to_owned(),
+            ));
+        }
+        Ok(())
+    }
 }
 
 /// Explicit headless selection and optional profiling requests.
@@ -196,7 +205,7 @@ impl WgpuRuntime {
 
     /// Creates an owned runtime using explicit backend and profiling options.
     ///
-    /// GL must be compiled for the target and supported by the platform/adapter.
+    /// GL must be compiled for the target and provide adapter compute shaders.
     /// An uncompiled GL request fails before instance creation. Admission errors do not
     /// select another backend. Browser callers should use the async counterpart.
     pub fn new_headless_with_options(options: WgpuRuntimeOptions) -> SpatialResult<Self> {
@@ -462,6 +471,8 @@ impl WgpuRuntime {
                 )
             })?;
 
+        options.backend.validate_compute_support(adapter.get_downlevel_capabilities().flags)?;
+
         let raw_adapter_info = adapter.get_info();
         let adapter_info = WgpuAdapterInfo {
             name: raw_adapter_info.name,
@@ -626,6 +637,26 @@ mod tests {
                 .validate_compiled_backends(available)
                 .expect("compiled GL support");
         }
+    }
+
+    #[test]
+    fn explicit_gl_rejects_adapters_without_compute_shaders() {
+        for available in [wgpu::DownlevelFlags::empty(), wgpu::DownlevelFlags::INDIRECT_EXECUTION] {
+            let error = super::WgpuBackendSelection::Gl
+                .validate_compute_support(available)
+                .expect_err("WebGL or graphics-only GL cannot run compute kernels");
+            assert!(error.to_string().contains("does not support compute shaders"));
+        }
+    }
+
+    #[test]
+    fn compute_admission_preserves_primary_and_accepts_compute_gl() {
+        super::WgpuBackendSelection::Primary
+            .validate_compute_support(wgpu::DownlevelFlags::empty())
+            .expect("original primary admission policy");
+        super::WgpuBackendSelection::Gl
+            .validate_compute_support(wgpu::DownlevelFlags::COMPUTE_SHADERS)
+            .expect("GL adapter with compute shaders");
     }
 
     #[test]

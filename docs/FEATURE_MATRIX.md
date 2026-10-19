@@ -12,7 +12,8 @@ Existing constructors and the shared runtime retain primary/high-performance
 defaults and their timestamp contracts. Explicit GL selection requires platform
 support and does not select a different backend on failure. An explicit GL
 request is rejected before instance creation when GL is not compiled in, so
-WebGPU-only browser builds cannot substitute WebGPU. The public RGB-D
+WebGPU-only browser builds cannot substitute WebGPU. GL adapters without
+compute-shader support are rejected before device creation. The public RGB-D
 example records requested/actual backends; its auditor keeps operation checks
 and distinct raw hardware-class coverage separate. See the
 [fixed GLES validation protocol](EXPLICIT_GLES_GPU_VALIDATION.md). The Windows

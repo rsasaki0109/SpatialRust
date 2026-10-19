@@ -26,6 +26,9 @@ Require compiled GL support before creating an instance for an explicit GL
 request. A WebGPU-only browser build otherwise lets wgpu select WebGPU despite
 the requested GL mask; return an argument error before that selection. Primary
 admission retains its original policy.
+After adapter selection, require advertised compute-shader support for explicit
+GL before creating a device; WebGL and graphics-only GL cannot satisfy this
+compute runtime's contract. Original Primary admission remains unchanged.
 No new heavy dependency, core change, unsafe code, shader or implicit device
 transfer. Driver/platform support can still reject an explicit GL request.
 
@@ -117,12 +120,12 @@ Two diagnostic launcher failures occurred before GPU calls and are also retained
 No driver replacement, version override, disabled validation, alternate backend
 fallback or class relabeling was used to make this result pass.
 
-After the frozen runs, review added the compiled-GL preflight described above;
+After the frozen runs, review added the compiled-GL and compute preflights above;
 the receipt separately binds its final source and checks. The measured dataset
 results and executables remain frozen at the implementation commit above.
 This admission-only guard changes no kernel, numeric limit or transfer.
 
-Validation passes nine runtime tests, three example tests (including the
+Validation passes eleven runtime tests, three example tests (including the
 independent CPU references), 34 report/backend cases, GPU all-target Clippy,
 WASM `gpu-image` checking and workspace formatting. The full Python suite passes
 973 tests with three optional ONNX skips. The numerical kernels and original
@@ -139,7 +142,7 @@ After diagnostics and cleanup, controlled build/cache/temp storage is
 (128MiB cap), with more than 632GiB free on E (20GiB floor). These are logical
 file counts and point-in-time free space, not peak process memory measurements.
 After the final compiled-backend guard checks, the separately recorded
-controlled total is 6,038,332,371 bytes, still below the same 16GiB cap with
+controlled total is 6,040,968,384 bytes, still below the same 16GiB cap with
 more than 632GiB free on E. All release executables are checked unchanged.
 
 Typed explicit GL selection is implemented. Linux hardware execution and both

@@ -887,20 +887,20 @@
     "original_test_source_scope": "Frozen EBF release before the later admission-only compiled-backend guard; Python extension and all numerical kernels remain unchanged.",
     "compiled_backend_guard": {
       "metadata": {
-        "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-tests-compiled-backends-v3.json",
-        "bytes": 6003,
-        "sha256": "dd0d84962c96968b5a013c822ec9aa7c2db4a900339b7864bb50c5fbced5a02d"
+        "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-tests-compiled-backends-v4.json",
+        "bytes": 6133,
+        "sha256": "0c8fb3198ea96083b32f3d45b5374355e17d9a022880eec99d8a49ff22d55589"
       },
-      "runtime_source_sha256": "caf2fc12f17083354659c7fdde5d94e54288816e8402289ecd39d54cf3cd77aa",
-      "working_base_commit": "d10e78e3feef1010fab33a924b1d75aba7fd6075",
-      "runtime_tests_passed": 9,
+      "runtime_source_sha256": "04028d94d983f0e138380c1e4db79bd9edabd7d854e02bf1505934aad112efe7",
+      "working_base_commit": "d1ffebd3937d1d13f521d72db0eaa8a63ae6baab",
+      "runtime_tests_passed": 11,
       "example_tests_passed": 3,
       "clippy_all_gpu_targets": true,
       "wasm_gpu_image_check": true,
       "commands": [
         {
-          "label": "runtime-contracts-compiled-backends-v3",
-          "pid": 47696,
+          "label": "runtime-contracts-compiled-backends-v4",
+          "pid": 39588,
           "arguments": [
             "cargo",
             "test",
@@ -913,13 +913,13 @@
             "--lib",
             "runtime::tests"
           ],
-          "started_at_utc": "2026-10-19T17:33:38.773748+00:00",
+          "started_at_utc": "2026-10-19T17:42:32.383150+00:00",
           "exit_status": 0,
-          "finished_at_utc": "2026-10-19T17:34:05.357332+00:00"
+          "finished_at_utc": "2026-10-19T17:43:05.650117+00:00"
         },
         {
-          "label": "example-references-compiled-backends-v3",
-          "pid": 40612,
+          "label": "example-references-compiled-backends-v4",
+          "pid": 9280,
           "arguments": [
             "cargo",
             "test",
@@ -932,13 +932,13 @@
             "--example",
             "gpu_public_rgbd_conformance"
           ],
-          "started_at_utc": "2026-10-19T17:34:06.682965+00:00",
+          "started_at_utc": "2026-10-19T17:43:07.184807+00:00",
           "exit_status": 0,
-          "finished_at_utc": "2026-10-19T17:34:13.240621+00:00"
+          "finished_at_utc": "2026-10-19T17:43:13.860132+00:00"
         },
         {
-          "label": "clippy-compiled-backends-v3",
-          "pid": 50612,
+          "label": "clippy-compiled-backends-v4",
+          "pid": 17300,
           "arguments": [
             "cargo",
             "clippy",
@@ -953,13 +953,13 @@
             "-D",
             "warnings"
           ],
-          "started_at_utc": "2026-10-19T17:34:15.163988+00:00",
+          "started_at_utc": "2026-10-19T17:43:15.451810+00:00",
           "exit_status": 0,
-          "finished_at_utc": "2026-10-19T17:34:28.215230+00:00"
+          "finished_at_utc": "2026-10-19T17:43:30.469257+00:00"
         },
         {
-          "label": "wasm-check-compiled-backends-v3",
-          "pid": 8112,
+          "label": "wasm-check-compiled-backends-v4",
+          "pid": 2000,
           "arguments": [
             "cargo",
             "check",
@@ -972,9 +972,9 @@
             "--target",
             "wasm32-unknown-unknown"
           ],
-          "started_at_utc": "2026-10-19T17:34:29.689633+00:00",
+          "started_at_utc": "2026-10-19T17:43:31.928276+00:00",
           "exit_status": 0,
-          "finished_at_utc": "2026-10-19T17:34:36.168212+00:00"
+          "finished_at_utc": "2026-10-19T17:43:38.603355+00:00"
         }
       ],
       "frozen_old_and_study_release_files_preserved": true,
@@ -983,7 +983,7 @@
         "bytes": 16136,
         "sha256": "4065020df49080bc43515ba2c45bbb820fb6be3d6c4a41c6323dc7c4978b74b8"
       },
-      "reason": "Reject explicit GL before instance creation unless GL is compiled for the target; WebGPU-only browser instance otherwise ignores the requested backend mask. Original Primary admission unchanged.",
+      "reason": "Reject explicit GL before instance creation unless GL is compiled, then reject the GL adapter before device creation unless COMPUTE_SHADERS is advertised. Original Primary admission unchanged; kernels/transfers unchanged.",
       "checks_before_instance": true,
       "kernel_numeric_transfer_changes": false,
       "raw_dataset_results_remain_source_bound_to_original_ebf_release": true,
@@ -999,7 +999,13 @@
           "sha256": "4273302a99a22146177fe3f08e70a1e53219eaa8023bc616f35dbfb380a9e7a4"
         },
         "scope": "Incorrect diagnostic Cargo subcommand label; corrected in v3. No failed GPU operation is relabeled."
-      }
+      },
+      "prior_successful_compiled_backend_check": {
+        "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-tests-compiled-backends-v3.json",
+        "bytes": 6003,
+        "sha256": "dd0d84962c96968b5a013c822ec9aa7c2db4a900339b7864bb50c5fbced5a02d"
+      },
+      "requires_gl_compute_before_device": true
     }
   },
   "preservation": {
@@ -1046,10 +1052,10 @@
       "free_after_bytes": 679420661760
     },
     "after_compiled_backend_guard": {
-      "recorded_at_utc": "2026-10-19T17:35:37.968534+00:00",
-      "controlled_build_cache_temp_bytes": 6038332371,
-      "free_e_bytes": 678822633472,
-      "free_c_bytes": 79006318592,
+      "recorded_at_utc": "2026-10-19T17:44:54.480738+00:00",
+      "controlled_build_cache_temp_bytes": 6040968384,
+      "free_e_bytes": 678645506048,
+      "free_c_bytes": 78960066560,
       "dataset_downloads": 0,
       "dataset_payload_copies": 0
     }

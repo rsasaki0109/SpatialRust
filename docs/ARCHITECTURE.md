@@ -8,7 +8,9 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 Explicit headless runtime options retain the primary/high-performance default
 and expose GL as an opt-in backend set. Owned sync/async constructors retain
-original flags, adapter limits and optional timestamp admission. Requested and
+original flags, adapter limits and optional timestamp admission. Explicit GL
+requires compiled GL support before instance creation and compute-shader support
+before device creation; Primary admission retains its original policy. Requested and
 actual backends are separate receipts; raw hardware classes retain their
 meaning. Shader work, core dependencies and CPU/GPU transfers are unchanged.
 The Windows primary control passes both hardware classes; the fixed Linux GL
