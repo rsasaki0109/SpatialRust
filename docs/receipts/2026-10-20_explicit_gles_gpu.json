@@ -1,0 +1,937 @@
+{
+  "schema": "spatialrust.explicit-gles-evidence.v1",
+  "date": "2026-10-20",
+  "slice": "146I",
+  "recorded_at_utc": "2026-10-19T17:21:43.290334+00:00",
+  "protocol_commit": "db4b9018e89e56121ba4b18c5c4f2dc4d1fc5048",
+  "source_commit": "ebf117dc781500bcdacb24e1afb1f95855155740",
+  "fixed_plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gles-hardware-plan.json",
+    "bytes": 3378,
+    "sha256": "fbd4b69522472f74a55f3bdf6fb4de5745ebb6d8d2b26281c458dc5ec755f043"
+  },
+  "git_plan_blob_sha256": "fbd4b69522472f74a55f3bdf6fb4de5745ebb6d8d2b26281c458dc5ec755f043",
+  "input_manifest": {
+    "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gpu-conformance-input-v1\\manifest.json",
+    "bytes": 4397,
+    "sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae"
+  },
+  "execution_freeze": {
+    "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\execution-freeze.json",
+    "bytes": 1531,
+    "sha256": "e4fd18eabb04b29d4993667df6cc4cd648bf5a457b40308babe68096541a016d"
+  },
+  "study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\study.json",
+    "bytes": 31048,
+    "sha256": "1632dc1c5cb342d2f4f6bfad4caac40bac0d408895383a3ceb3d6c84c2c494d8"
+  },
+  "release_freeze": {
+    "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\release-freeze.json",
+    "bytes": 96686,
+    "sha256": "2f612e51605a15e83367f78682975e3ffdd0d898482d6d1af42d9e5fb09a87ea"
+  },
+  "frozen_source_file_entries": 667,
+  "builds": {
+    "windows": {
+      "metadata": {
+        "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-release.json",
+        "bytes": 3729,
+        "sha256": "08993d0e88af939a3b379443e6cf495059f81e664aa43a25680a8087614034a5"
+      },
+      "executable": {
+        "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe",
+        "bytes": 5410304,
+        "sha256": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f"
+      },
+      "compiler": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-pc-windows-msvc\nrelease: 1.98.1\nLLVM version: 22.1.8\n"
+    },
+    "linux": {
+      "metadata": {
+        "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\linux-release.json",
+        "bytes": 1317,
+        "sha256": "cb0380b7be189c306ea43eda42b2326f81b9237d1566cda76f728e125a9e356f"
+      },
+      "executable": {
+        "path": "/mnt/e/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance",
+        "bytes": 5503992,
+        "sha256": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860"
+      },
+      "compiler": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.95.0\nLLVM version: 22.1.2\n"
+    }
+  },
+  "runs": {
+    "windows_primary": [
+      {
+        "preference": "high",
+        "exit_status": 0,
+        "started_at_utc": "2026-10-19T17:05:19.708193+00:00",
+        "finished_at_utc": "2026-10-19T17:05:24.912944+00:00",
+        "stdout": {
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\windows_primary-high.json",
+          "bytes": 8065,
+          "sha256": "48543970b2bf93da36bb2a746f2406af67250ffb1f15ccb6346bbdf452ff6c28"
+        },
+        "stderr": {
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\windows_primary-high.stderr.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "planned_frame_indices": [
+          0,
+          399,
+          797
+        ],
+        "not_observed_frame_indices": [],
+        "report": {
+          "accepted": true,
+          "architecture": "x86_64",
+          "backend": "Vulkan",
+          "device_type": "DiscreteGpu",
+          "frames": [
+            {
+              "accepted": true,
+              "image": {
+                "box_11x11_mismatches": 0,
+                "box_11x11_sha256": "d37a0e1bb7ddcb947001afcc94ae2e8aa019aea7b2b44504b76484cb71d53ec3",
+                "box_259x3_mismatches": 0,
+                "box_259x3_sha256": "7df404a522b83575f75e1a216fe6f0531fce4c60e4c4bc8879da5523a553d09c",
+                "explicit_device_to_host_bytes": 3687424,
+                "gray_mismatches": 0,
+                "gray_sha256": "4d4871ae880f3d9dc8fa09727280cc9823e36376ddc745343fbcc158fafa56c6",
+                "histogram_bin_mismatches": 0,
+                "histogram_pixels": 307200,
+                "host_to_device_bytes": 1228800,
+                "readbacks_before_device_consumers": 0,
+                "resident_stages": [
+                  "upload_u8_texture",
+                  "rgb_to_gray_gpu",
+                  "box_blur_horizontal_gpu",
+                  "box_blur_gpu",
+                  "histogram_u8_partials_gpu",
+                  "histogram_u8_reduce_gpu",
+                  "readback_histogram_u32"
+                ]
+              },
+              "index": 0,
+              "pools": {
+                "buffer": {
+                  "allocations": 4,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 6437524,
+                  "cached_resources": 5,
+                  "discarded": 0,
+                  "reuses": 0
+                },
+                "image": {
+                  "allocations": 4,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 4915200,
+                  "cached_resources": 4,
+                  "discarded": 0,
+                  "reuses": 0
+                },
+                "scratch": {
+                  "allocations": 15,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 6825020,
+                  "cached_resources": 15,
+                  "discarded": 0,
+                  "reuses": 1
+                }
+              },
+              "radius": {
+                "complete_row_access_rejected": true,
+                "count_mismatches": 0,
+                "explicit_device_to_host_bytes": 512,
+                "queries": 64,
+                "queries_host_to_device_bytes": 1024,
+                "radius_m": 0.03125,
+                "search_device_to_host_bytes": 0,
+                "search_host_to_device_bytes": 0,
+                "total_neighbors": 25093,
+                "tree_host_to_device_bytes": 4726544
+              },
+              "voxel": {
+                "centroid_device_to_host_bytes": 67992,
+                "centroid_tolerance_m": 1e-05,
+                "construction_device_to_host_bytes": 4,
+                "host_to_device_payload_bytes": 2758500,
+                "maximum_centroid_coordinate_error_m": 2.462569981487306e-06,
+                "metadata_device_to_host_bytes": 1032820,
+                "metadata_mismatches": 0,
+                "occupied_cells": 5666,
+                "point_count": 229875
+              }
+            },
+            {
+              "accepted": true,
+              "image": {
+                "box_11x11_mismatches": 0,
+                "box_11x11_sha256": "7a088200c08999a50109aeb3688f2a4e0383d4db1f0dd028695f819c9b0df591",
+                "box_259x3_mismatches": 0,
+                "box_259x3_sha256": "cc926af6ada20e394f80c84daa86675e789e7adabf1ce0b4c0b0b6d1f182f65a",
+                "explicit_device_to_host_bytes": 3687424,
+                "gray_mismatches": 0,
+                "gray_sha256": "52f71d5b6baae66102dbf777c8821e23e5fe8f884c727343987daf920d0c9892",
+                "histogram_bin_mismatches": 0,
+                "histogram_pixels": 307200,
+                "host_to_device_bytes": 1228800,
+                "readbacks_before_device_consumers": 0,
+                "resident_stages": [
+                  "upload_u8_texture",
+                  "rgb_to_gray_gpu",
+                  "box_blur_horizontal_gpu",
+                  "box_blur_gpu",
+                  "histogram_u8_partials_gpu",
+                  "histogram_u8_reduce_gpu",
+                  "readback_histogram_u32"
+                ]
+              },
+              "index": 399,
+              "pools": {
+                "buffer": {
+                  "allocations": 7,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 12931872,
+                  "cached_resources": 9,
+                  "discarded": 0,
+                  "reuses": 1
+                },
+                "image": {
+                  "allocations": 4,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 4915200,
+                  "cached_resources": 4,
+                  "discarded": 0,
+                  "reuses": 4
+                },
+                "scratch": {
+                  "allocations": 21,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 11587192,
+                  "cached_resources": 21,
+                  "discarded": 0,
+                  "reuses": 11
+                }
+              },
+              "radius": {
+                "complete_row_access_rejected": true,
+                "count_mismatches": 0,
+                "explicit_device_to_host_bytes": 512,
+                "queries": 64,
+                "queries_host_to_device_bytes": 1024,
+                "radius_m": 0.03125,
+                "search_device_to_host_bytes": 0,
+                "search_host_to_device_bytes": 0,
+                "total_neighbors": 38648,
+                "tree_host_to_device_bytes": 4759600
+              },
+              "voxel": {
+                "centroid_device_to_host_bytes": 52788,
+                "centroid_tolerance_m": 1e-05,
+                "construction_device_to_host_bytes": 4,
+                "host_to_device_payload_bytes": 2783292,
+                "maximum_centroid_coordinate_error_m": 2.8974309409512955e-06,
+                "metadata_device_to_host_bytes": 1015744,
+                "metadata_mismatches": 0,
+                "occupied_cells": 4399,
+                "point_count": 231941
+              }
+            },
+            {
+              "accepted": true,
+              "image": {
+                "box_11x11_mismatches": 0,
+                "box_11x11_sha256": "020d1df9085fb907fe3e5eb00c0ae3f799a079aaa6dac5fa579190fb075af9c7",
+                "box_259x3_mismatches": 0,
+                "box_259x3_sha256": "60f6896732225d0b910fc748953197efb98784322d0dca0eda7464cd09078ad4",
+                "explicit_device_to_host_bytes": 3687424,
+                "gray_mismatches": 0,
+                "gray_sha256": "a423fc78805268c61383a1d3cfbe74cfed470c0881c62af8403b6b335feb180f",
+                "histogram_bin_mismatches": 0,
+                "histogram_pixels": 307200,
+                "host_to_device_bytes": 1228800,
+                "readbacks_before_device_consumers": 0,
+                "resident_stages": [
+                  "upload_u8_texture",
+                  "rgb_to_gray_gpu",
+                  "box_blur_horizontal_gpu",
+                  "box_blur_gpu",
+                  "histogram_u8_partials_gpu",
+                  "histogram_u8_reduce_gpu",
+                  "readback_histogram_u32"
+                ]
+              },
+              "index": 797,
+              "pools": {
+                "buffer": {
+                  "allocations": 10,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 19383520,
+                  "cached_resources": 13,
+                  "discarded": 0,
+                  "reuses": 2
+                },
+                "image": {
+                  "allocations": 4,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 4915200,
+                  "cached_resources": 4,
+                  "discarded": 0,
+                  "reuses": 8
+                },
+                "scratch": {
+                  "allocations": 27,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 16318048,
+                  "cached_resources": 27,
+                  "discarded": 0,
+                  "reuses": 21
+                }
+              },
+              "radius": {
+                "complete_row_access_rejected": true,
+                "count_mismatches": 0,
+                "explicit_device_to_host_bytes": 512,
+                "queries": 64,
+                "queries_host_to_device_bytes": 1024,
+                "radius_m": 0.03125,
+                "search_device_to_host_bytes": 0,
+                "search_host_to_device_bytes": 0,
+                "total_neighbors": 51389,
+                "tree_host_to_device_bytes": 4735200
+              },
+              "voxel": {
+                "centroid_device_to_host_bytes": 29100,
+                "centroid_tolerance_m": 1e-05,
+                "construction_device_to_host_bytes": 4,
+                "host_to_device_payload_bytes": 2764992,
+                "maximum_centroid_coordinate_error_m": 3.817541470718666e-06,
+                "metadata_device_to_host_bytes": 970164,
+                "metadata_mismatches": 0,
+                "occupied_cells": 2425,
+                "point_count": 230416
+              }
+            }
+          ],
+          "limits": {
+            "max_compute_workgroup_storage_size": 49152,
+            "max_storage_buffers_per_shader_stage": 1048576,
+            "max_texture_dimension_2d": 32768
+          },
+          "manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+          "os": "windows",
+          "preference": "high",
+          "requested_backend": "primary",
+          "schema": "spatialrust.public-gpu-conformance.v1",
+          "scope": "Three fixed development frames; no timing/accuracy or all-algorithm portability claim. Transfer payloads exclude uniforms/driver staging; pool counters exclude live/driver/staging allocations."
+        }
+      },
+      {
+        "preference": "low",
+        "exit_status": 0,
+        "started_at_utc": "2026-10-19T17:05:25.606159+00:00",
+        "finished_at_utc": "2026-10-19T17:05:30.631995+00:00",
+        "stdout": {
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\windows_primary-low.json",
+          "bytes": 8062,
+          "sha256": "f74b1581231a50937448750b0f1c2beb0c56bab49a2249abceafef4f7cc74227"
+        },
+        "stderr": {
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\windows_primary-low.stderr.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "planned_frame_indices": [
+          0,
+          399,
+          797
+        ],
+        "not_observed_frame_indices": [],
+        "report": {
+          "accepted": true,
+          "architecture": "x86_64",
+          "backend": "Vulkan",
+          "device_type": "IntegratedGpu",
+          "frames": [
+            {
+              "accepted": true,
+              "image": {
+                "box_11x11_mismatches": 0,
+                "box_11x11_sha256": "d37a0e1bb7ddcb947001afcc94ae2e8aa019aea7b2b44504b76484cb71d53ec3",
+                "box_259x3_mismatches": 0,
+                "box_259x3_sha256": "7df404a522b83575f75e1a216fe6f0531fce4c60e4c4bc8879da5523a553d09c",
+                "explicit_device_to_host_bytes": 3687424,
+                "gray_mismatches": 0,
+                "gray_sha256": "4d4871ae880f3d9dc8fa09727280cc9823e36376ddc745343fbcc158fafa56c6",
+                "histogram_bin_mismatches": 0,
+                "histogram_pixels": 307200,
+                "host_to_device_bytes": 1228800,
+                "readbacks_before_device_consumers": 0,
+                "resident_stages": [
+                  "upload_u8_texture",
+                  "rgb_to_gray_gpu",
+                  "box_blur_horizontal_gpu",
+                  "box_blur_gpu",
+                  "histogram_u8_partials_gpu",
+                  "histogram_u8_reduce_gpu",
+                  "readback_histogram_u32"
+                ]
+              },
+              "index": 0,
+              "pools": {
+                "buffer": {
+                  "allocations": 4,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 6437524,
+                  "cached_resources": 5,
+                  "discarded": 0,
+                  "reuses": 0
+                },
+                "image": {
+                  "allocations": 4,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 4915200,
+                  "cached_resources": 4,
+                  "discarded": 0,
+                  "reuses": 0
+                },
+                "scratch": {
+                  "allocations": 15,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 6825020,
+                  "cached_resources": 15,
+                  "discarded": 0,
+                  "reuses": 1
+                }
+              },
+              "radius": {
+                "complete_row_access_rejected": true,
+                "count_mismatches": 0,
+                "explicit_device_to_host_bytes": 512,
+                "queries": 64,
+                "queries_host_to_device_bytes": 1024,
+                "radius_m": 0.03125,
+                "search_device_to_host_bytes": 0,
+                "search_host_to_device_bytes": 0,
+                "total_neighbors": 25093,
+                "tree_host_to_device_bytes": 4726544
+              },
+              "voxel": {
+                "centroid_device_to_host_bytes": 67992,
+                "centroid_tolerance_m": 1e-05,
+                "construction_device_to_host_bytes": 4,
+                "host_to_device_payload_bytes": 2758500,
+                "maximum_centroid_coordinate_error_m": 2.5535884656813224e-06,
+                "metadata_device_to_host_bytes": 1032820,
+                "metadata_mismatches": 0,
+                "occupied_cells": 5666,
+                "point_count": 229875
+              }
+            },
+            {
+              "accepted": true,
+              "image": {
+                "box_11x11_mismatches": 0,
+                "box_11x11_sha256": "7a088200c08999a50109aeb3688f2a4e0383d4db1f0dd028695f819c9b0df591",
+                "box_259x3_mismatches": 0,
+                "box_259x3_sha256": "cc926af6ada20e394f80c84daa86675e789e7adabf1ce0b4c0b0b6d1f182f65a",
+                "explicit_device_to_host_bytes": 3687424,
+                "gray_mismatches": 0,
+                "gray_sha256": "52f71d5b6baae66102dbf777c8821e23e5fe8f884c727343987daf920d0c9892",
+                "histogram_bin_mismatches": 0,
+                "histogram_pixels": 307200,
+                "host_to_device_bytes": 1228800,
+                "readbacks_before_device_consumers": 0,
+                "resident_stages": [
+                  "upload_u8_texture",
+                  "rgb_to_gray_gpu",
+                  "box_blur_horizontal_gpu",
+                  "box_blur_gpu",
+                  "histogram_u8_partials_gpu",
+                  "histogram_u8_reduce_gpu",
+                  "readback_histogram_u32"
+                ]
+              },
+              "index": 399,
+              "pools": {
+                "buffer": {
+                  "allocations": 7,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 12931872,
+                  "cached_resources": 9,
+                  "discarded": 0,
+                  "reuses": 1
+                },
+                "image": {
+                  "allocations": 4,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 4915200,
+                  "cached_resources": 4,
+                  "discarded": 0,
+                  "reuses": 4
+                },
+                "scratch": {
+                  "allocations": 21,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 11587192,
+                  "cached_resources": 21,
+                  "discarded": 0,
+                  "reuses": 11
+                }
+              },
+              "radius": {
+                "complete_row_access_rejected": true,
+                "count_mismatches": 0,
+                "explicit_device_to_host_bytes": 512,
+                "queries": 64,
+                "queries_host_to_device_bytes": 1024,
+                "radius_m": 0.03125,
+                "search_device_to_host_bytes": 0,
+                "search_host_to_device_bytes": 0,
+                "total_neighbors": 38648,
+                "tree_host_to_device_bytes": 4759600
+              },
+              "voxel": {
+                "centroid_device_to_host_bytes": 52788,
+                "centroid_tolerance_m": 1e-05,
+                "construction_device_to_host_bytes": 4,
+                "host_to_device_payload_bytes": 2783292,
+                "maximum_centroid_coordinate_error_m": 2.837826296175905e-06,
+                "metadata_device_to_host_bytes": 1015744,
+                "metadata_mismatches": 0,
+                "occupied_cells": 4399,
+                "point_count": 231941
+              }
+            },
+            {
+              "accepted": true,
+              "image": {
+                "box_11x11_mismatches": 0,
+                "box_11x11_sha256": "020d1df9085fb907fe3e5eb00c0ae3f799a079aaa6dac5fa579190fb075af9c7",
+                "box_259x3_mismatches": 0,
+                "box_259x3_sha256": "60f6896732225d0b910fc748953197efb98784322d0dca0eda7464cd09078ad4",
+                "explicit_device_to_host_bytes": 3687424,
+                "gray_mismatches": 0,
+                "gray_sha256": "a423fc78805268c61383a1d3cfbe74cfed470c0881c62af8403b6b335feb180f",
+                "histogram_bin_mismatches": 0,
+                "histogram_pixels": 307200,
+                "host_to_device_bytes": 1228800,
+                "readbacks_before_device_consumers": 0,
+                "resident_stages": [
+                  "upload_u8_texture",
+                  "rgb_to_gray_gpu",
+                  "box_blur_horizontal_gpu",
+                  "box_blur_gpu",
+                  "histogram_u8_partials_gpu",
+                  "histogram_u8_reduce_gpu",
+                  "readback_histogram_u32"
+                ]
+              },
+              "index": 797,
+              "pools": {
+                "buffer": {
+                  "allocations": 10,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 19383520,
+                  "cached_resources": 13,
+                  "discarded": 0,
+                  "reuses": 2
+                },
+                "image": {
+                  "allocations": 4,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 4915200,
+                  "cached_resources": 4,
+                  "discarded": 0,
+                  "reuses": 8
+                },
+                "scratch": {
+                  "allocations": 27,
+                  "budget_bytes": 67108864,
+                  "cached_bytes": 16318048,
+                  "cached_resources": 27,
+                  "discarded": 0,
+                  "reuses": 21
+                }
+              },
+              "radius": {
+                "complete_row_access_rejected": true,
+                "count_mismatches": 0,
+                "explicit_device_to_host_bytes": 512,
+                "queries": 64,
+                "queries_host_to_device_bytes": 1024,
+                "radius_m": 0.03125,
+                "search_device_to_host_bytes": 0,
+                "search_host_to_device_bytes": 0,
+                "total_neighbors": 51389,
+                "tree_host_to_device_bytes": 4735200
+              },
+              "voxel": {
+                "centroid_device_to_host_bytes": 29100,
+                "centroid_tolerance_m": 1e-05,
+                "construction_device_to_host_bytes": 4,
+                "host_to_device_payload_bytes": 2764992,
+                "maximum_centroid_coordinate_error_m": 3.936750760269447e-06,
+                "metadata_device_to_host_bytes": 970164,
+                "metadata_mismatches": 0,
+                "occupied_cells": 2425,
+                "point_count": 230416
+              }
+            }
+          ],
+          "limits": {
+            "max_compute_workgroup_storage_size": 32768,
+            "max_storage_buffers_per_shader_stage": 200,
+            "max_texture_dimension_2d": 16384
+          },
+          "manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+          "os": "windows",
+          "preference": "low",
+          "requested_backend": "primary",
+          "schema": "spatialrust.public-gpu-conformance.v1",
+          "scope": "Three fixed development frames; no timing/accuracy or all-algorithm portability claim. Transfer payloads exclude uniforms/driver staging; pool counters exclude live/driver/staging allocations."
+        }
+      }
+    ],
+    "linux_gl": [
+      {
+        "preference": "high",
+        "exit_status": 1,
+        "started_at_utc": "2026-10-19T17:05:31.333375+00:00",
+        "finished_at_utc": "2026-10-19T17:05:41.368610+00:00",
+        "stdout": {
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\linux_gl-high.json",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\linux_gl-high.stderr.log",
+          "bytes": 78,
+          "sha256": "968549247457bcd896eae0be1a4d5c561ab2db6c09c14b17e14f87379fb3be53"
+        },
+        "planned_frame_indices": [
+          0,
+          399,
+          797
+        ],
+        "not_observed_frame_indices": [
+          0,
+          399,
+          797
+        ],
+        "report": null,
+        "initialization_error": "Error: InvalidArgument(\"failed to create wgpu device: Parent device is lost\")"
+      },
+      {
+        "preference": "low",
+        "exit_status": 1,
+        "started_at_utc": "2026-10-19T17:05:42.075955+00:00",
+        "finished_at_utc": "2026-10-19T17:05:47.112337+00:00",
+        "stdout": {
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\linux_gl-low.json",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\linux_gl-low.stderr.log",
+          "bytes": 78,
+          "sha256": "968549247457bcd896eae0be1a4d5c561ab2db6c09c14b17e14f87379fb3be53"
+        },
+        "planned_frame_indices": [
+          0,
+          399,
+          797
+        ],
+        "not_observed_frame_indices": [
+          0,
+          399,
+          797
+        ],
+        "report": null,
+        "initialization_error": "Error: InvalidArgument(\"failed to create wgpu device: Parent device is lost\")"
+      }
+    ]
+  },
+  "audits": {
+    "windows_primary": {
+      "schema": "spatialrust.public-gpu-report-audit.v1",
+      "all_operation_reports_passed": true,
+      "accepted_hardware_classes": [
+        "DiscreteGpu",
+        "IntegratedGpu"
+      ],
+      "hardware_coverage_accepted": true,
+      "maximum_centroid_coordinate_error_m": 3.936750760269447e-06,
+      "issues": []
+    },
+    "linux_gl": {
+      "schema": "spatialrust.public-gpu-report-audit.v1",
+      "all_operation_reports_passed": false,
+      "accepted_hardware_classes": [],
+      "hardware_coverage_accepted": false,
+      "maximum_centroid_coordinate_error_m": null,
+      "issues": [
+        "run 0: process must exit zero",
+        "run 0: schema",
+        "run 0: manifest_sha256",
+        "run 0: os",
+        "run 0: backend",
+        "run 0: accepted",
+        "run 0: explicit GL request required",
+        "run 0: report preference",
+        "run 0: every ordered fixed frame required",
+        "run 1: process must exit zero",
+        "run 1: schema",
+        "run 1: manifest_sha256",
+        "run 1: os",
+        "run 1: backend",
+        "run 1: accepted",
+        "run 1: explicit GL request required",
+        "run 1: report preference",
+        "run 1: every ordered fixed frame required",
+        "distinct integrated and discrete hardware classes required"
+      ]
+    }
+  },
+  "admission_diagnostic": {
+    "scope": "Separate private admission-only probe with pinned wgpu 24.0.5/wgpu-hal 24.0.4/Naga 24; its own offline lock, no application shader or dataset run",
+    "freeze": {
+      "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\admission-diagnostic-v3\\freeze.json",
+      "bytes": 1310,
+      "sha256": "dd488d0ac2f5db310e0365d57c664d62cb4f8638dd0101c19306b01c85a7b5ba"
+    },
+    "lock": {
+      "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\admission-diagnostic-v3\\Cargo.lock",
+      "bytes": 31284,
+      "sha256": "66815ad9009e797d082a344b63a37f7d228ef79106360883c4228edf9e76ad3f"
+    },
+    "result": {
+      "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\admission-diagnostic-v3\\result.json",
+      "bytes": 1426,
+      "sha256": "c747a25c2f628d8c59a00a8d7694b026e0ccdd908b75b30f6e3ad2dbd1ebffb8"
+    },
+    "probe": {
+      "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\admission-diagnostic-v3\\probe.json",
+      "bytes": 2087,
+      "sha256": "1e993872df6264386a65b3b4a2f76ed434f88492e0a42752553ce8407573a447"
+    },
+    "private_log": {
+      "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\admission-diagnostic-v3\\private-wgpu.log",
+      "bytes": 37259,
+      "sha256": "cfb8251433f5179474a11f8d189b09fdc16357caa3494b9414b34b9b9b8e763f"
+    },
+    "private_log_content_published": false,
+    "selected_desktop_opengl": "4.2 core",
+    "selected_glsl": "4.20",
+    "raw_device_type": "Other",
+    "reported_compute_shaders": true,
+    "device_created": false,
+    "application_shaders_executed": false,
+    "error": "Parent device is lost",
+    "upstream_error": "indirect-validation error: ComputePipeline(Internal(\"The selected version doesn't support Features(DYNAMIC_ARRAY_SIZE)\"))",
+    "interpretation": "wgpu HAL prefers advertised desktop GL; the selected GLSL 4.20 cannot compile the internal indirect-validation dynamic array. The separate ES 3.1 context probe does not select ES for wgpu.",
+    "pinned_primary_sources": [
+      {
+        "path": "C:\\Users\\rsasa\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\wgpu-hal-24.0.4\\src\\gles\\egl.rs",
+        "bytes": 56894,
+        "sha256": "93c77473a5e04b825e5acf5c74a7251632ba7d4d147367743a7a039e6c54d8db"
+      },
+      {
+        "path": "C:\\Users\\rsasa\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\wgpu-hal-24.0.4\\src\\gles\\adapter.rs",
+        "bytes": 54375,
+        "sha256": "e66e5031dfd17e0de9e65fdbb4ff62046f6f39b85cd21412e6e28de025223994"
+      },
+      {
+        "path": "C:\\Users\\rsasa\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\wgpu-core-24.0.5\\src\\device\\resource.rs",
+        "bytes": 147950,
+        "sha256": "6a5ae7059c5972f6adb20f7577ec90ea9647587c218136f5603f8a0611126663"
+      },
+      {
+        "path": "C:\\Users\\rsasa\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\naga-24.0.0\\src\\back\\glsl\\features.rs",
+        "bytes": 28919,
+        "sha256": "64673257e60772a9e08ecdc59a3e04880c33d580f46df51d0097c7031783d61b"
+      }
+    ],
+    "failed_launchers_before_gpu": [
+      {
+        "version": "1",
+        "result": {
+          "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\admission-diagnostic-v1\\result.json",
+          "bytes": 1432,
+          "sha256": "7979f1a0571613c994e10a48f01866dffdc867b33094b86970657757b2307d64"
+        },
+        "gpu_call_reached": false
+      },
+      {
+        "version": "2",
+        "result": {
+          "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\admission-diagnostic-v2\\result.json",
+          "bytes": 1426,
+          "sha256": "3a6af832ed6c31217a07332ceb9a5f473754ac9239ff048346ad65634e597730"
+        },
+        "gpu_call_reached": false
+      }
+    ]
+  },
+  "validation": {
+    "windows_tests": {
+      "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-tests.json",
+      "bytes": 12426,
+      "sha256": "ad1abbdbf831b9507bda505eb2ebe4450b7aae43a97383fbdd9e6cbedb8b760e"
+    },
+    "commands": [
+      {
+        "label": "runtime-contracts",
+        "pid": 39552,
+        "arguments": [
+          "cargo",
+          "test",
+          "-p",
+          "spatialrust-gpu",
+          "--features",
+          "gpu-image",
+          "--locked",
+          "--offline",
+          "--lib",
+          "runtime::tests"
+        ],
+        "started_at_utc": "2026-10-19T16:31:41.029585+00:00",
+        "exit_status": 0,
+        "finished_at_utc": "2026-10-19T16:35:04.144827+00:00"
+      },
+      {
+        "label": "example-references",
+        "pid": 20332,
+        "arguments": [
+          "cargo",
+          "test",
+          "-p",
+          "spatialrust-gpu",
+          "--features",
+          "gpu-image",
+          "--locked",
+          "--offline",
+          "--example",
+          "gpu_public_rgbd_conformance"
+        ],
+        "started_at_utc": "2026-10-19T16:35:04.551941+00:00",
+        "exit_status": 0,
+        "finished_at_utc": "2026-10-19T16:35:26.429798+00:00"
+      },
+      {
+        "label": "clippy",
+        "pid": 31116,
+        "arguments": [
+          "cargo",
+          "clippy",
+          "-p",
+          "spatialrust-gpu",
+          "--features",
+          "gpu-image",
+          "--locked",
+          "--offline",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "started_at_utc": "2026-10-19T16:35:26.915043+00:00",
+        "exit_status": 0,
+        "finished_at_utc": "2026-10-19T16:36:29.142364+00:00"
+      },
+      {
+        "label": "wasm-check",
+        "pid": 27544,
+        "arguments": [
+          "cargo",
+          "check",
+          "-p",
+          "spatialrust-gpu",
+          "--features",
+          "gpu-image",
+          "--locked",
+          "--offline",
+          "--target",
+          "wasm32-unknown-unknown"
+        ],
+        "started_at_utc": "2026-10-19T16:36:29.698543+00:00",
+        "exit_status": 0,
+        "finished_at_utc": "2026-10-19T16:37:33.791544+00:00"
+      }
+    ],
+    "runtime_tests_passed": 7,
+    "example_tests_passed": 3,
+    "focused_backend_audit_tests_passed": 34,
+    "focused_xml": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\explicit-gles-report-tests.xml",
+      "bytes": 5742,
+      "sha256": "40ea5524d82793bb947b3dc97d28d01c82da491c93bc38e8aa57b19e7b158581"
+    },
+    "full_python": {
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\explicit-gles-full-python.xml",
+        "bytes": 130556,
+        "sha256": "ed2e07861d1212306ada2b991e320ca5fec94aff4e99c9e9f02a8a4a0f8f7e55"
+      },
+      "passed": 973,
+      "skipped": 3,
+      "failed": 0,
+      "errors": 0
+    },
+    "clippy_all_gpu_targets": true,
+    "wasm_gpu_image_check": true,
+    "workspace_fmt": true,
+    "python38_ast": true
+  },
+  "preservation": {
+    "all_frozen_native_files": {
+      "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+      "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+      "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+      "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+      "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+      "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+      "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+      "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+      "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+      "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+      "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+      "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88"
+    },
+    "verified_unchanged": true,
+    "release_source_and_shader_hashes_verified": true,
+    "original_failed_gl_runs_preserved": true,
+    "original_public_inputs_preserved": true
+  },
+  "storage": {
+    "build_root": "E:\\SpatialRustBuild\\explicit-gles-v1",
+    "output_root": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1",
+    "dataset_downloads": 0,
+    "dataset_payload_copies": 0,
+    "controlled_build_cache_temp_bytes": 4965811047,
+    "maximum_controlled_bytes": 17179869184,
+    "result_logical_bytes": 78351,
+    "maximum_result_bytes": 134217728,
+    "minimum_free_bytes": 21474836480,
+    "free_e_bytes": 679420661760,
+    "free_c_bytes": 79012560896,
+    "scratch_cleanup": {
+      "utc": "2026-10-19T17:19:57.1311019Z",
+      "method": "Remove only exact completed passing pytest scratch after absolute-parent and complete no-reparse validation; preserve source, XMLs, all datasets, wheels, logs, frozen binaries and scientific results",
+      "path": "E:\\SpatialRustBuild\\explicit-gles-v1\\pytest-full-v1",
+      "files": 1048,
+      "logical_removed_bytes": 275674423,
+      "xml_path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\explicit-gles-full-python.xml",
+      "xml_sha256": "ed2e07861d1212306ada2b991e320ca5fec94aff4e99c9e9f02a8a4a0f8f7e55",
+      "free_before_bytes": 679143964672,
+      "free_after_bytes": 679420661760
+    }
+  },
+  "remaining_gates": [
+    "Linux hardware application execution and both raw IntegratedGpu/DiscreteGpu classes remain unaccepted (0/6 GL frame cases executed).",
+    "No GL operation conformance, bare-metal Linux certification, performance, motion accuracy, canonical measured clock/physical calibration, full mapping/semantic/release or operational 80% claim."
+  ],
+  "scope": "Typed explicit backend selection and unchanged Windows control; honest preserved Linux failure and separately sourced diagnosis. Raw Other is never relabeled; no fallback, driver/version override, threshold waiver or model names published."
+}

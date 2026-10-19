@@ -4,8 +4,8 @@ Operational slice 146I. A capability-only probe of the existing Ubuntu 22.04
 WSL2 system driver creates an OpenGLES 3.1 context through D3D12 and reports
 1,024 compute invocations, 32KiB shared storage and 16 compute storage blocks.
 The separate OpenGL 4.3 context request fails with EGL_BAD_MATCH. Neither result
-executes application shaders or certifies hardware classes. The current runtime
-selects `wgpu::Backends::PRIMARY`; the existing GLES implementation is a separate
+executes application shaders or certifies hardware classes. Before this slice the
+runtime selected `wgpu::Backends::PRIMARY`; the existing GLES implementation is a separate
 explicit candidate. Preserve the prior Vulkan/Dozen failures and all Windows
 hardware/Linux software results.
 
@@ -74,3 +74,63 @@ transfers, pools and controlled storage without local adapter model names.
 This is selected-frame/backend conformance, not broad GL certification,
 bare-metal Linux, motion accuracy, calibrated canonical mapping or completion
 of the operational 80% objective.
+
+## Frozen execution outcome (2026-10-20)
+
+The contract/plan was committed at
+`db4b9018e89e56121ba4b18c5c4f2dc4d1fc5048`, before wgpu GL admission. Both
+release executables use implementation
+`ebf117dc781500bcdacb24e1afb1f95855155740`. The
+[compact receipt](receipts/2026-10-20_explicit_gles_gpu.json) binds source,
+input, binaries, raw outputs, audits, diagnostic sources and storage. The plan's
+Git blob and working-file bytes have separately labeled hashes.
+
+| Execution | Observed frames | Operation audit | Hardware coverage |
+| --- | --- | --- | --- |
+| Windows primary/high, Vulkan, DiscreteGpu | 0/399/797, all pass | Pass | Both Windows classes pass together |
+| Windows primary/low, Vulkan, IntegratedGpu | 0/399/797, all pass | Pass | Both Windows classes pass together |
+| Linux explicit GL/high | None; device creation fails, process exits 1 | Fail | Unaccepted |
+| Linux explicit GL/low | None; device creation fails, process exits 1 | Fail | Unaccepted |
+
+The Windows control passes all six unchanged image/point/transfer/pool cases.
+Maximum centroid coordinate error is `3.936750760269447e-6 m`, within the fixed
+`1e-5 m` limit. Both Linux stderr files report
+`failed to create wgpu device: Parent device is lost`; neither process emits an
+operation report. Retain all six unobserved Linux frame cases and both failures.
+The EGL capability probe does not establish any Linux application execution.
+
+A separate bounded admission-only diagnostic uses pinned wgpu 24.0.5 and its
+own offline lock. Its redacted result reports raw class `Other`, GL 4.2 core,
+GLSL 4.20 and advertised compute support. Device creation reproduces the failure
+while wgpu builds its internal indirect-validation pipeline:
+`The selected version doesn't support Features(DYNAMIC_ARRAY_SIZE)`.
+Inspection of the pinned primary source explains the difference: wgpu-hal
+prefers desktop GL when EGL advertises it; Naga 24 requires desktop GLSL 4.30 or
+ES 3.10 for dynamic arrays. The separate ES 3.1 capability context therefore
+does not imply that wgpu selected ES. Source paths/hashes and the private log's
+identity are bound in the receipt; private renderer/model strings are omitted.
+Two diagnostic launcher failures occurred before GPU calls and are also retained.
+No driver replacement, version override, disabled validation, alternate backend
+fallback or class relabeling was used to make this result pass.
+
+Validation passes seven runtime tests, three example tests (including the
+independent CPU references), 34 report/backend cases, GPU all-target Clippy,
+WASM `gpu-image` checking and workspace formatting. The full Python suite passes
+973 tests with three optional ONNX skips. The numerical kernels and original
+execution gates are unchanged.
+
+No dataset is downloaded and no image payload is copied. Only the completed
+passing Python test scratch at
+`E:/SpatialRustBuild/explicit-gles-v1/pytest-full-v1/` is removed after checking
+the XML, exact absolute parent and every child for reparse points: 275,674,423
+logical bytes across 1,048 files. Logs, XMLs, original inputs, all five
+wheels/extensions, old/new GPU executables and failed/successful results remain.
+After diagnostics and cleanup, controlled build/cache/temp storage is
+4,965,811,047 logical bytes (16GiB cap); the result directory is 78,351 bytes
+(128MiB cap), with more than 632GiB free on E (20GiB floor). These are logical
+file counts and point-in-time free space, not peak process memory measurements.
+
+Typed explicit GL selection is implemented. Linux hardware execution and both
+raw hardware classes remain open; this slice makes no GL conformance or
+operational 80% claim. A future ES-context integration needs its own ownership
+contract, fixed protocol and unchanged operation/hardware gates before admission.

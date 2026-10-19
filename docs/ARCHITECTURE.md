@@ -11,7 +11,10 @@ and expose GL as an opt-in backend set. Owned sync/async constructors retain
 original flags, adapter limits and optional timestamp admission. Requested and
 actual backends are separate receipts; raw hardware classes retain their
 meaning. Shader work, core dependencies and CPU/GPU transfers are unchanged.
-See the [fixed GLES protocol](EXPLICIT_GLES_GPU_VALIDATION.md).
+The Windows primary control passes both hardware classes; the fixed Linux GL
+attempt fails during device creation, before application work. Separate pinned
+diagnostics bind the internal GLSL dynamic-array failure without admission
+overrides. See the [fixed GLES protocol and outcomes](EXPLICIT_GLES_GPU_VALIDATION.md).
 
 A separately fixed experimental dense adapter retains one owned proper relative
 pose as the next initial seed, starting with identity. Native and full-cloud

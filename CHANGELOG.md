@@ -24,7 +24,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
   The public RGB-D example records requested/actual backends and accepts
   `--backend primary|gl`; report auditing retains original operation/transfer
   gates and raw hardware-class requirements. See
-  `docs/EXPLICIT_GLES_GPU_VALIDATION.md` for the fixed execution contract.
+  `docs/EXPLICIT_GLES_GPU_VALIDATION.md` for the fixed execution contract and
+  outcomes: Windows both hardware classes pass 6/6; Linux GL fails device
+  creation before 6/6 application cases, with a separately sourced internal
+  GLSL admission diagnosis. Preserve all failures and frozen binaries; 973
+  Python passes/3 optional skips, native/Clippy/WASM checks and storage receipts.
 
 - Add a separately fixed causal dense RGB-D workflow that supplies the previous
   returned relative increment as the next explicit native seed. Retain the
