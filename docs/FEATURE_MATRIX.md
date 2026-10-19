@@ -20,6 +20,8 @@ experimental CPU capability with bounded resources, not full motion acceptance.
 The separate [causal initialization study](CAUSAL_DENSE_RGBD_VALIDATION.md)
 reuses the same numerical binary with an explicit previous-increment seed and
 independent seed-lineage checks; all final acceptance gates remain fixed.
+It completes both 798/722-frame development timelines. XYZ passes; rpy RPE is
+0.048145m but ATE 0.114793m still exceeds the unchanged 0.10m limit.
 
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,

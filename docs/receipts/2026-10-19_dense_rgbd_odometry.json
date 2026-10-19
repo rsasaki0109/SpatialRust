@@ -899,10 +899,22 @@
   "remaining": [
     "rpy full motion acceptance",
     "independently measured canonical clock and physical extrinsic accuracy",
-    "operations on a second hardware class",
+    "Linux GPU hardware operation conformance",
     "full mapping and release acceptance",
     "held-out robustness"
   ],
   "operational_80_percent_proven": false,
-  "gpu_dense_solver_implemented": false
+  "gpu_dense_solver_implemented": false,
+  "hardware_scope_correction": {
+    "date": "2026-10-20",
+    "date_timezone": "Asia/Tokyo",
+    "windows_hardware_classes_already_accepted": [
+      "DiscreteGpu",
+      "IntegratedGpu"
+    ],
+    "remaining_gap": "Linux GPU hardware operation conformance",
+    "source_receipt": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\receipts\\2026-10-19_public_multi_adapter_rgbd.json",
+    "source_receipt_sha256": "d97f1968db30135a410630eff146562ed3d371b71c60d0bc30a64b8a595dd80a",
+    "scope": "Correct only the remaining-work label; original scientific measurements and raw receipts unchanged"
+  }
 }
