@@ -9,6 +9,7 @@ import numpy as np
 from PIL import Image
 
 from dense_rgbd_protocol import CONTROLS, FINAL_ESTIMATOR, validate_dense_experiment_plan
+from causal_dense_rgbd_protocol import ESTIMATOR as CAUSAL_ESTIMATOR, validate_causal_dense_plan
 from evaluate_pose_reference import rigid
 from tum_sequence_reference import file_sha256, json_bytes, require_sha256, safe_relative
 
@@ -78,6 +79,30 @@ def checked_image(prepared, entry, kind, camera, limit):
     return ((4899*rgb[:, :, 0]+9617*rgb[:, :, 1]+1868*rgb[:, :, 2]+8192) >> 14).astype(np.uint8)
 
 
+def check_causal_initialization(report, previous_relative, index):
+    """Audit a reported seed using only the prior returned increment, no fitting."""
+    if (report.get('initial_seed_policy') != 'previous-relative-increment'
+            or 'initial_previous_pair_index' not in report):
+        raise ValueError('causal seed policy receipt required')
+    observed_index = report.get('initial_previous_pair_index')
+    if index == 1:
+        if observed_index is not None or previous_relative is not None:
+            raise ValueError('first causal pair requires identity without prior index')
+        expected = np.eye(4)
+    else:
+        if type(observed_index) is not int or observed_index != index-1 or previous_relative is None:
+            raise ValueError('causal seed must identify the immediately preceding pair')
+        expected = previous_relative
+    try:
+        actual = rigid(report['initial_current_from_previous'])
+    except (KeyError, TypeError):
+        raise ValueError('causal seed pose receipt required') from None
+    error = float(np.max(np.abs(actual-expected)))
+    if error > 1e-12:
+        raise ValueError('causal seed differs from identity or the preceding relative pose')
+    return error
+
+
 def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
     prepared, estimates, output = Path(prepared), Path(estimates), Path(output)
     if output.exists() or shutil.disk_usage(output.parent).free < 20*1024**3:
@@ -89,7 +114,9 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
         raise ValueError('require source-bound reference-free prepared frames')
     if file_sha256(prepared/'plan.json') != manifest['plan_sha256']:
         raise ValueError('prepared plan changed')
-    plan = validate_dense_experiment_plan(json.loads((prepared/'plan.json').read_text(encoding='utf-8')))
+    plan = json.loads((prepared/'plan.json').read_text(encoding='utf-8'))
+    causal = plan.get('estimator') == CAUSAL_ESTIMATOR
+    plan = validate_causal_dense_plan(plan) if causal else validate_dense_experiment_plan(plan)
     if file_sha256(prepared/'calibration.json') != manifest['calibration_sha256'] or json.loads((prepared/'calibration.json').read_text(encoding='utf-8')) != plan['calibration']:
         raise ValueError('prepared calibration changed')
     frozen = json.loads(estimates.read_text(encoding='utf-8'))
@@ -102,6 +129,7 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
     if len(frames) != len(rows) or [r['timestamp_ns'] for r in rows] != [f['timestamp_ns'] for f in frames]:
         raise ValueError('complete original timeline required')
     camera, previous, world, lost = plan['calibration'], None, None, False
+    previous_relative = None
     checks, failures = [], []
     for index, (frame, row) in enumerate(zip(frames, rows)):
         if row.get('status') not in ('success', 'error'):
@@ -120,9 +148,10 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
                 raise ValueError('sole initial world anchor required')
         else:
             report = row['registration']
-            if plan['estimator'] == FINAL_ESTIMATOR and report.get('final_support_only') is not True:
+            if plan['estimator'] in (FINAL_ESTIMATOR, CAUSAL_ESTIMATOR) and report.get('final_support_only') is not True:
                 raise ValueError('native final support policy receipt required')
             pose = rigid(report['current_from_previous'])
+            initial_error = check_causal_initialization(report, previous_relative, index) if causal else None
             reference = reference_statistics(previous[0], depth, previous[1], gray, pose, camera, CONTROLS)
             for key in ('valid_source_pixels', 'correspondences'):
                 if type(report[key]) is not int or report[key] != reference[key]:
@@ -140,6 +169,9 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
             if composition_error > 1e-9 or not np.allclose(inverse, report['previous_from_current'], rtol=0, atol=1e-12):
                 raise ValueError('dense direction/world composition differs')
             checks.append(dict(index=index, statistics=reference, differences=delta, world_max_error=composition_error))
+            if causal:
+                checks[-1]['initial_max_error'] = initial_error
+                previous_relative = pose.copy()
         previous, world = (depth, gray), observed_world
         if index % 60 == 0:
             print('Independent dense rows {}/{}'.format(index+1, len(rows)), flush=True)
@@ -150,6 +182,8 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
         estimates_sha256=estimates_sha256, manifest_sha256=manifest_sha256,
         auditor_sha256=file_sha256(__file__), reference_motion_used=False,
         scope='Final projective measurements and causal world chain; no fitting or trajectory-accuracy acceptance')
+    if causal:
+        result.update(causal_initialization_pairs=len(checks), initial_seed_policy='previous-relative-increment')
     output.mkdir()
     (output/'audit.json').write_bytes(json_bytes(result))
     return result

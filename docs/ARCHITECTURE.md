@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A separately fixed experimental dense adapter retains one owned proper relative
+pose as the next initial seed, starting with identity. Native and full-cloud
+admission remain; a lost chain makes no later call. Independent auditing checks
+every seed against the preceding relative estimate. This reuses the frozen CPU
+solver without a runtime/core/GPU change; see the
+[causal initialization protocol](CAUSAL_DENSE_RGBD_VALIDATION.md).
+
 Dense projective RGB-D uses a dedicated optional vision feature with checked
 borrowed grayscale/metric-depth views for both frames, calibrated pinhole data,
 an explicit initial pose and preflighted owned CPU pyramids. Fixed ordered row

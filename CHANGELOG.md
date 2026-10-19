@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a separately fixed causal dense RGB-D workflow that supplies the previous
+  returned relative increment as the next explicit native seed. Retain the
+  same numerical binary and output/accuracy gates, with independent seed,
+  projective-statistic and world-chain audits. See
+  `docs/CAUSAL_DENSE_RGBD_VALIDATION.md` for both frozen full-scene plans.
+
 - Add feature-gated dense CPU RGB-D projective odometry with explicit source
   and target grayscale/depth inputs, checked pose/options, bounded pyramids,
   deterministic row-tile parallelism and owned Python execution outside the
