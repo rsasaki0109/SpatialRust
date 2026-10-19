@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add an explicit fixed-interval RGB-D keyframe adapter that retains original
+  metric depth landmarks through native sparse tracking/PnP, and a source-bound
+  hard-link input reuse helper with storage preflight and partial inventories.
+  Preserve image/depth defaults, full failure timelines, support and accuracy
+  gates. See `docs/TUM_KEYFRAME_RGBD_VALIDATION.md`.
+
 - Bind the exact public canonical Autoware bag to hash-pinned publisher
   front/rear LiDAR configuration with an offline, disk-bounded frame-evidence
   adapter. Preserve the missing clock gate and distinguish configured
