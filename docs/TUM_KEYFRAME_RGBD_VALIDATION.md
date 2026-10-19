@@ -233,5 +233,72 @@ Execution order and admission:
   source image payloads. Keep the added detector work and any shared-host timing
   observations visible; make no performance ranking.
 
-Adaptive real-data results are pending. The fixed-policy failure table above
-and all original accuracy limits remain authoritative.
+### Input-quality revision results
+
+Algorithm commit `56dc4ed`; complete source/binding commit
+`10780e3a6fded310c5cfed9b334b2dc466383be2`, before either adaptive fit. No new
+archive, extraction or native build is required; both new prepared directories
+share verified source payloads. All earlier fixed results are retained verbatim.
+
+| Adaptive case | Generated | Evaluated | Prefix ATE RMSE (m) | Prefix 1s RPE RMSE (m) | Accepted |
+| --- | ---: | ---: | ---: | ---: | --- |
+| xyz | 240/798 | 237 | 0.056469 | 0.030103 | No: completeness/coverage |
+| rpy | 2/722 | 2 | 0.007455 | unavailable | No: completeness/coverage/RPE |
+
+XYZ now reaches row 240, but the unchanged PnP inlier/depth admission stops it.
+Rpy still stops at row 2. These are incomplete prefixes, not accepted full-motion
+accuracy or a ranking against the complete parent trajectory. Every planned row
+and all failed/unmatched counts remain. Both new independent audits pass, with
+maximum differences below 8.82e-16m and 1.43e-13degree.
+
+A separate trace/source audit checks **33,203** source landmark rows directly
+against their original PNG 3x3 integer counts; all meet the declared consensus
+rule. It checks persistent landmark IDs, causal keyframe ordinals, all pose
+compositions, ten early xyz promotions, original support/roundtrip/inlier gates,
+all hard-link identities and five new exact typed-IO file pairs. Thus the
+remaining motion failures are not counted as acceptance or hidden by resets.
+Together the fixed and adaptive studies preserve **3,762 new timeline rows**,
+nine generated typed IO audits, five independent new-score audits and a separate
+reaudit of the original xyz parent.
+
+The final local suite has 834 passes/three optional ONNX skips, plus one extra
+unique native detector-to-depth case; all 17 adaptive and 17 fixed new focused
+cases pass. Both revised source files parse as Python 3.8. Hosted required
+checks remain a merge prerequisite.
+
+At the recorded storage snapshot, new study paths contain 961,778,948 unique
+logical payload bytes (about 917 MiB), after excluding existing xyz inputs and
+deduplicating hard links by file identity. Shared/repeated input payload totals
+1,836,299,360 bytes. These are payload sizes, not NTFS allocated-cluster or
+free-space deltas. All files remain external; the 20 GiB floor is retained.
+
+### Post-freeze numerical diagnosis and next work
+
+Diagnostic prefix replays occur only after both adaptive estimates and scores
+are frozen. They neither replace a trajectory nor satisfy a study gate. The
+original rpy second interval reproduces 22/58 inliers both before and after the
+final refit, so refit regression is not its observed cause. Reference-reprojection
+residuals remain large; image matching and calibration/time consistency remain
+open beyond this short diagnostic.
+
+An explicit four-setting LK prefix probe retains the same acceptance thresholds
+and original feature margin. Valid first-interval track counts are 53 (r=5,
+levels=3), 93 (5,4), 107 (10,3), and 125 (10,4). Several larger-motion settings
+expose a native proper-rotation error. These exploratory prefixes are preserved
+in the compact receipt; none is a new accepted trajectory or chosen full result.
+
+For r=5/levels=4, a public-solver replay of the exact six-point sample sequence
+finds a **54/93-inlier** hypothesis after 165 iterations. Its rotation determinant
+is 1.0 and maximum orthogonality error 2.23e-16. The final fresh-DLT/inlier refit
+then raises `absolute pose rotation must be a proper orthonormal matrix`, matching
+the native failure. The existing native implementation discards the selected
+hypothesis before that fallible refit. This establishes a concrete numerical
+failure to address; it does not establish physical correctness of that hypothesis
+or predict full-trajectory accuracy.
+
+A separate follow-up will reproduce this with synthetic geometry, retain the
+best valid robust-PnP hypothesis when optional refinement errors or worsens its
+original consensus criterion, and verify all native/complete-data outcomes under
+a new fixed protocol. Native solver/default behavior is unchanged in this PR.
+Canonical measured Autoware calibration, full mapping and the operational 80%
+goal remain unproven. The operational maturity estimate stays 63%.

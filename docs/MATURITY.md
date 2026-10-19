@@ -30,6 +30,17 @@ blocked. This closes a configuration-provenance gap, not physical calibration
 or full mapping. The operational estimate stays **63%**. See
 [public canonical frame evidence](PUBLIC_AUTOWARE_FRAME_EVIDENCE.md).
 
+Persistent RGB-D keyframes now have source-bound fixed and input-quality
+revisions, hard-link input reuse and independent complete-timeline scoring.
+Fixed xyz stops at 90/798 poses; input quality/early promotion reaches 240/798;
+both rpy candidates stop at 2/722. All five new cases fail unchanged acceptance
+and remain visible. All new score audits pass, and 33,203 retained landmark
+rows satisfy independent source-depth checks. A short post-freeze diagnostic
+identifies a native final-refit error despite a numerically valid 54/93 PnP
+hypothesis; it does not establish accurate motion or fix the production solver.
+The operational estimate stays **63%**. See
+[all keyframe outcomes and the next numerical boundary](TUM_KEYFRAME_RGBD_VALIDATION.md).
+
 The operational goal stays active. See [public GPU evidence](PUBLIC_GPU_RGBD_CONFORMANCE.md).
 See [the complete protocol and failures](TUM_RGBD_MOTION_VALIDATION.md).
 
