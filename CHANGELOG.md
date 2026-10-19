@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Validate the frozen public image/point executable on privately staged Mesa
+  Gallium D3D12/surfaceless GL 4.6 / GLSL 4.60: all six original operation cases
+  pass, with centroid error 3.818e-6m under the unchanged 1e-5m limit. Both raw
+  reports retain Other, so Linux two-class coverage stays unaccepted. Preserve
+  original system-driver failures, all frozen artifacts and scoped storage;
+  see `docs/ISOLATED_GALLIUM_GLES_VALIDATION.md`.
+
 - Add typed headless GPU runtime options with explicit GL selection while
   preserving primary backend defaults, shared runtime and timestamp admission.
   Reject uncompiled GL before instance creation so WebGPU-only browser builds

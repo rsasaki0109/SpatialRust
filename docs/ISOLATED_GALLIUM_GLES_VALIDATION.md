@@ -95,10 +95,65 @@ Write new application outputs only in
 `E:/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/`,
 with a 128MiB cap and ten minutes per preference. Bound shader cache/temp there,
 record before/after storage and protected hashes, and stop owned processes on
-their bounds. No result exists yet in this pre-execution contract.
+their bounds. This contract was committed before any new-driver result; the
+separate frozen outcomes follow below.
 
 These are three already observed development frames on WSL2 and a new
 driver/WSI combination. This contract changes no framework numerical code or
 CPU/GPU ownership. It does not certify bare-metal Linux, broad GL support,
 performance, motion accuracy, canonical measured clock/physical calibration,
 full mapping/semantic/release acceptance or the operational 80% objective.
+
+## Frozen outcome (2026-10-20)
+
+Initial protocol `bbac4d155eec785327ac813f3854f1cb8b30dba2` and prefix correction
+`70e48c8c6bf0fb7dcc45f1d56a4b08b48388e364` both precede the first new context.
+The [evidence receipt](receipts/2026-10-20_isolated_gallium_gles.json) binds the
+execution freeze, input/executable/source identities, exact libraries and links,
+private vendor selection, process environment, raw outputs and fresh audit.
+
+| Preference | Actual backend/class | Observed frames | Operation gates | Two-class hardware coverage |
+| --- | --- | --- | --- | --- |
+| High | Gl / Other | 0/399/797, all accepted | Pass | Unaccepted |
+| Low | Gl / Other | 0/399/797, all accepted | Pass | Unaccepted |
+
+All six unchanged image/voxel/radius/transfer/pool cases pass. Maximum centroid
+coordinate error is `3.817541470718666e-6 m`, below the original `1e-5 m` limit.
+Both complete raw reports retain `Other`; the independent auditor accepts
+operation correctness and rejects hardware coverage with no accepted raw
+hardware classes. No preference or private renderer classification promotes
+either run to IntegratedGpu or DiscreteGpu.
+
+The separate capability probe observes desktop OpenGL 4.6 / GLSL 4.60 for both
+3.3 and 4.3 requests, and ES 3.1 / ESSL 3.10. All three probes classify the
+renderer as D3D12 with no software-renderer marker, and report 1,024 compute
+invocations, 32KiB shared storage and
+16 compute storage blocks, with no GL error. These capability observations
+remain separate from the actual application reports. No version or extension
+override is used. The combination passes on the same frozen executable that
+fails with the original system driver; preserve both original failures.
+
+CPU build preparation, compilation and E-contained DESTDIR installation finish
+with all original protected files unchanged. The build-time new-root snapshot
+is 184,037,018 bytes, below 4GiB. A fresh post-execution check verifies 698
+protected hash entries and eight library links, before documenting outcomes.
+The new regression feeds the actual passing GL reports to the existing auditor
+and requires raw Other to remain outside the two-class hardware gate.
+All 35 report/backend cases pass; the full Python suite passes 974 cases with
+three optional ONNX skips. Python 3.8 syntax checking also passes. No framework
+kernel or Rust numerical source changes; the existing native binary is retained.
+
+Finalized application files total 462,370 bytes, below 128MiB. Preserve the
+worker's earlier 306,151-byte sample as a pre-final-summary observation and bind
+the separate final count in the receipt. After checking the passing 977-case
+XML, exact parent and every child for reparse points, remove only
+`E:/SpatialRustBuild/mesa-gallium-gles-v3/pytest-full-v1/`: 275,674,789 bytes.
+The recorded controlled regular-file total is 6,907,095,864 bytes, below 16GiB;
+capacity inventories omit reparse aliases while retaining
+their actual owned files. No image payload is downloaded or copied. Only the
+two small parser packages are fetched; all prior preparation failures, archives,
+wheels/extensions, binaries, logs, XMLs and scientific records remain.
+
+This is accepted operation on the isolated D3D12/surfaceless GL combination.
+Production selection and installed system drivers retain their original state.
+Both raw Linux hardware classes and the other operational 80% gates remain open.

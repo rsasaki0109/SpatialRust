@@ -32,6 +32,17 @@ def test_actual_linux_software_reports_pass_operations_but_not_hardware():
     assert result["accepted_hardware_classes"] == []
 
 
+def test_actual_isolated_gallium_operations_do_not_promote_other_class():
+    receipt = json.loads((ROOT / "docs/receipts/2026-10-20_isolated_gallium_gles.json")
+                         .read_text(encoding="utf-8"))
+    runs = receipt["runs"]
+    assert {run["report"]["device_type"] for run in runs} == {"Other"}
+    result = audit_runs(runs, MANIFEST, "linux", expected_backend="Gl")
+    assert result["all_operation_reports_passed"]
+    assert not result["hardware_coverage_accepted"]
+    assert result["accepted_hardware_classes"] == []
+
+
 def gl_schema_runs():
     # Synthetic backend metadata over frozen measurements tests validation only.
     # These rows are never presented as evidence of actual GL execution.
