@@ -12,6 +12,12 @@ from run_tum_sequence import generate
 
 
 def align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray, camera, controls):
+    return _align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray,
+                             camera, controls, expected_final_support_only=False)
+
+
+def _align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray, camera, controls,
+                     *, expected_final_support_only):
     if controls.get('dense_rgbd_odometry') != CONTROLS:
         raise ValueError('dense RGB-D controls differ from the fixed protocol')
     source = (previous_depth.astype(np.float64)*camera['depth_unit_m']).astype(np.float32)
@@ -19,6 +25,8 @@ def align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray,
     rotation, translation, report = sr.estimate_dense_rgbd_odometry(
         previous_gray, source, current_gray, target,
         camera['fx'], camera['fy'], camera['cx'], camera['cy'], initial=np.eye(4), **CONTROLS)
+    if type(report.get('final_support_only', False)) is not bool or report.get('final_support_only', False) != expected_final_support_only:
+        raise ValueError('native dense support policy does not match this fixed experiment')
     valid = int(np.count_nonzero((source >= CONTROLS['min_depth']) & (source <= CONTROLS['max_depth'])))
     if (valid <= 0 or type(report.get('valid_source_pixels')) is not int or report['valid_source_pixels'] != valid
             or type(report.get('correspondences')) is not int

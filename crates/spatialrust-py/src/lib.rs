@@ -4313,6 +4313,7 @@ fn estimate_dense_rgbd_odometry<'py>(
     report.set_item("working_bytes", estimate.working_bytes)?;
     report.set_item("workers", estimate.workers)?;
     report.set_item("input_copy_bytes", width * height * 10)?;
+    report.set_item("final_support_only", true)?;
     Ok((
         mat3_to_numpy(py, estimate.pose.rotation()),
         numpy::PyArray1::from_vec_bound(

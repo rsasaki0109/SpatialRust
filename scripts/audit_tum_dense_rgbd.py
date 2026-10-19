@@ -8,7 +8,7 @@ import shutil
 import numpy as np
 from PIL import Image
 
-from dense_rgbd_protocol import CONTROLS, ESTIMATOR, validate_dense_plan
+from dense_rgbd_protocol import CONTROLS, FINAL_ESTIMATOR, validate_dense_experiment_plan
 from evaluate_pose_reference import rigid
 from tum_sequence_reference import file_sha256, json_bytes, require_sha256, safe_relative
 
@@ -89,12 +89,12 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
         raise ValueError('require source-bound reference-free prepared frames')
     if file_sha256(prepared/'plan.json') != manifest['plan_sha256']:
         raise ValueError('prepared plan changed')
-    plan = validate_dense_plan(json.loads((prepared/'plan.json').read_text(encoding='utf-8')))
+    plan = validate_dense_experiment_plan(json.loads((prepared/'plan.json').read_text(encoding='utf-8')))
     if file_sha256(prepared/'calibration.json') != manifest['calibration_sha256'] or json.loads((prepared/'calibration.json').read_text(encoding='utf-8')) != plan['calibration']:
         raise ValueError('prepared calibration changed')
     frozen = json.loads(estimates.read_text(encoding='utf-8'))
     if (frozen.get('schema') != 'spatialrust.timestamped-trajectory.v1' or frozen.get('length_unit') != 'm'
-            or frozen.get('method') != ESTIMATOR or frozen.get('manifest_sha256') != manifest_sha256
+            or frozen.get('method') != plan['estimator'] or frozen.get('manifest_sha256') != manifest_sha256
             or frozen.get('reference_used_for_generation') is not False
             or any(frozen.get(key) != manifest[key] for key in ('source_sha256', 'plan_sha256', 'calibration_sha256'))):
         raise ValueError('require the exact frozen native dense estimates')
@@ -120,6 +120,8 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
                 raise ValueError('sole initial world anchor required')
         else:
             report = row['registration']
+            if plan['estimator'] == FINAL_ESTIMATOR and report.get('final_support_only') is not True:
+                raise ValueError('native final support policy receipt required')
             pose = rigid(report['current_from_previous'])
             reference = reference_statistics(previous[0], depth, previous[1], gray, pose, camera, CONTROLS)
             for key in ('valid_source_pixels', 'correspondences'):

@@ -45,7 +45,9 @@ pub struct DenseRgbdOdometryOptions {
     pub depth_weight: f64,
     /// Minimum projective correspondence count at every level and final pose.
     pub min_correspondences: usize,
-    /// Minimum matched fraction of all valid source pixels at every level.
+    /// Minimum matched fraction of all valid source pixels at the returned pose.
+    /// Initial/intermediate hypotheses need the minimum count and a solvable
+    /// normal system; they are not yet accepted motion estimates.
     pub min_correspondence_fraction: f64,
     /// Stop a level when rotation-vector norm plus translation norm is smaller.
     pub epsilon: f64,
@@ -166,9 +168,9 @@ pub fn estimate_dense_rgbd_odometry(
     let mut iterations = 0;
     for (schedule, level) in (0..source.len()).rev().enumerate() {
         let intrinsics = scaled_camera(camera, level);
-        for _ in 0..options.iterations[schedule] {
+        for iteration in 0..options.iterations[schedule] {
             let normal = linearize(&source[level], &target[level], intrinsics, pose, options);
-            check_support(&normal, options)?;
+            check_support(&normal, options, SupportStage::Linearization { level, iteration })?;
             let mut matrix = normal.hessian;
             for (row, values) in matrix.iter_mut().enumerate() {
                 for (col, value) in values.iter_mut().take(row).enumerate() {
@@ -202,7 +204,7 @@ pub fn estimate_dense_rgbd_odometry(
         }
     }
     let final_rows = linearize(&source[0], &target[0], scaled_camera(camera, 0), pose, options);
-    check_support(&final_rows, options)?;
+    check_support(&final_rows, options, SupportStage::Final)?;
     Ok(DenseRgbdOdometryEstimate {
         pose,
         iterations,
@@ -469,16 +471,33 @@ fn linearize(
     total
 }
 
-fn check_support(rows: &Normal, options: &DenseRgbdOdometryOptions) -> VisionResult<()> {
+#[derive(Clone, Copy)]
+enum SupportStage {
+    Linearization { level: usize, iteration: usize },
+    Final,
+}
+
+fn check_support(
+    rows: &Normal,
+    options: &DenseRgbdOdometryOptions,
+    stage: SupportStage,
+) -> VisionResult<()> {
+    let fraction = if rows.valid == 0 { 0.0 } else { rows.count as f64 / rows.valid as f64 };
     if rows.valid == 0
         || rows.count < options.min_correspondences
-        || (rows.count as f64) / (rows.valid as f64) < options.min_correspondence_fraction
+        || (matches!(stage, SupportStage::Final) && fraction < options.min_correspondence_fraction)
         || !rows.photo_sse.is_finite()
         || !rows.depth_sse.is_finite()
     {
-        return Err(VisionError::InvalidParameter(
-            "insufficient or nonfinite dense RGB-D support".into(),
-        ));
+        let context = match stage {
+            SupportStage::Linearization { level, iteration } => {
+                format!("level {level}, iteration {iteration}")
+            }
+            SupportStage::Final => "returned full-resolution pose".to_string(),
+        };
+        return Err(VisionError::InvalidParameter(format!(
+            "insufficient or nonfinite dense RGB-D support at {context}: {}/{} correspondences ({fraction}), minimum count {}, final fraction {}",
+            rows.count,rows.valid,options.min_correspondences,options.min_correspondence_fraction)));
     }
     Ok(())
 }
@@ -562,6 +581,63 @@ mod tests {
             (pose.transform_point(Vec3::new(1.0, 0.0, 0.0)) - Vec3::new(0.0, 2.0, 0.0)).length()
                 < 1e-12
         );
+    }
+
+    #[test]
+    fn low_initial_overlap_can_recover_final_support() {
+        let (source_gray, source_depth) = images(0.0, 2.0);
+        let angle = 0.05_f64;
+        let (s, c) = angle.sin_cos();
+        let mut gray = Vec::new();
+        let mut depth = Vec::new();
+        for y in 0..72 {
+            for x in 0..96 {
+                let ray_x = (x as f64 - 48.0) / 64.0;
+                let ray_y = (y as f64 - 36.0) / 64.0;
+                let z = 2.0 / (c + s * ray_x);
+                let source_x = 64.0 * z * (c * ray_x - s) / 2.0 + 48.0;
+                let source_y = 64.0 * z * ray_y / 2.0 + 36.0;
+                gray.push(texture(source_x, source_y));
+                depth.push(z as f32);
+            }
+        }
+        let target_gray = Image::<u8, 1>::try_new(96, 72, gray).unwrap();
+        let target_depth = Image::<f32, 1>::try_new(96, 72, depth).unwrap();
+        let source = DenseRgbdFrame::try_new(source_gray.view(), source_depth.view()).unwrap();
+        let target = DenseRgbdFrame::try_new(target_gray.view(), target_depth.view()).unwrap();
+        let options = DenseRgbdOdometryOptions::default();
+        let a = pyramid(source, &options);
+        let b = pyramid(target, &options);
+        let initial = linearize(&a[0], &b[0], scaled_camera(camera(), 0), identity(), &options);
+        assert!((initial.count as f64 / initial.valid as f64) < 0.5);
+        let result =
+            estimate_dense_rgbd_odometry(source, target, camera(), identity(), &options).unwrap();
+        let expected = Mat3::from_rows([c, 0.0, s], [0.0, 1.0, 0.0], [-s, 0.0, c]);
+        for (actual, truth) in
+            result.pose.rotation().m.iter().flatten().zip(expected.m.iter().flatten())
+        {
+            assert!((actual - truth).abs() < 1e-3);
+        }
+        assert!(result.pose.translation().length() < 0.003);
+        assert!(result.correspondence_fraction > 0.8 && result.photometric_rmse < 1.0 / 255.0);
+    }
+
+    #[test]
+    fn an_exact_but_small_overlap_is_still_rejected_at_return() {
+        let (gray, source_depth) = images(0.0, 2.0);
+        let mut values = vec![0.0; 96 * 72];
+        for y in 0..72 {
+            for x in 30..55 {
+                values[y * 96 + x] = 2.0;
+            }
+        }
+        let target_depth = Image::<f32, 1>::try_new(96, 72, values).unwrap();
+        let source = DenseRgbdFrame::try_new(gray.view(), source_depth.view()).unwrap();
+        let target = DenseRgbdFrame::try_new(gray.view(), target_depth.view()).unwrap();
+        let options = DenseRgbdOdometryOptions { iterations: vec![1], ..Default::default() };
+        let error = estimate_dense_rgbd_odometry(source, target, camera(), identity(), &options)
+            .unwrap_err();
+        assert!(error.to_string().contains("returned full-resolution pose"));
     }
 
     #[test]

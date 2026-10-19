@@ -36,7 +36,7 @@ pyramid/reduction payloads are preflighted against 128MiB before allocation.
 Input Python copies and thread/allocator overhead are recorded or excluded
 explicitly; these counters do not measure peak process or GPU memory.
 
-## Fixed full-sequence experiment
+## Fixed full-sequence experiment: initial strict-iteration policy
 
 Use existing registered TUM Freiburg 1 xyz and rpy frames under
 `E:/SpatialRustData/maturity-80/`, retaining all 798/722 planned rows. Bind exact
@@ -75,3 +75,28 @@ build, cache and temporary outputs stay on E with a 20GiB free floor; cap new
 study outputs at 1GiB. Publish hashes, bounded storage and all actual outcomes.
 Canonical measured clock/physical calibration, Linux hardware operations and
 release acceptance remain separate open requirements for the operational 80% goal.
+
+## Explicit final-acceptance solver revision
+
+The first source/wheel at `ece33c25513c757958f5b7b1780bdd087125cade` preserves
+xyz 75/798 and rpy 1/722; both fail. All 1,520 planned rows, scores and audits
+are frozen before diagnosis. Independent identity-warp checks at the first
+failed intervals find 0.517172 initial fraction for xyz and 0.331943 for rpy.
+A separately rendered 0.05-radian planar scene reproduces rejection from a
+below-50% initial hypothesis although the correct pose has high overlap.
+
+The revised native solver requires >=30 correspondences, finite residuals and
+a nonsingular normal system while fitting. The unchanged >=0.5 fraction is
+checked on the returned full-resolution pose. This separates a numerical
+hypothesis from an accepted estimate; no final confidence, geometric support
+or accuracy limit changes. All numeric options, objective, pyramid, iterations,
+identity initialization and datasets remain fixed. Richer support errors report
+level/iteration/counts. Native receipts declare `final_support_only`; adapters
+reject a mismatching solver policy rather than silently relabeling old plans.
+
+The two separately named `tum-fr1-{xyz,rpy}-dense-final-overlap-plan.json` plans
+are committed before revised native/full-data execution. Keep the original
+strict-policy wheel/extension and results; build a new E-drive wheel/environment
+and use fresh `prepared/run/evaluation/audit` directories. Freeze both revised
+estimates before new scores, and rerun independent projective/trajectory audits.
+The original source and plans remain reproducible with their frozen old binary.

@@ -28,6 +28,7 @@ def test_known_metric_source_to_target_motion_and_owned_outputs():
     assert report['depth_rmse_m'] < 1e-5 and report['photometric_rmse'] < 1e-4
     assert report['valid_source_pixels'] == 96*72
     assert report['input_copy_bytes'] == 96*72*10
+    assert report['final_support_only'] is True
     assert report['working_bytes'] <= 128*1024**2 and 1 <= report['workers'] <= 4
     for actual, expected in zip((*source, *target), originals):
         np.testing.assert_array_equal(actual, expected)
@@ -77,6 +78,14 @@ def test_shape_dtype_and_unobservable_scene_rejection():
     flat = np.full_like(gray, 100)
     with pytest.raises(ValueError):
         estimate((flat, depth), (flat, depth))
+
+
+def test_low_final_overlap_is_rejected_even_with_zero_residual():
+    gray, depth = images()
+    target = np.zeros_like(depth)
+    target[:, 30:55] = 2
+    with pytest.raises(ValueError, match='returned full-resolution pose'):
+        estimate((gray, depth), (gray, target), iterations=[1])
 
 
 def test_simultaneous_native_calls_keep_independent_owned_results():
