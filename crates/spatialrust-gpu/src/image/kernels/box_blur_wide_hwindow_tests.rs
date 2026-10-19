@@ -529,3 +529,6 @@ mod four_horizontal_windows;
 
 #[path = "box_blur_row_prefix_tests.rs"]
 mod row_prefix;
+
+#[path = "box_blur_column_prefix_tests.rs"]
+mod column_prefix;

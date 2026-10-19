@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Compute eligible tall GPU box-blur columns with exact bounded u32 shared
+  prefixes, preserving original scratch, two passes, receipts and explicit
+  transfers. A seventh lazy program has a whole-column overflow guard. 191
+  native executions and all 108 warm/12 fresh-cache comparisons are in
+  `notes/2026-10-19_gpu_box_blur_column_prefixes.md`.
+
 - Compute eligible wide GPU box-blur row sums with exact workgroup-local u32
   prefixes, preserving two passes, scratch/transfers and all original fallback
   shaders. A lazy sixth program uses 16KiB shared memory. 188 native

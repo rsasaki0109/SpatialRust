@@ -30,6 +30,15 @@ history and report actual work with saturating counters. Changed shapes and
 standalone resize retain original behavior. See
 [identity-chain evidence](../notes/2026-10-18_identity_gpu_vision_chain_resize.md).
 
+Eligible unpacked GPU box-blur columns use interleaved workgroup-local u32
+prefixes for width >=128, height 512..4096 and both kernels >=259, with 16KiB
+shared storage and `height*kernel_width*255 <= u32::MAX`. A seventh lazy final
+pipeline combines with the horizontal choices while retaining original scratch,
+two passes, receipts and explicit transfers. Outside these bounds the original
+vertical pass remains available. See
+[column-prefix evidence](../notes/2026-10-19_gpu_box_blur_column_prefixes.md)
+for integer proof, ownership and warm/first-use tradeoffs.
+
 Eligible wide GPU box-blur rows use a workgroup-local exclusive u32 prefix:
 widths 512..4096, at least 128 rows and kernel width at least 259, with a 16KiB
 workgroup-storage capability guard. A sixth lazy horizontal pipeline retains
