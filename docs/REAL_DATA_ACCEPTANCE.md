@@ -48,7 +48,7 @@ The rosbag2 SQLite snapshot is:
 | --- | --- |
 | Storage | `sqlite3` |
 | Size | `713670656` bytes |
-| SHA-256 | `b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c` |
+| SHA-256 | `b00d31e25dc0b53cba89cfbe16e5b118079c514a1d8c6f4089fac9c0e3ffd7c8` |
 | Duration | `76854162986` ns |
 | Starting timestamp | `1600901887524769241` ns since epoch |
 | Total messages | `1535` |

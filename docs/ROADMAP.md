@@ -1038,6 +1038,7 @@ without accurate reference motion do not establish operational acceptance.
 | --- | --- | --- | --- |
 | 141A | Complete | Canonical external input snapshot, topic counts, output hashes, storage policy, and fail-closed downstream gates | [`docs/REAL_DATA_ACCEPTANCE.md`](REAL_DATA_ACCEPTANCE.md) |
 | 141B | Complete | Automated absolute-root/free-space preflight and local checksum manifest validation | `storage-preflight`, `DatasetManifest::validate_local_files`, and rosbag2 CLI smoke |
+| 141C | Active: protocol fixed | Public canonical reacquisition, publisher-bound front/rear configuration and native partial admission | `docs/PUBLIC_AUTOWARE_FRAME_EVIDENCE.md`; no independent physical accuracy or clock calibration claim |
 
 ### Epic 142 progress
 
