@@ -65,3 +65,35 @@ measurements. After implementation, tests and source/plan/binary freezing, run
 both full scenes, audit, commit outcomes, PR and merge. Native rpy/held-out,
 canonical measured clock/physical frame accuracy, both raw Linux hardware
 classes and full mapping/semantic/release acceptance remain explicit 80% gates.
+
+## Pre-fit implementation validation
+
+Model/plan commit `8414866` precedes implementation and fitting. Numerical source
+`ef77631` adds the typed `DenseRgbdPreprocessing` and checked working-byte policy;
+Python's `preprocessing` keyword remains `raw` by default. Gaussian3 row tiles
+share the existing private four-worker pool and are serial on WASM.
+
+Native dense tests pass 13/13, including impulse/border weights, missing taps,
+raw final denominators, exact added-plane charging and serial/parallel bit
+equality with partial tiles. Native and Python-bridge Clippy pass. Focused Python
+tests pass 49/49; the full installed-wheel suite passes 1,043 with three existing
+optional ONNX skips. The new 25 cases independently recompute raw statistics,
+check ownership/strides/concurrent calls, fixed controls, causal state and
+generator/auditor loss behavior. Installed wheel bytes, ICP/support and PCD
+round-trip checks pass.
+
+Five identical synthetic raw-default cases were run separately through the
+preserved old module and the new one: identity, one-pixel and fractional-pixel
+motion, a depth hole and an explicit seed. Serialized poses and original
+diagnostics agree exactly, excluding only the new policy identifier. New module
+SHA-256 is `46f4434b0b6456a3ea564d2a7f1f7c4c942ce4979348d6a06e9eed36ef9611a6`.
+All old frozen modules/wheels/executables retain their hashes.
+
+The first native-test launcher failed before creating a process because Windows
+lookup did not use the child PATH; its empty log is preserved and Cargo now uses
+an absolute path. One Clippy observer encountered an atomically removed compiler
+temporary file; after confirming no matching Cargo process remained, the bounded
+verification was repeated successfully with disappearing-entry-aware inventory.
+No fit/model/threshold was altered. Passing scratch alone reclaimed 397,598,601
+logical bytes; keep all XML/logs and both startup/observer records. These checks
+precede complete-scene estimation and do not establish trajectory acceptance.

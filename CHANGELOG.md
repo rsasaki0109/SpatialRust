@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add explicit native dense RGB-D Gaussian3 fitting inputs with a typed policy,
+  safe owned Python keyword, checked added-buffer charges and deterministic CPU
+  row tiles. The raw default and final statistics on original images retain
+  their contracts. Native 13 tests, focused Python 49 tests, full Python 1,043
+  passes/3 optional skips, native/bridge Clippy and exact five-case old/new raw
+  regression pass before fitting; complete-scene evidence follows the fixed
+  `docs/GAUSSIAN_DENSE_RGBD_VALIDATION.md` protocol.
+
 - Add a fixed full-scene Open3D CPU RGB-D comparator with owned adjacent images,
   one causal relative seed and independent raw projective/world/score auditing.
   Both complete development runs pass existing gates (xyz ATE/RPE

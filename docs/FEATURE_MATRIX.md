@@ -50,6 +50,13 @@ and 1s RPE 0.023110/0.048494m; all 1,518 projective/seed pairs and both trajecto
 scores are independently audited. This external control adds no production
 dependency or native solver change. Native rpy accuracy remains unaccepted.
 
+The explicit native `DenseRgbdPreprocessing::Gaussian3` policy and Python
+`preprocessing="gaussian3"` select full-resolution filtered fitting. The raw
+default and final raw image admission remain; checked working bytes charge
+retained original levels. Gaussian3 shares bounded deterministic CPU row tiles.
+See [the prospective native preprocessing study](GAUSSIAN_DENSE_RGBD_VALIDATION.md).
+This optional policy awaits complete-scene accuracy evidence.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree
