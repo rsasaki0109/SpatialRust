@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Parallel neighborhood readback keeps the parent production decoder. A native
+test-only direct-row candidate moves unchanged validation and collection into
+the worker loop, but complete-call improvement did not repeat across initial
+surveys and CPU controls regressed. Production selection, count-only/serial
+paths, GPU work and explicit transfers remain unchanged. See
+[direct parallel row evidence](../notes/2026-10-19_direct_parallel_neighborhood_rows.md)
+for all native/exploratory comparisons and shared-host limitations.
+
 Count-only GPU neighborhood readbacks at 65,536 or more queries use complete
 integer-OR header validation before bulk owned outputs. Capacity-zero radius
 counts preserve all u32 values; nearest-k requires both headers zero. Smaller
