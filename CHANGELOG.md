@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add explicit initial-correspondence pair-mean gray fitting with original
+  depth and raw final admission. Keep older selectors, defaults and all gates;
+  native 20/focused Python 106/full Python 1,100 passes with 3 optional skips,
+  Clippy/WASM and exact 15-case old/new selector regression pass before fitting.
+  Preserve the initial test-type compile failure and reclaim 560MB of verified
+  passing scratch. Full-scene evidence follows the fixed contract in
+  `docs/PAIR_MEAN_DENSE_RGBD_VALIDATION.md`.
+
 - Add an explicit gray-only Gaussian3 dense fitting policy with original depth,
   unchanged raw final admission and bounded deterministic CPU execution. Keep
   raw/joint selectors and defaults; native 15, focused Python 75, full Python

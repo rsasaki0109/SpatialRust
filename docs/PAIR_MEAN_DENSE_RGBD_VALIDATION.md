@@ -68,3 +68,32 @@ frame accuracy, both raw Linux hardware classes and full mapping/semantic/
 release acceptance remain in the 80% audit. Implementation tests alone do not
 establish trajectory or operational acceptance. Deliver tests, complete
 evidence, PR and merge for this single family.
+
+## Pre-fit implementation validation
+
+Protocol `7606269` precedes implementation. Source `c6fdb50` adds the typed
+selector, safe owned Python bridge and independent mean/gain tests. The first
+native test compile rejects an ambiguous `Mat3::identity()` in an added test;
+`3366ea5` specifies `Mat3<f64>` without changing the estimator. Preserve that
+failed compile and its log. The corrected native suite passes 20/20, including
+independent initial-pose/depth admission, missing corners, zero/nonfinite mean
+rejection before mutation, gain-only brightness correction with original raw
+diagnostics and exact parallel/serial multiplication. Native/bridge Clippy and
+the WASM compile check pass.
+
+The dedicated installed wheel passes all 106 focused Python cases and the full
+suite's 1,100 tests, with three existing optional ONNX skips. The 31 new cases
+cover the explicit policy, original raw measurements, ownership/strides,
+concurrent calls, fixed normalization/seed/camera/gates and lost-chain audits.
+Installed bytes, ICP/support and exact PCD round-trip checks pass.
+
+Fifteen synthetic old/new-wheel cases (five each for raw, joint Gaussian3 and
+gray-only Gaussian3) have identical serialized numerical poses and original
+diagnostics; their policy tags are checked separately. This is a synthetic
+regression check, not a full real-sequence equivalence claim. The new module
+SHA-256 is `ee9063970899e05c9b6d8987e2c0d1e19238cf83827356f037b7cf9ad221295c`.
+
+All previous frozen native files retain their hashes. Only two explicitly
+owned passing pytest roots are removed after the XML/path/reparse checks,
+reclaiming 560,093,288 logical bytes. No real fitting has started at this
+checkpoint; trajectory acceptance remains unproven.
