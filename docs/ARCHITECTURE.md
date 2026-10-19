@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Robust PnP keeps its selected proper hypothesis through optional final refitting.
+The same inlier-count/Euclidean-error ordering admits improvements; errors and
+worse/tied candidates retain the selected pose with consistent original-order
+rows. Existing owned output buffers are reused, with a restoration projection
+pass on a valid rejected candidate. No public API, threshold, core dependency
+or CPU/GPU transfer changes. See
+[consensus-preservation evidence](PNP_CONSENSUS_VALIDATION.md).
+
 Experimental RGB-D keyframes retain one owned source depth and original landmark
 IDs while last-frame pixels advance through native LK. Metric PnP poses compose
 through the same keyframe before world chaining; fixed promotion never resets
