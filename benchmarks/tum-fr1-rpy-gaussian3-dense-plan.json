@@ -1,0 +1,123 @@
+{
+  "acceptance": {
+    "basis": "Unchanged engineering completeness/coverage/ATE/RPE limits from the previous plane study. Fixed before first image-tracking/PnP fitting; not publisher accuracy requirements or physical calibration guarantees.",
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_one_second_translation_rpe_rmse_m": 0.05,
+    "minimum_evaluated_fraction": 0.95,
+    "minimum_generated_fraction": 1.0
+  },
+  "calibration": {
+    "axes": "x right, y down, z forward",
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration.",
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "fx": 525.0,
+    "fy": 525.0,
+    "height": 480,
+    "sensor_frame": "tum_rgb_optical",
+    "width": 640
+  },
+  "controls": {
+    "dense_fitting_preprocessing": {
+      "border": "replicate",
+      "depth_missing": "any invalid tap makes filtered depth missing",
+      "divisor": 16,
+      "final_statistics": "original raw full-resolution images",
+      "intensity_normalization": false,
+      "kernel": [
+        1,
+        2,
+        1
+      ],
+      "preprocessing": "gaussian3"
+    },
+    "dense_rgbd_odometry": {
+      "depth_weight": 0.968,
+      "epsilon": 1e-07,
+      "iterations": [
+        20,
+        10,
+        5
+      ],
+      "max_depth": 5.0,
+      "max_depth_difference": 0.03,
+      "max_working_bytes": 134217728,
+      "min_correspondence_fraction": 0.5,
+      "min_correspondences": 30,
+      "min_depth": 0.1
+    },
+    "evaluation_max_gap_ns": 20000000,
+    "io_stride": 60,
+    "max_depth_m": 5.0,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "projection_tolerance_m": 1e-06,
+    "rgb_max_gap_ns": 20000000,
+    "rgbd_odometry": {
+      "epsilon": 0.001,
+      "image_margin": 40,
+      "max_features": 300,
+      "max_forward_backward_error": 0.75,
+      "max_iterations": 30,
+      "min_distance": 10.0,
+      "min_eigenvalue": 0.0001,
+      "min_inlier_fraction": 0.5,
+      "min_inliers": 15,
+      "min_tracks": 20,
+      "pnp_threshold": 2.0,
+      "pyramid_levels": 4,
+      "quality_level": 0.01,
+      "window_radius": 10
+    },
+    "rpe_delta_ns": 1000000000,
+    "stages": [
+      {
+        "gate_m": 0.2,
+        "iterations": 20,
+        "leaf_m": 0.1
+      },
+      {
+        "gate_m": 0.1,
+        "iterations": 20,
+        "leaf_m": 0.05
+      }
+    ]
+  },
+  "dense_initialization": {
+    "first_pair": "identity",
+    "reference_initialization": false,
+    "reset_after_loss": false,
+    "retries": false,
+    "subsequent_pairs": "previous returned source-to-target increment",
+    "time_rescaling": false
+  },
+  "dense_support_policy": "Minimum count and a nonsingular system for initial/intermediate hypotheses; the unchanged 0.5 full-resolution correspondence fraction applies to the returned pose. The independent full-cloud support and complete trajectory accuracy gates are unchanged.",
+  "estimator": "spatialrust_gaussian3_dense_rgbd_cpu",
+  "generation": "All original adjacent frames with the previous returned source-to-target increment, starting identity. Native fitting uses owned float64 Gaussian3 gray/depth at full resolution before the unchanged pyramid. Final support/residuals use original raw images. No reference, rescale, retries, selection or lost-chain reset.",
+  "limits": {
+    "max_frames": 10000,
+    "max_member_bytes": 16777216,
+    "max_members": 30000,
+    "max_total_bytes": 8589934592
+  },
+  "native_refinement_policy": "Only the explicit full-resolution fitting input policy changes. No brightness normalization, derivative, update, stopping, downsample, numeric-control or final admission change. Charge both retained raw levels before allocating fit buffers.",
+  "observed_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz",
+  "prior_algorithm_plan_sha256": "52af9d7601b73cefddd9a65d87ee7ccf1f1465e892afe5f695dc62fba84a7cdf",
+  "prior_causal_dense_lf_sha256": "b6d5d39345b164d454658d89c0033d6ab81dfb057156885dd6c597aae0b269ec",
+  "prior_consensus_plan_sha256": "39275599e62e582aafd6a6f8e018fceed12dbed25721441fc2a8f1eaa16002b4",
+  "prior_dense_protocol_sha256": "162c74968e46fef2bf30f25d2df3625209e23855957aee7a8ef530ed438cff66",
+  "prior_dense_source_plan_sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781",
+  "prior_final_overlap_plan_sha256": "fbd41ca5c1357209483b244987fb34d013a198615780a26f80ca91795a90b266",
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "scope": "Prospective preprocessing block on two observed development scenes; preserve native causal and external comparator controls and all failures. Freeze both complete timelines before either reference score. No held-out, equivalence or speed claim. Canonical clock/physical calibration, raw Linux classes and full mapping/release remain open.",
+  "sequence": "rgbd_dataset_freiburg1_rpy",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz"
+}

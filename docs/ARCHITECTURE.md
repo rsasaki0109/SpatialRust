@@ -6,6 +6,11 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+An explicit native dense fitting policy can filter full-resolution inputs while
+retaining original raw levels for final admission. Checked preflight charges
+all additional planes; the raw default, safe owned Python boundary and core/GPU
+contracts remain. See [the prospective Gaussian3 protocol](GAUSSIAN_DENSE_RGBD_VALIDATION.md).
+
 A separately fixed CPU comparator owns its adjacent RGB-D inputs and one causal
 relative seed. The existing generator retains full-cloud/world/IO admission;
 bounded raw projective validation is separate from the external estimator's
