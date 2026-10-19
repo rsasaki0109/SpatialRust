@@ -1,0 +1,93 @@
+{
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "sequence": "rgbd_dataset_freiburg1_xyz",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+  "observed_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "calibration": {
+    "sensor_frame": "tum_rgb_optical",
+    "axes": "x right, y down, z forward",
+    "width": 640,
+    "height": 480,
+    "fx": 525.0,
+    "fy": 525.0,
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration."
+  },
+  "limits": {
+    "max_frames": 10000,
+    "max_members": 30000,
+    "max_member_bytes": 16777216,
+    "max_total_bytes": 8589934592
+  },
+  "controls": {
+    "rgb_max_gap_ns": 20000000,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "max_depth_m": 5.0,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "projection_tolerance_m": 1e-06,
+    "io_stride": 60,
+    "stages": [
+      {
+        "leaf_m": 0.1,
+        "gate_m": 0.2,
+        "iterations": 20
+      },
+      {
+        "leaf_m": 0.05,
+        "gate_m": 0.1,
+        "iterations": 20
+      }
+    ],
+    "evaluation_max_gap_ns": 20000000,
+    "rpe_delta_ns": 1000000000,
+    "rgbd_odometry": {
+      "max_features": 300,
+      "quality_level": 0.01,
+      "min_distance": 10.0,
+      "image_margin": 40,
+      "window_radius": 5,
+      "pyramid_levels": 3,
+      "max_iterations": 30,
+      "epsilon": 0.001,
+      "min_eigenvalue": 0.0001,
+      "max_forward_backward_error": 0.75,
+      "pnp_threshold": 2.0,
+      "min_tracks": 20,
+      "min_inliers": 15,
+      "min_inlier_fraction": 0.5
+    },
+    "rgbd_keyframe": {
+      "interval_frames": 30,
+      "retention": "pnp_inliers"
+    },
+    "rgbd_adaptive_keyframe": {
+      "maximum_candidate_features": 900,
+      "maximum_retained_features": 300,
+      "depth_patch_radius": 1,
+      "absolute_deviation_depth_counts": 100,
+      "relative_deviation_denominator": 50,
+      "minimum_retained_tracks": 60
+    }
+  },
+  "generation": "Retain all original input frames, raw projection/typed IO, support and accuracy gates. Detect at most 900 Shi-Tomasi candidates with original quality/distance/margin. Admit at most the first 300 with all nine 3x3 raw depth counts in [500,25000] and 50*maximum_deviation <= max(5000,median_count); replace only owned selected source-depth samples by their integer median. Use the original 0.75px LK/2px PnP/20-track/15-inlier/0.5-fraction gates. Promote the previous accepted frame at age 30 or when fewer than 60 geometric-inlier tracks survive; preserve the world chain, all failures and no recovery resets. Source input files are never filtered or modified.",
+  "scope": "Second protocol fixed after preserving every fixed-keyframe failure on both already observed development scenes. Local source-depth quality and input-count promotion are algorithm changes, not relaxed acceptance gates. No held-out claim, reference initialization, scale fit, after-fit tuning or production-default change.",
+  "estimator": "spatialrust_adaptive_keyframe_rgbd_pnp_cpu",
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+  "acceptance": {
+    "minimum_generated_fraction": 1.0,
+    "minimum_evaluated_fraction": 0.95,
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_one_second_translation_rpe_rmse_m": 0.05,
+    "basis": "Unchanged engineering completeness/coverage/ATE/RPE limits from the previous plane study. Fixed before first image-tracking/PnP fitting; not publisher accuracy requirements or physical calibration guarantees."
+  },
+  "prior_rgbd_plan_sha256": "f85dd80fa03d8ec0651c748b246459e8bbdb560a6cd335bfc43cf08666dec10e",
+  "prior_fixed_keyframe_plan_sha256": "7180c354e79cf5e5729c9bde34353885c3134eb5f213ce524c3922555744f11f"
+}

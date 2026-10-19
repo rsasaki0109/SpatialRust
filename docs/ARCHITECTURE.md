@@ -6,6 +6,17 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Experimental RGB-D keyframes retain one owned source depth and original landmark
+IDs while last-frame pixels advance through native LK. Metric PnP poses compose
+through the same keyframe before world chaining; fixed promotion never resets
+the world gauge. A separately fixed revision selects bounded local-depth
+consensus landmarks and promotes from the previous frame before input-track
+starvation, preserving the same native/geometry/accuracy gates. Source-bound
+external inputs can share hard-linked PNGs under
+a separately frozen plan, with no silent payload-copy fallback. Defaults and
+full-cloud/failure/accuracy gates remain. See
+[the fixed keyframe RGB-D protocol](TUM_KEYFRAME_RGBD_VALIDATION.md).
+
 Public canonical frame evidence is an explicit offline adaptation of pinned
 publisher configuration. Complete source hashes and every bounded sensor header
 are checked before emitting the existing frame schema outside the repository.

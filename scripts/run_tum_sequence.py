@@ -149,7 +149,8 @@ def decode_rgb_gray(raw, camera):
 def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
              method='spatialrust_cpu', additional_bindings=(), rgbd_aligner=None):
     """Run native ICP by default; explicit adapters serve separate baseline studies."""
-    image_method = method == 'spatialrust_rgbd_pnp_cpu'
+    image_method = method in ('spatialrust_rgbd_pnp_cpu', 'spatialrust_keyframe_rgbd_pnp_cpu',
+                              'spatialrust_adaptive_keyframe_rgbd_pnp_cpu')
     if image_method:
         if rgbd_aligner is None or pair_aligner is not None:
             raise ValueError('RGB-D method requires its explicit image adapter only')
