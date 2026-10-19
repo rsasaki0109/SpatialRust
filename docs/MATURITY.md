@@ -56,6 +56,18 @@ with three optional skips. All four real cases still fail at least one original
 motion gate, so the operational assessment stays **63%**. See
 [the numerical fix and every full/prefix result](PNP_CONSENSUS_VALIDATION.md).
 
+A separately fixed radius-10/four-level LK capture study completes both xyz
+frontends, but ATE is 0.114557m stateless / 0.144424m adaptive, both above 0.10m.
+Adaptive rpy extends 2 -> 59/722 frames; stateless remains 2/722. All four cases
+fail at least one original gate, with all 3,040 planned rows and 16 older result
+hashes retained. Four independent audits, 318,435 landmark checks and 32 exact
+typed IO audits pass. Installed Python passes 868 cases with three optional
+skips. Post-freeze same-row PnP comparison yields 56/126 inliers for both native
+and OpenCV; native PnP on OpenCV LK tracks gives 58/128, still below the 50% gate.
+These diagnostics do not establish the physical cause or accepted motion. No
+production defaults, native binaries or acceptance limits change. The estimate
+stays **63%**; see [all capture outcomes and diagnostic limits](WIDE_RGBD_CAPTURE_VALIDATION.md).
+
 The operational goal stays active. See [public GPU evidence](PUBLIC_GPU_RGBD_CONFORMANCE.md).
 See [the complete protocol and failures](TUM_RGBD_MOTION_VALIDATION.md).
 

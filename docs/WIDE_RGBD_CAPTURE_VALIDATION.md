@@ -84,12 +84,83 @@ throughput ranking or GPU acceleration claim.
 
 ## Results
 
-Before public fitting: the final installed-wheel suite passes 868 cases with
-three optional ONNX skips. All 71 focused cases pass, including 31 new cases
-for strict plans, explicit parent-bound reuse, native forwarding/row ownership,
-noncommuting pose direction and complete lost timelines. Changed Python files
-parse as Python 3.8. Native source and both frozen extensions are unchanged.
-Public candidate fitting and all reference scores remain pending.
-No partial result establishes the operational 80% goal. Canonical measured
-clock/physical calibration, Linux hardware-GPU execution and the public-release
-boundary remain separate unresolved requirements.
+Implementation and four fixed plans were committed at
+`a6acccc80e97aed46055a6cfede9898720ddc04f` before any candidate fit. All four
+estimates were frozen before new reference scoring. See
+[the compact complete record](receipts/2026-10-19_wide_rgbd_capture.json).
+
+| Method / scene | Generated | Evaluated | ATE RMSE (m) | 1s RPE RMSE (m) | Accepted |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Frozen parent xyz-rgbd | 798/798 | 795 | 0.122263 | 0.035838 | No |
+| Wide xyz-rgbd | 798/798 | 795 | 0.114557 | 0.038457 | No |
+| Frozen parent xyz-adaptive | 798/798 | 795 | 0.118821 | 0.028585 | No |
+| Wide xyz-adaptive | 798/798 | 795 | 0.144424 | 0.039448 | No |
+| Frozen parent rpy-rgbd | 2/722 | 2 | 0.011220 | unavailable | No |
+| Wide rpy-rgbd | 2/722 | 2 | 0.015445 | unavailable | No |
+| Frozen parent rpy-adaptive | 2/722 | 2 | 0.005037 | unavailable | No |
+| Wide rpy-adaptive | 59/722 | 59 | 0.084487 | 0.124613 | No |
+
+0 of four new cases meet every original gate. Incomplete-case ATE/RPE
+covers only the accepted prefix and cannot establish complete-motion improvement.
+Every one of the 3,040 planned rows, reference gaps and uncovered one-second pairs
+is retained. All 16 older estimate/score hashes remain unchanged. The only
+settings change is the committed radius-10/four-level LK capture configuration.
+
+All four independent SciPy score audits pass unchanged 1e-8m/1e-6degree limits.
+Source-depth/landmark IDs, returned-pose PnP masks and causal world/keyframe
+composition independently match across 318,435 landmark rows. All 32 typed IO
+audits are exact. Full installed-wheel Python passes 868 cases with three optional
+ONNX skips, and all 71 focused cases pass. Changed source parses as Python 3.8.
+Native source, loaded extension, old wheel and old extension remain unchanged;
+no native rebuild or dependency installation is needed. Hosted checks remain
+required before merge.
+
+Checked hard links reuse 1,836,299,360 logical input bytes, with zero new archive or
+image payload copies. New run/evaluation/audit files use 410,826,962 logical bytes.
+Five successful dedicated pytest basetemps reclaim 773,231,900 logical bytes;
+XML/logs, input data, native wheel/cache and every old/new frozen result remain.
+These are logical sizes, not allocated-cluster/free-space deltas. The minimum
+output free space remains 20GiB and all data/temp/cache writes use E.
+
+## Post-freeze solver diagnosis
+
+After all full estimates/scores are frozen, one exact failed rpy interval
+(rows 1 -> 2) is replayed independently. Original registered PNG bytes, controls,
+frame associations and the loaded native extension are checked. Captured RGB-D
+correspondences reproduce the same native direct-PnP pose, mask and admission
+error. All diagnostic sensor arrays remain external and are hash-bound.
+
+The same 126 supplied float64 rows, camera and 2px criterion are passed once to
+the existing OpenCV 4.13.0 EPnP RANSAC (seed 0, confidence .99, 2,000 maximum
+iterations). All returned models are independently rescored on original float64
+rows. Native has 56 inliers; OpenCV rescoring has 56. This
+is numerical fitting evidence for one failed interval, not a motion/calibration
+accuracy result, equivalent-algorithm test or replacement full trajectory.
+
+OpenCV uses a five-point EPnP RANSAC model and internally converts inputs to
+float32 in its pinned legacy implementation; native uses six-point hypotheses.
+Sampling, initialization and fitting differ. These limits are explicit in the
+[versioned primary implementation](https://raw.githubusercontent.com/opencv/opencv/4.13.0/modules/calib3d/src/solvepnp.cpp)
+and [official pose documentation](https://docs.opencv.org/4.13.0/d5/d1f/calib3d_solvePnP.html).
+OpenCV is an already installed private diagnostic dependency; this change adds
+no production dependency or solver fallback.
+
+The receipt also retains the native cold fit attempted on the independently
+rescored OpenCV inlier subset. No reference motion or search over alternative
+capture settings is used in this diagnostic. It informs subsequent native solver
+work without rewriting any failed result above.
+
+An additional post-freeze LK comparison uses the same two RGB images and all
+203 initial native detector points. Native accepts 126 forward/backward tracks;
+OpenCV accepts 128. On jointly accepted points the median target difference is
+0.022385px; only two differ by more than 2px. Feeding the OpenCV tracks into the
+same unchanged native PnP yields 58/128 inliers, still below 50%. Different
+pyramids, gradients, precision, border handling and eigen-admission semantics
+remain explicit. Neither this solver replacement nor this tracking replacement
+accepts the interval; the diagnostic does not establish a physical cause. Depth,
+registration/time consistency and wider real-motion robustness remain open.
+These are two retained numerical diagnostics, not new full-trajectory candidates.
+
+Canonical measured clock/physical calibration, Linux hardware-GPU execution and
+the public-release boundary remain separate requirements. This study does not
+prove the operational 80% goal.
