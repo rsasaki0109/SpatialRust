@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Dense projective RGB-D uses a dedicated optional vision feature with checked
+borrowed grayscale/metric-depth views for both frames, calibrated pinhole data,
+an explicit initial pose and preflighted owned CPU pyramids. Fixed ordered row
+tiles bound private CPU workers; the Python adapter owns all inputs before
+releasing the GIL. No core dependency, unsafe block, hidden device transfer or
+change to sparse tracking defaults is introduced. See the
+[dense RGB-D protocol](DENSE_RGBD_ODOMETRY_VALIDATION.md).
+
 Hardware coverage audits consume explicit process receipts and complete fixed
 frame sets; finite errors, exact counts/transfers and retained-pool bounds are
 checked separately from hardware class coverage. The isolated WSL2 Dozen

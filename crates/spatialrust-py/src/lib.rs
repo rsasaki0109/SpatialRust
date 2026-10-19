@@ -129,6 +129,10 @@ use spatialrust::vision::{
     ThresholdType, TrackState,
 };
 use spatialrust::vision::{
+    estimate_dense_rgbd_odometry as estimate_dense_rgbd_odometry_op, DenseRgbdFrame,
+    DenseRgbdOdometryOptions,
+};
+use spatialrust::vision::{
     track_points_forward_backward as track_points_forward_backward_op, LucasKanadeOptions,
     RobustTrackOptions,
 };
@@ -4205,6 +4209,125 @@ fn estimate_rgbd_odometry<'py>(
     ))
 }
 
+/// Dense metric motion from explicit source/target grayscale and depth images.
+#[pyfunction]
+#[pyo3(signature = (source_gray, source_depth, target_gray, target_depth, fx, fy, cx, cy, *, initial=None, iterations=None, min_depth=0.1, max_depth=5.0, max_depth_difference=0.03, depth_weight=0.968, min_correspondences=30, min_correspondence_fraction=0.5, epsilon=1e-7, max_working_bytes=134217728))]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+fn estimate_dense_rgbd_odometry<'py>(
+    py: Python<'py>,
+    source_gray: PyReadonlyArray2<'_, u8>,
+    source_depth: PyReadonlyArray2<'_, f32>,
+    target_gray: PyReadonlyArray2<'_, u8>,
+    target_depth: PyReadonlyArray2<'_, f32>,
+    fx: f64,
+    fy: f64,
+    cx: f64,
+    cy: f64,
+    initial: Option<PyReadonlyArray2<'_, f64>>,
+    iterations: Option<Vec<usize>>,
+    min_depth: f64,
+    max_depth: f64,
+    max_depth_difference: f64,
+    depth_weight: f64,
+    min_correspondences: usize,
+    min_correspondence_fraction: f64,
+    epsilon: f64,
+    max_working_bytes: usize,
+) -> PyResult<(Bound<'py, PyArray2<f64>>, Bound<'py, PyArray1<f64>>, Bound<'py, PyDict>)> {
+    let (sg, sd, tg, td) = (
+        source_gray.as_array(),
+        source_depth.as_array(),
+        target_gray.as_array(),
+        target_depth.as_array(),
+    );
+    if sg.shape() != sd.shape() || sg.shape() != tg.shape() || sg.shape() != td.shape() {
+        return Err(PyValueError::new_err("all four dense RGB-D inputs must have the same shape"));
+    }
+    let (height, width) = (sg.shape()[0], sg.shape()[1]);
+    let options = DenseRgbdOdometryOptions {
+        iterations: iterations.unwrap_or_else(|| vec![20, 10, 5]),
+        min_depth,
+        max_depth,
+        max_depth_difference,
+        depth_weight,
+        min_correspondences,
+        min_correspondence_fraction,
+        epsilon,
+        max_working_bytes,
+    };
+    options.required_working_bytes(width, height).map_err(to_py_err)?;
+    let camera = CameraMatrix3::from_intrinsics(
+        CameraIntrinsics::try_new(fx, fy, cx, cy, width, height).map_err(to_py_err)?,
+    );
+    let pose = if let Some(initial) = initial {
+        let a = initial.as_array();
+        if a.shape() != [4, 4]
+            || a.iter().any(|x| !x.is_finite())
+            || [a[[3, 0]], a[[3, 1]], a[[3, 2]], a[[3, 3]]] != [0.0, 0.0, 0.0, 1.0]
+        {
+            return Err(PyValueError::new_err("initial pose must be finite rigid homogeneous 4x4"));
+        }
+        AbsolutePose::try_new(
+            spatialrust::math::Mat3::from_rows(
+                [a[[0, 0]], a[[0, 1]], a[[0, 2]]],
+                [a[[1, 0]], a[[1, 1]], a[[1, 2]]],
+                [a[[2, 0]], a[[2, 1]], a[[2, 2]]],
+            ),
+            spatialrust::math::Vec3::new(a[[0, 3]], a[[1, 3]], a[[2, 3]]),
+        )
+        .map_err(to_py_err)?
+    } else {
+        AbsolutePose::try_new(
+            spatialrust::math::Mat3::<f64>::identity(),
+            spatialrust::math::Vec3::new(0.0, 0.0, 0.0),
+        )
+        .map_err(to_py_err)?
+    };
+    // Logical row order also owns strided NumPy inputs before the GIL is released.
+    let sg =
+        Image::<u8, 1>::try_new(width, height, sg.iter().copied().collect()).map_err(to_py_err)?;
+    let sd =
+        Image::<f32, 1>::try_new(width, height, sd.iter().copied().collect()).map_err(to_py_err)?;
+    let tg =
+        Image::<u8, 1>::try_new(width, height, tg.iter().copied().collect()).map_err(to_py_err)?;
+    let td =
+        Image::<f32, 1>::try_new(width, height, td.iter().copied().collect()).map_err(to_py_err)?;
+    let estimate = py
+        .allow_threads(move || {
+            estimate_dense_rgbd_odometry_op(
+                DenseRgbdFrame::try_new(sg.view(), sd.view())?,
+                DenseRgbdFrame::try_new(tg.view(), td.view())?,
+                camera,
+                pose,
+                &options,
+            )
+        })
+        .map_err(to_py_err)?;
+    let report = PyDict::new_bound(py);
+    report.set_item("iterations", estimate.iterations)?;
+    report.set_item("valid_source_pixels", estimate.valid_source_pixels)?;
+    report.set_item("correspondences", estimate.correspondences)?;
+    report.set_item("correspondence_fraction", estimate.correspondence_fraction)?;
+    report.set_item("photometric_rmse", estimate.photometric_rmse)?;
+    report.set_item("depth_rmse_m", estimate.depth_rmse_m)?;
+    report.set_item("working_bytes", estimate.working_bytes)?;
+    report.set_item("workers", estimate.workers)?;
+    report.set_item("input_copy_bytes", width * height * 10)?;
+    report.set_item("final_support_only", true)?;
+    Ok((
+        mat3_to_numpy(py, estimate.pose.rotation()),
+        numpy::PyArray1::from_vec_bound(
+            py,
+            vec![
+                estimate.pose.translation().x,
+                estimate.pose.translation().y,
+                estimate.pose.translation().z,
+            ],
+        ),
+        report,
+    ))
+}
+
 /// Dense SAD stereo block matching on rectified grayscale images.
 #[pyfunction]
 #[pyo3(signature = (left, right, window_size=15, min_disparity=0, num_disparities=64, uniqueness_ratio=15.0))]
@@ -5064,6 +5187,7 @@ fn spatialrust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(solve_pnp, m)?)?;
     m.add_function(wrap_pyfunction!(solve_pnp_ransac, m)?)?;
     m.add_function(wrap_pyfunction!(estimate_rgbd_odometry, m)?)?;
+    m.add_function(wrap_pyfunction!(estimate_dense_rgbd_odometry, m)?)?;
     m.add_function(wrap_pyfunction!(gray_world_white_balance_image, m)?)?;
     m.add_function(wrap_pyfunction!(stitch_panorama_pair, m)?)?;
     m.add_function(wrap_pyfunction!(stereo_block_match, m)?)?;

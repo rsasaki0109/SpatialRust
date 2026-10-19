@@ -6,6 +6,18 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+`vision-odometry-dense` exposes checked borrowed `DenseRgbdFrame` views and
+`estimate_dense_rgbd_odometry` through `spatialrust-vision/odometry-dense`.
+Both grayscale/metric-depth frames and the initial proper pose are explicit.
+Bounded CPU pyramids and ordered row tiles use at most four private workers;
+WASM is serial. Python owns all four inputs before releasing the GIL and returns
+pose/error/support/working-buffer receipts. Original sparse APIs and device
+transfers retain their contracts. See the
+[fixed full-sequence protocol](DENSE_RGBD_ODOMETRY_VALIDATION.md).
+The frozen final-overlap variant passes the original accuracy/coverage gates on
+TUM fr1/xyz (798/798 poses); fr1/rpy remains incomplete (40/722). This is an
+experimental CPU capability with bounded resources, not full motion acceptance.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree

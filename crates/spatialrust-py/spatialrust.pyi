@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 
 __version__: str
 __all__: list[str] = [
-    "__version__", "ImageMetadata", "Tensor", "Keypoint2", "OnnxRuntimeSession",
+    "__version__", "ImageMetadata", "Tensor", "Keypoint2", "OnnxRuntimeSession", "OnnxEntityEmbedder",
     "GaussianBlurWorkspace",
     "DLPackTensorView", "PointCloud", "PointCloudStream", "PipelineResult", "RegionResult",
     "ViewerState", "ViewerPointSource",
@@ -20,10 +20,10 @@ __all__: list[str] = [
     "CylinderResult", "RegistrationResult", "MultiObjectTracker", "read_image",
     "tensor_copy_from_numpy", "tensor_view_from_dlpack", "harris_keypoints",
     "shi_tomasi_keypoints", "fast_keypoints", "orb_features", "track_points_forward_backward",
-    "estimate_homography_ransac", "solve_pnp", "solve_pnp_ransac", "estimate_rgbd_odometry", "stereo_block_match",
+    "estimate_homography_ransac", "solve_pnp", "solve_pnp_ransac", "estimate_rgbd_odometry", "estimate_dense_rgbd_odometry", "stereo_block_match",
     "match_binary_descriptors", "match_float_descriptors", "write_image", "read",
     "open_point_cloud_stream",
-    "write", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
+    "write", "export_tiles3d", "export_copc_tiles3d", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
     "orient_normals", "detect_boundary", "mls_smooth", "farthest_point_sampling",
     "statistical_outlier_removal", "radius_outlier_removal", "run_pipeline", "run_pipeline_files",
     "region_growing", "dbscan", "ground_segmentation", "segment_multi_plane",
@@ -40,7 +40,7 @@ __all__: list[str] = [
     "histogram_image", "equalize_histogram_image", "clahe_image",
     "integral_image_u8", "CannyWorkspace", "canny_image", "resize_image", "letterbox_image",
     "normalize_image_chw", "resize_normalize_image_chw", "rgb_to_gray_image", "resize_rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
-    "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
+    "nms", "batched_nms", "soft_nms", "connected_components_image", "DistanceTransformWorkspace", "distance_transform_edt",
     "find_mask_contours",
     "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
     "radius_graph", "distance_gated_support", "DistanceSupportIndex", "register_icp", "register_icp_diagnostics", "IcpIteration", "IcpDiagnostics", "register_point_to_plane", "register_gicp",
@@ -1034,6 +1034,31 @@ def estimate_rgbd_odometry(
     depth_scale: float = ...,
     threshold: float = ...,
 ) -> tuple[_F64Array, _F64Array, _BoolArray, int]: ...
+def estimate_dense_rgbd_odometry(
+    source_gray: _U8Array,
+    source_depth: _F32Array,
+    target_gray: _U8Array,
+    target_depth: _F32Array,
+    fx: float, fy: float, cx: float, cy: float,
+    *,
+    initial: Optional[_F64Array] = ...,
+    iterations: Optional[Sequence[int]] = ...,
+    min_depth: float = ...,
+    max_depth: float = ...,
+    max_depth_difference: float = ...,
+    depth_weight: float = ...,
+    min_correspondences: int = ...,
+    min_correspondence_fraction: float = ...,
+    epsilon: float = ...,
+    max_working_bytes: int = ...,
+) -> tuple[_F64Array, _F64Array, dict[str, float]]:
+    """Own four CPU inputs before releasing the GIL; return source-to-target pose.
+
+    Depth is already metric. Logical working bytes exclude input copies and
+    allocator/thread overhead. Original sparse APIs and device transfers remain.
+    """
+    ...
+
 def gray_world_white_balance_image(image: _U8Array) -> _U8Array: ...
 def stitch_panorama_pair(
     source: _U8Array,

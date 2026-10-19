@@ -32,6 +32,8 @@ mod corners;
 mod adapters;
 #[cfg(feature = "dense")]
 mod dense;
+#[cfg(feature = "odometry-dense")]
+mod dense_odometry;
 #[cfg(feature = "detection")]
 mod detection;
 #[cfg(feature = "feature2d")]
@@ -86,6 +88,8 @@ pub use corners::*;
 pub use adapters::*;
 #[cfg(feature = "dense")]
 pub use dense::*;
+#[cfg(feature = "odometry-dense")]
+pub use dense_odometry::*;
 #[cfg(feature = "detection")]
 pub use detection::*;
 #[cfg(feature = "feature2d")]

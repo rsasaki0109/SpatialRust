@@ -19,6 +19,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add feature-gated dense CPU RGB-D projective odometry with explicit source
+  and target grayscale/depth inputs, checked pose/options, bounded pyramids,
+  deterministic row-tile parallelism and owned Python execution outside the
+  GIL. Preserve sparse APIs and existing acceptance gates; see
+  `docs/DENSE_RGBD_ODOMETRY_VALIDATION.md` for the fixed real-data protocol and
+  all frozen outcomes: final-pose overlap passes fr1/xyz at 798/798 poses,
+  ATE 0.090314m and 1s RPE 0.025987m; fr1/rpy remains incomplete at 40/722.
+  Preserve both failed strict-policy results, independent audits and original
+  binaries. Check all public Python exports against complete type-stub metadata.
+
 - Audit complete public GPU process/frame receipts and distinguish operation
   correctness from hardware class coverage. Preserve both isolated WSL2 Dozen
   initialization failures with fixed input/binary/driver provenance, without
