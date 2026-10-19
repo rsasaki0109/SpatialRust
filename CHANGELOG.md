@@ -19,6 +19,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Audit complete public GPU process/frame receipts and distinguish operation
+  correctness from hardware class coverage. Preserve both isolated WSL2 Dozen
+  initialization failures with fixed input/binary/driver provenance, without
+  overriding production adapter admission. See `docs/WSL_HARDWARE_GPU_CONFORMANCE.md`.
+
 - Add an explicit fixed wide-capture RGB-D experiment for both observed scenes
   and stateless/adaptive frontends, reusing the native wheel and source images.
   Existing defaults and all motion admission/accuracy limits stay unchanged.

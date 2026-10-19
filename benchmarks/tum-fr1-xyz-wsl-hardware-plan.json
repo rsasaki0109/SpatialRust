@@ -1,0 +1,42 @@
+{
+  "schema": "spatialrust.public-wsl-hardware-plan.v1",
+  "date": "2026-10-19",
+  "slice": "146F",
+  "parent_protocol_commit": "df647b5e9f5b72aaa44f26d5cf74053cf79ecbcc",
+  "parent_plan": "benchmarks/tum-fr1-xyz-gpu-conformance-plan.json",
+  "prepared_input_manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+  "runner_source_sha256": "6bb586db3269716d160121ee161baa9a84521049a77908a979c61ab0845b6481",
+  "linux_executable_sha256": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+  "frame_indices": [0, 399, 797],
+  "device_preferences": ["high", "low"],
+  "minimum_distinct_hardware_classes": 2,
+  "required_hardware_classes": ["DiscreteGpu", "IntegratedGpu"],
+  "backend": "Vulkan",
+  "os": "linux",
+  "environment": "Ubuntu 22.04 under WSL2; Mesa Dozen Vulkan-to-D3D12 bridge through /dev/dxg; not bare-metal Linux",
+  "mesa": {
+    "version": "26.2.5",
+    "source_url": "https://archive.mesa3d.org/mesa-26.2.5.tar.xz",
+    "source_sha256": "794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5",
+    "directx_headers_revision": "v1.619.1",
+    "directx_headers_commit": "9e393d6d8a3b30dcc6f2806ef604ec16a27b0d7e",
+    "libdrm_version": "2.4.133",
+    "libdrm_source_sha256": "fc68f9d0ba2ea63c9432a299e14fea09fad7a8a66e8039fcd7802ca59f77b4f5",
+    "selection": "Both VK_DRIVER_FILES and VK_ICD_FILENAMES name the one isolated ICD; LD_LIBRARY_PATH selects its private library directory and /usr/lib/wsl/lib. No global installation."
+  },
+  "unchanged_acceptance": "Inherit every image, voxel, radius, transfer and retained-pool gate from the parent plan and runner. Both preferences must complete every fixed frame, and their accepted reports must establish both required hardware classes. Cpu/VirtualGpu/Other, missing reports, failed processes, failed frames and duplicate hardware classes cannot satisfy hardware coverage.",
+  "provenance": "Before execution, freeze source-tree identities, binary/input/runtime library/ICD hashes and the protocol commit. Preserve each process status, complete stdout/stderr and all failed cases. Report no local adapter model names.",
+  "storage": {
+    "source_and_build_root": "E:/SpatialRustBuild/mesa-dozen-v1",
+    "existing_inputs": "E:/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1",
+    "new_output_root": "E:/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1",
+    "minimum_free_bytes": 21474836480,
+    "maximum_build_tree_bytes": 8589934592,
+    "maximum_result_tree_bytes": 134217728,
+    "timeout_seconds_per_preference": 600,
+    "dataset_downloads": 0,
+    "dataset_payload_copies": 0,
+    "scope": "Controlled source/build/temp/cache/results use E; operating-system and proprietary driver allocations/caches are outside these counters. Preserve all older data, binaries and receipts."
+  },
+  "scope": "Selected development-frame correctness and explicit transfer conformance through one WSL2 bridge configuration. No performance ranking, physical sensor calibration, trajectory accuracy, bare-metal portability, broad Vulkan conformance or completed operational 80% claim."
+}
