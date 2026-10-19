@@ -724,5 +724,30 @@
     "scientific_outputs_and_plans_preserved": true,
     "scientific_refit": false,
     "native_rebuild": false
+  },
+  "post_study_onnx_junit_consumer_validation": {
+    "failed_ci_source_commit": "22ef12ed5750edc97a060a10d0b2f42b936944f9",
+    "observed_real_onnx_ci": {
+      "passed": 1020,
+      "skipped": 1,
+      "reason": "Only the unavailable external comparator test; former standalone zero-total-skip assertion rejected it."
+    },
+    "policy": "ONNX job now uses the same exact named-external classifier with expected baseline skips zero. Actual ONNX skips and every other failure/unexpected skip still reject.",
+    "workflow": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\.github\\workflows\\ci.yml",
+      "bytes": 27766,
+      "sha256": "a50a7ff702ed14da55720c8bf1d59a31036e7f718ee1f4e73392c24f51358ebb"
+    },
+    "gate_evidence": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-onnx-junit-gate.json",
+      "bytes": 233,
+      "sha256": "3b25599b4c823f943ff470646f48474bf1dd9e2922932cbd84dc1e80184b2cb2"
+    },
+    "yaml_parsed": true,
+    "actual_onnx_skips_rejected": true,
+    "only_named_external_absence_accepted": true,
+    "python_and_numerical_sources_unchanged_since_1018_passes": true,
+    "scientific_refit": false,
+    "native_rebuild": false
   }
 }

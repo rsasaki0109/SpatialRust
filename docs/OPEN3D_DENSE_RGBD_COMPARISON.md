@@ -176,3 +176,11 @@ it is separate from the real Linux CI. Both passing scratch roots were removed
 after XML/path/reparse checks, bringing total logical reclamation to
 1,427,823,793 bytes. The receipt appends their separate evidence; no scientific
 plan, estimate, score or numerical binary changed and no fitting was repeated.
+
+The real ONNX job also has a zero-baseline JUnit admission contract. It now uses
+the same exact external classifier with `expected_skips=0`: the single unavailable
+external smoke is identified, while any skipped ONNX test still rejects. The
+prior real CI ran 1,020 tests successfully with only that external skip. The
+updated consumer parses as YAML, accepts the actual isolated absent-module XML,
+and rejects the local full XML containing three absent ONNX checks. Python and
+numerical source remain those of the 1,018-pass suite; no repeated fit or build.
