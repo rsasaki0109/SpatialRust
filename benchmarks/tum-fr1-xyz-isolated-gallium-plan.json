@@ -62,7 +62,7 @@
   ],
   "maximum_jobs": 4,
   "private_install_destdir": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage",
-  "private_installed_prefix": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v3",
+  "private_installed_prefix": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1",
   "parser_tools": {
     "path": "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json",
     "bytes": 1730,
@@ -109,8 +109,8 @@
   "environment": "Ubuntu 22.04 WSL2; new privately staged Mesa Gallium D3D12 and surfaceless EGL, selected per child process; installed system driver unchanged",
   "process_environment": {
     "__EGL_VENDOR_LIBRARY_FILENAMES": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/runtime/mesa-vendor.json",
-    "LD_LIBRARY_PATH": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v3/lib:/usr/lib/wsl/lib",
-    "LIBGL_DRIVERS_PATH": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v3/lib/dri",
+    "LD_LIBRARY_PATH": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib:/usr/lib/wsl/lib",
+    "LIBGL_DRIVERS_PATH": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/dri",
     "GALLIUM_DRIVER": "d3d12",
     "EGL_PLATFORM": "surfaceless",
     "MESA_SHADER_CACHE_MAX_SIZE": "64M"
@@ -171,5 +171,6 @@
     "private_tool_downloads": 2,
     "preserve_all_prior_attempts": true
   },
-  "scope": "Three observed development frames and a driver/WSI combination. No bare-metal Linux, broad GL certification, performance, motion, canonical calibration or operational 80% claim; no numerical kernel change or unsafe external context integration."
+  "scope": "Three observed development frames and a driver/WSI combination. No bare-metal Linux, broad GL certification, performance, motion, canonical calibration or operational 80% claim; no numerical kernel change or unsafe external context integration.",
+  "pre_admission_prefix_correction": "Initial contract hardcoded the staged logical suffix as v3; the unchanged build configuration uses /opt/spatialrust-gles-v1 inside the v3 DESTDIR. Correct the derived paths before any new driver context; no rebuild, driver/version override, data, numeric gate or score change."
 }

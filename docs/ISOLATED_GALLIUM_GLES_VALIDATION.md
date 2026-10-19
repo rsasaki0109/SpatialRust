@@ -28,7 +28,7 @@ Dozen prefix, installed system libraries and all original results unchanged.
 The fixed Meson configuration enables Gallium D3D12 and the softpipe loader
 support, GL/EGL/GLES, GLVND and surfaceless EGL; Vulkan, LLVM, video and driver
 tests are disabled. Install only through an E-contained `--destdir`; its logical
-`/opt/spatialrust-gles-v3` prefix is staged under that destination.
+`/opt/spatialrust-gles-v1` prefix is staged under that destination.
 
 Two prior configurations fail before any new-driver context: the first does
 not select the existing Mako/YAML tool environment, and the second lacks parser
@@ -53,6 +53,11 @@ external context, mutate production defaults or select an alternate backend.
 Classify private renderer strings without recording/publishing local model names.
 Reported D3D12 selection and a capability probe cannot replace application runs
 or the original hardware-class gate.
+
+The initial contract used a hardcoded v3 logical suffix for the staged prefix.
+Before any new context, derive it from the unchanged build configuration instead:
+`/opt/spatialrust-gles-v1` inside the v3 DESTDIR. Preserve the initial protocol
+commit; this corrects paths without a rebuild, data observation or numeric change.
 
 ## Fixed data and gates
 
