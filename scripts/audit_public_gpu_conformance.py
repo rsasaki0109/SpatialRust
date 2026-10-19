@@ -13,10 +13,12 @@ FRAME_COUNTS = {0: (229875, 5666, 25093),
 HARDWARE_CLASSES = {"DiscreteGpu", "IntegratedGpu"}
 
 
-def audit_runs(runs, manifest_sha256, expected_os="linux"):
+def audit_runs(runs, manifest_sha256, expected_os="linux", *, expected_backend="Vulkan"):
     """Return all issues; failed processes/frames cannot disappear from coverage."""
     if not isinstance(manifest_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", manifest_sha256):
         raise ValueError("Expected input manifest SHA-256 is required")
+    if type(expected_backend) is not str or expected_backend not in ("Vulkan", "Gl"):
+        raise ValueError("Explicit expected backend must be Vulkan or Gl")
     issues = []
     classes = set()
     maximum_error = None
@@ -53,8 +55,10 @@ def audit_runs(runs, manifest_sha256, expected_os="linux"):
         report = object_value(run, "report")
         for key, value in (("schema", "spatialrust.public-gpu-conformance.v1"),
                            ("manifest_sha256", manifest_sha256), ("os", expected_os),
-                           ("backend", "Vulkan"), ("accepted", True)):
+                           ("backend", expected_backend), ("accepted", True)):
             require(equal(report, key, value), label + key)
+        if expected_backend == "Gl":
+            require(equal(report, "requested_backend", "gl"), label + "explicit GL request required")
         require(report.get("preference") == run.get("preference"), label + "report preference")
         frames = report.get("frames")
         require(type(frames) is list and

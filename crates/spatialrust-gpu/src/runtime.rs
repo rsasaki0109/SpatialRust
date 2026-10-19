@@ -105,6 +105,70 @@ pub enum WgpuPowerPreference {
     LowPower,
 }
 
+/// Explicit backend set for a headless runtime.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum WgpuBackendSelection {
+    /// The original primary backend set used by existing constructors.
+    #[default]
+    Primary,
+    /// GL only, requiring platform support for OpenGL or OpenGLES compute.
+    Gl,
+}
+
+impl WgpuBackendSelection {
+    /// Stable requested-backend label for execution receipts.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Primary => "primary",
+            Self::Gl => "gl",
+        }
+    }
+
+    const fn backends(self) -> wgpu::Backends {
+        match self {
+            Self::Primary => wgpu::Backends::PRIMARY,
+            Self::Gl => wgpu::Backends::GL,
+        }
+    }
+
+    fn validate_compiled_backends(self, available: wgpu::Backends) -> SpatialResult<()> {
+        // A WebGPU-only browser build ignores the requested instance mask.
+        // Reject before instance creation so an explicit GL request stays GL-only.
+        if self == Self::Gl && !available.contains(wgpu::Backends::GL) {
+            return Err(SpatialError::InvalidArgument(
+                "requested GL backend is not enabled for this build/platform".to_owned(),
+            ));
+        }
+        Ok(())
+    }
+
+    fn validate_compute_support(self, available: wgpu::DownlevelFlags) -> SpatialResult<()> {
+        if self == Self::Gl && !available.contains(wgpu::DownlevelFlags::COMPUTE_SHADERS) {
+            return Err(SpatialError::InvalidArgument(
+                "requested GL adapter does not support compute shaders".to_owned(),
+            ));
+        }
+        Ok(())
+    }
+}
+
+/// Explicit headless selection and optional profiling requests.
+///
+/// Defaults preserve existing primary/high-performance/no-timestamp behavior.
+/// Options constructors create an owned runtime independently of [`WgpuRuntime::shared`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct WgpuRuntimeOptions {
+    /// Requested backend set; GL is an explicit opt-in without backend fallback.
+    pub backend: WgpuBackendSelection,
+    /// Adapter power preference within the selected backend set.
+    pub power_preference: WgpuPowerPreference,
+    /// Request timestamp queries when available; unsupported adapters still initialize.
+    pub request_timestamps: bool,
+}
+
 /// Minimum storage buffers required for the 4-channel gather kernel.
 #[cfg(feature = "gpu-wgpu")]
 pub const MULTI_GATHER4_STORAGE_BUFFERS: u32 = 10;
@@ -137,6 +201,15 @@ impl WgpuRuntime {
     /// before constructing a profiler. The default constructors request no timestamps.
     pub fn new_headless_with_timestamps(preference: WgpuPowerPreference) -> SpatialResult<Self> {
         pollster::block_on(Self::new_headless_with_timestamps_async(preference))
+    }
+
+    /// Creates an owned runtime using explicit backend and profiling options.
+    ///
+    /// GL must be compiled for the target and provide adapter compute shaders.
+    /// An uncompiled GL request fails before instance creation. Admission errors do not
+    /// select another backend. Browser callers should use the async counterpart.
+    pub fn new_headless_with_options(options: WgpuRuntimeOptions) -> SpatialResult<Self> {
+        pollster::block_on(Self::new_headless_with_options_async(options))
     }
 
     /// Returns whether this device has optional pass timestamp queries enabled.
@@ -349,28 +422,42 @@ impl WgpuRuntime {
     /// main thread is not supported. Native callers may also use it from their
     /// async executor.
     pub async fn new_headless_async(preference: WgpuPowerPreference) -> SpatialResult<Self> {
-        Self::new_headless_impl(preference, false).await
+        Self::new_headless_impl(WgpuRuntimeOptions {
+            power_preference: preference,
+            ..Default::default()
+        })
+        .await
     }
 
     /// Async counterpart of [`Self::new_headless_with_timestamps`].
     pub async fn new_headless_with_timestamps_async(
         preference: WgpuPowerPreference,
     ) -> SpatialResult<Self> {
-        Self::new_headless_impl(preference, true).await
+        Self::new_headless_impl(WgpuRuntimeOptions {
+            power_preference: preference,
+            request_timestamps: true,
+            ..Default::default()
+        })
+        .await
     }
 
-    async fn new_headless_impl(
-        preference: WgpuPowerPreference,
-        timestamps: bool,
+    /// Async counterpart of [`Self::new_headless_with_options`].
+    pub async fn new_headless_with_options_async(
+        options: WgpuRuntimeOptions,
     ) -> SpatialResult<Self> {
+        Self::new_headless_impl(options).await
+    }
+
+    async fn new_headless_impl(options: WgpuRuntimeOptions) -> SpatialResult<Self> {
+        options.backend.validate_compiled_backends(wgpu::Instance::enabled_backend_features())?;
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::PRIMARY,
+            backends: options.backend.backends(),
             ..Default::default()
         });
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: match preference {
+                power_preference: match options.power_preference {
                     WgpuPowerPreference::HighPerformance => wgpu::PowerPreference::HighPerformance,
                     WgpuPowerPreference::LowPower => wgpu::PowerPreference::LowPower,
                 },
@@ -384,6 +471,8 @@ impl WgpuRuntime {
                 )
             })?;
 
+        options.backend.validate_compute_support(adapter.get_downlevel_capabilities().flags)?;
+
         let raw_adapter_info = adapter.get_info();
         let adapter_info = WgpuAdapterInfo {
             name: raw_adapter_info.name,
@@ -396,7 +485,10 @@ impl WgpuRuntime {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: Some("spatialrust-wgpu"),
-                    required_features: timestamp_features(timestamps, adapter.features()),
+                    required_features: timestamp_features(
+                        options.request_timestamps,
+                        adapter.features(),
+                    ),
                     required_limits: adapter.limits(),
                     memory_hints: wgpu::MemoryHints::Performance,
                 },
@@ -504,6 +596,68 @@ mod tests {
     use super::WgpuRuntime;
     use crate::pipeline_cache::ComputePipelineCache;
     use std::sync::Arc;
+
+    #[test]
+    fn runtime_options_preserve_existing_constructor_policy() {
+        let options = super::WgpuRuntimeOptions::default();
+        assert_eq!(options.backend, super::WgpuBackendSelection::Primary);
+        assert_eq!(options.power_preference, super::WgpuPowerPreference::HighPerformance);
+        assert!(!options.request_timestamps);
+    }
+
+    #[test]
+    fn backend_selection_is_explicit_without_cross_backend_fallback() {
+        let primary = super::WgpuBackendSelection::Primary;
+        let gl = super::WgpuBackendSelection::Gl;
+        assert_eq!(primary.backends(), wgpu::Backends::PRIMARY);
+        assert_eq!(gl.backends(), wgpu::Backends::GL);
+        assert!(!primary.backends().intersects(gl.backends()));
+        assert_eq!((primary.as_str(), gl.as_str()), ("primary", "gl"));
+    }
+
+    #[test]
+    fn explicit_gl_rejects_builds_that_could_select_browser_webgpu() {
+        for available in
+            [wgpu::Backends::BROWSER_WEBGPU, wgpu::Backends::PRIMARY, wgpu::Backends::empty()]
+        {
+            let error = super::WgpuBackendSelection::Gl
+                .validate_compiled_backends(available)
+                .expect_err("explicit GL must not create an instance without GL support");
+            assert!(error.to_string().contains("requested GL backend is not enabled"));
+        }
+    }
+
+    #[test]
+    fn backend_admission_preserves_primary_and_accepts_compiled_gl() {
+        super::WgpuBackendSelection::Primary
+            .validate_compiled_backends(wgpu::Backends::BROWSER_WEBGPU)
+            .expect("original primary browser policy");
+        for available in [wgpu::Backends::GL, wgpu::Backends::GL | wgpu::Backends::BROWSER_WEBGPU] {
+            super::WgpuBackendSelection::Gl
+                .validate_compiled_backends(available)
+                .expect("compiled GL support");
+        }
+    }
+
+    #[test]
+    fn explicit_gl_rejects_adapters_without_compute_shaders() {
+        for available in [wgpu::DownlevelFlags::empty(), wgpu::DownlevelFlags::INDIRECT_EXECUTION] {
+            let error = super::WgpuBackendSelection::Gl
+                .validate_compute_support(available)
+                .expect_err("WebGL or graphics-only GL cannot run compute kernels");
+            assert!(error.to_string().contains("does not support compute shaders"));
+        }
+    }
+
+    #[test]
+    fn compute_admission_preserves_primary_and_accepts_compute_gl() {
+        super::WgpuBackendSelection::Primary
+            .validate_compute_support(wgpu::DownlevelFlags::empty())
+            .expect("original primary admission policy");
+        super::WgpuBackendSelection::Gl
+            .validate_compute_support(wgpu::DownlevelFlags::COMPUTE_SHADERS)
+            .expect("GL adapter with compute shaders");
+    }
 
     #[test]
     fn optional_timestamp_features_handle_unsupported_adapters() {

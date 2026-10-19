@@ -1,0 +1,94 @@
+{
+  "schema": "spatialrust.public-gles-hardware-plan.v1",
+  "date": "2026-10-20",
+  "slice": "146I",
+  "parent_plan": "benchmarks/tum-fr1-xyz-gpu-conformance-plan.json",
+  "parent_plan_sha256": "a06bf77f3e8f3403ddee394b88eb75a3f8e10b30844281e8ee03d733637cb30f",
+  "base_commit": "7f94847f0ec38dca694ad22b4a1ae1a275e00996",
+  "prepared_input_manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+  "parent_runner_source_sha256": "6bb586db3269716d160121ee161baa9a84521049a77908a979c61ab0845b6481",
+  "frame_indices": [
+    0,
+    399,
+    797
+  ],
+  "device_preferences": [
+    "high",
+    "low"
+  ],
+  "backend": "Gl",
+  "requested_backend": "gl",
+  "minimum_distinct_hardware_classes": 2,
+  "required_hardware_classes": [
+    "DiscreteGpu",
+    "IntegratedGpu"
+  ],
+  "os": "linux",
+  "environment": "Ubuntu 22.04 under WSL2; existing system Mesa D3D12/EGL; capability probe only before this protocol; not bare-metal Linux",
+  "capability_probe": {
+    "path": "E:\\SpatialRustBuild\\linux-gl-capability-v1\\capabilities.json",
+    "sha256": "a62e44210eb2166b6ee7bc322d550d898719bdf5f05c4e923a6b105ec158b3a1",
+    "modes": [
+      {
+        "mode": "OpenGL",
+        "requested_version": [
+          4,
+          3
+        ],
+        "status": "unsupported",
+        "egl_version": [
+          1,
+          5
+        ],
+        "failed_stage": "create-context",
+        "egl_error": "0x3009"
+      },
+      {
+        "mode": "OpenGLES",
+        "requested_version": [
+          3,
+          1
+        ],
+        "status": "context-created",
+        "egl_version": [
+          1,
+          5
+        ],
+        "actual_version": [
+          3,
+          1
+        ],
+        "d3d12_driver": true,
+        "software_renderer": false,
+        "max_compute_workgroup_invocations": 1024,
+        "max_compute_shared_bytes": 32768,
+        "max_compute_storage_blocks": 16,
+        "gl_error": "0x0"
+      }
+    ],
+    "scope": "Capability-only existing system driver probe; no shader execution, operation conformance or hardware-class certification"
+  },
+  "unchanged_acceptance": "All original image/voxel/radius/transfer/pool gates and both distinct raw hardware classes remain. No relabeling Other/Cpu/VirtualGpu, omitted failure or backend fallback can establish coverage.",
+  "runtime_contract": {
+    "default_backend": "primary",
+    "default_preference": "high",
+    "default_timestamps": false,
+    "gl_opt_in_only": true,
+    "driver_override": false,
+    "noncompliant_adapter_override": false
+  },
+  "storage": {
+    "source_workspace": "C:\\Users\\rsasa\\Workspace\\SpatialRust",
+    "build_root": "E:/SpatialRustBuild/explicit-gles-v1",
+    "existing_inputs": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gpu-conformance-input-v1",
+    "new_output_root": "E:/SpatialRustData/maturity-80/tum-fr1-xyz/gles-hardware-conformance-v1",
+    "minimum_free_bytes": 21474836480,
+    "maximum_build_cache_temp_bytes": 17179869184,
+    "maximum_result_bytes": 134217728,
+    "timeout_seconds_per_preference": 600,
+    "maximum_build_jobs": 4,
+    "dataset_downloads": 0,
+    "dataset_payload_copies": 0
+  },
+  "scope": "Explicit backend execution on three development frames; retain defaults, every failed attempt and original hardware coverage requirements. No performance, motion, calibration, driver certification or operational 80% claim."
+}

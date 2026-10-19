@@ -6,6 +6,22 @@ should normally depend on `spatialrust` and select only the profiles they need.
 
 ## User-facing profiles
 
+`gpu-wgpu` exposes `WgpuBackendSelection`, `WgpuRuntimeOptions` and owned
+`WgpuRuntime::new_headless_with_options` / `new_headless_with_options_async`.
+Existing constructors and the shared runtime retain primary/high-performance
+defaults and their timestamp contracts. Explicit GL selection requires platform
+support and does not select a different backend on failure. An explicit GL
+request is rejected before instance creation when GL is not compiled in, so
+WebGPU-only browser builds cannot substitute WebGPU. GL adapters without
+compute-shader support are rejected before device creation. The public RGB-D
+example records requested/actual backends; its auditor keeps operation checks
+and distinct raw hardware-class coverage separate. See the
+[fixed GLES validation protocol](EXPLICIT_GLES_GPU_VALIDATION.md). The Windows
+primary control passes all six cases on both raw hardware classes. Linux GL
+device creation fails before all six application cases; internal GLSL 4.20
+dynamic-array admission is diagnosed and preserved. GL selection is available,
+but this environment has no accepted GL operation or Linux hardware coverage.
+
 `vision-odometry-dense` exposes checked borrowed `DenseRgbdFrame` views and
 `estimate_dense_rgbd_odometry` through `spatialrust-vision/odometry-dense`.
 Both grayscale/metric-depth frames and the initial proper pose are explicit.
