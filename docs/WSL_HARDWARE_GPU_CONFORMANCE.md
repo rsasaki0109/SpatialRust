@@ -43,6 +43,14 @@ runner emits backend, hardware class and limits without adapter model names.
 Its independent CPU references and public upload/readback receipts determine
 correctness; successful enumeration or compilation cannot establish it.
 
+The data-only `C:/Users/rsasa/Workspace/SpatialRust/scripts/audit_public_gpu_conformance.py`
+also checks complete preference/frame sets, process status, exact operation
+counts, finite centroid errors, transfer sizes, retained-pool bounds and
+cross-preference image hashes. It reproduces the prior hardware/software
+distinction from actual published receipts and rejects inconsistent success
+flags. It checks report consistency; execution authenticity still depends on
+the separately frozen process/binary/input/driver provenance.
+
 ## Storage and scope
 
 Reuse `E:/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/`
