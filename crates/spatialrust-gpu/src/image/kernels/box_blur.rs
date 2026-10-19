@@ -12,19 +12,29 @@ const WORKGROUP: u32 = 256;
 const SEPARABLE_MIN_AREA: u64 = 81;
 const SEPARABLE_MIN_SAMPLES: u64 = 65_536;
 const ROW_PREFIX_BYTES: u32 = 4096 * 4;
-const SHADERS: [&str; 6] = [
+const SHADERS: [&str; 7] = [
     include_str!("box_blur_serial.wgsl"),
     concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_horizontal.wgsl")),
     concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_vertical.wgsl")),
     concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_packed_horizontal.wgsl")),
     concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_packed_vertical.wgsl")),
     concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_row_prefix.wgsl")),
+    concat!(include_str!("box_blur_params.wgsl"), include_str!("box_blur_column_prefix.wgsl")),
 ];
 
 fn row_prefix_enabled(width: u32, height: u32, kw: u32, limits: &wgpu::Limits) -> bool {
     (512..=4096).contains(&width)
         && height >= 128
         && kw >= 259
+        && limits.max_compute_workgroup_storage_size >= ROW_PREFIX_BYTES
+}
+
+fn column_prefix_enabled(width: u32, height: u32, kw: u32, kh: u32, limits: &wgpu::Limits) -> bool {
+    width >= 128
+        && (512..=4096).contains(&height)
+        && kw >= 259
+        && kh >= 259
+        && u64::from(height) * u64::from(kw) * 255 <= u64::from(u32::MAX)
         && limits.max_compute_workgroup_storage_size >= ROW_PREFIX_BYTES
 }
 
@@ -148,7 +158,7 @@ struct Variant {
 }
 
 pub(crate) struct BlurPipeline {
-    variants: [OnceLock<Variant>; 6],
+    variants: [OnceLock<Variant>; 7],
 }
 
 impl BlurPipeline {
@@ -175,7 +185,7 @@ impl BlurPipeline {
             };
             let types = [
                 buffer(wgpu::BufferBindingType::Uniform),
-                if matches!(index, 2 | 4) {
+                if matches!(index, 2 | 4 | 6) {
                     buffer(wgpu::BufferBindingType::Storage { read_only: true })
                 } else {
                     texture
@@ -234,25 +244,34 @@ fn encode(
     encoder: &mut wgpu::CommandEncoder,
     mut profiler: Option<&mut GpuStageProfiler>,
 ) {
+    let limits = runtime.device().limits();
+    let horizontal =
+        if row_prefix_enabled(p.params.width, p.params.height, p.params.kernel_width, &limits) {
+            5
+        } else {
+            1
+        };
+    let vertical = if column_prefix_enabled(
+        p.params.width,
+        p.params.height,
+        p.params.kernel_width,
+        p.params.kernel_height,
+        &limits,
+    ) {
+        6
+    } else {
+        2
+    };
     let indices: &[usize] = if p.packed {
         &[3, 4]
-    } else if p.separable
-        && row_prefix_enabled(
-            p.params.width,
-            p.params.height,
-            p.params.kernel_width,
-            &runtime.device().limits(),
-        )
-    {
-        &[5, 2]
     } else if p.separable {
-        &[1, 2]
+        &[horizontal, vertical]
     } else {
         &[0]
     };
     for &index in indices {
         let variant = cache.variant(runtime.device(), index);
-        let input = if matches!(index, 2 | 4) {
+        let input = if matches!(index, 2 | 4 | 6) {
             sums.unwrap().as_entire_binding()
         } else {
             wgpu::BindingResource::TextureView(source)

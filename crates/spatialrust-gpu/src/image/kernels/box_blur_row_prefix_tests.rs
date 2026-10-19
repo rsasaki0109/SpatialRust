@@ -243,7 +243,14 @@ fn box_row_prefix_complete_profiles_cache_resources_admission_and_ownership() {
             }
         }
     }
-    assert!(r.image_blur_pipeline.get().unwrap().variants.iter().all(|v| v.get().is_some()));
+    assert!(r
+        .image_blur_pipeline
+        .get()
+        .unwrap()
+        .variants
+        .iter()
+        .take(6)
+        .all(|v| v.get().is_some()));
     let source = GpuImage::upload_u8(&r, fixture(512, 128, true).view()).unwrap();
     let identities: Vec<_> = r
         .image_blur_pipeline
@@ -251,6 +258,7 @@ fn box_row_prefix_complete_profiles_cache_resources_admission_and_ownership() {
         .unwrap()
         .variants
         .iter()
+        .take(6)
         .map(|v| v.get().unwrap() as *const Variant as usize)
         .collect();
     for budget in [crate::resource_cache::DEFAULT_GPU_POOL_BUDGET_BYTES, 4, 0] {
@@ -270,6 +278,7 @@ fn box_row_prefix_complete_profiles_cache_resources_admission_and_ownership() {
             .unwrap()
             .variants
             .iter()
+            .take(6)
             .map(|v| v.get().unwrap() as *const Variant as usize)
             .collect::<Vec<_>>()
     );
