@@ -144,3 +144,26 @@ This closes the fixed normalization experiment. Native rpy/held-out accuracy,
 canonical measured clock uncertainty and physical frame accuracy, both raw
 Linux hardware classes and full mapping/semantic/release acceptance remain
 unproven. Operational 80% is not established.
+
+## CI portability amendment
+
+After the study is frozen, source `a2637c8` addresses CI environment failures.
+Ubuntu 26.04 cannot set up the requested CPython 3.8; the official build
+manifest provides Ubuntu 24.04 x64, so only the legacy Python Linux lanes
+are pinned there. Newest-Python Linux coverage retains `ubuntu-latest`.
+Keep all four native wheel lanes and every named check.
+
+Four tiny synthetic audit tests explicitly receive a scoped adequate-space
+fixture. It is not autouse and is never injected into the real study CLI.
+Three new boundary tests prove that the production auditor rejects 0 and
+20GiB-minus-one before input reads/output, and admits exactly 20GiB to the
+frozen-input check. The production auditor and its 20GiB floor are unchanged.
+One added Rust test line is wrapped by rustfmt; estimator code is unchanged.
+
+The portability selection passes 11/11; the updated full installed-wheel suite
+passes 1,103 with the same three optional ONNX skips. Its two passing scratch
+roots reclaim 600,718,061 logical bytes; combined verified pytest cleanup is
+1,160,811,349 bytes. The original scientific source/module bindings and all
+measurements remain preserved, with no estimation rerun or gate change.
+Failure logs, official-manifest proof, source-equivalence proof, XML and
+cleanup records are bound in the receipt's separate `ci_portability` section.

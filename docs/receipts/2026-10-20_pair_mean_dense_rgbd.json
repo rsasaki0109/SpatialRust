@@ -596,7 +596,8 @@
     "maximum_successful_command_sampled_build_and_cache_growth_bytes": 585373429,
     "maximum_new_build_and_cache_growth_bytes": 2147483648,
     "excluded_shared_png_and_index_logical_bytes": 918149680,
-    "new_image_payload_bytes": 0
+    "new_image_payload_bytes": 0,
+    "total_verified_passing_pytest_scratch_reclaimed_bytes": 1160811349
   },
   "commands": [
     {
@@ -742,5 +743,120 @@
     "bytes": 2342,
     "sha256": "fb461762e325e2b0cf2e102d07f425026d99d96e345f3300c1e9f63ef7ca532e"
   },
-  "selector_regression_scope": "Fifteen synthetic cases across raw, joint and gray-only policies; exact serialized numerical poses and original diagnostics; policy tags separately checked"
+  "selector_regression_scope": "Fifteen synthetic cases across raw, joint and gray-only policies; exact serialized numerical poses and original diagnostics; policy tags separately checked",
+  "ci_portability": {
+    "recorded_at_utc": "2026-10-19T23:18:00.301819+00:00",
+    "validation_source_commit": "a2637c8dd97d4261dc847e8912c39ef382e029bb",
+    "initial_source_head": "53a3a9d3977e55c845ef1697f8327092c635016d",
+    "initial_ci_rollup": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-initial-rollup.json",
+      "bytes": 5659,
+      "sha256": "ccb1b30aa082b836bd52fbe8f9dfb6d38bf484a42315cfec1f628163d1c6fc04"
+    },
+    "initial_failure_logs": [
+      {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-linux38-initial.log",
+        "bytes": 14627,
+        "sha256": "eb5e255ca30bf1916b38a9330c4119b32ad8688f72ec25fadc6a48a433e35756"
+      },
+      {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-initial-job-118356084892.log",
+        "bytes": 14109,
+        "sha256": "d7470c70c5c1d555f1bb4272ecfef0d90d304107e8871a9766b30c645e42a55d"
+      },
+      {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-initial-job-118356085072.log",
+        "bytes": 87404,
+        "sha256": "cfe036d285353df120ef56a62f6a24522542eed78e28233d3f229108114b0530"
+      }
+    ],
+    "official_python38_manifest": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-python38-manifest-proof.json",
+      "bytes": 609,
+      "sha256": "4de959a00fc6e96e8bfe04b9d715aee95a228726648de2437d421b5d267f310b"
+    },
+    "source_equivalence_proof": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-portability-source-proof.json",
+      "bytes": 562,
+      "sha256": "eece55bf325f8152845d0c44c31ca154c6c3a8dcb6d807efc93b2937237ea77c"
+    },
+    "changes": [
+      "Pin only Python 3.8 Linux lanes to official-build-supported Ubuntu 24.04; retain newest-Python ubuntu-latest coverage",
+      "Explicit adequate-space fixture only for four tiny synthetic audit tests; no autouse or real-study injection",
+      "Three exact production 20GiB floor/order boundary tests",
+      "Wrap one added-test Rust line with rustfmt; estimator/auditor logic unchanged"
+    ],
+    "production_minimum_free_bytes": 21474836480,
+    "scientific_estimation_rerun": false,
+    "validation": {
+      "ci-portability-tests": {
+        "path": "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\ci-portability-tests.json",
+        "bytes": 2418,
+        "sha256": "73ac29c351b3ba0897bd7853db536670200df178ccbf5a002569a523aad29176"
+      },
+      "ci-portability-full-tests": {
+        "path": "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\ci-portability-full-tests.json",
+        "bytes": 3145,
+        "sha256": "689d4bc33ab58c42cb3e1398dc950ddd33124ab8778a42fab503c62a52b9ed90"
+      }
+    },
+    "tests": {
+      "ci-portability-tests": {
+        "file": {
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-portability-tests.xml",
+          "bytes": 1824,
+          "sha256": "4cb53d19dbff9c54121052aca62a5f7be31fc5b6b5c7eb35bcda447c40a20b13"
+        },
+        "tests": 11,
+        "passed": 11,
+        "skipped": 0,
+        "failed": 0
+      },
+      "ci-portability-full-tests": {
+        "file": {
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-portability-full-tests.xml",
+          "bytes": 149460,
+          "sha256": "9742fd3d5b701ff4a32e280f01bf87ac74330ad46e650e33ff6f2ad2c0e53868"
+        },
+        "tests": 1106,
+        "passed": 1103,
+        "skipped": 3,
+        "failed": 0
+      }
+    },
+    "scratch_cleanup": {
+      "Schema": "spatialrust.pair-mean-dense-ci-portability-pytest-scratch-cleanup.v1",
+      "VerifiedAtUtc": "2026-10-19T23:16:05.3242157Z",
+      "Paths": [
+        {
+          "Path": "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\pytest-ci-portability-tests-v1",
+          "Files": 148,
+          "LogicalBytes": 162492146,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-portability-tests.xml",
+          "XmlSha256": "4cb53d19dbff9c54121052aca62a5f7be31fc5b6b5c7eb35bcda447c40a20b13",
+          "Tests": 11,
+          "Skipped": 0
+        },
+        {
+          "Path": "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\pytest-ci-portability-full-tests-v1",
+          "Files": 1215,
+          "LogicalBytes": 438225915,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-ci-portability-full-tests.xml",
+          "XmlSha256": "9742fd3d5b701ff4a32e280f01bf87ac74330ad46e650e33ff6f2ad2c0e53868",
+          "Tests": 1106,
+          "Skipped": 3
+        }
+      ],
+      "AlreadyAbsent": [],
+      "LogicalBytesRemoved": 600718061,
+      "FreeBeforeBytes": 675886616576,
+      "FreeAfterBytes": 676489105408,
+      "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+    },
+    "storage": {
+      "final_new_package_and_incremental_cache_bytes": 25299188,
+      "maximum_successful_command_sampled_bytes": 564904311,
+      "bound_bytes": 2147483648
+    }
+  }
 }
