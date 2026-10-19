@@ -1,0 +1,753 @@
+{
+  "schema": "spatialrust.public-open3d-dense-comparison.v1",
+  "slice": "146K",
+  "date": "2026-10-20",
+  "date_timezone": "Asia/Tokyo",
+  "recorded_at_utc": "2026-10-19T19:53:34.457029+00:00",
+  "model_protocol_commit": "b4cfad9b0653695c2ae154a851ba91d5fe5b6920",
+  "implementation_commit": "7b0896154038155b72571b08514daff6af6f303a",
+  "numerical_source_commit": "1e56c9352f6b91aaccec97e946b10b5feec651c0",
+  "protocol_files": [
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "15bc4cb6d965b98514a0ce200da7309a627a30cddd4d9bb4d0d344d33d3bc16c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rgbd-wide-capture-plan.json",
+      "bytes": 4299,
+      "sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "3d9e3b4b5a83a51f6c45c1ae7a850680e4b324857ed83c33dbf98b5abfee9313"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-wide-capture-plan.json",
+      "bytes": 4299,
+      "sha256": "03df039aea7c6b02069d2b5e673fbc65e080d7d407d78d476605a8d79d5725d5"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-causal-dense-plan.json",
+      "bytes": 5242,
+      "sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-dense-final-overlap-plan.json",
+      "bytes": 4670,
+      "sha256": "fbd41ca5c1357209483b244987fb34d013a198615780a26f80ca91795a90b266"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-dense-rgbd-plan.json",
+      "bytes": 4319,
+      "sha256": "162c74968e46fef2bf30f25d2df3625209e23855957aee7a8ef530ed438cff66"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "15bc4cb6d965b98514a0ce200da7309a627a30cddd4d9bb4d0d344d33d3bc16c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-causal-dense-plan.json",
+      "bytes": 5242,
+      "sha256": "347324b9e0198ae65b2717f54086e5637b112b490573d06d511d38f36ef75d1d"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-dense-final-overlap-plan.json",
+      "bytes": 4670,
+      "sha256": "37745182241f0638bf4d295c8cf698d4304428fd0c92659f99bbda3859b93e1a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-dense-rgbd-plan.json",
+      "bytes": 4319,
+      "sha256": "766cbfb99babd6e1ad3c48c60dee7a5719f9b4258f0173df415d84d60b2509f6"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "3d9e3b4b5a83a51f6c45c1ae7a850680e4b324857ed83c33dbf98b5abfee9313"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_tum_open3d_rgbd.py",
+      "bytes": 9440,
+      "sha256": "6f6393206990d871c962ae2ac603ce690857663235c05bbc070f3a5b677092ab"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-vision\\src\\dense_odometry.rs",
+      "bytes": 31517,
+      "sha256": "5e71bef5197a80c35ff488dd5672e151cd269a38085d025611ca3e7c59fa1797"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\ARCHITECTURE.md",
+      "bytes": 137010,
+      "sha256": "58e15eb034cb65943b9f28157b20876c0b9ecd6c86b2cc118bc3f2caa2c9ff0e"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\OPEN3D_DENSE_RGBD_COMPARISON.md",
+      "bytes": 5726,
+      "sha256": "35fbb594b7a3ba73d10bde94dc7cebc3cff7cbbd9ed3c552e0cf9266d2b8eb3a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\ROADMAP.md",
+      "bytes": 164036,
+      "sha256": "3ee8595f3ae7dd0115f45afcc964fb3c4e9dc9ae29e5c950f502370aad916db4"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\audit_tum_dense_rgbd.py",
+      "bytes": 13133,
+      "sha256": "71f6af57d8c6caf6d1ff48d42313d266f064cde31e310d7623d7ac5d60e3aac2"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\dense_rgbd_protocol.py",
+      "bytes": 4566,
+      "sha256": "c618a6e5183276cb67226ccef7486b2368baaee3d45970d0cea681fd5c51804c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\open3d_rgbd_protocol.py",
+      "bytes": 3223,
+      "sha256": "cdf25090f468d237f02d9a0eca25f73209202a4a0f6f557eb724d49a8dbc8dc9"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\open3d_rgbd_validation.py",
+      "bytes": 2805,
+      "sha256": "6b97578d68e5626d27dda56e37e04885745be14ede33e8ea38685cc774870640"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_open3d_rgbd.py",
+      "bytes": 7683,
+      "sha256": "40bffb2d6b8d3356bd0ae3b9010c8033641d4eb2dd6deeaf851fd522cb717d0d"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_sequence.py",
+      "bytes": 18963,
+      "sha256": "bdf3f498ceae2a789a8c720d051442d21614826cbe729cbeda84cf4482e8c82a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\wide_rgbd_protocol.py",
+      "bytes": 1520,
+      "sha256": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8"
+    }
+  ],
+  "study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\open3d-dense-study-v2\\study.json",
+    "bytes": 1247845,
+    "sha256": "7e38975e4ccc77699126e604335ee704fc36c6315ea5b703530d74e8613e558a"
+  },
+  "preparation": {
+    "path": "E:\\SpatialRustData\\maturity-80\\open3d-dense-study-v2\\preparation.json",
+    "bytes": 64032,
+    "sha256": "39c5234385fccf1a026f03d90e7d45718b91ed9957022b86c73ad82eb6b7b3de"
+  },
+  "freeze": {
+    "path": "E:\\SpatialRustData\\maturity-80\\open3d-dense-study-v2\\all-estimates-frozen.json",
+    "bytes": 734,
+    "sha256": "3cbb5acf716e0de4335f30603bec7113c0c98fa260ccc6ade5950471058a72c3"
+  },
+  "all_estimates_frozen_at_utc": "2026-10-19T19:50:05.632263+00:00",
+  "initial_api_failure_study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\open3d-dense-study-v1\\study.json",
+    "bytes": 12509,
+    "sha256": "b1b78841ea7fc6011f1c403a525c9e5f8e5b44f11f03060137c5c81265a5c5ea"
+  },
+  "initial_api_implementation_commit": "b42d75523af5527b6a447f1700230843e0d1124f",
+  "initial_failure_scope": "Two identity-anchor rows and incompatible RGBDImage constructor; no odometry or reference scoring occurred. All original results/logs retained.",
+  "native_extension": {
+    "path": "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+    "bytes": 5383168,
+    "sha256": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]"
+  },
+  "preserved_frozen_native_files": {
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+    "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+    "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+    "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f",
+    "E:/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libdrm.so.2": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libvulkan_dzn.so": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\share\\vulkan\\icd.d\\dzn_icd.x86_64.json": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\bison": "7791b07ce4e24d56c80f3df47c9a193b039392afc1eb02af726ff93591b1c6e7",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\flex": "4cabd101467c6b428e3fd9b5a7dee0785b3108657ae0a5d85947956329d7047b",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0": "ceb1e4eb7eb552e08022d821d632cb400de60e4d3201324ac1b7ec34268ac5f9",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0": "f177704aac79527908633213ba1bb3f298c32aabdc2b3bc231b46983d58587e8",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0": "92a30b5b3a96fb52bbdad4cc46b7796411ccffc22b5eb06f72dd3d2dcb90cd40",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libgallium-26.2.5.so": "e2c423620442bb6bfafd89a4550b39eab11a4245ab88eb85153a9f4750066e03",
+    "C:\\Users\\rsasa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\open3d\\cpu\\pybind.cp312-win_amd64.pyd": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88"
+  },
+  "preserved_previous_json_count": 256,
+  "preserved_wheel_count": 5,
+  "dataset_downloads": 0,
+  "additional_image_payload_copies": 0,
+  "additional_v2_png_links": 0,
+  "cpu_worker_limit": 4,
+  "thread_environment": {
+    "OMP_NUM_THREADS": "4",
+    "OPENBLAS_NUM_THREADS": "4",
+    "MKL_NUM_THREADS": "4",
+    "NUMEXPR_NUM_THREADS": "4",
+    "RAYON_NUM_THREADS": "4"
+  },
+  "scope": "External Open3D CPU comparator on two observed development scenes; no production/native/GPU dependency or solver change, physical-calibration, memory-equivalence, speed or held-out claim",
+  "acceptance": {
+    "required_generation_fraction": 1.0,
+    "minimum_reference_fraction": 0.95,
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_1s_translation_rpe_rmse_m": 0.05,
+    "final_projective_minimum_count": 30,
+    "final_projective_minimum_fraction": 0.5,
+    "full_cloud_minimum_fraction": 0.5,
+    "full_cloud_distance_gate_m": 0.1,
+    "reference_used_for_generation": false
+  },
+  "cases": {
+    "xyz": {
+      "accepted": true,
+      "planned_poses": 798,
+      "generated_poses": 798,
+      "evaluated_poses": 795,
+      "failed_frames": 0,
+      "publisher_reference_gaps": 3,
+      "first_failed_frame_index": null,
+      "first_failure": null,
+      "first_pose_aligned_ate_rmse_m": 0.05117393895007759,
+      "one_second_translation_rpe_rmse_m": 0.02311022888937285,
+      "one_second_pairs": {
+        "evaluated": 762,
+        "planned": 768
+      },
+      "metrics_scope": "full planned trajectory",
+      "source_archive": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\rgbd_dataset_freiburg1_xyz.tgz",
+        "bytes": 448204271,
+        "sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98"
+      },
+      "plan": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-open3d-dense-plan.json",
+        "bytes": 5901,
+        "sha256": "3d9e3b4b5a83a51f6c45c1ae7a850680e4b324857ed83c33dbf98b5abfee9313"
+      },
+      "manifest": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-open3d-dense-v1\\manifest.json",
+        "bytes": 739773,
+        "sha256": "a3b5cd78e88a6045064199a5ebf4cd026ddd4fe27a8e4ad03182411ef4c3ae24"
+      },
+      "calibration": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-open3d-dense-v1\\calibration.json",
+        "bytes": 558,
+        "sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94"
+      },
+      "input_reuse": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-causal-dense-v1",
+        "manifest_sha256": "5b90a5ffe8034d270a830bd5fecc1bb352d3a17f313c9c4972dc92930466c5d7",
+        "storage": "hard links; original PNG/index payloads shared, source never edited",
+        "linked_files": 1598,
+        "linked_logical_bytes": 478351206,
+        "new_image_payload_bytes": 0,
+        "free_before_bytes": 678005485568,
+        "free_after_links_bytes": 678004436992
+      },
+      "estimates": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\run-open3d-dense-v2\\estimates.json",
+        "bytes": 4225700,
+        "sha256": "3c01939c39b029724515dc94101f78c8a32dbc54169b1bd0a1727087c7f110be"
+      },
+      "evaluation": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\evaluate-open3d-dense-v2\\accuracy.json",
+        "bytes": 492403,
+        "sha256": "81cdc29a4e2236e5396d626da2352183605192a06b1ec574f885dbccee2c2dc9"
+      },
+      "projective_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\audit-open3d-dense-projective-v1\\audit.json",
+        "bytes": 411389,
+        "sha256": "c174fb3d30767b3712428d757c8d03edf84e17249757b744f143ea438511b352"
+      },
+      "score_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\audit-open3d-dense-v2\\audit.json",
+        "bytes": 1304,
+        "sha256": "e5d04453644e351b22d8c67421187514e5d812853420761dff2248d872991cf9"
+      },
+      "audited_causal_pairs": 797,
+      "maximum_initial_pose_difference": 0.0,
+      "maximum_world_composition_difference": 2.6978419498391304e-14,
+      "independent_projective_max_differences": {
+        "correspondence_fraction": 0.0,
+        "photometric_rmse": 2.7755575615628914e-17,
+        "depth_rmse_m": 3.469446951953614e-18
+      },
+      "independent_score_max_difference_m": 1.1622647289044608e-15,
+      "independent_score_max_difference_degrees": 2.2737367544323206e-13,
+      "native_causal_control": {
+        "receipt_path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\receipts\\2026-10-20_causal_dense_rgbd.json",
+        "accepted": true,
+        "first_pose_aligned_ate_rmse_m": 0.08999275666147741,
+        "one_second_translation_rpe_rmse_m": 0.02659081522499142
+      },
+      "external_report_ranges": {
+        "correspondence_fraction": {
+          "minimum": 0.78396349582952,
+          "maximum": 0.9752990830783991
+        },
+        "support_fraction": {
+          "minimum": 0.978884953739772,
+          "maximum": 1.0
+        },
+        "owned_raw_input_bytes": {
+          "minimum": 1843200,
+          "maximum": 1843200
+        },
+        "owned_float_input_bytes": {
+          "minimum": 4915200,
+          "maximum": 4915200
+        },
+        "retained_seed_bytes": {
+          "minimum": 128,
+          "maximum": 128
+        }
+      }
+    },
+    "rpy": {
+      "accepted": true,
+      "planned_poses": 722,
+      "generated_poses": 722,
+      "evaluated_poses": 716,
+      "failed_frames": 0,
+      "publisher_reference_gaps": 6,
+      "first_failed_frame_index": null,
+      "first_failure": null,
+      "first_pose_aligned_ate_rmse_m": 0.09968393517102346,
+      "one_second_translation_rpe_rmse_m": 0.04849437945595787,
+      "one_second_pairs": {
+        "evaluated": 680,
+        "planned": 692
+      },
+      "metrics_scope": "full planned trajectory",
+      "source_archive": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\rgbd_dataset_freiburg1_rpy.tgz",
+        "bytes": 410268381,
+        "sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1"
+      },
+      "plan": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-open3d-dense-plan.json",
+        "bytes": 5901,
+        "sha256": "15bc4cb6d965b98514a0ce200da7309a627a30cddd4d9bb4d0d344d33d3bc16c"
+      },
+      "manifest": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-open3d-dense-v1\\manifest.json",
+        "bytes": 670349,
+        "sha256": "8b0e741c340676787ed4a7835269626d8f1321885384a52419d946f4a2a8a3da"
+      },
+      "calibration": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-open3d-dense-v1\\calibration.json",
+        "bytes": 558,
+        "sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94"
+      },
+      "input_reuse": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-causal-dense-v1",
+        "manifest_sha256": "d57a48595c2ad892e9dc73bc35315ff6c76bb9069213578e1b3c680d36077295",
+        "storage": "hard links; original PNG/index payloads shared, source never edited",
+        "linked_files": 1447,
+        "linked_logical_bytes": 439798474,
+        "new_image_payload_bytes": 0,
+        "free_before_bytes": 678003683328,
+        "free_after_links_bytes": 678003290112
+      },
+      "estimates": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\run-open3d-dense-v2\\estimates.json",
+        "bytes": 3817946,
+        "sha256": "928c7624b9e0daaaf7c697cbd2e9c9d447a6eff7a966dc93ceb8c43aff1dd27a"
+      },
+      "evaluation": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\evaluate-open3d-dense-v2\\accuracy.json",
+        "bytes": 442486,
+        "sha256": "40a9e887fda4a00a2c61545329d8f7e8d71a4c17f421457623420a5789902e9b"
+      },
+      "projective_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\audit-open3d-dense-projective-v1\\audit.json",
+        "bytes": 370977,
+        "sha256": "21972ed2809a24ebcd644d206617281068a21f175a547cf88ae353393fba4578"
+      },
+      "score_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\audit-open3d-dense-v2\\audit.json",
+        "bytes": 1301,
+        "sha256": "7fa1c3d9ee1d0d9d853fac6b7dca44d95ac1276d222ef00186bda56b6efc9f85"
+      },
+      "audited_causal_pairs": 721,
+      "maximum_initial_pose_difference": 0.0,
+      "maximum_world_composition_difference": 1.8207657603852567e-14,
+      "independent_projective_max_differences": {
+        "correspondence_fraction": 0.0,
+        "photometric_rmse": 2.7755575615628914e-17,
+        "depth_rmse_m": 3.469446951953614e-18
+      },
+      "independent_score_max_difference_m": 8.951173136040325e-16,
+      "independent_score_max_difference_degrees": 2.8421709430404007e-13,
+      "native_causal_control": {
+        "receipt_path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\receipts\\2026-10-20_causal_dense_rgbd.json",
+        "accepted": false,
+        "first_pose_aligned_ate_rmse_m": 0.11479303058830677,
+        "one_second_translation_rpe_rmse_m": 0.048144966825295156
+      },
+      "external_report_ranges": {
+        "correspondence_fraction": {
+          "minimum": 0.6373768529803889,
+          "maximum": 0.9805872450313807
+        },
+        "support_fraction": {
+          "minimum": 0.960685234305924,
+          "maximum": 1.0
+        },
+        "owned_raw_input_bytes": {
+          "minimum": 1843200,
+          "maximum": 1843200
+        },
+        "owned_float_input_bytes": {
+          "minimum": 4915200,
+          "maximum": 4915200
+        },
+        "retained_seed_bytes": {
+          "minimum": 128,
+          "maximum": 128
+        }
+      }
+    }
+  },
+  "tests": {
+    "open3d-dense-focused": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-focused.xml",
+        "bytes": 8488,
+        "sha256": "294a1198ca3ebfe413751f2c68b71d32611dc7f7011a82f2429bf4de0c901803"
+      },
+      "tests": 56,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0
+    },
+    "open3d-dense-full": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full.xml",
+        "bytes": 133770,
+        "sha256": "b2a1982d1d99b8b193ddf31715845a746d07c64973f4c9fd0a0f703c9625bb9d"
+      },
+      "tests": 1000,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    "open3d-dense-full-v2": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v2.xml",
+        "bytes": 134038,
+        "sha256": "a51d5aa7d334335e77b70c4fcf8c45185ca2c7a3a746ad9f44256b1e560f5e95"
+      },
+      "tests": 1002,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    "new_comparator_cases": 25,
+    "python_passed": 999,
+    "native_rebuild_required": false,
+    "numerical_binary_unchanged": true,
+    "python38_syntax_checked": true
+  },
+  "unchanged_native_trees": {
+    "crates/spatialrust-vision": "72f91eb73106cc2f729042690da2cf257a95d023",
+    "crates/spatialrust-py/src": "d9b3227f074928815707d43f9ec5845344f20daf",
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96"
+  },
+  "test_scratch_cleanup": {
+    "Schema": "spatialrust.open3d-dense-pytest-scratch-cleanup.v1",
+    "VerifiedAtUtc": "2026-10-19T19:30:28.6802464Z",
+    "Paths": [
+      {
+        "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-focused-v1",
+        "Files": 109,
+        "LogicalBytes": 121850117,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-focused.xml",
+        "XmlSha256": "294a1198ca3ebfe413751f2c68b71d32611dc7f7011a82f2429bf4de0c901803",
+        "Tests": 56,
+        "Skipped": 0
+      },
+      {
+        "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-full-v1",
+        "Files": 1085,
+        "LogicalBytes": 316297689,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full.xml",
+        "XmlSha256": "b2a1982d1d99b8b193ddf31715845a746d07c64973f4c9fd0a0f703c9625bb9d",
+        "Tests": 1000,
+        "Skipped": 3
+      },
+      {
+        "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-full-v2",
+        "Files": 1085,
+        "LogicalBytes": 316297679,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v2.xml",
+        "XmlSha256": "a51d5aa7d334335e77b70c4fcf8c45185ca2c7a3a746ad9f44256b1e560f5e95",
+        "Tests": 1002,
+        "Skipped": 3
+      }
+    ],
+    "AlreadyAbsent": [],
+    "LogicalBytesRemoved": 754445485,
+    "FreeBeforeBytes": 677643722752,
+    "FreeAfterBytes": 678401703936,
+    "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+  },
+  "storage": {
+    "final_combined_new_result_logical_bytes": 336933306,
+    "prefinal_recorded_result_logical_bytes": 336933306,
+    "maximum_result_bytes": 1073741824,
+    "minimum_free_bytes": 21474836480,
+    "maximum_command_seconds": 3600,
+    "minimum_sampled_free_bytes": 677643722752,
+    "free_after_bytes": {
+      "C": 78758490112,
+      "E": 678105968640
+    },
+    "retained_seed_payload_bytes": 128,
+    "external_native_working_memory_observed": false,
+    "excluded_shared_png_and_index_logical_bytes": 918149680
+  },
+  "commands": [
+    {
+      "label": "generate-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T19:28:54.871859+00:00",
+      "finished_at_utc": "2026-10-19T19:40:28.302730+00:00"
+    },
+    {
+      "label": "generate-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T19:40:28.349651+00:00",
+      "finished_at_utc": "2026-10-19T19:50:05.603603+00:00"
+    },
+    {
+      "label": "projective-audit-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T19:50:05.673153+00:00",
+      "finished_at_utc": "2026-10-19T19:51:26.464172+00:00"
+    },
+    {
+      "label": "score-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T19:51:26.490838+00:00",
+      "finished_at_utc": "2026-10-19T19:51:33.019685+00:00"
+    },
+    {
+      "label": "score-audit-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T19:51:33.104904+00:00",
+      "finished_at_utc": "2026-10-19T19:51:35.190643+00:00"
+    },
+    {
+      "label": "projective-audit-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T19:51:35.309251+00:00",
+      "finished_at_utc": "2026-10-19T19:52:57.012986+00:00"
+    },
+    {
+      "label": "score-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T19:52:57.067234+00:00",
+      "finished_at_utc": "2026-10-19T19:53:03.918471+00:00"
+    },
+    {
+      "label": "score-audit-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-19T19:53:04.081408+00:00",
+      "finished_at_utc": "2026-10-19T19:53:06.242583+00:00"
+    }
+  ],
+  "remaining": [
+    "Native rpy full motion accuracy",
+    "Canonical measured clock uncertainty and physical frame accuracy",
+    "Both raw Linux hardware classes",
+    "Canonical full mapping and semantic/release acceptance",
+    "Held-out motion robustness"
+  ],
+  "operational_80_percent_proven": false,
+  "post_study_checkout_identity_validation": {
+    "policy": "Admit only the exact registered parent byte content in uniform LF or CRLF form; preserve declared original raw identity. Reject mixed endings, stray CR, added whitespace and changed controls.",
+    "failed_ci_source_commit": "16cdaaa0821ff9a9bfeb9b6d20384a1d3aff1392",
+    "parent_encodings": {
+      "xyz": {
+        "lf_sha256": "10fc2b663545b9f26a210ced3dadd3838fa9e2e76cc8b7bbb6c43b3582478847",
+        "crlf_sha256": "347324b9e0198ae65b2717f54086e5637b112b490573d06d511d38f36ef75d1d",
+        "recorded_parent_sha256": "347324b9e0198ae65b2717f54086e5637b112b490573d06d511d38f36ef75d1d"
+      },
+      "rpy": {
+        "lf_sha256": "b6d5d39345b164d454658d89c0033d6ab81dfb057156885dd6c597aae0b269ec",
+        "crlf_sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544",
+        "recorded_parent_sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544"
+      }
+    },
+    "source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\open3d_rgbd_protocol.py",
+      "bytes": 3826,
+      "sha256": "4e282bee7822b61561960a73bbe1cf5434844783a3d9a490315057a3cabd992a"
+    },
+    "tests_source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_tum_open3d_rgbd.py",
+      "bytes": 10950,
+      "sha256": "5bcaaa0d754f631673ccce52fac45d0a0ea30a457d37a6e19c4f61202690decf"
+    },
+    "tests": {
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v3.xml",
+        "bytes": 135492,
+        "sha256": "c39a423d1457dbc4ba8348133aa5d99729a30ea2f32d5e993f5035745054a3b9"
+      },
+      "tests": 1012,
+      "passed": 1009,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0,
+      "new_checkout_cases": 10,
+      "total_comparator_cases": 35
+    },
+    "scratch_cleanup": {
+      "Schema": "spatialrust.open3d-dense-portability-pytest-scratch-cleanup.v1",
+      "VerifiedAtUtc": "2026-10-19T20:03:43.4197902Z",
+      "Paths": [
+        {
+          "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-full-v3",
+          "Files": 1095,
+          "LogicalBytes": 316349249,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v3.xml",
+          "XmlSha256": "c39a423d1457dbc4ba8348133aa5d99729a30ea2f32d5e993f5035745054a3b9",
+          "Tests": 1012,
+          "Skipped": 3
+        }
+      ],
+      "AlreadyAbsent": [],
+      "LogicalBytesRemoved": 316349249,
+      "FreeBeforeBytes": 677787430912,
+      "FreeAfterBytes": 678105444352,
+      "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+    },
+    "total_passing_scratch_logical_bytes_removed": 1070794734,
+    "scientific_outputs_and_plans_preserved": true,
+    "numerical_rebuild": false,
+    "scientific_refit": false,
+    "free_after_bytes": {
+      "C": 78720118784,
+      "E": 678105444352
+    }
+  },
+  "post_study_optional_comparator_wheel_validation": {
+    "failed_ci_source_commit": "b866c817226fc5255c1c59c6f74b9122f8ea9d84",
+    "policy": "Only the exact external legacy-image ownership test module/name and unavailable open3d.cpu.pybind import reason may add one skip. Baseline expected skip count, all failures, duplicate/other skips and actual installed-wheel byte/ICP/PCD checks retain strict rejection.",
+    "source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tools\\verify_installed_wheel.py",
+      "bytes": 5111,
+      "sha256": "41730f41ec99005fbcf7ce4d07e761d6418c480921589b8a0d6ac69f6e361058"
+    },
+    "tests_source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_installed_wheel_junit.py",
+      "bytes": 2366,
+      "sha256": "0b07a4c51fa33736836fa1767958eabbd7f3a752a9f72022efc0fcd1a2ee9a4c"
+    },
+    "local_full_tests": {
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v4.xml",
+        "bytes": 136733,
+        "sha256": "4f9a76d93ffc89a38ddfe11fd4d80e82ad50b78c221ce7038ec5354937986b6e"
+      },
+      "tests": 1021,
+      "passed": 1018,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0,
+      "new_wheel_admission_cases": 9
+    },
+    "deliberately_simulated_external_module_absence": true,
+    "unavailable_comparator_tests": {
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-absent-tests.xml",
+        "bytes": 5312,
+        "sha256": "e57830412176e86a30a94371496194982ba4bc8ab36577243cdfade7cb46d61a"
+      },
+      "tests": 35,
+      "passed": 34,
+      "skipped": 1
+    },
+    "actual_installed_wheel_validation": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-absent-wheel-validation.json",
+      "bytes": 1203,
+      "sha256": "e66add16b0d9544617d17b484f1c0d704e181c27c668a337262c3d03366cddeb"
+    },
+    "installed_wheel_bytes_icp_support_and_exact_pcd_verified": true,
+    "scratch_cleanup": {
+      "Schema": "spatialrust.open3d-dense-wheel-skip-pytest-scratch-cleanup.v1",
+      "VerifiedAtUtc": "2026-10-19T20:12:29.0981611Z",
+      "Paths": [
+        {
+          "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-full-v4",
+          "Files": 1104,
+          "LogicalBytes": 316354148,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-full-v4.xml",
+          "XmlSha256": "4f9a76d93ffc89a38ddfe11fd4d80e82ad50b78c221ce7038ec5354937986b6e",
+          "Tests": 1021,
+          "Skipped": 3
+        },
+        {
+          "Path": "E:\\SpatialRustBuild\\open3d-dense-v1\\pytest-open3d-absent-v1",
+          "Files": 47,
+          "LogicalBytes": 40674911,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-absent-tests.xml",
+          "XmlSha256": "e57830412176e86a30a94371496194982ba4bc8ab36577243cdfade7cb46d61a",
+          "Tests": 35,
+          "Skipped": 1
+        }
+      ],
+      "AlreadyAbsent": [],
+      "LogicalBytesRemoved": 357029059,
+      "FreeBeforeBytes": 677746106368,
+      "FreeAfterBytes": 678104920064,
+      "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+    },
+    "total_passing_scratch_logical_bytes_removed": 1427823793,
+    "scientific_outputs_and_plans_preserved": true,
+    "scientific_refit": false,
+    "native_rebuild": false
+  },
+  "post_study_onnx_junit_consumer_validation": {
+    "failed_ci_source_commit": "22ef12ed5750edc97a060a10d0b2f42b936944f9",
+    "observed_real_onnx_ci": {
+      "passed": 1020,
+      "skipped": 1,
+      "reason": "Only the unavailable external comparator test; former standalone zero-total-skip assertion rejected it."
+    },
+    "policy": "ONNX job now uses the same exact named-external classifier with expected baseline skips zero. Actual ONNX skips and every other failure/unexpected skip still reject.",
+    "workflow": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\.github\\workflows\\ci.yml",
+      "bytes": 27766,
+      "sha256": "a50a7ff702ed14da55720c8bf1d59a31036e7f718ee1f4e73392c24f51358ebb"
+    },
+    "gate_evidence": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\open3d-dense-onnx-junit-gate.json",
+      "bytes": 233,
+      "sha256": "3b25599b4c823f943ff470646f48474bf1dd9e2922932cbd84dc1e80184b2cb2"
+    },
+    "yaml_parsed": true,
+    "actual_onnx_skips_rejected": true,
+    "only_named_external_absence_accepted": true,
+    "python_and_numerical_sources_unchanged_since_1018_passes": true,
+    "scientific_refit": false,
+    "native_rebuild": false
+  }
+}

@@ -19,6 +19,18 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a fixed full-scene Open3D CPU RGB-D comparator with owned adjacent images,
+  one causal relative seed and independent raw projective/world/score auditing.
+  Both complete development runs pass existing gates (xyz ATE/RPE
+  0.051174/0.023110m; rpy 0.099684/0.048494m). Preserve native rpy's ATE failure,
+  all initial API failures, unchanged binaries and original acceptance limits.
+  Preserve parent identities across uniform LF/CRLF checkout while rejecting
+  other byte/model changes. Identify only the named unavailable external smoke
+  as an extra optional wheel skip; all other wheel admission stays strict.
+  Python 1,018 passes/3 optional skips, no image copies/downloads, bounded E
+  output and 1.43GB passing scratch reclaimed. See
+  `docs/OPEN3D_DENSE_RGBD_COMPARISON.md` and its measurement receipt.
+
 - Validate the frozen public image/point executable on privately staged Mesa
   Gallium D3D12/surfaceless GL 4.6 / GLSL 4.60: all six original operation cases
   pass, with centroid error 3.818e-6m under the unchanged 1e-5m limit. Both raw

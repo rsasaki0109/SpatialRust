@@ -151,7 +151,7 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
              dense_rgbd_aligner=None):
     """Run native ICP by default; explicit adapters serve separate baseline studies."""
     dense_method = method in ('spatialrust_dense_projective_rgbd_cpu', 'spatialrust_final_overlap_dense_rgbd_cpu',
-                              'spatialrust_causal_dense_rgbd_cpu')
+                              'spatialrust_causal_dense_rgbd_cpu', 'open3d_causal_rgbd_cpu')
     image_method = dense_method or method in ('spatialrust_rgbd_pnp_cpu', 'spatialrust_keyframe_rgbd_pnp_cpu',
                               'spatialrust_adaptive_keyframe_rgbd_pnp_cpu',
                               'spatialrust_wide_rgbd_pnp_cpu',

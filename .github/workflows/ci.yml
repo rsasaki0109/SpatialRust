@@ -373,7 +373,7 @@ jobs:
           cargo clippy --manifest-path crates/spatialrust-py/Cargo.toml --features onnxruntime -- -D warnings
           maturin develop --release --features onnxruntime --manifest-path crates/spatialrust-py/Cargo.toml
           pytest crates/spatialrust-py/tests --junitxml=target/python-onnx-tests.xml
-          python -c "import xml.etree.ElementTree as E; s=E.parse('target/python-onnx-tests.xml').getroot().find('testsuite'); assert s is not None and int(s.attrib['skipped']) == 0, 'ONNX validation must not silently skip'"
+          python -c "import sys; sys.path.insert(0, 'crates/spatialrust-py/tools'); from verify_installed_wheel import verify_junit; verify_junit('target/python-onnx-tests.xml', expected_skips=0)"
           python scripts/study_icp_convergence.py --output-dir "$RUNNER_TEMP/$SPATIALRUST_STUDY_NAME/icp-convergence-study"
           python scripts/study_trimmed_icp.py --output-dir "$RUNNER_TEMP/$SPATIALRUST_STUDY_NAME/trimmed-icp-study"
       - name: Save ONNX test results
