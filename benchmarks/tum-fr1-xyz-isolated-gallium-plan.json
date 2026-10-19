@@ -1,0 +1,176 @@
+{
+  "schema": "spatialrust.isolated-gallium-gles-plan.v1",
+  "date": "2026-10-20",
+  "slice": "146J",
+  "base_commit": "4ff2edeb757b4cad964cffdec3203b4caa83ab5c",
+  "parent_plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gles-hardware-plan.json",
+    "bytes": 3378,
+    "sha256": "fbd4b69522472f74a55f3bdf6fb4de5745ebb6d8d2b26281c458dc5ec755f043"
+  },
+  "prior_study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\study.json",
+    "bytes": 31048,
+    "sha256": "1632dc1c5cb342d2f4f6bfad4caac40bac0d408895383a3ceb3d6c84c2c494d8"
+  },
+  "source_archive": {
+    "path": "E:\\SpatialRustBuild\\mesa-dozen-scout-v1\\mesa-26.2.5.tar.xz",
+    "sha256": "794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5",
+    "bytes": 68652756
+  },
+  "mesa_source": "E:\\SpatialRustBuild\\mesa-dozen-v1\\source\\mesa-26.2.5",
+  "source_capability_motivation": "Pinned source advertises GLSL feature level 460 and ESSL 310; this is not an observed runtime version or operation result.",
+  "build_preparation": {
+    "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v3\\preparation.json",
+    "bytes": 7461,
+    "sha256": "26175b30eeaaee073f10d91c3934ed6d7925d7d9da02bb9535d22dd471966db4"
+  },
+  "configuration": [
+    "/mnt/e/SpatialRustBuild/mesa-dozen-v1/tools-env/bin/meson",
+    "setup",
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/build",
+    "/mnt/e/SpatialRustBuild/mesa-dozen-v1/source/mesa-26.2.5",
+    "--prefix",
+    "/opt/spatialrust-gles-v1",
+    "--libdir=lib",
+    "--wrap-mode=nodownload",
+    "--buildtype=release",
+    "-Dgallium-drivers=d3d12,softpipe",
+    "-Dvulkan-drivers=[]",
+    "-Dplatforms=[]",
+    "-Degl-native-platform=surfaceless",
+    "-Dglx=disabled",
+    "-Degl=enabled",
+    "-Dgles1=disabled",
+    "-Dgles2=enabled",
+    "-Dopengl=true",
+    "-Dglvnd=enabled",
+    "-Dgbm=disabled",
+    "-Dllvm=disabled",
+    "-Dmicrosoft-clc=disabled",
+    "-Dspirv-tools=disabled",
+    "-Dbuild-tests=false",
+    "-Dtools=[]",
+    "-Dvalgrind=disabled",
+    "-Dlibunwind=disabled",
+    "-Dallow-fallback-for=libdrm",
+    "-Dlibdrm:tests=false",
+    "-Dgallium-va=disabled",
+    "-Dvideo-codecs=[]",
+    "-Dgallium-d3d12-video=disabled",
+    "-Dgallium-d3d12-graphics=enabled"
+  ],
+  "maximum_jobs": 4,
+  "private_install_destdir": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage",
+  "private_installed_prefix": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1",
+  "parser_tools": {
+    "path": "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json",
+    "bytes": 1730,
+    "sha256": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a"
+  },
+  "private_parser_package_compressed_bytes": 1054910,
+  "preserved_pre_gpu_preparation_failures": [
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\mesa-gallium-prebuild-failures.json",
+      "bytes": 441,
+      "sha256": "781c97eef5a424da60f4d9377b0b01e06d7cbae0e2492151b7c44554207178d0"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v1\\build.json",
+      "bytes": 2280,
+      "sha256": "4bd0eeb83194b812322f15398141175fed91b3f7cc4166b6362e1c3b5951cf68"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v2\\build.json",
+      "bytes": 2282,
+      "sha256": "ae0ff398e846afa415cde1c10fcc8fc33ab9c91cb0cf8b0e8d86008fdb6d9280"
+    }
+  ],
+  "fixed_executable": {
+    "path": "/mnt/e/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance",
+    "bytes": 5503992,
+    "sha256": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860"
+  },
+  "fixed_executable_source_commit": "ebf117dc781500bcdacb24e1afb1f95855155740",
+  "fixed_input_manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+  "existing_inputs": "E:/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1",
+  "frame_indices": [
+    0,
+    399,
+    797
+  ],
+  "preferences": [
+    "high",
+    "low"
+  ],
+  "backend": "Gl",
+  "requested_backend": "gl",
+  "os": "linux",
+  "environment": "Ubuntu 22.04 WSL2; new privately staged Mesa Gallium D3D12 and surfaceless EGL, selected per child process; installed system driver unchanged",
+  "process_environment": {
+    "__EGL_VENDOR_LIBRARY_FILENAMES": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/runtime/mesa-vendor.json",
+    "LD_LIBRARY_PATH": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib:/usr/lib/wsl/lib",
+    "LIBGL_DRIVERS_PATH": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/dri",
+    "GALLIUM_DRIVER": "d3d12",
+    "EGL_PLATFORM": "surfaceless",
+    "MESA_SHADER_CACHE_MAX_SIZE": "64M"
+  },
+  "forbid_inherited_capability_overrides": [
+    "MESA_GL_VERSION_OVERRIDE",
+    "MESA_GLSL_VERSION_OVERRIDE",
+    "MESA_EXTENSION_OVERRIDE",
+    "MESA_LOADER_DRIVER_OVERRIDE",
+    "LIBGL_ALWAYS_SOFTWARE",
+    "WGPU_ALLOW_UNDERLYING_NONCOMPLIANT_ADAPTER",
+    "WGPU_BACKEND"
+  ],
+  "runtime_freeze_required_before_first_new_context": [
+    "Clean protocol commit and plan identities",
+    "Original input/executable/source identities",
+    "Exact new vendor library, Gallium ELF, private selection JSON, build/dependency identities",
+    "Protected existing wheels/extensions/executables/results",
+    "Actual launch environment and bounded output directories"
+  ],
+  "capability_probe_scope": "The first EGL context counts as admission and must follow the committed plan and immutable execution freeze. It never substitutes for application execution.",
+  "attempt_policy": "After successful build/hash freeze, attempt both fixed preferences once with the original executable; preserve stderr, failed exits and all unobserved frames. No alternate driver/backend, software fallback, version override, removed failure or post-score tuning.",
+  "operation_gates": {
+    "image_mismatches": 0,
+    "histogram_mismatches": 0,
+    "voxel_membership_mismatches": 0,
+    "centroid_coordinate_error_m": 1e-05,
+    "radius_m": 0.03125,
+    "radius_count_mismatches": 0,
+    "mid_chain_host_image_reads": 0,
+    "each_retained_pool_budget_bytes": 67108864,
+    "transfers": "All original exact image/voxel/radius/tree receipts remain required"
+  },
+  "hardware_gates": {
+    "required_raw_classes": [
+      "DiscreteGpu",
+      "IntegratedGpu"
+    ],
+    "minimum_distinct_classes": 2,
+    "Other_Cpu_VirtualGpu_never_promoted": true,
+    "operation_and_hardware_coverage_audited_separately": true
+  },
+  "auditor": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\audit_public_gpu_conformance.py",
+    "bytes": 7321,
+    "sha256": "1d5cb2e5798671b68adae254a792f069fd6cebbceff9762f3b916fa7529a51c9"
+  },
+  "storage": {
+    "new_build_root": "E:/SpatialRustBuild/mesa-gallium-gles-v3",
+    "output_root": "E:/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1",
+    "minimum_free_bytes": 21474836480,
+    "maximum_new_build_prefix_temp_bytes": 4294967296,
+    "maximum_combined_controlled_bytes": 17179869184,
+    "maximum_result_bytes": 134217728,
+    "timeout_seconds_per_preference": 600,
+    "dataset_downloads": 0,
+    "dataset_payload_copies": 0,
+    "private_tool_downloads": 2,
+    "preserve_all_prior_attempts": true
+  },
+  "scope": "Three observed development frames and a driver/WSI combination. No bare-metal Linux, broad GL certification, performance, motion, canonical calibration or operational 80% claim; no numerical kernel change or unsafe external context integration.",
+  "pre_admission_prefix_correction": "Initial contract hardcoded the staged logical suffix as v3; the unchanged build configuration uses /opt/spatialrust-gles-v1 inside the v3 DESTDIR. Correct the derived paths before any new driver context; no rebuild, driver/version override, data, numeric gate or score change."
+}

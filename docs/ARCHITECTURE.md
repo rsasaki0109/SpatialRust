@@ -14,9 +14,16 @@ before device creation; Primary admission retains its original policy. Requested
 actual backends are separate receipts; raw hardware classes retain their
 meaning. Shader work, core dependencies and CPU/GPU transfers are unchanged.
 The Windows primary control passes both hardware classes; the fixed Linux GL
-attempt fails during device creation, before application work. Separate pinned
+attempt with the original system driver fails during device creation, before
+application work. Separate pinned
 diagnostics bind the internal GLSL dynamic-array failure without admission
 overrides. See the [fixed GLES protocol and outcomes](EXPLICIT_GLES_GPU_VALIDATION.md).
+
+A separately frozen driver/WSI study reuses the executable and all numeric,
+transfer and pool gates with privately staged Mesa Gallium D3D12/surfaceless GL.
+All six cases pass; raw Other remains outside the two-class hardware gate.
+Installed system libraries, defaults, kernels and safe ownership stay unchanged;
+see [isolated Gallium evidence](ISOLATED_GALLIUM_GLES_VALIDATION.md).
 
 A separately fixed experimental dense adapter retains one owned proper relative
 pose as the next initial seed, starting with identity. Native and full-cloud

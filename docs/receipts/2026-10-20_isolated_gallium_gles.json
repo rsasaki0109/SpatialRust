@@ -1,0 +1,1511 @@
+{
+  "schema": "spatialrust.isolated-gallium-evidence.v1",
+  "date": "2026-10-20",
+  "slice": "146J",
+  "recorded_at_utc": "2026-10-19T18:37:21.663805+00:00",
+  "initial_protocol_commit": "bbac4d155eec785327ac813f3854f1cb8b30dba2",
+  "protocol_commit": "70e48c8c6bf0fb7dcc45f1d56a4b08b48388e364",
+  "base_commit": "4ff2edeb757b4cad964cffdec3203b4caa83ab5c",
+  "fixed_plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-isolated-gallium-plan.json",
+    "bytes": 8043,
+    "sha256": "6d4f389c4a5e8b0d336ecde4d2bd42096f864d147ab0e1177ea8e62e01c37a22"
+  },
+  "git_plan_blob_sha256": "73430b7b684e5aaebb72a8bfcd5d5aea8797e0d7a6f6c8e5dfa09ebb15e720f0",
+  "source_commit": "ebf117dc781500bcdacb24e1afb1f95855155740",
+  "executable": {
+    "path": "/mnt/e/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance",
+    "bytes": 5503992,
+    "sha256": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860"
+  },
+  "execution_freeze": {
+    "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\isolated-gallium-conformance-v1\\execution-freeze.json",
+    "bytes": 130506,
+    "sha256": "c8869253417de22970945ad0bedd4825c43f99d44f7e04f77fd3b927e97cb5a9"
+  },
+  "control_freeze": {
+    "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v3\\runtime\\control-freeze.json",
+    "bytes": 130462,
+    "sha256": "db69073f7f3e765339fb7bbb77424f5c6d9b1ffee7da3f19af464dbe0d298ade"
+  },
+  "study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\isolated-gallium-conformance-v1\\study.json",
+    "bytes": 156219,
+    "sha256": "d4cb451ecaf99a1f89add4fe19cb7d51710f8823633696a018e7474f1933449c"
+  },
+  "source_archive": {
+    "path": "E:\\SpatialRustBuild\\mesa-dozen-scout-v1\\mesa-26.2.5.tar.xz",
+    "sha256": "794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5",
+    "bytes": 68652756
+  },
+  "build_preparation": {
+    "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v3\\preparation.json",
+    "bytes": 7461,
+    "sha256": "26175b30eeaaee073f10d91c3934ed6d7925d7d9da02bb9535d22dd471966db4"
+  },
+  "build_metadata": {
+    "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v3\\build.json",
+    "bytes": 16518,
+    "sha256": "d01f5b4b3ce5937c0bc2b6be64cf4bd640705d5f3b685df1748b95c98efddde8"
+  },
+  "build_commands": [
+    {
+      "label": "configure",
+      "arguments": [
+        "/mnt/e/SpatialRustBuild/mesa-dozen-v1/tools-env/bin/meson",
+        "setup",
+        "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/build",
+        "/mnt/e/SpatialRustBuild/mesa-dozen-v1/source/mesa-26.2.5",
+        "--prefix",
+        "/opt/spatialrust-gles-v1",
+        "--libdir=lib",
+        "--wrap-mode=nodownload",
+        "--buildtype=release",
+        "-Dgallium-drivers=d3d12,softpipe",
+        "-Dvulkan-drivers=[]",
+        "-Dplatforms=[]",
+        "-Degl-native-platform=surfaceless",
+        "-Dglx=disabled",
+        "-Degl=enabled",
+        "-Dgles1=disabled",
+        "-Dgles2=enabled",
+        "-Dopengl=true",
+        "-Dglvnd=enabled",
+        "-Dgbm=disabled",
+        "-Dllvm=disabled",
+        "-Dmicrosoft-clc=disabled",
+        "-Dspirv-tools=disabled",
+        "-Dbuild-tests=false",
+        "-Dtools=[]",
+        "-Dvalgrind=disabled",
+        "-Dlibunwind=disabled",
+        "-Dallow-fallback-for=libdrm",
+        "-Dlibdrm:tests=false",
+        "-Dgallium-va=disabled",
+        "-Dvideo-codecs=[]",
+        "-Dgallium-d3d12-video=disabled",
+        "-Dgallium-d3d12-graphics=enabled"
+      ],
+      "started_at_utc": "2026-10-19T18:05:47.483077+00:00",
+      "samples": [
+        {
+          "seconds": 1.5944999999462084e-05,
+          "new_root_bytes": 12058,
+          "free_bytes": 678625288192
+        },
+        {
+          "seconds": 10.023243173,
+          "new_root_bytes": 5350594,
+          "free_bytes": 678618894336
+        },
+        {
+          "seconds": 20.206706984,
+          "new_root_bytes": 5924446,
+          "free_bytes": 678618714112
+        },
+        {
+          "seconds": 30.439544290999997,
+          "new_root_bytes": 6039854,
+          "free_bytes": 678618632192
+        },
+        {
+          "seconds": 40.654141364,
+          "new_root_bytes": 6783755,
+          "free_bytes": 678617825280
+        },
+        {
+          "seconds": 50.979584365,
+          "new_root_bytes": 6784955,
+          "free_bytes": 678617821184
+        }
+      ],
+      "pid": 400,
+      "exit_status": 0,
+      "finished_at_utc": "2026-10-19T18:06:48.922191+00:00"
+    },
+    {
+      "label": "compile",
+      "arguments": [
+        "/mnt/e/SpatialRustBuild/mesa-dozen-v1/tools-env/bin/meson",
+        "compile",
+        "-C",
+        "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/build",
+        "-j",
+        "4"
+      ],
+      "started_at_utc": "2026-10-19T18:06:51.768213+00:00",
+      "samples": [
+        {
+          "seconds": 1.0337999995613245e-05,
+          "new_root_bytes": 17661904,
+          "free_bytes": 678606417920
+        },
+        {
+          "seconds": 11.295051286999993,
+          "new_root_bytes": 17665725,
+          "free_bytes": 678606413824
+        },
+        {
+          "seconds": 22.626618597999993,
+          "new_root_bytes": 21424153,
+          "free_bytes": 678602969088
+        },
+        {
+          "seconds": 34.006286172,
+          "new_root_bytes": 23891315,
+          "free_bytes": 678600417280
+        },
+        {
+          "seconds": 45.43064569799999,
+          "new_root_bytes": 27929044,
+          "free_bytes": 678596288512
+        },
+        {
+          "seconds": 56.962609231,
+          "new_root_bytes": 23875789,
+          "free_bytes": 678600347648
+        },
+        {
+          "seconds": 68.61866869500001,
+          "new_root_bytes": 27965665,
+          "free_bytes": 678594822144
+        },
+        {
+          "seconds": 80.28975329199999,
+          "new_root_bytes": 31085828,
+          "free_bytes": 678592983040
+        },
+        {
+          "seconds": 92.106619046,
+          "new_root_bytes": 32780735,
+          "free_bytes": 678591320064
+        },
+        {
+          "seconds": 103.99062190599999,
+          "new_root_bytes": 85889003,
+          "free_bytes": 678538182656
+        },
+        {
+          "seconds": 115.892771258,
+          "new_root_bytes": 127508018,
+          "free_bytes": 678488551424
+        },
+        {
+          "seconds": 127.521000228,
+          "new_root_bytes": 92666232,
+          "free_bytes": 678531284992
+        },
+        {
+          "seconds": 139.670598407,
+          "new_root_bytes": 92822006,
+          "free_bytes": 678531121152
+        },
+        {
+          "seconds": 151.620413933,
+          "new_root_bytes": 92955090,
+          "free_bytes": 678530965504
+        },
+        {
+          "seconds": 163.758660862,
+          "new_root_bytes": 93146192,
+          "free_bytes": 678530781184
+        },
+        {
+          "seconds": 175.679700525,
+          "new_root_bytes": 93358107,
+          "free_bytes": 678530506752
+        },
+        {
+          "seconds": 187.702574509,
+          "new_root_bytes": 93533790,
+          "free_bytes": 678530342912
+        },
+        {
+          "seconds": 199.710642378,
+          "new_root_bytes": 93785852,
+          "free_bytes": 678530068480
+        },
+        {
+          "seconds": 211.798593133,
+          "new_root_bytes": 93965361,
+          "free_bytes": 678529900544
+        },
+        {
+          "seconds": 223.898725715,
+          "new_root_bytes": 94073818,
+          "free_bytes": 678529765376
+        },
+        {
+          "seconds": 236.01865321499997,
+          "new_root_bytes": 94302225,
+          "free_bytes": 678529454080
+        },
+        {
+          "seconds": 248.236825448,
+          "new_root_bytes": 94488879,
+          "free_bytes": 678529314816
+        },
+        {
+          "seconds": 260.43064205999997,
+          "new_root_bytes": 94600555,
+          "free_bytes": 678529146880
+        },
+        {
+          "seconds": 272.754581263,
+          "new_root_bytes": 94740591,
+          "free_bytes": 678528991232
+        },
+        {
+          "seconds": 284.930630863,
+          "new_root_bytes": 95002084,
+          "free_bytes": 678528655360
+        },
+        {
+          "seconds": 297.278863688,
+          "new_root_bytes": 95145602,
+          "free_bytes": 678528442368
+        },
+        {
+          "seconds": 309.90664080799996,
+          "new_root_bytes": 95357572,
+          "free_bytes": 678528237568
+        },
+        {
+          "seconds": 322.726704375,
+          "new_root_bytes": 95587517,
+          "free_bytes": 678528028672
+        },
+        {
+          "seconds": 335.222589601,
+          "new_root_bytes": 95882973,
+          "free_bytes": 678527651840
+        },
+        {
+          "seconds": 347.546673371,
+          "new_root_bytes": 96078828,
+          "free_bytes": 678526910464
+        },
+        {
+          "seconds": 360.054909899,
+          "new_root_bytes": 96855173,
+          "free_bytes": 678526095360
+        },
+        {
+          "seconds": 372.254632008,
+          "new_root_bytes": 98558794,
+          "free_bytes": 678523596800
+        },
+        {
+          "seconds": 385.09873599099996,
+          "new_root_bytes": 99558870,
+          "free_bytes": 678523379712
+        },
+        {
+          "seconds": 398.024242087,
+          "new_root_bytes": 100446230,
+          "free_bytes": 678522396672
+        },
+        {
+          "seconds": 410.138602993,
+          "new_root_bytes": 101363290,
+          "free_bytes": 678521466880
+        },
+        {
+          "seconds": 422.742639201,
+          "new_root_bytes": 101584911,
+          "free_bytes": 678521204736
+        },
+        {
+          "seconds": 435.179554647,
+          "new_root_bytes": 101746329,
+          "free_bytes": 678521044992
+        },
+        {
+          "seconds": 447.938884896,
+          "new_root_bytes": 102053064,
+          "free_bytes": 678520602624
+        },
+        {
+          "seconds": 460.77061411499994,
+          "new_root_bytes": 102600407,
+          "free_bytes": 678520233984
+        },
+        {
+          "seconds": 473.544078043,
+          "new_root_bytes": 102744327,
+          "free_bytes": 678520070144
+        },
+        {
+          "seconds": 486.430658323,
+          "new_root_bytes": 102971232,
+          "free_bytes": 678519840768
+        },
+        {
+          "seconds": 499.205366757,
+          "new_root_bytes": 103042369,
+          "free_bytes": 678519754752
+        },
+        {
+          "seconds": 512.4105870779999,
+          "new_root_bytes": 103111917,
+          "free_bytes": 678519595008
+        },
+        {
+          "seconds": 525.651140381,
+          "new_root_bytes": 106125824,
+          "free_bytes": 678516555776
+        },
+        {
+          "seconds": 538.73061318,
+          "new_root_bytes": 112133160,
+          "free_bytes": 678510481408
+        },
+        {
+          "seconds": 552.314642847,
+          "new_root_bytes": 112254681,
+          "free_bytes": 678510243840
+        },
+        {
+          "seconds": 565.9387434299999,
+          "new_root_bytes": 112792576,
+          "free_bytes": 678509641728
+        },
+        {
+          "seconds": 578.9587229379999,
+          "new_root_bytes": 116327353,
+          "free_bytes": 678506147840
+        },
+        {
+          "seconds": 592.0105909719999,
+          "new_root_bytes": 115789300,
+          "free_bytes": 678506831872
+        },
+        {
+          "seconds": 605.302386383,
+          "new_root_bytes": 116017624,
+          "free_bytes": 678506536960
+        },
+        {
+          "seconds": 618.622043407,
+          "new_root_bytes": 116334722,
+          "free_bytes": 678506213376
+        },
+        {
+          "seconds": 631.747106587,
+          "new_root_bytes": 119100039,
+          "free_bytes": 678503342080
+        },
+        {
+          "seconds": 645.224041071,
+          "new_root_bytes": 117907754,
+          "free_bytes": 678504628224
+        },
+        {
+          "seconds": 658.438625433,
+          "new_root_bytes": 119006261,
+          "free_bytes": 678503456768
+        },
+        {
+          "seconds": 671.65062967,
+          "new_root_bytes": 118979620,
+          "free_bytes": 678503542784
+        },
+        {
+          "seconds": 684.938658927,
+          "new_root_bytes": 119282725,
+          "free_bytes": 678503227392
+        },
+        {
+          "seconds": 698.326658495,
+          "new_root_bytes": 119460686,
+          "free_bytes": 678502965248
+        },
+        {
+          "seconds": 711.754730954,
+          "new_root_bytes": 119692775,
+          "free_bytes": 678502662144
+        },
+        {
+          "seconds": 725.143735087,
+          "new_root_bytes": 120005556,
+          "free_bytes": 678502350848
+        },
+        {
+          "seconds": 738.654596015,
+          "new_root_bytes": 120201977,
+          "free_bytes": 678502133760
+        },
+        {
+          "seconds": 751.934598106,
+          "new_root_bytes": 120357303,
+          "free_bytes": 678501978112
+        },
+        {
+          "seconds": 765.294985359,
+          "new_root_bytes": 120910723,
+          "free_bytes": 678501363712
+        },
+        {
+          "seconds": 779.067419919,
+          "new_root_bytes": 121351844,
+          "free_bytes": 678500892672
+        },
+        {
+          "seconds": 792.600311216,
+          "new_root_bytes": 121789475,
+          "free_bytes": 678500421632
+        },
+        {
+          "seconds": 805.774740241,
+          "new_root_bytes": 121705804,
+          "free_bytes": 678500532224
+        },
+        {
+          "seconds": 819.594629711,
+          "new_root_bytes": 121771348,
+          "free_bytes": 678500454400
+        },
+        {
+          "seconds": 832.930592074,
+          "new_root_bytes": 121900190,
+          "free_bytes": 678500216832
+        },
+        {
+          "seconds": 846.447941064,
+          "new_root_bytes": 122109694,
+          "free_bytes": 678499917824
+        },
+        {
+          "seconds": 859.7865982339999,
+          "new_root_bytes": 122331968,
+          "free_bytes": 678499713024
+        },
+        {
+          "seconds": 872.998698233,
+          "new_root_bytes": 122574467,
+          "free_bytes": 678499471360
+        },
+        {
+          "seconds": 886.5386342959999,
+          "new_root_bytes": 122708638,
+          "free_bytes": 678499336192
+        },
+        {
+          "seconds": 900.1009386229999,
+          "new_root_bytes": 124733653,
+          "free_bytes": 678497230848
+        },
+        {
+          "seconds": 913.882645569,
+          "new_root_bytes": 125320826,
+          "free_bytes": 678496649216
+        },
+        {
+          "seconds": 927.88662625,
+          "new_root_bytes": 126006113,
+          "free_bytes": 678495952896
+        },
+        {
+          "seconds": 941.922175013,
+          "new_root_bytes": 126213055,
+          "free_bytes": 678495166464
+        },
+        {
+          "seconds": 955.7763301130001,
+          "new_root_bytes": 126455541,
+          "free_bytes": 678494867456
+        },
+        {
+          "seconds": 969.6107803760001,
+          "new_root_bytes": 126674862,
+          "free_bytes": 678494658560
+        },
+        {
+          "seconds": 983.674670244,
+          "new_root_bytes": 126765566,
+          "free_bytes": 678494552064
+        },
+        {
+          "seconds": 997.929673615,
+          "new_root_bytes": 127126311,
+          "free_bytes": 678494158848
+        },
+        {
+          "seconds": 1011.978600828,
+          "new_root_bytes": 127569703,
+          "free_bytes": 678493642752
+        },
+        {
+          "seconds": 1026.034578691,
+          "new_root_bytes": 128016193,
+          "free_bytes": 678493167616
+        },
+        {
+          "seconds": 1040.190609778,
+          "new_root_bytes": 128552233,
+          "free_bytes": 678492598272
+        },
+        {
+          "seconds": 1054.338638799,
+          "new_root_bytes": 128790320,
+          "free_bytes": 678492332032
+        },
+        {
+          "seconds": 1068.6786713449999,
+          "new_root_bytes": 129063889,
+          "free_bytes": 678492098560
+        },
+        {
+          "seconds": 1083.066579959,
+          "new_root_bytes": 129204868,
+          "free_bytes": 678491860992
+        },
+        {
+          "seconds": 1097.588817193,
+          "new_root_bytes": 129306879,
+          "free_bytes": 678491742208
+        },
+        {
+          "seconds": 1112.170602388,
+          "new_root_bytes": 129499226,
+          "free_bytes": 678491549696
+        },
+        {
+          "seconds": 1126.894820664,
+          "new_root_bytes": 129606437,
+          "free_bytes": 678491369472
+        },
+        {
+          "seconds": 1141.922585309,
+          "new_root_bytes": 129746313,
+          "free_bytes": 678491299840
+        },
+        {
+          "seconds": 1157.450578616,
+          "new_root_bytes": 129871268,
+          "free_bytes": 678491160576
+        },
+        {
+          "seconds": 1172.569581112,
+          "new_root_bytes": 130073012,
+          "free_bytes": 678491000832
+        },
+        {
+          "seconds": 1187.393829858,
+          "new_root_bytes": 130199305,
+          "free_bytes": 678490865664
+        },
+        {
+          "seconds": 1202.32899365,
+          "new_root_bytes": 130309872,
+          "free_bytes": 678490660864
+        },
+        {
+          "seconds": 1217.360053958,
+          "new_root_bytes": 130560283,
+          "free_bytes": 678490411008
+        },
+        {
+          "seconds": 1229.082575958,
+          "new_root_bytes": 152085408,
+          "free_bytes": 678449647616
+        },
+        {
+          "seconds": 1240.322424893,
+          "new_root_bytes": 152085542,
+          "free_bytes": 678449647616
+        }
+      ],
+      "pid": 1488,
+      "exit_status": 0,
+      "finished_at_utc": "2026-10-19T18:27:43.411051+00:00"
+    },
+    {
+      "label": "private-install",
+      "arguments": [
+        "/mnt/e/SpatialRustBuild/mesa-dozen-v1/tools-env/bin/meson",
+        "install",
+        "-C",
+        "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/build",
+        "--no-rebuild",
+        "--destdir",
+        "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage"
+      ],
+      "started_at_utc": "2026-10-19T18:27:53.033283+00:00",
+      "samples": [
+        {
+          "seconds": 1.1393000022508204e-05,
+          "new_root_bytes": 154654353,
+          "free_bytes": 678463901696
+        }
+      ],
+      "pid": 5577,
+      "exit_status": 0,
+      "finished_at_utc": "2026-10-19T18:28:08.170861+00:00"
+    }
+  ],
+  "build_new_root_bytes_snapshot": 184037018,
+  "private_install_destdir": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage",
+  "private_installed_prefix": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1",
+  "install_log": {
+    "path": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/build/meson-logs/install-log.txt",
+    "bytes": 13961,
+    "sha256": "3196d53a69a2070ab13921ae4b0314e22833f3bdcf13a654ae9192707a525533"
+  },
+  "install_log_paths_contained": true,
+  "library_links": {
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so": {
+      "target": "libdrm.so.2",
+      "resolved": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0"
+    },
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2": {
+      "target": "libdrm.so.2.133.0",
+      "resolved": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0"
+    },
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so": {
+      "target": "libdrm_nouveau.so.2",
+      "resolved": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0"
+    },
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2": {
+      "target": "libdrm_nouveau.so.2.133.0",
+      "resolved": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0"
+    },
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so": {
+      "target": "libdrm_radeon.so.1",
+      "resolved": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0"
+    },
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1": {
+      "target": "libdrm_radeon.so.1.133.0",
+      "resolved": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0"
+    },
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so": {
+      "target": "libEGL_mesa.so.0",
+      "resolved": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0"
+    },
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0": {
+      "target": "libEGL_mesa.so.0.0.0",
+      "resolved": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0"
+    }
+  },
+  "libraries": {
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0": "ceb1e4eb7eb552e08022d821d632cb400de60e4d3201324ac1b7ec34268ac5f9",
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0": "f177704aac79527908633213ba1bb3f298c32aabdc2b3bc231b46983d58587e8",
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0": "92a30b5b3a96fb52bbdad4cc46b7796411ccffc22b5eb06f72dd3d2dcb90cd40",
+    "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libgallium-26.2.5.so": "e2c423620442bb6bfafd89a4550b39eab11a4245ab88eb85153a9f4750066e03"
+  },
+  "vendor_selection": {
+    "path": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/runtime/mesa-vendor.json",
+    "bytes": 175,
+    "sha256": "2693118ceed47602b684ed56d2e75a034e19ddcf347176015386bf5150886f58"
+  },
+  "process_environment": {
+    "__EGL_VENDOR_LIBRARY_FILENAMES": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/runtime/mesa-vendor.json",
+    "LD_LIBRARY_PATH": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib:/usr/lib/wsl/lib",
+    "LIBGL_DRIVERS_PATH": "/mnt/e/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/dri",
+    "GALLIUM_DRIVER": "d3d12",
+    "EGL_PLATFORM": "surfaceless",
+    "MESA_SHADER_CACHE_MAX_SIZE": "64M",
+    "TMPDIR": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/tmp",
+    "XDG_CACHE_HOME": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/cache",
+    "MESA_SHADER_CACHE_DIR": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/cache/mesa",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "capabilities": {
+    "schema": "spatialrust.isolated-gallium-capabilities.v1",
+    "scope": "Capability-only isolated Gallium driver probe; no shader execution, operation conformance or hardware-class certification",
+    "version_override": false,
+    "process_driver_selection": "d3d12",
+    "system_dependencies_installed": false,
+    "adapter_model_names_in_report": false,
+    "modes": [
+      {
+        "mode": "OpenGL",
+        "requested_version": [
+          3,
+          3
+        ],
+        "status": "context-created",
+        "egl_version": [
+          1,
+          5
+        ],
+        "glsl_numeric_version": [
+          4,
+          60
+        ],
+        "actual_version": [
+          4,
+          6
+        ],
+        "d3d12_driver": true,
+        "software_renderer": false,
+        "max_compute_workgroup_invocations": 1024,
+        "max_compute_shared_bytes": 32768,
+        "max_compute_storage_blocks": 16,
+        "gl_error": "0x0"
+      },
+      {
+        "mode": "OpenGL",
+        "requested_version": [
+          4,
+          3
+        ],
+        "status": "context-created",
+        "egl_version": [
+          1,
+          5
+        ],
+        "glsl_numeric_version": [
+          4,
+          60
+        ],
+        "actual_version": [
+          4,
+          6
+        ],
+        "d3d12_driver": true,
+        "software_renderer": false,
+        "max_compute_workgroup_invocations": 1024,
+        "max_compute_shared_bytes": 32768,
+        "max_compute_storage_blocks": 16,
+        "gl_error": "0x0"
+      },
+      {
+        "mode": "OpenGLES",
+        "requested_version": [
+          3,
+          1
+        ],
+        "status": "context-created",
+        "egl_version": [
+          1,
+          5
+        ],
+        "glsl_numeric_version": [
+          3,
+          10
+        ],
+        "actual_version": [
+          3,
+          1
+        ],
+        "d3d12_driver": true,
+        "software_renderer": false,
+        "max_compute_workgroup_invocations": 1024,
+        "max_compute_shared_bytes": 32768,
+        "max_compute_storage_blocks": 16,
+        "gl_error": "0x0"
+      }
+    ]
+  },
+  "capability_probe": {
+    "label": "capability-probe",
+    "arguments": [
+      "/usr/bin/python3",
+      "/mnt/c/Users/rsasa/Workspace/SpatialRust/target/automation/probe-isolated-gallium-capabilities.py",
+      "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/capabilities.json"
+    ],
+    "started_at_utc": "2026-10-19T18:31:09.086571+00:00",
+    "pid": 392,
+    "exit_status": 0,
+    "finished_at_utc": "2026-10-19T18:31:14.134186+00:00",
+    "stdout": {
+      "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/capability-probe.json",
+      "bytes": 1928,
+      "sha256": "b77d93733014fbb22e3835aa67bfb4dc8d2a95ebb53eb359cfc817725a5229e0"
+    },
+    "stderr": {
+      "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/capability-probe.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "prior_system_driver_study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\gles-hardware-conformance-v1\\study.json",
+    "bytes": 31048,
+    "sha256": "1632dc1c5cb342d2f4f6bfad4caac40bac0d408895383a3ceb3d6c84c2c494d8"
+  },
+  "prior_failures_preserved": true,
+  "preparation_failures": [
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\mesa-gallium-prebuild-failures.json",
+      "bytes": 441,
+      "sha256": "781c97eef5a424da60f4d9377b0b01e06d7cbae0e2492151b7c44554207178d0"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v1\\build.json",
+      "bytes": 2280,
+      "sha256": "4bd0eeb83194b812322f15398141175fed91b3f7cc4166b6362e1c3b5951cf68"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v2\\build.json",
+      "bytes": 2282,
+      "sha256": "ae0ff398e846afa415cde1c10fcc8fc33ab9c91cb0cf8b0e8d86008fdb6d9280"
+    }
+  ],
+  "parser_tools": {
+    "path": "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json",
+    "bytes": 1730,
+    "sha256": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a"
+  },
+  "private_parser_package_compressed_bytes": 1054910,
+  "private_parser_regular_extracted_bytes": 2519998,
+  "global_package_install": false,
+  "runs": [
+    {
+      "preference": "high",
+      "started_at_utc": "2026-10-19T18:31:26.092059+00:00",
+      "finished_at_utc": "2026-10-19T18:31:36.163002+00:00",
+      "exit_status": 0,
+      "stdout": {
+        "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/high.json",
+        "bytes": 8043,
+        "sha256": "4767a0cefe42a200a661d7461f01b368747527d80b48bd6b16952f2222db15af"
+      },
+      "stderr": {
+        "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/high.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "report": {
+        "accepted": true,
+        "architecture": "x86_64",
+        "backend": "Gl",
+        "device_type": "Other",
+        "frames": [
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "d37a0e1bb7ddcb947001afcc94ae2e8aa019aea7b2b44504b76484cb71d53ec3",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "7df404a522b83575f75e1a216fe6f0531fce4c60e4c4bc8879da5523a553d09c",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "4d4871ae880f3d9dc8fa09727280cc9823e36376ddc745343fbcc158fafa56c6",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 0,
+            "pools": {
+              "buffer": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6437524,
+                "cached_resources": 5,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "scratch": {
+                "allocations": 15,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6825020,
+                "cached_resources": 15,
+                "discarded": 0,
+                "reuses": 1
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 25093,
+              "tree_host_to_device_bytes": 4726544
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 67992,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2758500,
+              "maximum_centroid_coordinate_error_m": 2.462569981487306e-06,
+              "metadata_device_to_host_bytes": 1032820,
+              "metadata_mismatches": 0,
+              "occupied_cells": 5666,
+              "point_count": 229875
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "7a088200c08999a50109aeb3688f2a4e0383d4db1f0dd028695f819c9b0df591",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "cc926af6ada20e394f80c84daa86675e789e7adabf1ce0b4c0b0b6d1f182f65a",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "52f71d5b6baae66102dbf777c8821e23e5fe8f884c727343987daf920d0c9892",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 399,
+            "pools": {
+              "buffer": {
+                "allocations": 7,
+                "budget_bytes": 67108864,
+                "cached_bytes": 12931872,
+                "cached_resources": 9,
+                "discarded": 0,
+                "reuses": 1
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 4
+              },
+              "scratch": {
+                "allocations": 21,
+                "budget_bytes": 67108864,
+                "cached_bytes": 11587192,
+                "cached_resources": 21,
+                "discarded": 0,
+                "reuses": 11
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 38648,
+              "tree_host_to_device_bytes": 4759600
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 52788,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2783292,
+              "maximum_centroid_coordinate_error_m": 2.8974309409512955e-06,
+              "metadata_device_to_host_bytes": 1015744,
+              "metadata_mismatches": 0,
+              "occupied_cells": 4399,
+              "point_count": 231941
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "020d1df9085fb907fe3e5eb00c0ae3f799a079aaa6dac5fa579190fb075af9c7",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "60f6896732225d0b910fc748953197efb98784322d0dca0eda7464cd09078ad4",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "a423fc78805268c61383a1d3cfbe74cfed470c0881c62af8403b6b335feb180f",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 797,
+            "pools": {
+              "buffer": {
+                "allocations": 10,
+                "budget_bytes": 67108864,
+                "cached_bytes": 19383520,
+                "cached_resources": 13,
+                "discarded": 0,
+                "reuses": 2
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 8
+              },
+              "scratch": {
+                "allocations": 27,
+                "budget_bytes": 67108864,
+                "cached_bytes": 16318048,
+                "cached_resources": 27,
+                "discarded": 0,
+                "reuses": 21
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 51389,
+              "tree_host_to_device_bytes": 4735200
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 29100,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2764992,
+              "maximum_centroid_coordinate_error_m": 3.817541470718666e-06,
+              "metadata_device_to_host_bytes": 970164,
+              "metadata_mismatches": 0,
+              "occupied_cells": 2425,
+              "point_count": 230416
+            }
+          }
+        ],
+        "limits": {
+          "max_compute_workgroup_storage_size": 32768,
+          "max_storage_buffers_per_shader_stage": 16,
+          "max_texture_dimension_2d": 16384
+        },
+        "manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+        "os": "linux",
+        "preference": "high",
+        "requested_backend": "gl",
+        "schema": "spatialrust.public-gpu-conformance.v1",
+        "scope": "Three fixed development frames; no timing/accuracy or all-algorithm portability claim. Transfer payloads exclude uniforms/driver staging; pool counters exclude live/driver/staging allocations."
+      },
+      "not_observed_frame_indices": []
+    },
+    {
+      "preference": "low",
+      "started_at_utc": "2026-10-19T18:31:47.902787+00:00",
+      "finished_at_utc": "2026-10-19T18:31:58.002281+00:00",
+      "exit_status": 0,
+      "stdout": {
+        "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/low.json",
+        "bytes": 8042,
+        "sha256": "cd098562432522fc14eab9b2f565949929d30d9cf505f222ee971781c0b273ba"
+      },
+      "stderr": {
+        "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/isolated-gallium-conformance-v1/low.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "report": {
+        "accepted": true,
+        "architecture": "x86_64",
+        "backend": "Gl",
+        "device_type": "Other",
+        "frames": [
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "d37a0e1bb7ddcb947001afcc94ae2e8aa019aea7b2b44504b76484cb71d53ec3",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "7df404a522b83575f75e1a216fe6f0531fce4c60e4c4bc8879da5523a553d09c",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "4d4871ae880f3d9dc8fa09727280cc9823e36376ddc745343fbcc158fafa56c6",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 0,
+            "pools": {
+              "buffer": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6437524,
+                "cached_resources": 5,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 0
+              },
+              "scratch": {
+                "allocations": 15,
+                "budget_bytes": 67108864,
+                "cached_bytes": 6825020,
+                "cached_resources": 15,
+                "discarded": 0,
+                "reuses": 1
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 25093,
+              "tree_host_to_device_bytes": 4726544
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 67992,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2758500,
+              "maximum_centroid_coordinate_error_m": 2.462569981487306e-06,
+              "metadata_device_to_host_bytes": 1032820,
+              "metadata_mismatches": 0,
+              "occupied_cells": 5666,
+              "point_count": 229875
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "7a088200c08999a50109aeb3688f2a4e0383d4db1f0dd028695f819c9b0df591",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "cc926af6ada20e394f80c84daa86675e789e7adabf1ce0b4c0b0b6d1f182f65a",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "52f71d5b6baae66102dbf777c8821e23e5fe8f884c727343987daf920d0c9892",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 399,
+            "pools": {
+              "buffer": {
+                "allocations": 7,
+                "budget_bytes": 67108864,
+                "cached_bytes": 12931872,
+                "cached_resources": 9,
+                "discarded": 0,
+                "reuses": 1
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 4
+              },
+              "scratch": {
+                "allocations": 21,
+                "budget_bytes": 67108864,
+                "cached_bytes": 11587192,
+                "cached_resources": 21,
+                "discarded": 0,
+                "reuses": 11
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 38648,
+              "tree_host_to_device_bytes": 4759600
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 52788,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2783292,
+              "maximum_centroid_coordinate_error_m": 2.8974309409512955e-06,
+              "metadata_device_to_host_bytes": 1015744,
+              "metadata_mismatches": 0,
+              "occupied_cells": 4399,
+              "point_count": 231941
+            }
+          },
+          {
+            "accepted": true,
+            "image": {
+              "box_11x11_mismatches": 0,
+              "box_11x11_sha256": "020d1df9085fb907fe3e5eb00c0ae3f799a079aaa6dac5fa579190fb075af9c7",
+              "box_259x3_mismatches": 0,
+              "box_259x3_sha256": "60f6896732225d0b910fc748953197efb98784322d0dca0eda7464cd09078ad4",
+              "explicit_device_to_host_bytes": 3687424,
+              "gray_mismatches": 0,
+              "gray_sha256": "a423fc78805268c61383a1d3cfbe74cfed470c0881c62af8403b6b335feb180f",
+              "histogram_bin_mismatches": 0,
+              "histogram_pixels": 307200,
+              "host_to_device_bytes": 1228800,
+              "readbacks_before_device_consumers": 0,
+              "resident_stages": [
+                "upload_u8_texture",
+                "rgb_to_gray_gpu",
+                "box_blur_horizontal_gpu",
+                "box_blur_gpu",
+                "histogram_u8_partials_gpu",
+                "histogram_u8_reduce_gpu",
+                "readback_histogram_u32"
+              ]
+            },
+            "index": 797,
+            "pools": {
+              "buffer": {
+                "allocations": 10,
+                "budget_bytes": 67108864,
+                "cached_bytes": 19383520,
+                "cached_resources": 13,
+                "discarded": 0,
+                "reuses": 2
+              },
+              "image": {
+                "allocations": 4,
+                "budget_bytes": 67108864,
+                "cached_bytes": 4915200,
+                "cached_resources": 4,
+                "discarded": 0,
+                "reuses": 8
+              },
+              "scratch": {
+                "allocations": 27,
+                "budget_bytes": 67108864,
+                "cached_bytes": 16318048,
+                "cached_resources": 27,
+                "discarded": 0,
+                "reuses": 21
+              }
+            },
+            "radius": {
+              "complete_row_access_rejected": true,
+              "count_mismatches": 0,
+              "explicit_device_to_host_bytes": 512,
+              "queries": 64,
+              "queries_host_to_device_bytes": 1024,
+              "radius_m": 0.03125,
+              "search_device_to_host_bytes": 0,
+              "search_host_to_device_bytes": 0,
+              "total_neighbors": 51389,
+              "tree_host_to_device_bytes": 4735200
+            },
+            "voxel": {
+              "centroid_device_to_host_bytes": 29100,
+              "centroid_tolerance_m": 1e-05,
+              "construction_device_to_host_bytes": 4,
+              "host_to_device_payload_bytes": 2764992,
+              "maximum_centroid_coordinate_error_m": 3.817541470718666e-06,
+              "metadata_device_to_host_bytes": 970164,
+              "metadata_mismatches": 0,
+              "occupied_cells": 2425,
+              "point_count": 230416
+            }
+          }
+        ],
+        "limits": {
+          "max_compute_workgroup_storage_size": 32768,
+          "max_storage_buffers_per_shader_stage": 16,
+          "max_texture_dimension_2d": 16384
+        },
+        "manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+        "os": "linux",
+        "preference": "low",
+        "requested_backend": "gl",
+        "schema": "spatialrust.public-gpu-conformance.v1",
+        "scope": "Three fixed development frames; no timing/accuracy or all-algorithm portability claim. Transfer payloads exclude uniforms/driver staging; pool counters exclude live/driver/staging allocations."
+      },
+      "not_observed_frame_indices": []
+    }
+  ],
+  "audit": {
+    "schema": "spatialrust.public-gpu-report-audit.v1",
+    "all_operation_reports_passed": true,
+    "accepted_hardware_classes": [],
+    "hardware_coverage_accepted": false,
+    "maximum_centroid_coordinate_error_m": 3.817541470718666e-06,
+    "issues": [
+      "distinct integrated and discrete hardware classes required"
+    ]
+  },
+  "raw_adapter_classes": [
+    "Other",
+    "Other"
+  ],
+  "input_files": {
+    "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/manifest.json": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+    "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/frame-000000.rgb-u8": "487414bfc391c6bab50453870c51bacc0b4982aabdddba3cbbff894d26448ef2",
+    "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/frame-000000.xyz-f32le": "71c5e85c09bccca248322d9ac20502f9c8f866135cdbd7a2375ac169f28f4d1f",
+    "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/frame-000399.rgb-u8": "61c26a3662edb16880896ebd7ebbfc383978ffd9c26e410ac2ec41bf69f8ded8",
+    "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/frame-000399.xyz-f32le": "16fa974ae1c6fc3cffcf0b319c7aa06c77d082e81f3882be064c0ef13d526951",
+    "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/frame-000797.rgb-u8": "f9b77330d3945f1a7b18cc0a4f3d64f9b440cbb22ac26e91743136a28c5d6242",
+    "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1/frame-000797.xyz-f32le": "9df7ccb81b9c83384ecf86c0dcbc8ca1c6ed7f7c849007610b8af5aa6538ae71"
+  },
+  "protected_hash_entry_count": 698,
+  "original_native_files": {
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+    "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+    "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+    "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f",
+    "E:/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libdrm.so.2": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libvulkan_dzn.so": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\share\\vulkan\\icd.d\\dzn_icd.x86_64.json": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\bison": "7791b07ce4e24d56c80f3df47c9a193b039392afc1eb02af726ff93591b1c6e7",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\flex": "4cabd101467c6b428e3fd9b5a7dee0785b3108657ae0a5d85947956329d7047b"
+  },
+  "all_frozen_files_preserved": true,
+  "independent_audit": {
+    "raw_stdout_and_hashes_match": true,
+    "report_audit_recomputed": true,
+    "scope": "Fresh data-only report/hash audit; original device execution remains source/input/binary/library bound.",
+    "fresh_native_protected_hash_entries_matched_before_documentation": 698,
+    "fresh_native_library_links_matched": 8,
+    "native_check_gpu_calls": false,
+    "post_test_protected_hashes_matched": 697,
+    "post_test_library_links_matched": 8,
+    "post_test_exclusion": "Only docs/ISOLATED_GALLIUM_GLES_VALIDATION.md gained post-study outcome prose; all remaining frozen code, inputs, native files and libraries match.",
+    "workspace_rustfmt": true
+  },
+  "validation": {
+    "new_numerical_or_framework_code": false,
+    "focused_report_cases_passed": 35,
+    "full_python_passed": 974,
+    "full_python_skipped": 3,
+    "full_python_errors": 0,
+    "full_python_failures": 0,
+    "focused_xml": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\isolated-gallium-focused-python.xml",
+      "bytes": 5893,
+      "sha256": "d1ceccdb1a8ce36da118cb8f7afbc473d060a446cc69077296ce57d44d9ae7db"
+    },
+    "full_xml": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\isolated-gallium-full-python.xml",
+      "bytes": 130707,
+      "sha256": "e47b12c787db30593857c68719f31bc5de5a7bc224633286ea4b239796c63eda"
+    },
+    "execution": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\isolated-gallium-python-tests.json",
+      "bytes": 3059,
+      "sha256": "efc45a3c50713e939835019ff1d9e61e5027f84c5370890af49df768853117b4"
+    },
+    "test_source": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_public_gpu_conformance_audit.py",
+      "bytes": 6047,
+      "sha256": "79d3636cf488da34f41f5b568f2d0a6964f4f1757305504be883d8b5a2c92661"
+    },
+    "python38_ast": true
+  },
+  "storage": {
+    "roots_regular_bytes_no_reparse": {
+      "E:\\SpatialRustBuild\\explicit-gles-v1": 5694998120,
+      "E:\\SpatialRustBuild\\maturity-80-linux-cargo": 345970264,
+      "E:\\SpatialRustBuild\\mesa-dozen-v1": 596201206,
+      "E:\\SpatialRustBuild\\mesa-dozen-scout-v1\\mesa-26.2.5.tar.xz": 68652756,
+      "E:\\SpatialRustBuild\\mesa-gallium-gles-v1": 6127750,
+      "E:\\SpatialRustBuild\\mesa-gallium-gles-v2": 6769834,
+      "E:\\SpatialRustBuild\\mesa-gallium-gles-v3": 181650739,
+      "E:\\SpatialRustBuild\\mesa-gallium-tools-v1": 6262825,
+      "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\isolated-gallium-conformance-v1": 462370
+    },
+    "controlled_regular_bytes": 6907095864,
+    "maximum_combined_bytes": 17179869184,
+    "maximum_new_build_bytes": 4294967296,
+    "maximum_result_bytes": 134217728,
+    "result_regular_bytes_after_final_summary": 462370,
+    "worker_size_sample_before_final_summary_bytes": 306151,
+    "size_sample_scope": "Preserve original worker sample taken before final study JSON; independently count finalized regular files without reparse aliases.",
+    "minimum_free_bytes": 21474836480,
+    "free_e_bytes": 678446120960,
+    "free_c_bytes": 78718156800,
+    "dataset_downloads": 0,
+    "dataset_payload_copies": 0,
+    "private_tool_downloads": 2,
+    "scratch_cleanup": {
+      "utc": "2026-10-19T18:43:27.4339782Z",
+      "method": "Remove only exact completed passing pytest scratch after absolute-parent and complete no-reparse validation; preserve source, XMLs, all datasets, wheels, logs, frozen binaries and scientific results",
+      "path": "E:\\SpatialRustBuild\\mesa-gallium-gles-v3\\pytest-full-v1",
+      "files": 1048,
+      "logical_removed_bytes": 275674789,
+      "xml_path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\isolated-gallium-full-python.xml",
+      "xml_sha256": "e47b12c787db30593857c68719f31bc5de5a7bc224633286ea4b239796c63eda",
+      "free_before_bytes": 678168895488,
+      "free_after_bytes": 678446120960
+    },
+    "recorded_after_test_cleanup_at_utc": "2026-10-19T18:44:49.195111+00:00"
+  },
+  "remaining_gates": [
+    "Both raw IntegratedGpu/DiscreteGpu classes on Linux remain unaccepted; both actual GL runs report Other.",
+    "Original system-driver GL failures remain preserved; production defaults and installed system libraries are unchanged.",
+    "No broad GL/bare-metal Linux/performance/motion/canonical clock/physical calibration/full mapping/semantic/release or operational 80% claim."
+  ],
+  "scope": "All six fixed image/voxel/radius cases pass on isolated Mesa Gallium D3D12/surfaceless GL. Raw Other is retained, without capability/version overrides, backend/software fallback or class promotion; numerical kernels and transfers unchanged."
+}

@@ -17,10 +17,15 @@ compute-shader support are rejected before device creation. The public RGB-D
 example records requested/actual backends; its auditor keeps operation checks
 and distinct raw hardware-class coverage separate. See the
 [fixed GLES validation protocol](EXPLICIT_GLES_GPU_VALIDATION.md). The Windows
-primary control passes all six cases on both raw hardware classes. Linux GL
-device creation fails before all six application cases; internal GLSL 4.20
+primary control passes all six cases on both raw hardware classes. Original
+system-driver Linux GL device creation fails before all six application cases; internal GLSL 4.20
 dynamic-array admission is diagnosed and preserved. GL selection is available,
-but this environment has no accepted GL operation or Linux hardware coverage.
+but that system-driver combination has no accepted GL operation. The separately
+frozen [isolated Gallium study](ISOLATED_GALLIUM_GLES_VALIDATION.md) passes all six
+image/point cases with private Mesa D3D12/surfaceless GL 4.6 / GLSL 4.60 on the
+same executable. Both runs report raw Other, so Linux hardware coverage remains
+unaccepted. This requires explicit per-process library selection; production
+defaults and installed system drivers are unchanged.
 
 `vision-odometry-dense` exposes checked borrowed `DenseRgbdFrame` views and
 `estimate_dense_rgbd_odometry` through `spatialrust-vision/odometry-dense`.

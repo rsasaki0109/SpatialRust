@@ -149,3 +149,10 @@ Typed explicit GL selection is implemented. Linux hardware execution and both
 raw hardware classes remain open; this slice makes no GL conformance or
 operational 80% claim. A future ES-context integration needs its own ownership
 contract, fixed protocol and unchanged operation/hardware gates before admission.
+
+Subsequent evidence (2026-10-20): the separately fixed
+[isolated Gallium study](ISOLATED_GALLIUM_GLES_VALIDATION.md) passes all six
+operation cases on the same executable with private Mesa D3D12/surfaceless GL
+4.6 / GLSL 4.60. Both runs report raw Other, leaving hardware coverage open.
+This changes the driver/WSI combination, preserves the original system-driver
+failures above and installs no system-wide replacement.
