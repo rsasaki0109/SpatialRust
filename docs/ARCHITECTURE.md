@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Explicit GPU neighborhood downloads may decode completed maps with at most four
+native CPU workers per call. A bounded density/region probe selects large work;
+all headers retain original validation, and every worker joins before unmapping.
+Small, sparse, concentrated-sample, one-worker and WASM paths retain the original
+serial collector. GPU work, ownership and explicit transfers are unchanged.
+See [readback evidence](../notes/2026-10-19_parallel_gpu_neighborhood_readback.md)
+for all final/initial measurements, resource costs and heuristic limits.
+
 Resident GPU nearest-k search selects compile-time private candidate extents
 1/8/16/64 while preserving all original traversal, distance and stable tie rules.
 Batches below 1024 queries retain the original 64-entry array. Each requested nearest/radius program is lazy; mixed workloads may retain five

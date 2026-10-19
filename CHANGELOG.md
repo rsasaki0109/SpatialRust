@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Decode eligible explicit GPU neighborhood readbacks with at most four native
+  CPU workers, preserving original row bits, counts, errors, ownership and
+  transfer receipts. Keep the original collector for serial controls and WASM.
+  55 native executions and all 86 final/78 initial route comparisons are in
+  `notes/2026-10-19_parallel_gpu_neighborhood_readback.md`.
+
 - Specialize resident GPU nearest-k candidate arrays to 1/8/16/64 slots and
   lazily compile each requested nearest/radius program. Keep the original array below 1024 queries. Preserve traversal,
   ties, output schema and explicit transfers. 75 native executions and all
