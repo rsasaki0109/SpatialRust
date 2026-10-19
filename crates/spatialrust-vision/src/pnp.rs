@@ -28,7 +28,10 @@ pub fn solve_pnp(
     refine_pnp(correspondences, camera, initial)
 }
 
-/// Robust PnP using deterministic six-point RANSAC and inlier refinement.
+/// Robust PnP using deterministic six-point RANSAC and optional inlier refinement.
+///
+/// Refinement preserves the selected hypothesis on failure or when its consensus
+/// is worse. More inliers win; equal counts require a lower inlier residual sum.
 pub fn solve_pnp_ransac(
     correspondences: &[ObjectImageCorrespondence],
     camera: CameraMatrix3,
@@ -42,7 +45,7 @@ pub fn solve_pnp_ransac(
         ));
     }
     let mut rng = XorShift64::new(options.seed);
-    let mut best: Option<(AbsolutePose, Vec<bool>, Vec<f64>, usize, f64)> = None;
+    let mut best: Option<PnpConsensus> = None;
     let mut iteration_limit = options.max_iterations;
     let mut iteration = 0;
     while iteration < iteration_limit {
@@ -85,24 +88,70 @@ pub fn solve_pnp_ransac(
         }
         iteration += 1;
     }
-    let (_, best_inliers, _, count, _) = best
+    let best = best
         .ok_or_else(|| VisionError::InvalidParameter("robust PnP found no valid model".into()))?;
-    if count < 4 {
+    if best.3 < 4 {
         return Err(VisionError::InvalidParameter("robust PnP found too few inliers".into()));
     }
     let inlier_pairs = correspondences
         .iter()
-        .zip(&best_inliers)
+        .zip(&best.1)
         .filter_map(|(&pair, &is_inlier)| is_inlier.then_some(pair))
         .collect::<Vec<_>>();
-    let refined = solve_pnp(&inlier_pairs, camera)?;
-    let residuals = correspondences
-        .iter()
-        .copied()
-        .map(|pair| pnp_residual(refined, pair, camera))
-        .collect::<Vec<_>>();
-    let inliers = residuals.iter().map(|&value| value <= options.threshold).collect();
-    GeometricEstimate::try_new(refined, correspondences.len(), inliers, residuals)
+    let refinement = solve_pnp(&inlier_pairs, camera);
+    finish_pnp_consensus(best, refinement, correspondences, camera, options.threshold)
+}
+
+// Pose, original-order decisions/residuals, inlier count and inlier residual sum.
+type PnpConsensus = (AbsolutePose, Vec<bool>, Vec<f64>, usize, f64);
+
+fn finish_pnp_consensus(
+    mut best: PnpConsensus,
+    refinement: VisionResult<AbsolutePose>,
+    correspondences: &[ObjectImageCorrespondence],
+    camera: CameraMatrix3,
+    threshold: f64,
+) -> VisionResult<GeometricEstimate<AbsolutePose>> {
+    if let Ok(refined) = refinement {
+        let (count, error) =
+            rescore_pnp(refined, correspondences, camera, threshold, &mut best.1, &mut best.2);
+        if count > best.3 || (count == best.3 && error < best.4) {
+            best.0 = refined;
+            best.3 = count;
+            best.4 = error;
+        } else {
+            // Reuse the selected hypothesis's existing buffers. A rejected
+            // candidate costs one extra projection pass, not another pair of
+            // full-row output allocations. Restore rows before publishing.
+            rescore_pnp(best.0, correspondences, camera, threshold, &mut best.1, &mut best.2);
+        }
+    }
+    GeometricEstimate::try_new(best.0, correspondences.len(), best.1, best.2)
+}
+
+fn rescore_pnp(
+    pose: AbsolutePose,
+    correspondences: &[ObjectImageCorrespondence],
+    camera: CameraMatrix3,
+    threshold: f64,
+    inliers: &mut [bool],
+    residuals: &mut [f64],
+) -> (usize, f64) {
+    debug_assert_eq!(correspondences.len(), inliers.len());
+    debug_assert_eq!(correspondences.len(), residuals.len());
+    let mut count = 0;
+    let mut error = 0.0;
+    for ((&pair, inlier), residual) in
+        correspondences.iter().zip(inliers.iter_mut()).zip(residuals.iter_mut())
+    {
+        *residual = pnp_residual(pose, pair, camera);
+        *inlier = *residual <= threshold;
+        if *inlier {
+            count += 1;
+            error += *residual;
+        }
+    }
+    (count, error)
 }
 
 /// Projects an object point with an absolute pose into pixel coordinates.
@@ -785,5 +834,185 @@ mod tests {
         assert!(estimate.inlier_count() >= 14);
         let recovered = *estimate.model();
         assert!((pose.translation().z - recovered.translation().z).abs() < 5e-2);
+    }
+
+    #[test]
+    fn robust_pose_survives_failed_inlier_reinitialization() {
+        // Procedural near-planar geometry, not a captured sensor fixture.
+        // The selected six-point hypothesis is valid, while cold DLT over its
+        // consensus can produce an invalid rotation on the parent implementation.
+        let camera = CameraMatrix3::from_intrinsics(
+            CameraIntrinsics::try_new(525.0, 525.0, 319.5, 239.5, 640, 480).unwrap(),
+        );
+        let truth = AbsolutePose::try_new(
+            Mat3::from_rows(
+                [0.9983758533596424, -0.03588494159791196, -0.04424846206277005],
+                [0.034957430317503015, 0.999156210831159, -0.021560250998475538],
+                [0.044984814037660234, 0.019978421460035138, 0.9987878799735018],
+            ),
+            Vec3::new(0.01, -0.004, 0.007),
+        )
+        .unwrap();
+        let mut rng = super::XorShift64::new(5);
+        let uniform = |rng: &mut super::XorShift64| {
+            (rng.next_u64() >> 11) as f64 * (1.0 / ((1_u64 << 53) as f64))
+        };
+        let pairs = (0..90)
+            .map(|index| {
+                let x = -0.95 + 1.9 * uniform(&mut rng);
+                let y = -0.7 + 1.4 * uniform(&mut rng);
+                let z = 2.0 + 0.2 * x + 0.1 * y + 0.002 * (uniform(&mut rng) - 0.5);
+                let object = Vec3::new(x, y, z);
+                let mut image = project_object_point(truth, camera, object).unwrap();
+                image.x += 0.5 * (uniform(&mut rng) - 0.5);
+                image.y += 0.5 * (uniform(&mut rng) - 0.5);
+                if index % 3 == 0 {
+                    image.x = 40.0 + 560.0 * uniform(&mut rng);
+                    image.y = 40.0 + 400.0 * uniform(&mut rng);
+                }
+                ObjectImageCorrespondence::try_new(object, image).unwrap()
+            })
+            .collect::<Vec<_>>();
+        let estimate = solve_pnp_ransac(
+            &pairs,
+            camera,
+            RobustEstimationOptions { threshold: 2.0, ..Default::default() },
+        )
+        .expect("optional refitting must not discard a valid robust hypothesis");
+        assert!(estimate.inlier_count() >= 58);
+        assert_eq!(estimate.inliers().len(), pairs.len());
+        assert_eq!(estimate.residuals().len(), pairs.len());
+        for ((pair, &inlier), &residual) in
+            pairs.iter().zip(estimate.inliers()).zip(estimate.residuals())
+        {
+            let expected = super::pnp_residual(*estimate.model(), *pair, camera);
+            assert_eq!(residual, expected);
+            assert_eq!(inlier, expected <= 2.0);
+        }
+    }
+
+    fn consensus_fixture() -> (CameraMatrix3, Vec<ObjectImageCorrespondence>) {
+        let camera = camera();
+        let pairs = (0..32)
+            .map(|index| {
+                let object = Vec3::new(
+                    (index % 8) as f64 * 0.04 - 0.14,
+                    (index / 8) as f64 * 0.06 - 0.09,
+                    (index % 3) as f64 * 0.1,
+                );
+                let image = Vec2 {
+                    x: 500.0 * (object.x / (object.z + 3.0)) + 320.0,
+                    y: 500.0 * (object.y / (object.z + 3.0)) + 240.0,
+                };
+                ObjectImageCorrespondence::try_new(object, image).unwrap()
+            })
+            .collect();
+        (camera, pairs)
+    }
+
+    fn translated_pose(x: f64, z: f64) -> AbsolutePose {
+        AbsolutePose::try_new(Mat3::<f64>::identity(), Vec3::new(x, 0.0, z)).unwrap()
+    }
+
+    fn consensus_for(
+        pose: AbsolutePose,
+        pairs: &[ObjectImageCorrespondence],
+        camera: CameraMatrix3,
+    ) -> super::PnpConsensus {
+        let mut inliers = vec![false; pairs.len()];
+        let mut residuals = vec![0.0; pairs.len()];
+        let (count, error) =
+            super::rescore_pnp(pose, pairs, camera, 2.0, &mut inliers, &mut residuals);
+        (pose, inliers, residuals, count, error)
+    }
+
+    #[test]
+    fn optional_refit_error_or_worse_pose_preserves_owned_rows() {
+        let (camera, pairs) = consensus_fixture();
+        let original_pairs = pairs.clone();
+        let selected = translated_pose(0.003, 3.0);
+        for candidate in [
+            Err(crate::VisionError::InvalidParameter("optional refit failed".into())),
+            Ok(translated_pose(0.1, 3.0)),   // Fewer inliers.
+            Ok(translated_pose(0.006, 3.0)), // Same count, larger error.
+            Ok(translated_pose(0.0, -3.0)),  // All projections behind camera.
+        ] {
+            let best = consensus_for(selected, &pairs, camera);
+            let decisions = best.1.as_ptr();
+            let residuals = best.2.as_ptr();
+            let estimate =
+                super::finish_pnp_consensus(best, candidate, &pairs, camera, 2.0).unwrap();
+            assert_eq!(*estimate.model(), selected);
+            assert_eq!(estimate.inlier_count(), pairs.len());
+            assert_eq!(estimate.inliers().as_ptr(), decisions);
+            assert_eq!(estimate.residuals().as_ptr(), residuals);
+            for (&residual, pair) in estimate.residuals().iter().zip(&pairs) {
+                let expected = 500.0 * 0.003 / (pair.object().z + 3.0);
+                assert!((residual - expected).abs() < 1e-12);
+            }
+        }
+        assert_eq!(pairs, original_pairs);
+    }
+
+    #[test]
+    fn equal_count_lower_error_refit_is_retained() {
+        let (camera, pairs) = consensus_fixture();
+        let best = consensus_for(translated_pose(0.003, 3.0), &pairs, camera);
+        let refined = translated_pose(0.0, 3.0);
+        let estimate = super::finish_pnp_consensus(best, Ok(refined), &pairs, camera, 2.0).unwrap();
+        assert_eq!(*estimate.model(), refined);
+        assert_eq!(estimate.inlier_count(), pairs.len());
+        assert!(estimate.residuals().iter().all(|&value| value < 1e-12));
+    }
+
+    #[test]
+    fn more_inliers_win_even_with_a_larger_inlier_residual_sum() {
+        let (camera, mut pairs) = consensus_fixture();
+        for pair in pairs.iter_mut().skip(30) {
+            let mut image = pair.image();
+            image.x += 2.2;
+            *pair = ObjectImageCorrespondence::try_new(pair.object(), image).unwrap();
+        }
+        let best = consensus_for(translated_pose(0.0, 3.0), &pairs, camera);
+        assert_eq!(best.3, 30);
+        assert!(best.4 < 1e-12);
+        let refined = translated_pose(0.0048, 3.0);
+        let estimate = super::finish_pnp_consensus(best, Ok(refined), &pairs, camera, 2.0).unwrap();
+        assert_eq!(*estimate.model(), refined);
+        assert_eq!(estimate.inlier_count(), 32);
+        assert!(estimate.residuals().iter().sum::<f64>() > 20.0);
+    }
+
+    #[test]
+    fn exact_consensus_ties_keep_the_selected_pose() {
+        let camera = camera();
+        let pair = ObjectImageCorrespondence::try_new(
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec2 { x: 320.0, y: 240.0 },
+        )
+        .unwrap();
+        let pairs = vec![pair; 8];
+        let selected = translated_pose(0.0, 3.0);
+        let tied = translated_pose(0.0, 4.0);
+        let best = consensus_for(selected, &pairs, camera);
+        let estimate = super::finish_pnp_consensus(best, Ok(tied), &pairs, camera, 2.0).unwrap();
+        assert_eq!(*estimate.model(), selected);
+        assert!(estimate.residuals().iter().all(|&value| value == 0.0));
+    }
+
+    #[test]
+    fn missing_robust_hypothesis_still_returns_an_error() {
+        let camera = camera();
+        let pair = ObjectImageCorrespondence::try_new(
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec2 { x: 320.0, y: 240.0 },
+        )
+        .unwrap();
+        assert!(solve_pnp_ransac(
+            &[pair; 8],
+            camera,
+            RobustEstimationOptions { max_iterations: 8, ..Default::default() },
+        )
+        .is_err());
     }
 }

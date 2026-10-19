@@ -19,6 +19,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Preserve the selected robust-PnP hypothesis when optional final refitting
+  fails or worsens its original consensus objective. Keep strict rotation and
+  input checks, thresholds, sampling and output order; reuse owned result buffers.
+  See `docs/PNP_CONSENSUS_VALIDATION.md` for synthetic/public-data evidence.
+
 - Add explicit RGB-D keyframe adapters with persistent metric landmarks and
   a separately fixed local-depth-quality/input-count promotion revision.
   Preserve every failed fixed-interval result, unchanged support/accuracy gates

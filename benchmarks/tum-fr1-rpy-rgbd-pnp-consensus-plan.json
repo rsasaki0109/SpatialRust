@@ -1,0 +1,81 @@
+{
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "sequence": "rgbd_dataset_freiburg1_rpy",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz",
+  "observed_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "calibration": {
+    "sensor_frame": "tum_rgb_optical",
+    "axes": "x right, y down, z forward",
+    "width": 640,
+    "height": 480,
+    "fx": 525.0,
+    "fy": 525.0,
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration."
+  },
+  "limits": {
+    "max_frames": 10000,
+    "max_members": 30000,
+    "max_member_bytes": 16777216,
+    "max_total_bytes": 8589934592
+  },
+  "controls": {
+    "rgb_max_gap_ns": 20000000,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "max_depth_m": 5.0,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "projection_tolerance_m": 1e-06,
+    "io_stride": 60,
+    "stages": [
+      {
+        "leaf_m": 0.1,
+        "gate_m": 0.2,
+        "iterations": 20
+      },
+      {
+        "leaf_m": 0.05,
+        "gate_m": 0.1,
+        "iterations": 20
+      }
+    ],
+    "evaluation_max_gap_ns": 20000000,
+    "rpe_delta_ns": 1000000000,
+    "rgbd_odometry": {
+      "max_features": 300,
+      "quality_level": 0.01,
+      "min_distance": 10.0,
+      "image_margin": 40,
+      "window_radius": 5,
+      "pyramid_levels": 3,
+      "max_iterations": 30,
+      "epsilon": 0.001,
+      "min_eigenvalue": 0.0001,
+      "max_forward_backward_error": 0.75,
+      "pnp_threshold": 2.0,
+      "min_tracks": 20,
+      "min_inliers": 15,
+      "min_inlier_fraction": 0.5
+    }
+  },
+  "generation": "Every indexed depth frame with its fixed nearest timestamp-associated RGB image. Native grayscale, Shi-Tomasi detection, forward/backward sparse LK, source-depth metric PnP RANSAC; invert previous-to-current exactly once for the unchanged world chain. Retain the original 0.5 full-cloud support guard at 0.1m. No reference initialization, scale fit, lost-track reset or future-frame selection. PnP uses the existing native RGB-D API deterministic RANSAC defaults plus the fixed 2px threshold.",
+  "scope": "Previously observed development data. Separate native-only refit-policy revision, fixed before candidate generation. Existing failed and complete baseline results retained; no held-out, calibrated Autoware, changed thresholds or general motion claim.",
+  "estimator": "spatialrust_rgbd_pnp_cpu",
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+  "acceptance": {
+    "minimum_generated_fraction": 1.0,
+    "minimum_evaluated_fraction": 0.95,
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_one_second_translation_rpe_rmse_m": 0.05,
+    "basis": "Unchanged engineering completeness/coverage/ATE/RPE limits from the previous plane study. Fixed before first image-tracking/PnP fitting; not publisher accuracy requirements or physical calibration guarantees."
+  },
+  "prior_algorithm_plan_sha256": "52af9d7601b73cefddd9a65d87ee7ccf1f1465e892afe5f695dc62fba84a7cdf",
+  "native_refinement_policy": "Preserve the selected deterministic RANSAC hypothesis when optional final inlier refitting errors or worsens the same inlier-count/inlier-error objective. Sampling, thresholds, refinement initialization, frontend and geometric admission remain unchanged."
+}
