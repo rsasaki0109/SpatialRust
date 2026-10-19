@@ -177,3 +177,61 @@ capacity margin (three times the existing minimum). The completed fixed study
 also exposes low rpy inlier support. The next separately committed protocol will
 combine that input-only promotion with local source-depth quality selection;
 retain every failed fixed result and the same completeness/support/accuracy gates.
+
+### Separate input-quality protocol, fixed before adaptive fitting
+
+The fixed study and all four independent audits are preserved in commit
+`8843aea`. This second candidate is a development revision after observing those
+failures. It is not a held-out result. Its implementation, tests and both
+`benchmarks/tum-fr1-*-adaptive-rgbd-pnp-plan.json` files are committed before its
+first fit. The same source archives and prepared full timelines are reused.
+
+The new explicit `spatialrust_adaptive_keyframe_rgbd_pnp_cpu` method changes:
+
+1. Detect at most **900** candidates with the original Shi-Tomasi quality,
+   distance and margin, then retain at most the first **300** depth-qualified
+   points in the detector's order. This increases the bounded detection work;
+   the retained landmark/PnP budget remains 300.
+2. At each candidate's original rounded pixel, require all nine 3x3 depth counts
+   in the closed interval `[500,25000]`. With integer median `M` and maximum
+   absolute deviation `D`, require `50*D <= max(5000,M)`. This is an exact
+   integer-count comparison, equivalent to a max(0.02m,2% median depth) local
+   spread rule under the fixed 1/5000m convention. The integer median replaces
+   only the selected sample in the owned metric estimator-depth image. Original
+   PNGs, raw frame projection, typed IO and full-cloud support remain unchanged.
+3. In addition to the fixed maximum age 30, promote the previous accepted frame
+   before alignment when fewer than **60** geometric-inlier landmarks remain
+   (three times the unchanged 20-track minimum). This does not recover a lost
+   chain or reset the world pose. Failed promotion preserves the prior cached
+   depth/state and leaves tracking lost. Age-30 promotion remains the parent path.
+
+These are explicit frontend algorithm changes, not sensor calibration or a new
+noise model. A depth-qualification failure never falls back to unqualified
+samples. Forward/backward 0.75px, PnP 2px, 20 tracks, 15 inliers/50%, full-cloud
+50% support and all completeness/coverage/ATE/RPE criteria remain fixed.
+
+The exact integer depth limits, both absolute/relative consensus boundaries,
+holes, feature order/cap, threshold-60 behavior, noncommuting world composition
+and failed state updates have new synthetic regressions. Parent fixed-keyframe
+and stateless adapters are retained verbatim. The only common-runner change is
+admission of the new explicit estimator name.
+
+Execution order and admission:
+
+- Create new `prepared-adaptive-rgbd-v1` directories through the same checked
+  hard-link reuse helper; retain all source files and prior manifests.
+- Run xyz and rpy once each to `run-adaptive-rgbd-v1`. Bind all estimator,
+  parent/source/scoring/plan and existing native extension bytes. Freeze both
+  complete timelines before new reference scoring.
+- Use unchanged scoring and independent SciPy audits. Preserve every failure,
+  reference gap and uncovered RPE pair, with no reruns selected by score.
+- Both cases need full generation, >=95% evaluation, ATE <=0.10m and one-second
+  translation RPE <=0.05m for a two-scene accepted revision. Record all outcomes
+  even if only one case passes. A local passing prefix or synthetic test does
+  not satisfy these requirements.
+- Preflight the same 20 GiB disk floor and reuse existing native binaries and
+  source image payloads. Keep the added detector work and any shared-host timing
+  observations visible; make no performance ranking.
+
+Adaptive real-data results are pending. The fixed-policy failure table above
+and all original accuracy limits remain authoritative.
