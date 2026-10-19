@@ -43,6 +43,12 @@ reuses the same numerical binary with an explicit previous-increment seed and
 independent seed-lineage checks; all final acceptance gates remain fixed.
 It completes both 798/722-frame development timelines. XYZ passes; rpy RPE is
 0.048145m but ATE 0.114793m still exceeds the unchanged 0.10m limit.
+The separately fixed [Open3D CPU comparison](OPEN3D_DENSE_RGBD_COMPARISON.md)
+owns its inputs and previous increment and reuses the same raw final/dataflow
+gates. Its full 798/722-frame development runs pass, with ATE 0.051174/0.099684m
+and 1s RPE 0.023110/0.048494m; all 1,518 projective/seed pairs and both trajectory
+scores are independently audited. This external control adds no production
+dependency or native solver change. Native rpy accuracy remains unaccepted.
 
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,

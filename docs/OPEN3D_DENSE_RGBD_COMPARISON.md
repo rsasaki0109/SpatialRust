@@ -88,3 +88,53 @@ absolute-parent and full no-reparse checks. Preserve all scientific outcomes and
 logs, including failures. Both datasets are observed development data. Canonical
 measured clock/physical calibration, both raw Linux hardware classes and full
 mapping/semantic/release acceptance remain separate open 80% requirements.
+
+## Observed complete runs (2026-10-20 JST)
+
+The model/plans were fixed at `b4cfad9`; repaired implementation `7b08961`
+generated both complete timelines on the existing Windows CPU packages. Both
+estimate files were frozen at `2026-10-19T19:50:05.632263+00:00`, before either
+new reference score. The [source/storage/measurement receipt](receipts/2026-10-20_open3d_dense_rgbd.json)
+binds all original archives, manifests, plans, binaries, commands and audits.
+
+| Implementation / scene | Generated | Reference matched | First-pose ATE RMSE (m) | 1s translation RPE RMSE (m) | Fixed gates |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Native causal / xyz (preserved control) | 798/798 | 795/798 | 0.089993 | 0.026591 | Pass |
+| Open3D CPU / xyz | 798/798 | 795/798 | 0.051174 | 0.023110 | Pass |
+| Native causal / rpy (preserved control) | 722/722 | 716/722 | 0.114793 | 0.048145 | ATE fails |
+| Open3D CPU / rpy | 722/722 | 716/722 | 0.099684 | 0.048494 | Pass |
+
+These are complete planned trajectories. Three xyz and six rpy publisher gaps
+remain explicit; evaluated/planned 1s pairs are 762/768 and 680/692. The external
+rpy ATE margin is only 0.000316m below the 0.10m limit, and its RPE is slightly
+higher than the native control. No repetition, selection or threshold change was
+made after scoring. This gives a complete external control for the same dataflow;
+it does not establish held-out robustness or identify one causal solver difference.
+Native rpy acceptance remains open. The next numerical investigation can isolate
+full-resolution preprocessing while retaining raw final checks and these controls.
+
+Independent full-frame NumPy auditing checks all 797+721 causal/projective pairs:
+counts/fractions and prior seeds agree exactly; maximum gray/depth RMSE
+differences are 2.78e-17 / 3.47e-18 and world-chain difference is 2.70e-14.
+Independent SciPy trajectory auditing agrees within 1.17e-15m / 2.85e-13 degrees.
+All original three/six reference gaps and unmatched RPE pairs stay in denominators.
+
+The shared input retains the publisher's recommended registered-PNG approximation:
+see [TUM file formats](https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats).
+No extra depth rescale, undistortion or sensor extrinsic was applied. This input
+model remains separate from measured canonical clock/physical calibration.
+
+All eight generation/audit/score commands exit successfully. The final Python
+suite has 999 passes and three existing optional ONNX skips, including 25 new
+comparator cases and installed legacy-image buffer ownership without fitting.
+Changed Python files parse as Python 3.8. Native/core/GPU trees and 26 frozen
+native/module/library files remain unchanged; 256 prior JSON files and five
+wheels retain their original hashes. No native rebuild or package download.
+
+Combined v1/v2 scientific output and new preparation metadata occupy 336,933,306
+logical bytes, below 1GiB. Existing PNG/index hard links share 918,149,680 logical
+bytes; v2 adds no links or image payload. Only the three verified passing pytest
+scratch directories were removed, reclaiming 754,445,485 logical bytes. The
+receipt observes 678,105,968,640 bytes free on E after completion. Preserve both
+initial API failures and all successful results. This comparison leaves the
+remaining canonical, hardware-class and full mapping/semantic/release gates open.
