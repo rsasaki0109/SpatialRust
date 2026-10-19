@@ -1,9 +1,23 @@
 """Known metric motion, missing-depth/shape/budget rejection and owned calls."""
+import ast
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import numpy as np
 import pytest
 import spatialrust as sr
+
+
+def test_dense_public_exports_match_checked_stub():
+    stub = Path(__file__).resolve().parents[1] / 'spatialrust.pyi'
+    declarations = ast.parse(stub.read_text(encoding='utf-8')).body
+    exports = next(ast.literal_eval(item.value) for item in declarations
+                   if isinstance(item, ast.AnnAssign)
+                   and isinstance(item.target, ast.Name)
+                   and item.target.id == '__all__')
+    assert 'estimate_dense_rgbd_odometry' in exports
+    assert len(exports) == len(set(exports))
+    assert set(exports) == set(sr.__all__)
 
 
 def images(shift=0, width=96, height=72):

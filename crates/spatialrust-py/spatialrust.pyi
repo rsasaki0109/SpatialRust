@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 
 __version__: str
 __all__: list[str] = [
-    "__version__", "ImageMetadata", "Tensor", "Keypoint2", "OnnxRuntimeSession",
+    "__version__", "ImageMetadata", "Tensor", "Keypoint2", "OnnxRuntimeSession", "OnnxEntityEmbedder",
     "GaussianBlurWorkspace",
     "DLPackTensorView", "PointCloud", "PointCloudStream", "PipelineResult", "RegionResult",
     "ViewerState", "ViewerPointSource",
@@ -23,7 +23,7 @@ __all__: list[str] = [
     "estimate_homography_ransac", "solve_pnp", "solve_pnp_ransac", "estimate_rgbd_odometry", "estimate_dense_rgbd_odometry", "stereo_block_match",
     "match_binary_descriptors", "match_float_descriptors", "write_image", "read",
     "open_point_cloud_stream",
-    "write", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
+    "write", "export_tiles3d", "export_copc_tiles3d", "voxel_downsample", "crop_box", "pass_through", "iss_keypoints",
     "orient_normals", "detect_boundary", "mls_smooth", "farthest_point_sampling",
     "statistical_outlier_removal", "radius_outlier_removal", "run_pipeline", "run_pipeline_files",
     "region_growing", "dbscan", "ground_segmentation", "segment_multi_plane",
@@ -40,7 +40,7 @@ __all__: list[str] = [
     "histogram_image", "equalize_histogram_image", "clahe_image",
     "integral_image_u8", "CannyWorkspace", "canny_image", "resize_image", "letterbox_image",
     "normalize_image_chw", "resize_normalize_image_chw", "rgb_to_gray_image", "resize_rgb_to_gray_image", "rgb_to_hsv_image", "remap_image",
-    "nms", "batched_nms", "soft_nms", "connected_components_image", "distance_transform_edt",
+    "nms", "batched_nms", "soft_nms", "connected_components_image", "DistanceTransformWorkspace", "distance_transform_edt",
     "find_mask_contours",
     "encode_mask_rle", "decode_mask_rle", "point_map_to_point_cloud", "knn_graph",
     "radius_graph", "distance_gated_support", "DistanceSupportIndex", "register_icp", "register_icp_diagnostics", "IcpIteration", "IcpDiagnostics", "register_point_to_plane", "register_gicp",
