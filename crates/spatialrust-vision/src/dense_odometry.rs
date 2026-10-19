@@ -7,6 +7,27 @@ use crate::{AbsolutePose, CameraMatrix3, VisionError, VisionResult};
 
 const TILE_ROWS: usize = 16;
 
+/// Explicit fitting input policy; final admission always uses original pixels.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DenseRgbdPreprocessing {
+    /// Preserve the original full-resolution fitting inputs and buffer bound.
+    #[default]
+    Raw,
+    /// Replicated-edge Gaussian3 gray/depth; any missing depth tap stays missing.
+    Gaussian3,
+}
+
+impl DenseRgbdPreprocessing {
+    /// Stable policy identifier for execution receipts.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Raw => "raw",
+            Self::Gaussian3 => "gaussian3",
+        }
+    }
+}
+
 /// Borrowed grayscale and metric-depth views for one registered RGB-D frame.
 ///
 /// Depth is already in metres. Nonfinite, nonpositive and out-of-range samples
@@ -119,6 +140,27 @@ impl DenseRgbdOdometryOptions {
         }
         Ok(bytes)
     }
+
+    /// Includes both retained raw levels when filtered fitting is selected.
+    pub fn required_working_bytes_with_preprocessing(
+        &self,
+        width: usize,
+        height: usize,
+        preprocessing: DenseRgbdPreprocessing,
+    ) -> VisionResult<usize> {
+        let original = self.required_working_bytes(width, height)?;
+        if preprocessing == DenseRgbdPreprocessing::Raw {
+            return Ok(original);
+        }
+        width
+            .checked_mul(height)
+            .and_then(|pixels| pixels.checked_mul(4 * std::mem::size_of::<f64>()))
+            .and_then(|extra| original.checked_add(extra))
+            .filter(|bytes| *bytes <= self.max_working_bytes)
+            .ok_or_else(|| {
+                VisionError::InvalidParameter("over-budget dense preprocessing buffers".into())
+            })
+    }
 }
 
 /// Owned pose and final full-resolution projective diagnostics.
@@ -157,13 +199,47 @@ pub fn estimate_dense_rgbd_odometry(
     initial: AbsolutePose,
     options: &DenseRgbdOdometryOptions,
 ) -> VisionResult<DenseRgbdOdometryEstimate> {
+    estimate_dense_rgbd_odometry_with_preprocessing(
+        source,
+        target,
+        camera,
+        initial,
+        options,
+        DenseRgbdPreprocessing::Raw,
+    )
+}
+
+/// Fits with an explicit policy, retaining original raw full-resolution admission.
+///
+/// All additional logical planes are checked before allocation. The Gaussian3
+/// policy uses fixed ordered row tiles and at most four private CPU workers;
+/// WASM is serial. No input mutation or device copy occurs.
+pub fn estimate_dense_rgbd_odometry_with_preprocessing(
+    source: DenseRgbdFrame<'_>,
+    target: DenseRgbdFrame<'_>,
+    camera: CameraMatrix3,
+    initial: AbsolutePose,
+    options: &DenseRgbdOdometryOptions,
+    preprocessing: DenseRgbdPreprocessing,
+) -> VisionResult<DenseRgbdOdometryEstimate> {
     if source.gray.width() != target.gray.width() || source.gray.height() != target.gray.height() {
         return Err(VisionError::ShapeMismatch("dense RGB-D source/target geometry".into()));
     }
-    let working_bytes =
-        options.required_working_bytes(source.gray.width(), source.gray.height())?;
-    let source = pyramid(source, options);
-    let target = pyramid(target, options);
+    let working_bytes = options.required_working_bytes_with_preprocessing(
+        source.gray.width(),
+        source.gray.height(),
+        preprocessing,
+    )?;
+    let (source, target, raw) = match preprocessing {
+        DenseRgbdPreprocessing::Raw => (pyramid(source, options), pyramid(target, options), None),
+        DenseRgbdPreprocessing::Gaussian3 => {
+            let a = base_level(source, options);
+            let b = base_level(target, options);
+            let source = pyramid_from_level(gaussian3(&a), options);
+            let target = pyramid_from_level(gaussian3(&b), options);
+            (source, target, Some((a, b)))
+        }
+    };
     let mut pose = initial;
     let mut iterations = 0;
     for (schedule, level) in (0..source.len()).rev().enumerate() {
@@ -203,7 +279,9 @@ pub fn estimate_dense_rgbd_odometry(
             }
         }
     }
-    let final_rows = linearize(&source[0], &target[0], scaled_camera(camera, 0), pose, options);
+    let (final_source, final_target) =
+        raw.as_ref().map_or((&source[0], &target[0]), |(a, b)| (a, b));
+    let final_rows = linearize(final_source, final_target, scaled_camera(camera, 0), pose, options);
     check_support(&final_rows, options, SupportStage::Final)?;
     Ok(DenseRgbdOdometryEstimate {
         pose,
@@ -225,7 +303,7 @@ struct Level {
     depth: Vec<f64>,
 }
 
-fn pyramid(frame: DenseRgbdFrame<'_>, options: &DenseRgbdOdometryOptions) -> Vec<Level> {
+fn base_level(frame: DenseRgbdFrame<'_>, options: &DenseRgbdOdometryOptions) -> Level {
     let (width, height) = (frame.gray.width(), frame.gray.height());
     let mut color = Vec::with_capacity(width * height);
     let mut depth = Vec::with_capacity(width * height);
@@ -241,7 +319,65 @@ fn pyramid(frame: DenseRgbdFrame<'_>, options: &DenseRgbdOdometryOptions) -> Vec
             });
         }
     }
-    let mut levels = vec![Level { width, height, color, depth }];
+    Level { width, height, color, depth }
+}
+
+fn gaussian3_tile(raw: &Level, color: &mut [f64], depth: &mut [f64], start_row: usize) {
+    for (i, (intensity, z)) in color.iter_mut().zip(depth.iter_mut()).enumerate() {
+        let (x, y) = (i % raw.width, start_row + i / raw.width);
+        let (mut isum, mut zsum, mut finite) = (0.0, 0.0, true);
+        for (dy, wy) in [1.0, 2.0, 1.0].into_iter().enumerate() {
+            for (dx, wx) in [1.0, 2.0, 1.0].into_iter().enumerate() {
+                let sx = (x + dx).saturating_sub(1).min(raw.width - 1);
+                let sy = (y + dy).saturating_sub(1).min(raw.height - 1);
+                let index = sy * raw.width + sx;
+                isum += wx * wy * raw.color[index];
+                zsum += wx * wy * raw.depth[index];
+                finite &= raw.depth[index].is_finite();
+            }
+        }
+        *intensity = isum / 16.0;
+        *z = if finite { zsum / 16.0 } else { f64::NAN };
+    }
+}
+
+fn gaussian3(raw: &Level) -> Level {
+    let mut output = Level {
+        width: raw.width,
+        height: raw.height,
+        color: vec![0.0; raw.color.len()],
+        depth: vec![0.0; raw.depth.len()],
+    };
+    let tile_pixels = raw.width * TILE_ROWS;
+    #[cfg(not(target_arch = "wasm32"))]
+    if worker_count(raw.width * raw.height) > 1 {
+        use rayon::prelude::*;
+        pool().expect("worker count requires a pool").install(|| {
+            output
+                .color
+                .par_chunks_mut(tile_pixels)
+                .zip(output.depth.par_chunks_mut(tile_pixels))
+                .enumerate()
+                .for_each(|(block, (color, depth))| {
+                    gaussian3_tile(raw, color, depth, block * TILE_ROWS)
+                });
+        });
+        return output;
+    }
+    for (block, (color, depth)) in
+        output.color.chunks_mut(tile_pixels).zip(output.depth.chunks_mut(tile_pixels)).enumerate()
+    {
+        gaussian3_tile(raw, color, depth, block * TILE_ROWS);
+    }
+    output
+}
+
+fn pyramid(frame: DenseRgbdFrame<'_>, options: &DenseRgbdOdometryOptions) -> Vec<Level> {
+    pyramid_from_level(base_level(frame, options), options)
+}
+
+fn pyramid_from_level(base: Level, options: &DenseRgbdOdometryOptions) -> Vec<Level> {
+    let mut levels = vec![base];
     while levels.len() < options.iterations.len() {
         let previous = levels.last().expect("base level exists");
         let (width, height) =
@@ -527,6 +663,111 @@ fn update_pose(pose: AbsolutePose, delta: &[f64]) -> VisionResult<AbsolutePose> 
 mod tests {
     use super::*;
     use spatialrust_image::Image;
+
+    #[test]
+    fn gaussian3_impulses_borders_and_missing_depth_are_explicit() {
+        let mut raw = Level { width: 5, height: 5, color: vec![0.0; 25], depth: vec![2.0; 25] };
+        raw.color[12] = 1.0;
+        let filtered = gaussian3(&raw);
+        assert_eq!(filtered.color[12], 4.0 / 16.0);
+        assert_eq!(filtered.color[11], 2.0 / 16.0);
+        assert_eq!(filtered.color[6], 1.0 / 16.0);
+        assert!(filtered.depth.iter().all(|z| *z == 2.0));
+        raw.color.fill(0.0);
+        raw.color[0] = 1.0;
+        raw.depth[12] = f64::NAN;
+        let filtered = gaussian3(&raw);
+        assert_eq!(filtered.color[0], 9.0 / 16.0);
+        assert_eq!(filtered.color[1], 3.0 / 16.0);
+        assert_eq!(filtered.depth.iter().filter(|z| z.is_nan()).count(), 9);
+        assert_eq!(filtered.depth[0], 2.0);
+        assert!(raw.depth[12].is_nan() && raw.color[0] == 1.0);
+    }
+
+    #[test]
+    fn filtered_fitting_keeps_the_original_raw_valid_pixel_denominator() {
+        let (gray, _) = images(0.0, 2.0);
+        let mut depths = vec![2.0; 96 * 72];
+        depths[36 * 96 + 48] = f32::NAN;
+        let depth = Image::<f32, 1>::try_new(96, 72, depths).unwrap();
+        let frame = DenseRgbdFrame::try_new(gray.view(), depth.view()).unwrap();
+        let result = estimate_dense_rgbd_odometry_with_preprocessing(
+            frame,
+            frame,
+            camera(),
+            identity(),
+            &Default::default(),
+            DenseRgbdPreprocessing::Gaussian3,
+        )
+        .unwrap();
+        assert_eq!(result.valid_source_pixels, 96 * 72 - 1);
+        assert!(result.pose.translation().length() < 1e-10);
+        assert!(result.photometric_rmse < 1e-12 && result.depth_rmse_m < 1e-12);
+        let filtered = gaussian3(&base_level(frame, &Default::default()));
+        assert_eq!(filtered.depth.iter().filter(|z| z.is_finite()).count(), 96 * 72 - 9);
+    }
+
+    #[test]
+    fn filtered_preflight_charges_all_retained_raw_planes_before_allocation() {
+        let options = DenseRgbdOdometryOptions::default();
+        let raw = options.required_working_bytes(96, 72).unwrap();
+        assert_eq!(
+            raw,
+            options
+                .required_working_bytes_with_preprocessing(96, 72, DenseRgbdPreprocessing::Raw)
+                .unwrap()
+        );
+        let bytes = options
+            .required_working_bytes_with_preprocessing(96, 72, DenseRgbdPreprocessing::Gaussian3)
+            .unwrap();
+        assert_eq!(bytes - raw, 4 * 96 * 72 * std::mem::size_of::<f64>());
+        let exact = DenseRgbdOdometryOptions { max_working_bytes: bytes, ..options.clone() };
+        assert_eq!(
+            exact
+                .required_working_bytes_with_preprocessing(
+                    96,
+                    72,
+                    DenseRgbdPreprocessing::Gaussian3
+                )
+                .unwrap(),
+            bytes
+        );
+        let short = DenseRgbdOdometryOptions { max_working_bytes: bytes - 1, ..options };
+        assert!(short.required_working_bytes(96, 72).is_ok());
+        assert!(short
+            .required_working_bytes_with_preprocessing(96, 72, DenseRgbdPreprocessing::Gaussian3)
+            .is_err());
+        assert!(short
+            .required_working_bytes_with_preprocessing(
+                usize::MAX,
+                72,
+                DenseRgbdPreprocessing::Gaussian3
+            )
+            .is_err());
+        assert_eq!(DenseRgbdPreprocessing::default(), DenseRgbdPreprocessing::Raw);
+    }
+
+    #[test]
+    fn gaussian3_serial_parallel_and_partial_row_tiles_are_bit_identical() {
+        let (width, height) = (256, 163);
+        let mut raw = Level {
+            width,
+            height,
+            color: (0..width * height).map(|i| (i % 251) as f64 / 255.0).collect(),
+            depth: (0..width * height).map(|i| 1.0 + (i % 17) as f64 / 100.0).collect(),
+        };
+        raw.depth[80 * width + 50] = f64::NAN;
+        let parallel = gaussian3(&raw);
+        let mut color = vec![0.0; width * height];
+        let mut depth = vec![0.0; width * height];
+        for (block, (a, b)) in
+            color.chunks_mut(width * TILE_ROWS).zip(depth.chunks_mut(width * TILE_ROWS)).enumerate()
+        {
+            gaussian3_tile(&raw, a, b, block * TILE_ROWS);
+        }
+        assert_eq!(parallel.color, color);
+        assert!(parallel.depth.iter().zip(depth).all(|(a, b)| a.to_bits() == b.to_bits()));
+    }
 
     fn identity() -> AbsolutePose {
         AbsolutePose::try_new(Mat3::<f64>::identity(), Vec3::new(0.0, 0.0, 0.0)).unwrap()

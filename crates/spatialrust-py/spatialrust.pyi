@@ -1051,11 +1051,14 @@ def estimate_dense_rgbd_odometry(
     min_correspondence_fraction: float = ...,
     epsilon: float = ...,
     max_working_bytes: int = ...,
-) -> tuple[_F64Array, _F64Array, dict[str, float]]:
+    preprocessing: str = ...,
+) -> tuple[_F64Array, _F64Array, dict[str, object]]:
     """Own four CPU inputs before releasing the GIL; return source-to-target pose.
 
     Depth is already metric. Logical working bytes exclude input copies and
-    allocator/thread overhead. Original sparse APIs and device transfers remain.
+    allocator/thread overhead. preprocessing is raw (default) or gaussian3;
+    final statistics always use original raw images. Filtered mode charges its
+    retained raw levels before allocation. Original sparse APIs/device transfers remain.
     """
     ...
 
