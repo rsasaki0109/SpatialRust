@@ -207,31 +207,10 @@ impl GpuNeighborhoods {
         let mapped = slice.get_mapped_range();
         let words: &[u32] = bytemuck::cast_slice(&mapped);
         let stride = 2 + 2 * self.capacity as usize;
-        let mut rows = Vec::with_capacity(self.queries as usize);
-        let mut totals = Vec::with_capacity(self.queries as usize);
-        for row in words.chunks_exact(stride) {
-            if row[0] > self.capacity
-                || row[1] < row[0]
-                || (self.kind == GpuNeighborhoodKind::NearestK && row[0] != row[1])
-            {
-                drop(mapped);
-                staging.unmap();
-                return Err(SpatialError::InvalidArgument(
-                    "GPU neighborhood metadata is invalid".to_owned(),
-                ));
-            }
-            rows.push(
-                (0..row[0] as usize)
-                    .map(|j| Neighbor {
-                        index: row[2 + 2 * j] as usize,
-                        distance_squared: f32::from_bits(row[3 + 2 * j]),
-                    })
-                    .collect(),
-            );
-            totals.push(row[1]);
-        }
+        let decoded = readback_decode::decode(words, stride, self.capacity, self.kind);
         drop(mapped);
         staging.unmap();
+        let (rows, totals) = decoded?;
         let mut transfers = TransferStats::default();
         transfers.record(TransferDirection::DeviceToHost, self.bytes);
         Ok(GpuNeighborhoodReadback { rows, totals, transfers })
@@ -564,3 +543,6 @@ mod aos_upload_tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[path = "neighborhood_capacity_tests.rs"]
 mod capacity_tests;
+
+#[path = "neighborhood_readback_decode.rs"]
+mod readback_decode;
