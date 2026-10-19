@@ -63,6 +63,18 @@ information matrix as sensor calibration or clock uncertainty evidence.
 
 ## Resource and scope boundary
 
+The initial implementation commit `b42d755` reached neither odometry nor
+reference scoring: the installed legacy binding accepts a default RGBDImage
+constructor with separate owned color/depth properties. Both attempted runs
+retain their first identity row and TypeError logs under the original v1
+directories; they are preparation/API failures, not completed trajectory
+measurements. A separate implementation repair uses that exact API and tests
+actual float-buffer ownership without fitting. API TypeError/RuntimeError now
+becomes a reported lost-chain failure. Preserve the v1 preparation/results and
+reuse their unchanged prepared inputs in a separately committed v2 study/output
+directory. Keep all plans, seeds, admission thresholds and scoring gates fixed;
+the combined v1/v2 new-output budget remains 1GiB.
+
 Write new results only under the E drive, using an
 `open3d-dense-v1` suffix and study root
 `E:/SpatialRustData/maturity-80/open3d-dense-study-v1/`. Keep at least 20GiB free,

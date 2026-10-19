@@ -14,7 +14,7 @@ from audit_tum_dense_rgbd import audit, check_causal_initialization, reference_s
 from dense_rgbd_protocol import CONTROLS as VALIDATION
 from open3d_rgbd_protocol import CONTROLS, ESTIMATOR, PARENTS, validate_comparator_plan
 from open3d_rgbd_validation import raw_statistics
-from run_tum_open3d_rgbd import PreviousMotionOpen3dRgbd
+from run_tum_open3d_rgbd import PreviousMotionOpen3dRgbd, owned_cpu_rgbd
 from run_tum_sequence import generate
 from tum_sequence_reference import file_sha256, prepare
 from test_tum_sequence_reference import fixture
@@ -76,7 +76,19 @@ def test_returned_inverse_handles_rotation_and_translation_together():
     np.testing.assert_array_equal(report['current_from_previous'],pose)
 
 
-@pytest.mark.parametrize('failure', ['flag','pose','information','support'])
+def test_installed_legacy_cpu_images_own_float_buffers_without_estimation():
+    cpu = pytest.importorskip('open3d.cpu.pybind')
+    gray = np.arange(64, dtype=np.float32).reshape(8, 8)/np.float32(255)
+    depth = np.full((8, 8), 1.5, np.float32)
+    expected_gray, expected_depth = gray.copy(), depth.copy()
+    image = owned_cpu_rgbd(cpu, gray, depth)
+    gray[:] = 0;depth[:] = 0
+    np.testing.assert_array_equal(np.asarray(image.color), expected_gray)
+    np.testing.assert_array_equal(np.asarray(image.depth), expected_depth)
+    assert np.asarray(image.color).dtype == np.asarray(image.depth).dtype == np.float32
+
+
+@pytest.mark.parametrize('failure', ['flag','pose','information','support','api'])
 def test_failure_does_not_advance_seed_or_pair_counter(failure):
     attempt = [0]
     observed = []
@@ -84,6 +96,7 @@ def test_failure_does_not_advance_seed_or_pair_counter(failure):
         observed.append(args[4].copy());attempt[0] += 1
         pose = np.eye(4)
         if attempt[0] == 1:
+            if failure == 'api':raise TypeError('unsupported native signature')
             if failure == 'flag':return False, pose, np.eye(6)
             if failure == 'pose':pose[0, 0] = 2
             if failure == 'information':return True, pose, np.full((6, 6), np.nan)

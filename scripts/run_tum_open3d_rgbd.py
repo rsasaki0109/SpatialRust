@@ -16,10 +16,17 @@ from tum_sequence_reference import file_sha256
 from wide_rgbd_protocol import exact_json
 
 
+def owned_cpu_rgbd(cpu, gray, depth):
+    image = cpu.geometry.RGBDImage()
+    image.color = cpu.geometry.Image(gray)
+    image.depth = cpu.geometry.Image(depth)
+    return image
+
+
 def compute_cpu(source_gray, source_depth, target_gray, target_depth, initial, camera):
     cpu = importlib.import_module('open3d.cpu.pybind')
-    source = cpu.geometry.RGBDImage(cpu.geometry.Image(source_gray), cpu.geometry.Image(source_depth))
-    target = cpu.geometry.RGBDImage(cpu.geometry.Image(target_gray), cpu.geometry.Image(target_depth))
+    source = owned_cpu_rgbd(cpu, source_gray, source_depth)
+    target = owned_cpu_rgbd(cpu, target_gray, target_depth)
     intrinsic = cpu.camera.PinholeCameraIntrinsic(camera['width'], camera['height'],
         camera['fx'], camera['fy'], camera['cx'], camera['cy'])
     options = cpu.pipelines.odometry.OdometryOption()
@@ -66,8 +73,11 @@ class PreviousMotionOpen3dRgbd:
         initial = self._previous.copy()
         source = (source_counts.astype(np.float64)*camera['depth_unit_m']).astype(np.float32)
         target = (target_counts.astype(np.float64)*camera['depth_unit_m']).astype(np.float32)
-        result = self._compute(source_gray.astype(np.float32)/np.float32(255), source,
-            target_gray.astype(np.float32)/np.float32(255), target, initial.copy(), dict(camera))
+        try:
+            result = self._compute(source_gray.astype(np.float32)/np.float32(255), source,
+                target_gray.astype(np.float32)/np.float32(255), target, initial.copy(), dict(camera))
+        except (TypeError, RuntimeError) as error:
+            raise ValueError('Open3D CPU RGB-D API failed: '+str(error)) from error
         if not isinstance(result, tuple) or len(result) != 3 or result[0] is not True:
             raise ValueError('Open3D CPU RGB-D estimation did not succeed')
         candidate = rigid(result[1]).copy()
