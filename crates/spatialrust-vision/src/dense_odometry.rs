@@ -18,6 +18,8 @@ pub enum DenseRgbdPreprocessing {
     Gaussian3,
     /// The same Gaussian3 gray inputs, with original full-resolution fitting depth.
     Gaussian3GrayOnly,
+    /// Original fitting depth and Gaussian3 gray scaled once by initial pair means.
+    Gaussian3GrayOnlyPairMean,
 }
 
 impl DenseRgbdPreprocessing {
@@ -27,6 +29,7 @@ impl DenseRgbdPreprocessing {
             Self::Raw => "raw",
             Self::Gaussian3 => "gaussian3",
             Self::Gaussian3GrayOnly => "gaussian3-gray-only",
+            Self::Gaussian3GrayOnlyPairMean => "gaussian3-gray-only-pair-mean",
         }
     }
 }
@@ -235,12 +238,25 @@ pub fn estimate_dense_rgbd_odometry_with_preprocessing(
     )?;
     let (source, target, raw) = match preprocessing {
         DenseRgbdPreprocessing::Raw => (pyramid(source, options), pyramid(target, options), None),
-        DenseRgbdPreprocessing::Gaussian3 | DenseRgbdPreprocessing::Gaussian3GrayOnly => {
+        DenseRgbdPreprocessing::Gaussian3
+        | DenseRgbdPreprocessing::Gaussian3GrayOnly
+        | DenseRgbdPreprocessing::Gaussian3GrayOnlyPairMean => {
             let filter_depth = preprocessing == DenseRgbdPreprocessing::Gaussian3;
             let a = base_level(source, options);
             let b = base_level(target, options);
-            let source = pyramid_from_level(gaussian3(&a, filter_depth), options);
-            let target = pyramid_from_level(gaussian3(&b, filter_depth), options);
+            let mut source = gaussian3(&a, filter_depth);
+            let mut target = gaussian3(&b, filter_depth);
+            if preprocessing == DenseRgbdPreprocessing::Gaussian3GrayOnlyPairMean {
+                normalize_pair(
+                    &mut source,
+                    &mut target,
+                    scaled_camera(camera, 0),
+                    initial,
+                    options,
+                )?;
+            }
+            let source = pyramid_from_level(source, options);
+            let target = pyramid_from_level(target, options);
             (source, target, Some((a, b)))
         }
     };
@@ -462,6 +478,74 @@ fn sample(data: &[f64], width: usize, height: usize, x: f64, y: f64) -> Option<[
     ])
 }
 
+// Streaming row-major means use the same depth/projection admission as tile().
+// Keep them separate from the original normal reduction and its arithmetic.
+fn normalize_pair(
+    source: &mut Level,
+    target: &mut Level,
+    k: [f64; 4],
+    initial: AbsolutePose,
+    options: &DenseRgbdOdometryOptions,
+) -> VisionResult<[f64; 2]> {
+    let [fx, fy, cx, cy] = k;
+    let (mut source_sum, mut target_sum, mut count) = (0.0, 0.0, 0usize);
+    for y in 0..source.height {
+        for x in 0..source.width {
+            let i = y * source.width + x;
+            let z = source.depth[i];
+            if !z.is_finite() {
+                continue;
+            }
+            let point = initial.transform_point(Vec3::new(
+                (x as f64 - cx) * z / fx,
+                (y as f64 - cy) * z / fy,
+                z,
+            ));
+            if !point.z.is_finite() || point.z <= 0.0 {
+                continue;
+            }
+            let (u, v) = (fx * point.x / point.z + cx, fy * point.y / point.z + cy);
+            let Some(depth) = sample(&target.depth, target.width, target.height, u, v) else {
+                continue;
+            };
+            if (depth[0] - point.z).abs() > options.max_depth_difference {
+                continue;
+            }
+            let Some(color) = sample(&target.color, target.width, target.height, u, v) else {
+                continue;
+            };
+            source_sum += source.color[i];
+            target_sum += color[0];
+            count += 1;
+        }
+    }
+    let means = [source_sum / count as f64, target_sum / count as f64];
+    let gains = means.map(|mean| 0.5 / mean);
+    if count < options.min_correspondences
+        || means.iter().chain(gains.iter()).any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(VisionError::InvalidParameter(format!(
+            "dense pair-mean normalization requires minimum count and finite positive means/gains: {count} correspondences"
+        )));
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    if worker_count(source.width * source.height) > 1 {
+        use rayon::prelude::*;
+        pool().expect("worker count requires a pool").install(|| {
+            source.color.par_iter_mut().zip(target.color.par_iter_mut()).for_each(|(a, b)| {
+                *a *= gains[0];
+                *b *= gains[1];
+            });
+        });
+        return Ok(gains);
+    }
+    for (a, b) in source.color.iter_mut().zip(target.color.iter_mut()) {
+        *a *= gains[0];
+        *b *= gains[1];
+    }
+    Ok(gains)
+}
+
 #[derive(Clone, Default, Debug, PartialEq)]
 struct Normal {
     hessian: [[f64; 6]; 6],
@@ -681,6 +765,171 @@ fn update_pose(pose: AbsolutePose, delta: &[f64]) -> VisionResult<AbsolutePose> 
 mod tests {
     use super::*;
     use spatialrust_image::Image;
+
+    #[test]
+    fn pair_means_use_only_initial_depth_correspondences_and_do_not_clip() {
+        let make = |gain| Level {
+            width: 5,
+            height: 5,
+            color: (0..25)
+                .map(|i| {
+                    gain * if i % 5 == 4 || i / 5 == 4 { 100.0 } else { (i + 1) as f64 / 10.0 }
+                })
+                .collect(),
+            depth: vec![1.0; 25],
+        };
+        let (mut source, mut target) = (make(1.0), make(2.0));
+        source.depth[12] = f64::NAN;
+        target.depth[12] = f64::NAN;
+        let options = DenseRgbdOdometryOptions { min_correspondences: 6, ..Default::default() };
+        let gains =
+            normalize_pair(&mut source, &mut target, [1.0, 1.0, 0.0, 0.0], identity(), &options)
+                .unwrap();
+        assert!((gains[0] - 0.5).abs() < 1e-14 && (gains[1] - 0.25).abs() < 1e-14);
+        assert!(source.color[24] > 49.0 && target.color[24] > 49.0);
+        assert!(source.depth[12].is_nan() && target.depth[12].is_nan());
+        assert_eq!(
+            DenseRgbdPreprocessing::Gaussian3GrayOnlyPairMean.as_str(),
+            "gaussian3-gray-only-pair-mean"
+        );
+        assert_eq!(
+            options
+                .required_working_bytes_with_preprocessing(
+                    96,
+                    72,
+                    DenseRgbdPreprocessing::Gaussian3GrayOnlyPairMean
+                )
+                .unwrap(),
+            options
+                .required_working_bytes_with_preprocessing(
+                    96,
+                    72,
+                    DenseRgbdPreprocessing::Gaussian3GrayOnly
+                )
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn pair_mean_uses_supplied_initial_pose_and_original_depth_difference_gate() {
+        let make = |gain| Level {
+            width: 5,
+            height: 5,
+            color: (0..25).map(|i| gain * (i + 1) as f64 / 10.0).collect(),
+            depth: vec![1.0; 25],
+        };
+        let (mut source, mut target) = (make(1.0), make(2.0));
+        target.depth[12] = 1.5;
+        let initial = AbsolutePose::try_new(Mat3::identity(), Vec3::new(1.0, 0.0, 0.0)).unwrap();
+        let options = DenseRgbdOdometryOptions { min_correspondences: 6, ..Default::default() };
+        let gains =
+            normalize_pair(&mut source, &mut target, [1.0, 1.0, 0.0, 0.0], initial, &options)
+                .unwrap();
+        // A one-pixel shift leaves 12 rows; depth rejects only source (1,2).
+        assert!((gains[0] - 0.5 / (10.2 / 11.0)).abs() < 1e-14);
+        assert!((gains[1] - 0.5 / (22.6 / 11.0)).abs() < 1e-14);
+        assert_eq!(target.depth[12], 1.5);
+    }
+
+    #[test]
+    fn invalid_pair_means_reject_before_mutating_fitting_inputs() {
+        let make =
+            |value| Level { width: 5, height: 5, color: vec![value; 25], depth: vec![1.0; 25] };
+        for (a, b, missing) in
+            [(0.0, 1.0, false), (1.0, 0.0, false), (f64::INFINITY, 1.0, false), (1.0, 1.0, true)]
+        {
+            let (mut source, mut target) = (make(a), make(b));
+            if missing {
+                source.depth.fill(f64::NAN);
+            }
+            let before: Vec<_> =
+                source.color.iter().chain(target.color.iter()).map(|x| x.to_bits()).collect();
+            let options = DenseRgbdOdometryOptions { min_correspondences: 6, ..Default::default() };
+            assert!(normalize_pair(
+                &mut source,
+                &mut target,
+                [1.0, 1.0, 0.0, 0.0],
+                identity(),
+                &options
+            )
+            .is_err());
+            assert_eq!(
+                source
+                    .color
+                    .iter()
+                    .chain(target.color.iter())
+                    .map(|x| x.to_bits())
+                    .collect::<Vec<_>>(),
+                before
+            );
+        }
+    }
+
+    #[test]
+    fn pair_mean_corrects_gain_for_fitting_and_retains_original_final_statistics() {
+        let values: Vec<u8> = (0..96 * 72)
+            .map(|i| ((i % 96 * 3 + i / 96 * 5 + (i % 96) * (i / 96) % 17) % 90 + 20) as u8)
+            .collect();
+        let a = Image::<u8, 1>::try_new(96, 72, values.clone()).unwrap();
+        let b =
+            Image::<u8, 1>::try_new(96, 72, values.into_iter().map(|x| x * 2).collect()).unwrap();
+        let depth = Image::<f32, 1>::try_new(96, 72, vec![2.0; 96 * 72]).unwrap();
+        let source = DenseRgbdFrame::try_new(a.view(), depth.view()).unwrap();
+        let target = DenseRgbdFrame::try_new(b.view(), depth.view()).unwrap();
+        let options = DenseRgbdOdometryOptions::default();
+        let result = estimate_dense_rgbd_odometry_with_preprocessing(
+            source,
+            target,
+            camera(),
+            identity(),
+            &options,
+            DenseRgbdPreprocessing::Gaussian3GrayOnlyPairMean,
+        )
+        .unwrap();
+        assert!(result.pose.translation().length() < 1e-10);
+        assert!(result.photometric_rmse > 0.1 && result.depth_rmse_m < 1e-12);
+        let original = linearize(
+            &base_level(source, &options),
+            &base_level(target, &options),
+            scaled_camera(camera(), 0),
+            result.pose,
+            &options,
+        );
+        assert_eq!(result.correspondences, original.count);
+        assert_eq!(result.photometric_rmse, (original.photo_sse / original.count as f64).sqrt());
+    }
+
+    #[test]
+    fn pair_mean_parallel_scaling_matches_independent_serial_multiplication() {
+        let (width, height) = (193, 173);
+        let make = |gain| Level {
+            width,
+            height,
+            color: (0..width * height)
+                .map(|i| gain * (1 + (i * 17) % 251) as f64 / 255.0)
+                .collect(),
+            depth: vec![2.0; width * height],
+        };
+        let (mut source, mut target) = (make(1.0), make(2.0));
+        let (mut a, mut b) = (source.color.clone(), target.color.clone());
+        let gains = normalize_pair(
+            &mut source,
+            &mut target,
+            [64.0, 64.0, 48.0, 36.0],
+            identity(),
+            &Default::default(),
+        )
+        .unwrap();
+        for x in &mut a {
+            *x *= gains[0];
+        }
+        for x in &mut b {
+            *x *= gains[1];
+        }
+        assert_eq!(source.color, a);
+        assert_eq!(target.color, b);
+        assert!(source.depth.iter().chain(target.depth.iter()).all(|&z| z == 2.0));
+    }
 
     #[test]
     fn gray_only_preserves_original_depth_bits_and_joint_gray_arithmetic() {

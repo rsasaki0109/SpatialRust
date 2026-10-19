@@ -4239,7 +4239,8 @@ fn estimate_dense_rgbd_odometry<'py>(
         "raw" => DenseRgbdPreprocessing::Raw,
         "gaussian3" => DenseRgbdPreprocessing::Gaussian3,
         "gaussian3-gray-only" => DenseRgbdPreprocessing::Gaussian3GrayOnly,
-        _ => return Err(PyValueError::new_err("dense preprocessing must be raw, gaussian3, or gaussian3-gray-only")),
+        "gaussian3-gray-only-pair-mean" => DenseRgbdPreprocessing::Gaussian3GrayOnlyPairMean,
+        _ => return Err(PyValueError::new_err("dense preprocessing must be raw, gaussian3, gaussian3-gray-only, or gaussian3-gray-only-pair-mean")),
     };
     let (sg, sd, tg, td) = (
         source_gray.as_array(),
