@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 
 from run_tum_keyframe_rgbd import KeyframeRgbdTracker, validate_keyframe_rgbd_plan
-from run_tum_rgbd_odometry import DEFAULT_CONTROLS
 from run_tum_sequence import generate
 from tum_sequence_reference import file_sha256
 import spatialrust as sr
@@ -39,13 +38,14 @@ class AdaptiveRgbdTracker(KeyframeRgbdTracker):
         self.seed_statistics = {}
 
     def seed(self, depth, gray, camera, controls):
+        settings = self.tracking_settings()
         if camera['depth_unit_m'] != .0002 or controls['min_depth_m'] != .1 or controls['max_depth_m'] != 5.:
             raise ValueError('depth consensus requires the fixed registered-depth count convention')
         points = sr.shi_tomasi_keypoints(gray, max_corners=CONTROLS['maximum_candidate_features'],
-            quality_level=DEFAULT_CONTROLS['quality_level'], min_distance=DEFAULT_CONTROLS['min_distance'],
+            quality_level=settings['quality_level'], min_distance=settings['min_distance'],
             block_size=3, gradient_size=3)
         pixels = np.array([[p.x,p.y] for p in points], dtype=np.float64).reshape(-1,2)
-        margin = DEFAULT_CONTROLS['image_margin']
+        margin = settings['image_margin']
         inside = ((pixels[:,0]>=margin) & (pixels[:,0]<camera['width']-margin) &
                   (pixels[:,1]>=margin) & (pixels[:,1]<camera['height']-margin))
         pixels = pixels[inside]
@@ -64,8 +64,8 @@ class AdaptiveRgbdTracker(KeyframeRgbdTracker):
         selected = np.flatnonzero(admitted)[:CONTROLS['maximum_retained_features']]
         self.seed_statistics = dict(detected_candidates=len(points), interior_candidates=len(pixels),
                                     depth_consistent_candidates=int(admitted.sum()), retained_features=len(selected))
-        if len(selected)<DEFAULT_CONTROLS['min_tracks']:
-            raise ValueError('only {} stable-depth keypoints; require {}'.format(len(selected),DEFAULT_CONTROLS['min_tracks']))
+        if len(selected)<settings['min_tracks']:
+            raise ValueError('only {} stable-depth keypoints; require {}'.format(len(selected),settings['min_tracks']))
         metres = np.array(depth.astype(np.float64)*camera['depth_unit_m'],dtype=np.float32,copy=True)
         chosen = indices[selected]
         metres[chosen[:,1],chosen[:,0]] = (median[selected].astype(np.float64)*camera['depth_unit_m']).astype(np.float32)

@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A separate experimental RGB-D capture adapter supplies fixed LK window/pyramid
+settings to the original stateless and persistent-depth implementations. Existing
+callers keep original settings; no global controls are mutated. Native/core/GPU
+APIs, camera parameters, transfer ownership and all admission/accuracy gates
+retain their contracts. Wider windows and extra pyramid work remain explicit.
+See [the fixed capture protocol](WIDE_RGBD_CAPTURE_VALIDATION.md).
+
 Robust PnP keeps its selected proper hypothesis through optional final refitting.
 The same inlier-count/Euclidean-error ordering admits improvements; errors and
 worse/tied candidates retain the selected pose with consistent original-order
