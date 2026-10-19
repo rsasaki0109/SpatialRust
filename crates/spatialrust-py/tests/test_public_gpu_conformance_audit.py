@@ -66,3 +66,11 @@ def test_failed_frame_is_retained_and_rejected_without_assuming_payload_exists()
     result = audit_runs(runs, MANIFEST, "windows")
     assert not result["hardware_coverage_accepted"]
     assert any("frame 0" in issue for issue in result["issues"])
+
+
+def test_initialization_failures_have_no_observed_centroid_error():
+    runs = [{"preference": preference, "exit_status": 1, "report": None}
+            for preference in ("high", "low")]
+    result = audit_runs(runs, MANIFEST)
+    assert not result["hardware_coverage_accepted"]
+    assert result["maximum_centroid_coordinate_error_m"] is None

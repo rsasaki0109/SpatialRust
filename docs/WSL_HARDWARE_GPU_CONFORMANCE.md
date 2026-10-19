@@ -66,3 +66,62 @@ This is three development frames under one bridge configuration. Accurate
 motion, measured canonical sensor clock/calibration, full mapping and release
 acceptance remain separate open gates. No throughput or competing-library
 maturity percentage follows from these cases.
+
+## Observed outcome
+
+Protocol commit `952d34e2fee702717a172509430702f62912f5c5` and execution-source
+commit `893ba09665ba5eca59453644cca2f147c91b4f1c` precede both attempts.
+The original executable, input payloads and earlier Windows/Linux receipts
+remain byte-identical. The relevant GPU/core/math/image/search Git trees also
+match the original protocol revision. The isolated source build succeeds;
+that success does not establish operation conformance.
+
+| Preference | Process | Operation frames executed / planned | Hardware acceptance |
+| --- | --- | ---: | --- |
+| high | Exit 1: no compatible wgpu adapter | 0 / 3 | fail |
+| low | Exit 1: no compatible wgpu adapter | 0 / 3 | fail |
+
+Both stdout files are empty. Complete stderr is preserved and reports that
+Dozen is a testing implementation followed by the unchanged runtime's adapter
+admission error. No image, voxel or radius shader runs, readback correctness,
+or centroid error was observed. Missing measurements are not zero errors.
+
+A separate post-failure Vulkan capability probe enumerates one `DiscreteGpu`,
+API 1.2.354, graphics/compute support and conformance version 0.0.0.0. It emits
+no adapter model strings and creates no logical device or shader. wgpu-hal
+24.0.4's
+[adapter admission source](https://github.com/gfx-rs/wgpu/blob/v24.0.5/wgpu-hal/src/vulkan/adapter.rs)
+excludes a non-MoltenVK driver with conformance major zero unless an explicit
+noncompliant-adapter flag is set. The frozen runtime uses the default flags.
+These observed properties and source checks explain its exclusion; neither
+driver certification nor admission is overridden to obtain a passing result.
+The probe also reports no `VK_KHR_swapchain`; later device creation is untested.
+Even enumeration of one class cannot meet the unchanged two-class gate.
+
+The [compact receipt](receipts/2026-10-19_wsl_hardware_gpu.json) records both
+initialization failures, every planned but unexecuted frame, runtime/source
+hashes, the capability diagnostic, storage observations and report auditing.
+The final auditor uses `null` when no centroid error was observed; the original
+raw execution receipt retains the earlier auditor's zero initializer and is
+preserved with its original source hash. This reporting correction does not
+rerun or revise operation results.
+
+The earlier six Windows hardware and six Linux software operation cases retain
+their outcomes. WSL2 hardware operation conformance and bare-metal Linux
+hardware support remain unproven. Any experimental change to admission or
+driver configuration requires a separate protocol and new result directory.
+
+Final local validation passes 892 Python cases, including 24 new report-audit
+cases and the unchanged 13 input/projection cases; three optional ONNX cases
+skip. Both new Python files parse with the Python 3.8 grammar. Native Rust,
+wheel, shaders and Cargo dependencies are unchanged; no new native build is
+needed for these data-only checks. The Mesa build completes with ten compiler
+warnings retained in its log; it is not a Vulkan certification test.
+
+The final controlled E-drive source/tools/build/runtime tree contains
+596201206 logical bytes, with the 68652756-byte Mesa archive cached separately.
+New execution/diagnostic results contain 23709 logical bytes. Removing only
+three fully checked passing-test scratch directories reclaims 404474664 logical
+bytes; XMLs, source archives, wheels, frozen binaries, data and all old/new
+execution results remain. These are observed regular-file sizes, excluding
+filesystem symlink targets, not disk-allocation or peak-memory measurements.

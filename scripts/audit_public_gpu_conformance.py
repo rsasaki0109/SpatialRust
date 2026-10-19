@@ -19,7 +19,7 @@ def audit_runs(runs, manifest_sha256, expected_os="linux"):
         raise ValueError("Expected input manifest SHA-256 is required")
     issues = []
     classes = set()
-    maximum_error = 0.0
+    maximum_error = None
 
     def require(ok, label):
         if not ok:
@@ -94,7 +94,7 @@ def audit_runs(runs, manifest_sha256, expected_os="linux"):
             valid_error = type(error) in (int, float) and 0 <= error <= 1e-5 and math.isfinite(error)
             require(valid_error, prefix + "finite centroid error within tolerance")
             if valid_error:
-                maximum_error = max(maximum_error, error)
+                maximum_error = error if maximum_error is None else max(maximum_error, error)
             radius = object_value(frame, "radius")
             for key, value in (("queries", 64), ("count_mismatches", 0), ("total_neighbors", neighbors),
                                ("queries_host_to_device_bytes", 1024), ("explicit_device_to_host_bytes", 512),

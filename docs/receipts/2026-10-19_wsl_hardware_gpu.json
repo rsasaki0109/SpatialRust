@@ -1,0 +1,541 @@
+{
+  "schema": "spatialrust.public-wsl-hardware-receipt.v1",
+  "date": "2026-10-19",
+  "slice": "146F",
+  "protocol_commit": "952d34e2fee702717a172509430702f62912f5c5",
+  "execution_source_commit": "893ba09665ba5eca59453644cca2f147c91b4f1c",
+  "environment": "Ubuntu 22.04 under WSL2; Mesa Dozen Vulkan-to-D3D12 bridge through /dev/dxg; not bare-metal Linux",
+  "plan": "C:/Users/rsasa/Workspace/SpatialRust/benchmarks/tum-fr1-xyz-wsl-hardware-plan.json",
+  "plan_sha256": "f532e028e4ef53d6a1e35e6b1c292dcca58191b04c4e1178f3e38ec34f37bdbf",
+  "frozen_source_files": {
+    "benchmarks/tum-fr1-xyz-wsl-hardware-plan.json": "f532e028e4ef53d6a1e35e6b1c292dcca58191b04c4e1178f3e38ec34f37bdbf",
+    "benchmarks/tum-fr1-xyz-gpu-conformance-plan.json": "a06bf77f3e8f3403ddee394b88eb75a3f8e10b30844281e8ee03d733637cb30f",
+    "scripts/audit_public_gpu_conformance.py": "9644f5e675e0143b72bfa48f54f8d9f75b837966d4bfa619e222df7c6766f71f",
+    "crates/spatialrust-gpu/examples/gpu_public_rgbd_conformance.rs": "6bb586db3269716d160121ee161baa9a84521049a77908a979c61ab0845b6481",
+    "docs/WSL_HARDWARE_GPU_CONFORMANCE.md": "ddeaebac402d55a898d123647e5d457ae43902925f8e6405bda55f878c0dbb4a"
+  },
+  "executable_sha256": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+  "input_manifest_sha256": "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+  "unchanged_crate_trees": {
+    "crates/spatialrust-gpu": "598f1e4e258ca9769350f7d91ba27c9975bcaa61",
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-math": "1b2b0d359494c807a71caf508c5a8abd8c52aa2b",
+    "crates/spatialrust-image": "67fc04869008415610300839e01238503da57cb0",
+    "crates/spatialrust-search": "f88b69bda15eb9a32fb37d0d2b330fac8f3c34a4"
+  },
+  "mesa_source": {
+    "version": "26.2.5",
+    "source_url": "https://archive.mesa3d.org/mesa-26.2.5.tar.xz",
+    "source_sha256": "794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5",
+    "directx_headers_revision": "v1.619.1",
+    "directx_headers_commit": "9e393d6d8a3b30dcc6f2806ef604ec16a27b0d7e",
+    "libdrm_version": "2.4.133",
+    "libdrm_source_sha256": "fc68f9d0ba2ea63c9432a299e14fea09fad7a8a66e8039fcd7802ca59f77b4f5",
+    "selection": "Both VK_DRIVER_FILES and VK_ICD_FILENAMES name the one isolated ICD; LD_LIBRARY_PATH selects its private library directory and /usr/lib/wsl/lib. No global installation."
+  },
+  "preparation": {
+    "schema": "spatialrust.mesa-dozen-preparation.v1",
+    "archive_path": "E:\\SpatialRustBuild\\mesa-dozen-scout-v1\\mesa-26.2.5.tar.xz",
+    "archive_sha256": "794b3d1729075dae7ebd47c7283b7ca0cdb5dec668f7f11cc0a5d82f6138a0a5",
+    "root": "E:\\SpatialRustBuild\\mesa-dozen-v1",
+    "source": "E:\\SpatialRustBuild\\mesa-dozen-v1\\source\\mesa-26.2.5",
+    "files": 12808,
+    "logical_source_bytes": 376707701,
+    "materialized_internal_file_links": [
+      {
+        "path": "mesa-26.2.5\\bin\\ci\\pipeline_message.py",
+        "original_link": "../../.marge/hooks/pipeline_message.py",
+        "target": "mesa-26.2.5\\.marge\\hooks\\pipeline_message.py",
+        "bytes": 12311
+      },
+      {
+        "path": "mesa-26.2.5\\include\\android_stub\\sync\\sync.h",
+        "original_link": "../android/sync.h",
+        "target": "mesa-26.2.5\\include\\android_stub\\android\\sync.h",
+        "bytes": 1741
+      },
+      {
+        "path": "mesa-26.2.5\\src\\compiler\\isaspec\\README.rst",
+        "original_link": "../../../docs/isaspec.rst",
+        "target": "mesa-26.2.5\\docs\\isaspec.rst",
+        "bytes": 15175
+      },
+      {
+        "path": "mesa-26.2.5\\src\\gallium\\drivers\\asahi\\.clang-format",
+        "original_link": "../../../asahi/.clang-format",
+        "target": "mesa-26.2.5\\src\\asahi\\.clang-format",
+        "bytes": 195
+      },
+      {
+        "path": "mesa-26.2.5\\src\\gallium\\drivers\\freedreno\\.clang-format",
+        "original_link": "../../../freedreno/.clang-format",
+        "target": "mesa-26.2.5\\src\\freedreno\\.clang-format",
+        "bytes": 139
+      },
+      {
+        "path": "mesa-26.2.5\\src\\gallium\\drivers\\panfrost\\.clang-format",
+        "original_link": "../../../panfrost/.clang-format",
+        "target": "mesa-26.2.5\\src\\panfrost\\.clang-format",
+        "bytes": 2888
+      },
+      {
+        "path": "mesa-26.2.5\\src\\gallium\\winsys\\asahi\\drm\\.clang-format",
+        "original_link": "../../../../asahi/.clang-format",
+        "target": "mesa-26.2.5\\src\\asahi\\.clang-format",
+        "bytes": 195
+      },
+      {
+        "path": "mesa-26.2.5\\src\\gallium\\winsys\\panfrost\\drm\\.clang-format",
+        "original_link": "../../../../panfrost/.clang-format",
+        "target": "mesa-26.2.5\\src\\panfrost\\.clang-format",
+        "bytes": 2888
+      }
+    ],
+    "skipped_directory_or_broken_ci_links": [
+      {
+        "path": "mesa-26.2.5/.gitlab-ci/bin",
+        "target": "../bin/ci"
+      },
+      {
+        "path": "mesa-26.2.5/.gitlab-ci/docs",
+        "target": "../docs/ci"
+      }
+    ],
+    "created_filesystem_symlinks": 0,
+    "free_after_bytes": 686272724992
+  },
+  "configure_attempts": [
+    {
+      "metadata_path": "E:\\SpatialRustBuild\\mesa-dozen-v1\\configure.json",
+      "metadata_sha256": "2114b2bb3b6605337641f1bf1947501cbdc562e52ed95b17388d54442cb6c620",
+      "exit_status": 1,
+      "log_sha256": "eaa24a6475450e93290d5eb793d9a2e036a557805d517eec5e84e5315a27e96e",
+      "reason": null
+    },
+    {
+      "metadata_path": "E:\\SpatialRustBuild\\mesa-dozen-v1\\configure-retry1.json",
+      "metadata_sha256": "ca5c6d6c10515f6fb5e948a08b617fdbb346568f88c419df9e1311f8f51d4587",
+      "exit_status": 1,
+      "log_sha256": "9a0e85d16d46910728a847717a6bfc41b5883e4f7047258386c66c9a95c158e0",
+      "reason": "Missing build-only PyYAML installed into the isolated E-drive venv"
+    },
+    {
+      "metadata_path": "E:\\SpatialRustBuild\\mesa-dozen-v1\\configure-retry2.json",
+      "metadata_sha256": "2c2cf0a6fb084b7360149a0abd5136110df2d0665535d0f206680914a087f1ba",
+      "exit_status": 0,
+      "log_sha256": "d1cef822db2c3a32eab1763c4ece51bd6d2c61f0ea6fad7e8930f9012eef800b",
+      "reason": "Pinned libdrm source staged locally, fallback enabled with all dependency tests disabled"
+    }
+  ],
+  "final_configure": {
+    "schema": "spatialrust.mesa-dozen-configure-retry.v1",
+    "reason": "Pinned libdrm source staged locally, fallback enabled with all dependency tests disabled",
+    "arguments": [
+      "/mnt/e/SpatialRustBuild/mesa-dozen-v1/tools-env/bin/meson",
+      "setup",
+      "/mnt/e/SpatialRustBuild/mesa-dozen-v1/build",
+      "/mnt/e/SpatialRustBuild/mesa-dozen-v1/source/mesa-26.2.5",
+      "--prefix",
+      "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix",
+      "--libdir=lib",
+      "--wrap-mode=nodownload",
+      "--buildtype=release",
+      "-Dgallium-drivers=[]",
+      "-Dvulkan-drivers=microsoft-experimental",
+      "-Dplatforms=[]",
+      "-Dglx=disabled",
+      "-Degl=disabled",
+      "-Dgles1=disabled",
+      "-Dgles2=disabled",
+      "-Dopengl=false",
+      "-Dgbm=disabled",
+      "-Dllvm=disabled",
+      "-Dmicrosoft-clc=disabled",
+      "-Dspirv-tools=disabled",
+      "-Dbuild-tests=false",
+      "-Dtools=[]",
+      "-Dvalgrind=disabled",
+      "-Dlibunwind=disabled",
+      "-Dallow-fallback-for=libdrm",
+      "-Dlibdrm:tests=false"
+    ],
+    "started_at_utc": "2026-10-19T12:13:26.732589+00:00",
+    "dependency_wheels": [
+      {
+        "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/wheelhouse/mako-1.4.3-py3-none-any.whl",
+        "sha256": "723296007c870bfd6b3f0c3230dba7198096e5269297ebf5e4eff9e7ffa39d4f"
+      },
+      {
+        "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/wheelhouse/markupsafe-3.0.4-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "sha256": "d1aca03ede943eb80ab3d63bb082c84b7aab85ea83bd0fd0c200260945fb49d9"
+      },
+      {
+        "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/wheelhouse/meson-1.12.1-py3-none-any.whl",
+        "sha256": "930bc7542cbd9f57009e182fd014eba48cf1a0180a7b9006d2d32d8f168d8b02"
+      },
+      {
+        "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/wheelhouse/packaging-26.3-py3-none-any.whl",
+        "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
+      },
+      {
+        "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/wheelhouse/pyyaml-6.0.3-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "sha256": "9c7708761fccb9397fe64bbc0395abcae8c4bf7b0eac081e12b809bf47700d0b"
+      }
+    ],
+    "system_driver_changed": false,
+    "hardware_execution_performed": false,
+    "exit_status": 0,
+    "finished_at_utc": "2026-10-19T12:15:28.700477+00:00",
+    "free_after_bytes": 686217142272
+  },
+  "compile": {
+    "arguments": [
+      "/usr/bin/ninja",
+      "-C",
+      "/mnt/e/SpatialRustBuild/mesa-dozen-v1/build",
+      "-j",
+      "4"
+    ],
+    "started_at_utc": "2026-10-19T12:22:09.728191+00:00",
+    "finished_at_utc": "2026-10-19T12:31:30.616389+00:00",
+    "exit_status": 0,
+    "jobs": 4,
+    "metadata_sha256": "4305b6590685259fe333bdf108436b121417b2362889f0a6bbaa7147f917a649",
+    "log_sha256": "728822a961347ec57cc0599661e8ae9e3006fddc2ef73566b2095cab6c2675c6",
+    "compiler_warning_count": 10,
+    "maximum_sampled_build_logical_bytes": 153136999,
+    "minimum_sampled_free_bytes": 686078066688,
+    "sample_count": 44,
+    "scope": "Logical build-tree samples, not allocated disk blocks, peak live GPU memory or driver/OS memory"
+  },
+  "runtime": {
+    "schema": "spatialrust.isolated-dozen-runtime.v1",
+    "method": "Stage only compiled runtime libraries and generated ICD into the E-drive prefix; no system installation or global loader update",
+    "files": [
+      {
+        "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/lib/libdrm.so.2",
+        "bytes": 119696,
+        "sha256": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc"
+      },
+      {
+        "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/lib/libvulkan_dzn.so",
+        "bytes": 13133296,
+        "sha256": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2"
+      },
+      {
+        "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/share/vulkan/icd.d/dzn_icd.x86_64.json",
+        "bytes": 197,
+        "sha256": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff"
+      }
+    ],
+    "icd": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/share/vulkan/icd.d/dzn_icd.x86_64.json",
+    "source_icd": {
+      "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/build/src/microsoft/vulkan/dzn_icd.x86_64.json",
+      "sha256": "893c9057fc87ec1745d6ed4edf7ec8fc27ab02678567c5f2144e8d3f3cd9c18e"
+    },
+    "compile_metadata_sha256": "4305b6590685259fe333bdf108436b121417b2362889f0a6bbaa7147f917a649",
+    "system_driver_changed": false,
+    "hardware_execution_performed": false
+  },
+  "wsl_bridge_libraries": [
+    {
+      "path": "/usr/lib/wsl/lib/libd3d12.so",
+      "bytes": 801840,
+      "sha256": "b3d78d409a4dbbe8612551fc0c0d746d3e58d7997ee7eba78ce1064d77cfa8c3"
+    },
+    {
+      "path": "/usr/lib/wsl/lib/libd3d12core.so",
+      "bytes": 6880344,
+      "sha256": "a4104a2022932d8e6c714f103ebd89db1c5bdbf36fe92151c88d3d93d4e3894d"
+    },
+    {
+      "path": "/usr/lib/wsl/lib/libdxcore.so",
+      "bytes": 942048,
+      "sha256": "83d1671a839bcf71709349e77cd68341515df2e63080765618876996a0f4190c"
+    }
+  ],
+  "runs": [
+    {
+      "preference": "high",
+      "exit_status": 1,
+      "started_at_utc": "2026-10-19T12:36:07.293556+00:00",
+      "finished_at_utc": "2026-10-19T12:36:09.328548+00:00",
+      "arguments": [
+        "/mnt/e/SpatialRustBuild/maturity-80-linux-target/release/examples/gpu_public_rgbd_conformance",
+        "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1",
+        "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+        "high"
+      ],
+      "environment": {
+        "VK_DRIVER_FILES": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/share/vulkan/icd.d/dzn_icd.x86_64.json",
+        "VK_ICD_FILENAMES": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/share/vulkan/icd.d/dzn_icd.x86_64.json",
+        "LD_LIBRARY_PATH": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/lib:/usr/lib/wsl/lib",
+        "TMPDIR": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/tmp",
+        "XDG_CACHE_HOME": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/cache",
+        "MESA_SHADER_CACHE_DIR": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/cache/mesa",
+        "MESA_SHADER_CACHE_MAX_SIZE": "64M"
+      },
+      "stdout": {
+        "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/linux-hardware-high.json",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/linux-hardware-high.stderr.log",
+        "bytes": 154,
+        "sha256": "290feb3d0c841b3df8623e4f43013e6443e8f5d7f746bcbdddcc744faee670a9",
+        "text": "WARNING: dzn is not a conformant Vulkan implementation, testing use only.\nError: InvalidArgument(\"no compatible wgpu adapter found for headless compute\")\n"
+      },
+      "report": null,
+      "planned_frames": [
+        {
+          "index": 0,
+          "executed": false,
+          "status": "blocked_by_adapter_initialization"
+        },
+        {
+          "index": 399,
+          "executed": false,
+          "status": "blocked_by_adapter_initialization"
+        },
+        {
+          "index": 797,
+          "executed": false,
+          "status": "blocked_by_adapter_initialization"
+        }
+      ],
+      "measurements_observed": false
+    },
+    {
+      "preference": "low",
+      "exit_status": 1,
+      "started_at_utc": "2026-10-19T12:36:09.668924+00:00",
+      "finished_at_utc": "2026-10-19T12:36:11.717917+00:00",
+      "arguments": [
+        "/mnt/e/SpatialRustBuild/maturity-80-linux-target/release/examples/gpu_public_rgbd_conformance",
+        "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/gpu-conformance-input-v1",
+        "f0c2fe90f845de3bb434b7d0e24b10b4ddfe8754bb39455841bcaa654c98a7ae",
+        "low"
+      ],
+      "environment": {
+        "VK_DRIVER_FILES": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/share/vulkan/icd.d/dzn_icd.x86_64.json",
+        "VK_ICD_FILENAMES": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/share/vulkan/icd.d/dzn_icd.x86_64.json",
+        "LD_LIBRARY_PATH": "/mnt/e/SpatialRustBuild/mesa-dozen-v1/prefix/lib:/usr/lib/wsl/lib",
+        "TMPDIR": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/tmp",
+        "XDG_CACHE_HOME": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/cache",
+        "MESA_SHADER_CACHE_DIR": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/cache/mesa",
+        "MESA_SHADER_CACHE_MAX_SIZE": "64M"
+      },
+      "stdout": {
+        "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/linux-hardware-low.json",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1/linux-hardware-low.stderr.log",
+        "bytes": 154,
+        "sha256": "290feb3d0c841b3df8623e4f43013e6443e8f5d7f746bcbdddcc744faee670a9",
+        "text": "WARNING: dzn is not a conformant Vulkan implementation, testing use only.\nError: InvalidArgument(\"no compatible wgpu adapter found for headless compute\")\n"
+      },
+      "report": null,
+      "planned_frames": [
+        {
+          "index": 0,
+          "executed": false,
+          "status": "blocked_by_adapter_initialization"
+        },
+        {
+          "index": 399,
+          "executed": false,
+          "status": "blocked_by_adapter_initialization"
+        },
+        {
+          "index": 797,
+          "executed": false,
+          "status": "blocked_by_adapter_initialization"
+        }
+      ],
+      "measurements_observed": false
+    }
+  ],
+  "post_failure_capability_probe": {
+    "report": {
+      "schema": "spatialrust.vulkan-admission-probe.v1",
+      "device_count": 1,
+      "devices": [
+        {
+          "device_type": "DiscreteGpu",
+          "api_version": [
+            1,
+            2,
+            354
+          ],
+          "conformance_version": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "driver_id": 23,
+          "first_queue_graphics": true,
+          "first_queue_compute": true,
+          "max_compute_workgroup_storage_size": 32768,
+          "max_storage_buffers_per_stage": 1000000,
+          "extensions": {
+            "VK_KHR_driver_properties": true,
+            "VK_KHR_storage_buffer_storage_class": true,
+            "VK_KHR_maintenance1": true,
+            "VK_KHR_swapchain": false
+          }
+        }
+      ],
+      "scope": "Capability enumeration only; no logical device, shader, dispatch or dataset execution. Adapter model strings are never emitted."
+    },
+    "execution": {
+      "started_at_utc": "2026-10-19T12:40:22.362459+00:00",
+      "source": "/mnt/c/Users/rsasa/Workspace/SpatialRust/target/automation/probe-dozen-vulkan-admission.c",
+      "source_sha256": "e9bee84989725a1fa2dd6092cab9f449ddfaf27ef682247425cc6da097d51370",
+      "compile_arguments": [
+        "/usr/bin/cc",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/mnt/e/SpatialRustBuild/mesa-dozen-v1/source/mesa-26.2.5/include",
+        "/mnt/c/Users/rsasa/Workspace/SpatialRust/target/automation/probe-dozen-vulkan-admission.c",
+        "-ldl",
+        "-o",
+        "/mnt/e/SpatialRustBuild/mesa-dozen-v1/vulkan-admission-probe"
+      ],
+      "executable_sha256": "2c8cac8349fd48c4af97655b218e134a7b938b7cd5fcc2d1341f82263bf8ace0",
+      "runtime_metadata_sha256": "f5bdcba94a769ad1153b19dcd727f027ed23158d95066d1cb16ea890f647e502",
+      "scope": "Post-failure diagnostic; capability enumeration only; no logical device/shader/dispatch or threshold changes",
+      "exit_status": 0,
+      "stdout_sha256": "bca6a76326346f6ec339ffe74eb517bd8c2fa57f216f513e9399b923643ef385",
+      "stderr_sha256": "4976cfd19909daf9118d5bae67e771a5d3355012bc1aa14808568c49a571ca93",
+      "finished_at_utc": "2026-10-19T12:40:22.788863+00:00"
+    }
+  },
+  "admission_source": {
+    "wgpu_hal_version": "24.0.4",
+    "wgpu_hal_source_sha256": "9be689dadc9acbf28b37c4a373c6bf7a7bb731c00e46a93e7671686a06c4688c",
+    "wgpu_hal_source_commit": "993fc39b07e8a4418a15043265298d7bc016d059",
+    "wgpu_hal_source_url": "https://github.com/gfx-rs/wgpu/blob/v24.0.5/wgpu-hal/src/vulkan/adapter.rs",
+    "wgpu_types_version": "24.0.0",
+    "wgpu_types_instance_source_sha256": "d8d723dc004179824121266b49f65f16783d70ad4998e6a094f7fdbd1839c97e",
+    "noncompliant_adapter_flag": false,
+    "assessment": "Observed conformance major zero is excluded by the unchanged default wgpu admission policy; capability enumeration is not operation success. The diagnostic also reports no VK_KHR_swapchain; later logical-device compatibility is untested."
+  },
+  "audit": {
+    "result": {
+      "schema": "spatialrust.public-gpu-report-audit.v1",
+      "all_operation_reports_passed": false,
+      "accepted_hardware_classes": [],
+      "hardware_coverage_accepted": false,
+      "maximum_centroid_coordinate_error_m": null,
+      "issues": [
+        "run 0: process must exit zero",
+        "run 0: schema",
+        "run 0: manifest_sha256",
+        "run 0: os",
+        "run 0: backend",
+        "run 0: accepted",
+        "run 0: report preference",
+        "run 0: every ordered fixed frame required",
+        "run 1: process must exit zero",
+        "run 1: schema",
+        "run 1: manifest_sha256",
+        "run 1: os",
+        "run 1: backend",
+        "run 1: accepted",
+        "run 1: report preference",
+        "run 1: every ordered fixed frame required",
+        "distinct integrated and discrete hardware classes required"
+      ]
+    },
+    "source_sha256": "a76c98a4c4a3ee9e1a6aa55c4916463bff76ee9b7e899df91b58075e61e8e717",
+    "initial_frozen_source_sha256": "9644f5e675e0143b72bfa48f54f8d9f75b837966d4bfa619e222df7c6766f71f",
+    "reporting_correction": "Final audit returns null for unobserved centroid error. Original frozen study with zero initializer remains byte-preserved; no operation result or criterion changed."
+  },
+  "local_validation": {
+    "python_passed": 892,
+    "python_skipped": 3,
+    "new_audit_cases": 24,
+    "unchanged_input_cases": 13,
+    "xml_sha256": "284100e867f41eb1a84fb9f57455395a6981257e7d2629f75a93619c48134e02",
+    "python_extension_unchanged": "Existing isolated wheel reused; no Rust/native rebuild"
+  },
+  "storage": {
+    "controlled_build": {
+      "path": "/mnt/e/SpatialRustBuild/mesa-dozen-v1",
+      "files": 16069,
+      "logical_bytes": 596201206,
+      "method": "Linux lstat-aware traversal excluding filesystem symlinks; logical regular-file sizes"
+    },
+    "result_tree": {
+      "path": "/mnt/e/SpatialRustData/maturity-80/tum-fr1-xyz/wsl-hardware-conformance-v1",
+      "files": 13,
+      "logical_bytes": 23709,
+      "method": "Linux lstat-aware traversal excluding filesystem symlinks; logical regular-file sizes"
+    },
+    "source_archive": {
+      "path": "E:\\SpatialRustBuild\\mesa-dozen-scout-v1\\mesa-26.2.5.tar.xz",
+      "bytes": 68652756
+    },
+    "test_scratch_cleanup": {
+      "utc": "2026-10-19T12:44:59.2485561Z",
+      "method": "Remove only three exact task-owned passing pytest scratch directories after absolute-parent and complete no-reparse validation; preserve XMLs, source, all datasets, wheels, logs, frozen binaries and results",
+      "entries": [
+        {
+          "path": "E:\\SpatialRustBuild\\mesa-dozen-v1\\pytest-focused-v1",
+          "files": 36,
+          "logical_bytes": 15579573,
+          "xml_path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\wsl-hardware-focused-python.xml",
+          "xml_sha256": "07c6915da8aeb6deaf6b23b9a8db0b5f591b7de71cfa2edca63d458c63afa71b"
+        },
+        {
+          "path": "E:\\SpatialRustBuild\\mesa-dozen-v1\\pytest-full-v1",
+          "files": 976,
+          "logical_bytes": 194447263,
+          "xml_path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\wsl-hardware-full-python.xml",
+          "xml_sha256": "9bf0e9132b103f47ae06c162b1d717536e3384d3288fa35576eea0a71f028623"
+        },
+        {
+          "path": "E:\\SpatialRustBuild\\mesa-dozen-v1\\pytest-full-final-v1",
+          "files": 976,
+          "logical_bytes": 194447828,
+          "xml_path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\wsl-hardware-full-final-python.xml",
+          "xml_sha256": "284100e867f41eb1a84fb9f57455395a6981257e7d2629f75a93619c48134e02"
+        }
+      ],
+      "logical_removed_bytes": 404474664,
+      "free_before_bytes": 685643878400,
+      "free_after_bytes": 686050623488
+    },
+    "dataset_downloads": 0,
+    "dataset_payload_copies": 0,
+    "system_driver_changed": false,
+    "free_before_execution_bytes": 686018027520,
+    "free_after_execution_bytes": 686010916864,
+    "scope": "Controlled source/build/temp/cache/results use E; operating-system and proprietary driver allocations/caches are outside these counters. Preserve all older data, binaries and receipts."
+  },
+  "preservation": {
+    "input_payloads_byte_identical": true,
+    "previous_result_files_byte_identical": true,
+    "executable_byte_identical": true,
+    "study_path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\wsl-hardware-conformance-v1\\study.json",
+    "study_sha256": "594eae6a17521b9559cf26d673c0f607720c3158c83d4563e6aa46e7b0901bdc",
+    "execution_freeze_sha256": "ec2ecd766e75ba6a728548b3b770b2285698740c23b613699cac6aaaf6d356a9"
+  },
+  "operation_frames_executed": 0,
+  "operation_frames_planned": 6,
+  "hardware_coverage_accepted": false,
+  "scope": "Selected development-frame correctness and explicit transfer conformance through one WSL2 bridge configuration. No performance ranking, physical sensor calibration, trajectory accuracy, bare-metal portability, broad Vulkan conformance or completed operational 80% claim.",
+  "remaining_gates": [
+    "WSL2 hardware operation conformance",
+    "Bare-metal Linux hardware operation conformance",
+    "Accurate public reference motion",
+    "Independently measured canonical physical/clock calibration",
+    "Full canonical mapping and public release acceptance"
+  ]
+}

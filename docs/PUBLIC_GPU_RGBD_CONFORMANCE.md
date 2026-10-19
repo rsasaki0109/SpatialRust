@@ -143,3 +143,8 @@ reference tests also pass on Linux with compiler warnings denied. GPU hardware
 execution is observed on Windows only; Linux hardware GPU support is unproven.
 The compact receipt includes all six additional software cases and capabilities.
 Accurate motion and full operational v1.3 acceptance remain open.
+
+The subsequent [isolated WSL2 hardware attempt](WSL_HARDWARE_GPU_CONFORMANCE.md)
+preserves both initialization failures: the current runtime excludes the
+nonconformant Dozen adapter before any operation. Capability enumeration alone
+adds no hardware operation coverage; the outcomes above remain unchanged.

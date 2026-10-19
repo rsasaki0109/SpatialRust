@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Hardware coverage audits consume explicit process receipts and complete fixed
+frame sets; finite errors, exact counts/transfers and retained-pool bounds are
+checked separately from hardware class coverage. The isolated WSL2 Dozen
+attempt retains failed default adapter admission without changing production
+selection, core dependencies, shaders or device transfers. Capability-only
+enumeration is not operation conformance. See
+[WSL2 hardware evidence](WSL_HARDWARE_GPU_CONFORMANCE.md).
+
 A separate experimental RGB-D capture adapter supplies fixed LK window/pyramid
 settings to the original stateless and persistent-depth implementations. Existing
 callers keep original settings; no global controls are mutated. Native/core/GPU
