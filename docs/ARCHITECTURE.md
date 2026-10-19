@@ -6,6 +6,11 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A separate gray-only fitting policy preserves original full-resolution depth
+while sharing the prior Gaussian3 gray arithmetic and raw final admission.
+Typed selection, preflighted owned planes and defaults retain their contracts;
+see [the component comparison](GRAY_GAUSSIAN_DENSE_RGBD_VALIDATION.md).
+
 An explicit native dense fitting policy can filter full-resolution inputs while
 retaining original raw levels for final admission. Checked preflight charges
 all additional planes; the raw default, safe owned Python boundary and core/GPU
