@@ -57,3 +57,28 @@ synthetic numerical results as well as native/Python math, IO and ownership
 before real fitting. Keep rpy/held-out, canonical measured clock/physical frame
 accuracy, both raw Linux hardware classes and full mapping/semantic/release
 acceptance in the 80% audit. Deliver implementation, tests, evidence, PR and merge.
+
+## Pre-fit implementation validation
+
+Protocol `6dc3de1` precedes implementation and fitting; numerical source
+`28d1f93` adds the explicit variant while retaining prior selectors and bounds.
+Native tests pass 15/15, checking copied depth bits, missing-depth locations,
+identical joint/gray-only gray arithmetic, final raw statistics and exact
+serial/parallel results including partial tiles. Native and Python-bridge
+Clippy and the WASM compile check pass.
+
+Focused Python tests pass 75/75; the full installed-wheel suite passes 1,069 with
+three existing optional ONNX skips. The 26 new cases cover independent original
+raw statistics, ownership/strides/concurrent calls, identical constant-depth
+joint/gray-only outputs, fixed controls, causal state and loss/audit behavior.
+Installed wheel bytes, ICP/support and exact PCD round-trip checks pass.
+
+Ten synthetic cases run through the previous and new wheels: five raw and five
+joint Gaussian3 cases (identity, integer/subpixel motion, a hole, explicit seed).
+Serialized numerical poses and original diagnostics agree exactly, excluding
+only policy identifier handling. New module SHA-256 is
+`f3a58c85172c8596630e18eaa010e7905a49e65ad5e849db0f7a0d63c1467abc`.
+All frozen previous modules, wheels and executables retain their hashes.
+Only the two passing pytest scratch roots were removed, reclaiming 478,843,534
+logical bytes. These implementation checks precede complete-scene estimation;
+they do not establish trajectory acceptance.

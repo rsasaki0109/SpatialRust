@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add an explicit gray-only Gaussian3 dense fitting policy with original depth,
+  unchanged raw final admission and bounded deterministic CPU execution. Keep
+  raw/joint selectors and defaults; native 15, focused Python 75, full Python
+  1,069 passes/3 optional skips, Clippy/WASM and exact ten-case old/new raw/joint
+  numerical regression pass before fitting. The fixed full-scene contract is
+  `docs/GRAY_GAUSSIAN_DENSE_RGBD_VALIDATION.md`.
+
 - Add explicit native dense RGB-D Gaussian3 fitting inputs with a typed policy,
   safe owned Python keyword, checked added-buffer charges and deterministic CPU
   row tiles. The raw default and final statistics on original images retain

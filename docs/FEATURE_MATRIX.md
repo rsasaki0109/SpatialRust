@@ -60,6 +60,13 @@ index 349 when original raw final support is 0.497388 < 0.5; all 373 failed
 remaining rows are retained and the 349/722 result is unaccepted. This remains
 an experimental opt-in policy; it does not replace the raw default or solve rpy.
 
+`DenseRgbdPreprocessing::Gaussian3GrayOnly` and Python
+`preprocessing="gaussian3-gray-only"` retain original full-resolution fitting
+depth while sharing the joint policy's Gaussian3 gray arithmetic and raw final
+admission. Ownership and preflight bounds stay explicit. The
+[separate component study](GRAY_GAUSSIAN_DENSE_RGBD_VALIDATION.md) awaits complete
+trajectory evidence; raw and joint defaults/results remain preserved.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree
