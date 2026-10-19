@@ -767,6 +767,55 @@ mod tests {
     use spatialrust_image::Image;
 
     #[test]
+    fn source_bound_sampling_audit() {
+        let affine = || Level {
+            width: 8,
+            height: 8,
+            color: (0..64).map(|i| (3 * (i % 8) + 5 * (i / 8) + 7) as f64 / 255.0).collect(),
+            depth: vec![2.0; 64],
+        };
+        let options = DenseRgbdOdometryOptions { iterations: vec![1, 1], ..Default::default() };
+        let even = pyramid_from_level(affine(), &options);
+        assert_eq!((even[1].width, even[1].height), (4, 4));
+        let coarse_gray = even[1].color[5];
+        assert!((coarse_gray - 23.0 / 255.0).abs() < 1e-14);
+        let odd = pyramid_from_level(
+            Level { width: 7, height: 5, color: vec![0.0; 35], depth: vec![2.0; 35] },
+            &options,
+        );
+        assert_eq!((odd[1].width, odd[1].height), (4, 3));
+        let mut hole = affine();
+        hole.depth[2 * 8 + 2] = f64::NAN;
+        let hole = pyramid_from_level(hole, &options);
+        let coarse_depth = hole[1].depth[5];
+        assert_eq!(coarse_depth, 2.0);
+        let field = affine();
+        let subpixel = sample(&field.color, 8, 8, 2.25, 2.5).unwrap();
+        for (observed, expected) in subpixel.iter().zip([26.25 / 255.0, 3.0 / 255.0, 5.0 / 255.0]) {
+            assert!((*observed - expected).abs() < 1e-14);
+        }
+        let mut neighbor = affine();
+        neighbor.depth[2 * 8 + 3] = f64::NAN;
+        let hole_admitted = sample(&neighbor.depth, 8, 8, 2.0, 2.0).is_some();
+        let border_admitted = sample(&field.depth, 8, 8, 7.0, 2.0).is_some();
+        assert!(!hole_admitted && !border_admitted);
+        let point = Vec3::new(f64::from(0.0625_f32), f64::from(0.05_f32), 2.0);
+        let gray_gradient = [f64::from(0.002_f32), f64::from(-0.001_f32)];
+        let depth_gradient = [f64::from(0.003_f32), f64::from(0.004_f32)];
+        let jacobian = residual_jacobians(
+            point,
+            [64.0, 80.0, 0.0, 0.0],
+            [0.0, gray_gradient[0], gray_gradient[1]],
+            [2.0, depth_gradient[0], depth_gradient[1]],
+        );
+        assert!(jacobian.iter().flatten().all(|value| value.is_finite()));
+        println!(
+            "DENSE_SAMPLING_AUDIT_JSON:{{\"schema\":\"spatialrust.native-sampling-probe.v1\",\"even_dimensions\":[{},{}],\"coarse_gray\":{coarse_gray},\"odd_dimensions\":[{},{}],\"hole_coarse_depth\":{coarse_depth},\"hole_admitted\":{hole_admitted},\"border_admitted\":{border_admitted},\"subpixel\":{subpixel:?},\"row_point\":{:?},\"row_gray_gradient\":{gray_gradient:?},\"row_depth_gradient\":{depth_gradient:?},\"row_jacobian\":{jacobian:?}}}",
+            even[1].width, even[1].height, odd[1].width, odd[1].height, [point.x, point.y, point.z],
+        );
+    }
+
+    #[test]
     fn pair_means_use_only_initial_depth_correspondences_and_do_not_clip() {
         let make = |gain| Level {
             width: 5,
