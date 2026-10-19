@@ -820,7 +820,8 @@ mod tests {
         };
         let (mut source, mut target) = (make(1.0), make(2.0));
         target.depth[12] = 1.5;
-        let initial = AbsolutePose::try_new(Mat3::<f64>::identity(), Vec3::new(1.0, 0.0, 0.0)).unwrap();
+        let initial =
+            AbsolutePose::try_new(Mat3::<f64>::identity(), Vec3::new(1.0, 0.0, 0.0)).unwrap();
         let options = DenseRgbdOdometryOptions { min_correspondences: 6, ..Default::default() };
         let gains =
             normalize_pair(&mut source, &mut target, [1.0, 1.0, 0.0, 0.0], initial, &options)

@@ -149,7 +149,7 @@ def test_wrong_native_fitting_policy_cannot_be_accepted(monkeypatch):
 
 
 @pytest.mark.parametrize('reject_support',[False,True])
-def test_full_generator_retains_raw_audit_and_never_calls_after_loss(tmp_path,monkeypatch,reject_support):
+def test_full_generator_retains_raw_audit_and_never_calls_after_loss(tmp_path,monkeypatch,reject_support,synthetic_dense_audit_space):
     archive,digest=fixture(tmp_path,count=3);prepared=tmp_path/'prepared'
     prepare(archive,digest,PLAN,prepared);calls=[]
     monkeypatch.setattr(sr,'estimate_dense_rgbd_odometry',mock_native(calls,audit_stats=True))

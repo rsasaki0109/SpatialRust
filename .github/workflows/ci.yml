@@ -303,7 +303,8 @@ jobs:
 
   python-bindings:
     name: Python bindings (${{ matrix.python }})
-    runs-on: ubuntu-latest
+    # Keep the legacy ABI lane on an OS with an official CPython 3.8 build.
+    runs-on: ${{ matrix.python == '3.8' && 'ubuntu-24.04' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
