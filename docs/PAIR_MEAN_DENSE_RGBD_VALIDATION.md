@@ -97,3 +97,50 @@ All previous frozen native files retain their hashes. Only two explicitly
 owned passing pytest roots are removed after the XML/path/reparse checks,
 reclaiming 560,093,288 logical bytes. No real fitting has started at this
 checkpoint; trajectory acceptance remains unproven.
+
+## Complete-scene outcome
+
+Workflow source `69482cd` binds the installed module above. Both full timelines
+were frozen at 2026-10-19T22:55:40.582373Z before either reference score. Both
+finish without failures or reset: 798/798 xyz and 722/722 rpy. See the
+[source-bound receipt](receipts/2026-10-20_pair_mean_dense_rgbd.json).
+
+| Fitting policy | xyz ATE / RPE (m) | rpy poses | rpy ATE / RPE (m) | Acceptance |
+| --- | --- | --- | --- | --- |
+| Native raw causal control | 0.089993 / 0.026591 | 722/722 | 0.114793 / 0.048145 | xyz only |
+| Native joint Gaussian3 | 0.082755 / 0.025186 | 349/722 | 0.119374 / 0.049937, prefix only | xyz only; rpy incomplete |
+| Native gray-only Gaussian3 | 0.091755 / 0.027265 | 722/722 | 0.120216 / 0.048803 | xyz only; rpy ATE fails |
+| Native gray-only pair mean | 0.086962 / 0.025649 | 722/722 | 0.130595 / 0.048722 | xyz only; rpy ATE fails |
+| External CPU hybrid control | 0.051174 / 0.023110 | 722/722 | 0.099684 / 0.048494 | both development scenes |
+
+Every policy completes all 798 xyz poses. Pair-mean fitting passes xyz but does
+not improve rpy ATE over either the raw or gray-only control, and still fails
+the unchanged 0.10m gate. The synthetic gain correction is verified; it does
+not establish a trajectory accuracy benefit. Keep the raw default and all
+experimental selectors explicit. Do not change target means, weights or gates
+after these scores. The joint rpy prefix is not full-sequence accuracy, and
+the external control still differs in multiple preprocessing/solver details.
+
+Reference coverage remains 795/798 and 716/722, with all three/six publisher
+gaps in the denominator. One-second RPE evaluates 762/768 and 680/692 pairs.
+Independent NumPy audits pass all 1,518 admitted causal/raw pairs. Counts and
+fractions agree exactly; maximum photometric/depth differences are
+2.221e-16 / 8.674e-18, seed differences meet 1e-12 and world differences stay
+below 3.853e-14. Independent SciPy score differences stay below 1.118e-15m and
+3.980e-13 degrees. All eight owned generation/audit/score commands exit zero;
+rpy trajectory acceptance remains false.
+
+Every admitted pair records four workers, 22,743,840 logical working bytes
+and 3,072,000 input-copy bytes; these charges are not process RSS or a speed
+comparison. Scientific output is 316,877,511 logical bytes, below 1GiB.
+New package bytes plus incremental cache growth finish at 25,292,248 bytes;
+the maximum successful-command sample is 585,373,429 bytes, below 2GiB.
+The 918,149,680 logical PNG/index bytes are shared through checked hard links,
+with zero image payload copies or downloads. All 315 prior JSON files and
+32 frozen native/wheel files, including eight wheels, retain their hashes.
+Archives, old variants and the initial test compile failure remain preserved.
+
+This closes the fixed normalization experiment. Native rpy/held-out accuracy,
+canonical measured clock uncertainty and physical frame accuracy, both raw
+Linux hardware classes and full mapping/semantic/release acceptance remain
+unproven. Operational 80% is not established.

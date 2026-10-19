@@ -77,8 +77,11 @@ final statistics. Means/gains require finite positive values and minimum count;
 streaming sums add no pixel-sized buffer. The
 [fixed pair-mean study](PAIR_MEAN_DENSE_RGBD_VALIDATION.md) has native 20,
 focused Python 106 and full Python 1,100 passes/3 skips before fitting, plus
-exact 15-case old/new regression across the three older selectors. Full-scene
-accuracy remains unproven at this implementation checkpoint.
+exact 15-case old/new regression across the three older selectors. Both full
+trajectories finish: xyz ATE/RPE 0.086962/0.025649m passes; rpy
+0.130595/0.048722m fails the fixed 0.10m ATE gate. All 1,518 causal/raw pairs
+and both score audits pass, but this does not establish an rpy accuracy benefit
+or change the raw default.
 
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
