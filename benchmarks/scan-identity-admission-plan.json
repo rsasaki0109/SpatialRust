@@ -1,0 +1,29 @@
+{
+  "schema": "spatialrust.scan-identity-admission-plan.v1",
+  "slice": "146AA",
+  "parent_merge": "0db0eab05f13619e83d6884c2358af7778e03486",
+  "purpose": "Reject ambiguous scan grouping and timestamp-to-pose association in the private full-bag mapping example before admitting a successful map. Synthetic correctness only; no canonical data run or measured timing qualification.",
+  "fixed_contract": {
+    "message_cardinality": "After a selected SQLite topic drains successfully, require collected scan groups to equal its physical message count. Keep existing consecutive raw-header/frame chunk assembly. Cardinality is a necessary admission condition, not a new physical-message identity API or proof of identity. Reject merged identical-header messages and skipped empty messages instead of claiming complete collection.",
+    "topic_timestamps": "Before odometry, select both topics from the deterministically sorted episode and require each topic's corrected nanoseconds to be strictly increasing. Reject nonconsecutive repeated raw times and correction-rounding collisions. Equal timestamps across different topics remain valid. Do not deduplicate data, invent timestamps or infer message boundaries from chunk length or chunk sequence.",
+    "pose_binding": "Before TSDF allocation/integration, require exactly one trajectory sample per front record and equality of the complete StampedTime, including clock identity/domain/quality. Reject duplicate timestamp keys and mixed topic/frame bindings. Preserve every valid pose and original sensor-to-volume algebra. No silent zip truncation or map overwrite.",
+    "scope": "Use safe private example helpers only. Preserve source SHA/path/size, measured calibration admission, actual frame checks, bounded incremental collection, explicit ownership and CPU copies, disk limits and synchronization-window policy. Nearest-neighbor tie/reuse behavior remains deterministic and is not evidence of physical simultaneity. Public source-message identity remains a separate open contract.",
+    "failure": "A failed gate cannot produce successful complete/non-truncated mapping output. Existing partial builder state may remain private after a collection error; the overall mapping fails. Do not weaken or fabricate clock/frame/accuracy evidence."
+  },
+  "verification": "Commit this protocol before native execution. Extract current topic selection and timestamp-to-pose zip into private fallible seams while preserving their old behavior; characterize baseline rejection failures with tiny SQLite multi-chunk/duplicate-header/empty cases, sorted repeated times, rounding collisions, trajectory cardinality/stamp/clock/domain/quality and valid distinct poses. Then implement gates and run all full-bag tests, E2E, ROS2 default/all features, records/sync/mapping/calibration controls, all-target Clippy and formatting. Reuse existing three-OS CI jobs and all 131 required checks. Baseline extraction is explicitly a behavior-preserving seam, not an independent canonical run.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/scan-identity-admission-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned reference sources and completed room outputs. Reuse the shared cache. Preserve failed attempts. No real sensor reads/downloads/copies, real motion fit or frozen binary build. Synthetic SQLite fixtures use the owned external temp directory."
+  },
+  "remaining_80_percent": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Synthetic ambiguity admission cannot establish these requirements."
+}
