@@ -10,6 +10,8 @@ from PIL import Image
 
 from dense_rgbd_protocol import CONTROLS, FINAL_ESTIMATOR, validate_dense_experiment_plan
 from causal_dense_rgbd_protocol import ESTIMATOR as CAUSAL_ESTIMATOR, validate_causal_dense_plan
+from room_reference_rgbd_protocol import (ESTIMATOR as ROOM_REFERENCE_ESTIMATOR,
+    validate_room_reference_plan, source_identity as room_reference_source_identity)
 from open3d_rgbd_protocol import ESTIMATOR as OPEN3D_ESTIMATOR, validate_comparator_plan
 from gaussian_dense_rgbd_protocol import ESTIMATOR as GAUSSIAN_ESTIMATOR, POLICY as GAUSSIAN_POLICY, validate_gaussian_dense_plan
 from gray_gaussian_dense_rgbd_protocol import ESTIMATOR as GRAY_GAUSSIAN_ESTIMATOR, POLICY as GRAY_GAUSSIAN_POLICY, validate_gray_gaussian_dense_plan
@@ -127,7 +129,8 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output, *, sou
     if file_sha256(prepared/'plan.json') != manifest['plan_sha256']:
         raise ValueError('prepared plan changed')
     plan = json.loads((prepared/'plan.json').read_text(encoding='utf-8'))
-    external = plan.get('estimator') == OPEN3D_ESTIMATOR
+    room_reference = plan.get('estimator') == ROOM_REFERENCE_ESTIMATOR
+    external = room_reference or plan.get('estimator') == OPEN3D_ESTIMATOR
     gray_gaussian = plan.get('estimator') == GRAY_GAUSSIAN_ESTIMATOR
     huber = plan.get('estimator') == HUBER_ESTIMATOR
     precision = huber or plan.get('estimator') == PRECISION_ESTIMATOR
@@ -137,8 +140,10 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output, *, sou
     pair_mean = plan.get('estimator') == PAIR_MEAN_ESTIMATOR
     gaussian = pair_mean or gray_gaussian or plan.get('estimator') == GAUSSIAN_ESTIMATOR
     causal = precision or rounded or external or gaussian or plan.get('estimator') == CAUSAL_ESTIMATOR
-    plan = (validate_huber_plan(plan) if huber else validate_reference_precision_plan(plan) if precision else validate_heldout_plan(plan) if heldout else validate_rounded_sobel_dense_plan(plan) if rounded else validate_pair_mean_dense_plan(plan) if pair_mean else validate_gray_gaussian_dense_plan(plan) if gray_gaussian else validate_gaussian_dense_plan(plan) if gaussian else validate_comparator_plan(plan) if external else
+    plan = (validate_room_reference_plan(plan) if room_reference else validate_huber_plan(plan) if huber else validate_reference_precision_plan(plan) if precision else validate_heldout_plan(plan) if heldout else validate_rounded_sobel_dense_plan(plan) if rounded else validate_pair_mean_dense_plan(plan) if pair_mean else validate_gray_gaussian_dense_plan(plan) if gray_gaussian else validate_gaussian_dense_plan(plan) if gaussian else validate_comparator_plan(plan) if external else
             validate_causal_dense_plan(plan) if causal else validate_dense_experiment_plan(plan))
+    if room_reference:
+        room_reference_source_identity(manifest['sequence'],manifest['source_sha256'])
     if precision:
         (huber_source_identity if huber else precision_source_identity)(manifest['sequence'],manifest['source_sha256'])
     if heldout:

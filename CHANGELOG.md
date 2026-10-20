@@ -19,6 +19,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a fixed complete room public CPU reference comparator and seven bounded
+  source-equation cases. Preserve all 1,360 timestamps and 1,359 independently
+  audited raw/causal pairs; reference ATE/RPE 0.378945/0.058388m
+  misses original accuracy acceptance. Compare every frozen native/reference
+  pose without alignment; retain the native failure and unobserved runtime pairs.
+  37 new math/schema/IO cases, 1,374 SDK passes/three old skips and frozen wheel
+  checks; preserve 477 JSON/42 native artifacts. Reclaim 696MB passing scratch,
+  reuse all images by hard link, and add no native build/cache growth. See
+  [the full room evidence](docs/ROOM_REFERENCE_AUDIT.md).
+
 - Add the explicit reference-precision Huber dense RGB-D model with fixed scalar
   IRLS thresholds, unchanged unweighted raw final admission and all six legacy
   choices. Independent math/native/Python/wheel checks and full four-scene

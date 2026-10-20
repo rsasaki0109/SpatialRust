@@ -27,8 +27,8 @@ def external(path):
     return resolved
 
 
-def reuse(prepared, manifest_sha256, plan_path, output, *, capture_revision=False, reference_precision_revision=False, huber_revision=False):
-    if any(type(v) is not bool for v in (capture_revision,reference_precision_revision,huber_revision)) or sum((capture_revision,reference_precision_revision,huber_revision))>1:
+def reuse(prepared, manifest_sha256, plan_path, output, *, capture_revision=False, reference_precision_revision=False, huber_revision=False, room_reference_revision=False):
+    if any(type(v) is not bool for v in (capture_revision,reference_precision_revision,huber_revision,room_reference_revision)) or sum((capture_revision,reference_precision_revision,huber_revision,room_reference_revision))>1:
         raise ValueError('require explicit, mutually exclusive revision booleans')
     if Path(output).is_symlink():
         raise ValueError('output cannot be a filesystem link')
@@ -62,6 +62,9 @@ def reuse(prepared, manifest_sha256, plan_path, output, *, capture_revision=Fals
         if plan.get('prior_consensus_plan_sha256') != manifest['plan_sha256']:
             raise ValueError('capture revision requires the exact prepared parent plan hash')
         validate_capture_transition(old_plan,plan)
+    elif room_reference_revision:
+        from room_reference_rgbd_protocol import validate_transition
+        validate_transition(old_plan,plan)
     elif huber_revision:
         from huber_dense_rgbd_protocol import validate_transition
         validate_transition(old_plan,plan)
@@ -108,6 +111,9 @@ def reuse(prepared, manifest_sha256, plan_path, output, *, capture_revision=Fals
         if huber_revision:
             rule = Path(__file__).with_name('huber_dense_rgbd_protocol.py').resolve()
             manifest['bindings'][str(rule)] = file_sha256(rule)
+        if room_reference_revision:
+            rule = Path(__file__).with_name('room_reference_rgbd_protocol.py').resolve()
+            manifest['bindings'][str(rule)] = file_sha256(rule)
         manifest['reused_input'] = dict(path=str(prepared), manifest_sha256=manifest_sha256,
             storage='hard links; original PNG/index payloads shared, source never edited',
             linked_files=len(sources), linked_logical_bytes=sum(e['bytes'] for _, _, e in sources),
@@ -133,9 +139,10 @@ def main():
     parser.add_argument('--capture-revision',action='store_true',help='allow only the hash-bound fixed wider LK revision')
     parser.add_argument('--reference-precision-revision',action='store_true',help='allow only the fixed reference-precision model transition')
     parser.add_argument('--huber-revision',action='store_true',help='allow only the fixed Huber model transition')
+    parser.add_argument('--room-reference-revision',action='store_true',help='allow only the fixed room CPU reference transition')
     args = parser.parse_args()
     manifest = reuse(args.prepared_dir, args.manifest_sha256, args.plan, args.output_dir,
-                     capture_revision=args.capture_revision, reference_precision_revision=args.reference_precision_revision, huber_revision=args.huber_revision)
+                     capture_revision=args.capture_revision, reference_precision_revision=args.reference_precision_revision, huber_revision=args.huber_revision, room_reference_revision=args.room_reference_revision)
     print(json.dumps(dict(manifest_sha256=file_sha256(args.output_dir/'manifest.json'), reused=manifest['reused_input'])))
 
 
