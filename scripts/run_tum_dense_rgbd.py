@@ -30,8 +30,8 @@ def _align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray
             raise ValueError('explicit dense fitting policy must be a supported Gaussian3 policy')
         native_controls['preprocessing'] = preprocessing
     if fitting_model is not None:
-        if fitting_model != 'rounded-sobel' or preprocessing is not None:
-            raise ValueError('explicit complete dense model must be rounded-sobel without a legacy filter')
+        if fitting_model not in ('rounded-sobel','reference-precision') or preprocessing is not None:
+            raise ValueError('explicit complete dense model requires rounded-sobel or reference-precision without a legacy filter')
         native_controls['fitting_model'] = fitting_model
     rotation, translation, report = sr.estimate_dense_rgbd_odometry(
         previous_gray, source, current_gray, target,

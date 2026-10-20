@@ -75,8 +75,12 @@ def validate_plan(plan):
             raise ValueError('invalid iteration bound')
         leaf, gate = s['leaf_m'], s['gate_m']
     if plan['sequence'] in ('rgbd_dataset_freiburg1_plant','rgbd_dataset_freiburg1_room'):
-        from heldout_dense_rgbd_protocol import validate_heldout_plan
-        validate_heldout_plan(plan, check_base=False)
+        if plan.get('estimator') == 'spatialrust_reference_precision_dense_rgbd_cpu':
+            from reference_precision_dense_rgbd_protocol import validate_reference_precision_plan
+            validate_reference_precision_plan(plan, check_base=False)
+        else:
+            from heldout_dense_rgbd_protocol import validate_heldout_plan
+            validate_heldout_plan(plan, check_base=False)
     return plan
 
 
