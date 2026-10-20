@@ -1,0 +1,138 @@
+{
+  "acceptance": {
+    "basis": "Unchanged engineering completeness/coverage/ATE/RPE limits from the previous plane study. Fixed before first image-tracking/PnP fitting; not publisher accuracy requirements or physical calibration guarantees.",
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_one_second_translation_rpe_rmse_m": 0.05,
+    "minimum_evaluated_fraction": 0.95,
+    "minimum_generated_fraction": 1.0
+  },
+  "calibration": {
+    "axes": "x right, y down, z forward",
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration.",
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "fx": 525.0,
+    "fy": 525.0,
+    "height": 480,
+    "sensor_frame": "tum_rgb_optical",
+    "width": 640
+  },
+  "controls": {
+    "dense_fitting_model": {
+      "final_admission": "Original full-resolution raw bilinear final statistics, count/fraction/depth/error gates; no filtered final admission",
+      "fitting_point": "Separate source XYZ: ((x-cx)*z*(1/fx)), ((y-cy)*z*(1/fy)), z each cast f32 then promoted f64; proper pose transform in f64. Skip a fitting row if this transformed point is not finite with positive z.",
+      "gradients": "Sobel separable horizontal [-1,0,1],vertical [1,2,1] for x and swapped for y; f32 operator output promoted f64 then multiplied by 1/8. Each nonfinite depth derivative becomes zero. Local surrogate, not an exact derivative of rounded lookup.",
+      "initial_filter": "Gaussian3 weights [0.25,0.5,0.25] on gray and depth using the separable operator; NaNs propagate",
+      "input": "u8 gray divided by 255 in f32; metric f32 depth promoted to f64; original inclusive finite depth admission and NaN holes",
+      "iterations": "All original 20,10,5 scheduled updates; no epsilon early exit",
+      "matching": "Retain native f64 source unproject ((x-cx)*z/fx,(y-cy)*z/fy,z), proper pose transform and projection. trunc(projected+0.5), finite signed bounds before usize, finite selected target depth and original metric difference gate. No target uniqueness or bitwise external correspondence equivalence claim.",
+      "model": "reference-precision",
+      "normal_equations": "Existing residual_jacobians, f64; multiply each J and residual by sqrt(1-depth_weight) or sqrt(depth_weight), then accumulate in f64 with unit weight in existing fixed 16-row tile order. No unchecked external solver behavior.",
+      "normalization": "Once, initial rounded correspondences in row-major order; f64 means/gains, gain=0.5/mean; require minimum count and finite positive means/gains before mutation; each multiplied gray value stored as f32 without clipping",
+      "ownership": "Safe borrowed Rust input; Python owns four image copies before GIL release; CPU only, explicit device transfers unchanged",
+      "pose_update": "Proper left Rz(delta_z)*Ry(delta_y)*Rx(delta_x), t_new=R_step*t_old+delta_translation; finite proper AbsolutePose admission",
+      "preprocessing_selector": "raw only; reject every other preprocessing combination",
+      "pyramid": "Floor width/2,height/2, each scheduled level >=3x3; gray separable Gaussian3 then left-associated f32 (a+b+c+d)/4; depth same f32 mean without Gaussian; nonfinite propagates; halve fx,fy,cx,cy",
+      "residuals": "Photometric target-source subtraction in f32 promoted f64. Depth target f32 promoted f64 minus transformed quantized point.z in f64.",
+      "separable_operator": "Replicate edges. Each horizontal tap product is f32; accumulate the three products in order in f64 and store f32. Each vertical product is f32; accumulate in order in f64 and store f32. Recompute horizontal samples locally to avoid an additional full-plane intermediate. All taps participate, including zero times NaN.",
+      "solve": "Existing finite-checked pivoted f64 Gaussian solver; singular/nonfinite failure remains failure",
+      "storage": "Owned f64 Level buffers explicitly holding f32-quantized fitting values; no f32 memory-saving claim",
+      "workers": "At most four private CPU workers, deterministic ordered tiles; WASM serial",
+      "working_bytes": "32*sum(floor-pyramid pixels)+64*base_pixels+max(ceil(height/16)*sizeof(Normal),48*sizeof(f64)); checked arithmetic/options before allocation; excludes caller/Python inputs, allocator metadata and stacks"
+    },
+    "dense_rgbd_odometry": {
+      "depth_weight": 0.968,
+      "epsilon": 1e-07,
+      "iterations": [
+        20,
+        10,
+        5
+      ],
+      "max_depth": 5.0,
+      "max_depth_difference": 0.03,
+      "max_working_bytes": 134217728,
+      "min_correspondence_fraction": 0.5,
+      "min_correspondences": 30,
+      "min_depth": 0.1
+    },
+    "evaluation_max_gap_ns": 20000000,
+    "io_stride": 60,
+    "max_depth_m": 5.0,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "projection_tolerance_m": 1e-06,
+    "rgb_max_gap_ns": 20000000,
+    "rgbd_odometry": {
+      "epsilon": 0.001,
+      "image_margin": 40,
+      "max_features": 300,
+      "max_forward_backward_error": 0.75,
+      "max_iterations": 30,
+      "min_distance": 10.0,
+      "min_eigenvalue": 0.0001,
+      "min_inlier_fraction": 0.5,
+      "min_inliers": 15,
+      "min_tracks": 20,
+      "pnp_threshold": 2.0,
+      "pyramid_levels": 4,
+      "quality_level": 0.01,
+      "window_radius": 10
+    },
+    "rpe_delta_ns": 1000000000,
+    "stages": [
+      {
+        "gate_m": 0.2,
+        "iterations": 20,
+        "leaf_m": 0.1
+      },
+      {
+        "gate_m": 0.1,
+        "iterations": 20,
+        "leaf_m": 0.05
+      }
+    ]
+  },
+  "dense_initialization": {
+    "first_pair": "identity",
+    "reference_initialization": false,
+    "reset_after_loss": false,
+    "retries": false,
+    "subsequent_pairs": "previous returned source-to-target increment",
+    "time_rescaling": false
+  },
+  "dense_support_policy": "Minimum count and a nonsingular system for initial/intermediate hypotheses; the unchanged 0.5 full-resolution correspondence fraction applies to the returned pose. The independent full-cloud support and complete trajectory accuracy gates are unchanged.",
+  "estimator": "spatialrust_reference_precision_dense_rgbd_cpu",
+  "generation": "All four are already observed development recordings. Reuse existing prepared PNG/index hard links without payload copies/downloads. Preserve every original source/calibration/control/accuracy gate and all old failures; explicitly replace only the complete fitting model. Freeze all four full timelines before any score. Identity first, preceding returned increment subsequently; full cloud/world/IO/causal audits; no reference in generation, retry, reset, trim, post-score model adjustment or held-out qualification claim.",
+  "limits": {
+    "max_frames": 10000,
+    "max_member_bytes": 16777216,
+    "max_members": 30000,
+    "max_total_bytes": 8589934592
+  },
+  "native_refinement_policy": "Fixed complete reference-precision model; original raw final admission and every original accuracy gate. All four full timelines frozen before scoring; observed development data only.",
+  "observed_development": true,
+  "observed_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz",
+  "prior_algorithm_plan_sha256": "52af9d7601b73cefddd9a65d87ee7ccf1f1465e892afe5f695dc62fba84a7cdf",
+  "prior_causal_dense_lf_sha256": "b6d5d39345b164d454658d89c0033d6ab81dfb057156885dd6c597aae0b269ec",
+  "prior_consensus_plan_sha256": "39275599e62e582aafd6a6f8e018fceed12dbed25721441fc2a8f1eaa16002b4",
+  "prior_dense_protocol_sha256": "162c74968e46fef2bf30f25d2df3625209e23855957aee7a8ef530ed438cff66",
+  "prior_dense_source_plan_sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781",
+  "prior_final_overlap_plan_sha256": "fbd41ca5c1357209483b244987fb34d013a198615780a26f80ca91795a90b266",
+  "prior_fitting_plan_lf_sha256": "78f9f234086ca3968a6ad7854d0507325830fb21b4d31fa8e063b8fcb8c31e2d",
+  "prior_gray_gaussian_lf_sha256": "89b66dfb944761ca655c7baa3317a46b370d9a360c9b1c4cf3fc9b93496fc871",
+  "prior_joint_gaussian_lf_sha256": "854a10aad77c4994fab4f043681dd3b76579e3d6201678bb4a689509ab6fc42e",
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+  "prior_pair_mean_dense_lf_sha256": "9e33b401d45c6af60379cdfc555d9376f17e4ece08e7d0ce4be3b213d9e522d5",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "reference_precision_protocol_lf_sha256": "0a73e2c475e7f5e732809576ba2764909cf3377717888eee2ba4468aa22a702f",
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "scope": "146S independent source models reproduce all six separate native/reference one-step outputs. This motivates a complete opt-in arithmetic/retraction model; it does not establish the cause of a real trajectory error.",
+  "sequence": "rgbd_dataset_freiburg1_rpy",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.tgz"
+}

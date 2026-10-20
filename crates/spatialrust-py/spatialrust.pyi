@@ -1064,6 +1064,9 @@ def estimate_dense_rgbd_odometry(
     joint Gaussian3, rounded initial pair means, floor 2x2 pyramids and Sobel3
     surrogate gradients, executing the complete iteration schedule. Only this
     new selection adds fitting_model to the report; bilinear keeps old reports.
+    fitting_model="reference-precision" requires preprocessing="raw" and uses
+    explicit float32 intermediate filters/XYZ in owned f64 buffers, a checked
+    f64 solve and proper left Rz*Ry*Rx increments; raw final admission is retained.
     All final statistics use original raw images. Filtered mode charges its
     retained raw levels before allocation. Original sparse APIs/device transfers remain.
     """

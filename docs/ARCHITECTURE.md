@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+An additive [reference-precision dense model](REFERENCE_PRECISION_DENSE_RGBD_VALIDATION.md)
+quantizes fitting image/XYZ intermediates while retaining owned f64 buffers,
+checked f64 normal systems and proper left Euler increments. Original models,
+defaults and raw final admission delegate unchanged. Explicit CPU ownership,
+preflighted logical payloads, deterministic bounded tiles and WASM serial
+execution remain; core, math, GPU and heavy dependencies do not change. Full
+development rpy now passes, while room/independent operational qualification remain open.
+
 A [source-bound synthetic precision audit](DENSE_PRECISION_AUDIT.md) compares
 independent f64/native and float32/reference equations and proper left pose
 retractions with frozen CPU public one-step results. Observed public transforms,

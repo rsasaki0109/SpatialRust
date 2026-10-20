@@ -19,6 +19,18 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add explicit reference-precision dense RGB-D fitting with float32 intermediate
+  images/XYZ, checked f64 equations and proper left Euler increments. Preserve
+  every old selector/default, CPU ownership and original raw final gates.
+  Six frozen reference one-step cases agree to <=1.11e-16; all 25 legacy cases
+  stay exact. Complete 4,019-frame development trajectories pass xyz/rpy/plant;
+  rpy ATE is 0.099679m against the unchanged 0.10m limit. Room remains outside
+  ATE/RPE limits. All 4,015 independent raw/causal pairs and four score audits
+  pass; native 35/Python 1,310 passes with three old skips, Clippy/WASM/wheel
+  checks. Reuse 2.50GB hard-link views with zero sensor payload copies/downloads,
+  retain 810MB results and reclaim 723MB passing scratch. All old evidence stays;
+  operational 80% remains open. See `docs/REFERENCE_PRECISION_DENSE_RGBD_VALIDATION.md`.
+
 - Add a fixed synthetic dense arithmetic/pose-update audit using existing CPU
   modules and independent normal-system/left-retraction predictions. Six paired
   cases agree to <=1.11e-16; actual poses differ up to 4.95e-7, and all 24 public

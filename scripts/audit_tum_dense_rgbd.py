@@ -16,6 +16,9 @@ from gray_gaussian_dense_rgbd_protocol import ESTIMATOR as GRAY_GAUSSIAN_ESTIMAT
 from pair_mean_dense_rgbd_protocol import ESTIMATOR as PAIR_MEAN_ESTIMATOR, POLICY as PAIR_MEAN_POLICY, validate_pair_mean_dense_plan
 from rounded_sobel_dense_rgbd_protocol import ESTIMATOR as ROUNDED_ESTIMATOR, POLICY as ROUNDED_POLICY, validate_rounded_sobel_dense_plan
 from heldout_dense_rgbd_protocol import ESTIMATOR as HELDOUT_ESTIMATOR, source_identity, validate_heldout_plan
+from reference_precision_dense_rgbd_protocol import (ESTIMATOR as PRECISION_ESTIMATOR,
+    POLICY as PRECISION_POLICY, validate_reference_precision_plan,
+    source_identity as precision_source_identity)
 from wide_rgbd_protocol import exact_json
 from evaluate_pose_reference import rigid
 from tum_sequence_reference import file_sha256, json_bytes, require_sha256, safe_relative
@@ -124,13 +127,16 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output, *, sou
     plan = json.loads((prepared/'plan.json').read_text(encoding='utf-8'))
     external = plan.get('estimator') == OPEN3D_ESTIMATOR
     gray_gaussian = plan.get('estimator') == GRAY_GAUSSIAN_ESTIMATOR
+    precision = plan.get('estimator') == PRECISION_ESTIMATOR
     heldout = plan.get('estimator') == HELDOUT_ESTIMATOR
     rounded = heldout or plan.get('estimator') == ROUNDED_ESTIMATOR
     pair_mean = plan.get('estimator') == PAIR_MEAN_ESTIMATOR
     gaussian = pair_mean or gray_gaussian or plan.get('estimator') == GAUSSIAN_ESTIMATOR
-    causal = rounded or external or gaussian or plan.get('estimator') == CAUSAL_ESTIMATOR
-    plan = (validate_heldout_plan(plan) if heldout else validate_rounded_sobel_dense_plan(plan) if rounded else validate_pair_mean_dense_plan(plan) if pair_mean else validate_gray_gaussian_dense_plan(plan) if gray_gaussian else validate_gaussian_dense_plan(plan) if gaussian else validate_comparator_plan(plan) if external else
+    causal = precision or rounded or external or gaussian or plan.get('estimator') == CAUSAL_ESTIMATOR
+    plan = (validate_reference_precision_plan(plan) if precision else validate_heldout_plan(plan) if heldout else validate_rounded_sobel_dense_plan(plan) if rounded else validate_pair_mean_dense_plan(plan) if pair_mean else validate_gray_gaussian_dense_plan(plan) if gray_gaussian else validate_gaussian_dense_plan(plan) if gaussian else validate_comparator_plan(plan) if external else
             validate_causal_dense_plan(plan) if causal else validate_dense_experiment_plan(plan))
+    if precision:
+        precision_source_identity(manifest['sequence'],manifest['source_sha256'])
     if heldout:
         if source_identities is None or source_identities_sha256 is None:
             raise ValueError('held-out audit requires the pre-generation source identity pin')
@@ -166,7 +172,7 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output, *, sou
                 raise ValueError('sole initial world anchor required')
         else:
             report = row['registration']
-            if plan['estimator'] in (FINAL_ESTIMATOR, CAUSAL_ESTIMATOR, GAUSSIAN_ESTIMATOR, GRAY_GAUSSIAN_ESTIMATOR, PAIR_MEAN_ESTIMATOR, ROUNDED_ESTIMATOR, HELDOUT_ESTIMATOR) and report.get('final_support_only') is not True:
+            if plan['estimator'] in (FINAL_ESTIMATOR, CAUSAL_ESTIMATOR, GAUSSIAN_ESTIMATOR, GRAY_GAUSSIAN_ESTIMATOR, PAIR_MEAN_ESTIMATOR, ROUNDED_ESTIMATOR, HELDOUT_ESTIMATOR, PRECISION_ESTIMATOR) and report.get('final_support_only') is not True:
                 raise ValueError('native final support policy receipt required')
             if rounded and (report.get('fitting_model') != ROUNDED_POLICY['model']
                     or report.get('fitting_preprocessing') != 'raw'
@@ -174,6 +180,12 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output, *, sou
                     or type(report.get('iterations')) is not int
                     or report['iterations'] != sum(CONTROLS['iterations'])):
                 raise ValueError('fixed complete rounded-sobel fitting receipt required')
+            if precision and (report.get('fitting_model') != PRECISION_POLICY['model']
+                    or report.get('fitting_preprocessing') != 'raw'
+                    or exact_json(report.get('fitting_policy')) != exact_json(PRECISION_POLICY)
+                    or type(report.get('iterations')) is not int
+                    or report['iterations'] != sum(CONTROLS['iterations'])):
+                raise ValueError('fixed complete reference-precision fitting receipt required')
             fitting_policy = PAIR_MEAN_POLICY if pair_mean else GRAY_GAUSSIAN_POLICY if gray_gaussian else GAUSSIAN_POLICY
             if gaussian and (report.get('fitting_preprocessing') != fitting_policy['preprocessing']
                     or exact_json(report.get('fitting_policy')) != exact_json(fitting_policy)):

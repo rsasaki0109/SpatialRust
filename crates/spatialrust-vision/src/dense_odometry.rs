@@ -7,6 +7,7 @@ use crate::{AbsolutePose, CameraMatrix3, VisionError, VisionResult};
 
 const TILE_ROWS: usize = 16;
 
+mod reference_precision;
 mod rounded_sobel;
 
 /// Explicit complete fitting model; final admission always uses original pixels.
@@ -19,6 +20,9 @@ pub enum DenseRgbdFittingModel {
     /// Joint Gaussian3/pair means, floor pyramids, rounded pixels and Sobel gradients.
     /// Requires the legacy preprocessing selector Raw; executes every planned update.
     RoundedSobel,
+    /// Float32 intermediate filters/XYZ, f64 checked solve and proper left Euler update.
+    /// Requires Raw and retains original raw final admission and every scheduled update.
+    ReferencePrecision,
 }
 
 impl DenseRgbdFittingModel {
@@ -27,6 +31,7 @@ impl DenseRgbdFittingModel {
         match self {
             Self::Bilinear => "bilinear",
             Self::RoundedSobel => "rounded-sobel",
+            Self::ReferencePrecision => "reference-precision",
         }
     }
 }
@@ -191,6 +196,14 @@ impl DenseRgbdOdometryOptions {
                     ));
                 }
                 rounded_sobel::required_bytes(self, width, height)
+            }
+            DenseRgbdFittingModel::ReferencePrecision => {
+                if preprocessing != DenseRgbdPreprocessing::Raw {
+                    return Err(VisionError::InvalidParameter(
+                        "reference-precision defines its complete fitting policy; preprocessing must be raw".into(),
+                    ));
+                }
+                reference_precision::required_bytes(self, width, height)
             }
         }
     }
@@ -388,7 +401,7 @@ pub fn estimate_dense_rgbd_odometry_with_model(
             options,
             preprocessing,
         ),
-        DenseRgbdFittingModel::RoundedSobel => {
+        DenseRgbdFittingModel::RoundedSobel | DenseRgbdFittingModel::ReferencePrecision => {
             if source.gray.width() != target.gray.width()
                 || source.gray.height() != target.gray.height()
             {
@@ -402,7 +415,18 @@ pub fn estimate_dense_rgbd_odometry_with_model(
                 preprocessing,
                 model,
             )?;
-            rounded_sobel::estimate(source, target, camera, initial, options, working_bytes)
+            if model == DenseRgbdFittingModel::ReferencePrecision {
+                reference_precision::estimate(
+                    source,
+                    target,
+                    camera,
+                    initial,
+                    options,
+                    working_bytes,
+                )
+            } else {
+                rounded_sobel::estimate(source, target, camera, initial, options, working_bytes)
+            }
         }
     }
 }
