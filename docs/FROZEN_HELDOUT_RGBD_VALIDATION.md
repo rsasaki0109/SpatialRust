@@ -73,3 +73,15 @@ Canonical matching measured clock uncertainty and physical frame accuracy,
 both raw Linux hardware classes, full mapping/semantic/release acceptance and
 native development rpy acceptance remain required. Two new recordings, green
 CI or complete generation alone cannot establish operational 80%.
+
+## Transport review before continuation
+
+The first source GET slowed substantially near its end while remaining live.
+Add sequential, non-overlapping HTTP ranges of at most 128MiB against the same
+selected URL/ETag/total length. A continuation requires exact 206 status,
+Content-Range start/end/total, Content-Length and encoding before appending.
+Preserve the original attempt/log and a frozen prefix byte-count/SHA-256. Verify
+that prefix again in the completed archive; no prefix bytes are discarded or
+fetched twice. Keep source/model/limits/gates fixed and test the transport before
+using it on the real incomplete input. This is an acquisition change, with no
+new image or ground-truth interpretation or estimator selection.
