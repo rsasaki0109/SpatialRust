@@ -42,10 +42,13 @@ complete rows and independent full-cloud/score/IO gates. The original ATE 0.10m,
 
 Borrow native inputs; own all four Python inputs before releasing the GIL.
 Preflight logical working bytes before allocation: 32 times total floor-pyramid
-pixels, plus 64 times base pixels, plus ceil(height/16) ordered Normal records.
+pixels, plus 64 times base pixels, plus the greater of ceil(height/16) ordered
+Normal records or 48 f64 values for nonconcurrent 6x6 solver matrix/RHS/solution.
 This charges both fitting pyramids, original raw levels and the greater of four
 current-level target gradient planes or two temporary smoothing planes. Inputs,
-allocator metadata and stacks remain explicit exclusions. Cap at 128MiB by default,
+allocator metadata and stacks remain explicit exclusions. A pre-execution source
+review corrected the tiny-image solver minimum before any numerical test or fit;
+the original prospective protocol commit remains preserved. Cap at 128MiB by default,
 use at most four private CPU workers with deterministic ordered row reductions;
 WASM is serial. Add no core/heavy dependency, unsafe code or hidden device copy.
 

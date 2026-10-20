@@ -68,8 +68,8 @@
       "working_bytes": {
         "checked_before_allocation": true,
         "excludes": "caller inputs/Python input copies, allocator metadata, stacks",
-        "formula": "32*sum(floor-pyramid pixel counts) + 64*base_pixels + ceil(height/16)*sizeof(Normal)",
-        "meaning": "both fitting pyramids; both raw levels; max of four current-level target gradient planes and two temporary smoothing planes; ordered reductions"
+        "formula": "32*sum(floor-pyramid pixel counts) + 64*base_pixels + max(ceil(height/16)*sizeof(Normal), 48*sizeof(f64))",
+        "meaning": "both fitting pyramids; both raw levels; max of four current-level target gradient planes and two temporary smoothing planes; ordered reductions or nonconcurrent 6x6 matrix, RHS and solution scratch"
       }
     },
     "dense_rgbd_odometry": {
