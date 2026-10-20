@@ -129,8 +129,8 @@ use spatialrust::vision::{
     ThresholdType, TrackState,
 };
 use spatialrust::vision::{
-    estimate_dense_rgbd_odometry_with_preprocessing as estimate_dense_rgbd_odometry_op,
-    DenseRgbdFrame, DenseRgbdOdometryOptions, DenseRgbdPreprocessing,
+    estimate_dense_rgbd_odometry_with_model as estimate_dense_rgbd_odometry_op,
+    DenseRgbdFittingModel, DenseRgbdFrame, DenseRgbdOdometryOptions, DenseRgbdPreprocessing,
 };
 use spatialrust::vision::{
     track_points_forward_backward as track_points_forward_backward_op, LucasKanadeOptions,
@@ -4211,7 +4211,7 @@ fn estimate_rgbd_odometry<'py>(
 
 /// Dense metric motion from explicit source/target grayscale and depth images.
 #[pyfunction]
-#[pyo3(signature = (source_gray, source_depth, target_gray, target_depth, fx, fy, cx, cy, *, initial=None, iterations=None, min_depth=0.1, max_depth=5.0, max_depth_difference=0.03, depth_weight=0.968, min_correspondences=30, min_correspondence_fraction=0.5, epsilon=1e-7, max_working_bytes=134217728, preprocessing="raw"))]
+#[pyo3(signature = (source_gray, source_depth, target_gray, target_depth, fx, fy, cx, cy, *, initial=None, iterations=None, min_depth=0.1, max_depth=5.0, max_depth_difference=0.03, depth_weight=0.968, min_correspondences=30, min_correspondence_fraction=0.5, epsilon=1e-7, max_working_bytes=134217728, preprocessing="raw", fitting_model="bilinear"))]
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn estimate_dense_rgbd_odometry<'py>(
     py: Python<'py>,
@@ -4234,7 +4234,13 @@ fn estimate_dense_rgbd_odometry<'py>(
     epsilon: f64,
     max_working_bytes: usize,
     preprocessing: &str,
+    fitting_model: &str,
 ) -> PyResult<(Bound<'py, PyArray2<f64>>, Bound<'py, PyArray1<f64>>, Bound<'py, PyDict>)> {
+    let fitting_model = match fitting_model {
+        "bilinear" => DenseRgbdFittingModel::Bilinear,
+        "rounded-sobel" => DenseRgbdFittingModel::RoundedSobel,
+        _ => return Err(PyValueError::new_err("dense fitting_model must be bilinear or rounded-sobel")),
+    };
     let preprocessing = match preprocessing {
         "raw" => DenseRgbdPreprocessing::Raw,
         "gaussian3" => DenseRgbdPreprocessing::Gaussian3,
@@ -4263,7 +4269,7 @@ fn estimate_dense_rgbd_odometry<'py>(
         epsilon,
         max_working_bytes,
     };
-    options.required_working_bytes_with_preprocessing(width, height, preprocessing).map_err(to_py_err)?;
+    options.required_working_bytes_with_model(width, height, preprocessing, fitting_model).map_err(to_py_err)?;
     let camera = CameraMatrix3::from_intrinsics(
         CameraIntrinsics::try_new(fx, fy, cx, cy, width, height).map_err(to_py_err)?,
     );
@@ -4309,6 +4315,7 @@ fn estimate_dense_rgbd_odometry<'py>(
                 pose,
                 &options,
                 preprocessing,
+                fitting_model,
             )
         })
         .map_err(to_py_err)?;
@@ -4324,6 +4331,9 @@ fn estimate_dense_rgbd_odometry<'py>(
     report.set_item("input_copy_bytes", width * height * 10)?;
     report.set_item("final_support_only", true)?;
     report.set_item("fitting_preprocessing", preprocessing.as_str())?;
+    if fitting_model != DenseRgbdFittingModel::Bilinear {
+        report.set_item("fitting_model", fitting_model.as_str())?;
+    }
     Ok((
         mat3_to_numpy(py, estimate.pose.rotation()),
         numpy::PyArray1::from_vec_bound(
