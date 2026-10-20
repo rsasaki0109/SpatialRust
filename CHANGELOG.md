@@ -19,6 +19,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Enforce full-bag episode record/point/capacity limits while reading both sensor
+  topics, including the pending scan, instead of retaining whole topic vectors
+  before admission. Check source and owned-copy capacity, preserve leases and
+  metadata, bound assembly requests separately and stop on the first error.
+  Twenty-two synthetic IO/capacity cases include real SQLite tail-decode ordering;
+  37 full-bag/17 E2E passes, records/sync, Clippy and three OS CI coverage.
+  Real data, core/GPU/libraries/dependencies and physical acceptance stay unchanged.
+  See [the contract and evidence](docs/SCAN_COLLECTION_BUDGET.md).
+
 - Correct scan-to-TSDF direction and shared front/rear body transport in both
   mapping examples. Preserve source/calibration/clock admission and reject
   non-finite transforms before integration. Close native rooted/drive/parent

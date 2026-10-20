@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.scan-collection-budget-plan.v1",
+  "slice": "146Z",
+  "parent_merge": "d44581d7a0fa2d4ec2214a792fc24e1dc6a69f7e",
+  "purpose": "Enforce episode admission while collecting full-bag scans, before retaining complete front/rear topic vectors. Synthetic IO/capacity correctness; no canonical data run or measured accuracy qualification.",
+  "fixed_contract": {
+    "retention": "One shared MemoryEpisodeBuilder across both topics. Finished scans plus the pending scan's owned chunks must fit max_records/max_points/max_bytes. Count pending as one record; use checked arithmetic and actual allocated scalar capacities. Check each incoming leased record before cloning it into retained storage, recheck the clone, and stop at the first error without requesting another chunk.",
+    "ownership": "Source leases remain borrowed and accounted by their existing source tracker. Explicitly clone an admitted chunk once into the collector; never detach a record from its reservation or change core/records public APIs. Pending chunks assemble into one owned scan at a boundary or EOF, with exact-size field requests and final allocated-capacity validation before builder admission.",
+    "scratch": "Assembly requests at most the pending logical scalar payload, separately from the admitted retained episode budget. Recheck actual output capacity. Logical scalar storage, source decoding leases and assembly scratch are distinct; this is not a bound on allocator internals, Vec/metadata overhead or process RSS.",
+    "semantics": "Preserve consecutive header-timestamp/frame grouping, scalar order/dtypes/schema, first metadata and first provenance with sequence removed, corrected StampedTime, deterministic episode order and complete/non-truncated success. Identical headers across distinct physical messages remain the existing grouping policy; message identity is a separate unresolved contract.",
+    "failure": "Reject record/point/byte excess, overflow, empty chunks and schema mismatches before retaining the offending chunk. Source/cancellation/clock errors propagate. Previously committed builder records stay valid; a failed overall run never admits a partial map.",
+    "admission": "Keep source path/size/SHA, registered calibration/clock evidence, actual frame IDs, timestamp matching, sensor-to-volume algebra and disk limits. Validate episode configuration before opening sources. No invented calibration, hidden device copies, new thread or dependency."
+  },
+  "verification": "First commit this protocol. Extract the existing per-topic drain loop into a callback seam with final builder admission after that topic; explicitly record this baseline boundary rather than claiming an unchanged whole-program memory schedule. Retain failing source-spy tests before incremental admission: fail-fast record/point/capacity limits within and across topics, pending growth, oversized first input, exact-limit success, metadata/lineage/dtypes, error propagation and duplicate-header characterization. Add a tiny synthetic SQLite bag with a malformed tail to verify the real source is not decoded beyond an earlier limit. Run both examples, ROS2, records/sync, mapping/calibration, all-target Clippy and formatting. Reuse the existing three-OS example CI and all 131 required checks.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/scan-collection-budget-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned reference sources and completed room outputs. Reuse Cargo cache, preserve failed attempts, and do not rebuild frozen binaries or copy real sensor payloads. Synthetic test fixtures use the owned external temp root."
+  },
+  "remaining_80_percent": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Incremental collection tests cannot establish these requirements."
+}

@@ -1,0 +1,420 @@
+{
+  "schema": "spatialrust.public-scan-collection-budget-receipt.v1",
+  "slice": "146Z",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-20T15:08:37.068617+00:00",
+  "protocol_commit": "1bb898601901bb23c625004481c0e9b88304fd4d",
+  "implementation_commit": "bf91ea884b07b1e717b6cbb894cb68baf39a8350",
+  "numerical_source_commit": "bf91ea884b07b1e717b6cbb894cb68baf39a8350",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\scan-collection-budget-plan.json",
+    "bytes": 4454,
+    "sha256": "a9767cad62de0847693a7be7b450368a2ac957ca2cbd3b0cba80c952ce2bcae8"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\scan-collection-budget-preflight.json",
+    "bytes": 115902,
+    "sha256": "a2cdfefc886d59f639ac034cd40078d881ac3441145de854e0fbe0fa2ebfbc8e"
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/scan-collection-budget-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned reference sources and completed room outputs. Reuse Cargo cache, preserve failed attempts, and do not rebuild frozen binaries or copy real sensor payloads. Synthetic test fixtures use the owned external temp root."
+  },
+  "validation": {
+    "full-bag": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\full-bag.command.json",
+        "bytes": 18931,
+        "sha256": "2f89f5c1c8c2ca26f81aec4f3c7ade9aeeb98c8d8aa4d4ba1f88de3ea0426193"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\full-bag.log",
+        "bytes": 3257,
+        "sha256": "cca0f223b22a671b57d84c36338025fea088fa5ea2beddbbb2fd195157672c16"
+      }
+    },
+    "e2e": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\e2e.command.json",
+        "bytes": 18913,
+        "sha256": "5eed5ede11f419ffabb384290f76be1ad4b2b412f8ce45df87f0eda095db1129"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\e2e.log",
+        "bytes": 1571,
+        "sha256": "219bb971c8716daa03bf9bb849cec61802d36c1fc5df108adda5eee0bc419fc0"
+      }
+    },
+    "ros2-default": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\ros2-default.command.json",
+        "bytes": 18842,
+        "sha256": "c05b0c4e45764e6a7c047a0cc483a3c0c732af7fe7f0a2dc7a05d421214ed2d9"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\ros2-default.log",
+        "bytes": 553,
+        "sha256": "16f9fe12858857867894bad8e8d8fd1aea61b9973fd177c61d46442784cf20d4"
+      }
+    },
+    "ros2-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\ros2-all.command.json",
+        "bytes": 18864,
+        "sha256": "b60e5db041edf5eb239c6df23e713e83e3ace16b71be3a60f3aecc2a9a35c98d"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\ros2-all.log",
+        "bytes": 824,
+        "sha256": "1612679ef95b600edc405bc003f80e7ee870fb9452ad4b63b45d0c41bc2abbfc"
+      }
+    },
+    "records": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\records.command.json",
+        "bytes": 18868,
+        "sha256": "2b0aefcb4c21a2d52bc7243fef5cd4c4daa92149bfe31ed7163bf63ea75a47a5"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\records.log",
+        "bytes": 2653,
+        "sha256": "e3f02f6bcaa9bc7c7a66244ab86b50cc2e2e95fbf58fd1c9e47268659fea4ae4"
+      }
+    },
+    "sync": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\sync.command.json",
+        "bytes": 19107,
+        "sha256": "9e4dfbdaee37c5aead004d7ec7fa995a85f5e452b8a6bc2377bdb4b9de537b73"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\sync.log",
+        "bytes": 1188,
+        "sha256": "0bc67be11642c8b2d06d36aadd9d9236f4dafa58c2103450b3d282024399b97e"
+      }
+    },
+    "mapping-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\mapping-all.command.json",
+        "bytes": 18876,
+        "sha256": "d83f1c809145bc1e3d462518d0978c731a85dd712e22902ba02427def25a2efc"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\mapping-all.log",
+        "bytes": 2230,
+        "sha256": "d6f8c9f984c1298473239bc3508adb2c3b113f02b8f3179e4e871fb4e8269d7b"
+      }
+    },
+    "calibration": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\calibration.command.json",
+        "bytes": 18895,
+        "sha256": "a5db306ee7eda883777331363c47426584d9afb6e51f9bfae45259dfd67e94f1"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\calibration.log",
+        "bytes": 790,
+        "sha256": "e0bd4070148d1b56e2412ecbabc56edb1b94de2d2890ada5901c0cb06eb004ad"
+      }
+    },
+    "examples-clippy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\examples-clippy.command.json",
+        "bytes": 18940,
+        "sha256": "29c2ad74067bf7b05fad8feb081d7796025fe60756441c7a4e79b672d025833d"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\examples-clippy.log",
+        "bytes": 172,
+        "sha256": "dc4e193e0f1407655a34bc5d167183145aad199c128a4700738dd4d30d143570"
+      }
+    },
+    "format": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\format.command.json",
+        "bytes": 19056,
+        "sha256": "4262ea121907092021311ace2fd1cba8f61d0a9bbbb48ce7623108ef77c081e0"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\format.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "tests": {
+    "full-bag": {
+      "passed": 37,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    },
+    "e2e": {
+      "passed": 17,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    },
+    "ros2-default": {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "ros2-all": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "records": {
+      "passed": 29,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "sync": {
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "mapping-all": {
+      "passed": 24,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 3
+    },
+    "calibration": {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    }
+  },
+  "original_regressions": {
+    "source_commit": "36fae408c72fba7661b9a1fdb559e4b01ccbafa5",
+    "per_topic_loop_preserved": true,
+    "pending_assembly_preserved": true,
+    "baseline_boundary": "Original per-topic draining loop extracted into a callback seam. Existing builder admission moved after each complete topic instead of after both complete vectors. This is not an unchanged whole-program memory schedule; no incremental admission exists in the baseline seam.",
+    "tests": 32,
+    "passed": 23,
+    "failed": 9,
+    "failed_names": [
+      "collection_tests::capacity_is_checked_before_retaining_input",
+      "collection_tests::capacity_is_shared_across_topics",
+      "collection_tests::empty_chunk_rejects_before_reading_tail",
+      "collection_tests::oversized_first_points_do_not_drain_tail",
+      "collection_tests::pending_capacity_stops_before_next_chunk",
+      "collection_tests::pending_points_stop_before_next_chunk",
+      "collection_tests::record_limit_is_shared_across_topics",
+      "collection_tests::record_limit_stops_before_next_scan",
+      "collection_tests::sqlite_limit_precedes_malformed_tail_decode"
+    ],
+    "receipt": {
+      "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\baseline-v2.command.json",
+      "bytes": 18836,
+      "sha256": "d4b11eede35bb50bf4f459b1f0a22604414bc0f10257ec55456dc4a258795b8a"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\baseline-v2.log",
+      "bytes": 6306,
+      "sha256": "918703006cd077c1508f6fa8bbb226b87e16612ee7c038ec4cb74822352049b4"
+    }
+  },
+  "initial_test_compilation": {
+    "source_commit": "888200f65e11cb9c5e7983f933a7a7d6b4682287",
+    "exit_status": 101,
+    "cause": "Test imported private runtime::ros2 module; only switched to public root codec re-exports before behavioral reproduction.",
+    "receipt": {
+      "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\baseline.command.json",
+      "bytes": 18807,
+      "sha256": "2994751d7980b57d4b63138e36ebee8063df92459e8668780accc746b0af5b2a"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\scan-collection-budget-v1\\baseline.log",
+      "bytes": 1305,
+      "sha256": "d5ba105332667e2c8ef0edbe1be3c8c2c3163ae2bd553987c7cc82d6269db600"
+    }
+  },
+  "unchanged_gates": {
+    "source/calibration/disk run gates": true,
+    "registered frame checks": true,
+    "odometry/TSDF/interchange": true,
+    "clock correction": true
+  },
+  "unique_new_cases": 22,
+  "source_spy_and_sqlite_cases": true,
+  "synthetic_usage_fixture": {
+    "points": 12,
+    "xyz_f32": true,
+    "retained_and_pending_capacity_bytes": 144,
+    "max_assembly_request_bytes": 96,
+    "source_lease_peak_bytes": 48,
+    "scope": "Values asserted by passing native synthetic tests; not a canonical run, process RSS or allocator observation."
+  },
+  "preserved_scientific_json_count": 493,
+  "preserved_native_file_count": 42,
+  "preserved_native_files": {
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+    "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+    "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+    "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f",
+    "E:/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libdrm.so.2": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libvulkan_dzn.so": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\share\\vulkan\\icd.d\\dzn_icd.x86_64.json": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\bison": "7791b07ce4e24d56c80f3df47c9a193b039392afc1eb02af726ff93591b1c6e7",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\flex": "4cabd101467c6b428e3fd9b5a7dee0785b3108657ae0a5d85947956329d7047b",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0": "ceb1e4eb7eb552e08022d821d632cb400de60e4d3201324ac1b7ec34268ac5f9",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0": "f177704aac79527908633213ba1bb3f298c32aabdc2b3bc231b46983d58587e8",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0": "92a30b5b3a96fb52bbdad4cc46b7796411ccffc22b5eb06f72dd3d2dcb90cd40",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libgallium-26.2.5.so": "e2c423620442bb6bfafd89a4550b39eab11a4245ab88eb85153a9f4750066e03",
+    "C:\\Users\\rsasa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\open3d\\cpu\\pybind.cp312-win_amd64.pyd": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "46f4434b0b6456a3ea564d2a7f1f7c4c942ce4979348d6a06e9eed36ef9611a6",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1baaf7a63e71cf153d5d2736e06e5f8bd87e3813e063a3f43d5bf5a8d930855b",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a58c85172c8596630e18eaa010e7905a49e65ad5e849db0f7a0d63c1467abc",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "026091cde997323078e453fdc4c0f941b623b6a4c6443de4e76e058fd78689c1",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "ee9063970899e05c9b6d8987e2c0d1e19238cf83827356f037b7cf9ad221295c",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "0b8545e0b3737fc08f49a2b9af325a1e09a56693c9e524665f1fd5ab00790589",
+    "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\bin\\dense_sampling_audit.exe": "dc9c08cd9cd6eb7141fab67b28734213947526a35437f27b05da9e52930e22c4",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1817591beb7eacb443a4eb0632e4be75f21fbd4de9590d6fd74ce71fb6bed465",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\bin\\rounded_sobel_vision_tests.exe": "0dac430a412bfba2717c79367ac60f2d4141502f6ca5160800fa929c884002a5",
+    "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "e0c5de6027dba4005c5e6666e491de2e737e4b925d2c584803f32beace4b9625",
+    "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "9525a5c44614252a7685c8bb8c118be2c9247f3d75e1dbfa4b6dcf938e873997",
+    "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\bin\\reference_precision_vision_tests.exe": "db60e26145ac88e4ccb53c4a0b5d53889d517953c3cc5df2bebd2c5394384ef7",
+    "E:\\SpatialRustBuild\\native-dense-huber-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "32ff815261746c87ef914c8f925125be6ceaf835a7bdee4e47fdc8e1eb2a1afc",
+    "E:\\SpatialRustBuild\\native-dense-huber-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "358a0f7f1b082a990e10e073b5747e6449eb00a71d0a10e7616a1d025558240e",
+    "E:\\SpatialRustBuild\\native-dense-huber-v1\\bin\\huber_vision_tests.exe": "b6bbf662ca67ddc50e4ccc602dca91202b89356a2f10c12cee8eb6822bb5f1fc"
+  },
+  "previous_completed_room_outputs": {
+    "schema": "spatialrust.huber-preserved-room-outputs.v1",
+    "files": [
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\audit.json",
+        "bytes": 14612178,
+        "sha256": "3f518a2d8d5b1aba5858a934ab88429cb8868b27aae01ad0329ea148c29eb3ec"
+      },
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\drift.svg",
+        "bytes": 382828,
+        "sha256": "e8fd81a07172126d592ffccb451a3ae090422680ef030d55efdb3ed780afb03c"
+      },
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\preview.png",
+        "bytes": 226821,
+        "sha256": "3ccd937a5c35be51af3bf3b6c9958d6fc062304363085546df80bc706bd19f99"
+      }
+    ],
+    "manifest_sha256": "75468b4a7e65a0edce8ff8e60c2f7f831c97589eefda66a243198cdacf7f6745"
+  },
+  "reference_sources": {
+    "upstream_repository": "https://github.com/isl-org/Open3D",
+    "ref": "v0.19.0",
+    "commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+    "files": [
+      {
+        "upstream_path": "cpp/open3d/geometry/ImageFactory.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\ImageFactory.cpp",
+        "bytes": 6267,
+        "sha256": "e447d9f17c725b243fbc291aa32ac2238dd4eaa46edc3a17f2f4d08a3ae4fbf1"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImageFactory.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImageFactory.cpp",
+        "bytes": 4464,
+        "sha256": "4f95c4b284fb8c22bf537bf66f53fe0c79723efb8971a0f4e357fdd7d7f079fc"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.h",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.h",
+        "bytes": 4570,
+        "sha256": "1a35f4370aaae08d693a2efd5913266f85dc71879c5e09c538429a2446760d57"
+      },
+      {
+        "upstream_path": "cpp/open3d/pipelines/odometry/RGBDOdometryJacobian.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDOdometryJacobian.cpp",
+        "bytes": 5924,
+        "sha256": "47640145004e4cca41ad70744ea0216935f57383c6b3d8a5a44561c6293a3830"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.cpp",
+        "bytes": 2554,
+        "sha256": "bf3d07e1d09be85dd448c216a7a0fddea019f5331e39fa52df8be99b39008d47"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/Image.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Image.cpp",
+        "bytes": 14366,
+        "sha256": "bef45e1facc2f25a63623e6e6aa9289127fbc9aa7ac9df9fe87393a014bbcd0c"
+      },
+      {
+        "upstream_path": "cpp/open3d/pipelines/odometry/Odometry.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Odometry.cpp",
+        "bytes": 23556,
+        "sha256": "be75e58413b6d2f7ee575b526fc0d68b228e5eeb2cab27f246f7c8e8dd34d0fb"
+      }
+    ],
+    "sensor_payload_downloads": 0
+  },
+  "sensor_downloads": 0,
+  "sensor_payload_copies": 0,
+  "new_real_motion_fits": 0,
+  "new_frozen_native_artifacts": 0,
+  "copy_scope": "No existing real sensor data read or copied. Synthetic fixtures and explicit per-chunk CPU ownership copies are separate.",
+  "operational_80_percent_proven": false,
+  "remaining": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Incremental collection tests cannot establish these requirements.",
+  "preserved_code_trees": {
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-math": "1b2b0d359494c807a71caf508c5a8abd8c52aa2b",
+    "crates/spatialrust-records": "7236d93b95dcff9d80d668bc03935f7442b1c1c6",
+    "crates/spatialrust-sync": "8c27cb7d73ee1f04bbad232e9421b48dec483657",
+    "crates/spatialrust-mapping": "6550a941f5349e098a27cfb1e0f9751504a58594",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96",
+    "crates/spatialrust-vision": "763c04fcef8c92c2eec5a165e2f385cf567e00a7",
+    "crates/spatialrust-py": "cd89ecbd3325df100591467ee84b5f32bc71e8df",
+    "crates/spatialrust-viewer": "6fab7f74e53fd906cbb275ac182bb1b77cd1c3f4",
+    "crates/spatialrust-ros2/src": "9d4b84b8a1f43db0e78303b36e09a17050b245fb",
+    "crates/spatialrust-ros2/Cargo.toml": "c0c33536dd873d1448c334f32af308acccf5b4b9",
+    "crates/spatialrust-ros2/examples/support/scan_transport.rs": "0cd36329e631f3bab97edaa4c25b1d6fd6d0149b",
+    "Cargo.toml": "071f537437a8d7b77cbe4dff7ae28e6a5479ed66"
+  },
+  "cargo_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118041,
+    "sha256": "6b7bc5c64861ec82eed78b683e8a05269175fdd5a4ecd397833090a34d5c3f8d"
+  },
+  "storage": {
+    "owned_metadata_bytes": 248720,
+    "cache_bytes": 9754445220,
+    "positive_cache_growth_bytes": 218414385,
+    "combined_bytes": 218663105,
+    "free_bytes": {
+      "C": 76015108096,
+      "E": 879335501824
+    }
+  }
+}

@@ -18,8 +18,15 @@ use std::{
 #[path = "support/scan_transport.rs"]
 mod scan_transport;
 
+#[path = "support/scan_collection.rs"]
+mod scan_collection;
+use scan_collection::{collect_chunks, CollectionUsage};
+
+#[cfg(test)]
+#[path = "support/collection_tests.rs"]
+mod collection_tests;
+
 use serde::{de::DeserializeOwned, Serialize};
-use spatialrust_core::Timestamp;
 use spatialrust_interchange::export_triangle_mesh_gltf_json;
 use spatialrust_io::{
     DatasetManifest, FileReceipt, ReceiptRole, StoragePreflight, DEFAULT_MIN_OUTPUT_FREE_BYTES,
@@ -27,15 +34,13 @@ use spatialrust_io::{
 use spatialrust_mapping::{IcpScanMatcher, ScanOdometry, ScanOdometryConfig};
 use spatialrust_math::{Isometry3, Quat, Vec3};
 use spatialrust_records::{
-    BoundedSpatialRecordSource, CancellationToken, MemoryBudget, MemoryChunkSink,
-    SpatialRecordSink, StreamOptions,
+    BoundedSpatialRecordSource, CancellationToken, MemoryBudget, StreamOptions,
 };
 use spatialrust_registration::IcpConfig;
 use spatialrust_ros2::Rosbag2PointCloudSource;
 use spatialrust_scene::TsdfVolume;
 use spatialrust_sync::{
-    ClockDomain, ClockId, DeterministicReplayer, EpisodeLimits, MemoryEpisodeBuilder,
-    StampedRecord, StampedTime, SyncQuality, SyncWindow, TopicId,
+    DeterministicReplayer, EpisodeLimits, MemoryEpisodeBuilder, StampedRecord, SyncWindow, TopicId,
 };
 use spatialrust_viewer::{
     CalibrationEvidenceFrame, CalibrationEvidenceState, FrameTransform, FullBagMappingState,
@@ -77,11 +82,12 @@ struct Config {
 
 #[derive(Debug)]
 struct CollectedTopic {
-    records: Vec<StampedRecord>,
+    record_count: u64,
     bag_message_count: u64,
     chunk_count: u64,
     peak_source_bytes: u64,
     frame_ids: BTreeSet<String>,
+    usage: CollectionUsage,
 }
 
 #[derive(Debug)]
@@ -271,11 +277,27 @@ fn execute_mapping(
     calibration: &CalibrationEvidenceState,
 ) -> Result<MappingExecution, Box<dyn Error>> {
     let mut clock = ClockCorrection::try_new(calibration)?;
+    let mut builder = MemoryEpisodeBuilder::try_new(EpisodeLimits::new(
+        config.max_records,
+        config.max_points,
+        config.max_bytes,
+    ))?;
     let options =
         StreamOptions::new(config.chunk_points, MemoryBudget::new(config.source_memory_bytes)?)?;
-    let front = collect_topic(&config.input, &config.front_topic, options.clone(), &mut clock)?;
-    let rear = collect_topic(&config.input, &config.rear_topic, options, &mut clock)?;
-    if front.records.len() < 2 {
+    let front = collect_topic(
+        &config.input,
+        &config.front_topic,
+        options.clone(),
+        &mut clock,
+        &mut builder,
+    )?;
+    let rear = collect_topic(&config.input, &config.rear_topic, options, &mut clock, &mut builder)?;
+    eprintln!(
+        "Collection scalar capacity: peak_retained_and_pending_bytes={}, max_assembly_request_bytes={} (excludes source leases and process RSS)",
+        front.usage.peak_retained_and_pending_bytes.max(rear.usage.peak_retained_and_pending_bytes),
+        front.usage.max_assembly_request_bytes.max(rear.usage.max_assembly_request_bytes),
+    );
+    if front.record_count < 2 {
         return Err("at least two complete front records are required for full-bag odometry".into());
     }
     let front_frame_ids = front.frame_ids.clone();
@@ -309,26 +331,13 @@ fn execute_mapping(
         .into());
     }
 
-    let front_record_count = u64::try_from(front.records.len())?;
-    let rear_record_count = u64::try_from(rear.records.len())?;
+    let front_record_count = front.record_count;
+    let rear_record_count = rear.record_count;
     let front_bag_message_count = front.bag_message_count;
     let rear_bag_message_count = rear.bag_message_count;
     let front_chunk_count = front.chunk_count;
     let rear_chunk_count = rear.chunk_count;
     let peak_source_bytes = front.peak_source_bytes.max(rear.peak_source_bytes);
-    let front_records = front.records;
-    let rear_records = rear.records;
-    let mut builder = MemoryEpisodeBuilder::try_new(EpisodeLimits::new(
-        config.max_records,
-        config.max_points,
-        config.max_bytes,
-    ))?;
-    for record in front_records {
-        builder.push(record)?;
-    }
-    for record in rear_records {
-        builder.push(record)?;
-    }
     let total_record_count = u64::try_from(builder.len())?;
     let total_point_count = builder.points();
     let retained_bytes = builder.bytes();
@@ -465,70 +474,21 @@ fn collect_topic(
     topic: &str,
     options: StreamOptions,
     clock: &mut ClockCorrection,
+    builder: &mut MemoryEpisodeBuilder,
 ) -> Result<CollectedTopic, Box<dyn Error>> {
     let mut source =
         Rosbag2PointCloudSource::open(input, topic, options, CancellationToken::default())?;
     let bag_message_count = source.topic().message_count;
     let peak_source_bytes = source.max_message_bytes();
-    let mut current: Option<(u64, String, MemoryChunkSink)> = None;
-    let mut records = Vec::new();
-    let mut chunk_count = 0_u64;
-    let mut frame_ids = BTreeSet::new();
-    while let Some(chunk) = source.next_chunk() {
-        let chunk = chunk?;
-        chunk_count = chunk_count.checked_add(1).ok_or("full-bag chunk count overflow")?;
-        let record = chunk.record().clone();
-        let stamp = record.metadata().timestamp.as_nanos();
-        let frame = record.metadata().frame_id.0.clone();
-        match current.as_mut() {
-            Some((current_stamp, current_frame, sink))
-                if *current_stamp == stamp && current_frame == &frame =>
-            {
-                sink.write_record(&record)?;
-            }
-            Some(_) => {
-                finish_pending(&mut current, topic, clock, &mut records, &mut frame_ids)?;
-                let mut sink = MemoryChunkSink::new();
-                sink.write_record(&record)?;
-                current = Some((stamp, frame, sink));
-            }
-            None => {
-                let mut sink = MemoryChunkSink::new();
-                sink.write_record(&record)?;
-                current = Some((stamp, frame, sink));
-            }
-        }
-    }
-    finish_pending(&mut current, topic, clock, &mut records, &mut frame_ids)?;
-    Ok(CollectedTopic { records, bag_message_count, chunk_count, peak_source_bytes, frame_ids })
-}
-
-fn finish_pending(
-    current: &mut Option<(u64, String, MemoryChunkSink)>,
-    topic: &str,
-    clock: &mut ClockCorrection,
-    records: &mut Vec<StampedRecord>,
-    frame_ids: &mut BTreeSet<String>,
-) -> Result<(), Box<dyn Error>> {
-    let Some((raw_stamp, frame, sink)) = current.take() else {
-        return Ok(());
-    };
-    let record = sink.into_record()?.ok_or("empty PointCloud2 record")?;
-    let corrected_stamp = clock.correct(raw_stamp)?;
-    let quality = SyncQuality {
-        offset_ns: clock.offset_i64()?,
-        uncertainty_ns: clock.uncertainty_ns,
-        estimated: true,
-    };
-    let stamp = StampedTime {
-        clock: ClockId::new(clock.clock_id.clone()),
-        domain: ClockDomain::External,
-        timestamp: Timestamp::from_nanos(corrected_stamp),
-        quality,
-    };
-    frame_ids.insert(frame);
-    records.push(StampedRecord::new(topic, stamp, record));
-    Ok(())
+    let chunks = collect_chunks(|| source.next_chunk(), topic, clock, builder)?;
+    Ok(CollectedTopic {
+        record_count: chunks.record_count,
+        bag_message_count,
+        chunk_count: chunks.chunk_count,
+        peak_source_bytes,
+        frame_ids: chunks.frame_ids,
+        usage: chunks.usage,
+    })
 }
 
 impl ClockCorrection {
