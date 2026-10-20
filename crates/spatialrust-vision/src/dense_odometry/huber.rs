@@ -486,6 +486,7 @@ fn euler_update(pose: AbsolutePose, delta: &[f64]) -> VisionResult<AbsolutePose>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use spatialrust_image::Image;
     fn identity() -> AbsolutePose {
         AbsolutePose::try_new(Mat3::<f64>::identity(), Vec3::new(0.0, 0.0, 0.0)).unwrap()
     }
