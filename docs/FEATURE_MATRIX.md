@@ -92,6 +92,20 @@ vectors are observed, but its Python API does not expose the mutated Jacobian.
 Native 21 and Python 1,134 passes/3 existing skips validate this diagnostic;
 it introduces no estimator policy or rpy accuracy acceptance.
 
+`DenseRgbdFittingModel::{Bilinear,RoundedSobel}` and
+`estimate_dense_rgbd_odometry_with_model` expose an explicit complete CPU model;
+Python selects `fitting_model="rounded-sobel"` with the legacy preprocessing
+selector left Raw. Joint Gaussian3/pair means, floor 2x2 pyramids, rounded lookup,
+Sobel surrogate gradients and the complete update schedule share checked buffers
+and bounded deterministic CPU rows. The original raw final gates remain. The
+[fixed complete-model study](ROUNDED_SOBEL_DENSE_RGBD_VALIDATION.md) completes both
+798/722-frame timelines: xyz ATE/RPE 0.050258/0.023051m passes; rpy
+0.100327/0.048503m fails the unchanged 0.10m ATE limit. All 1,518 causal/raw pairs
+and both score audits pass. Native 28/Python 1,171 passes and 3 existing skips,
+with exact 20-case regression across all four preserved selectors; defaults and
+old reports remain. The new policy is experimental and does not establish rpy
+or operational 80% acceptance.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree

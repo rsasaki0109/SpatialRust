@@ -81,3 +81,60 @@ Candidate selection precedes any future held-out recording score. Canonical meas
 clock/physical frame calibration, both raw Linux hardware classes and complete
 mapping/semantic/release acceptance remain required. Green tests or this development
 comparison alone cannot prove operational 80%. Deliver as one named PR and merge.
+
+## Observed outcome
+
+The initial prospective protocol is `381b89a`; the pre-execution solver-scratch
+review is `607415e`. Numerical/package/workflow source is `0b345e4`. The new
+validated ABI3 wheel and 28-test executable were frozen before fitting; all
+four older selectors retain exact old-wheel poses and reports in 20 synthetic
+cases. Existing native parent lines remain byte-equivalent after line-ending
+normalization, with only additive model declarations/dispatch.
+
+Both complete development timelines were frozen before either new score.
+
+| Scene | Generated | Reference matched | First-pose ATE RMSE | 1s translation RPE RMSE | Original acceptance |
+| --- | ---: | ---: | ---: | ---: | --- |
+| fr1/xyz | 798/798 | 795/798 | 0.05025800681626491m | 0.023050793987003902m | Pass |
+| fr1/rpy | 722/722 | 716/722 | 0.10032699404221075m | 0.048503244138082525m | Fail: ATE > 0.10m |
+
+Rpy exceeds the fixed ATE limit by 0.00032699404221075m; do not round that into
+a pass or adjust the threshold. Its RPE passes, but full motion accuracy remains
+unaccepted. Prior raw causal ATE was 0.089993/0.114793m; the external CPU control
+was 0.051174/0.099684m. These are complete variant comparisons on observed
+development recordings, not evidence of a component's causal effect or held-out
+robustness. Every earlier variant and failure remains preserved.
+
+Independent raw-image/causal/world auditing passes all 1,518 pairs, and both
+independent trajectory score audits pass. Counts/fractions match exactly;
+maximum photometric/depth RMSE differences are 2.78e-16/8.67e-18m. Maximum world
+composition difference is 2.11e-14; independent score differences are at most
+1.17e-15m and 3.84e-13 degrees. Publisher reference gaps remain 3/6; original
+1s RPE denominators stay 762/768 and 680/692. Final raw correspondence fractions
+stay at least 0.784046/0.637377, and independent full-cloud support at least
+0.978885/0.960685. Each successful pair records 35 planned updates, 32,574,240
+logical working bytes, 3,072,000 input-copy bytes and four CPU workers.
+
+Validation before fitting: native 28, focused Python 143 and full Python 1,171
+passes/3 existing optional ONNX skips. Native/bridge Clippy, WASM compile,
+Rustfmt, Python 3.8 syntax and installed-wheel byte/runtime checks pass. The
+initial test camera-type reference and WASM parallel-only variable compile
+failures are preserved; constructor/scope fixes introduce no warning suppression
+or model change. The [measurement receipt](receipts/2026-10-20_rounded_sobel_dense_rgbd.json)
+binds all plans, source, packages, commands, logs, XML and independent results.
+
+Scientific results use 322,171,414 bytes under
+`E:/SpatialRustData/maturity-80/rounded-sobel-dense-study-v1/`. Retained new build
+plus incremental cache growth is 46,392,418 bytes; maximum successful-command
+sampled growth was 685,537,082 bytes, below 2GiB. Verified passing pytest scratch
+cleanup reclaimed 641,419,300 logical bytes. All 339 prior JSON outputs and 36
+frozen native artifacts (including this model's package/test executable, nine
+wheels in total) are hash-verified. No sensor payload was downloaded or copied;
+PNG inputs share checked existing hard links. E free space after measurement was
+676,128,202,752 bytes, above the original 20GiB floor.
+
+The opt-in model improves the observed ATE versus the raw causal control while
+retaining full tracking, but rpy's accuracy gate remains closed. Further work
+must fix a new complete contract before another fit, retain this result and all
+original raw/full-timeline/accuracy gates, and choose any future held-out candidate
+before reading held-out scores. Operational 80% remains unproven.

@@ -19,6 +19,19 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a typed opt-in complete rounded-pixel/Sobel CPU fitting model with joint
+  initial Gaussian3/pair means, floor pyramids and the complete update schedule.
+  Preserve original raw final gates, every legacy selector/default/report and
+  explicit owned Python inputs. Preflight raw/pyramid/gradient/reduction/solver
+  payloads, including tiny-image scratch, with deterministic bounded CPU rows.
+  Native 28/Python 1,171 passes with 3 existing skips, Clippy/WASM/wheel checks
+  and exact 20-case old-wheel regression pass before fitting. Full xyz/rpy finish;
+  ATE/RPE 0.050258/0.023051m passes xyz, 0.100327/0.048503m fails rpy ATE.
+  All 1,518 causal/raw pairs and both score audits pass. Preserve initial test
+  and WASM compile failures, all controls and original limits. Retain 322MB
+  results/46MB new build/cache, reclaim 641MB passing scratch, and add no sensor
+  downloads/copies. See `docs/ROUNDED_SOBEL_DENSE_RGBD_VALIDATION.md`.
+
 - Add a source-bound dense RGB-D operator audit with a prospective fixed plan,
   test-only native probe and pinned CPU reference APIs. Confirm different
   pyramid grids, odd-size dimensions and missing-depth/border lookup rules;

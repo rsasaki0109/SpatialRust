@@ -1,0 +1,834 @@
+{
+  "schema": "spatialrust.public-rounded-sobel-dense-rgbd-receipt.v1",
+  "slice": "146P",
+  "date": "2026-10-20",
+  "date_timezone": "Asia/Tokyo",
+  "recorded_at_utc": "2026-10-20T01:09:08.639263+00:00",
+  "model_protocol_commit": "607415e0dbfe9535b2509e1c78ab73029260b6c8",
+  "workflow_source_commit": "0b345e46172c091075199db5fee20656fd1a2afe",
+  "numerical_source_commit": "0b345e46172c091075199db5fee20656fd1a2afe",
+  "package_metadata_source_commit": "0b345e46172c091075199db5fee20656fd1a2afe",
+  "protocol_files": [
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rgbd-wide-capture-plan.json",
+      "bytes": 4299,
+      "sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rounded-sobel-dense-plan.json",
+      "bytes": 8175,
+      "sha256": "2c1b8f5a5261fe64e7021101b3a3fbac3bf4fe6c6785cb4eeb16d8917387cfd0"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-wide-capture-plan.json",
+      "bytes": 4299,
+      "sha256": "03df039aea7c6b02069d2b5e673fbc65e080d7d407d78d476605a8d79d5725d5"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rounded-sobel-dense-plan.json",
+      "bytes": 8175,
+      "sha256": "dbd002eb16062de6ae9aaa98d4bf9f9c9811d124624e7703001ea026bcb8581a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\dense-sampling-audit-plan.json",
+      "bytes": 4561,
+      "sha256": "bedd01cd4ed5a348cbd8d30c85998e658f591ec8c19e5d4d1ab579a84e6f5c45"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-causal-dense-plan.json",
+      "bytes": 5242,
+      "sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-dense-final-overlap-plan.json",
+      "bytes": 4670,
+      "sha256": "fbd41ca5c1357209483b244987fb34d013a198615780a26f80ca91795a90b266"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-dense-rgbd-plan.json",
+      "bytes": 4319,
+      "sha256": "162c74968e46fef2bf30f25d2df3625209e23855957aee7a8ef530ed438cff66"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-gaussian3-dense-plan.json",
+      "bytes": 5587,
+      "sha256": "854a10aad77c4994fab4f043681dd3b76579e3d6201678bb4a689509ab6fc42e"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-gray-gaussian3-dense-plan.json",
+      "bytes": 5756,
+      "sha256": "89b66dfb944761ca655c7baa3317a46b370d9a360c9b1c4cf3fc9b93496fc871"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "15bc4cb6d965b98514a0ce200da7309a627a30cddd4d9bb4d0d344d33d3bc16c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-pair-mean-dense-plan.json",
+      "bytes": 6513,
+      "sha256": "ca200af3bf715cf88ef23276986317aad83683389aa790ada4489e52b236a462"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rounded-sobel-dense-plan.json",
+      "bytes": 8175,
+      "sha256": "2c1b8f5a5261fe64e7021101b3a3fbac3bf4fe6c6785cb4eeb16d8917387cfd0"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-causal-dense-plan.json",
+      "bytes": 5242,
+      "sha256": "347324b9e0198ae65b2717f54086e5637b112b490573d06d511d38f36ef75d1d"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-dense-final-overlap-plan.json",
+      "bytes": 4670,
+      "sha256": "37745182241f0638bf4d295c8cf698d4304428fd0c92659f99bbda3859b93e1a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-dense-rgbd-plan.json",
+      "bytes": 4319,
+      "sha256": "766cbfb99babd6e1ad3c48c60dee7a5719f9b4258f0173df415d84d60b2509f6"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gaussian3-dense-plan.json",
+      "bytes": 5587,
+      "sha256": "46aa954310006d5af573932f7723d9ab98a2a5c67610f403553f50ca386bd3a9"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gray-gaussian3-dense-plan.json",
+      "bytes": 5756,
+      "sha256": "38477e8f30f301d195ee6e1ec723a213dafe73c728b79e5821434bd1314bfb79"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "3d9e3b4b5a83a51f6c45c1ae7a850680e4b324857ed83c33dbf98b5abfee9313"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-pair-mean-dense-plan.json",
+      "bytes": 6513,
+      "sha256": "86300071a8a311c7a6f10e8086cc7f2bc7958b02f3af378f6f9a4d428450cf9d"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rounded-sobel-dense-plan.json",
+      "bytes": 8175,
+      "sha256": "dbd002eb16062de6ae9aaa98d4bf9f9c9811d124624e7703001ea026bcb8581a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\spatialrust.pyi",
+      "bytes": 38858,
+      "sha256": "1dae30edcd12a6b859d79be3dfdd76bc1893dcbdb618b8f149ecfe9dd7a9ffd4"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\src\\lib.rs",
+      "bytes": 204679,
+      "sha256": "5dc1855be8792c01c899acdd317a73fc898efa424c13957bd0c0133f8cfcd555"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_rounded_sobel_dense_rgbd.py",
+      "bytes": 11415,
+      "sha256": "933ca7ca0c106a3336e1680b047fc4d4d7be1440d65a3a59c42bbd685ac08ad5"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-vision\\src\\dense_odometry.rs",
+      "bytes": 59797,
+      "sha256": "dab3fd34853ee32eb3589625c41688b50d633dcc650c18625c98a4901beb676e"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-vision\\src\\dense_odometry\\rounded_sobel.rs",
+      "bytes": 21801,
+      "sha256": "1efe1fb5485f9d52cca00980854efafb9581806b77c9916ed655e85c29707514"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\ROADMAP.md",
+      "bytes": 168339,
+      "sha256": "ec18c79b2c88ccc314541248df4030e0e16e6604d46d2c4e6f8ac1703dfd4cc7"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\ROUNDED_SOBEL_DENSE_RGBD_VALIDATION.md",
+      "bytes": 5521,
+      "sha256": "a2d93ff75eafc21137ada7289f7256127fb9857a17797fce829f8325035dac73"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\audit_tum_dense_rgbd.py",
+      "bytes": 15468,
+      "sha256": "f09342cce0a4a7c76187c6deb9bf9de0cb2a532cfa674716ae38f2f987393543"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\dense_rgbd_protocol.py",
+      "bytes": 4566,
+      "sha256": "c618a6e5183276cb67226ccef7486b2368baaee3d45970d0cea681fd5c51804c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\rounded_sobel_dense_rgbd_protocol.py",
+      "bytes": 4860,
+      "sha256": "735fd249fe5832512073bdab15472dd68a5a6302875ad7c955b28adcff6f7198"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_dense_rgbd.py",
+      "bytes": 5393,
+      "sha256": "f3587fa000fdae20b6a4fb5d36ffce3d64dfc14157b7d91bd46cd124c9ce4135"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_rounded_sobel_dense_rgbd.py",
+      "bytes": 3421,
+      "sha256": "dff8a4aed2162d423e1f44b0b4e6d8dba1aa2b58fcb1cb8d16cba23a9c5a74c9"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_sequence.py",
+      "bytes": 19511,
+      "sha256": "3077f06d000b267c28d511b7e52d1f882fac20bdebcb0e9f7aff4a56a697ecab"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\wide_rgbd_protocol.py",
+      "bytes": 1520,
+      "sha256": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8"
+    }
+  ],
+  "study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\study.json",
+    "bytes": 1227447,
+    "sha256": "c5eb66b69ad8ed1d2cd35af8c7103309cab890f1386f6239cddbfbae787dc1e4"
+  },
+  "preparation": {
+    "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\preparation.json",
+    "bytes": 84017,
+    "sha256": "1b0afdcc426035f6efaaecab272005740dbc10db9b1854f5ca454beb4dc974b1"
+  },
+  "all_estimates_frozen_at_utc": "2026-10-20T01:04:21.526972+00:00",
+  "freeze": {
+    "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\all-estimates-frozen.json",
+    "bytes": 746,
+    "sha256": "4ce396b79328b1e5e81f7d0141afec0fedf350b1c75b72a3fb5f253205411a31"
+  },
+  "native_build": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\frozen-package.json",
+    "bytes": 11066,
+    "sha256": "db9bfd2cc523dee541c043bd0eca7bdb50eda850ff89818a2f915e1ea361ab52"
+  },
+  "native_extension": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+    "bytes": 5490176,
+    "sha256": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69"
+  },
+  "reused_wheel": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl",
+    "bytes": 2296634,
+    "sha256": "1817591beb7eacb443a4eb0632e4be75f21fbd4de9590d6fd74ce71fb6bed465"
+  },
+  "preserved_frozen_native_files": {
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+    "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+    "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+    "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f",
+    "E:/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libdrm.so.2": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libvulkan_dzn.so": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\share\\vulkan\\icd.d\\dzn_icd.x86_64.json": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\bison": "7791b07ce4e24d56c80f3df47c9a193b039392afc1eb02af726ff93591b1c6e7",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\flex": "4cabd101467c6b428e3fd9b5a7dee0785b3108657ae0a5d85947956329d7047b",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0": "ceb1e4eb7eb552e08022d821d632cb400de60e4d3201324ac1b7ec34268ac5f9",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0": "f177704aac79527908633213ba1bb3f298c32aabdc2b3bc231b46983d58587e8",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0": "92a30b5b3a96fb52bbdad4cc46b7796411ccffc22b5eb06f72dd3d2dcb90cd40",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libgallium-26.2.5.so": "e2c423620442bb6bfafd89a4550b39eab11a4245ab88eb85153a9f4750066e03",
+    "C:\\Users\\rsasa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\open3d\\cpu\\pybind.cp312-win_amd64.pyd": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "46f4434b0b6456a3ea564d2a7f1f7c4c942ce4979348d6a06e9eed36ef9611a6",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1baaf7a63e71cf153d5d2736e06e5f8bd87e3813e063a3f43d5bf5a8d930855b",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a58c85172c8596630e18eaa010e7905a49e65ad5e849db0f7a0d63c1467abc",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "026091cde997323078e453fdc4c0f941b623b6a4c6443de4e76e058fd78689c1",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "ee9063970899e05c9b6d8987e2c0d1e19238cf83827356f037b7cf9ad221295c",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "0b8545e0b3737fc08f49a2b9af325a1e09a56693c9e524665f1fd5ab00790589",
+    "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\bin\\dense_sampling_audit.exe": "dc9c08cd9cd6eb7141fab67b28734213947526a35437f27b05da9e52930e22c4",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1817591beb7eacb443a4eb0632e4be75f21fbd4de9590d6fd74ce71fb6bed465",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\bin\\rounded_sobel_vision_tests.exe": "0dac430a412bfba2717c79367ac60f2d4141502f6ca5160800fa929c884002a5"
+  },
+  "preserved_previous_json_count": 339,
+  "preserved_wheel_count": 9,
+  "dataset_downloads": 0,
+  "additional_image_payload_copies": 0,
+  "scope": "Explicit native rounded-pixel/Sobel full fitting model on two observed development scenes; original raw final statistics and every causal/full-cloud/accuracy gate remain fixed",
+  "acceptance": {
+    "required_generation_fraction": 1.0,
+    "minimum_reference_fraction": 0.95,
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_1s_translation_rpe_rmse_m": 0.05,
+    "final_projective_minimum_fraction": 0.5,
+    "full_cloud_minimum_fraction": 0.5,
+    "full_cloud_distance_gate_m": 0.1,
+    "reference_used_for_generation": false
+  },
+  "cases": {
+    "xyz": {
+      "accepted": true,
+      "planned_poses": 798,
+      "generated_poses": 798,
+      "evaluated_poses": 795,
+      "failed_frames": 0,
+      "publisher_reference_gaps": 3,
+      "first_failed_frame_index": null,
+      "first_failure": null,
+      "first_pose_aligned_ate_rmse_m": 0.05025800681626491,
+      "one_second_translation_rpe_rmse_m": 0.023050793987003902,
+      "one_second_pairs": {
+        "evaluated": 762,
+        "planned": 768
+      },
+      "metrics_scope": "full planned trajectory",
+      "source_archive": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\rgbd_dataset_freiburg1_xyz.tgz",
+        "bytes": 448204271,
+        "sha256": "a0236d97b8c30cd93b653656d2b6c293ff7c982a4130ef2a1a8beecdb124ef98"
+      },
+      "plan": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rounded-sobel-dense-plan.json",
+        "bytes": 8175,
+        "sha256": "dbd002eb16062de6ae9aaa98d4bf9f9c9811d124624e7703001ea026bcb8581a"
+      },
+      "manifest": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-rounded-sobel-dense-v1\\manifest.json",
+        "bytes": 739773,
+        "sha256": "e4a5e4a295760c2b60a7f6e5a28003f0e2fb311ba807d92cd2130d7ce9ae9b0b"
+      },
+      "calibration": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-rounded-sobel-dense-v1\\calibration.json",
+        "bytes": 558,
+        "sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94"
+      },
+      "input_reuse": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-xyz\\prepared-causal-dense-v1",
+        "manifest_sha256": "5b90a5ffe8034d270a830bd5fecc1bb352d3a17f313c9c4972dc92930466c5d7",
+        "storage": "hard links; original PNG/index payloads shared, source never edited",
+        "linked_files": 1598,
+        "linked_logical_bytes": 478351206,
+        "new_image_payload_bytes": 0,
+        "free_before_bytes": 676451921920,
+        "free_after_links_bytes": 676450873344
+      },
+      "estimates": {
+        "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\xyz\\run\\estimates.json",
+        "bytes": 5544999,
+        "sha256": "f069c6e01f17c1a4fc6046b00049ff6970fc97cb86e2fe6cee5c797467bbd2d6"
+      },
+      "evaluation": {
+        "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\xyz\\evaluate\\accuracy.json",
+        "bytes": 492397,
+        "sha256": "8bd1ad82e46db3f91ce0f5e0d68d13baa09d1e836f9045e68e67480e76df6d56"
+      },
+      "projective_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\xyz\\audit-projective\\audit.json",
+        "bytes": 424164,
+        "sha256": "e00b2c64e9615a19433ab4ab00974e8811310be3cf7ed4e1f44aef5e42740385"
+      },
+      "score_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\xyz\\audit-score\\audit.json",
+        "bytes": 1304,
+        "sha256": "7c449d6416a0e8ef241811fe6e04c5c6b40ca6533e304f8adb505e5638de228d"
+      },
+      "audited_causal_pairs": 797,
+      "maximum_initial_pose_difference": 0.0,
+      "maximum_world_composition_difference": 2.1094237467877974e-14,
+      "independent_projective_max_differences": {
+        "correspondence_fraction": 0.0,
+        "photometric_rmse": 2.7755575615628914e-16,
+        "depth_rmse_m": 6.938893903907228e-18
+      },
+      "independent_score_max_difference_m": 1.1622647289044608e-15,
+      "independent_score_max_difference_degrees": 2.2737367544323206e-13,
+      "native_receipt_ranges": {
+        "working_bytes": {
+          "minimum": 32574240,
+          "maximum": 32574240
+        },
+        "input_copy_bytes": {
+          "minimum": 3072000,
+          "maximum": 3072000
+        },
+        "workers": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "correspondence_fraction": {
+          "minimum": 0.7840459078113546,
+          "maximum": 0.9744311421467665
+        },
+        "support_fraction": {
+          "minimum": 0.978884953739772,
+          "maximum": 1.0
+        }
+      },
+      "native_causal_control": {
+        "accepted": true,
+        "first_pose_aligned_ate_rmse_m": 0.08999275666147741,
+        "one_second_translation_rpe_rmse_m": 0.02659081522499142
+      },
+      "external_cpu_control": {
+        "accepted": true,
+        "first_pose_aligned_ate_rmse_m": 0.05117393895007759,
+        "one_second_translation_rpe_rmse_m": 0.02311022888937285
+      },
+      "joint_gaussian_control": {
+        "accepted": true,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "first_pose_aligned_ate_rmse_m": 0.08275511584416129,
+        "one_second_translation_rpe_rmse_m": 0.025186216864478278,
+        "metrics_scope": "full planned trajectory",
+        "first_failed_frame_index": null
+      },
+      "gray_only_control": {
+        "accepted": true,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "first_pose_aligned_ate_rmse_m": 0.09175480309597174,
+        "one_second_translation_rpe_rmse_m": 0.027265054543374644
+      },
+      "pair_mean_control": {
+        "accepted": true,
+        "generated_poses": 798,
+        "planned_poses": 798,
+        "first_pose_aligned_ate_rmse_m": 0.08696174074371224,
+        "one_second_translation_rpe_rmse_m": 0.025648834871994142
+      }
+    },
+    "rpy": {
+      "accepted": false,
+      "planned_poses": 722,
+      "generated_poses": 722,
+      "evaluated_poses": 716,
+      "failed_frames": 0,
+      "publisher_reference_gaps": 6,
+      "first_failed_frame_index": null,
+      "first_failure": null,
+      "first_pose_aligned_ate_rmse_m": 0.10032699404221075,
+      "one_second_translation_rpe_rmse_m": 0.048503244138082525,
+      "one_second_pairs": {
+        "evaluated": 680,
+        "planned": 692
+      },
+      "metrics_scope": "full planned trajectory",
+      "source_archive": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\rgbd_dataset_freiburg1_rpy.tgz",
+        "bytes": 410268381,
+        "sha256": "78103722a25873dbbb4de027eaa8c810a6382100691f02b6cf95c3adc91c4ac1"
+      },
+      "plan": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rounded-sobel-dense-plan.json",
+        "bytes": 8175,
+        "sha256": "2c1b8f5a5261fe64e7021101b3a3fbac3bf4fe6c6785cb4eeb16d8917387cfd0"
+      },
+      "manifest": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-rounded-sobel-dense-v1\\manifest.json",
+        "bytes": 670349,
+        "sha256": "5ba579776adda749356d4e8210661571fa82ac85b96691579668b48d400a22b7"
+      },
+      "calibration": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-rounded-sobel-dense-v1\\calibration.json",
+        "bytes": 558,
+        "sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94"
+      },
+      "input_reuse": {
+        "path": "E:\\SpatialRustData\\maturity-80\\tum-fr1-rpy\\prepared-causal-dense-v1",
+        "manifest_sha256": "d57a48595c2ad892e9dc73bc35315ff6c76bb9069213578e1b3c680d36077295",
+        "storage": "hard links; original PNG/index payloads shared, source never edited",
+        "linked_files": 1447,
+        "linked_logical_bytes": 439798474,
+        "new_image_payload_bytes": 0,
+        "free_before_bytes": 676450115584,
+        "free_after_links_bytes": 676449722368
+      },
+      "estimates": {
+        "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\rpy\\run\\estimates.json",
+        "bytes": 5011756,
+        "sha256": "e52c55692990a0b5111472d476b996467da161913ee48c805b540730b3b51158"
+      },
+      "evaluation": {
+        "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\rpy\\evaluate\\accuracy.json",
+        "bytes": 442411,
+        "sha256": "5d37599ffa241865b8007899d0539a5e18f092b0a50578555476ec809f005d67"
+      },
+      "projective_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\rpy\\audit-projective\\audit.json",
+        "bytes": 382546,
+        "sha256": "54738f57d6f360925b45bf253d1e8818c45cb5443afae1e6c37e61ad61246127"
+      },
+      "score_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\rounded-sobel-dense-study-v1\\rpy\\audit-score\\audit.json",
+        "bytes": 1299,
+        "sha256": "51850cfcb9ac300fd373d89ca645782e268b411a1b7efd8f28eb8b8ff1d8c48c"
+      },
+      "audited_causal_pairs": 721,
+      "maximum_initial_pose_difference": 0.0,
+      "maximum_world_composition_difference": 1.887379141862766e-14,
+      "independent_projective_max_differences": {
+        "correspondence_fraction": 0.0,
+        "photometric_rmse": 2.1510571102112408e-16,
+        "depth_rmse_m": 8.673617379884035e-18
+      },
+      "independent_score_max_difference_m": 9.020562075079397e-16,
+      "independent_score_max_difference_degrees": 3.836930773104541e-13,
+      "native_receipt_ranges": {
+        "working_bytes": {
+          "minimum": 32574240,
+          "maximum": 32574240
+        },
+        "input_copy_bytes": {
+          "minimum": 3072000,
+          "maximum": 3072000
+        },
+        "workers": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "correspondence_fraction": {
+          "minimum": 0.6373768529803889,
+          "maximum": 0.9805872450313807
+        },
+        "support_fraction": {
+          "minimum": 0.960685234305924,
+          "maximum": 1.0
+        }
+      },
+      "native_causal_control": {
+        "accepted": false,
+        "first_pose_aligned_ate_rmse_m": 0.11479303058830677,
+        "one_second_translation_rpe_rmse_m": 0.048144966825295156
+      },
+      "external_cpu_control": {
+        "accepted": true,
+        "first_pose_aligned_ate_rmse_m": 0.09968393517102346,
+        "one_second_translation_rpe_rmse_m": 0.04849437945595787
+      },
+      "joint_gaussian_control": {
+        "accepted": false,
+        "generated_poses": 349,
+        "planned_poses": 722,
+        "first_pose_aligned_ate_rmse_m": 0.11937353133338134,
+        "one_second_translation_rpe_rmse_m": 0.049937423030647125,
+        "metrics_scope": "surviving prefix only; not full-sequence accuracy",
+        "first_failed_frame_index": 349
+      },
+      "gray_only_control": {
+        "accepted": false,
+        "generated_poses": 722,
+        "planned_poses": 722,
+        "first_pose_aligned_ate_rmse_m": 0.12021550302789179,
+        "one_second_translation_rpe_rmse_m": 0.048802837801846743
+      },
+      "pair_mean_control": {
+        "accepted": false,
+        "generated_poses": 722,
+        "planned_poses": 722,
+        "first_pose_aligned_ate_rmse_m": 0.13059510840454566,
+        "one_second_translation_rpe_rmse_m": 0.0487216505597977
+      }
+    }
+  },
+  "tests": {
+    "rounded-sobel-focused-tests": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\rounded-sobel-focused-tests.xml",
+        "bytes": 21275,
+        "sha256": "17924abc8e7f47b589ac1e86cfb1404c793444a7538c1ff629d18508ac0083ff"
+      },
+      "tests": 143,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0
+    },
+    "rounded-sobel-full-tests": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\rounded-sobel-full-tests.xml",
+        "bytes": 159320,
+        "sha256": "ee60b9437621a323d2863617e4fe625628227a0b611a6d099c15be3335da46d1"
+      },
+      "tests": 1174,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    "native_rebuild_required": true,
+    "new_numerical_binary_frozen": true,
+    "new_rounded_sobel_cases": 37,
+    "python_passed": 1171,
+    "python38_syntax_checked": true,
+    "native_passed": 28
+  },
+  "unchanged_native_trees": {
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96"
+  },
+  "test_scratch_cleanup": {
+    "Schema": "spatialrust.rounded-sobel-dense-pytest-scratch-cleanup.v1",
+    "VerifiedAtUtc": "2026-10-20T00:54:18.4013209Z",
+    "Paths": [
+      {
+        "Path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\pytest-focused-tests-v1",
+        "Files": 150,
+        "LogicalBytes": 162517254,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\rounded-sobel-focused-tests.xml",
+        "XmlSha256": "17924abc8e7f47b589ac1e86cfb1404c793444a7538c1ff629d18508ac0083ff",
+        "Tests": 143,
+        "Skipped": 0
+      },
+      {
+        "Path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\pytest-full-tests-v1",
+        "Files": 1263,
+        "LogicalBytes": 478902046,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\rounded-sobel-full-tests.xml",
+        "XmlSha256": "ee60b9437621a323d2863617e4fe625628227a0b611a6d099c15be3335da46d1",
+        "Tests": 1174,
+        "Skipped": 3
+      }
+    ],
+    "AlreadyAbsent": [],
+    "LogicalBytesRemoved": 641419300,
+    "FreeBeforeBytes": 675810439168,
+    "FreeAfterBytes": 676454264832,
+    "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+  },
+  "storage": {
+    "result_logical_bytes": 322171414,
+    "recorded_result_logical_bytes": 322171414,
+    "maximum_result_bytes": 1073741824,
+    "minimum_free_bytes": 21474836480,
+    "maximum_command_seconds": 7200,
+    "minimum_sampled_free_bytes": 676130623488,
+    "free_after_bytes": {
+      "C": 77579935744,
+      "E": 676128202752
+    },
+    "retained_seed_payload_bytes": 128,
+    "memory_scope": "One retained float64 4x4 seed; excludes temporary copies, Python object overhead and process/thread memory",
+    "final_new_build_bytes": 22610499,
+    "incremental_cache_growth_bytes": 23781919,
+    "final_combined_build_and_cache_growth_bytes": 46392418,
+    "maximum_new_build_and_cache_growth_bytes": 2147483648,
+    "maximum_successful_command_sampled_build_and_cache_growth_bytes": 685537082,
+    "new_sensor_payload_bytes": 0
+  },
+  "commands": [
+    {
+      "label": "generate-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T00:55:56.205066+00:00",
+      "finished_at_utc": "2026-10-20T01:00:11.020830+00:00"
+    },
+    {
+      "label": "generate-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T01:00:11.101583+00:00",
+      "finished_at_utc": "2026-10-20T01:04:21.498249+00:00"
+    },
+    {
+      "label": "projective-audit-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T01:04:21.569739+00:00",
+      "finished_at_utc": "2026-10-20T01:05:52.701180+00:00"
+    },
+    {
+      "label": "score-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T01:05:52.727782+00:00",
+      "finished_at_utc": "2026-10-20T01:06:00.075026+00:00"
+    },
+    {
+      "label": "score-audit-xyz",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T01:06:00.160069+00:00",
+      "finished_at_utc": "2026-10-20T01:06:02.416942+00:00"
+    },
+    {
+      "label": "projective-audit-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T01:06:02.541801+00:00",
+      "finished_at_utc": "2026-10-20T01:07:26.143203+00:00"
+    },
+    {
+      "label": "score-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T01:07:26.255260+00:00",
+      "finished_at_utc": "2026-10-20T01:07:32.784355+00:00"
+    },
+    {
+      "label": "score-audit-rpy",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T01:07:32.931880+00:00",
+      "finished_at_utc": "2026-10-20T01:07:35.205116+00:00"
+    }
+  ],
+  "remaining": [
+    "Both raw Linux hardware classes",
+    "canonical measured clock uncertainty and physical frame accuracy",
+    "canonical full mapping and semantic/release acceptance",
+    "held-out motion robustness",
+    "rpy full motion acceptance"
+  ],
+  "operational_80_percent_proven": false,
+  "frozen_test_executable": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\frozen-test-executable.json",
+    "bytes": 829,
+    "sha256": "de3c9b4d7be81adcb103cfc6cff5ef7bd7ee47424a2dd602e2c7e7aa62e67d66"
+  },
+  "fitting_policy": {
+    "model": "rounded-sobel",
+    "initial_filter": {
+      "gray": "Gaussian3",
+      "depth": "Gaussian3; any nonfinite tap propagates",
+      "kernel": [
+        1,
+        2,
+        1
+      ],
+      "divisor": 16,
+      "border": "replicate"
+    },
+    "intensity_normalization": {
+      "method": "initial-rounded-correspondence-pair-mean",
+      "target_mean": 0.5,
+      "ordering": "once; full-resolution row-major",
+      "admission": "minimum count and finite positive means/gains before mutation",
+      "clipping": false
+    },
+    "pyramid": {
+      "gray": "Gaussian3 then 2x2 arithmetic mean",
+      "depth": "2x2 arithmetic mean; nonfinite propagates",
+      "dimensions": "floor(width/2), floor(height/2); all scheduled levels at least 3x3",
+      "intrinsics": "halve fx, fy, cx, cy per level"
+    },
+    "lookup": {
+      "coordinate": "trunc(projected_coordinate + 0.5); test finite and signed bounds before usize cast",
+      "point": "finite transformed point with positive z",
+      "depth": "selected target depth finite and original metric difference gate",
+      "uniqueness": "one row per valid source pixel; no target uniqueness claim"
+    },
+    "gradient": {
+      "method": "replicated-edge Sobel3, multiplied by 1/8",
+      "depth_nonfinite": "replace each nonfinite derivative with zero",
+      "jacobian": "local Sobel surrogate; not an exact derivative of the discontinuous rounded-pixel objective"
+    },
+    "iterations": "all scheduled updates; no epsilon early exit",
+    "pose_update": "existing native f64 proper left Rodrigues update and solver",
+    "arithmetic": "native f64; no external binary or bitwise-equivalence claim",
+    "final_statistics": "original raw full-resolution images; original bilinear final admission, count/fraction/error gates",
+    "ownership": "borrowed native input; owned Python input copies before GIL release; explicit CPU/device transfers",
+    "working_bytes": {
+      "formula": "32*sum(floor-pyramid pixel counts) + 64*base_pixels + max(ceil(height/16)*sizeof(Normal), 48*sizeof(f64))",
+      "meaning": "both fitting pyramids; both raw levels; max of four current-level target gradient planes and two temporary smoothing planes; ordered reductions or nonconcurrent 6x6 matrix, RHS and solution scratch",
+      "excludes": "caller inputs/Python input copies, allocator metadata, stacks",
+      "checked_before_allocation": true
+    },
+    "workers": 4,
+    "wasm": "serial"
+  },
+  "validation": {
+    "native-tests-v3": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\native-tests-v3.json",
+      "bytes": 2667,
+      "sha256": "9e6f945a7279a378255e805a4b0bb2e1adf059c760c2cbaeada7428786a247b7"
+    },
+    "native-clippy-v2": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\native-clippy-v2.json",
+      "bytes": 2657,
+      "sha256": "cc2b0f8ddd2d4e068fe1be63a7546d6f84e4adcad99080f5c3dfb7b1f8b7684c"
+    },
+    "python-clippy-v2": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\python-clippy-v2.json",
+      "bytes": 2687,
+      "sha256": "6679529d368a8b3418214ce33fa9cfc787f42ab78c07e174518b2798cda3945d"
+    },
+    "wasm-check-v2": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\wasm-check-v2.json",
+      "bytes": 2641,
+      "sha256": "dd79bd352bab22edaf2cf8fb10905e0a6c938ad4a4f6293d72f821410ac1cadd"
+    },
+    "focused-tests": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\focused-tests.json",
+      "bytes": 3302,
+      "sha256": "5faf78578382cdbd097ece83c077f6ea6254deb894522b3ccf1553bfb615017c"
+    },
+    "full-tests": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\full-tests.json",
+      "bytes": 4250,
+      "sha256": "4af4bf1a66bc3507df2cd3e2414c951f91abb4d0bee4ce296998ecf661233182"
+    },
+    "verify-wheel": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\verify-wheel.json",
+      "bytes": 3013,
+      "sha256": "220e4e8080295a4d9360bbd339b467d974fa9be5739846eba45c80955090b59a"
+    },
+    "compat-old": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\compat-old.json",
+      "bytes": 2703,
+      "sha256": "710f38c2983255ab9e4e765674a79c9c1492c629b6b38ff9ec04f53b1020f25e"
+    },
+    "compat-new": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\compat-new.json",
+      "bytes": 2775,
+      "sha256": "eb0d9973513abac7e4219d3bcd34867996b4a5243042a355bf248120f1316813"
+    },
+    "frozen-native-tests": {
+      "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\frozen-native-tests.json",
+      "bytes": 2633,
+      "sha256": "76627722101db46d4d974238674cf8419d7d3c1f98fbafc034d06351d50e2884"
+    }
+  },
+  "selector_regression": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\rounded-sobel-compatibility-audit.json",
+    "bytes": 807,
+    "sha256": "74e1714bd529d8208959b630249cab418e16f33559eac4a2d2d28faa52aa618d"
+  },
+  "legacy_native_source_equivalence": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\rounded-sobel-legacy-source-proof.json",
+    "bytes": 378,
+    "sha256": "fea2f2214991bc52b8dee5faa9f691746cbdfee3ede06b97746596d3b33fc12c"
+  },
+  "raw_default_scope": "Twenty synthetic cases across all four preserved policies; exact serialized numerical poses and original diagnostics; policy tags separately checked",
+  "thread_environment": {
+    "OMP_NUM_THREADS": "4",
+    "OPENBLAS_NUM_THREADS": "4",
+    "MKL_NUM_THREADS": "4",
+    "NUMEXPR_NUM_THREADS": "4",
+    "RAYON_NUM_THREADS": "4"
+  },
+  "cpu_worker_limit": 4,
+  "initial_native_test_compile_failure": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\native-tests.json",
+    "bytes": 2666,
+    "sha256": "7acafd64b438a423c18a6e038d78367b6a917fc5fd88ce07dbf77dec38747202"
+  },
+  "initial_native_test_compile_log": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\native-tests.log",
+    "bytes": 586,
+    "sha256": "1fd20e38c68698697c78c1a00ec36581c05d61623e26a739a5b0a06c957a4de9"
+  },
+  "initial_failure_scope": "Initial new-test camera type reference failed compilation; corrected test-only constructor. Initial WASM compile found a native-parallel-only tile variable; moved its declaration inside that branch, without warning suppression. Both original logs and metadata remain preserved.",
+  "initial_wasm_compile_failure": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\wasm-check.json",
+    "bytes": 2640,
+    "sha256": "f1aaa40f40297d7d671145932891d4f68ad0d2ca83b8ffbac70fb153a5d762e6"
+  },
+  "initial_wasm_compile_log": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\wasm-check.log",
+    "bytes": 584,
+    "sha256": "ab00c6c62e327f82269bfb6d911fd6ab2fa722b4d50139a055b6d20c157eba9f"
+  },
+  "initial_prospective_protocol_commit": "381b89ae2370b4737bfffaa4090d07dad817db8d",
+  "pre_execution_resource_review": "Before any numerical execution, commit 607415e charges the nonconcurrent 48-f64 solver scratch minimum for tiny images. Model arithmetic and accuracy gates unchanged.",
+  "native_test_log": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\native-tests-v3.log",
+    "bytes": 3195,
+    "sha256": "56a45da00e5ade61dff610b4e3f962596b83a3ea5c367dc18b83e6e93a04041f"
+  }
+}
