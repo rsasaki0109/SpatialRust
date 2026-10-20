@@ -33,6 +33,10 @@ mod scan_identity;
 #[path = "support/identity_tests.rs"]
 mod identity_tests;
 
+#[cfg(test)]
+#[path = "support/coverage_characterization.rs"]
+mod coverage_characterization;
+
 use serde::{de::DeserializeOwned, Serialize};
 use spatialrust_interchange::export_triangle_mesh_gltf_json;
 use spatialrust_io::{
