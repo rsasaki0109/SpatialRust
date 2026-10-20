@@ -19,6 +19,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Bind portable full-bag source and odometry counts, selected topic, registered
+  frames/corrected clock and TSDF root before receipt admission. Preserve schema
+  1, public signatures and consistent partial diagnostics; integration visits
+  remain separate from unique source coverage. Twenty-six synthetic cases
+  reproduce 15 original failures; viewer default/serde/all-feature checks pass
+  68/73/81 cases alongside 54 full-bag/17 E2E, related controls and Clippy.
+  Add default/serde checks to existing three OS jobs; preserve prior evidence
+  and physical acceptance requirements. See
+  [the contract and evidence](docs/MAPPING_RECEIPT_CONSISTENCY.md).
+
 - Reject ambiguous full-bag scan grouping and pose association: require selected
   message/group counts, unique corrected times per topic and exact trajectory
   cardinality/clock/time/quality before TSDF. Seventeen synthetic cases reproduce
