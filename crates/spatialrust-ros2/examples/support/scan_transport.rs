@@ -32,7 +32,7 @@ mod tests {
     }
 
     fn close(actual: Vec3<f32>, expected: [f32; 3]) {
-        assert!((actual - point(expected)).norm() < 2e-5, "{actual:?} != {expected:?}");
+        assert!((actual - point(expected)).length() < 2e-5, "{actual:?} != {expected:?}");
     }
 
     #[test]
@@ -101,7 +101,7 @@ mod tests {
         let (front, rear, odometry) = fixture();
         let observed = observe_rear(WORLD[0]);
         let wrong = rear.compose(odometry.inverse()).transform_point(observed);
-        assert!((wrong - point(WORLD[0])).norm() > 1.0);
+        assert!((wrong - point(WORLD[0])).length() > 1.0);
         close(sensor_to_volume(front, rear, odometry).unwrap().transform_point(observed), WORLD[0]);
     }
 
