@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A [complete frozen room audit](ROOM_DRIFT_AUDIT.md) consumes existing trajectories,
+reference and independent raw/score evidence with explicit full-timeline
+coverage. Independent post-fit SE3/SLERP checks, fixed chronological bins and
+bounded optional scientific tooling separate observations from causal claims.
+No estimator, image/archive access, default, Rust/core/GPU/native bridge or
+production dependency change occurs; missing data and original acceptance stay.
+
 An additive [reference-precision dense model](REFERENCE_PRECISION_DENSE_RGBD_VALIDATION.md)
 quantizes fitting image/XYZ intermediates while retaining owned f64 buffers,
 checked f64 normal systems and proper left Euler increments. Original models,

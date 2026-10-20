@@ -1,0 +1,129 @@
+{
+  "schema": "spatialrust.room-drift-audit-plan.v1",
+  "slice": "146U",
+  "parent_merge": "70dae2d6865162d0f80397fb889a02078d094bd9",
+  "scope": "Prospective complete metadata-only observed room audit. No estimation, payload access, model change or alternative acceptance.",
+  "cases": [
+    {
+      "label": "rounded-sobel",
+      "estimator": "spatialrust_heldout_rounded_sobel_dense_rgbd_cpu",
+      "files": {
+        "estimates": {
+          "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\run\\estimates.json",
+          "bytes": 9435730,
+          "sha256": "5deb5609fe8dd7818e3cc7677b63decc8de8161b515da811adaaed9a60d1f898"
+        },
+        "evaluation_file": {
+          "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\evaluate\\accuracy.json",
+          "bytes": 843386,
+          "sha256": "eda63a6d7a732c573525740646554c98155345ced609468f77fde31e2a774b68"
+        },
+        "reference_file": {
+          "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\evaluate\\groundtruth.txt",
+          "bytes": 332920,
+          "sha256": "66b6770d887a5a3b69c94c3b186c3f76fe092ca25399772177f41aed984bd1b0"
+        },
+        "projective_audit_file": {
+          "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\audit-projective\\audit.json",
+          "bytes": 720349,
+          "sha256": "d2f2bbea3ff37bdc7d6e78e0a0d2a74f2fb7f9635ddc1c39b9dc751f4b636ecb"
+        },
+        "score_audit_file": {
+          "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\audit-score\\audit.json",
+          "bytes": 1304,
+          "sha256": "792045d354554d11974a37fa039eeb8a8f4db88357be4349f3c583a30cf7e70a"
+        }
+      },
+      "native_extension": {
+        "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+        "bytes": 5490176,
+        "sha256": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69"
+      }
+    },
+    {
+      "label": "reference-precision",
+      "estimator": "spatialrust_reference_precision_dense_rgbd_cpu",
+      "files": {
+        "estimates": {
+          "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\run\\estimates.json",
+          "bytes": 10599039,
+          "sha256": "e5cbfa425097cc2fe2a41ba9cf9b564f27337248c2b8755e0e4cb7b83f80627f"
+        },
+        "evaluation_file": {
+          "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\evaluate\\accuracy.json",
+          "bytes": 843373,
+          "sha256": "b5718860e27c2cf353d2cac6f0c902dd460ee318bfab57fa0a045615f73329db"
+        },
+        "reference_file": {
+          "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\evaluate\\groundtruth.txt",
+          "bytes": 332920,
+          "sha256": "66b6770d887a5a3b69c94c3b186c3f76fe092ca25399772177f41aed984bd1b0"
+        },
+        "projective_audit_file": {
+          "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\audit-projective\\audit.json",
+          "bytes": 720747,
+          "sha256": "e3c8039fb8ccd0ff16654880891ff774cc1f0f43d1ad06a476d8538b46aaa029"
+        },
+        "score_audit_file": {
+          "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\audit-score\\audit.json",
+          "bytes": 1304,
+          "sha256": "01dc4bb9888bb53add24121084f77492b8b3da544cd4f0e2eabda3e84646c4ad"
+        }
+      },
+      "native_extension": {
+        "path": "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+        "bytes": 5577728,
+        "sha256": "e0c5de6027dba4005c5e6666e491de2e737e4b925d2c584803f32beace4b9625"
+      }
+    }
+  ],
+  "controls": {
+    "planned_frames": 1360,
+    "chronological_bins": 8,
+    "max_reference_gap_ns": 20000000,
+    "rpe_delta_ns": 1000000000,
+    "min_correspondences": 30,
+    "min_correspondence_fraction": 0.5,
+    "min_support_fraction": 0.5,
+    "iterations": 35,
+    "image_pixels": 307200,
+    "translation_comparison_tolerance_m": 1e-08,
+    "rotation_comparison_tolerance_degrees": 1e-06,
+    "pose_composition_tolerance": 1e-09,
+    "seed_tolerance": 1e-12
+  },
+  "coverage": "Require the exact complete 1360 timestamps/statuses in both candidates and original score rows. Preserve all failures and unmatched references. Independently reconstruct Decimal timestamps, bounded SciPy SLERP, original first-jointly-valid SE3 gauge and nearest fixed 1s pair denominator/ties. Verify original full translation/rotation rows, RMSEs and frozen raw/causal audit bindings before descriptive output.",
+  "adjacent": "For every consecutive planned pair (i-1,i), compute inv(actual[i-1])*actual[i] and inv(truth[i-1])*truth[i]; compare proper rigid translation and principal SO3 angle. Missing truth/status stays explicit. Causal seeds, inverse direction and world composition must match original receipts. No new alignment or interpolation across missing samples.",
+  "per_frame": "Keep every planned index/time/status/reference mask. Output original first-gauge translation and principal rotation errors and vectors, adjacent actual/reference motion and error, original registration raw count/fraction/photo/depth/support statistics with exact source audit comparison.",
+  "one_second": "Keep every original planned source/target pair, including unevaluated gaps; independently rederive translation/rotation errors. Window covariates are arithmetic means of all constituent adjacent reports (i+1..j), never a selected subset.",
+  "bins": "Eight chronological bins assigned by floor(8*index/N); adjacent pairs by target row and 1s pairs by source row. Count every planned/matched/missing/error observation. Full unweighted SSE contributions sum back to original denominators and RMSEs; report rotation errors separately without inventing rotation acceptance.",
+  "associations": "Descriptive Pearson correlations only: adjacent translation/rotation errors vs five raw scalar covariates and 1s translation/rotation errors vs complete-window mean covariates. Constant or fewer-than-two observations produce explicit undefined reasons. Scaled centered fsum arithmetic; no causal or inferential claim, selection, p-values or acceptance change.",
+  "comparison": "Compare both original first-gauge trajectories on exactly their common original reference mask; report all per-row pose differences and whole-timeline distributions, never fit a new gauge or choose intervals from the result.",
+  "original_acceptance": {
+    "generated_fraction": 1.0,
+    "reference_match_fraction": 0.95,
+    "ate_rmse_m": 0.1,
+    "rpe_rmse_m": 0.05
+  },
+  "plot": "Four fixed full-timeline panels: original per-row aligned translation/rotation error, adjacent translation error and original 1s translation RPE. Retain NaN gaps, disable path simplification; original global acceptance remains separate from pointwise curves. Fixed labels, no hidden filtering. Static SVG and PNG preview with standard Matplotlib Agg; all observations remain in JSON.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/room-drift-audit-v1",
+    "result_root": "E:/SpatialRustData/maturity-80/room-drift-audit-v1",
+    "maximum_build_and_test_scratch_bytes": 1073741824,
+    "maximum_result_bytes": 16777216,
+    "combined_new_owned_max_bytes": 2147483648,
+    "minimum_free_bytes": 21474836480,
+    "input_file_max_bytes": 16777216,
+    "workers": 4,
+    "command_timeout_seconds": 900,
+    "sampling_seconds": 5
+  },
+  "preservation": {
+    "scientific_json_count": 437,
+    "native_file_count": 39,
+    "policy": "Protect every preflight scientific JSON/native hash and both complete source studies; fail closed on complete inventories. No payload copy/download, native build/install, image/archive read, new fit or altered score. Delete only exact passing owned pytest basetemps after XML/terminal/absolute/no-reparse checks."
+  },
+  "verification": "Independent closed-form/synthetic rigid drift, rotation near zero/180 degrees, epochs/SLERP/gaps/RPE ties, scalar/causal/coverage/schema/IO mutation tests; focused and complete Python tests with original three skips; freeze source before audit and independent post-audit recomputation/record checks.",
+  "unchanged": "Rust vision/core/math/GPU, native Python bridge/stub and runtime dependencies/defaults remain byte-identical to parent. Runtime hidden H/J unobserved; association is descriptive and all recordings already observed development.",
+  "remaining": "Room robustness, genuinely unobserved motion qualification, both raw Linux hardware classes, canonical matching measured clock uncertainty/physical frame accuracy and complete canonical mapping/semantic/Viewer/interchange/release acceptance remain required for operational 80%."
+}
