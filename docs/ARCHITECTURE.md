@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Portable mapping receipt consistency](MAPPING_RECEIPT_CONSISTENCY.md) binds
+completed source counts/time bounds and front trajectory totals, topic, frames
+and corrected clock to existing source/calibration state. TSDF roots agree with
+available trajectory/calibration roots; consistent partial diagnostics remain
+blocked. Immutable validation retains schema 1, fields and signatures. Fusion
+totals count visits and cannot prove unique coverage; source/matching/transport,
+core/GPU/Python, dependencies and explicit device ownership remain unchanged.
+
 [Full-bag scan identity admission](SCAN_IDENTITY_ADMISSION.md) requires selected
 SQLite message/group cardinality, strictly increasing corrected times per topic
 before odometry and exact trajectory count/stamp bindings before TSDF. Ambiguity

@@ -40,6 +40,11 @@ chunk assembly, nearest-neighbor tie/reuse policy and source clock correction
 remain unchanged. Deterministic matching is separate from calibrated timing
 accuracy. Public physical-message identity remains an open contract.
 
+The subsequent [146AB portable receipt checks](MAPPING_RECEIPT_CONSISTENCY.md)
+also bind source and stage summaries when saved state is explicitly validated.
+They preserve schema 1 and distinguish integration visits from unique coverage;
+the source-bound 146AA results below retain their original scope.
+
 ## Reproduction and verification
 
 The baseline extracts the existing topic filter and timestamp-to-pose zip into
