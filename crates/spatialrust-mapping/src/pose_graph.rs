@@ -1,6 +1,6 @@
 //! Pose graph nodes, relative edges, and loop-closure candidates.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use spatialrust_math::Isometry3;
 
@@ -77,42 +77,66 @@ impl PoseGraph {
         &self.edges
     }
 
-    /// Propagates absolute poses along non-loop edges from a fixed root using composition.
+    /// Propagates complete poses through the directed non-loop tree rooted at `root`.
+    ///
+    /// Stored isometries use `node_T_anchor`, with
+    /// `to_T_anchor = to_T_from * from_T_anchor`. The original root and all stamps
+    /// remain fixed; disconnected components and loop-closure edges are untouched.
+    /// Callers needing `anchor_T_node` explicitly invert the resulting isometry.
+    ///
+    /// The reachable non-loop component must be a tree: cycles, duplicate edges
+    /// and multiple incoming paths return [`MappingError::Graph`]. Non-finite
+    /// reachable transforms or composed results also fail. Every failure leaves
+    /// the graph unchanged. Work and temporary storage are O(nodes + edges).
     pub fn localize_from_root(&mut self, root: &PoseNodeId) -> MappingResult<()> {
         let root_pose = self
             .nodes
             .get(&root.0)
             .cloned()
             .ok_or_else(|| MappingError::Missing(format!("root node `{}`", root.0)))?;
-        let mut changed = true;
-        let mut guard = 0;
-        while changed && guard < self.edges.len().saturating_mul(2).saturating_add(1) {
-            changed = false;
-            guard += 1;
-            for edge in &self.edges {
-                if edge.loop_closure {
-                    continue;
+        if !finite_isometry(root_pose.pose.isometry) {
+            return Err(MappingError::Graph("non-finite root pose".into()));
+        }
+
+        let mut outgoing: HashMap<&str, Vec<&PoseGraphEdge>> = HashMap::new();
+        for edge in self.edges.iter().filter(|edge| !edge.loop_closure) {
+            outgoing.entry(edge.from.0.as_str()).or_default().push(edge);
+        }
+        let mut localized = HashMap::new();
+        localized.insert(root.0.as_str(), root_pose.pose.isometry);
+        let mut pending = VecDeque::from([root.0.as_str()]);
+        while let Some(from) = pending.pop_front() {
+            let Some(edges) = outgoing.get(from) else {
+                continue;
+            };
+            let from_pose = localized[from];
+            for edge in edges {
+                let to = edge.to.0.as_str();
+                if localized.contains_key(to) {
+                    return Err(MappingError::Graph(format!(
+                        "reachable non-loop constraints must form a tree; repeated node `{to}`"
+                    )));
                 }
-                let Some(from_pose) = self.nodes.get(&edge.from.0).cloned() else {
-                    continue;
-                };
-                let predicted =
-                    spatialrust_math::Pose3::new(edge.to_t_from.compose(from_pose.pose.isometry));
-                let Some(existing) = self.nodes.get_mut(&edge.to.0) else {
-                    continue;
-                };
-                let delta = (existing.pose.isometry.translation()
-                    - predicted.isometry.translation())
-                .length();
-                if delta > 1e-4 {
-                    existing.pose = predicted;
-                    // Keep target stamp; overwrite pose only.
-                    changed = true;
+                if !finite_isometry(edge.to_t_from) {
+                    return Err(MappingError::Graph(format!("non-finite constraint to `{to}`")));
                 }
+                let predicted = edge.to_t_from.compose(from_pose);
+                if !finite_isometry(predicted) {
+                    return Err(MappingError::Graph(format!("non-finite localized pose `{to}`")));
+                }
+                localized.insert(to, predicted);
+                pending.push_back(to);
             }
         }
-        // Ensure root remains fixed.
-        self.nodes.insert(root.0.clone(), root_pose);
+
+        // Validation completes before the first mutation. add_edge guarantees
+        // every endpoint exists, and this traversal never removes a node.
+        for (id, isometry) in localized {
+            if id != root.0 {
+                let target = self.nodes.get_mut(id).expect("validated pose graph endpoint");
+                target.pose = spatialrust_math::Pose3::new(isometry);
+            }
+        }
         Ok(())
     }
 
@@ -134,6 +158,14 @@ impl PoseGraph {
         }
         out
     }
+}
+
+fn finite_isometry(pose: Isometry3<f32>) -> bool {
+    let rotation = pose.rotation();
+    let translation = pose.translation();
+    [rotation.x, rotation.y, rotation.z, rotation.w, translation.x, translation.y, translation.z]
+        .iter()
+        .all(|value| value.is_finite())
 }
 
 #[cfg(test)]

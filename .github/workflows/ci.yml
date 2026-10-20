@@ -14,6 +14,27 @@ env:
   RUSTFLAGS: "-D warnings"
 
 jobs:
+  rooted-mapping-conformance:
+    name: Rooted mapping (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo generate-lockfile
+      - name: Check rooted graph math, atomicity and mapping bridges
+        run: |
+          cargo test -p spatialrust-mapping --locked
+          cargo test -p spatialrust-mapping --all-features --locked
+          cargo clippy -p spatialrust-mapping --all-features --all-targets --locked -- -D warnings
+
   room-drift-audit:
     name: Frozen room drift audit
     runs-on: ubuntu-latest
@@ -514,6 +535,7 @@ jobs:
           cargo check -p spatialrust-web --target wasm32-unknown-unknown --features wasm,webgpu
           cargo check -p spatialrust-gpu --target wasm32-unknown-unknown --features gpu-image,gpu-aoso-staging
           cargo check -p spatialrust-vision --target wasm32-unknown-unknown --features imgproc-analysis
+          cargo check -p spatialrust-mapping --target wasm32-unknown-unknown --all-features
           cargo build -p spatialrust-web --target wasm32-unknown-unknown --features wasm
           python -m unittest discover -s scripts/tests -p 'test_*.py'
           wasm_bindgen_version=$(python scripts/wasm_bindgen_version.py Cargo.lock)
