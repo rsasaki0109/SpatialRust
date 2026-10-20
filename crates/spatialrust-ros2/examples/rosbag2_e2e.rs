@@ -809,8 +809,14 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
     if front_topic == rear_topic {
         return Err("front and rear topics must differ".into());
     }
-    if output_dir.is_absolute() {
-        return Err("--output-dir must be relative to --output-root".into());
+    if output_dir.as_os_str().is_empty()
+        || output_dir.components().any(|component| {
+            !matches!(component, std::path::Component::Normal(_) | std::path::Component::CurDir)
+        })
+    {
+        return Err(
+            "--output-dir must be relative to --output-root without parent traversal".into()
+        );
     }
     if max_records_per_topic < 2 {
         return Err("--max-records must be at least 2 for odometry".into());
