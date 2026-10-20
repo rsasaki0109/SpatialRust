@@ -1081,5 +1081,14 @@
     },
     "combined_bytes": 15310658
   },
-  "conclusion": "Both float/Euler variants remain close (2.008mm position / 0.0602 degree orientation RMS between original gauges) while room has 0.379m position / 12.8 degree orientation error against the supplied reference. Fixed bin 1 (frames 170..339) contributes 37.18% of original 1s translation SSE. Descriptive local/window associations motivate a separately prospective robust-fitting investigation; they neither prove a cause nor justify changing acceptance or selecting frames."
+  "conclusion": "Both float/Euler variants remain close (2.008mm position / 0.0602 degree orientation RMS between original gauges) while room has 0.379m position / 12.8 degree orientation error against the supplied reference. Fixed bin 1 (frames 170..339) contributes 37.18% of original 1s translation SSE. Descriptive local/window associations motivate a separately prospective robust-fitting investigation; they neither prove a cause nor justify changing acceptance or selecting frames.",
+  "workflow_repair": {
+    "proof": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-workflow-repair.json",
+      "bytes": 1411,
+      "sha256": "5a76cd1c1107f5d69eca2436ba6c46dfff83bfe29a7a722cd561da6b4f0bcfe3"
+    },
+    "repair_commit": "b9616e654c7d6d72919f9eb517264c09b6aa39c7",
+    "scope": "Only move runner.temp plotting cache from job env to step env. All numerical sources, inputs, results and test outputs are preserved; initial rejected workflow and original public receipt retained."
+  }
 }
