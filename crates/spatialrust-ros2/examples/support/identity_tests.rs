@@ -9,7 +9,9 @@ use spatialrust_mapping::{StampedPose, Trajectory};
 use spatialrust_math::Pose3;
 use spatialrust_records::{SchemaVersion, SpatialRecord};
 use spatialrust_runtime::{encode_point_cloud2_xyz, PointCloud2Xyz};
-use spatialrust_sync::{ClockDomain, MemoryEpisode, StampedRecord, StampedTime};
+use spatialrust_sync::{
+    ClockDomain, DeterministicReplayer, MemoryEpisode, StampedRecord, StampedTime, SyncWindow,
+};
 use std::collections::BTreeMap;
 
 fn sample(topic: &str, frame: &str, raw: u64, corrected: u64) -> StampedRecord {
