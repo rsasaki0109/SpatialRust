@@ -7,7 +7,7 @@
 //! JSON/HTML/manifest receipt and exits with status 2.
 
 use std::{
-    collections::{BTreeMap, BTreeSet, VecDeque},
+    collections::{BTreeSet, VecDeque},
     env,
     error::Error,
     fs,
@@ -47,7 +47,7 @@ use spatialrust_registration::IcpConfig;
 use spatialrust_ros2::Rosbag2PointCloudSource;
 use spatialrust_scene::TsdfVolume;
 use spatialrust_sync::{
-    DeterministicReplayer, EpisodeLimits, MemoryEpisodeBuilder, StampedRecord, SyncWindow, TopicId,
+    DeterministicReplayer, EpisodeLimits, MemoryEpisodeBuilder, SyncWindow, TopicId,
 };
 use spatialrust_viewer::{
     CalibrationEvidenceFrame, CalibrationEvidenceState, FrameTransform, FullBagMappingState,
@@ -486,6 +486,15 @@ fn collect_topic(
     let bag_message_count = source.topic().message_count;
     let peak_source_bytes = source.max_message_bytes();
     let chunks = collect_chunks(|| source.next_chunk(), topic, clock, builder)?;
+    // Header/frame grouping cannot distinguish identical-header messages.
+    // Reject lost groups (including skipped empty messages) before claiming a
+    // complete selected topic. Counts are not a physical-message identity API.
+    if chunks.record_count != bag_message_count {
+        return Err(format!(
+            "topic `{topic}` scan group count {} differs from bag message count {bag_message_count}; ambiguous grouping or empty messages",
+            chunks.record_count
+        ).into());
+    }
     Ok(CollectedTopic {
         record_count: chunks.record_count,
         bag_message_count,
@@ -853,6 +862,7 @@ mod tests {
     use super::*;
     use spatialrust_math::TransformPoint;
     use spatialrust_viewer::{CalibrationArtifact, CalibrationEvidenceClock, ClockCalibration};
+    use std::collections::BTreeMap;
 
     const SHA: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
