@@ -1,0 +1,60 @@
+{
+  "candidate": {
+    "development_rpy_accepted": false,
+    "model": "rounded-sobel",
+    "native_sha256": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69",
+    "numerical_source_commit": "0b345e46172c091075199db5fee20656fd1a2afe",
+    "selection_basis": "Choose the existing complete native variant before any new archive payload, image or reference read. The current rpy ATE 0.10032699404221075m still fails; selection is a diagnostic candidate, not deployment acceptance.",
+    "validated_merge": "27e43e7715c0acea28bae8c78cf8e26cff79379c",
+    "wheel_sha256": "1817591beb7eacb443a4eb0632e4be75f21fbd4de9590d6fd74ce71fb6bed465"
+  },
+  "execution": "Pin the opaque downloaded archive SHA-256/headers before preparation. Withhold groundtruth/accelerometer/README bodies from generation. Freeze both complete trajectories before either score. Preserve all original raw/fraction/count/world/typed IO/accuracy/gap gates and every failure. No selection, trimming, retries, resets or threshold changes after scores.",
+  "observed_recordings": [
+    "rgbd_dataset_freiburg1_xyz",
+    "rgbd_dataset_freiburg1_rpy",
+    "rgbd_dataset_freiburg1_desk",
+    "rgbd_dataset_freiburg1_desk2"
+  ],
+  "prior_observation_evidence": "docs/receipts/2026-10-11_tum_keyframe_validation.json",
+  "resources": {
+    "archives_max_bytes": 2147483648,
+    "case_command_max_seconds": 7200,
+    "combined_new_owned_max_bytes": 8589934592,
+    "cpu_worker_limit": 4,
+    "minimum_free_bytes": 21474836480,
+    "new_native_builds": 0,
+    "prepared_max_bytes": 4294967296,
+    "results_max_bytes": 1073741824,
+    "source_command_max_seconds": 7200,
+    "test_scratch_max_bytes": 1073741824
+  },
+  "schema": "spatialrust.frozen-heldout-selection.v1",
+  "scope": "Two previously unscored recordings under the same Freiburg 1 registered-depth convention. No independent hardware/scene, physical calibration, speed or complete operational 80% claim. Both recordings become observed after this run; do not retune and call them held out again.",
+  "slice": "146Q",
+  "sources": [
+    {
+      "content_length": 695620135,
+      "effective_url": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_plant.tgz",
+      "etag": "\"29765227-4ae2a16f72e00\"",
+      "last_modified": "Fri, 30 Sep 2011 15:15:04 GMT",
+      "publisher_approx_archive_gb": 0.65,
+      "publisher_duration_s": 41.53,
+      "publisher_groundtruth_duration_s": 41.24,
+      "sequence": "rgbd_dataset_freiburg1_plant",
+      "status": 200,
+      "url": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_plant.tgz"
+    },
+    {
+      "content_length": 782381450,
+      "effective_url": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_room.tgz",
+      "etag": "\"2ea2318a-4ae2a19f21e80\"",
+      "last_modified": "Fri, 30 Sep 2011 15:15:54 GMT",
+      "publisher_approx_archive_gb": 0.73,
+      "publisher_duration_s": 48.9,
+      "publisher_groundtruth_duration_s": 48.87,
+      "sequence": "rgbd_dataset_freiburg1_room",
+      "status": 200,
+      "url": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_room.tgz"
+    }
+  ]
+}

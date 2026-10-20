@@ -1,0 +1,21 @@
+{
+  "frozen_at_utc": "2026-10-20T02:28:10.306090+00:00",
+  "schema": "spatialrust.heldout-source-identities.v1",
+  "selection_lf_sha256": "3e17aa6668697743e62c75116814466989e528dc58a451567b450bd9d6d1f12b",
+  "sources": [
+    {
+      "bytes": 695620135,
+      "etag": "\"29765227-4ae2a16f72e00\"",
+      "sequence": "rgbd_dataset_freiburg1_plant",
+      "sha256": "2a5b3db30aaec442c5116fb6269f865a33f22db72263d12fff3675a0342b9bd0",
+      "url": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_plant.tgz"
+    },
+    {
+      "bytes": 782381450,
+      "etag": "\"2ea2318a-4ae2a19f21e80\"",
+      "sequence": "rgbd_dataset_freiburg1_room",
+      "sha256": "5ace47a1d2e53696bc939a84999293a04a7226958e848a609666691fd3cc38da",
+      "url": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_room.tgz"
+    }
+  ]
+}
