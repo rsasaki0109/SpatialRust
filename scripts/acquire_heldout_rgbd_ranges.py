@@ -10,6 +10,7 @@ from datetime import datetime,timezone
 
 from acquire_heldout_rgbd import NoRedirect,preflight,regular_tree,sha
 from heldout_dense_rgbd_protocol import selection
+from regular_file_inventory import inventory
 
 SEGMENT_BYTES=128*1024**2
 
@@ -40,7 +41,7 @@ def acquire_ranges(source,root,resources,*,opener=None,segment_bytes=SEGMENT_BYT
     initial=partial.stat().st_size if partial.exists() else 0
     if initial>source['content_length']:raise ValueError('source prefix exceeds the fixed archive length')
     prefix=dict(bytes=initial,sha256=prefix_sha(partial,initial) if initial else hashlib.sha256(b'').hexdigest())
-    other=sum(p.stat().st_size for p in root.rglob('*.tgz*') if p.is_file())-initial
+    other=inventory(root,filename_pattern='*.tgz*').logical_bytes-initial
     if other+source['content_length']>resources['archives_max_bytes']:raise ValueError('combined source archive budget exceeded')
     record=dict(schema='spatialrust.heldout-range-acquisition.v1',source=source,sequence=name,
         started_at_utc=datetime.now(timezone.utc).isoformat(),status='incomplete',segments=[],
