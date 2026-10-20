@@ -17,7 +17,7 @@ def align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray,
 
 
 def _align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray, camera, controls,
-                     *, expected_final_support_only, initial=None, preprocessing=None):
+                     *, expected_final_support_only, initial=None, preprocessing=None, fitting_model=None):
     if controls.get('dense_rgbd_odometry') != CONTROLS:
         raise ValueError('dense RGB-D controls differ from the fixed protocol')
     source = (previous_depth.astype(np.float64)*camera['depth_unit_m']).astype(np.float32)
@@ -29,9 +29,15 @@ def _align_dense_rgbd(previous_depth, current_depth, previous_gray, current_gray
         if preprocessing not in ('gaussian3','gaussian3-gray-only','gaussian3-gray-only-pair-mean'):
             raise ValueError('explicit dense fitting policy must be a supported Gaussian3 policy')
         native_controls['preprocessing'] = preprocessing
+    if fitting_model is not None:
+        if fitting_model != 'rounded-sobel' or preprocessing is not None:
+            raise ValueError('explicit complete dense model must be rounded-sobel without a legacy filter')
+        native_controls['fitting_model'] = fitting_model
     rotation, translation, report = sr.estimate_dense_rgbd_odometry(
         previous_gray, source, current_gray, target,
         camera['fx'], camera['fy'], camera['cx'], camera['cy'], initial=initial, **native_controls)
+    if fitting_model is not None and report.get('fitting_model') != fitting_model:
+        raise ValueError('native complete fitting model differs from the explicit plan')
     if preprocessing is not None and report.get('fitting_preprocessing') != preprocessing:
         raise ValueError('native fitting policy differs from the explicit plan')
     if type(report.get('final_support_only', False)) is not bool or report.get('final_support_only', False) != expected_final_support_only:

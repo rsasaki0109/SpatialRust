@@ -7,6 +7,30 @@ use crate::{AbsolutePose, CameraMatrix3, VisionError, VisionResult};
 
 const TILE_ROWS: usize = 16;
 
+mod rounded_sobel;
+
+/// Explicit complete fitting model; final admission always uses original pixels.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DenseRgbdFittingModel {
+    /// Existing bilinear model, with the separately selected preprocessing policy.
+    #[default]
+    Bilinear,
+    /// Joint Gaussian3/pair means, floor pyramids, rounded pixels and Sobel gradients.
+    /// Requires the legacy preprocessing selector Raw; executes every planned update.
+    RoundedSobel,
+}
+
+impl DenseRgbdFittingModel {
+    /// Stable complete-model identifier for execution receipts.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Bilinear => "bilinear",
+            Self::RoundedSobel => "rounded-sobel",
+        }
+    }
+}
+
 /// Explicit fitting input policy; final admission always uses original pixels.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[non_exhaustive]
@@ -145,6 +169,30 @@ impl DenseRgbdOdometryOptions {
             return Err(invalid());
         }
         Ok(bytes)
+    }
+
+    /// Preflights a complete fitting model before allocating any logical buffers.
+    /// RoundedSobel owns raw levels, floor pyramids and one level's Sobel gradients.
+    pub fn required_working_bytes_with_model(
+        &self,
+        width: usize,
+        height: usize,
+        preprocessing: DenseRgbdPreprocessing,
+        model: DenseRgbdFittingModel,
+    ) -> VisionResult<usize> {
+        match model {
+            DenseRgbdFittingModel::Bilinear => {
+                self.required_working_bytes_with_preprocessing(width, height, preprocessing)
+            }
+            DenseRgbdFittingModel::RoundedSobel => {
+                if preprocessing != DenseRgbdPreprocessing::Raw {
+                    return Err(VisionError::InvalidParameter(
+                        "rounded-sobel defines its complete fitting policy; preprocessing must be raw".into(),
+                    ));
+                }
+                rounded_sobel::required_bytes(self, width, height)
+            }
+        }
     }
 
     /// Includes both retained raw levels when filtered fitting is selected.
@@ -314,6 +362,49 @@ pub fn estimate_dense_rgbd_odometry_with_preprocessing(
         working_bytes,
         workers: worker_count(source[0].width * source[0].height),
     })
+}
+
+/// Estimates motion with an explicit complete model and legacy preprocessing.
+///
+/// Bilinear delegates to the existing estimator. RoundedSobel requires Raw,
+/// retains original raw final admission, preflights every logical buffer and
+/// executes the complete schedule. Sobel Jacobians are local surrogates for the
+/// discontinuous rounded objective. Inputs are borrowed; no device copy occurs.
+pub fn estimate_dense_rgbd_odometry_with_model(
+    source: DenseRgbdFrame<'_>,
+    target: DenseRgbdFrame<'_>,
+    camera: CameraMatrix3,
+    initial: AbsolutePose,
+    options: &DenseRgbdOdometryOptions,
+    preprocessing: DenseRgbdPreprocessing,
+    model: DenseRgbdFittingModel,
+) -> VisionResult<DenseRgbdOdometryEstimate> {
+    match model {
+        DenseRgbdFittingModel::Bilinear => estimate_dense_rgbd_odometry_with_preprocessing(
+            source,
+            target,
+            camera,
+            initial,
+            options,
+            preprocessing,
+        ),
+        DenseRgbdFittingModel::RoundedSobel => {
+            if source.gray.width() != target.gray.width()
+                || source.gray.height() != target.gray.height()
+            {
+                return Err(VisionError::ShapeMismatch(
+                    "dense RGB-D source/target geometry".into(),
+                ));
+            }
+            let working_bytes = options.required_working_bytes_with_model(
+                source.gray.width(),
+                source.gray.height(),
+                preprocessing,
+                model,
+            )?;
+            rounded_sobel::estimate(source, target, camera, initial, options, working_bytes)
+        }
+    }
 }
 
 struct Level {

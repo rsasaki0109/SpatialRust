@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A typed opt-in [rounded-pixel Sobel model](ROUNDED_SOBEL_DENSE_RGBD_VALIDATION.md)
+bundles fitting input normalization, floor pyramids, integer lookup and surrogate
+gradients, while retaining original raw final admission. The existing bilinear
+entry points and policies delegate unchanged. Checked logical working bytes charge
+raw levels, pyramids, current gradients and nonconcurrent reduction/solver scratch;
+Python owns inputs before releasing the GIL. No core/dependency/device change.
+
 A fixed synthetic [sampling audit](DENSE_SAMPLING_AUDIT.md) binds test-only
 native observations and installed CPU reference APIs to source/module hashes.
 Pyramid raster, lookup admission and derivative semantics remain separate
