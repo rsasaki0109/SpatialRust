@@ -352,7 +352,7 @@ fn run() -> Result<(), Box<dyn Error>> {
                 .count()
         ),
         "front and rear PointCloud2 declarations supported",
-        &sensor_detail(&readiness.sensor_topics),
+        sensor_detail(&readiness.sensor_topics),
     )?;
 
     let clock_topic = relevant_topic(&readiness, "/clock");
@@ -424,7 +424,7 @@ fn run() -> Result<(), Box<dyn Error>> {
             readiness.registration_ready
         ),
         "source-bound registered clock and frame artifacts",
-        &calibration_artifact_detail(&readiness.calibration_artifacts),
+        calibration_artifact_detail(&readiness.calibration_artifacts),
     )?;
 
     if !source_identity_match {
