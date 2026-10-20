@@ -154,7 +154,7 @@ def generate(prepared, manifest_sha256, output, *, pair_aligner=None,
                               'spatialrust_causal_dense_rgbd_cpu', 'open3d_causal_rgbd_cpu',
                               'spatialrust_gaussian3_dense_rgbd_cpu', 'spatialrust_gray_gaussian3_dense_rgbd_cpu',
                               'spatialrust_pair_mean_dense_rgbd_cpu', 'spatialrust_rounded_sobel_dense_rgbd_cpu',
-                              'spatialrust_heldout_rounded_sobel_dense_rgbd_cpu', 'spatialrust_reference_precision_dense_rgbd_cpu')
+                              'spatialrust_heldout_rounded_sobel_dense_rgbd_cpu', 'spatialrust_reference_precision_dense_rgbd_cpu', 'spatialrust_huber_dense_rgbd_cpu')
     image_method = dense_method or method in ('spatialrust_rgbd_pnp_cpu', 'spatialrust_keyframe_rgbd_pnp_cpu',
                               'spatialrust_adaptive_keyframe_rgbd_pnp_cpu',
                               'spatialrust_wide_rgbd_pnp_cpu',

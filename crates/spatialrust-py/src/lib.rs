@@ -4240,7 +4240,8 @@ fn estimate_dense_rgbd_odometry<'py>(
         "bilinear" => DenseRgbdFittingModel::Bilinear,
         "rounded-sobel" => DenseRgbdFittingModel::RoundedSobel,
         "reference-precision" => DenseRgbdFittingModel::ReferencePrecision,
-        _ => return Err(PyValueError::new_err("dense fitting_model must be bilinear, rounded-sobel or reference-precision")),
+        "reference-precision-huber" => DenseRgbdFittingModel::ReferencePrecisionHuber,
+        _ => return Err(PyValueError::new_err("dense fitting_model must be bilinear, rounded-sobel, reference-precision or reference-precision-huber")),
     };
     let preprocessing = match preprocessing {
         "raw" => DenseRgbdPreprocessing::Raw,
