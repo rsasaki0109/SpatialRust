@@ -139,7 +139,7 @@ def reference_observation(cpu, plan):
     neighbor = np.full((8, 8), 2., np.float32); neighbor[2, 3] = np.nan
     owned_neighbor = np.asarray(cpu.geometry.Image(neighbor)).copy()
     gradient = [float(np.asarray(image.filter(mode))[2, 2]) * .125
-                for mode in (cpu.geometry.ImageFilterType.Sobel3Dx, cpu.geometry.ImageFilterType.Sobel3Dy)]
+                for mode in (cpu.geometry.ImageFilterType.Sobel3dx, cpu.geometry.ImageFilterType.Sobel3dy)]
     u, v = (int(coordinate + .5) for coordinate in affine['subpixel'])
     point, gray, depth = row_inputs(plan)
     def rgbd(color, z):
