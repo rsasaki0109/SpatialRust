@@ -1521,6 +1521,22 @@ mod tests {
     }
 
     #[test]
+    fn rejects_output_directory_escape_components() {
+        let mut invalid = vec!["", "..", "../escape", "nested/../../escape", "/tmp/run"];
+        if cfg!(windows) {
+            invalid.extend([r"C:run", r"C:\run", r"\run", r"\\host\share\run"]);
+        }
+        for output in invalid {
+            let result = parse_args(
+                ["bag.db3", "--output-root", "/media/output", "--output-dir", output]
+                    .into_iter()
+                    .map(str::to_owned),
+            );
+            assert!(result.is_err(), "accepted output directory {output:?}");
+        }
+    }
+
+    #[test]
     fn rejects_unsafe_or_unbounded_options() {
         let absolute_dir = parse_args(
             ["bag.db3", "--output-root", "/media/output", "--output-dir", "/tmp/run"]
