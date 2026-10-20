@@ -89,7 +89,7 @@ fn trajectory(records: &[StampedRecord]) -> Trajectory {
             .push(StampedPose::new(
                 record.stamp.clone(),
                 Pose3::new(Isometry3::new(
-                    Quat::identity(),
+                    Quat::<f32>::identity(),
                     Vec3::new(index as f32 * 3.0, 0.0, 0.0),
                 )),
             ))
@@ -282,7 +282,7 @@ fn matched_front_keeps_its_exact_distinct_pose() {
     let bundle = DeterministicReplayer::new(&episode)
         .next_bundle(
             &front_id,
-            &[rear_id.clone()],
+            std::slice::from_ref(&rear_id),
             SyncWindow { max_delta_ns: 1, max_uncertainty_ns: 0 },
         )
         .unwrap()
