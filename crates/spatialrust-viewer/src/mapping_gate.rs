@@ -451,6 +451,10 @@ fn push_blocker(blockers: &mut Vec<String>, blocker: impl Into<String>) {
 }
 
 #[cfg(test)]
+#[path = "mapping_gate_consistency_tests.rs"]
+mod consistency_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
@@ -505,8 +509,7 @@ mod tests {
         state.validate().unwrap();
     }
 
-    #[test]
-    fn complete_source_bound_stages_are_admitted() {
+    pub(super) fn complete_state() -> FullBagMappingState {
         let calibration = CalibrationEvidenceState::try_new(
             "fixture calibration",
             source(),
@@ -579,7 +582,7 @@ mod tests {
             Vec::new(),
         )
         .unwrap();
-        let state = FullBagMappingState::try_new(
+        FullBagMappingState::try_new(
             "fixture mapping",
             source(),
             Some(calibration),
@@ -632,7 +635,12 @@ mod tests {
             true,
             Vec::new(),
         )
-        .unwrap();
+        .unwrap()
+    }
+
+    #[test]
+    fn complete_source_bound_stages_are_admitted() {
+        let state = complete_state();
         assert!(state.summary.mapping_admitted);
         state.validate().unwrap();
     }
