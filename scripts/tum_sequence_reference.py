@@ -33,7 +33,8 @@ def validate_plan(plan):
     # Only these declared Freiburg 1 protocols share the registered-depth convention.
     if plan.get('schema') != 'spatialrust.tum-sequence-plan.v1' or plan.get('sequence') not in (
             'rgbd_dataset_freiburg1_xyz', 'rgbd_dataset_freiburg1_rpy', 'rgbd_dataset_freiburg1_desk',
-            'rgbd_dataset_freiburg1_desk2'):
+            'rgbd_dataset_freiburg1_desk2', 'rgbd_dataset_freiburg1_plant',
+            'rgbd_dataset_freiburg1_room'):
         raise ValueError('unsupported TUM sequence protocol')
     c = plan['calibration']
     for name, value in dict(width=640, height=480, fx=525., fy=525., cx=319.5, cy=239.5,
@@ -73,6 +74,9 @@ def validate_plan(plan):
         if type(s['iterations']) is not int or not 1 <= s['iterations'] <= 1000:
             raise ValueError('invalid iteration bound')
         leaf, gate = s['leaf_m'], s['gate_m']
+    if plan['sequence'] in ('rgbd_dataset_freiburg1_plant','rgbd_dataset_freiburg1_room'):
+        from heldout_dense_rgbd_protocol import validate_heldout_plan
+        validate_heldout_plan(plan, check_base=False)
     return plan
 
 

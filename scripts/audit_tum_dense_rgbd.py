@@ -15,6 +15,7 @@ from gaussian_dense_rgbd_protocol import ESTIMATOR as GAUSSIAN_ESTIMATOR, POLICY
 from gray_gaussian_dense_rgbd_protocol import ESTIMATOR as GRAY_GAUSSIAN_ESTIMATOR, POLICY as GRAY_GAUSSIAN_POLICY, validate_gray_gaussian_dense_plan
 from pair_mean_dense_rgbd_protocol import ESTIMATOR as PAIR_MEAN_ESTIMATOR, POLICY as PAIR_MEAN_POLICY, validate_pair_mean_dense_plan
 from rounded_sobel_dense_rgbd_protocol import ESTIMATOR as ROUNDED_ESTIMATOR, POLICY as ROUNDED_POLICY, validate_rounded_sobel_dense_plan
+from heldout_dense_rgbd_protocol import ESTIMATOR as HELDOUT_ESTIMATOR, source_identity, validate_heldout_plan
 from wide_rgbd_protocol import exact_json
 from evaluate_pose_reference import rigid
 from tum_sequence_reference import file_sha256, json_bytes, require_sha256, safe_relative
@@ -109,7 +110,7 @@ def check_causal_initialization(report, previous_relative, index):
     return error
 
 
-def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
+def audit(prepared, manifest_sha256, estimates, estimates_sha256, output, *, source_identities=None, source_identities_sha256=None):
     prepared, estimates, output = Path(prepared), Path(estimates), Path(output)
     if output.exists() or shutil.disk_usage(output.parent).free < 20*1024**3:
         raise ValueError('require fresh external audit output and 20GiB free')
@@ -123,12 +124,17 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
     plan = json.loads((prepared/'plan.json').read_text(encoding='utf-8'))
     external = plan.get('estimator') == OPEN3D_ESTIMATOR
     gray_gaussian = plan.get('estimator') == GRAY_GAUSSIAN_ESTIMATOR
-    rounded = plan.get('estimator') == ROUNDED_ESTIMATOR
+    heldout = plan.get('estimator') == HELDOUT_ESTIMATOR
+    rounded = heldout or plan.get('estimator') == ROUNDED_ESTIMATOR
     pair_mean = plan.get('estimator') == PAIR_MEAN_ESTIMATOR
     gaussian = pair_mean or gray_gaussian or plan.get('estimator') == GAUSSIAN_ESTIMATOR
     causal = rounded or external or gaussian or plan.get('estimator') == CAUSAL_ESTIMATOR
-    plan = (validate_rounded_sobel_dense_plan(plan) if rounded else validate_pair_mean_dense_plan(plan) if pair_mean else validate_gray_gaussian_dense_plan(plan) if gray_gaussian else validate_gaussian_dense_plan(plan) if gaussian else validate_comparator_plan(plan) if external else
+    plan = (validate_heldout_plan(plan) if heldout else validate_rounded_sobel_dense_plan(plan) if rounded else validate_pair_mean_dense_plan(plan) if pair_mean else validate_gray_gaussian_dense_plan(plan) if gray_gaussian else validate_gaussian_dense_plan(plan) if gaussian else validate_comparator_plan(plan) if external else
             validate_causal_dense_plan(plan) if causal else validate_dense_experiment_plan(plan))
+    if heldout:
+        if source_identities is None or source_identities_sha256 is None:
+            raise ValueError('held-out audit requires the pre-generation source identity pin')
+        source_identity(source_identities,source_identities_sha256,manifest['sequence'],manifest['source_sha256'])
     if file_sha256(prepared/'calibration.json') != manifest['calibration_sha256'] or json.loads((prepared/'calibration.json').read_text(encoding='utf-8')) != plan['calibration']:
         raise ValueError('prepared calibration changed')
     frozen = json.loads(estimates.read_text(encoding='utf-8'))
@@ -160,7 +166,7 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
                 raise ValueError('sole initial world anchor required')
         else:
             report = row['registration']
-            if plan['estimator'] in (FINAL_ESTIMATOR, CAUSAL_ESTIMATOR, GAUSSIAN_ESTIMATOR, GRAY_GAUSSIAN_ESTIMATOR, PAIR_MEAN_ESTIMATOR, ROUNDED_ESTIMATOR) and report.get('final_support_only') is not True:
+            if plan['estimator'] in (FINAL_ESTIMATOR, CAUSAL_ESTIMATOR, GAUSSIAN_ESTIMATOR, GRAY_GAUSSIAN_ESTIMATOR, PAIR_MEAN_ESTIMATOR, ROUNDED_ESTIMATOR, HELDOUT_ESTIMATOR) and report.get('final_support_only') is not True:
                 raise ValueError('native final support policy receipt required')
             if rounded and (report.get('fitting_model') != ROUNDED_POLICY['model']
                     or report.get('fitting_preprocessing') != 'raw'
@@ -212,6 +218,9 @@ def audit(prepared, manifest_sha256, estimates, estimates_sha256, output):
         scope='Final projective measurements and causal world chain; no fitting or trajectory-accuracy acceptance')
     if causal:
         result.update(causal_initialization_pairs=len(checks), initial_seed_policy='previous-relative-increment')
+    if heldout:
+        source_identity(source_identities,source_identities_sha256,manifest['sequence'],manifest['source_sha256'])
+        result['source_identities_lf_sha256']=source_identities_sha256
     output.mkdir()
     (output/'audit.json').write_bytes(json_bytes(result))
     return result
@@ -224,8 +233,10 @@ def main():
     parser.add_argument('--estimates', type=Path, required=True)
     parser.add_argument('--estimates-sha256', required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
+    parser.add_argument('--source-identities', type=Path)
+    parser.add_argument('--source-identities-sha256')
     args = parser.parse_args()
-    result = audit(args.prepared_dir, args.manifest_sha256, args.estimates, args.estimates_sha256, args.output_dir)
+    result = audit(args.prepared_dir, args.manifest_sha256, args.estimates, args.estimates_sha256, args.output_dir, source_identities=args.source_identities, source_identities_sha256=args.source_identities_sha256)
     print('Audited {} dense pairs; {} failed frames retained'.format(result['successful_pairs'], len(result['failed_frame_indices'])))
 
 

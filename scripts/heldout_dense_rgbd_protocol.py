@@ -2,7 +2,9 @@
 import copy
 import hashlib
 import json
+import re
 from pathlib import Path
+from datetime import datetime
 
 from rounded_sobel_dense_rgbd_protocol import POLICY, parent_plan, validate_rounded_sobel_dense_plan
 from tum_sequence_reference import validate_plan
@@ -47,3 +49,29 @@ def validate_heldout_plan(plan, *, check_base=True):
     if exact_json(plan)!=exact_json(heldout_plan(plan.get('sequence'))):
         raise ValueError('held-out candidate, source identity, calibration, controls and acceptance are fixed')
     return plan
+
+
+def source_identity(path, expected_lf_sha256, sequence, archive_sha256):
+    """Require the complete post-acquisition hash pin before generation/auditing."""
+    path=Path(path)
+    if not path.is_absolute() or type(expected_lf_sha256) is not str or not re.fullmatch('[0-9a-f]{64}',expected_lf_sha256):
+        raise ValueError('absolute source identity file and frozen SHA-256 required')
+    raw=path.read_bytes();lf=raw.replace(b'\r\n',b'\n')
+    if len(raw)>65536 or b'\r' in lf or raw not in (lf,lf.replace(b'\n',b'\r\n')) or hashlib.sha256(lf).hexdigest()!=expected_lf_sha256:
+        raise ValueError('source identity file changed')
+    pin=json.loads(lf);expected={r['sequence']:r for r in selection()['sources']}
+    if type(pin) is not dict or set(pin)!={'schema','selection_lf_sha256','frozen_at_utc','sources'} or pin['schema']!='spatialrust.heldout-source-identities.v1' or pin['selection_lf_sha256']!=SELECTION_LF_SHA256 or type(pin['sources']) is not list or len(pin['sources'])!=len(expected) or any(type(r) is not dict for r in pin['sources']) or {r.get('sequence') for r in pin['sources']}!=set(expected):
+        raise ValueError('exact complete source identity set required')
+    try:
+        frozen=datetime.fromisoformat(pin['frozen_at_utc'].replace('Z','+00:00'))
+        if frozen.utcoffset() is None:raise ValueError('timestamp must carry an offset')
+    except (TypeError,AttributeError,ValueError):
+        raise ValueError('source pin requires an explicit timezone timestamp') from None
+    for row in pin['sources']:
+        wanted=expected[row['sequence']]
+        if set(row)!={'sequence','url','etag','bytes','sha256'} or row['url']!=wanted['url'] or row['etag']!=wanted['etag'] or type(row['bytes']) is not int or row['bytes']!=wanted['content_length'] or type(row.get('sha256')) is not str or not re.fullmatch('[0-9a-f]{64}',row['sha256']):
+            raise ValueError('acquired source identity differs from fixed official metadata')
+    row=next((r for r in pin['sources'] if r['sequence']==sequence),None)
+    if row is None or row['sha256']!=archive_sha256:
+        raise ValueError('prepared source does not match the pre-generation archive pin')
+    return row
