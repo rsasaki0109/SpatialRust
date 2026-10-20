@@ -19,6 +19,17 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a fixed synthetic dense arithmetic/pose-update audit using existing CPU
+  modules and independent normal-system/left-retraction predictions. Six paired
+  cases agree to <=1.11e-16; actual poses differ up to 4.95e-7, and all 24 public
+  Gaussian image byte checks pass. Runtime Jacobians remain unobserved and no
+  real-accuracy cause is claimed. Preserve the first six diagnostic tuple-shape
+  failures, fix only observation assembly, and reuse the successful reference.
+  Corrected 42 math/schema and 1,290 full Python passes with 3 old skips; all old
+  artifacts stay. Retain 877KB synthetic metadata/results and reclaim 1.12GB
+  passing scratch, with no native rebuild/install or sensor payload. See
+  `docs/DENSE_PRECISION_AUDIT.md`.
+
 - Reject incomplete offline archive inventories before network admission.
   Propagate directory/stat errors and reject links/reparse/non-regular nodes;
   filename filters never skip a subtree. Reproduce the real restricted glob

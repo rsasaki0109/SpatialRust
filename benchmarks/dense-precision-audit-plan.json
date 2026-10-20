@@ -1,0 +1,254 @@
+{
+  "cases": [
+    {
+      "depth_offset": 0.0,
+      "depth_ramp": [
+        0.0,
+        0.0
+      ],
+      "height": 48,
+      "initial_translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initial_z_rotation": 0.0,
+      "name": "even-identity",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "width": 64
+    },
+    {
+      "depth_offset": 0.004,
+      "depth_ramp": [
+        3e-05,
+        -2e-05
+      ],
+      "height": 48,
+      "initial_translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initial_z_rotation": 0.0,
+      "name": "even-small-residual",
+      "shift": [
+        0.12,
+        -0.08
+      ],
+      "width": 64
+    },
+    {
+      "depth_offset": -0.003,
+      "depth_ramp": [
+        -2e-05,
+        1e-05
+      ],
+      "height": 25,
+      "initial_translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initial_z_rotation": 0.0,
+      "name": "odd-reverse-residual",
+      "shift": [
+        -0.17,
+        0.11
+      ],
+      "width": 31
+    },
+    {
+      "depth_offset": 0.002,
+      "depth_ramp": [
+        1e-05,
+        2e-05
+      ],
+      "height": 48,
+      "initial_translation": [
+        0.0004,
+        -0.0002,
+        0.0006
+      ],
+      "initial_z_rotation": 0.0015,
+      "name": "even-proper-initial",
+      "shift": [
+        0.08,
+        0.06
+      ],
+      "width": 64
+    },
+    {
+      "depth_offset": 0.009,
+      "depth_ramp": [
+        3e-05,
+        -3e-05
+      ],
+      "height": 48,
+      "initial_translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initial_z_rotation": 0.0,
+      "name": "even-stronger-residual",
+      "shift": [
+        0.3,
+        -0.25
+      ],
+      "width": 64
+    },
+    {
+      "depth_offset": 0.0,
+      "depth_ramp": [
+        0.0,
+        0.0
+      ],
+      "height": 25,
+      "initial_translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initial_z_rotation": 0.0,
+      "name": "odd-identity",
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "width": 31
+    }
+  ],
+  "controls": {
+    "depth_weight": 0.968,
+    "iterations": [
+      1
+    ],
+    "max_depth": 5.0,
+    "max_depth_difference": 0.03,
+    "max_working_bytes": 134217728,
+    "min_correspondence_fraction": 0.5,
+    "min_correspondences": 30,
+    "min_depth": 0.1
+  },
+  "fixture": {
+    "camera": "fx=0.9375*width,fy=1.2083333333333333*height,cx=(width-1)/2,cy=(height-1)/2",
+    "scope": "Synthetic numerical residual fixtures; no physical-motion truth or trajectory accuracy claim. Generate once and pass identical bound inputs to isolated native/reference processes.",
+    "source_depth": "float32(2+0.05*sin(0.20*x)+0.04*cos(0.25*y)+0.02*sin(0.15*(x+y)))",
+    "source_gray": "uint8 floor(clip(127+35*sin(0.20*x+0.10*y)+40*cos(0.17*y-0.20*x)+20*sin(0.07*x*y),0,255)+0.5)",
+    "target_depth": "float32(source-depth analytic expression + depth_offset + ramp_x*(x-cx)+ramp_y*(y-cy))",
+    "target_gray": "same analytic texture at x-shift_x,y-shift_y, with the same uint8 rounding"
+  },
+  "models": {
+    "counterfactuals": "Report all two normal-system arithmetic models by two proper rotation retractions as modeled predictions, separated from actual runtime observations. No production variant or selection is introduced.",
+    "native": "Source-defined direct f64 Gaussian3 and Sobel3, f64 normalization/point coordinates and ordered weighted equations; independent dense solve then proper rotation-vector left update.",
+    "reference": "Source-defined float32 inputs and each horizontal/vertical filter store; float32 coefficient products accumulated in double, float32 normalization stores/XYZ, double weighted Jacobians/equations. Independent dense solve and Rz*Ry*Rx left update."
+  },
+  "native": {
+    "model": "rounded-sobel",
+    "python": "E:/SpatialRustBuild/native-dense-rounded-sobel-v1/venv/Scripts/python.exe",
+    "sha256": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69",
+    "source_files": [
+      {
+        "lf_sha256": "dab3fd34853ee32eb3589625c41688b50d633dcc650c18625c98a4901beb676e",
+        "path": "crates/spatialrust-vision/src/dense_odometry.rs"
+      },
+      {
+        "lf_sha256": "1efe1fb5485f9d52cca00980854efafb9581806b77c9916ed655e85c29707514",
+        "path": "crates/spatialrust-vision/src/dense_odometry/rounded_sobel.rs"
+      },
+      {
+        "lf_sha256": "4e487a7d2b78698fb9906d44463ff270e6e00a9ec3cb6d5e605b8612c3a70e48",
+        "path": "crates/spatialrust-math/src/linalg.rs"
+      }
+    ]
+  },
+  "numerical_source_commit": "0b345e46172c091075199db5fee20656fd1a2afe",
+  "observation_limits": [
+    "External runtime Jacobian/normal system is not exposed through the prior Python list. Keep it explicitly unobserved; source-modeled predictions and actual public one-step transforms are separate evidence.",
+    "Do not attribute any real-data ATE/RPE difference to a numerical source difference from this audit alone.",
+    "Preserve every synthetic failure; do not silently trim cases or change the frozen inputs/tolerances after outcomes.",
+    "All real full-generation/35-update/raw/causal/world/calibration/hardware/release gates and all prior outputs remain unchanged. Plant/room are observed and may not be called held out after tuning.",
+    "Public Image filter observations are separately constructed from the fixed source-defined inputs. They do not expose hidden odometry state; runtime Jacobians/normal systems remain unobserved.",
+    "Any normal-model difference combines representation and operator evaluation order; do not attribute it to float32 alone. Solver residual agreement is not a direct observation of Eigen LDLT internals.",
+    "The single update and one pyramid level are synthetic diagnostics only. Original full real-data plans retain all 35 updates and all existing gates."
+  ],
+  "operational_80_percent_proven": false,
+  "parent_merge": "070d18b5d8871f1c86f8aa84e0c03148fbfd22d0",
+  "parent_pr": 306,
+  "reference": {
+    "commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+    "cpu_module_sha256": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "python": "C:/Users/rsasa/AppData/Local/Programs/Python/Python312/python.exe",
+    "sources": [
+      {
+        "bytes": 6267,
+        "sha256": "e447d9f17c725b243fbc291aa32ac2238dd4eaa46edc3a17f2f4d08a3ae4fbf1",
+        "upstream_path": "cpp/open3d/geometry/ImageFactory.cpp"
+      },
+      {
+        "bytes": 4464,
+        "sha256": "4f95c4b284fb8c22bf537bf66f53fe0c79723efb8971a0f4e357fdd7d7f079fc",
+        "upstream_path": "cpp/open3d/geometry/RGBDImageFactory.cpp"
+      },
+      {
+        "bytes": 4570,
+        "sha256": "1a35f4370aaae08d693a2efd5913266f85dc71879c5e09c538429a2446760d57",
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.h"
+      },
+      {
+        "bytes": 5924,
+        "sha256": "47640145004e4cca41ad70744ea0216935f57383c6b3d8a5a44561c6293a3830",
+        "upstream_path": "cpp/open3d/pipelines/odometry/RGBDOdometryJacobian.cpp"
+      },
+      {
+        "bytes": 2554,
+        "sha256": "bf3d07e1d09be85dd448c216a7a0fddea019f5331e39fa52df8be99b39008d47",
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.cpp"
+      },
+      {
+        "bytes": 14366,
+        "sha256": "bef45e1facc2f25a63623e6e6aa9289127fbc9aa7ac9df9fe87393a014bbcd0c",
+        "upstream_path": "cpp/open3d/geometry/Image.cpp"
+      },
+      {
+        "bytes": 23556,
+        "sha256": "be75e58413b6d2f7ee575b526fc0d68b228e5eeb2cab27f246f7c8e8dd34d0fb",
+        "upstream_path": "cpp/open3d/pipelines/odometry/Odometry.cpp"
+      },
+      {
+        "bytes": 15919,
+        "sha256": "f3e01211cb2bb390500043672bcdf5b97a3dede9d23cfa3adc948d75631b9a20",
+        "upstream_path": "cpp/open3d/utility/Eigen.cpp"
+      }
+    ],
+    "version": "0.19.0"
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/dense-precision-audit-v1",
+    "combined_new_owned_max_bytes": 2147483648,
+    "cpu_worker_limit": 4,
+    "maximum_build_and_test_scratch_bytes": 1073741824,
+    "maximum_command_seconds": 600,
+    "maximum_result_bytes": 16777216,
+    "minimum_free_bytes": 21474836480,
+    "native_rebuilds": 0,
+    "new_wheel_installs": 0,
+    "real_frame_reads": 0,
+    "result_root": "E:/SpatialRustData/maturity-80/dense-precision-audit-v1",
+    "sensor_downloads": 0,
+    "sensor_payload_copies": 0
+  },
+  "schema": "spatialrust.dense-precision-audit-plan.v1",
+  "slice": "146S",
+  "tolerances": {
+    "maximum_normal_condition": 10000000000.0,
+    "native_pose_max_difference": 1e-08,
+    "normal_relative_residual": 1e-10,
+    "proper_rotation": 1e-10,
+    "reference_filter_absolute": 0.0,
+    "reference_pose_max_difference": 1e-06
+  }
+}
