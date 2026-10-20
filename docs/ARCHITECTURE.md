@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+Offline fixed-source acquisition uses a standard-library [complete file
+inventory](REGULAR_FILE_INVENTORY.md) before network admission. Immutable logical
+counts require every directory/stat operation to succeed; filename filters do
+not skip subtrees. Links, reparse points and unsupported nodes reject. Owned
+process guards retain concurrent-growth responsibility; numerical/core/device
+contracts and safe production APIs are unchanged.
+
 A [fixed native-candidate study](FROZEN_HELDOUT_RGBD_VALIDATION.md) admits only
 two prospectively selected unscored recordings with opaque source hashes frozen
 before preparation. Strict source/plan/schema gates, bounded single-copy storage

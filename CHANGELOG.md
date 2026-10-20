@@ -19,6 +19,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reject incomplete offline archive inventories before network admission.
+  Propagate directory/stat errors and reject links/reparse/non-regular nodes;
+  filename filters never skip a subtree. Reproduce the real restricted glob
+  omission and recover the fixed complete 3.624GB prior total with an independent
+  walker. Nineteen new IO cases, 77 focused and 1,248 full Python passes with
+  three old skips; preserve 388 old JSON files and 36 native artifacts. Retain
+  106KB metadata, reclaim 642MB verified passing scratch, and add no sensor
+  payload, native rebuild/install or new score. See
+  `docs/REGULAR_FILE_INVENTORY.md`.
+
 - Add prospective fixed-source RGB-D validation with exact native/source pins,
   strict plan/admission and bounded opaque acquisition. Freeze both
   trajectories before scoring. Plant 1139/1139 poses, ATE/RPE

@@ -10,6 +10,7 @@ import urllib.request
 from datetime import datetime,timezone
 
 from heldout_dense_rgbd_protocol import ROOT, selection
+from regular_file_inventory import inventory
 
 
 def sha(path):
@@ -67,7 +68,7 @@ def acquire(source,root,resources,*,opener=None):
         journal.write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8')
     try:
         # Before opening a remote stream, account for existing source payloads.
-        previous=sum(p.stat().st_size for p in root.rglob('*.tgz*') if p.is_file())
+        previous=inventory(root,filename_pattern='*.tgz*').logical_bytes
         if previous+source['content_length']>resources['archives_max_bytes']:
             raise ValueError('combined source archive budget exceeded')
         if opener is None:opener=urllib.request.build_opener(NoRedirect())
