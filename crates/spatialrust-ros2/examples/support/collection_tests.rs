@@ -1,10 +1,12 @@
 //! Synthetic collector admission/IO tests. No physical calibration evidence.
 
 use super::*;
-use spatialrust_core::{PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas};
+use spatialrust_core::{
+    PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas, Timestamp,
+};
 use spatialrust_records::{
     record_storage_bytes, ChunkIdentity, MemoryTracker, RecordProvenance, RecordsError,
-    SchemaVersion, SpatialRecord,
+    RecordsResult, SchemaVersion, SpatialRecord, SpatialRecordChunk,
 };
 use spatialrust_sync::SyncError;
 use std::{cell::Cell, rc::Rc};
@@ -302,4 +304,81 @@ fn rejected_topic_preserves_previously_committed_records() {
     assert!(collect_chunks(rear, "/rear", &mut clock(), &mut retained).is_err());
     assert_eq!((retained.len(), retained.points(), retained.bytes()), before);
     assert_eq!(retained.finish().records()[0].record.metadata().timestamp.as_nanos(), 10);
+}
+
+#[test]
+fn retained_capacity_and_assembly_requests_are_separate() {
+    let (next, _, tracker) = spy(vec![Ok(xyz(10)), Ok(xyz(10)), Ok(xyz(20))]);
+    let mut retained = builder(2, 12, 144);
+    let stats = collect_chunks(next, "/front", &mut clock(), &mut retained).unwrap();
+    assert_eq!(stats.usage.peak_retained_and_pending_bytes, 144);
+    assert_eq!(stats.usage.max_assembly_request_bytes, 96);
+    assert_eq!(tracker.snapshot().current_bytes, 0);
+    assert_eq!(tracker.snapshot().peak_bytes, 48);
+}
+
+#[test]
+fn checked_budget_arithmetic_rejects_overflow_and_allows_exact_limits() {
+    for resource in ["records", "points", "bytes"] {
+        let error = scan_collection::checked_total(resource, u64::MAX, 1, u64::MAX).unwrap_err();
+        assert_limit(error.as_ref(), resource);
+        assert_eq!(scan_collection::checked_total(resource, 2, 3, 5).unwrap(), 5);
+        assert!(scan_collection::checked_total(resource, 4, 2, 5).is_err());
+    }
+}
+
+#[test]
+fn assembly_preserves_all_scalar_buffer_variants() {
+    use spatialrust_core::{FieldSemantic, PointField};
+    let variants = vec![
+        (
+            PointBuffer::F32(vec![1.0, 2.0, 3.0, 4.0]),
+            PointBuffer::F32(vec![1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0, 4.0]),
+        ),
+        (
+            PointBuffer::F64(vec![1.0, 2.0, 3.0, 4.0]),
+            PointBuffer::F64(vec![1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0, 4.0]),
+        ),
+        (PointBuffer::U8(vec![1, 2, 3, 4]), PointBuffer::U8(vec![1, 2, 3, 4, 1, 2, 3, 4])),
+        (PointBuffer::U16(vec![1, 2, 3, 4]), PointBuffer::U16(vec![1, 2, 3, 4, 1, 2, 3, 4])),
+        (PointBuffer::U32(vec![1, 2, 3, 4]), PointBuffer::U32(vec![1, 2, 3, 4, 1, 2, 3, 4])),
+        (PointBuffer::I32(vec![-1, 2, -3, 4]), PointBuffer::I32(vec![-1, 2, -3, 4, -1, 2, -3, 4])),
+    ];
+    for (input, expected) in variants {
+        let (schema, mut buffers, metadata) = xyz(10).into_cloud().into_parts();
+        let schema =
+            schema.with_field(PointField::scalar("extra", FieldSemantic::Intensity, input.dtype()));
+        buffers.insert("extra", input);
+        let cloud = PointCloud::try_from_parts(schema, buffers, metadata).unwrap();
+        let record =
+            SpatialRecord::try_from_cloud("typed-fixture", SchemaVersion::new(1, 0), cloud)
+                .unwrap();
+        let (next, _, _) = spy(vec![Ok(record.clone()), Ok(record)]);
+        let mut retained = builder(1, 8, 4096);
+        collect_chunks(next, "/front", &mut clock(), &mut retained).unwrap();
+        let episode = retained.finish();
+        assert_eq!(episode.records()[0].record.cloud().field("extra").unwrap(), &expected);
+    }
+}
+
+#[test]
+fn cancellation_releases_leases_without_reading_tail() {
+    let (next, count, tracker) = spy(vec![Ok(xyz(1)), Err(RecordsError::Cancelled), Ok(xyz(2))]);
+    let error =
+        collect_chunks(next, "/front", &mut clock(), &mut builder(10, 100, 4096)).unwrap_err();
+    assert!(matches!(error.downcast_ref::<RecordsError>(), Some(RecordsError::Cancelled)));
+    assert_eq!(count.get(), 2);
+    assert_eq!(tracker.snapshot().current_bytes, 0);
+}
+
+#[test]
+fn clock_error_does_not_admit_partial_scan_or_read_tail() {
+    let (next, count, tracker) = spy(vec![Ok(xyz(1)), Ok(xyz(2)), Ok(xyz(3))]);
+    let mut invalid_clock = clock();
+    invalid_clock.offset_ns = f64::MAX;
+    let mut retained = builder(10, 100, 4096);
+    assert!(collect_chunks(next, "/front", &mut invalid_clock, &mut retained).is_err());
+    assert_eq!(count.get(), 2);
+    assert_eq!(retained.len(), 0);
+    assert_eq!(tracker.snapshot().current_bytes, 0);
 }

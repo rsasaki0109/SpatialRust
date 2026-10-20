@@ -29,11 +29,13 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo generate-lockfile
-      - name: Recover static scenes through both mapping consumers
+      - name: Recover static scenes and enforce incremental scan admission
         run: |
           cargo test -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_full_bag_mapping --locked
           cargo test -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_e2e --locked
           cargo test -p spatialrust-ros2 --all-features --locked
+          cargo test -p spatialrust-records --all-features --locked
+          cargo test -p spatialrust-sync --all-features --locked
           cargo clippy -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_full_bag_mapping --example rosbag2_e2e --locked -- -D warnings
 
   rooted-mapping-conformance:
