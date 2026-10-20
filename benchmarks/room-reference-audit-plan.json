@@ -1,0 +1,316 @@
+{
+  "schema": "spatialrust.room-reference-audit-plan.v1",
+  "slice": "146W",
+  "parent_merge": "24b03102c30d707e315508fea553d120976cd8fe",
+  "selection": "One complete room reference comparator, fixed before implementation or new numerical observations. Source inspection does not support a missing target-keyed z-buffer hypothesis; compare actual full motion before another native policy change.",
+  "sequence": "rgbd_dataset_freiburg1_room",
+  "frames": 1360,
+  "source_sha256": "5ace47a1d2e53696bc939a84999293a04a7226958e848a609666691fd3cc38da",
+  "parent_plan": "benchmarks/tum-fr1-room-reference-precision-dense-plan.json",
+  "parent_plan_lf_sha256": "dd3b14d769ac66771b770bd7b9f1514b96d9c52b9e8e17b090009c87ff519bb1",
+  "native_baseline_receipt": "docs/receipts/2026-10-20_reference_precision_dense_rgbd.json",
+  "native_baseline_receipt_lf_sha256": "9c50bbdfce20da15a21b9566aaeceb162dbbeea4aa7ce778e85f76a59f8ed529",
+  "external": {
+    "package": "open3d",
+    "version": "0.19.0",
+    "cpu_module_sha256": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "controls": {
+      "iterations": [
+        20,
+        10,
+        5
+      ],
+      "depth_min": 0.1,
+      "depth_max": 5.0,
+      "depth_diff_max": 0.03,
+      "jacobian": "RGBDOdometryJacobianFromHybridTerm",
+      "package_version": "0.19.0"
+    },
+    "source_manifest": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\manifest.json",
+      "bytes": 2398,
+      "sha256": "3396a7b4441ae6b9b9dda8f4e3a5dd0095afa4d99e3e7647d9e1b7a6179aba79"
+    },
+    "sources": {
+      "upstream_repository": "https://github.com/isl-org/Open3D",
+      "ref": "v0.19.0",
+      "commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+      "files": [
+        {
+          "upstream_path": "cpp/open3d/geometry/ImageFactory.cpp",
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\ImageFactory.cpp",
+          "bytes": 6267,
+          "sha256": "e447d9f17c725b243fbc291aa32ac2238dd4eaa46edc3a17f2f4d08a3ae4fbf1"
+        },
+        {
+          "upstream_path": "cpp/open3d/geometry/RGBDImageFactory.cpp",
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImageFactory.cpp",
+          "bytes": 4464,
+          "sha256": "4f95c4b284fb8c22bf537bf66f53fe0c79723efb8971a0f4e357fdd7d7f079fc"
+        },
+        {
+          "upstream_path": "cpp/open3d/geometry/RGBDImage.h",
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.h",
+          "bytes": 4570,
+          "sha256": "1a35f4370aaae08d693a2efd5913266f85dc71879c5e09c538429a2446760d57"
+        },
+        {
+          "upstream_path": "cpp/open3d/pipelines/odometry/RGBDOdometryJacobian.cpp",
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDOdometryJacobian.cpp",
+          "bytes": 5924,
+          "sha256": "47640145004e4cca41ad70744ea0216935f57383c6b3d8a5a44561c6293a3830"
+        },
+        {
+          "upstream_path": "cpp/open3d/geometry/RGBDImage.cpp",
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.cpp",
+          "bytes": 2554,
+          "sha256": "bf3d07e1d09be85dd448c216a7a0fddea019f5331e39fa52df8be99b39008d47"
+        },
+        {
+          "upstream_path": "cpp/open3d/geometry/Image.cpp",
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Image.cpp",
+          "bytes": 14366,
+          "sha256": "bef45e1facc2f25a63623e6e6aa9289127fbc9aa7ac9df9fe87393a014bbcd0c"
+        },
+        {
+          "upstream_path": "cpp/open3d/pipelines/odometry/Odometry.cpp",
+          "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Odometry.cpp",
+          "bytes": 23556,
+          "sha256": "be75e58413b6d2f7ee575b526fc0d68b228e5eeb2cab27f246f7c8e8dd34d0fb"
+        }
+      ],
+      "sensor_payload_downloads": 0
+    }
+  },
+  "native_io": {
+    "path": "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+    "bytes": 5577728,
+    "sha256": "e0c5de6027dba4005c5e6666e491de2e737e4b925d2c584803f32beace4b9625"
+  },
+  "python": "E:/SpatialRustBuild/native-dense-reference-precision-v1/venv/Scripts/python.exe",
+  "raw_validation": {
+    "iterations": [
+      20,
+      10,
+      5
+    ],
+    "min_depth": 0.1,
+    "max_depth": 5.0,
+    "max_depth_difference": 0.03,
+    "depth_weight": 0.968,
+    "min_correspondences": 30,
+    "min_correspondence_fraction": 0.5,
+    "epsilon": 1e-07,
+    "max_working_bytes": 134217728
+  },
+  "real_protocol": "Reuse every original room PNG/index payload by hard link. One frozen Open3D CPU legacy hybrid policy, original calibration/depth/35-update schedule. Identity then preceding returned current-from-previous increment. No reference in fitting, retry, reset, trimming, rescaling, parameter sweep or post-score change. Freeze the complete timeline before any score. Retain all errors/gaps. Independently audit original raw bilinear final count/support/depth, causal seed, proper/world direction, full cloud/typed IO and first-anchor ATE/1s RPE. Full reference motion is diagnostic and cannot qualify the native solver.",
+  "original_acceptance": {
+    "generated_fraction": 1.0,
+    "reference_match_fraction": 0.95,
+    "ate_rmse_m": 0.1,
+    "rpe_delta_ns": 1000000000,
+    "rpe_rmse_m": 0.05
+  },
+  "comparison": "Compare all planned timestamps against the already frozen native ReferencePrecision room trajectory in their original first-frame gauges. Report complete coverage, per-row translation and proper rotation differences, summaries and missing rows; never fit/trim/rescale to reduce disagreement. Preserve the original native failure.",
+  "correspondence_audit": {
+    "scope": "Source-defined core projection/admission equations only, after finite depth preprocessing. No claim that runtime pair arrays are exposed or observed; full external trajectory/diagnostic information are actual public CPU API observations.",
+    "source": "cpp/open3d/pipelines/odometry/Odometry.cpp at pinned upstream commit",
+    "native_source": "crates/spatialrust-vision/src/dense_odometry/reference_precision.rs",
+    "inspected_findings": "The reference map is keyed by u_s,v_s; each source pixel supplies one candidate. Its nearer-point branch does not enforce unique target pixels. Both source-directed models may retain many sources per target. Check matrix-projection versus unproject/transform/project equations, signed truncation, NaN holes and inclusive depth admission only on declared finite representable cases.",
+    "cases": [
+      {
+        "name": "identity",
+        "width": 4,
+        "height": 4,
+        "camera": [
+          4.0,
+          4.0,
+          1.5,
+          1.5
+        ],
+        "source_depth_m": 2.0,
+        "target_depth_m": 2.0,
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source_holes": [],
+        "target_holes": [],
+        "depth_gate_m": 0.03,
+        "expected_rows": 16,
+        "expected_unique_targets": 16
+      },
+      {
+        "name": "contraction-many-to-one",
+        "width": 4,
+        "height": 4,
+        "camera": [
+          4.0,
+          4.0,
+          1.5,
+          1.5
+        ],
+        "source_depth_m": 2.0,
+        "target_depth_m": 4.0,
+        "translation": [
+          0.0,
+          0.0,
+          2.0
+        ],
+        "source_holes": [],
+        "target_holes": [],
+        "depth_gate_m": 0.03,
+        "expected_rows": 16,
+        "expected_unique_targets": 4
+      },
+      {
+        "name": "contracted-selected-target-hole",
+        "width": 4,
+        "height": 4,
+        "camera": [
+          4.0,
+          4.0,
+          1.5,
+          1.5
+        ],
+        "source_depth_m": 2.0,
+        "target_depth_m": 4.0,
+        "translation": [
+          0.0,
+          0.0,
+          2.0
+        ],
+        "source_holes": [],
+        "target_holes": [
+          [
+            1,
+            1
+          ]
+        ],
+        "depth_gate_m": 0.03,
+        "expected_rows": 12,
+        "expected_unique_targets": 3
+      },
+      {
+        "name": "contracted-source-hole",
+        "width": 4,
+        "height": 4,
+        "camera": [
+          4.0,
+          4.0,
+          1.5,
+          1.5
+        ],
+        "source_depth_m": 2.0,
+        "target_depth_m": 4.0,
+        "translation": [
+          0.0,
+          0.0,
+          2.0
+        ],
+        "source_holes": [
+          [
+            3,
+            3
+          ]
+        ],
+        "target_holes": [],
+        "depth_gate_m": 0.03,
+        "expected_rows": 15,
+        "expected_unique_targets": 4
+      },
+      {
+        "name": "signed-negative-rounding-edge",
+        "width": 4,
+        "height": 4,
+        "camera": [
+          4.0,
+          4.0,
+          1.5,
+          1.5
+        ],
+        "source_depth_m": 2.0,
+        "target_depth_m": 2.0,
+        "translation": [
+          -0.75,
+          0.0,
+          0.0
+        ],
+        "source_holes": [],
+        "target_holes": [],
+        "depth_gate_m": 0.03,
+        "expected_rows": 12,
+        "expected_unique_targets": 12
+      },
+      {
+        "name": "inclusive-exact-binary-depth-gate",
+        "width": 4,
+        "height": 4,
+        "camera": [
+          4.0,
+          4.0,
+          1.5,
+          1.5
+        ],
+        "source_depth_m": 2.0,
+        "target_depth_m": 4.03125,
+        "translation": [
+          0.0,
+          0.0,
+          2.0
+        ],
+        "source_holes": [],
+        "target_holes": [],
+        "depth_gate_m": 0.03125,
+        "expected_rows": 16,
+        "expected_unique_targets": 4
+      },
+      {
+        "name": "outside-next-down-depth-gate",
+        "width": 4,
+        "height": 4,
+        "camera": [
+          4.0,
+          4.0,
+          1.5,
+          1.5
+        ],
+        "source_depth_m": 2.0,
+        "target_depth_m": 4.03125,
+        "translation": [
+          0.0,
+          0.0,
+          2.0
+        ],
+        "source_holes": [],
+        "target_holes": [],
+        "depth_gate_m": "nextafter(0.03125,0)",
+        "expected_rows": 0,
+        "expected_unique_targets": 0
+      }
+    ]
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/room-reference-audit-v1",
+    "input_root": "E:/SpatialRustData/maturity-80/room-reference-input-v1",
+    "result_root": "E:/SpatialRustData/maturity-80/room-reference-audit-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 1073741824,
+    "linked_input_logical_max_bytes": 1073741824,
+    "result_max_bytes": 536870912,
+    "combined_new_logical_max_bytes": 2684354560,
+    "minimum_free_bytes": 21474836480,
+    "cargo_cache_must_remain_unchanged": true,
+    "native_builds": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "workers": 4,
+    "command_timeout_seconds": 3600,
+    "real_case_timeout_seconds": 7200,
+    "sampling_seconds": 5,
+    "preservation": "Hash-protect all 477 prior scientific JSON, all 42 frozen native artifacts and completed room-audit outputs. Complete fail-closed inventories. Reclaim only exact terminal passing pytest basetemps after XML/absolute/no-reparse checks."
+  },
+  "verification": "Strict fixed lineage/schema/calibration/controls/source/resource and original gate tests; independent analytical source-model projection/collision/hole/boundary cases; adapter ownership/causal/error behavior and new revision IO tests. Run focused and complete SDK tests, original three skips, installed frozen wheel/stub identity before real fitting. Rust/core/GPU/bridge/stub/dependencies/all previous estimator modules remain byte-identical. No native rebuild or cache write.",
+  "remaining_80_percent": "Native room robustness and genuinely unobserved motion qualification; both raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. No promotion from a reference result or green CI alone."
+}
