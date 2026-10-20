@@ -388,6 +388,8 @@ fn execute_mapping(
         return Err("no front/rear records matched within the configured sync window".into());
     }
 
+    // ScanOdometry stores current_front_T_first_front. Each sensor is carried
+    // by the same body motion into the fixed first-body volume gauge.
     let mut pose_by_stamp = BTreeMap::new();
     for (record, pose) in front_records.iter().zip(odometry_result.trajectory.samples()) {
         pose_by_stamp.insert(record.stamp.as_nanos(), pose.pose.isometry);

@@ -3,13 +3,34 @@
 use spatialrust_math::Isometry3;
 
 /// `A_T_B` maps B points into A. The volume gauge is the first body frame.
+/// Calibration and scan matching supply proper rigid isometries. This boundary
+/// additionally rejects non-finite input/intermediate/output values before TSDF
+/// insertion. Timestamp matching and physical calibration admission stay with
+/// the caller; a matched scan is not a claim of simultaneous acquisition.
 pub fn sensor_to_volume(
-    _body_from_front: Isometry3<f32>,
+    body_from_front: Isometry3<f32>,
     body_from_sensor: Isometry3<f32>,
     current_front_from_first_front: Isometry3<f32>,
 ) -> Result<Isometry3<f32>, &'static str> {
-    // Preserve the original consumer algebra for the prospective regression run.
-    Ok(body_from_sensor.compose(current_front_from_first_front))
+    checked(body_from_front)?;
+    checked(body_from_sensor)?;
+    checked(current_front_from_first_front)?;
+    let first_front_from_current_front = checked(current_front_from_first_front.inverse())?;
+    let front_from_body = checked(body_from_front.inverse())?;
+    let volume_from_current_front =
+        checked(body_from_front.compose(first_front_from_current_front))?;
+    let volume_from_current_body = checked(volume_from_current_front.compose(front_from_body))?;
+    checked(volume_from_current_body.compose(body_from_sensor))
+}
+
+fn checked(transform: Isometry3<f32>) -> Result<Isometry3<f32>, &'static str> {
+    let q = transform.rotation();
+    let t = transform.translation();
+    if [q.x, q.y, q.z, q.w, t.x, t.y, t.z].iter().all(|value| value.is_finite()) {
+        Ok(transform)
+    } else {
+        Err("scan-to-volume transport contains non-finite values")
+    }
 }
 
 #[cfg(test)]

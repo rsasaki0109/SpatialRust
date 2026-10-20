@@ -502,6 +502,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     let tsdf_started = Instant::now();
     let mut volume = TsdfVolume::try_new(TSDF_ORIGIN, TSDF_VOXEL_SIZE, TSDF_DIMS, TSDF_TRUNCATION)?;
     let mut integrated_points = 0_u64;
+    // This bounded smoke uses the first front scan as its volume gauge.
     for (record, pose) in front_episode.records().iter().zip(odometry_result.trajectory.samples()) {
         integrated_points = integrated_points
             .checked_add(u64::try_from(volume.integrate_cloud_with_pose(
