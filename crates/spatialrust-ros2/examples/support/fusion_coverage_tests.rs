@@ -598,7 +598,7 @@ fn synthetic_run(
         max_records: 100,
         max_points: 1000,
         max_bytes: 1_048_576,
-        min_output_free_bytes: 0,
+        min_output_free_bytes: 1,
     };
     (directory, config)
 }
