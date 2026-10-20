@@ -33,6 +33,13 @@ mod scan_identity;
 #[path = "support/identity_tests.rs"]
 mod identity_tests;
 
+#[cfg(test)]
+#[path = "support/coverage_characterization.rs"]
+mod coverage_characterization;
+
+#[path = "support/fusion_coverage.rs"]
+mod fusion_coverage;
+
 use serde::{de::DeserializeOwned, Serialize};
 use spatialrust_interchange::export_triangle_mesh_gltf_json;
 use spatialrust_io::{
@@ -46,9 +53,7 @@ use spatialrust_records::{
 use spatialrust_registration::IcpConfig;
 use spatialrust_ros2::Rosbag2PointCloudSource;
 use spatialrust_scene::TsdfVolume;
-use spatialrust_sync::{
-    DeterministicReplayer, EpisodeLimits, MemoryEpisodeBuilder, SyncWindow, TopicId,
-};
+use spatialrust_sync::{EpisodeLimits, MemoryEpisodeBuilder, TopicId};
 use spatialrust_viewer::{
     CalibrationEvidenceFrame, CalibrationEvidenceState, FrameTransform, FullBagMappingState,
     MappingOdometrySummary, MappingSourceSummary, MappingTsdfSummary, ReplayArtifact, StudioSource,
@@ -68,6 +73,7 @@ const STATE_FILE: &str = "full-bag-mapping.json";
 const HTML_FILE: &str = "full-bag-mapping.html";
 const MANIFEST_FILE: &str = "full-bag-mapping.manifest.json";
 const MESH_FILE: &str = "full-bag-mapping.mesh.gltf";
+const COVERAGE_FILE: &str = "full-bag-mapping.coverage.json";
 
 #[derive(Debug)]
 struct Config {
@@ -114,6 +120,7 @@ struct MappingExecution {
     mesh_json: String,
     clock_applied: bool,
     frame_graph_applied: bool,
+    coverage: fusion_coverage::CompletedCoverage,
 }
 
 fn main() {
@@ -125,6 +132,10 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let config = parse_args(env::args().skip(1))?;
+    run_config(config)
+}
+
+fn run_config(config: Config) -> Result<(), Box<dyn Error>> {
     validate_config(&config)?;
     ensure_outputs_absent(&config)?;
 
@@ -171,7 +182,13 @@ fn run() -> Result<(), Box<dyn Error>> {
     let mut execution = None;
     let started = Instant::now();
     if source_identity_matches && calibration_ready {
-        match execute_mapping(&config, calibration.as_ref().expect("calibration is ready")) {
+        let identity = fusion_coverage::InputIdentity::from_receipts(
+            &input_receipt,
+            calibration_receipt.as_ref().ok_or("ready calibration has no file receipt")?,
+        );
+        match identity.and_then(|identity| {
+            execute_mapping(&config, calibration.as_ref().expect("calibration is ready"), identity)
+        }) {
             Ok(result) => execution = Some(result),
             Err(error) => {
                 push_blocker(&mut blockers, format!("mapping execution blocked: {error}"))
@@ -186,7 +203,11 @@ fn run() -> Result<(), Box<dyn Error>> {
         artifacts.push(replay_artifact("calibration-evidence", receipt)?);
     }
     let mesh_path = config.output_dir.join(MESH_FILE);
+    let coverage_path = config.output_dir.join(COVERAGE_FILE);
     if let Some(result) = &execution {
+        result.coverage.publish(&coverage_path)?;
+        let coverage_receipt = FileReceipt::from_path(ReceiptRole::Output, &coverage_path)?;
+        artifacts.push(replay_artifact("fusion-coverage", &coverage_receipt)?);
         fs::write(&mesh_path, format!("{}\n", result.mesh_json))?;
         let mesh_receipt = FileReceipt::from_path(ReceiptRole::Output, &mesh_path)?;
         artifacts.push(replay_artifact("tsdf-mesh", &mesh_receipt)?);
@@ -253,6 +274,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     if mesh_path.is_file() {
         manifest.entries.push(FileReceipt::from_path(ReceiptRole::Output, &mesh_path)?);
     }
+    if coverage_path.is_file() {
+        manifest.entries.push(FileReceipt::from_path(ReceiptRole::Output, &coverage_path)?);
+    }
     manifest.entries.push(FileReceipt::from_path(ReceiptRole::Output, &state_path)?);
     manifest.entries.push(FileReceipt::from_path(ReceiptRole::Output, &html_path)?);
     let validation = manifest.validate_local_files()?;
@@ -282,6 +306,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 fn execute_mapping(
     config: &Config,
     calibration: &CalibrationEvidenceState,
+    identity: fusion_coverage::InputIdentity,
 ) -> Result<MappingExecution, Box<dyn Error>> {
     let mut clock = ClockCorrection::try_new(calibration)?;
     let mut builder = MemoryEpisodeBuilder::try_new(EpisodeLimits::new(
@@ -349,6 +374,9 @@ fn execute_mapping(
     let total_point_count = builder.points();
     let retained_bytes = builder.bytes();
     let episode = builder.finish();
+    fusion_coverage::check_record_bound(episode.records().len())?;
+    let coverage_context =
+        fusion_coverage::Context::new(config, identity, &clock, front_frame, rear_frame)?;
     let start_nanos = episode.records().first().map(|record| record.stamp.as_nanos());
     let end_nanos = episode.records().last().map(|record| record.stamp.as_nanos());
     let source_summary = MappingSourceSummary {
@@ -389,20 +417,7 @@ fn execute_mapping(
     let root_t_rear =
         resolve_frame_transform(&calibration.frame, &calibration.frame.root_frame, rear_frame)?;
 
-    let mut replayer = DeterministicReplayer::new(&episode);
-    let mut matched_rear = Vec::new();
-    let window =
-        SyncWindow { max_delta_ns: config.max_delta_ns, max_uncertainty_ns: clock.uncertainty_ns };
-    while let Some(bundle) =
-        replayer.next_bundle(&front_id, std::slice::from_ref(&rear_id), window)?
-    {
-        let front_record = *bundle.get(&front_id).ok_or("front sync bundle member missing")?;
-        let rear_record = *bundle.get(&rear_id).ok_or("rear sync bundle member missing")?;
-        matched_rear.push((front_record.stamp.as_nanos(), rear_record));
-    }
-    if matched_rear.is_empty() {
-        return Err("no front/rear records matched within the configured sync window".into());
-    }
+    let mut coverage = fusion_coverage::Coverage::prepare(&episode, &coverage_context)?;
 
     // ScanOdometry stores current_front_T_first_front. Each sensor is carried
     // by the same body motion into the fixed first-body volume gauge.
@@ -419,11 +434,15 @@ fn execute_mapping(
             volume_t_sensor,
             Vec3::new(0.0, 0.0, 0.0),
         )?;
+        coverage.note_front(fusion_coverage::record_index(&episode, record)?, points)?;
         integrated_records = integrated_records.checked_add(1).ok_or("TSDF record overflow")?;
         integrated_points =
             integrated_points.checked_add(u64::try_from(points)?).ok_or("TSDF point overflow")?;
     }
-    for (stamp, record) in matched_rear {
+    for index in 0..coverage.associations().len() {
+        let association = coverage.associations()[index];
+        let stamp = episode.records()[usize::try_from(association.front_index)?].stamp.as_nanos();
+        let record = &episode.records()[usize::try_from(association.rear_index)?];
         let pose =
             *pose_by_stamp.get(&stamp).ok_or("matched rear record has no front trajectory pose")?;
         let volume_t_sensor = scan_transport::sensor_to_volume(root_t_front, root_t_rear, pose)?;
@@ -432,6 +451,7 @@ fn execute_mapping(
             volume_t_sensor,
             Vec3::new(0.0, 0.0, 0.0),
         )?;
+        coverage.note_rear(index, points)?;
         integrated_records = integrated_records.checked_add(1).ok_or("TSDF record overflow")?;
         integrated_points =
             integrated_points.checked_add(u64::try_from(points)?).ok_or("TSDF point overflow")?;
@@ -464,6 +484,13 @@ fn execute_mapping(
         mesh_triangle_count: u64::try_from(mesh.triangle_count())?,
         complete: true,
     };
+    let coverage = coverage.finish(
+        &episode,
+        &coverage_context,
+        &source_summary,
+        integrated_records,
+        integrated_points,
+    )?;
     Ok(MappingExecution {
         source_summary,
         odometry: odometry_summary,
@@ -471,6 +498,7 @@ fn execute_mapping(
         mesh_json,
         clock_applied: true,
         frame_graph_applied: true,
+        coverage,
     })
 }
 

@@ -19,6 +19,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a bounded, source/calibration-bound fusion submission ledger to the
+  full-bag example. Track stable episode indices, exact replay associations,
+  successful TSDF calls, unmatched records and rear reuse without copying point
+  payloads. Reconcile counters before streaming no-clobber publication and link
+  its checksum through existing artifacts/manifests. Preserve state schema 1,
+  matching/geometry and physical acceptance; 13 original-policy controls plus
+  33 ledger cases expand the example to 100 passing tests. See
+  [the contract and evidence](docs/FUSION_COVERAGE.md).
+
 - Bind portable full-bag source and odometry counts, selected topic, registered
   frames/corrected clock and TSDF root before receipt admission. Preserve schema
   1, public signatures and consistent partial diagnostics; integration visits
