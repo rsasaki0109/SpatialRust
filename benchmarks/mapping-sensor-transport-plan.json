@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.mapping-sensor-transport-plan.v1",
+  "slice": "146Y",
+  "parent_merge": "4242c6723f48a739fbd8b311aa943dee9c26a806",
+  "purpose": "Correct the explicit scan-to-TSDF transform in the full-bag and bounded E2E examples. Synthetic coordinate correctness only; no measured calibration or real accuracy qualification.",
+  "fixed_contract": {
+    "notation": "A_T_B maps points from B into A. ScanOdometry stores current_front_T_first_front. Calibration paths provide body_T_sensor. The volume gauge is the first body frame (first front frame for the uncalibrated bounded smoke).",
+    "front": "volume_T_current_front = body_T_front * inverse(current_front_T_first_front).",
+    "other_sensor": "volume_T_current_sensor = body_T_front * inverse(current_front_T_first_front) * inverse(body_T_front) * body_T_sensor. Both sensors share one rigid body motion; inverse-only rear transport is insufficient under rotation and lever arms.",
+    "failure": "Reject non-finite inputs, inverses and composed results before TSDF insertion. Existing proper-rigid calibration/matcher assumptions remain. No new normalization policy or frame/clock evidence is invented.",
+    "admission": "Keep source SHA/path/size, registered clock/frame readiness, actual frame IDs, timestamp synchronization, bounded IO and storage admission unchanged. Rear uses the existing matched front timestamp without interpolation; the sync bound is not simultaneous-motion proof.",
+    "execution": "One private shared example helper, constant work per scan, no public API/core/math change, device copies, threads or dependencies. Preserve input transforms, record timestamps, frames and provenance."
+  },
+  "verification": "Commit protocol first, then extract the unchanged old consumer algebra into the shared helper and commit independent physical-coordinate tests. Retain a failing baseline before fixing production math. Hand-defined signed-axis rotations and inverse observation equations recover static points from translating/rotating front and rear sensors, including nonidentity noncommuting extrinsics, first pose and inverse-only lever-arm counterexample. Check finite errors, existing clock/frame/source/resource gates, both examples, ROS2 crate, mapping bridge, Clippy and formatting. Execute both examples on Linux/Windows/macOS CI.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/mapping-sensor-transport-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 3221225472,
+    "combined_new_and_positive_cache_growth_max_bytes": 3355443200,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect existing scientific JSON, 42 frozen native artifacts, pinned reference sources and completed room audit outputs. Reuse the existing cache; no frozen binary/wheel rebuild, old evidence deletion or real-motion fit. Retain failed attempts."
+  },
+  "remaining_80_percent": "Native complete room accuracy and genuinely unobserved motion qualification; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; full canonical mapping/semantic/Viewer/interchange/release acceptance. Coordinate fixtures do not satisfy these requirements."
+}
