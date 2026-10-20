@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Rooted pose-graph propagation](POSE_GRAPH_ROOTED_LOCALIZATION.md) keeps the
+explicit node-from-anchor composition contract, complete SE3 updates, fixed root
+and timestamps. An iterative indexed traversal validates the reachable non-loop
+tree and finite results before mutation; ambiguity fails atomically. Disconnected
+components/loop constraints retain their records. Core/math/GPU/dependencies and
+device ownership stay unchanged; this substrate does not optimize loop closures
+or qualify real-motion accuracy.
+
 A [full room reference audit](ROOM_REFERENCE_AUDIT.md) admits only one hash-bound
 public CPU model, exact parent preparation and unchanged original gates. Explicit
 owned inputs and causal state retain the existing generator's cloud/world/IO

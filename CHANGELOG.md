@@ -19,6 +19,16 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Fix rooted pose-graph localization dropping pure rotations/tiny translations,
+  updating disconnected components and propagating a temporarily moved root.
+  Validate a finite reachable tree before atomically applying complete poses;
+  preserve timestamps, root and loop-closure records, and reject ambiguous paths.
+  Retain original composition direction with iterative adjacency/queue traversal.
+  Seventeen new math/scan cases, 22 default/24 all-feature passes, cross-crate
+  integration, Clippy/WASM/format checks and three OS CI jobs. Existing scientific
+  evidence and real-motion acceptance remain unchanged. See
+  [the fixed contract and results](docs/POSE_GRAPH_ROOTED_LOCALIZATION.md).
+
 - Add a fixed complete room public CPU reference comparator and seven bounded
   source-equation cases. Preserve all 1,360 timestamps and 1,359 independently
   audited raw/causal pairs; reference ATE/RPE 0.378945/0.058388m
