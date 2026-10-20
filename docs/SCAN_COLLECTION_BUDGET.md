@@ -47,6 +47,11 @@ Distinct physical messages with identical headers can therefore merge; message
 identity is a separate unresolved contract. Complete collection is not proof
 of physical calibration, synchronized motion or canonical acceptance.
 
+The subsequent [146AA consumer gates](SCAN_IDENTITY_ADMISSION.md) reject
+message/group count mismatches and duplicate corrected times before accepting a
+full-bag map. The collector's grouping policy and physical identity API remain
+unchanged; the original 146Z results below retain their source-bound scope.
+
 ## Reproduction and verification
 
 The baseline extracts the original per-topic callback loop and pending assembly

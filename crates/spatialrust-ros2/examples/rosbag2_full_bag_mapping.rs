@@ -7,7 +7,7 @@
 //! JSON/HTML/manifest receipt and exits with status 2.
 
 use std::{
-    collections::{BTreeMap, BTreeSet, VecDeque},
+    collections::{BTreeSet, VecDeque},
     env,
     error::Error,
     fs,
@@ -26,6 +26,13 @@ use scan_collection::{collect_chunks, CollectionUsage};
 #[path = "support/collection_tests.rs"]
 mod collection_tests;
 
+#[path = "support/scan_identity.rs"]
+mod scan_identity;
+
+#[cfg(test)]
+#[path = "support/identity_tests.rs"]
+mod identity_tests;
+
 use serde::{de::DeserializeOwned, Serialize};
 use spatialrust_interchange::export_triangle_mesh_gltf_json;
 use spatialrust_io::{
@@ -40,7 +47,7 @@ use spatialrust_registration::IcpConfig;
 use spatialrust_ros2::Rosbag2PointCloudSource;
 use spatialrust_scene::TsdfVolume;
 use spatialrust_sync::{
-    DeterministicReplayer, EpisodeLimits, MemoryEpisodeBuilder, StampedRecord, SyncWindow, TopicId,
+    DeterministicReplayer, EpisodeLimits, MemoryEpisodeBuilder, SyncWindow, TopicId,
 };
 use spatialrust_viewer::{
     CalibrationEvidenceFrame, CalibrationEvidenceState, FrameTransform, FullBagMappingState,
@@ -364,9 +371,9 @@ fn execute_mapping(
     };
 
     let front_id = TopicId::new(config.front_topic.clone());
-    let front_records: Vec<&StampedRecord> =
-        episode.records().iter().filter(|record| record.topic == front_id).collect();
+    let front_records = scan_identity::topic_records(&episode, &front_id)?;
     let rear_id = TopicId::new(config.rear_topic.clone());
+    scan_identity::topic_records(&episode, &rear_id)?;
     let odometry = ScanOdometry::try_new(ScanOdometryConfig::new(front_records.len(), 3))?;
     let matcher = IcpScanMatcher::new(IcpConfig {
         max_iterations: 10,
@@ -399,10 +406,8 @@ fn execute_mapping(
 
     // ScanOdometry stores current_front_T_first_front. Each sensor is carried
     // by the same body motion into the fixed first-body volume gauge.
-    let mut pose_by_stamp = BTreeMap::new();
-    for (record, pose) in front_records.iter().zip(odometry_result.trajectory.samples()) {
-        pose_by_stamp.insert(record.stamp.as_nanos(), pose.pose.isometry);
-    }
+    let pose_by_stamp =
+        scan_identity::front_pose_lookup(&front_records, &odometry_result.trajectory)?;
     let mut volume = TsdfVolume::try_new(TSDF_ORIGIN, TSDF_VOXEL_SIZE, TSDF_DIMS, TSDF_TRUNCATION)?;
     let mut integrated_records = 0_u64;
     let mut integrated_points = 0_u64;
@@ -481,6 +486,15 @@ fn collect_topic(
     let bag_message_count = source.topic().message_count;
     let peak_source_bytes = source.max_message_bytes();
     let chunks = collect_chunks(|| source.next_chunk(), topic, clock, builder)?;
+    // Header/frame grouping cannot distinguish identical-header messages.
+    // Reject lost groups (including skipped empty messages) before claiming a
+    // complete selected topic. Counts are not a physical-message identity API.
+    if chunks.record_count != bag_message_count {
+        return Err(format!(
+            "topic `{topic}` scan group count {} differs from bag message count {bag_message_count}; ambiguous grouping or empty messages",
+            chunks.record_count
+        ).into());
+    }
     Ok(CollectedTopic {
         record_count: chunks.record_count,
         bag_message_count,
@@ -848,6 +862,7 @@ mod tests {
     use super::*;
     use spatialrust_math::TransformPoint;
     use spatialrust_viewer::{CalibrationArtifact, CalibrationEvidenceClock, ClockCalibration};
+    use std::collections::BTreeMap;
 
     const SHA: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 

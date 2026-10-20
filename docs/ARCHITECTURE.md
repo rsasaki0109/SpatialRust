@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Full-bag scan identity admission](SCAN_IDENTITY_ADMISSION.md) requires selected
+SQLite message/group cardinality, strictly increasing corrected times per topic
+before odometry and exact trajectory count/stamp bindings before TSDF. Ambiguity
+rejects completion instead of merging scans into an accepted map or overwriting
+poses. Private safe example helpers preserve collection budgets, calibration,
+matching and transport. Public message IDs and physical timing remain open;
+core/libraries/GPU/dependencies and explicit data ownership stay unchanged.
+
 [Incremental scan collection](SCAN_COLLECTION_BUDGET.md) shares one bounded
 episode builder across both sensors. Completed scans plus pending owned chunks
 pass checked record/point/allocated-column admission before an explicit CPU

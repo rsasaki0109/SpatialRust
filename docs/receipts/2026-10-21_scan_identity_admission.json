@@ -1,0 +1,377 @@
+{
+  "schema": "spatialrust.public-scan-identity-admission-receipt.v1",
+  "slice": "146AA",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-20T16:15:18.338282+00:00",
+  "protocol_commit": "7ee12ebf4e471706a8a258ffda7c48eff8834251",
+  "implementation_commit": "33032bcb2a4d9a89386e466b46d064dfb04afa83",
+  "numerical_source_commit": "33032bcb2a4d9a89386e466b46d064dfb04afa83",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\scan-identity-admission-plan.json",
+    "bytes": 4202,
+    "sha256": "e7cbd89a059e992f6efba090b109d87358e447aef83b5bfe4a02a1c427706798"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\scan-identity-admission-preflight.json",
+    "bytes": 115930,
+    "sha256": "414a5b9d4cf7074c0953e27942c314a95d7fbb76e8458fdf83d483101c33fd6c"
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/scan-identity-admission-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned reference sources and completed room outputs. Reuse the shared cache. Preserve failed attempts. No real sensor reads/downloads/copies, real motion fit or frozen binary build. Synthetic SQLite fixtures use the owned external temp directory."
+  },
+  "validation": {
+    "full-bag": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\full-bag.command.json",
+        "bytes": 19290,
+        "sha256": "ec44a21307bb900697620d0dc25be3a4907fc0790c999620fc0f4d884b96a52e"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\full-bag.log",
+        "bytes": 4507,
+        "sha256": "8f168df3215c9238c5afc8c5894612ba341e6dca95825fca570a90561c445037"
+      }
+    },
+    "e2e": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\e2e.command.json",
+        "bytes": 19276,
+        "sha256": "b7275bbba4635dab5a544e8bcdfdce2fbf522c9c1861a4a11d34d76b7389a9dd"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\e2e.log",
+        "bytes": 1571,
+        "sha256": "be94f0bdf37bd640082e62e6419763ed3fd25e51dbe2f36c1ad7bdba2d0ba81a"
+      }
+    },
+    "ros2-default": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\ros2-default.command.json",
+        "bytes": 19208,
+        "sha256": "66315b5af63154e6a5dd9288ac84cdba9a629623eff42690fc195c5ce2ee164c"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\ros2-default.log",
+        "bytes": 553,
+        "sha256": "b73aedbbd72cf1e490e1a4a5b048d522841ac4d34abca241a0ae2c6554b73a09"
+      }
+    },
+    "ros2-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\ros2-all.command.json",
+        "bytes": 19227,
+        "sha256": "89236960350a1be7286bfd61aaa328c3260a1ce38a0bb1240a7effb0eb62ae64"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\ros2-all.log",
+        "bytes": 824,
+        "sha256": "f5e9f074868386eecb0c7ed4c950af87b6be93bc94aed2fdc2edd09ba4c76185"
+      }
+    },
+    "records": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\records.command.json",
+        "bytes": 19228,
+        "sha256": "3c1819bfe6561e2b9b4dfb928688e528a49e760403b8de13eb10ca39c0b45b7a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\records.log",
+        "bytes": 2547,
+        "sha256": "8efbc9ac130538c1cae7f3f645a91a17381c6db64729bd1f8d73a9bb00e1f224"
+      }
+    },
+    "sync": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\sync.command.json",
+        "bytes": 19223,
+        "sha256": "02d63862e8ceadf52edbcddd0b9ec97095cbb1a206c80e6908fb710c75820ef2"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\sync.log",
+        "bytes": 1004,
+        "sha256": "54f4b7d4c5f491c5404b19b6ce353310b58723beaa086651b0752f7521c1bb32"
+      }
+    },
+    "mapping-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\mapping-all.command.json",
+        "bytes": 19233,
+        "sha256": "727bb823d6f31089201aa38176bbc7207fe509efc201a2090c2ed45f3b8b9976"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\mapping-all.log",
+        "bytes": 2230,
+        "sha256": "d2eea1884a9a3aaca89e24e3a649b016f5c9b6677feb5d8dba552bc68d4acb16"
+      }
+    },
+    "calibration": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\calibration.command.json",
+        "bytes": 19252,
+        "sha256": "733c4008bc9e1cea66f0e717f0411cc24104da20bc3c58432a640473688cac3d"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\calibration.log",
+        "bytes": 790,
+        "sha256": "b65e266b0f0094e61c9bbaca487654d5fb0b68300bbfa8f20431ef66fd85c44d"
+      }
+    },
+    "examples-clippy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\examples-clippy.command.json",
+        "bytes": 19297,
+        "sha256": "8edb2ef5921bb88657c8c92da1f9851c0c0a4e77118b0e81f6d97e46e208b832"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\examples-clippy.log",
+        "bytes": 172,
+        "sha256": "86f5116352aa8ca82faa422cc387dff0d3e007989947b793a580313614652381"
+      }
+    },
+    "format": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\format.command.json",
+        "bytes": 19410,
+        "sha256": "93207f0147ff48e4208fc0fa8f7d032cc58e9d0179d0c279755e0e990a9370ba"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\format.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "tests": {
+    "full-bag": {
+      "passed": 54,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    },
+    "e2e": {
+      "passed": 17,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    },
+    "ros2-default": {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "ros2-all": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "records": {
+      "passed": 29,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "sync": {
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "mapping-all": {
+      "passed": 24,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 3
+    },
+    "calibration": {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    }
+  },
+  "original_regressions": {
+    "source_commit": "e54766ab06a4b45e5618e94d8e02d80ac5c6ce5a",
+    "tests": 54,
+    "passed": 41,
+    "failed": 13,
+    "failed_names": [
+      "identity_tests::correction_rounding_collision_is_rejected_without_rewriting_raw_time",
+      "identity_tests::duplicate_pose_keys_cannot_overwrite",
+      "identity_tests::duplicate_topic_timestamps_are_rejected",
+      "identity_tests::mixed_frames_cannot_share_front_pose_lookup",
+      "identity_tests::mixed_topics_cannot_share_front_pose_lookup",
+      "identity_tests::sqlite_distinct_messages_with_identical_headers_are_rejected",
+      "identity_tests::sqlite_nonconsecutive_repeat_is_rejected_after_sorting",
+      "identity_tests::sqlite_skipped_empty_message_cannot_claim_completeness",
+      "identity_tests::trajectory_clock_mismatch_is_rejected",
+      "identity_tests::trajectory_count_mismatch_is_rejected",
+      "identity_tests::trajectory_domain_mismatch_is_rejected",
+      "identity_tests::trajectory_quality_mismatch_is_rejected",
+      "identity_tests::trajectory_stamp_mismatch_is_rejected"
+    ],
+    "receipt": {
+      "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\baseline-v2.command.json",
+      "bytes": 19379,
+      "sha256": "8cb039abf87f783b9a1182889738df43aa3b99c78ff25d4ac2727df689ab882e"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\baseline-v2.log",
+      "bytes": 20686,
+      "sha256": "163491a70e3cb997d6634111f1f035beb2acedc6a519faa321d25f1193861cc8"
+    },
+    "boundary": "Behavior-preserving private fallible seams extract existing topic filtering and timestamp-keyed trajectory zip. Source collection and pose zip compare equal to the parent; no original rejection gates exist in these seams."
+  },
+  "initial_test_compilation": {
+    "source_commit": "e2fbb6928dd4567beefc9fa5683a637dd4d350f9",
+    "exit_status": 101,
+    "cause": "Ambiguous test-only Quat::identity scalar; explicitly selected f32 before behavioral reproduction. Initial failed log retained.",
+    "receipt": {
+      "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\baseline.command.json",
+      "bytes": 19352,
+      "sha256": "22cd5956a1401da10b46a25f7a9840120ead96eb1e8e0555a47206193ff31e1e"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\scan-identity-admission-v1\\baseline.log",
+      "bytes": 696,
+      "sha256": "7f7b9fafd0a21540da606db80251301a42b8670316dc356f53b6b68eba0dac3d"
+    }
+  },
+  "unchanged_gates": {
+    "source/calibration/disk gates": true,
+    "registered frame checks": true,
+    "clock correction": true,
+    "odometry and frame transforms": true,
+    "nearest bundle policy": true,
+    "TSDF integration/interchange": true
+  },
+  "admission_order": {
+    "both_topic_timestamps_before_odometry": true,
+    "trajectory_validation_before_tsdf": true
+  },
+  "unique_new_cases": 17,
+  "preserved_scientific_json_count": 493,
+  "preserved_native_file_count": 42,
+  "previous_completed_room_outputs": {
+    "schema": "spatialrust.huber-preserved-room-outputs.v1",
+    "files": [
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\audit.json",
+        "bytes": 14612178,
+        "sha256": "3f518a2d8d5b1aba5858a934ab88429cb8868b27aae01ad0329ea148c29eb3ec"
+      },
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\drift.svg",
+        "bytes": 382828,
+        "sha256": "e8fd81a07172126d592ffccb451a3ae090422680ef030d55efdb3ed780afb03c"
+      },
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\preview.png",
+        "bytes": 226821,
+        "sha256": "3ccd937a5c35be51af3bf3b6c9958d6fc062304363085546df80bc706bd19f99"
+      }
+    ],
+    "manifest_sha256": "75468b4a7e65a0edce8ff8e60c2f7f831c97589eefda66a243198cdacf7f6745"
+  },
+  "reference_sources": {
+    "upstream_repository": "https://github.com/isl-org/Open3D",
+    "ref": "v0.19.0",
+    "commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+    "files": [
+      {
+        "upstream_path": "cpp/open3d/geometry/ImageFactory.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\ImageFactory.cpp",
+        "bytes": 6267,
+        "sha256": "e447d9f17c725b243fbc291aa32ac2238dd4eaa46edc3a17f2f4d08a3ae4fbf1"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImageFactory.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImageFactory.cpp",
+        "bytes": 4464,
+        "sha256": "4f95c4b284fb8c22bf537bf66f53fe0c79723efb8971a0f4e357fdd7d7f079fc"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.h",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.h",
+        "bytes": 4570,
+        "sha256": "1a35f4370aaae08d693a2efd5913266f85dc71879c5e09c538429a2446760d57"
+      },
+      {
+        "upstream_path": "cpp/open3d/pipelines/odometry/RGBDOdometryJacobian.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDOdometryJacobian.cpp",
+        "bytes": 5924,
+        "sha256": "47640145004e4cca41ad70744ea0216935f57383c6b3d8a5a44561c6293a3830"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.cpp",
+        "bytes": 2554,
+        "sha256": "bf3d07e1d09be85dd448c216a7a0fddea019f5331e39fa52df8be99b39008d47"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/Image.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Image.cpp",
+        "bytes": 14366,
+        "sha256": "bef45e1facc2f25a63623e6e6aa9289127fbc9aa7ac9df9fe87393a014bbcd0c"
+      },
+      {
+        "upstream_path": "cpp/open3d/pipelines/odometry/Odometry.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Odometry.cpp",
+        "bytes": 23556,
+        "sha256": "be75e58413b6d2f7ee575b526fc0d68b228e5eeb2cab27f246f7c8e8dd34d0fb"
+      }
+    ],
+    "sensor_payload_downloads": 0
+  },
+  "sensor_downloads": 0,
+  "sensor_payload_copies": 0,
+  "real_sensor_payload_reads": 0,
+  "new_real_motion_fits": 0,
+  "new_frozen_native_artifacts": 0,
+  "physical_message_identity_api_added": false,
+  "operational_80_percent_proven": false,
+  "remaining": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Synthetic ambiguity admission cannot establish these requirements.",
+  "preserved_code_trees": {
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-math": "1b2b0d359494c807a71caf508c5a8abd8c52aa2b",
+    "crates/spatialrust-records": "7236d93b95dcff9d80d668bc03935f7442b1c1c6",
+    "crates/spatialrust-sync": "8c27cb7d73ee1f04bbad232e9421b48dec483657",
+    "crates/spatialrust-mapping": "6550a941f5349e098a27cfb1e0f9751504a58594",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96",
+    "crates/spatialrust-vision": "763c04fcef8c92c2eec5a165e2f385cf567e00a7",
+    "crates/spatialrust-py": "cd89ecbd3325df100591467ee84b5f32bc71e8df",
+    "crates/spatialrust-viewer": "6fab7f74e53fd906cbb275ac182bb1b77cd1c3f4",
+    "crates/spatialrust-ros2/src": "9d4b84b8a1f43db0e78303b36e09a17050b245fb",
+    "crates/spatialrust-ros2/Cargo.toml": "c0c33536dd873d1448c334f32af308acccf5b4b9",
+    "crates/spatialrust-ros2/examples/support/scan_transport.rs": "0cd36329e631f3bab97edaa4c25b1d6fd6d0149b",
+    "crates/spatialrust-ros2/examples/support/scan_collection.rs": "2b9345486f591eb7b7113650ed1768b66ae0a428",
+    "Cargo.toml": "071f537437a8d7b77cbe4dff7ae28e6a5479ed66"
+  },
+  "cargo_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118041,
+    "sha256": "6b7bc5c64861ec82eed78b683e8a05269175fdd5a4ecd397833090a34d5c3f8d"
+  },
+  "storage": {
+    "owned_metadata_bytes": 267918,
+    "cache_bytes": 9769514280,
+    "positive_cache_growth_bytes": 15069060,
+    "combined_bytes": 15336978,
+    "free_bytes": {
+      "C": 76537712640,
+      "E": 879325114368
+    }
+  }
+}
