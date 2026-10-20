@@ -6,6 +6,12 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A fixed synthetic [sampling audit](DENSE_SAMPLING_AUDIT.md) binds test-only
+native observations and installed CPU reference APIs to source/module hashes.
+Pyramid raster, lookup admission and derivative semantics remain separate
+from trajectory acceptance. Production algorithms, dependencies, public APIs
+and transfers are unchanged; an unobservable external Jacobian stays explicit.
+
 An explicit initial-correspondence intensity policy scales fitting gray planes
 once before pyramid construction, while retaining original fitting depth and
 raw final admission. Streaming means and independent gain application keep

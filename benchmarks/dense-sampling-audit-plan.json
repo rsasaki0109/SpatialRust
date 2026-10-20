@@ -1,0 +1,157 @@
+{
+  "affine": {
+    "coarse_pixel": [
+      1,
+      1
+    ],
+    "depth_m": 2.0,
+    "gradient": [
+      0.011764705882352941,
+      0.0196078431372549
+    ],
+    "gray_coefficients": [
+      3,
+      5,
+      7
+    ],
+    "gray_divisor": 255.0,
+    "height": 8,
+    "levels": 2,
+    "native_coarse_gray": 0.09019607843137255,
+    "native_subpixel_gray": 0.10294117647058823,
+    "reference_coarse_gray": 0.10588235294117647,
+    "reference_integer_gray": 0.10980392156862745,
+    "subpixel": [
+      2.25,
+      2.5
+    ],
+    "width": 8
+  },
+  "border": {
+    "native_admitted": false,
+    "pixel": [
+      7,
+      2
+    ],
+    "reference_integer_depth_valid": true
+  },
+  "holes": {
+    "native_admitted": false,
+    "native_coarse_valid": true,
+    "pyramid_hole": [
+      2,
+      2
+    ],
+    "reference_coarse_valid": false,
+    "reference_integer_depth_valid": true,
+    "sampling_neighbor_hole": [
+      3,
+      2
+    ],
+    "sampling_pixel": [
+      2,
+      2
+    ]
+  },
+  "invariant": "Production estimators, preprocessing defaults, raw final/lineage/full-trajectory gates, all prior artifacts, canonical calibration and hardware/release requirements remain unchanged",
+  "jacobian_observability": "Require independent analytic validation of all 12 native Jacobian entries. Record actual external residual/weight vectors and whether Python exposes mutated Jacobian arrays; never treat unchanged input arrays as C++ output.",
+  "native_production_baseline": "0573432e71998208c61cb3521e7fe62d9ea1ac77",
+  "odd": {
+    "height": 5,
+    "native_level_one": [
+      4,
+      3
+    ],
+    "reference_level_one": [
+      3,
+      2
+    ],
+    "width": 7
+  },
+  "reference": {
+    "commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+    "cpu_module_sha256": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "repository": "https://github.com/isl-org/Open3D",
+    "sources": [
+      {
+        "bytes": 6267,
+        "sha256": "e447d9f17c725b243fbc291aa32ac2238dd4eaa46edc3a17f2f4d08a3ae4fbf1",
+        "upstream_path": "cpp/open3d/geometry/ImageFactory.cpp"
+      },
+      {
+        "bytes": 4464,
+        "sha256": "4f95c4b284fb8c22bf537bf66f53fe0c79723efb8971a0f4e357fdd7d7f079fc",
+        "upstream_path": "cpp/open3d/geometry/RGBDImageFactory.cpp"
+      },
+      {
+        "bytes": 4570,
+        "sha256": "1a35f4370aaae08d693a2efd5913266f85dc71879c5e09c538429a2446760d57",
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.h"
+      },
+      {
+        "bytes": 5924,
+        "sha256": "47640145004e4cca41ad70744ea0216935f57383c6b3d8a5a44561c6293a3830",
+        "upstream_path": "cpp/open3d/pipelines/odometry/RGBDOdometryJacobian.cpp"
+      },
+      {
+        "bytes": 2554,
+        "sha256": "bf3d07e1d09be85dd448c216a7a0fddea019f5331e39fa52df8be99b39008d47",
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.cpp"
+      },
+      {
+        "bytes": 14366,
+        "sha256": "bef45e1facc2f25a63623e6e6aa9289127fbc9aa7ac9df9fe87393a014bbcd0c",
+        "upstream_path": "cpp/open3d/geometry/Image.cpp"
+      },
+      {
+        "bytes": 23556,
+        "sha256": "be75e58413b6d2f7ee575b526fc0d68b228e5eeb2cab27f246f7c8e8dd34d0fb",
+        "upstream_path": "cpp/open3d/pipelines/odometry/Odometry.cpp"
+      }
+    ],
+    "version": "0.19.0"
+  },
+  "resources": {
+    "audit_result_max_bytes": 16777216,
+    "command_max_seconds": 1200,
+    "cpu_worker_limit": 4,
+    "minimum_free_bytes": 21474836480,
+    "new_build_and_incremental_cache_max_bytes": 1073741824,
+    "new_sensor_payload_bytes": 0
+  },
+  "row": {
+    "depth_gradient": [
+      0.003,
+      0.004
+    ],
+    "depth_weight": 0.968,
+    "domain": "Common supplied float32-representable point/gradients; independent analytic row, separate from image stages",
+    "gray_gradient": [
+      0.002,
+      -0.001
+    ],
+    "intrinsics": [
+      64.0,
+      80.0,
+      0.0,
+      0.0
+    ],
+    "point": [
+      0.0625,
+      0.05,
+      2.0
+    ],
+    "source_gray": 0.3,
+    "target_depth": 2.01,
+    "target_gray": 0.31
+  },
+  "schema": "spatialrust.dense-sampling-audit-plan.v1",
+  "scope": "Source-bound synthetic operator comparison; no new sensor loading, pose fitting, trajectory score, performance or operational acceptance claim",
+  "slice": "146O",
+  "tolerances": {
+    "native_scalar": 1e-14,
+    "reference_float32": 1e-06,
+    "reference_row": 1e-06,
+    "unweighted_jacobian": 1e-12
+  }
+}

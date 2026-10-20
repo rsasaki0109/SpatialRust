@@ -1,0 +1,360 @@
+{
+  "schema": "spatialrust.public-dense-sampling-audit-receipt.v1",
+  "slice": "146O",
+  "date": "2026-10-20",
+  "date_timezone": "Asia/Tokyo",
+  "recorded_at_utc": "2026-10-20T00:09:31.974103+00:00",
+  "protocol_commit": "2bfd55d8801eaa6ae3951714259bba4c8d62a55e",
+  "native_probe_source_commit": "04fc306e88f7fb18ca65f4f665b166f6f61258f2",
+  "auditor_source_commit": "9b147bc9e502bae6347635e3662e0b339bd08815",
+  "production_baseline": "0573432e71998208c61cb3521e7fe62d9ea1ac77",
+  "production_rust_prefix_sha256": "671017ce66ce0d162fb61727352916a4af1a171b2cffd4024d4d0be2ee186eb2",
+  "unchanged_native_trees": {
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96"
+  },
+  "preparation": {
+    "path": "E:\\SpatialRustData\\maturity-80\\dense-sampling-audit-v1\\preparation.json",
+    "bytes": 112406,
+    "sha256": "50ac3916014acb37c485eb0c566852f7ed7d8ac956ffd16cbb5384a8cd739cfb"
+  },
+  "frozen_executable": {
+    "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\frozen-test-executable.json",
+    "bytes": 843,
+    "sha256": "ee667187c9db4c9113bea53aac302214f46b5fd4133f1ad89d903decf4e4413e"
+  },
+  "observations": {
+    "path": "E:\\SpatialRustData\\maturity-80\\dense-sampling-audit-v1\\observations-v2\\audit.json",
+    "bytes": 3907,
+    "sha256": "2048cd4f5645bf676c0241a5275f74a44d129048b0830ab1884b42c30024a67f"
+  },
+  "operator_predicates_passed": true,
+  "observed": {
+    "schema": "spatialrust.dense-sampling-audit.v1",
+    "plan": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\dense-sampling-audit-plan.json",
+      "bytes": 4561,
+      "sha256": "bedd01cd4ed5a348cbd8d30c85998e658f591ec8c19e5d4d1ab579a84e6f5c45"
+    },
+    "native_log": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\native-probe.log",
+      "bytes": 937,
+      "sha256": "761218b4c1c37680054a19e256823b89bf74d09584ae2a9df8ee9ff2a6ad2b1b"
+    },
+    "native_executable": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\bin\\dense_sampling_audit.exe",
+      "bytes": 1980416,
+      "sha256": "dc9c08cd9cd6eb7141fab67b28734213947526a35437f27b05da9e52930e22c4"
+    },
+    "source_manifest": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\manifest.json",
+      "bytes": 2398,
+      "sha256": "3396a7b4441ae6b9b9dda8f4e3a5dd0095afa4d99e3e7647d9e1b7a6179aba79"
+    },
+    "reference_module": {
+      "path": "C:\\Users\\rsasa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\open3d\\cpu\\pybind.cp312-win_amd64.pyd",
+      "bytes": 151434752,
+      "sha256": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88"
+    },
+    "upstream_commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+    "native": {
+      "schema": "spatialrust.native-sampling-probe.v1",
+      "even_dimensions": [
+        4,
+        4
+      ],
+      "coarse_gray": 0.09019607843137256,
+      "odd_dimensions": [
+        4,
+        3
+      ],
+      "hole_coarse_depth": 2,
+      "hole_admitted": false,
+      "border_admitted": false,
+      "subpixel": [
+        0.10294117647058823,
+        0.011764705882352941,
+        0.0196078431372549
+      ],
+      "row_point": [
+        0.0625,
+        0.05000000074505806,
+        2.0
+      ],
+      "row_gray_gradient": [
+        0.0020000000949949026,
+        -0.0010000000474974513
+      ],
+      "row_depth_gradient": [
+        0.003000000026077032,
+        0.004000000189989805
+      ],
+      "row_jacobian": [
+        [
+          0.07995000379742123,
+          0.12806250608171105,
+          -0.0057000003184191905,
+          0.06400000303983688,
+          -0.04000000189989805,
+          -0.0010000000325962894
+        ],
+        [
+          -0.37035001596324146,
+          0.25493750168615953,
+          0.005200000361725687,
+          0.09600000083446503,
+          0.1600000075995922,
+          -1.0070000002756714
+        ]
+      ]
+    },
+    "reference": {
+      "even_dimensions": [
+        4,
+        4
+      ],
+      "coarse_gray": 0.10588235408067703,
+      "odd_dimensions": [
+        3,
+        2
+      ],
+      "hole_coarse_valid": false,
+      "integer_hole_valid": true,
+      "integer_border_valid": true,
+      "rounded_coordinates": [
+        2,
+        3
+      ],
+      "rounded_gray": 0.10980392247438431,
+      "gradient": [
+        0.011764705181121826,
+        0.019607841968536377
+      ],
+      "row_residual": [
+        0.0017888526760153527,
+        0.009838689718084435
+      ],
+      "row_weights": [
+        1.0,
+        1.0
+      ],
+      "jacobian_observable": false,
+      "row_jacobian": null,
+      "jacobian_scope": "Python list does not expose mutated C++ Jacobian vectors; source formula and native analytic check remain separate"
+    },
+    "native_differences": {
+      "coarse_gray": 1.3877787807814457e-17,
+      "hole_depth": 0.0,
+      "subpixel": 0.0,
+      "point": 0.0,
+      "gray_gradient": 0.0,
+      "depth_gradient": 0.0,
+      "jacobian": 0.0
+    },
+    "reference_differences": {
+      "coarse_gray": 1.1395005633518807e-09,
+      "gradient": 1.1687185247355458e-09,
+      "rounded_gray": 9.057568584047715e-10,
+      "row_residual": 0.0,
+      "row_weights": 0.0
+    },
+    "scope": "Source-bound synthetic operator comparison; no new sensor loading, pose fitting, trajectory score, performance or operational acceptance claim",
+    "source_defined_lookup_scope": "rounded coordinates use the pinned source rule; no exported runtime correspondence set is claimed",
+    "trajectory_acceptance": false,
+    "operational_80_percent_proven": false
+  },
+  "validation": {
+    "compile": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\compile.json",
+      "bytes": 1397,
+      "sha256": "75a69e6f8d2dc7614f80999ceb05f12ecd3a73a10e40e22676334f6e38dc4534"
+    },
+    "native-probe": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\native-probe.json",
+      "bytes": 1374,
+      "sha256": "6ec46612399303649112da7b71aff9020e135eb0f7646bf58c69ff119383b4d8"
+    },
+    "native-tests": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\native-tests.json",
+      "bytes": 1302,
+      "sha256": "1ad2076cdd0df34855a067ee9b61d3983c1a71365064464b4ae0d4f61a0debd9"
+    },
+    "focused-tests": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\focused-tests.json",
+      "bytes": 1570,
+      "sha256": "0dcb573822403f6b35826c9c8a38921f97bd049efebef6bd8b88c36d30fd11e7"
+    },
+    "operator-audit-v2": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\operator-audit-v2.json",
+      "bytes": 1972,
+      "sha256": "4e99c351de565d800b85f9cf39f1923fb8229aa14d6b11bdf9223b34477a9095"
+    },
+    "native-clippy": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\native-clippy.json",
+      "bytes": 1405,
+      "sha256": "2025aabb6aad71dfae7c64632e0efab29303bf5650806cd8e0c11c227d187796"
+    },
+    "full-tests": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\full-tests.json",
+      "bytes": 3226,
+      "sha256": "f3e5cb4ef946e23d3715cfc9db6ba1f807c024bc0ec258747129881c4656e25e"
+    }
+  },
+  "native_test_log": {
+    "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\native-tests.log",
+    "bytes": 2102,
+    "sha256": "f54ddf16850edd530a93bf1055277233dd308adb129743f178292f9fb37cdd6d"
+  },
+  "tests": {
+    "native_passed": 21,
+    "new_python_cases": 31,
+    "python_passed": 1134,
+    "python_skipped": 3,
+    "focused-tests": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\dense-sampling-focused-tests.xml",
+        "bytes": 4610,
+        "sha256": "fb30f8bf3a9978ae77394e16399a1cdc7e382e3072bb3ad1367395f05f7f9ac3"
+      },
+      "tests": 31,
+      "passed": 31,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0
+    },
+    "full-tests": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\dense-sampling-full-tests.xml",
+        "bytes": 153818,
+        "sha256": "bf94dbd5d818b6e1396049d1016badac85016b985fb308076f19ea312f0c3cd6"
+      },
+      "tests": 1137,
+      "passed": 1134,
+      "skipped": 3,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "initial_adapter_failure": {
+    "metadata": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\operator-audit.json",
+      "bytes": 1970,
+      "sha256": "614a3887ff4249be7da8dd057e7b101bda4846304e88967904377141054e15f8"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\operator-audit.log",
+      "bytes": 1160,
+      "sha256": "1c2bc99858fa67419cd67541ffbdd6bf0e2e521b7d178b4f0e359dff675c83a8"
+    },
+    "scope": "C++ Sobel3Dx/Dy enum spellings differ from pinned Python Sobel3dx/dy. Only adapter spelling corrected; same plan, executable, expected values and tolerances retained."
+  },
+  "preserved_prior_json_count": 337,
+  "preserved_frozen_native_files": {
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+    "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+    "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+    "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f",
+    "E:/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libdrm.so.2": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libvulkan_dzn.so": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\share\\vulkan\\icd.d\\dzn_icd.x86_64.json": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\bison": "7791b07ce4e24d56c80f3df47c9a193b039392afc1eb02af726ff93591b1c6e7",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\flex": "4cabd101467c6b428e3fd9b5a7dee0785b3108657ae0a5d85947956329d7047b",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0": "ceb1e4eb7eb552e08022d821d632cb400de60e4d3201324ac1b7ec34268ac5f9",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0": "f177704aac79527908633213ba1bb3f298c32aabdc2b3bc231b46983d58587e8",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0": "92a30b5b3a96fb52bbdad4cc46b7796411ccffc22b5eb06f72dd3d2dcb90cd40",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libgallium-26.2.5.so": "e2c423620442bb6bfafd89a4550b39eab11a4245ab88eb85153a9f4750066e03",
+    "C:\\Users\\rsasa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\open3d\\cpu\\pybind.cp312-win_amd64.pyd": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "46f4434b0b6456a3ea564d2a7f1f7c4c942ce4979348d6a06e9eed36ef9611a6",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1baaf7a63e71cf153d5d2736e06e5f8bd87e3813e063a3f43d5bf5a8d930855b",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a58c85172c8596630e18eaa010e7905a49e65ad5e849db0f7a0d63c1467abc",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "026091cde997323078e453fdc4c0f941b623b6a4c6443de4e76e058fd78689c1",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "ee9063970899e05c9b6d8987e2c0d1e19238cf83827356f037b7cf9ad221295c",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "0b8545e0b3737fc08f49a2b9af325a1e09a56693c9e524665f1fd5ab00790589"
+  },
+  "preserved_old_native_file_count": 32,
+  "additional_frozen_test_executable": {
+    "path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\bin\\dense_sampling_audit.exe",
+    "bytes": 1980416,
+    "sha256": "dc9c08cd9cd6eb7141fab67b28734213947526a35437f27b05da9e52930e22c4"
+  },
+  "test_scratch_cleanup": {
+    "Schema": "spatialrust.dense-sampling-pytest-scratch-cleanup.v1",
+    "VerifiedAtUtc": "2026-10-20T00:07:40.6006954Z",
+    "Paths": [
+      {
+        "Path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\pytest-focused-tests-v1",
+        "Files": 9,
+        "LogicalBytes": 28522,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\dense-sampling-focused-tests.xml",
+        "XmlSha256": "fb30f8bf3a9978ae77394e16399a1cdc7e382e3072bb3ad1367395f05f7f9ac3",
+        "Tests": 31,
+        "Skipped": 0
+      },
+      {
+        "Path": "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\pytest-full-tests-v1",
+        "Files": 1224,
+        "LogicalBytes": 438252866,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\dense-sampling-full-tests.xml",
+        "XmlSha256": "bf94dbd5d818b6e1396049d1016badac85016b985fb308076f19ea312f0c3cd6",
+        "Tests": 1137,
+        "Skipped": 3
+      }
+    ],
+    "AlreadyAbsent": [],
+    "LogicalBytesRemoved": 438281388,
+    "FreeBeforeBytes": 676047323136,
+    "FreeAfterBytes": 676487598080,
+    "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+  },
+  "environment": {
+    "python": "3.12.10",
+    "numpy": "2.3.4",
+    "platform": "win32"
+  },
+  "storage": {
+    "result_logical_bytes": 116313,
+    "result_bound_bytes": 16777216,
+    "new_build_root_logical_bytes": 2195062,
+    "incremental_cache_growth_bytes": 3384263,
+    "combined_new_build_and_cache_growth_bytes": 5579325,
+    "maximum_successful_command_sampled_bytes": 430144092,
+    "new_build_and_cache_bound_bytes": 1073741824,
+    "minimum_free_bytes": 21474836480,
+    "minimum_sampled_free_bytes": 676061179904,
+    "free_after_bytes": {
+      "C": 78541996032,
+      "E": 676487598080
+    },
+    "new_sensor_payload_bytes": 0,
+    "sensor_downloads": 0,
+    "command_max_seconds": 1200,
+    "cpu_worker_limit": 4
+  },
+  "limitations": [
+    "Operator-level synthetic comparison, not full trajectory, speed, calibration or hardware acceptance",
+    "Rounded target lookup is source-defined, not an exported runtime correspondence set",
+    "External Python API does not expose mutated Jacobian vectors; native analytic equality and external residual/weight observations are separate",
+    "No cause of rpy error established"
+  ],
+  "remaining": [
+    "Both raw Linux hardware classes",
+    "canonical measured clock uncertainty and physical frame accuracy",
+    "canonical full mapping and semantic/release acceptance",
+    "held-out motion robustness",
+    "rpy full motion acceptance"
+  ],
+  "trajectory_acceptance": false,
+  "operational_80_percent_proven": false
+}
