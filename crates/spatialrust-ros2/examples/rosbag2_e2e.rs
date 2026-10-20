@@ -15,6 +15,9 @@ use std::{
     time::Instant,
 };
 
+#[path = "support/scan_transport.rs"]
+mod scan_transport;
+
 use serde::{Deserialize, Serialize};
 use spatialrust_core::{
     PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas, Timestamp,
@@ -24,7 +27,7 @@ use spatialrust_io::{
     DatasetManifest, ReceiptRole, StoragePreflight, StorageRoots, DEFAULT_MIN_OUTPUT_FREE_BYTES,
 };
 use spatialrust_mapping::{IcpScanMatcher, ScanOdometry, ScanOdometryConfig};
-use spatialrust_math::Vec3;
+use spatialrust_math::{Isometry3, Vec3};
 use spatialrust_records::{
     BoundedSpatialRecordSource, CancellationToken, MemoryBudget, RecordProvenance,
     SchemaDescriptor, SchemaVersion, SpatialRecord, StreamOptions,
@@ -499,11 +502,16 @@ fn run() -> Result<(), Box<dyn Error>> {
     let tsdf_started = Instant::now();
     let mut volume = TsdfVolume::try_new(TSDF_ORIGIN, TSDF_VOXEL_SIZE, TSDF_DIMS, TSDF_TRUNCATION)?;
     let mut integrated_points = 0_u64;
+    // This bounded smoke uses the first front scan as its volume gauge.
     for (record, pose) in front_episode.records().iter().zip(odometry_result.trajectory.samples()) {
         integrated_points = integrated_points
             .checked_add(u64::try_from(volume.integrate_cloud_with_pose(
                 record.record.cloud(),
-                pose.pose.isometry,
+                scan_transport::sensor_to_volume(
+                    Isometry3::identity(),
+                    Isometry3::identity(),
+                    pose.pose.isometry,
+                )?,
                 Vec3::new(0.0, 0.0, 0.0),
             )?)?)
             .ok_or("TSDF point counter overflow")?;
@@ -801,8 +809,14 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Config, Box<dyn 
     if front_topic == rear_topic {
         return Err("front and rear topics must differ".into());
     }
-    if output_dir.is_absolute() {
-        return Err("--output-dir must be relative to --output-root".into());
+    if output_dir.as_os_str().is_empty()
+        || output_dir.components().any(|component| {
+            !matches!(component, std::path::Component::Normal(_) | std::path::Component::CurDir)
+        })
+    {
+        return Err(
+            "--output-dir must be relative to --output-root without parent traversal".into()
+        );
     }
     if max_records_per_topic < 2 {
         return Err("--max-records must be at least 2 for odometry".into());
@@ -1510,6 +1524,22 @@ mod tests {
         assert!(config.stop_after_ingest);
         assert_eq!(config.front_topic, "/front");
         assert_eq!(config.rear_topic, "/rear");
+    }
+
+    #[test]
+    fn rejects_output_directory_escape_components() {
+        let mut invalid = vec!["", "..", "../escape", "nested/../../escape", "/tmp/run"];
+        if cfg!(windows) {
+            invalid.extend([r"C:run", r"C:\run", r"\run", r"\\host\share\run"]);
+        }
+        for output in invalid {
+            let result = parse_args(
+                ["bag.db3", "--output-root", "/media/output", "--output-dir", output]
+                    .into_iter()
+                    .map(str::to_owned),
+            );
+            assert!(result.is_err(), "accepted output directory {output:?}");
+        }
     }
 
     #[test]

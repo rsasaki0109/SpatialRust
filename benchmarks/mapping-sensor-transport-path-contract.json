@@ -1,0 +1,9 @@
+{
+  "schema": "spatialrust.mapping-sensor-transport-path-contract.v1",
+  "slice": "146Y",
+  "scope": "Prospective bounded-output correction discovered while executing the existing E2E harness on Windows; no sensor acquisition or physical calibration claim.",
+  "observed_failure": "At source 1a63044 the existing rejects_unsafe_or_unbounded_options test fails: /tmp/run has a Windows root but is_absolute is false, so parse_args accepts it.",
+  "fixed_contract": "Require a nonempty output-dir composed only of native Normal/CurDir components. Reject RootDir, Prefix and ParentDir before storage work. This closes native rooted, drive-relative and parent-escape cases. It is lexical admission, not a claim to resolve filesystem links.",
+  "verification": "Commit and run an additional path-admission regression before changing parse_args. Retain both the original existing-test failure and this baseline. Preserve all other source, calibration, clock, timestamp and resource gates; run both mapping examples and existing IO metadata/checkpoint tests on all three OS families.",
+  "resources": "The original mapping-sensor-transport-plan.json limits remain fixed; no additional budget or data acquisition."
+}

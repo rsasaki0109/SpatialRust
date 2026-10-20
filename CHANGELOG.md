@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Correct scan-to-TSDF direction and shared front/rear body transport in both
+  mapping examples. Preserve source/calibration/clock admission and reject
+  non-finite transforms before integration. Close native rooted/drive/parent
+  output-path admission gaps exposed by cross-platform tests. Twelve shared
+  coordinate/finite cases plus one path case, retained original failures, existing
+  ROS2/mapping/calibration checks and three OS CI jobs; no real acceptance claim.
+  See [the contract and evidence](docs/MAPPING_SENSOR_TRANSPORT.md).
+
 - Fix rooted pose-graph localization dropping pure rotations/tiny translations,
   updating disconnected components and propagating a temporarily moved root.
   Validate a finite reachable tree before atomically applying complete poses;
