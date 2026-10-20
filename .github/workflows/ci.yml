@@ -532,10 +532,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes libvulkan1 mesa-vulkan-drivers
-      - name: Test Visual contracts, strict image, viewer, and LOD
+      - name: Test Visual contracts, viewer receipt validation, and LOD
         run: |
           cargo test -p spatialrust-viz
           cargo test -p spatialrust-render-wgpu --features wgpu
+          cargo test -p spatialrust-viewer
+          cargo test -p spatialrust-viewer --features serde
           cargo test -p spatialrust-viewer --all-features
           cargo test -p spatialrust-lod --all-features
           cargo test -p spatialrust-platform visual

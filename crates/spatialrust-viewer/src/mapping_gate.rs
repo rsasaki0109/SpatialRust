@@ -92,6 +92,18 @@ impl MappingSourceSummary {
                 "a completed full-bag mapping run must retain source records and points".into(),
             ));
         }
+        if self.full_bag_processed
+            && (self.front_bag_message_count != self.front_record_count
+                || self.rear_bag_message_count != self.rear_record_count
+                || self.total_point_count < self.total_record_count
+                || self.start_nanos.is_none()
+                || self.end_nanos.is_none())
+        {
+            return Err(ViewerError::InvalidState(
+                "completed mapping source requires one nonempty scan per message and corrected time bounds"
+                    .into(),
+            ));
+        }
         Ok(())
     }
 }
@@ -171,9 +183,9 @@ pub struct MappingTsdfSummary {
     pub dims: [usize; 3],
     /// TSDF truncation distance in metres.
     pub truncation: f32,
-    /// Number of records integrated into the volume.
+    /// Integration visits; a retained source record may be visited repeatedly.
     pub integrated_record_count: u64,
-    /// Number of point samples visited by integration.
+    /// Point samples visited by integration, including repeated visits.
     pub integrated_point_count: u64,
     /// Number of extracted mesh vertices.
     pub mesh_vertex_count: u64,
@@ -354,7 +366,10 @@ impl FullBagMappingState {
         Ok(state)
     }
 
-    /// Validates source, calibration, stage receipts, and derived gates.
+    /// Validates source, calibration, cross-stage bindings, and derived gates.
+    ///
+    /// Call after deserialization and before admitting a receipt downstream.
+    /// Integration visits do not establish unique source-record coverage.
     pub fn validate(&self) -> ViewerResult<()> {
         if self.version != FULL_BAG_MAPPING_STATE_VERSION {
             return Err(ViewerError::InvalidState(format!(
@@ -378,6 +393,7 @@ impl FullBagMappingState {
         if let Some(tsdf) = &self.tsdf {
             tsdf.validate()?;
         }
+        self.validate_stage_bindings()?;
         let mut roles = std::collections::BTreeSet::new();
         let mut paths = std::collections::BTreeSet::new();
         for artifact in &self.artifacts {
@@ -438,6 +454,48 @@ impl FullBagMappingState {
             return Err(ViewerError::InvalidState(
                 "full-bag mapping blockers must not be empty".into(),
             ));
+        }
+        Ok(())
+    }
+
+    fn validate_stage_bindings(&self) -> ViewerResult<()> {
+        if let Some(odometry) = &self.odometry {
+            let front = &self.source_summary;
+            if odometry.topic != front.front_topic
+                || odometry.scan_count > front.front_record_count
+                || (odometry.complete
+                    && (odometry.scan_count != front.front_record_count
+                        || odometry.scan_count != front.front_bag_message_count))
+            {
+                return Err(ViewerError::InvalidState(
+                    "mapping odometry topic or scan count differs from the selected front source"
+                        .into(),
+                ));
+            }
+            if let Some(calibration) = &self.calibration {
+                if calibration.frame.required_frames.get("front") != Some(&odometry.source_frame)
+                    || odometry.root_frame != calibration.frame.root_frame
+                    || odometry.clock_id != calibration.clock.target_domain
+                {
+                    return Err(ViewerError::InvalidState(
+                        "mapping odometry frame or clock identity differs from registered calibration"
+                            .into(),
+                    ));
+                }
+            }
+        }
+        if let Some(tsdf) = &self.tsdf {
+            let calibration_mismatch = self
+                .calibration
+                .as_ref()
+                .is_some_and(|calibration| tsdf.frame_id != calibration.frame.root_frame);
+            let odometry_mismatch =
+                self.odometry.as_ref().is_some_and(|odometry| tsdf.frame_id != odometry.root_frame);
+            if calibration_mismatch || odometry_mismatch {
+                return Err(ViewerError::InvalidState(
+                    "mapping TSDF frame differs from calibration or odometry root".into(),
+                ));
+            }
         }
         Ok(())
     }
