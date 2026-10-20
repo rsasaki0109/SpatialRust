@@ -19,6 +19,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reject ambiguous full-bag scan grouping and pose association: require selected
+  message/group counts, unique corrected times per topic and exact trajectory
+  cardinality/clock/time/quality before TSDF. Seventeen synthetic cases reproduce
+  13 original failures; all 54 full-bag and 17 E2E cases pass with existing
+  ROS2/records/sync/mapping/calibration/Clippy checks and three OS CI coverage.
+  Preserve scientific evidence, capacity/calibration gates and sensor transport.
+  Public message IDs and real operational qualification remain open. See
+  [the contract and evidence](docs/SCAN_IDENTITY_ADMISSION.md).
+
 - Enforce full-bag episode record/point/capacity limits while reading both sensor
   topics, including the pending scan, instead of retaining whole topic vectors
   before admission. Check source and owned-copy capacity, preserve leases and
