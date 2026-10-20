@@ -91,6 +91,13 @@ skips. Optional validation tests live outside the SDK wheel suite. A mandatory
 `Frozen room drift audit` CI job uses the tested NumPy/SciPy/Matplotlib/pytest
 versions; SDK runtime dependencies stay unchanged.
 
+The first workflow definition used `runner.temp` in job-level `env`, which
+GitHub rejected before launching its CI jobs. The same plotting-cache value is
+now in step-level `env`, as supported by the official
+[context availability table](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability).
+Only that workflow scope changed; complete local scientific outputs and tests
+remain preserved and are reused without estimation or rendering repeats.
+
 All 437 prior scientific JSON and 39 native artifacts remain hash-identical.
 All Rust crates, native Python bridge/stub and production dependency manifests
 are byte-identical to the parent. No new native build/install, real estimation,

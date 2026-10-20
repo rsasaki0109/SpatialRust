@@ -22,7 +22,6 @@ jobs:
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
       PYTHONDONTWRITEBYTECODE: "1"
       MPLBACKEND: Agg
-      MPLCONFIGDIR: ${{ runner.temp }}/room-drift-mpl
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -31,6 +30,8 @@ jobs:
       # Optional post-fit tooling stays outside SDK/wheel runtime dependencies.
       - run: python -m pip install numpy==2.3.4 scipy==1.17.1 matplotlib==3.10.8 pytest==9.0.2
       - run: python -m pytest tests/validation/test_room_drift_audit.py -q --basetemp=${{ runner.temp }}/room-drift-tests --junitxml=room-drift-tests.xml
+        env:
+          MPLCONFIGDIR: ${{ runner.temp }}/room-drift-mpl
 
   msrv-base:
     name: Rust 1.75 base and geometry
