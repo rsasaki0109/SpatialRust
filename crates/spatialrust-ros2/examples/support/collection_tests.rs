@@ -269,7 +269,7 @@ fn shared_episode_retains_deterministic_timestamp_topic_order() {
 #[test]
 fn sqlite_limit_precedes_malformed_tail_decode() {
     use rusqlite::{params, Connection};
-    use spatialrust_runtime::ros2::{encode_point_cloud2_xyz, PointCloud2Xyz};
+    use spatialrust_runtime::{encode_point_cloud2_xyz, PointCloud2Xyz};
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("synthetic.db3");
     let db = Connection::open(&path).unwrap();
