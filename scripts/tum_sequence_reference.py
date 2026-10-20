@@ -75,7 +75,10 @@ def validate_plan(plan):
             raise ValueError('invalid iteration bound')
         leaf, gate = s['leaf_m'], s['gate_m']
     if plan['sequence'] in ('rgbd_dataset_freiburg1_plant','rgbd_dataset_freiburg1_room'):
-        if plan.get('estimator') == 'spatialrust_reference_precision_dense_rgbd_cpu':
+        if plan.get('estimator') == 'spatialrust_huber_dense_rgbd_cpu':
+            from huber_dense_rgbd_protocol import validate_huber_plan
+            validate_huber_plan(plan, check_base=False)
+        elif plan.get('estimator') == 'spatialrust_reference_precision_dense_rgbd_cpu':
             from reference_precision_dense_rgbd_protocol import validate_reference_precision_plan
             validate_reference_precision_plan(plan, check_base=False)
         else:

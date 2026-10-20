@@ -7,6 +7,7 @@ use crate::{AbsolutePose, CameraMatrix3, VisionError, VisionResult};
 
 const TILE_ROWS: usize = 16;
 
+mod huber;
 mod reference_precision;
 mod rounded_sobel;
 
@@ -23,6 +24,10 @@ pub enum DenseRgbdFittingModel {
     /// Float32 intermediate filters/XYZ, f64 checked solve and proper left Euler update.
     /// Requires Raw and retains original raw final admission and every scheduled update.
     ReferencePrecision,
+    /// ReferencePrecision with scalar Huber IRLS: normalized gray delta 0.02,
+    /// metric depth delta max_depth_difference/3. Raw final gates stay unweighted.
+    /// Requires Raw and a finite strictly positive derived depth delta.
+    ReferencePrecisionHuber,
 }
 
 impl DenseRgbdFittingModel {
@@ -32,6 +37,7 @@ impl DenseRgbdFittingModel {
             Self::Bilinear => "bilinear",
             Self::RoundedSobel => "rounded-sobel",
             Self::ReferencePrecision => "reference-precision",
+            Self::ReferencePrecisionHuber => "reference-precision-huber",
         }
     }
 }
@@ -204,6 +210,14 @@ impl DenseRgbdOdometryOptions {
                     ));
                 }
                 reference_precision::required_bytes(self, width, height)
+            }
+            DenseRgbdFittingModel::ReferencePrecisionHuber => {
+                if preprocessing != DenseRgbdPreprocessing::Raw {
+                    return Err(VisionError::InvalidParameter(
+                        "reference-precision-huber defines its complete fitting policy; preprocessing must be raw".into(),
+                    ));
+                }
+                huber::required_bytes(self, width, height)
             }
         }
     }
@@ -401,7 +415,9 @@ pub fn estimate_dense_rgbd_odometry_with_model(
             options,
             preprocessing,
         ),
-        DenseRgbdFittingModel::RoundedSobel | DenseRgbdFittingModel::ReferencePrecision => {
+        DenseRgbdFittingModel::RoundedSobel
+        | DenseRgbdFittingModel::ReferencePrecision
+        | DenseRgbdFittingModel::ReferencePrecisionHuber => {
             if source.gray.width() != target.gray.width()
                 || source.gray.height() != target.gray.height()
             {
@@ -415,7 +431,9 @@ pub fn estimate_dense_rgbd_odometry_with_model(
                 preprocessing,
                 model,
             )?;
-            if model == DenseRgbdFittingModel::ReferencePrecision {
+            if model == DenseRgbdFittingModel::ReferencePrecisionHuber {
+                huber::estimate(source, target, camera, initial, options, working_bytes)
+            } else if model == DenseRgbdFittingModel::ReferencePrecision {
                 reference_precision::estimate(
                     source,
                     target,

@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+An explicit [Huber dense fitting model](HUBER_DENSE_RGBD_VALIDATION.md) adds
+scalar IRLS to the isolated reference-precision pipeline. Typed Raw-only
+selection, finite positive preflighted thresholds, unchanged unweighted raw
+admission, six legacy choices and explicit owned CPU storage retain their
+contracts. Ordered bounded tiles and the original checked memory estimate
+remain; core/math/GPU/dependencies and defaults do not change. One fixed
+candidate is evaluated on four complete observed development timelines before
+any scoring; full independent operational qualification remains open.
+
 A [complete frozen room audit](ROOM_DRIFT_AUDIT.md) consumes existing trajectories,
 reference and independent raw/score evidence with explicit full-timeline
 coverage. Independent post-fit SE3/SLERP checks, fixed chronological bins and

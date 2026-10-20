@@ -1067,6 +1067,10 @@ def estimate_dense_rgbd_odometry(
     fitting_model="reference-precision" requires preprocessing="raw" and uses
     explicit float32 intermediate filters/XYZ in owned f64 buffers, a checked
     f64 solve and proper left Rz*Ry*Rx increments; raw final admission is retained.
+    fitting_model="reference-precision-huber" adds scalar Huber IRLS to that
+    pipeline: normalized gray delta 0.02, depth delta max_depth_difference/3.
+    Requires raw preprocessing and a finite positive derived delta. Original
+    unweighted raw final counts/errors and owned working-byte bound remain.
     All final statistics use original raw images. Filtered mode charges its
     retained raw levels before allocation. Original sparse APIs/device transfers remain.
     """
