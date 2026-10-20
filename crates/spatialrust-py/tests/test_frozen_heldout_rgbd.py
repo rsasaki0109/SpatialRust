@@ -157,7 +157,10 @@ def test_changed_or_partial_source_never_becomes_an_admitted_archive(tmp_path,mo
     elif change=='encoding':headers['Content-Encoding']='gzip'
     elif change=='truncated':actual=body[:-1]
     elif change=='not-gzip':actual=b'no'+body[2:]
-    elif change=='duration':resources['source_command_max_seconds']=0
+    elif change=='duration':
+        resources['source_command_max_seconds']=0
+        ticks=iter([0.,1.])
+        monkeypatch.setattr(download.time,'monotonic',lambda:next(ticks,1.))
     elif change=='budget':
         resources['archives_max_bytes']=len(body)
         (root/'existing.tgz.part').write_bytes(b'x')
