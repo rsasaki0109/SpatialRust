@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A [full room reference audit](ROOM_REFERENCE_AUDIT.md) admits only one hash-bound
+public CPU model, exact parent preparation and unchanged original gates. Explicit
+owned inputs and causal state retain the existing generator's cloud/world/IO
+contracts. Full trajectories freeze before scoring; complete original-gauge
+comparison and source-modeled equations stay distinct from unexposed runtime
+arrays. Native production/core/GPU/bridge/defaults/dependencies remain unchanged;
+reference results cannot qualify the native solver.
+
 An explicit [Huber dense fitting model](HUBER_DENSE_RGBD_VALIDATION.md) adds
 scalar IRLS to the isolated reference-precision pipeline. Typed Raw-only
 selection, finite positive preflighted thresholds, unchanged unweighted raw
