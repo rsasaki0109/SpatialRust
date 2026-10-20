@@ -1,0 +1,62 @@
+{
+  "expected_total_logical_bytes": 3624257697,
+  "observation": "The unpublished 146Q restricted snapshot silently omitted a protected failed-test directory. The corrected privileged snapshot is retained and is the fixed expected-byte baseline.",
+  "operational_80_percent_proven": false,
+  "parent_merge": "a128fbad9ebe102ac0c5cd2d2324ec5e51b6408d",
+  "previous_receipt": "docs/receipts/2026-10-20_frozen_heldout_rgbd.json",
+  "previous_receipt_lf_sha256": "4465d6b81430c0fb15f2cd7dbc3d5c9b2596fb9ddc8f0294a439902b893ed343",
+  "real_read_only_roots": [
+    {
+      "expected_logical_bytes": 3061264520,
+      "path": "E:/SpatialRustData/maturity-80/heldout-rgbd-input-v1",
+      "role": "prior-input"
+    },
+    {
+      "expected_logical_bytes": 481564539,
+      "path": "E:/SpatialRustData/maturity-80/heldout-rgbd-study-v1",
+      "role": "prior-study"
+    },
+    {
+      "expected_logical_bytes": 81428638,
+      "path": "E:/SpatialRustBuild/heldout-rgbd-v1",
+      "role": "prior-build"
+    }
+  ],
+  "remaining": [
+    "Both raw Linux hardware classes",
+    "canonical measured clock uncertainty and physical frame accuracy",
+    "canonical full mapping and semantic/release acceptance",
+    "held-out motion robustness",
+    "rpy full motion acceptance"
+  ],
+  "requirements": [
+    "Require an existing absolute directory; propagate missing, denied, vanished and stat/enumeration IO errors without returning partial counts.",
+    "Reject symlinks, Windows reparse points and non-regular filesystem entries, including root/ancestors.",
+    "Traverse every directory even when filename filtering excludes its files; count regular-file logical sizes once per pathname; hard links are charged per pathname.",
+    "Single-stream and range acquisition must inventory all *.tgz* source bytes before opening a network request; denied subtrees must not admit work.",
+    "Keep source URL/ETag/size/prefix preservation, free-space floor, all resource limits and native/numerical/generation/score contracts unchanged.",
+    "Read-only counters are observations, not an atomic filesystem snapshot; owned run roots and process guards retain responsibility for concurrent growth."
+  ],
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/fail-closed-inventory-v1",
+    "combined_new_owned_max_bytes": 2147483648,
+    "cpu_worker_limit": 4,
+    "maximum_build_and_test_scratch_bytes": 1073741824,
+    "maximum_command_seconds": 3600,
+    "maximum_result_bytes": 16777216,
+    "minimum_free_bytes": 21474836480,
+    "new_native_builds": 0,
+    "new_sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "result_root": "E:/SpatialRustData/maturity-80/fail-closed-inventory-v1"
+  },
+  "restricted_negative": "Record the actual protected failed-test inventory error under the restricted runner; no valid total may be accepted. Do not change ACLs or delete files.",
+  "schema": "spatialrust.regular-file-inventory-plan.v1",
+  "slice": "146R",
+  "verification": [
+    "Focused filesystem/error/acquisition tests, complete Python suite with the existing frozen native extension, Python 3.8 syntax.",
+    "Capture a real restricted failure, then require full privileged inventories to equal all three fixed prior totals.",
+    "Use independent strict os.walk(onerror=raise) comparison; preserve all existing scientific JSON files, frozen native artifacts and failed scratch.",
+    "Remove only exact passing pytest basetemps after XML/absolute ancestry/full no-reparse checks; preserve logs/XML and every failure."
+  ]
+}
