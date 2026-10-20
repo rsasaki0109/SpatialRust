@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Mapping sensor transport](MAPPING_SENSOR_TRANSPORT.md) explicitly inverts scan
+odometry into the fixed first-body volume gauge and conjugates front motion
+through the shared body before carrying other sensor extrinsics. One private
+example helper rejects non-finite intermediates; source/clock/frame admission,
+explicit ownership and bounded IO remain. Native output paths reject rooted,
+prefixed and parent components. Core/math/mapping/GPU/dependencies stay unchanged;
+physical calibration, synchronized motion and real accuracy need separate evidence.
+
 [Rooted pose-graph propagation](POSE_GRAPH_ROOTED_LOCALIZATION.md) keeps the
 explicit node-from-anchor composition contract, complete SE3 updates, fixed root
 and timestamps. An iterative indexed traversal validates the reachable non-loop
