@@ -137,10 +137,10 @@ fn downsample(previous: &Level) -> Level {
     let (width, height) = (previous.width / 2, previous.height / 2);
     let mut out =
         Level { width, height, color: vec![0.0; width * height], depth: vec![0.0; width * height] };
-    let tile_pixels = width * TILE_ROWS;
     #[cfg(not(target_arch = "wasm32"))]
     if worker_count(previous.width * previous.height) > 1 {
         use rayon::prelude::*;
+        let tile_pixels = width * TILE_ROWS;
         pool().expect("worker count requires a pool").install(|| {
             out.color
                 .par_chunks_mut(tile_pixels)
