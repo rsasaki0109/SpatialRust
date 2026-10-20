@@ -1,0 +1,164 @@
+{
+  "acceptance": {
+    "basis": "Unchanged engineering completeness/coverage/ATE/RPE limits from the previous plane study. Fixed before first image-tracking/PnP fitting; not publisher accuracy requirements or physical calibration guarantees.",
+    "maximum_first_pose_ate_rmse_m": 0.1,
+    "maximum_one_second_translation_rpe_rmse_m": 0.05,
+    "minimum_evaluated_fraction": 0.95,
+    "minimum_generated_fraction": 1.0
+  },
+  "calibration": {
+    "axes": "x right, y down, z forward",
+    "basis": "Publisher recommends ROS default intrinsics without undistortion for pre-registered PNG depth. Depth is already rescaled and expressed in RGB optical coordinates; apply no extra correction or IR-to-RGB transform. This is the recommended approximation, not newly measured calibration.",
+    "cx": 319.5,
+    "cy": 239.5,
+    "depth_unit_m": 0.0002,
+    "distortion_applied": false,
+    "extrinsic_applied": false,
+    "fx": 525.0,
+    "fy": 525.0,
+    "height": 480,
+    "sensor_frame": "tum_rgb_optical",
+    "width": 640
+  },
+  "controls": {
+    "dense_fitting_model": {
+      "arithmetic": "native f64; no external binary or bitwise-equivalence claim",
+      "final_statistics": "original raw full-resolution images; original bilinear final admission, count/fraction/error gates",
+      "gradient": {
+        "depth_nonfinite": "replace each nonfinite derivative with zero",
+        "jacobian": "local Sobel surrogate; not an exact derivative of the discontinuous rounded-pixel objective",
+        "method": "replicated-edge Sobel3, multiplied by 1/8"
+      },
+      "initial_filter": {
+        "border": "replicate",
+        "depth": "Gaussian3; any nonfinite tap propagates",
+        "divisor": 16,
+        "gray": "Gaussian3",
+        "kernel": [
+          1,
+          2,
+          1
+        ]
+      },
+      "intensity_normalization": {
+        "admission": "minimum count and finite positive means/gains before mutation",
+        "clipping": false,
+        "method": "initial-rounded-correspondence-pair-mean",
+        "ordering": "once; full-resolution row-major",
+        "target_mean": 0.5
+      },
+      "iterations": "all scheduled updates; no epsilon early exit",
+      "lookup": {
+        "coordinate": "trunc(projected_coordinate + 0.5); test finite and signed bounds before usize cast",
+        "depth": "selected target depth finite and original metric difference gate",
+        "point": "finite transformed point with positive z",
+        "uniqueness": "one row per valid source pixel; no target uniqueness claim"
+      },
+      "model": "rounded-sobel",
+      "ownership": "borrowed native input; owned Python input copies before GIL release; explicit CPU/device transfers",
+      "pose_update": "existing native f64 proper left Rodrigues update and solver",
+      "pyramid": {
+        "depth": "2x2 arithmetic mean; nonfinite propagates",
+        "dimensions": "floor(width/2), floor(height/2); all scheduled levels at least 3x3",
+        "gray": "Gaussian3 then 2x2 arithmetic mean",
+        "intrinsics": "halve fx, fy, cx, cy per level"
+      },
+      "wasm": "serial",
+      "workers": 4,
+      "working_bytes": {
+        "checked_before_allocation": true,
+        "excludes": "caller inputs/Python input copies, allocator metadata, stacks",
+        "formula": "32*sum(floor-pyramid pixel counts) + 64*base_pixels + ceil(height/16)*sizeof(Normal)",
+        "meaning": "both fitting pyramids; both raw levels; max of four current-level target gradient planes and two temporary smoothing planes; ordered reductions"
+      }
+    },
+    "dense_rgbd_odometry": {
+      "depth_weight": 0.968,
+      "epsilon": 1e-07,
+      "iterations": [
+        20,
+        10,
+        5
+      ],
+      "max_depth": 5.0,
+      "max_depth_difference": 0.03,
+      "max_working_bytes": 134217728,
+      "min_correspondence_fraction": 0.5,
+      "min_correspondences": 30,
+      "min_depth": 0.1
+    },
+    "evaluation_max_gap_ns": 20000000,
+    "io_stride": 60,
+    "max_depth_m": 5.0,
+    "max_tracking_gap_ns": 100000000,
+    "min_depth_m": 0.1,
+    "min_points": 100,
+    "min_support_fraction": 0.5,
+    "projection_tolerance_m": 1e-06,
+    "rgb_max_gap_ns": 20000000,
+    "rgbd_odometry": {
+      "epsilon": 0.001,
+      "image_margin": 40,
+      "max_features": 300,
+      "max_forward_backward_error": 0.75,
+      "max_iterations": 30,
+      "min_distance": 10.0,
+      "min_eigenvalue": 0.0001,
+      "min_inlier_fraction": 0.5,
+      "min_inliers": 15,
+      "min_tracks": 20,
+      "pnp_threshold": 2.0,
+      "pyramid_levels": 4,
+      "quality_level": 0.01,
+      "window_radius": 10
+    },
+    "rpe_delta_ns": 1000000000,
+    "stages": [
+      {
+        "gate_m": 0.2,
+        "iterations": 20,
+        "leaf_m": 0.1
+      },
+      {
+        "gate_m": 0.1,
+        "iterations": 20,
+        "leaf_m": 0.05
+      }
+    ]
+  },
+  "dense_initialization": {
+    "first_pair": "identity",
+    "reference_initialization": false,
+    "reset_after_loss": false,
+    "retries": false,
+    "subsequent_pairs": "previous returned source-to-target increment",
+    "time_rescaling": false
+  },
+  "dense_support_policy": "Minimum count and a nonsingular system for initial/intermediate hypotheses; the unchanged 0.5 full-resolution correspondence fraction applies to the returned pose. The independent full-cloud support and complete trajectory accuracy gates are unchanged.",
+  "estimator": "spatialrust_rounded_sobel_dense_rgbd_cpu",
+  "generation": "All original adjacent RGB-D frames; explicit rounded-sobel native model. Identity then the preceding returned relative increment. No reference, rescale, retry, selection or loss reset.",
+  "limits": {
+    "max_frames": 10000,
+    "max_member_bytes": 16777216,
+    "max_members": 30000,
+    "max_total_bytes": 8589934592
+  },
+  "native_refinement_policy": "Joint initial Gaussian3, rounded-pair means, floor 2x2 pyramids, integer target lookup and Sobel3 surrogate gradients form one fixed opt-in model. Execute the complete original iteration schedule. Retain the native f64 solver/proper left update, all original raw final gates and bounded ownership; no external-estimator equivalence claim.",
+  "observed_redirect": "https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz",
+  "prior_algorithm_plan_sha256": "f85dd80fa03d8ec0651c748b246459e8bbdb560a6cd335bfc43cf08666dec10e",
+  "prior_causal_dense_lf_sha256": "10fc2b663545b9f26a210ced3dadd3838fa9e2e76cc8b7bbb6c43b3582478847",
+  "prior_consensus_plan_sha256": "71ac033ff9b99dcca1ffa7b6225d1e429dad81439e17fc565afb769ee3da5309",
+  "prior_dense_protocol_sha256": "766cbfb99babd6e1ad3c48c60dee7a5719f9b4258f0173df415d84d60b2509f6",
+  "prior_dense_source_plan_sha256": "03df039aea7c6b02069d2b5e673fbc65e080d7d407d78d476605a8d79d5725d5",
+  "prior_final_overlap_plan_sha256": "37745182241f0638bf4d295c8cf698d4304428fd0c92659f99bbda3859b93e1a",
+  "prior_gray_gaussian_lf_sha256": "38477e8f30f301d195ee6e1ec723a213dafe73c728b79e5821434bd1314bfb79",
+  "prior_joint_gaussian_lf_sha256": "46aa954310006d5af573932f7723d9ab98a2a5c67610f403553f50ca386bd3a9",
+  "prior_native_plan_sha256": "8a3515a19466695568ce4a06512e20feea54dbe78c80a23c3f4589ff034ae29b",
+  "prior_pair_mean_dense_lf_sha256": "f64cd27fb3462e911d7639a3165206892371ecbb5aa045c6a4add796e89adc61",
+  "publisher_formats_sha256": "95c907344034b13953f30a01b6c8a960a5b38a08000b46f974992b5e4c6975fc",
+  "publisher_formats_url": "https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats",
+  "schema": "spatialrust.tum-sequence-plan.v1",
+  "scope": "Prospective development comparison after source-bound operator audit. Preserve all controls/results. Freeze both full timelines before either score. No post-score tuning, held-out, speed or physical-calibration claim; every operational 80% requirement remains.",
+  "sequence": "rgbd_dataset_freiburg1_xyz",
+  "url": "https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz"
+}
