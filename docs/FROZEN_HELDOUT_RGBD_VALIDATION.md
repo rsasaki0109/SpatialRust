@@ -85,3 +85,63 @@ that prefix again in the completed archive; no prefix bytes are discarded or
 fetched twice. Keep source/model/limits/gates fixed and test the transport before
 using it on the real incomplete input. This is an acquisition change, with no
 new image or ground-truth interpretation or estimator selection.
+
+## Observed outcomes
+
+The source/model/resource selection was committed at `70a80f5` before archive
+payloads. Complete opaque archive identities were committed at `a1bb5e2` before
+preparation. Both complete estimate files were frozen before either reference
+score. The original two single-stream transfers completed without restart; the
+strict range/prefix continuation has twelve passing synthetic tests and was
+not used on these real archives. No native rebuild or wheel install was needed.
+
+| Recording | Generated / planned | Reference matched | First-pose ATE RMSE (m) | 1s translation RPE RMSE (m) | Accepted |
+| --- | ---: | ---: | ---: | ---: | --- |
+| plant | 1139 / 1139 | 1130 | 0.077810366035 | 0.037764146286 | yes |
+| room | 1360 / 1360 | 1359 | 0.379777450218 | 0.058405114284 | no |
+
+Both scores cover complete planned trajectories, with zero failed generation
+rows. Actual reference gaps and original one-second pair denominators are:
+
+- plant: 0 failed rows, 9 reference gaps; 1093 / 1109 evaluated one-second pairs; full planned trajectory.
+- room: 0 failed rows, 1 reference gaps; 1328 / 1330 evaluated one-second pairs; full planned trajectory.
+
+All 2497 successful causal/raw pairs and both trajectory scores pass independent
+audits. The original 35 updates, raw half-support admission, full-cloud gates,
+world chaining, explicit CPU ownership and four-worker bound remain fixed.
+New source/plan/IO/range tests precede real generation; full Python has 1,229
+passes and three existing optional-dependency skips, the reused native dense
+executable has 28 passes, workflow unit tests have 12 passes, Python 3.8 syntax
+and root Rustfmt pass. Preserve the initial synthetic deadline failure; only its
+test clock changed before the successful rerun.
+
+An unpublished first metadata snapshot omitted a permission-protected failed-test
+directory. Preserve that snapshot and its log. Final fail-closed enumeration
+with complete directory access includes the retained failed scratch; numerical
+results, gates and all original files are unchanged.
+
+Storage accounting (decimal bytes), after removing only verified passing scratch:
+
+| Owned scope | Bytes |
+| --- | ---: |
+| Two archives | 1,478,001,585 |
+| Prepared images/indexes | 1,583,257,088 |
+| Scientific results | 481,564,539 |
+| Build/logs and preserved failed scratch | 81,428,638 |
+| Combined new owned trees | 3,624,257,697 |
+
+Reclaimed 1,201,803,250 logical passing-scratch bytes; retained all 361 old JSON files
+and 36 frozen native artifacts, every old/new failure, archives and result files.
+E free at receipt creation was 672,496,799,744 bytes, above the 20GiB floor; each owned
+scope and the combined 8GiB bound pass. The archives and extracted images are
+accounted separately; no redundant sensor payload copies or new native build
+were introduced.
+
+Plant/room are now observed recordings. The new-recording acceptance remains open.
+Development rpy still fails its original 0.10m ATE gate at 0.10032699404221075m.
+Canonical measured clock/physical calibration, both raw Linux hardware classes,
+and full mapping/semantic/release acceptance remain required for operational 80%.
+Do not retune on these outcomes and reuse a held-out claim.
+
+Full source/hash/command/score/storage evidence:
+[public receipt](receipts/2026-10-20_frozen_heldout_rgbd.json).

@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A [fixed native-candidate study](FROZEN_HELDOUT_RGBD_VALIDATION.md) admits only
+two prospectively selected unscored recordings with opaque source hashes frozen
+before preparation. Strict source/plan/schema gates, bounded single-copy storage
+and both-trajectories-before-score execution retain all original CPU ownership,
+raw/causal/world/accuracy requirements. Production Rust, Python bridge/stub, core
+and GPU trees are unchanged. Outcomes remain separate from full acceptance.
+
 A typed opt-in [rounded-pixel Sobel model](ROUNDED_SOBEL_DENSE_RGBD_VALIDATION.md)
 bundles fitting input normalization, floor pyramids, integer lookup and surrogate
 gradients, while retaining original raw final admission. The existing bilinear

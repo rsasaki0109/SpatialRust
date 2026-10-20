@@ -106,6 +106,15 @@ with exact 20-case regression across all four preserved selectors; defaults and
 old reports remain. The new policy is experimental and does not establish rpy
 or operational 80% acceptance.
 
+The [frozen unscored-recording study](FROZEN_HELDOUT_RGBD_VALIDATION.md)
+reuses that same native extension after source selection and pre-preparation
+hash pins. plant 1139/1139 poses, ATE/RPE 0.077810/0.037764m passes; room
+1360/1360 poses, ATE/RPE 0.379777/0.058405m fails. All 2497 successful
+causal/raw pairs and both scores pass independent audits. Failures/reference
+gaps remain; candidate selection, CPU ownership and original gates are
+unchanged. These recordings become observed after this run. Native development
+rpy and operational 80% remain unaccepted.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree

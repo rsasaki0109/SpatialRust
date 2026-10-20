@@ -1,0 +1,826 @@
+{
+  "schema": "spatialrust.public-frozen-heldout-rgbd-receipt.v1",
+  "slice": "146Q",
+  "date": "2026-10-20",
+  "date_timezone": "Asia/Tokyo",
+  "recorded_at_utc": "2026-10-20T02:54:24.884532+00:00",
+  "protocol_commit": "70a80f5761a122d76146051969cab4d804275656",
+  "workflow_source_commit": "a1bb5e25d4074b12425d4a8c3ed2b410584a5023",
+  "numerical_source_commit": "0b345e46172c091075199db5fee20656fd1a2afe",
+  "candidate": {
+    "development_rpy_accepted": false,
+    "model": "rounded-sobel",
+    "native_sha256": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69",
+    "numerical_source_commit": "0b345e46172c091075199db5fee20656fd1a2afe",
+    "selection_basis": "Choose the existing complete native variant before any new archive payload, image or reference read. The current rpy ATE 0.10032699404221075m still fails; selection is a diagnostic candidate, not deployment acceptance.",
+    "validated_merge": "27e43e7715c0acea28bae8c78cf8e26cff79379c",
+    "wheel_sha256": "1817591beb7eacb443a4eb0632e4be75f21fbd4de9590d6fd74ce71fb6bed465"
+  },
+  "selection": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\frozen-heldout-selection.json",
+    "bytes": 3267,
+    "sha256": "11828fa1428fcc676923d9fa7449ba2bbf9d38ae97dbc4e373a7ab6c7cbb47d5"
+  },
+  "source_identities": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\heldout-source-identities.json",
+    "bytes": 868,
+    "sha256": "de814216968072d960c3eb1cfe752dd7ddcc8b59fba4844f7cb8a8a12616ac93"
+  },
+  "source_identities_lf_sha256": "de814216968072d960c3eb1cfe752dd7ddcc8b59fba4844f7cb8a8a12616ac93",
+  "study": {
+    "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\study.json",
+    "bytes": 2039888,
+    "sha256": "26194e1b77ad4da07a7226246e0d089087391962361c497fd00ed5a3c066c5f1"
+  },
+  "preparation": {
+    "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\preparation.json",
+    "bytes": 90250,
+    "sha256": "265eed6010f98bbd88147ddbebce2b3f9e6a02a844887a66a2fc086725ca0f43"
+  },
+  "acquisition": {
+    "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\acquisition.json",
+    "bytes": 158090,
+    "sha256": "6c401188edf8cb0ecf313962f671a10f8e5b2749e551eea761c281c43f16756d"
+  },
+  "preparation_command": {
+    "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\prepare-command.json",
+    "bytes": 6668,
+    "sha256": "595ef24e0c7f666a50d2c8ae49678957ad2adb8da49254a99cda8e05e4c1d777"
+  },
+  "native_extension": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+    "bytes": 5490176,
+    "sha256": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69"
+  },
+  "native_build": {
+    "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\frozen-package.json",
+    "bytes": 11066,
+    "sha256": "db9bfd2cc523dee541c043bd0eca7bdb50eda850ff89818a2f915e1ea361ab52"
+  },
+  "freeze": {
+    "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\all-estimates-frozen.json",
+    "bytes": 738,
+    "sha256": "3b37bd05d83200bdaa11a10686e5019179dcc7bd5abf0a5072b684eed2a1ac68"
+  },
+  "all_estimates_frozen_at_utc": "2026-10-20T02:45:45.523530+00:00",
+  "protocol_files": [
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\frozen-heldout-selection.json",
+      "bytes": 3267,
+      "sha256": "11828fa1428fcc676923d9fa7449ba2bbf9d38ae97dbc4e373a7ab6c7cbb47d5"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\heldout-source-identities.json",
+      "bytes": 868,
+      "sha256": "de814216968072d960c3eb1cfe752dd7ddcc8b59fba4844f7cb8a8a12616ac93"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-plant-heldout-dense-plan.json",
+      "bytes": 9625,
+      "sha256": "7dd90b3f9b5137f68073515b84dc3a0d7aaad0c8b7bf738cbb7b03b47307d02a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-room-heldout-dense-plan.json",
+      "bytes": 9618,
+      "sha256": "5cd21c2218c3d1beefa23b07dc6ccb966b0787922f6452e2a8d342b75122de0c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rgbd-wide-capture-plan.json",
+      "bytes": 4299,
+      "sha256": "8beda7057e95ba24c361c3672b4c58c849795e61efdff88113fd425958dde781"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rgbd-wide-capture-plan.json",
+      "bytes": 4299,
+      "sha256": "03df039aea7c6b02069d2b5e673fbc65e080d7d407d78d476605a8d79d5725d5"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\dense-sampling-audit-plan.json",
+      "bytes": 4561,
+      "sha256": "bedd01cd4ed5a348cbd8d30c85998e658f591ec8c19e5d4d1ab579a84e6f5c45"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-plant-heldout-dense-plan.json",
+      "bytes": 9625,
+      "sha256": "7dd90b3f9b5137f68073515b84dc3a0d7aaad0c8b7bf738cbb7b03b47307d02a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-room-heldout-dense-plan.json",
+      "bytes": 9618,
+      "sha256": "5cd21c2218c3d1beefa23b07dc6ccb966b0787922f6452e2a8d342b75122de0c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-causal-dense-plan.json",
+      "bytes": 5242,
+      "sha256": "f2b5a1f1528c133706cd45785101c71b3ade2b30d15bfe76febf60bdab746544"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-dense-final-overlap-plan.json",
+      "bytes": 4670,
+      "sha256": "fbd41ca5c1357209483b244987fb34d013a198615780a26f80ca91795a90b266"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-dense-rgbd-plan.json",
+      "bytes": 4319,
+      "sha256": "162c74968e46fef2bf30f25d2df3625209e23855957aee7a8ef530ed438cff66"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-gaussian3-dense-plan.json",
+      "bytes": 5587,
+      "sha256": "854a10aad77c4994fab4f043681dd3b76579e3d6201678bb4a689509ab6fc42e"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-gray-gaussian3-dense-plan.json",
+      "bytes": 5756,
+      "sha256": "89b66dfb944761ca655c7baa3317a46b370d9a360c9b1c4cf3fc9b93496fc871"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "15bc4cb6d965b98514a0ce200da7309a627a30cddd4d9bb4d0d344d33d3bc16c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-pair-mean-dense-plan.json",
+      "bytes": 6513,
+      "sha256": "ca200af3bf715cf88ef23276986317aad83683389aa790ada4489e52b236a462"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-rpy-rounded-sobel-dense-plan.json",
+      "bytes": 8175,
+      "sha256": "2c1b8f5a5261fe64e7021101b3a3fbac3bf4fe6c6785cb4eeb16d8917387cfd0"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-causal-dense-plan.json",
+      "bytes": 5242,
+      "sha256": "347324b9e0198ae65b2717f54086e5637b112b490573d06d511d38f36ef75d1d"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-dense-final-overlap-plan.json",
+      "bytes": 4670,
+      "sha256": "37745182241f0638bf4d295c8cf698d4304428fd0c92659f99bbda3859b93e1a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-dense-rgbd-plan.json",
+      "bytes": 4319,
+      "sha256": "766cbfb99babd6e1ad3c48c60dee7a5719f9b4258f0173df415d84d60b2509f6"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gaussian3-dense-plan.json",
+      "bytes": 5587,
+      "sha256": "46aa954310006d5af573932f7723d9ab98a2a5c67610f403553f50ca386bd3a9"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-gray-gaussian3-dense-plan.json",
+      "bytes": 5756,
+      "sha256": "38477e8f30f301d195ee6e1ec723a213dafe73c728b79e5821434bd1314bfb79"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-open3d-dense-plan.json",
+      "bytes": 5901,
+      "sha256": "3d9e3b4b5a83a51f6c45c1ae7a850680e4b324857ed83c33dbf98b5abfee9313"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-pair-mean-dense-plan.json",
+      "bytes": 6513,
+      "sha256": "86300071a8a311c7a6f10e8086cc7f2bc7958b02f3af378f6f9a4d428450cf9d"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-xyz-rounded-sobel-dense-plan.json",
+      "bytes": 8175,
+      "sha256": "dbd002eb16062de6ae9aaa98d4bf9f9c9811d124624e7703001ea026bcb8581a"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_frozen_heldout_rgbd.py",
+      "bytes": 11584,
+      "sha256": "e46e53ca5cf251225ebf86675b08d6022a2dc906f764b168777bcb5344021ff9"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-py\\tests\\test_heldout_range_acquisition.py",
+      "bytes": 4398,
+      "sha256": "4dc47fdc7d255571d3722862eb88a18a24b4adbeaf6910d1cdeade29a66fe261"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\crates\\spatialrust-vision\\src\\dense_odometry.rs",
+      "bytes": 59797,
+      "sha256": "dab3fd34853ee32eb3589625c41688b50d633dcc650c18625c98a4901beb676e"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\FROZEN_HELDOUT_RGBD_VALIDATION.md",
+      "bytes": 5521,
+      "sha256": "d6db0a14ea4edde183ab347ae2f8c25010d6acc037566dae4ef94bb900b96d6b"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\ROADMAP.md",
+      "bytes": 169010,
+      "sha256": "19e42e6d89e8870167116e98703433801d1d3c57bffd0cd942d2016e271d6ebd"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\acquire_heldout_rgbd.py",
+      "bytes": 6630,
+      "sha256": "f0b4b2c5caa81942dbff2ceaa4c843d8e4afbdf15ca8c21cf6300b22bb6a48ff"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\acquire_heldout_rgbd_ranges.py",
+      "bytes": 6768,
+      "sha256": "77b4ef117dabe370269d32de932abe12268c622f96bdd1a21a9e3507716b6919"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\audit_tum_dense_rgbd.py",
+      "bytes": 16491,
+      "sha256": "4e549d4a21b2ff5e6fafb5674b376d75606914ea2fbc5c74d06d061a595592bd"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\dense_rgbd_protocol.py",
+      "bytes": 4566,
+      "sha256": "c618a6e5183276cb67226ccef7486b2368baaee3d45970d0cea681fd5c51804c"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\heldout_dense_rgbd_protocol.py",
+      "bytes": 5162,
+      "sha256": "6ee85ee797521a14e2ea92dff027d513d6a7f626743011f494003627c295eaaf"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_heldout_dense_rgbd.py",
+      "bytes": 2202,
+      "sha256": "fd7080a6d38c8c7b925c49e9bd4e618ac8ac79fa53d1c3edefae8d1c81b01487"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\run_tum_sequence.py",
+      "bytes": 19594,
+      "sha256": "6bfaf10143ab230fbc50912f34d5ef41973edcb94064c8643ce8d5fa7549ca91"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\tum_sequence_reference.py",
+      "bytes": 11991,
+      "sha256": "d34f579313efced2e271c2f51a82e1fbc405cf9a2263f26273b6a3637d90316f"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\scripts\\wide_rgbd_protocol.py",
+      "bytes": 1520,
+      "sha256": "5e841d22b061c11abc42cf7649d186e14e662d133fb0d8cb3107bf0af109ebe8"
+    }
+  ],
+  "preserved_previous_json_count": 361,
+  "preserved_frozen_native_files": {
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+    "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+    "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+    "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f",
+    "E:/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libdrm.so.2": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libvulkan_dzn.so": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\share\\vulkan\\icd.d\\dzn_icd.x86_64.json": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\bison": "7791b07ce4e24d56c80f3df47c9a193b039392afc1eb02af726ff93591b1c6e7",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\flex": "4cabd101467c6b428e3fd9b5a7dee0785b3108657ae0a5d85947956329d7047b",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0": "ceb1e4eb7eb552e08022d821d632cb400de60e4d3201324ac1b7ec34268ac5f9",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0": "f177704aac79527908633213ba1bb3f298c32aabdc2b3bc231b46983d58587e8",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0": "92a30b5b3a96fb52bbdad4cc46b7796411ccffc22b5eb06f72dd3d2dcb90cd40",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libgallium-26.2.5.so": "e2c423620442bb6bfafd89a4550b39eab11a4245ab88eb85153a9f4750066e03",
+    "C:\\Users\\rsasa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\open3d\\cpu\\pybind.cp312-win_amd64.pyd": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "46f4434b0b6456a3ea564d2a7f1f7c4c942ce4979348d6a06e9eed36ef9611a6",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1baaf7a63e71cf153d5d2736e06e5f8bd87e3813e063a3f43d5bf5a8d930855b",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a58c85172c8596630e18eaa010e7905a49e65ad5e849db0f7a0d63c1467abc",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "026091cde997323078e453fdc4c0f941b623b6a4c6443de4e76e058fd78689c1",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "ee9063970899e05c9b6d8987e2c0d1e19238cf83827356f037b7cf9ad221295c",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "0b8545e0b3737fc08f49a2b9af325a1e09a56693c9e524665f1fd5ab00790589",
+    "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\bin\\dense_sampling_audit.exe": "dc9c08cd9cd6eb7141fab67b28734213947526a35437f27b05da9e52930e22c4",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1817591beb7eacb443a4eb0632e4be75f21fbd4de9590d6fd74ce71fb6bed465",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\bin\\rounded_sobel_vision_tests.exe": "0dac430a412bfba2717c79367ac60f2d4141502f6ca5160800fa929c884002a5"
+  },
+  "preserved_native_file_count": 36,
+  "sensor_downloaded_payload_bytes": 1478001585,
+  "additional_redundant_payload_copies": 0,
+  "native_rebuilds": 0,
+  "new_wheel_installs": 0,
+  "scope": "Two previously unscored recordings under the same Freiburg 1 registered-depth convention. No independent hardware/scene, physical calibration, speed or complete operational 80% claim. Both recordings become observed after this run; do not retune and call them held out again.",
+  "prior_observed_recordings": [
+    "rgbd_dataset_freiburg1_xyz",
+    "rgbd_dataset_freiburg1_rpy",
+    "rgbd_dataset_freiburg1_desk",
+    "rgbd_dataset_freiburg1_desk2"
+  ],
+  "prior_observation_evidence": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\receipts\\2026-10-11_tum_keyframe_validation.json",
+    "bytes": 68104,
+    "sha256": "bc1cf77b0fe0573eb3179d48242ce6c5b563057f66488b7937a52174101daf03"
+  },
+  "cases": {
+    "plant": {
+      "accepted": true,
+      "planned_poses": 1139,
+      "generated_poses": 1139,
+      "evaluated_poses": 1130,
+      "failed_frames": 0,
+      "first_failed_frame_index": null,
+      "first_failure": null,
+      "first_pose_aligned_ate_rmse_m": 0.07781036603532097,
+      "one_second_translation_rpe_rmse_m": 0.03776414628598114,
+      "publisher_reference_gaps": 9,
+      "one_second_pairs": {
+        "evaluated": 1093,
+        "planned": 1109
+      },
+      "metrics_scope": "full planned trajectory",
+      "source_archive": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-input-v1\\rgbd_dataset_freiburg1_plant\\rgbd_dataset_freiburg1_plant.tgz",
+        "bytes": 695620135,
+        "sha256": "2a5b3db30aaec442c5116fb6269f865a33f22db72263d12fff3675a0342b9bd0"
+      },
+      "plan": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-plant-heldout-dense-plan.json",
+        "bytes": 9625,
+        "sha256": "7dd90b3f9b5137f68073515b84dc3a0d7aaad0c8b7bf738cbb7b03b47307d02a"
+      },
+      "manifest": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-input-v1\\rgbd_dataset_freiburg1_plant\\prepared\\manifest.json",
+        "bytes": 1055001,
+        "sha256": "7b0bff925b1bd375e727c8487d590fee7ff7a5399342065556b09a51c9505fbe"
+      },
+      "calibration": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-input-v1\\rgbd_dataset_freiburg1_plant\\prepared\\calibration.json",
+        "bytes": 558,
+        "sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94"
+      },
+      "estimates": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\plant\\run\\estimates.json",
+        "bytes": 7905475,
+        "sha256": "7acb52a9dd24a9af099248e115a519f9c1d6e232f50134efdf86758cd199dd53"
+      },
+      "evaluation": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\plant\\evaluate\\accuracy.json",
+        "bytes": 701929,
+        "sha256": "594279448504056ced07cedb3ecde474a92a7b7493a9e903f4e6978aa3fa6c81"
+      },
+      "projective_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\plant\\audit-projective\\audit.json",
+        "bytes": 601900,
+        "sha256": "d295fa464c3cc4d543f8cdde91f042723911936a5f267e5451f654e7caa9af8d"
+      },
+      "score_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\plant\\audit-score\\audit.json",
+        "bytes": 1307,
+        "sha256": "fbce6906aa6f5997639cf883ef5c3eb9abd68d42ea4c2792bca83c557c9da4d8"
+      },
+      "prepared_expanded_bytes": 745881311,
+      "prepared_file_count": 2282,
+      "withheld_members": [
+        {
+          "path": "accelerometer.txt",
+          "bytes": 972531,
+          "excluded_from_generation": true
+        },
+        {
+          "path": "groundtruth.txt",
+          "bytes": 281995,
+          "excluded_from_generation": true
+        }
+      ],
+      "audited_causal_pairs": 1138,
+      "maximum_initial_pose_difference": 0.0,
+      "maximum_world_composition_difference": 3.430589146091734e-14,
+      "independent_projective_max_differences": {
+        "correspondence_fraction": 0.0,
+        "photometric_rmse": 1.1102230246251565e-16,
+        "depth_rmse_m": 1.3877787807814457e-17
+      },
+      "independent_score_max_difference_m": 1.1136924715771102e-15,
+      "independent_score_max_difference_degrees": 3.694822225952521e-13,
+      "native_receipt_ranges": {
+        "working_bytes": {
+          "minimum": 32574240,
+          "maximum": 32574240
+        },
+        "input_copy_bytes": {
+          "minimum": 3072000,
+          "maximum": 3072000
+        },
+        "workers": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "correspondence_fraction": {
+          "minimum": 0.514815757624477,
+          "maximum": 0.9629488406808262
+        },
+        "support_fraction": {
+          "minimum": 0.9689452932479053,
+          "maximum": 1.0
+        },
+        "iterations": {
+          "minimum": 35,
+          "maximum": 35
+        }
+      }
+    },
+    "room": {
+      "accepted": false,
+      "planned_poses": 1360,
+      "generated_poses": 1360,
+      "evaluated_poses": 1359,
+      "failed_frames": 0,
+      "first_failed_frame_index": null,
+      "first_failure": null,
+      "first_pose_aligned_ate_rmse_m": 0.37977745021800813,
+      "one_second_translation_rpe_rmse_m": 0.05840511428416983,
+      "publisher_reference_gaps": 1,
+      "one_second_pairs": {
+        "evaluated": 1328,
+        "planned": 1330
+      },
+      "metrics_scope": "full planned trajectory",
+      "source_archive": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-input-v1\\rgbd_dataset_freiburg1_room\\rgbd_dataset_freiburg1_room.tgz",
+        "bytes": 782381450,
+        "sha256": "5ace47a1d2e53696bc939a84999293a04a7226958e848a609666691fd3cc38da"
+      },
+      "plan": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tum-fr1-room-heldout-dense-plan.json",
+        "bytes": 9618,
+        "sha256": "5cd21c2218c3d1beefa23b07dc6ccb966b0787922f6452e2a8d342b75122de0c"
+      },
+      "manifest": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-input-v1\\rgbd_dataset_freiburg1_room\\prepared\\manifest.json",
+        "bytes": 1259642,
+        "sha256": "546f5e2dca5a9385e8511086f86ed098a7817f7ae2cd7bee5793eec01d83306f"
+      },
+      "calibration": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-input-v1\\rgbd_dataset_freiburg1_room\\prepared\\calibration.json",
+        "bytes": 558,
+        "sha256": "6bb2e2d681598beb4924468a843306f149bee1db74e6d2d46e6b464e82cd0d94"
+      },
+      "estimates": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\run\\estimates.json",
+        "bytes": 9435730,
+        "sha256": "5deb5609fe8dd7818e3cc7677b63decc8de8161b515da811adaaed9a60d1f898"
+      },
+      "evaluation": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\evaluate\\accuracy.json",
+        "bytes": 843386,
+        "sha256": "eda63a6d7a732c573525740646554c98155345ced609468f77fde31e2a774b68"
+      },
+      "projective_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\audit-projective\\audit.json",
+        "bytes": 720349,
+        "sha256": "d2f2bbea3ff37bdc7d6e78e0a0d2a74f2fb7f9635ddc1c39b9dc751f4b636ecb"
+      },
+      "score_audit": {
+        "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\audit-score\\audit.json",
+        "bytes": 1304,
+        "sha256": "792045d354554d11974a37fa039eeb8a8f4db88357be4349f3c583a30cf7e70a"
+      },
+      "prepared_expanded_bytes": 837765933,
+      "prepared_file_count": 2724,
+      "withheld_members": [
+        {
+          "path": "accelerometer.txt",
+          "bytes": 1137712,
+          "excluded_from_generation": true
+        },
+        {
+          "path": "groundtruth.txt",
+          "bytes": 332920,
+          "excluded_from_generation": true
+        }
+      ],
+      "audited_causal_pairs": 1359,
+      "maximum_initial_pose_difference": 0.0,
+      "maximum_world_composition_difference": 2.0539125955565396e-14,
+      "independent_projective_max_differences": {
+        "correspondence_fraction": 0.0,
+        "photometric_rmse": 2.3592239273284576e-16,
+        "depth_rmse_m": 1.0408340855860843e-17
+      },
+      "independent_score_max_difference_m": 8.951173136040325e-16,
+      "independent_score_max_difference_degrees": 3.836930773104541e-13,
+      "native_receipt_ranges": {
+        "working_bytes": {
+          "minimum": 32574240,
+          "maximum": 32574240
+        },
+        "input_copy_bytes": {
+          "minimum": 3072000,
+          "maximum": 3072000
+        },
+        "workers": {
+          "minimum": 4,
+          "maximum": 4
+        },
+        "correspondence_fraction": {
+          "minimum": 0.6302668600688558,
+          "maximum": 0.9718860779733329
+        },
+        "support_fraction": {
+          "minimum": 0.9536245071276919,
+          "maximum": 1.0
+        },
+        "iterations": {
+          "minimum": 35,
+          "maximum": 35
+        }
+      }
+    }
+  },
+  "validation": {
+    "focused-tests-v2": {
+      "path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\focused-tests-v2.json",
+      "bytes": 2632,
+      "sha256": "15ef7d8128efb7bdaa35a1d9fcf2d87d126f39afe4de0b46805c7680b63412d9"
+    },
+    "full-tests": {
+      "path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\full-tests.json",
+      "bytes": 4852,
+      "sha256": "e935f91e2a713e6cf5fd7173b77d539188d91273240e9d7f0014ac12004899c5"
+    },
+    "frozen-native-tests": {
+      "path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\frozen-native-tests.json",
+      "bytes": 2230,
+      "sha256": "69470873cf4d43b9bc96e31de82d99cd876856a321a69dee08fa8e5234accbe7"
+    },
+    "range-tests": {
+      "path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\range-tests.json",
+      "bytes": 2816,
+      "sha256": "cdbdad3cb60567b674b2f996e74fd359be50b106b0fb9a88467682b52b6a2198"
+    },
+    "full-tests-v2": {
+      "path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\full-tests-v2.json",
+      "bytes": 5068,
+      "sha256": "da8bc5db783eac1f819a264f70403c7087bae2b095a1fd0e95f6fb06f41eff39"
+    }
+  },
+  "tests": {
+    "heldout-focused-tests-v2": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-focused-tests-v2.xml",
+        "bytes": 7122,
+        "sha256": "f91b9b2871157ec01dfbcfec3cb8856d1bd868bbc3ee65a0b596e5799f7468f6"
+      },
+      "tests": 46,
+      "passed": 46,
+      "skipped": 0
+    },
+    "heldout-full-tests": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-full-tests.xml",
+        "bytes": 166190,
+        "sha256": "9f80fee3edf918c54ab09961b776f6fdb6ad2c6ceed00583a51714bf93674506"
+      },
+      "tests": 1220,
+      "passed": 1217,
+      "skipped": 3
+    },
+    "heldout-range-tests": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-range-tests.xml",
+        "bytes": 1982,
+        "sha256": "cd9bd63a4942e31a08210e0ea48a4f983a2853988cc1c8c1a8500e417c8471fc"
+      },
+      "tests": 12,
+      "passed": 12,
+      "skipped": 0
+    },
+    "heldout-full-tests-v2": {
+      "file": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-full-tests-v2.xml",
+        "bytes": 167920,
+        "sha256": "5ae745fff41c89f03822d2e232d103af06c8a0cce7ad68fb706fae16a3e549d4"
+      },
+      "tests": 1232,
+      "passed": 1229,
+      "skipped": 3
+    },
+    "native_frozen_passed": 28,
+    "python_passed": 1229,
+    "python38_syntax_checked": true
+  },
+  "resources": {
+    "archives_max_bytes": 2147483648,
+    "case_command_max_seconds": 7200,
+    "combined_new_owned_max_bytes": 8589934592,
+    "cpu_worker_limit": 4,
+    "minimum_free_bytes": 21474836480,
+    "new_native_builds": 0,
+    "prepared_max_bytes": 4294967296,
+    "results_max_bytes": 1073741824,
+    "source_command_max_seconds": 7200,
+    "test_scratch_max_bytes": 1073741824
+  },
+  "additional_checks": {
+    "metadata": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-static-validation.json",
+      "bytes": 794,
+      "sha256": "f0103ccf26af84553df3781a0b101109be35645e64cc514b536f508c6d7f598f"
+    },
+    "workflow_unittest_log": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-workflow-unittest.log",
+      "bytes": 116,
+      "sha256": "2fedc65ffd9f89b73d74589a7c1ccdec5ef77ee1a4282712c756e65435f79037"
+    },
+    "workflow_unittest_passed": 12,
+    "root_cargo_fmt_exit_status": 0
+  },
+  "initial_limited_enumeration_receipt": {
+    "file": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-receipt-limited-enumeration-v1.json",
+      "bytes": 38764,
+      "sha256": "ad6ba16d0be7e5423a1d89bd93d20f935708a1fdce3371452cf09c2005638d2f"
+    },
+    "log": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-receipt-v1.log",
+      "bytes": 743,
+      "sha256": "2648b2ea57debfa793804679c64c81624845c039ab1edd4e3ba25abcdf5ea8c5"
+    },
+    "scope": "Unpublished first metadata snapshot silently omitted a permission-protected failed-test directory. Preserve it; final accounting uses fail-closed directory walking under the owned runtime with full enumeration rights. Numerical results and gates unchanged."
+  },
+  "initial_synthetic_duration_failure": {
+    "metadata": {
+      "path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\focused-tests.json",
+      "bytes": 2604,
+      "sha256": "562fa7773c34391a2eee456831db8b0a19cf9723b1c03395f2aa13a49f2102f6"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\focused-tests.log",
+      "bytes": 1847,
+      "sha256": "e9573eeded2fd8013c732b82ebf9e946255708a9c7015e689af9a48d670e0ecb"
+    },
+    "xml": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-focused-tests.xml",
+      "bytes": 8603,
+      "sha256": "55ba5f2bc25c2622fc2f825eb5c41e95a037af72312283a03e4f2bf705d27caa"
+    },
+    "scratch_path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\pytest-focused-tests-v1",
+    "scope": "The initial deadline test relied on clock granularity. Only its synthetic clock was made deterministic; source/model/resource/acceptance behavior unchanged. Preserve the failed run and scratch."
+  },
+  "test_scratch_cleanup": {
+    "Schema": "spatialrust.heldout-rgbd-pytest-scratch-cleanup.v1",
+    "VerifiedAtUtc": "2026-10-20T01:58:44.0751317Z",
+    "Paths": [
+      {
+        "Path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\pytest-focused-tests-v2",
+        "Files": 107,
+        "LogicalBytes": 81317884,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-focused-tests-v2.xml",
+        "XmlSha256": "f91b9b2871157ec01dfbcfec3cb8856d1bd868bbc3ee65a0b596e5799f7468f6",
+        "Tests": 46,
+        "Skipped": 0
+      },
+      {
+        "Path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\pytest-full-tests-v1",
+        "Files": 1370,
+        "LogicalBytes": 560218598,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-full-tests.xml",
+        "XmlSha256": "9f80fee3edf918c54ab09961b776f6fdb6ad2c6ceed00583a51714bf93674506",
+        "Tests": 1220,
+        "Skipped": 3
+      }
+    ],
+    "AlreadyAbsent": [],
+    "LogicalBytesRemoved": 641536482,
+    "FreeBeforeBytes": 675401396224,
+    "FreeAfterBytes": 676045471744,
+    "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+  },
+  "range_test_scratch_cleanup": {
+    "Schema": "spatialrust.heldout-rgbd-pytest-scratch-cleanup.v1",
+    "VerifiedAtUtc": "2026-10-20T02:27:23.7771218Z",
+    "Paths": [
+      {
+        "Path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\pytest-range-tests-v1",
+        "Files": 34,
+        "LogicalBytes": 24095,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-range-tests.xml",
+        "XmlSha256": "cd9bd63a4942e31a08210e0ea48a4f983a2853988cc1c8c1a8500e417c8471fc",
+        "Tests": 12,
+        "Skipped": 0
+      },
+      {
+        "Path": "E:\\SpatialRustBuild\\heldout-rgbd-v1\\pytest-full-tests-v2",
+        "Files": 1404,
+        "LogicalBytes": 560242673,
+        "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\heldout-full-tests-v2.xml",
+        "XmlSha256": "5ae745fff41c89f03822d2e232d103af06c8a0cce7ad68fb706fae16a3e549d4",
+        "Tests": 1232,
+        "Skipped": 3
+      }
+    ],
+    "AlreadyAbsent": [],
+    "LogicalBytesRemoved": 560266768.0,
+    "FreeBeforeBytes": 674011840512,
+    "FreeAfterBytes": 674574450688,
+    "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+  },
+  "transport": {
+    "actual": "Two uninterrupted single-stream requests completed; range continuation was tested synthetically but not used for these archives.",
+    "range_cases_passed": 12,
+    "actual_range_requests": 0
+  },
+  "unchanged_production_trees": {
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96",
+    "crates/spatialrust-vision": "0fe7e7a43bcff0250d558c08fbfc186fcc5a5e6a",
+    "crates/spatialrust-py/src": "bee70dcb43db891b195526124e7414b19f8697cb",
+    "crates/spatialrust-py/spatialrust.pyi": "3ebfc54be3b6c22b43629a378017c6030a54e452"
+  },
+  "storage": {
+    "archives_bytes": 1478001585,
+    "prepared_payload_bytes": 1580922086,
+    "prepared_tree_bytes": 1583257088,
+    "scientific_result_bytes": 481564539,
+    "build_and_scratch_bytes": 81428638,
+    "combined_new_owned_bytes": 3624257697,
+    "free_after_bytes": {
+      "C": 78156193792,
+      "E": 672496799744
+    }
+  },
+  "storage_observed_samples": {
+    "scope": "Completed owned-command monitor samples; logical owned trees, not process RSS.",
+    "maximum_combined_new_owned_bytes": 3624257697,
+    "minimum_free_bytes": 672496799744,
+    "maximum_build_and_test_scratch_bytes": 722950575
+  },
+  "heldout_recording_acceptance": false,
+  "remaining": [
+    "Both raw Linux hardware classes",
+    "canonical measured clock uncertainty and physical frame accuracy",
+    "canonical full mapping and semantic/release acceptance",
+    "held-out motion robustness",
+    "rpy full motion acceptance"
+  ],
+  "development_rpy_acceptance": false,
+  "operational_80_percent_proven": false,
+  "commands": [
+    {
+      "label": "acquire-plant",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T01:58:47.193641+00:00",
+      "finished_at_utc": "2026-10-20T02:19:02.198279+00:00"
+    },
+    {
+      "label": "acquire-room",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:19:04.615503+00:00",
+      "finished_at_utc": "2026-10-20T02:26:35.823413+00:00"
+    },
+    {
+      "label": "generate-plant",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:30:11.886174+00:00",
+      "finished_at_utc": "2026-10-20T02:37:26.275865+00:00"
+    },
+    {
+      "label": "generate-room",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:37:26.321059+00:00",
+      "finished_at_utc": "2026-10-20T02:45:45.477975+00:00"
+    },
+    {
+      "label": "projective-audit-plant",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:45:45.585854+00:00",
+      "finished_at_utc": "2026-10-20T02:48:01.672165+00:00"
+    },
+    {
+      "label": "score-plant",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:48:01.702438+00:00",
+      "finished_at_utc": "2026-10-20T02:48:13.121650+00:00"
+    },
+    {
+      "label": "score-audit-plant",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:48:13.244474+00:00",
+      "finished_at_utc": "2026-10-20T02:48:15.993557+00:00"
+    },
+    {
+      "label": "projective-audit-room",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:48:16.155236+00:00",
+      "finished_at_utc": "2026-10-20T02:51:00.169086+00:00"
+    },
+    {
+      "label": "score-room",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:51:00.262951+00:00",
+      "finished_at_utc": "2026-10-20T02:51:13.457717+00:00"
+    },
+    {
+      "label": "score-audit-room",
+      "exit_status": 0,
+      "started_at_utc": "2026-10-20T02:51:13.766869+00:00",
+      "finished_at_utc": "2026-10-20T02:51:16.687945+00:00"
+    }
+  ],
+  "observation_boundary": "Plant/room were selected before opaque acquisition and scored only after both complete timelines were frozen. They are now observed recordings; later tuning cannot reuse this held-out claim."
+}

@@ -19,6 +19,19 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add prospective fixed-source RGB-D validation with exact native/source pins,
+  strict plan/admission and bounded opaque acquisition. Freeze both
+  trajectories before scoring. Plant 1139/1139 poses, ATE/RPE
+  0.077810/0.037764m passes; room 1360/1360 poses, ATE/RPE 0.379777/0.058405m
+  fails. Independently audit all 2497 causal/raw pairs and both scores,
+  retaining every failure/gap. Python 1,229 passes/3 old skips, native 28 and
+  workflow 12 passes; preserve the initial synthetic clock failure, all old
+  artifacts and original gates. Retain 3.624GB across
+  archives/preparation/results/build, reclaim 1.202GB passing scratch, and add
+  no native rebuild/install or redundant payload copies. Development rpy and
+  full operational 80% remain open. See
+  `docs/FROZEN_HELDOUT_RGBD_VALIDATION.md`.
+
 - Add a typed opt-in complete rounded-pixel/Sobel CPU fitting model with joint
   initial Gaussian3/pair means, floor pyramids and the complete update schedule.
   Preserve original raw final gates, every legacy selector/default/report and
