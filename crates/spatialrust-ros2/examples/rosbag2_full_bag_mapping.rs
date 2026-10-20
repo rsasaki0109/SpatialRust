@@ -26,6 +26,13 @@ use scan_collection::{collect_chunks, CollectionUsage};
 #[path = "support/collection_tests.rs"]
 mod collection_tests;
 
+#[path = "support/scan_identity.rs"]
+mod scan_identity;
+
+#[cfg(test)]
+#[path = "support/identity_tests.rs"]
+mod identity_tests;
+
 use serde::{de::DeserializeOwned, Serialize};
 use spatialrust_interchange::export_triangle_mesh_gltf_json;
 use spatialrust_io::{
@@ -364,9 +371,9 @@ fn execute_mapping(
     };
 
     let front_id = TopicId::new(config.front_topic.clone());
-    let front_records: Vec<&StampedRecord> =
-        episode.records().iter().filter(|record| record.topic == front_id).collect();
+    let front_records = scan_identity::topic_records(&episode, &front_id)?;
     let rear_id = TopicId::new(config.rear_topic.clone());
+    scan_identity::topic_records(&episode, &rear_id)?;
     let odometry = ScanOdometry::try_new(ScanOdometryConfig::new(front_records.len(), 3))?;
     let matcher = IcpScanMatcher::new(IcpConfig {
         max_iterations: 10,
@@ -399,10 +406,8 @@ fn execute_mapping(
 
     // ScanOdometry stores current_front_T_first_front. Each sensor is carried
     // by the same body motion into the fixed first-body volume gauge.
-    let mut pose_by_stamp = BTreeMap::new();
-    for (record, pose) in front_records.iter().zip(odometry_result.trajectory.samples()) {
-        pose_by_stamp.insert(record.stamp.as_nanos(), pose.pose.isometry);
-    }
+    let pose_by_stamp =
+        scan_identity::front_pose_lookup(&front_records, &odometry_result.trajectory)?;
     let mut volume = TsdfVolume::try_new(TSDF_ORIGIN, TSDF_VOXEL_SIZE, TSDF_DIMS, TSDF_TRUNCATION)?;
     let mut integrated_records = 0_u64;
     let mut integrated_points = 0_u64;
