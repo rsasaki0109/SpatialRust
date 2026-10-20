@@ -277,7 +277,7 @@ fn reversed_long_chain_propagates_without_recursion() {
     let mut graph = PoseGraph::new();
     const COUNT: usize = 4096;
     for index in 0..=COUNT {
-        graph.upsert_node(format!("n{index}"), identity(index as u64));
+        graph.upsert_node(PoseNodeId::new(format!("n{index}")), identity(index as u64));
     }
     for index in (0..COUNT).rev() {
         graph.add_edge(shift(&format!("n{index}"), &format!("n{}", index + 1), 1.0)).unwrap();
