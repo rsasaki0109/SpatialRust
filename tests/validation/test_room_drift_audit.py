@@ -181,6 +181,13 @@ def test_nonfinite_and_duplicate_json_reject(raw):
     with pytest.raises(ValueError):audit.json_value(raw)
 
 
+def test_execution_rejects_changed_protocol_before_any_input_or_output(tmp_path):
+    plan=audit.load_plan();plan['controls']['chronological_bins']=7
+    with pytest.raises(ValueError,match='exact fixed room plan'):
+        audit.run(tmp_path/'audit',plan)
+    assert not (tmp_path/'audit').exists()
+
+
 def test_full_timeline_plot_preserves_counts_and_missing_gaps(tmp_path):
     a,_,_=audit.analyze_case(*fixture(label='rounded-sobel',gap=6))
     b,_,_=audit.analyze_case(*fixture(gap=6))

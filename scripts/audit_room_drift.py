@@ -348,6 +348,8 @@ def render(result,directory):
 
 
 def run(output,plan):
+    if json.dumps(plan,sort_keys=True,allow_nan=False)!=json.dumps(load_plan(),sort_keys=True,allow_nan=False):
+        raise ValueError('exact fixed room plan required before reading data')
     output=Path(output);root=Path(plan['resources']['result_root'])
     if not output.is_absolute() or output.resolve()!=root.resolve()/'audit' or output.exists() or not root.is_dir():
         raise ValueError('fresh exact owned audit output required')
