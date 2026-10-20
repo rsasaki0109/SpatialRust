@@ -15,6 +15,9 @@ use std::{
     time::Instant,
 };
 
+#[path = "support/scan_transport.rs"]
+mod scan_transport;
+
 use serde::{de::DeserializeOwned, Serialize};
 use spatialrust_core::Timestamp;
 use spatialrust_interchange::export_triangle_mesh_gltf_json;
@@ -393,7 +396,8 @@ fn execute_mapping(
     let mut integrated_records = 0_u64;
     let mut integrated_points = 0_u64;
     for (record, pose) in front_records.iter().zip(odometry_result.trajectory.samples()) {
-        let volume_t_sensor = root_t_front.compose(pose.pose.isometry);
+        let volume_t_sensor =
+            scan_transport::sensor_to_volume(root_t_front, root_t_front, pose.pose.isometry)?;
         let points = volume.integrate_cloud_with_pose(
             record.record.cloud(),
             volume_t_sensor,
@@ -406,7 +410,7 @@ fn execute_mapping(
     for (stamp, record) in matched_rear {
         let pose =
             *pose_by_stamp.get(&stamp).ok_or("matched rear record has no front trajectory pose")?;
-        let volume_t_sensor = root_t_rear.compose(pose);
+        let volume_t_sensor = scan_transport::sensor_to_volume(root_t_front, root_t_rear, pose)?;
         let points = volume.integrate_cloud_with_pose(
             record.record.cloud(),
             volume_t_sensor,

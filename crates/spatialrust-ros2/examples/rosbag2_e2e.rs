@@ -15,6 +15,9 @@ use std::{
     time::Instant,
 };
 
+#[path = "support/scan_transport.rs"]
+mod scan_transport;
+
 use serde::{Deserialize, Serialize};
 use spatialrust_core::{
     PointBuffer, PointBufferSet, PointCloud, SpatialMetadata, StandardSchemas, Timestamp,
@@ -24,7 +27,7 @@ use spatialrust_io::{
     DatasetManifest, ReceiptRole, StoragePreflight, StorageRoots, DEFAULT_MIN_OUTPUT_FREE_BYTES,
 };
 use spatialrust_mapping::{IcpScanMatcher, ScanOdometry, ScanOdometryConfig};
-use spatialrust_math::Vec3;
+use spatialrust_math::{Isometry3, Vec3};
 use spatialrust_records::{
     BoundedSpatialRecordSource, CancellationToken, MemoryBudget, RecordProvenance,
     SchemaDescriptor, SchemaVersion, SpatialRecord, StreamOptions,
@@ -503,7 +506,11 @@ fn run() -> Result<(), Box<dyn Error>> {
         integrated_points = integrated_points
             .checked_add(u64::try_from(volume.integrate_cloud_with_pose(
                 record.record.cloud(),
-                pose.pose.isometry,
+                scan_transport::sensor_to_volume(
+                    Isometry3::identity(),
+                    Isometry3::identity(),
+                    pose.pose.isometry,
+                )?,
                 Vec3::new(0.0, 0.0, 0.0),
             )?)?)
             .ok_or("TSDF point counter overflow")?;
