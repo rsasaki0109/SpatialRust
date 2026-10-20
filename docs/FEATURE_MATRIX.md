@@ -115,6 +115,13 @@ gaps remain; candidate selection, CPU ownership and original gates are
 unchanged. These recordings become observed after this run. Native development
 rpy and operational 80% remain unaccepted.
 
+Offline fixed-source acquisition now requires a [complete regular-file
+inventory](REGULAR_FILE_INVENTORY.md) before a single-stream or range request.
+Denied/stat/vanished subtrees, links and reparse points cannot become partial
+capacity success. Nineteen new IO cases and exact privileged old-tree counts
+validate this script-only correction; native models and motion acceptance remain
+unchanged.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree
