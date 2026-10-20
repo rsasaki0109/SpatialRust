@@ -19,6 +19,17 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a source-bound dense RGB-D operator audit with a prospective fixed plan,
+  test-only native probe and pinned CPU reference APIs. Confirm different
+  pyramid grids, odd-size dimensions and missing-depth/border lookup rules;
+  all twelve native Jacobian entries match independent analytics. Observe
+  reference residual/weights and explicitly retain its unavailable runtime
+  Jacobian. Native 21/Python 1,134 passes with 3 existing skips; preserve the
+  initial enum-spelling failure, all old artifacts and production behavior.
+  Retain 116KB results/5.6MB new build/cache, reclaim 438MB passing scratch and
+  download/copy no sensor payload. Native rpy accuracy remains open; see
+  `docs/DENSE_SAMPLING_AUDIT.md`.
+
 - Add explicit initial-correspondence pair-mean gray fitting with original
   depth and raw final admission. Keep older selectors, defaults and all gates;
   native 20/focused Python 106/full Python 1,100 passes with 3 optional skips,

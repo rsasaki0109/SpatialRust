@@ -83,6 +83,15 @@ trajectories finish: xyz ATE/RPE 0.086962/0.025649m passes; rpy
 and both score audits pass, but this does not establish an rpy accuracy benefit
 or change the raw default.
 
+The [source-bound sampling audit](DENSE_SAMPLING_AUDIT.md) freezes synthetic
+operator expectations before probing unchanged production functions and the
+pinned reference CPU APIs. It confirms different pyramid grids, odd-size
+dimensions and missing-depth/border lookup rules; all twelve native Jacobian
+entries match an independent analytic calculation. Reference residual/weight
+vectors are observed, but its Python API does not expose the mutated Jacobian.
+Native 21 and Python 1,134 passes/3 existing skips validate this diagnostic;
+it introduces no estimator policy or rpy accuracy acceptance.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree
