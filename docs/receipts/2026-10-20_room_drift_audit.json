@@ -1,0 +1,1085 @@
+{
+  "schema": "spatialrust.public-room-drift-audit-receipt.v1",
+  "slice": "146U",
+  "date": "2026-10-20",
+  "recorded_at_utc": "2026-10-20T07:00:24.362523+00:00",
+  "protocol_commit": "34ba6abbf37305571daade8897ed85f7c56e7ea4",
+  "initial_implementation_commit": "b7c68c3b41499fe5693037016003feca692ecf9d",
+  "implementation_commit": "2c47a138cd2747dd365ebc508c4ddb6c08c22956",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\room-drift-audit-plan.json",
+    "bytes": 8886,
+    "sha256": "8e751ebbdd1662f82f7d571f97c46fd6a174137c231cd3dae8b1e525ff1dd34a"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-preflight.json",
+    "bytes": 103271,
+    "sha256": "931307852d200beeb8f78a87b4c4cb07c36d15d259791e28aa8f97a44b3230e1"
+  },
+  "audit": {
+    "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\audit.json",
+    "bytes": 14612178,
+    "sha256": "3f518a2d8d5b1aba5858a934ab88429cb8868b27aae01ad0329ea148c29eb3ec"
+  },
+  "manifest": {
+    "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\manifest.json",
+    "bytes": 394,
+    "sha256": "75468b4a7e65a0edce8ff8e60c2f7f831c97589eefda66a243198cdacf7f6745"
+  },
+  "plot": {
+    "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\drift.svg",
+    "bytes": 382828,
+    "sha256": "e8fd81a07172126d592ffccb451a3ae090422680ef030d55efdb3ed780afb03c"
+  },
+  "preview": {
+    "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\preview.png",
+    "bytes": 226821,
+    "sha256": "3ccd937a5c35be51af3bf3b6c9958d6fc062304363085546df80bc706bd19f99"
+  },
+  "cases": {
+    "rounded-sobel": {
+      "counts": {
+        "planned_poses": 1360,
+        "generated_poses": 1360,
+        "evaluated_poses": 1359,
+        "unmatched_reference_poses": 1,
+        "rpe_planned_pairs": 1330,
+        "rpe_evaluated_pairs": 1328
+      },
+      "original_ate_rmse_m": 0.37977745021800813,
+      "original_one_second_rpe_rmse_m": 0.05840511428416983,
+      "recomputed_metrics": {
+        "aligned": {
+          "translation_m": {
+            "count": 1359,
+            "sse": 196.00980899227054,
+            "rmse": 0.37977745021800813,
+            "quantiles": {
+              "0.0": 0.0,
+              "0.25": 0.29305847043137045,
+              "0.5": 0.39758706290215673,
+              "0.75": 0.4554086839229372,
+              "0.95": 0.5097347055686785,
+              "1.0": 0.5704981293247052
+            }
+          },
+          "rotation_degrees": {
+            "count": 1359,
+            "sse": 223569.19626113633,
+            "rmse": 12.826148221141123,
+            "quantiles": {
+              "0.0": 0.0,
+              "0.25": 6.6544502695211545,
+              "0.5": 12.473817769694492,
+              "0.75": 15.924643755251328,
+              "0.95": 19.353469073333333,
+              "1.0": 19.73998472284399
+            }
+          }
+        },
+        "unadjusted": {
+          "translation_m": {
+            "count": 1359,
+            "sse": 5937.07361176287,
+            "rmse": 2.090145350868646,
+            "quantiles": {
+              "0.0": 1.1679979276882455,
+              "0.25": 1.7234949978195166,
+              "0.5": 2.006436131696081,
+              "0.75": 2.3654152552099266,
+              "0.95": 2.730774594544815,
+              "1.0": 2.853477468759467
+            }
+          },
+          "rotation_degrees": {
+            "count": 1359,
+            "sse": 22920527.764395285,
+            "rmse": 129.86812738682448,
+            "quantiles": {
+              "0.0": 123.3709068376332,
+              "0.25": 126.40505067794143,
+              "0.5": 130.38462028175357,
+              "0.75": 132.60023438608022,
+              "0.95": 135.48876587684302,
+              "1.0": 137.99877736034736
+            }
+          }
+        },
+        "adjacent": {
+          "translation_m": {
+            "count": 1357,
+            "sse": 0.08194737125763633,
+            "rmse": 0.007771012177070632,
+            "quantiles": {
+              "0.0": 0.00014612131635369528,
+              "0.25": 0.002436939621935931,
+              "0.5": 0.0038015127976828945,
+              "0.75": 0.006035604638402666,
+              "0.95": 0.013944255022248806,
+              "1.0": 0.06236472087230954
+            }
+          },
+          "rotation_degrees": {
+            "count": 1357,
+            "sse": 246.2395872223492,
+            "rmse": 0.4259798079416711,
+            "quantiles": {
+              "0.0": 0.02346038338293851,
+              "0.25": 0.17055800596024812,
+              "0.5": 0.2783792028417441,
+              "0.75": 0.44179930036381027,
+              "0.95": 0.8035103230411652,
+              "1.0": 1.9521592747084315
+            }
+          }
+        },
+        "rpe": {
+          "translation_m": {
+            "count": 1328,
+            "sse": 4.530016993398334,
+            "rmse": 0.05840511428416983,
+            "quantiles": {
+              "0.0": 0.0019365491603987627,
+              "0.25": 0.025584962112344324,
+              "0.5": 0.04045913140413549,
+              "0.75": 0.063447368791267,
+              "0.95": 0.09463141305560295,
+              "1.0": 0.23686539073703405
+            }
+          },
+          "rotation_degrees": {
+            "count": 1328,
+            "sse": 8683.541430728308,
+            "rmse": 2.5571099542881432,
+            "quantiles": {
+              "0.0": 0.08300742179829342,
+              "0.25": 1.246854446953789,
+              "0.5": 1.984775912539253,
+              "0.75": 3.1142300492723036,
+              "0.95": 4.52814039552263,
+              "1.0": 6.256450478206477
+            }
+          }
+        }
+      },
+      "original_acceptance": false,
+      "full_adjacent_evaluated_pairs": 1357,
+      "chronological_bins": [
+        {
+          "bin": 0,
+          "index_start": 0,
+          "index_end": 169,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.08774035379314225,
+          "orientation_rmse_degrees": 3.3638924412221693,
+          "adjacent_translation_rmse_m": 0.006039011217440068,
+          "one_second_translation_rmse_m": 0.056170850042376805,
+          "ate_whole_sse_fraction": 0.00667682323127201,
+          "rpe_whole_sse_fraction": 0.11840528365430264
+        },
+        {
+          "bin": 1,
+          "index_start": 170,
+          "index_end": 339,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 169,
+          "ate_rmse_m": 0.3506433080547862,
+          "orientation_rmse_degrees": 7.433524284590403,
+          "adjacent_translation_rmse_m": 0.01612932404669446,
+          "one_second_translation_rmse_m": 0.09984143603656581,
+          "ate_whole_sse_fraction": 0.10663560216538381,
+          "rpe_whole_sse_fraction": 0.3718848714207118
+        },
+        {
+          "bin": 2,
+          "index_start": 340,
+          "index_end": 509,
+          "planned_frames": 170,
+          "reference_matched": 169,
+          "rpe_planned": 170,
+          "rpe_evaluated": 169,
+          "ate_rmse_m": 0.41828059115547167,
+          "orientation_rmse_degrees": 7.040946554484329,
+          "adjacent_translation_rmse_m": 0.008727622192972006,
+          "one_second_translation_rmse_m": 0.04360370310952563,
+          "ate_whole_sse_fraction": 0.15084965644541629,
+          "rpe_whole_sse_fraction": 0.07093059800221894
+        },
+        {
+          "bin": 3,
+          "index_start": 510,
+          "index_end": 679,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.4250158306502384,
+          "orientation_rmse_degrees": 16.802490280095146,
+          "adjacent_translation_rmse_m": 0.004312733866933653,
+          "one_second_translation_rmse_m": 0.05768374356717047,
+          "ate_whole_sse_fraction": 0.1566683714934594,
+          "rpe_whole_sse_fraction": 0.12486938284144843
+        },
+        {
+          "bin": 4,
+          "index_start": 680,
+          "index_end": 849,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.3153152791881359,
+          "orientation_rmse_degrees": 18.650781495670575,
+          "adjacent_translation_rmse_m": 0.004461137742474542,
+          "one_second_translation_rmse_m": 0.05590185625970872,
+          "ate_whole_sse_fraction": 0.08623054828791843,
+          "rpe_whole_sse_fraction": 0.11727394873617394
+        },
+        {
+          "bin": 5,
+          "index_start": 850,
+          "index_end": 1019,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.41899706570537915,
+          "orientation_rmse_degrees": 12.771449195850046,
+          "adjacent_translation_rmse_m": 0.004586428782380608,
+          "one_second_translation_rmse_m": 0.04899316657191182,
+          "ate_whole_sse_fraction": 0.15226254305991868,
+          "rpe_whole_sse_fraction": 0.09007828527376241
+        },
+        {
+          "bin": 6,
+          "index_start": 1020,
+          "index_end": 1189,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.41746683808397234,
+          "orientation_rmse_degrees": 13.164238606765037,
+          "adjacent_translation_rmse_m": 0.005332193140891392,
+          "one_second_translation_rmse_m": 0.04323534315602902,
+          "ate_whole_sse_fraction": 0.1511524117353706,
+          "rpe_whole_sse_fraction": 0.07014987649989737
+        },
+        {
+          "bin": 7,
+          "index_start": 1190,
+          "index_end": 1359,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 140,
+          "rpe_evaluated": 140,
+          "ate_rmse_m": 0.46746230789737403,
+          "orientation_rmse_degrees": 15.253659551404855,
+          "adjacent_translation_rmse_m": 0.004731685308343731,
+          "one_second_translation_rmse_m": 0.03432281023816204,
+          "ate_whole_sse_fraction": 0.1895240435812608,
+          "rpe_whole_sse_fraction": 0.03640775357148442
+        }
+      ],
+      "associations": {
+        "adjacent": {
+          "translation_m": {
+            "correspondence_fraction": {
+              "count": 1357,
+              "value": -0.5166251071433976,
+              "undefined_reason": null
+            },
+            "photometric_rmse": {
+              "count": 1357,
+              "value": 0.6587836934889021,
+              "undefined_reason": null
+            },
+            "depth_rmse_m": {
+              "count": 1357,
+              "value": 0.40809239763052296,
+              "undefined_reason": null
+            },
+            "support_fraction": {
+              "count": 1357,
+              "value": -0.10613431754002618,
+              "undefined_reason": null
+            },
+            "support_rmse_m": {
+              "count": 1357,
+              "value": 0.3993662213485358,
+              "undefined_reason": null
+            }
+          },
+          "rotation_degrees": {
+            "correspondence_fraction": {
+              "count": 1357,
+              "value": -0.2866982479857023,
+              "undefined_reason": null
+            },
+            "photometric_rmse": {
+              "count": 1357,
+              "value": 0.4337997396133096,
+              "undefined_reason": null
+            },
+            "depth_rmse_m": {
+              "count": 1357,
+              "value": 0.10667754514312258,
+              "undefined_reason": null
+            },
+            "support_fraction": {
+              "count": 1357,
+              "value": -0.06113382777005688,
+              "undefined_reason": null
+            },
+            "support_rmse_m": {
+              "count": 1357,
+              "value": 0.18018155921597798,
+              "undefined_reason": null
+            }
+          }
+        },
+        "one_second": {
+          "translation_m": {
+            "correspondence_fraction": {
+              "count": 1328,
+              "value": -0.5882567303060767,
+              "undefined_reason": null
+            },
+            "photometric_rmse": {
+              "count": 1328,
+              "value": 0.0897993831658579,
+              "undefined_reason": null
+            },
+            "depth_rmse_m": {
+              "count": 1328,
+              "value": 0.5616503515150373,
+              "undefined_reason": null
+            },
+            "support_fraction": {
+              "count": 1328,
+              "value": -0.5283695314090362,
+              "undefined_reason": null
+            },
+            "support_rmse_m": {
+              "count": 1328,
+              "value": 0.6816766258699414,
+              "undefined_reason": null
+            }
+          },
+          "rotation_degrees": {
+            "correspondence_fraction": {
+              "count": 1328,
+              "value": -0.17424197923776108,
+              "undefined_reason": null
+            },
+            "photometric_rmse": {
+              "count": 1328,
+              "value": 0.17060770187783864,
+              "undefined_reason": null
+            },
+            "depth_rmse_m": {
+              "count": 1328,
+              "value": 0.032917098364130565,
+              "undefined_reason": null
+            },
+            "support_fraction": {
+              "count": 1328,
+              "value": -0.12687419464221444,
+              "undefined_reason": null
+            },
+            "support_rmse_m": {
+              "count": 1328,
+              "value": 0.25988833660488075,
+              "undefined_reason": null
+            }
+          }
+        }
+      },
+      "inputs": {
+        "label": "rounded-sobel",
+        "estimator": "spatialrust_heldout_rounded_sobel_dense_rgbd_cpu",
+        "files": {
+          "estimates": {
+            "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\run\\estimates.json",
+            "bytes": 9435730,
+            "sha256": "5deb5609fe8dd7818e3cc7677b63decc8de8161b515da811adaaed9a60d1f898"
+          },
+          "evaluation_file": {
+            "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\evaluate\\accuracy.json",
+            "bytes": 843386,
+            "sha256": "eda63a6d7a732c573525740646554c98155345ced609468f77fde31e2a774b68"
+          },
+          "reference_file": {
+            "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\evaluate\\groundtruth.txt",
+            "bytes": 332920,
+            "sha256": "66b6770d887a5a3b69c94c3b186c3f76fe092ca25399772177f41aed984bd1b0"
+          },
+          "projective_audit_file": {
+            "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\audit-projective\\audit.json",
+            "bytes": 720349,
+            "sha256": "d2f2bbea3ff37bdc7d6e78e0a0d2a74f2fb7f9635ddc1c39b9dc751f4b636ecb"
+          },
+          "score_audit_file": {
+            "path": "E:\\SpatialRustData\\maturity-80\\heldout-rgbd-study-v1\\room\\audit-score\\audit.json",
+            "bytes": 1304,
+            "sha256": "792045d354554d11974a37fa039eeb8a8f4db88357be4349f3c583a30cf7e70a"
+          }
+        },
+        "native_extension": {
+          "path": "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+          "bytes": 5490176,
+          "sha256": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69"
+        }
+      }
+    },
+    "reference-precision": {
+      "counts": {
+        "planned_poses": 1360,
+        "generated_poses": 1360,
+        "evaluated_poses": 1359,
+        "unmatched_reference_poses": 1,
+        "rpe_planned_pairs": 1330,
+        "rpe_evaluated_pairs": 1328
+      },
+      "original_ate_rmse_m": 0.37865266052617225,
+      "original_one_second_rpe_rmse_m": 0.05837532600255425,
+      "recomputed_metrics": {
+        "aligned": {
+          "translation_m": {
+            "count": 1359,
+            "sse": 194.8504809227026,
+            "rmse": 0.37865266052617225,
+            "quantiles": {
+              "0.0": 0.0,
+              "0.25": 0.2923532893744043,
+              "0.5": 0.3968827667111337,
+              "0.75": 0.4527542856278517,
+              "0.95": 0.5086534396356354,
+              "1.0": 0.5674835592313432
+            }
+          },
+          "rotation_degrees": {
+            "count": 1359,
+            "sse": 222765.6876073636,
+            "rmse": 12.803078858676496,
+            "quantiles": {
+              "0.0": 0.0,
+              "0.25": 6.648573092641055,
+              "0.5": 12.470596027899733,
+              "0.75": 15.904387586347937,
+              "0.95": 19.299138026498184,
+              "1.0": 19.69395651715233
+            }
+          }
+        },
+        "unadjusted": {
+          "translation_m": {
+            "count": 1359,
+            "sse": 5932.5066160630595,
+            "rmse": 2.0893412913373712,
+            "quantiles": {
+              "0.0": 1.168195688240194,
+              "0.25": 1.7233528637368032,
+              "0.5": 2.0061934257771594,
+              "0.75": 2.3653885862637476,
+              "0.95": 2.7289289616456784,
+              "1.0": 2.852395670843937
+            }
+          },
+          "rotation_degrees": {
+            "count": 1359,
+            "sse": 22917000.162228502,
+            "rmse": 129.85813327323814,
+            "quantiles": {
+              "0.0": 123.34506371749998,
+              "0.25": 126.38455992890474,
+              "0.5": 130.36820412686802,
+              "0.75": 132.59323571847892,
+              "0.95": 135.48865887735047,
+              "1.0": 137.99855491535888
+            }
+          }
+        },
+        "adjacent": {
+          "translation_m": {
+            "count": 1357,
+            "sse": 0.08195873135482358,
+            "rmse": 0.0077715507934591685,
+            "quantiles": {
+              "0.0": 0.00014563336210068778,
+              "0.25": 0.0024383919573710876,
+              "0.5": 0.003810739779766743,
+              "0.75": 0.006033125204911243,
+              "0.95": 0.013944294267814076,
+              "1.0": 0.062344702858914414
+            }
+          },
+          "rotation_degrees": {
+            "count": 1357,
+            "sse": 246.268177204977,
+            "rmse": 0.4260045367067714,
+            "quantiles": {
+              "0.0": 0.022709083982712267,
+              "0.25": 0.1706275292726973,
+              "0.5": 0.27815064547506374,
+              "0.75": 0.44244630075908303,
+              "0.95": 0.8034621424457613,
+              "1.0": 1.9521848130884625
+            }
+          }
+        },
+        "rpe": {
+          "translation_m": {
+            "count": 1328,
+            "sse": 4.525397294881157,
+            "rmse": 0.05837532600255424,
+            "quantiles": {
+              "0.0": 0.0018035304960886931,
+              "0.25": 0.02558534500515845,
+              "0.5": 0.040472689202835394,
+              "0.75": 0.06343206442807797,
+              "0.95": 0.09473913466562951,
+              "1.0": 0.23665846214023745
+            }
+          },
+          "rotation_degrees": {
+            "count": 1328,
+            "sse": 8679.091246359363,
+            "rmse": 2.556454630122157,
+            "quantiles": {
+              "0.0": 0.08574837419641744,
+              "0.25": 1.2459068764202266,
+              "0.5": 1.984975015999912,
+              "0.75": 3.1140353370454927,
+              "0.95": 4.52934521128592,
+              "1.0": 6.262653499269872
+            }
+          }
+        }
+      },
+      "original_acceptance": false,
+      "full_adjacent_evaluated_pairs": 1357,
+      "chronological_bins": [
+        {
+          "bin": 0,
+          "index_start": 0,
+          "index_end": 169,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.08773191496517263,
+          "orientation_rmse_degrees": 3.364199819676458,
+          "adjacent_translation_rmse_m": 0.006039382206179436,
+          "one_second_translation_rmse_m": 0.05616192090025794,
+          "ate_whole_sse_fraction": 0.006715257295703776,
+          "rpe_whole_sse_fraction": 0.11848847650828029
+        },
+        {
+          "bin": 1,
+          "index_start": 170,
+          "index_end": 339,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 169,
+          "ate_rmse_m": 0.3504020527259225,
+          "orientation_rmse_degrees": 7.431596656599995,
+          "adjacent_translation_rmse_m": 0.01612989384712254,
+          "one_second_translation_rmse_m": 0.09978379640543232,
+          "ate_whole_sse_fraction": 0.10712250570503916,
+          "rpe_whole_sse_fraction": 0.3718348044583874
+        },
+        {
+          "bin": 2,
+          "index_start": 340,
+          "index_end": 509,
+          "planned_frames": 170,
+          "reference_matched": 169,
+          "rpe_planned": 170,
+          "rpe_evaluated": 169,
+          "ate_rmse_m": 0.41795627276804986,
+          "orientation_rmse_degrees": 7.026909300103468,
+          "adjacent_translation_rmse_m": 0.008725474983712669,
+          "one_second_translation_rmse_m": 0.04337599800512788,
+          "ate_whole_sse_fraction": 0.15151196047913582,
+          "rpe_whole_sse_fraction": 0.07026336619254893
+        },
+        {
+          "bin": 3,
+          "index_start": 510,
+          "index_end": 679,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.42492139578515176,
+          "orientation_rmse_degrees": 16.74651861274679,
+          "adjacent_translation_rmse_m": 0.004315153572007321,
+          "one_second_translation_rmse_m": 0.05770501124614954,
+          "ate_whole_sse_fraction": 0.15753049515693507,
+          "rpe_whole_sse_fraction": 0.12508904257675071
+        },
+        {
+          "bin": 4,
+          "index_start": 680,
+          "index_end": 849,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.3142323683063151,
+          "orientation_rmse_degrees": 18.599709890698712,
+          "adjacent_translation_rmse_m": 0.004460415576579611,
+          "one_second_translation_rmse_m": 0.055896444726988785,
+          "ate_whole_sse_fraction": 0.0861488087688957,
+          "rpe_whole_sse_fraction": 0.1173709391727322
+        },
+        {
+          "bin": 5,
+          "index_start": 850,
+          "index_end": 1019,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.4161757378668701,
+          "orientation_rmse_degrees": 12.748613192724884,
+          "adjacent_translation_rmse_m": 0.004586475732597661,
+          "one_second_translation_rmse_m": 0.04900601370984816,
+          "ate_whole_sse_fraction": 0.15111269664156673,
+          "rpe_whole_sse_fraction": 0.09021753626270114
+        },
+        {
+          "bin": 6,
+          "index_start": 1020,
+          "index_end": 1189,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 170,
+          "rpe_evaluated": 170,
+          "ate_rmse_m": 0.4148013081882797,
+          "orientation_rmse_degrees": 13.164421064792197,
+          "adjacent_translation_rmse_m": 0.005331911247841162,
+          "one_second_translation_rmse_m": 0.043263167705038755,
+          "ate_whole_sse_fraction": 0.15011623865739387,
+          "rpe_whole_sse_fraction": 0.07031190077798208
+        },
+        {
+          "bin": 7,
+          "index_start": 1190,
+          "index_end": 1359,
+          "planned_frames": 170,
+          "reference_matched": 170,
+          "rpe_planned": 140,
+          "rpe_evaluated": 140,
+          "ate_rmse_m": 0.4663457895183156,
+          "orientation_rmse_degrees": 15.248892278618136,
+          "adjacent_translation_rmse_m": 0.004738988286804936,
+          "one_second_translation_rmse_m": 0.03431292682498967,
+          "ate_whole_sse_fraction": 0.18974203729532987,
+          "rpe_whole_sse_fraction": 0.036423934050617335
+        }
+      ],
+      "associations": {
+        "adjacent": {
+          "translation_m": {
+            "correspondence_fraction": {
+              "count": 1357,
+              "value": -0.5165180299334468,
+              "undefined_reason": null
+            },
+            "photometric_rmse": {
+              "count": 1357,
+              "value": 0.6589547933548743,
+              "undefined_reason": null
+            },
+            "depth_rmse_m": {
+              "count": 1357,
+              "value": 0.4079135763806872,
+              "undefined_reason": null
+            },
+            "support_fraction": {
+              "count": 1357,
+              "value": -0.10613048099877159,
+              "undefined_reason": null
+            },
+            "support_rmse_m": {
+              "count": 1357,
+              "value": 0.39928128523952827,
+              "undefined_reason": null
+            }
+          },
+          "rotation_degrees": {
+            "correspondence_fraction": {
+              "count": 1357,
+              "value": -0.2867087143306579,
+              "undefined_reason": null
+            },
+            "photometric_rmse": {
+              "count": 1357,
+              "value": 0.43357300301283364,
+              "undefined_reason": null
+            },
+            "depth_rmse_m": {
+              "count": 1357,
+              "value": 0.1066788868308636,
+              "undefined_reason": null
+            },
+            "support_fraction": {
+              "count": 1357,
+              "value": -0.061148942919973706,
+              "undefined_reason": null
+            },
+            "support_rmse_m": {
+              "count": 1357,
+              "value": 0.180196183677229,
+              "undefined_reason": null
+            }
+          }
+        },
+        "one_second": {
+          "translation_m": {
+            "correspondence_fraction": {
+              "count": 1328,
+              "value": -0.5893103971021927,
+              "undefined_reason": null
+            },
+            "photometric_rmse": {
+              "count": 1328,
+              "value": 0.09095601097307346,
+              "undefined_reason": null
+            },
+            "depth_rmse_m": {
+              "count": 1328,
+              "value": 0.5622218850812616,
+              "undefined_reason": null
+            },
+            "support_fraction": {
+              "count": 1328,
+              "value": -0.5292349981959473,
+              "undefined_reason": null
+            },
+            "support_rmse_m": {
+              "count": 1328,
+              "value": 0.6824752475093205,
+              "undefined_reason": null
+            }
+          },
+          "rotation_degrees": {
+            "correspondence_fraction": {
+              "count": 1328,
+              "value": -0.17450574637786856,
+              "undefined_reason": null
+            },
+            "photometric_rmse": {
+              "count": 1328,
+              "value": 0.17106532060774762,
+              "undefined_reason": null
+            },
+            "depth_rmse_m": {
+              "count": 1328,
+              "value": 0.03278007345132746,
+              "undefined_reason": null
+            },
+            "support_fraction": {
+              "count": 1328,
+              "value": -0.1272251749793625,
+              "undefined_reason": null
+            },
+            "support_rmse_m": {
+              "count": 1328,
+              "value": 0.2598635697523746,
+              "undefined_reason": null
+            }
+          }
+        }
+      },
+      "inputs": {
+        "label": "reference-precision",
+        "estimator": "spatialrust_reference_precision_dense_rgbd_cpu",
+        "files": {
+          "estimates": {
+            "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\run\\estimates.json",
+            "bytes": 10599039,
+            "sha256": "e5cbfa425097cc2fe2a41ba9cf9b564f27337248c2b8755e0e4cb7b83f80627f"
+          },
+          "evaluation_file": {
+            "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\evaluate\\accuracy.json",
+            "bytes": 843373,
+            "sha256": "b5718860e27c2cf353d2cac6f0c902dd460ee318bfab57fa0a045615f73329db"
+          },
+          "reference_file": {
+            "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\evaluate\\groundtruth.txt",
+            "bytes": 332920,
+            "sha256": "66b6770d887a5a3b69c94c3b186c3f76fe092ca25399772177f41aed984bd1b0"
+          },
+          "projective_audit_file": {
+            "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\audit-projective\\audit.json",
+            "bytes": 720747,
+            "sha256": "e3c8039fb8ccd0ff16654880891ff774cc1f0f43d1ad06a476d8538b46aaa029"
+          },
+          "score_audit_file": {
+            "path": "E:\\SpatialRustData\\maturity-80\\reference-precision-dense-study-v1\\room\\audit-score\\audit.json",
+            "bytes": 1304,
+            "sha256": "01dc4bb9888bb53add24121084f77492b8b3da544cd4f0e2eabda3e84646c4ad"
+          }
+        },
+        "native_extension": {
+          "path": "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd",
+          "bytes": 5577728,
+          "sha256": "e0c5de6027dba4005c5e6666e491de2e737e4b925d2c584803f32beace4b9625"
+        }
+      }
+    }
+  },
+  "candidate_difference": {
+    "translation_m": {
+      "count": 1359,
+      "sse": 0.005477663743379742,
+      "rmse": 0.002007649782161814,
+      "quantiles": {
+        "0.0": 0.0,
+        "0.25": 0.00038529935132552393,
+        "0.5": 0.0014617427745307748,
+        "0.75": 0.0026927442452047558,
+        "0.95": 0.0037565118327442235,
+        "1.0": 0.004472554293637627
+      }
+    },
+    "rotation_degrees": {
+      "count": 1359,
+      "sse": 4.927311301638813,
+      "rmse": 0.06021369415405687,
+      "quantiles": {
+        "0.0": 0.0,
+        "0.25": 0.011042445547941728,
+        "0.5": 0.07207508319428398,
+        "0.75": 0.07861132945668695,
+        "0.95": 0.08127014164897578,
+        "1.0": 0.12312261581236222
+      }
+    }
+  },
+  "validation": {
+    "focused-tests": {
+      "path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\focused-tests.json",
+      "bytes": 2866,
+      "sha256": "b25738907e990fe62c70878c0d923828185bed0ea713c96e6d9c4aabe72b5712"
+    },
+    "focused-tests-v2": {
+      "path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\focused-tests-v2.json",
+      "bytes": 2891,
+      "sha256": "d36c1e67738835d19fa844862414e8ffe65b8d6963c6b947e47b0175aec5c26f"
+    },
+    "full-tests": {
+      "path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\full-tests.json",
+      "bytes": 5554,
+      "sha256": "e1ff956168dd7986d5fda22a5eb31428ed719b77bc7f055f4cd5eec29f7afaf2"
+    },
+    "audit": {
+      "path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\audit.json",
+      "bytes": 3161,
+      "sha256": "b2cd500bdd3479cfee85430fbf688a30f0ff28b2c7e434f870e9dca9ea8bb2ac"
+    }
+  },
+  "tests": {
+    "focused-tests": {
+      "tests": 40,
+      "passed": 40,
+      "skipped": 0,
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-focused-tests.xml",
+        "bytes": 6624,
+        "sha256": "b34692a6b97edd75861ed6f084d5770796178a6bed1ca857e1214fd422929f2c"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\focused-tests.log",
+        "bytes": 101,
+        "sha256": "651fed65ac3ae109b67005cfd5857f1cc99d6ff1c6beeea3e43971875a2d88ce"
+      }
+    },
+    "focused-tests-v2": {
+      "tests": 41,
+      "passed": 41,
+      "skipped": 0,
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-focused-tests-v2.xml",
+        "bytes": 6774,
+        "sha256": "c6420d15c4bc75d17c150df8f4d22a22d18bf8f688a1f23127fe1ce70de4e6c5"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\focused-tests-v2.log",
+        "bytes": 101,
+        "sha256": "09c9894a5bc4e750151be482d882540db45ed3b04057d35722658addb231db96"
+      }
+    },
+    "full-tests": {
+      "tests": 1313,
+      "passed": 1310,
+      "skipped": 3,
+      "xml": {
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-full-tests.xml",
+        "bytes": 179835,
+        "sha256": "f5fa9d9a2cf2f84ed2c3c23fb526e738c0a730965d37910340430a9b4ba8586c"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\full-tests.log",
+        "bytes": 1539,
+        "sha256": "790d226a2495e839a5cc6205e082f3b373b8087b0127d105b70cecd13e14bf8a"
+      }
+    }
+  },
+  "scope": "Prospective complete metadata-only observed room audit. No estimation, payload access, model change or alternative acceptance.",
+  "association_scope": "Descriptive Pearson correlations only: adjacent translation/rotation errors vs five raw scalar covariates and 1s translation/rotation errors vs complete-window mean covariates. Constant or fewer-than-two observations produce explicit undefined reasons. Scaled centered fsum arithmetic; no causal or inferential claim, selection, p-values or acceptance change.",
+  "plot_contract": {
+    "matplotlib": "3.10.8",
+    "plotted_counts": {
+      "rounded-sobel": {
+        "all_frame_samples": 1360,
+        "all_planned_rpe_pairs": 1330
+      },
+      "reference-precision": {
+        "all_frame_samples": 1360,
+        "all_planned_rpe_pairs": 1330
+      }
+    },
+    "path_simplification": false,
+    "missing_reference_samples": "NaN gaps retained"
+  },
+  "runtime_versions": {
+    "numpy": "2.3.4",
+    "scipy": "1.17.1",
+    "matplotlib": "3.10.8",
+    "pytest": "9.0.2"
+  },
+  "preserved_scientific_json_count": 437,
+  "preserved_native_file_count": 39,
+  "preserved_native_files": {
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a8717ec97a04e91145b3c1dd01eebfe5abdddc28924736acb42b36614014f4",
+    "E:\\SpatialRustBuild\\dense-rgbd-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "6d6b2b1cdd92d0aa855d1f5fa6b00fe7bdecae46ca0de52139746270f89c0fac",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "3a4cc031d171590acd760357397ff1029ff22b9f554600b8bb2d42e97ccad600",
+    "E:\\SpatialRustBuild\\maturity-80-venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "7a9d983db9fcd473caf559fdd8785ba52c080eb4944b87a1c54693fd967c92e1",
+    "E:\\SpatialRustBuild\\maturity-80-linux-target\\release\\examples\\gpu_public_rgbd_conformance": "b6d64e369c05c22d4253e48a83ac8ba2c881203a85486bcf39f68ffe4e929d54",
+    "E:\\SpatialRustBuild\\maturity-80-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "a329e2b0758caa6aab8adb9009a879ee6040a9c796b8871ee2dec8c8ead98573",
+    "E:\\SpatialRustBuild\\pnp-consensus-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "bbbbb75c00d65d13a448d00f0c875c5b04ada931aa563288e1200319375c43cf",
+    "E:\\SpatialRustBuild\\maturity-80-wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "683e57e30c02d09d7012b8429ece04c66a9c0cd25ef57af936a6b5a9994bf042",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "db4c227863708494294fed4e320e373520b0bff7c125067370cc43546bcc8b33",
+    "E:\\SpatialRustBuild\\dense-rgbd-final-overlap-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "2d2e39b8635818e696227e0223102f2aab7f16ce53489cb56262c11d1a1da95b",
+    "E:\\SpatialRustBuild\\dense-rgbd-package-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f2112078a97484461fd3f2e653204a8394839784f833f7060abaf85c94a70d88",
+    "E:\\SpatialRustBuild\\explicit-gles-v1\\windows-target\\release\\examples\\gpu_public_rgbd_conformance.exe": "f5a4074fef3049b2d1b79fc08fbe9c0f15ed5c4efb2d7512840608b19e35539f",
+    "E:/SpatialRustBuild/explicit-gles-v1/linux-target/release/examples/gpu_public_rgbd_conformance": "b1c23f36687d808329afda90bebfcf466cd4097501be0c7f0c49ea9c6bcc9860",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libdrm.so.2": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\lib\\libvulkan_dzn.so": "c56c880fa372dfc66b00b61a262200466dfaf8cc824e79744d9d9107cba108c2",
+    "E:\\SpatialRustBuild\\mesa-dozen-v1\\prefix\\share\\vulkan\\icd.d\\dzn_icd.x86_64.json": "e05c90b8bc893fe073118b3a5bbaf7fe7ff655cdea71072cd8d8b99b3a9b5dff",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\tools.json": "b18b2013099d4b326502ccf1fe627a9ce2c462454a8dad9bd30ffbad9a3c680a",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\bison": "7791b07ce4e24d56c80f3df47c9a193b039392afc1eb02af726ff93591b1c6e7",
+    "E:\\SpatialRustBuild\\mesa-gallium-tools-v1\\unpacked\\usr\\bin\\flex": "4cabd101467c6b428e3fd9b5a7dee0785b3108657ae0a5d85947956329d7047b",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm.so.2.133.0": "9f69307f181e401a96a8499fab6c9677e0a64c9d291caffaad5843e74c8a87dc",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_nouveau.so.2.133.0": "ceb1e4eb7eb552e08022d821d632cb400de60e4d3201324ac1b7ec34268ac5f9",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libdrm_radeon.so.1.133.0": "f177704aac79527908633213ba1bb3f298c32aabdc2b3bc231b46983d58587e8",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libEGL_mesa.so.0.0.0": "92a30b5b3a96fb52bbdad4cc46b7796411ccffc22b5eb06f72dd3d2dcb90cd40",
+    "E:/SpatialRustBuild/mesa-gallium-gles-v3/stage/opt/spatialrust-gles-v1/lib/libgallium-26.2.5.so": "e2c423620442bb6bfafd89a4550b39eab11a4245ab88eb85153a9f4750066e03",
+    "C:\\Users\\rsasa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\open3d\\cpu\\pybind.cp312-win_amd64.pyd": "ab1b2f4a1126a11886a2a9f3eeab5ceaeac0bab1b53ee319eb363df7ef629d88",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "46f4434b0b6456a3ea564d2a7f1f7c4c942ce4979348d6a06e9eed36ef9611a6",
+    "E:\\SpatialRustBuild\\native-dense-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1baaf7a63e71cf153d5d2736e06e5f8bd87e3813e063a3f43d5bf5a8d930855b",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "f3a58c85172c8596630e18eaa010e7905a49e65ad5e849db0f7a0d63c1467abc",
+    "E:\\SpatialRustBuild\\native-dense-gray-gaussian3-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "026091cde997323078e453fdc4c0f941b623b6a4c6443de4e76e058fd78689c1",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "ee9063970899e05c9b6d8987e2c0d1e19238cf83827356f037b7cf9ad221295c",
+    "E:\\SpatialRustBuild\\native-dense-pair-mean-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "0b8545e0b3737fc08f49a2b9af325a1e09a56693c9e524665f1fd5ab00790589",
+    "E:\\SpatialRustBuild\\dense-sampling-audit-v1\\bin\\dense_sampling_audit.exe": "dc9c08cd9cd6eb7141fab67b28734213947526a35437f27b05da9e52930e22c4",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "e8652ddaeeb2ce7a6018ca670b1fde35760d745af5beb488bb4967baf1506f69",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "1817591beb7eacb443a4eb0632e4be75f21fbd4de9590d6fd74ce71fb6bed465",
+    "E:\\SpatialRustBuild\\native-dense-rounded-sobel-v1\\bin\\rounded_sobel_vision_tests.exe": "0dac430a412bfba2717c79367ac60f2d4141502f6ca5160800fa929c884002a5",
+    "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\venv\\Lib\\site-packages\\spatialrust\\spatialrust.pyd": "e0c5de6027dba4005c5e6666e491de2e737e4b925d2c584803f32beace4b9625",
+    "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\wheels\\spatialrust-1.2.0-cp38-abi3-win_amd64.whl": "9525a5c44614252a7685c8bb8c118be2c9247f3d75e1dbfa4b6dcf938e873997",
+    "E:\\SpatialRustBuild\\native-dense-reference-precision-v1\\bin\\reference_precision_vision_tests.exe": "db60e26145ac88e4ccb53c4a0b5d53889d517953c3cc5df2bebd2c5394384ef7"
+  },
+  "unchanged_production_trees": {
+    "crates": "94c9fa05dd513404bc98140c4358a58cab0d5130",
+    "Cargo.toml": "071f537437a8d7b77cbe4dff7ae28e6a5479ed66"
+  },
+  "new_real_estimator_calls": 0,
+  "new_native_builds": 0,
+  "new_wheel_installs": 0,
+  "sensor_image_reads": 0,
+  "archive_reads": 0,
+  "sensor_downloads": 0,
+  "sensor_payload_copies": 0,
+  "runtime_jacobian_observation": null,
+  "runtime_normal_system_observation": null,
+  "operational_80_percent_proven": false,
+  "scratch_cleanup": {
+    "file": {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-test-scratch-cleanup.json",
+      "bytes": 1585,
+      "sha256": "00c022527581f6e7f904a45f2f170cfd68011932d6ce3157b842deb20a42b2f3"
+    },
+    "receipt": {
+      "Schema": "spatialrust.room-drift-pytest-scratch-cleanup.v1",
+      "VerifiedAtUtc": "2026-10-20T06:55:13.1969192Z",
+      "Paths": [
+        {
+          "Path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\pytest-focused-tests",
+          "Files": 4,
+          "LogicalBytes": 256960,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-focused-tests.xml",
+          "XmlSha256": "b34692a6b97edd75861ed6f084d5770796178a6bed1ca857e1214fd422929f2c",
+          "Tests": 40,
+          "Skipped": 0
+        },
+        {
+          "Path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\pytest-focused-tests-v2",
+          "Files": 4,
+          "LogicalBytes": 256960,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-focused-tests-v2.xml",
+          "XmlSha256": "c6420d15c4bc75d17c150df8f4d22a22d18bf8f688a1f23127fe1ce70de4e6c5",
+          "Tests": 41,
+          "Skipped": 0
+        },
+        {
+          "Path": "E:\\SpatialRustBuild\\room-drift-audit-v1\\pytest-full-tests",
+          "Files": 1423,
+          "LogicalBytes": 560278971,
+          "Xml": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\room-drift-full-tests.xml",
+          "XmlSha256": "f5fa9d9a2cf2f84ed2c3c23fb526e738c0a730965d37910340430a9b4ba8586c",
+          "Tests": 1313,
+          "Skipped": 3
+        }
+      ],
+      "AlreadyAbsent": [],
+      "LogicalBytesRemoved": 560792891.0,
+      "FreeBeforeBytes": 882713038848,
+      "FreeAfterBytes": 883276181504,
+      "Scope": "Only explicitly named completed passing pytest basetemps; no datasets, results, logs, XML, wheels, native binaries or build cache removed"
+    }
+  },
+  "scratch_reclaimed_logical_bytes": 560792891,
+  "remaining": "Room robustness, genuinely unobserved motion qualification, both raw Linux hardware classes, canonical matching measured clock uncertainty/physical frame accuracy and complete canonical mapping/semantic/Viewer/interchange/release acceptance remain required for operational 80%.",
+  "owned_storage": {
+    "build": {
+      "logical_bytes": 88437,
+      "regular_files": 10,
+      "matched_files": 10,
+      "directories": 3
+    },
+    "result": {
+      "logical_bytes": 15222221,
+      "regular_files": 4,
+      "matched_files": 4,
+      "directories": 2
+    },
+    "free_bytes": {
+      "C": 77304537088,
+      "E": 883276181504
+    },
+    "combined_bytes": 15310658
+  },
+  "conclusion": "Both float/Euler variants remain close (2.008mm position / 0.0602 degree orientation RMS between original gauges) while room has 0.379m position / 12.8 degree orientation error against the supplied reference. Fixed bin 1 (frames 170..339) contributes 37.18% of original 1s translation SSE. Descriptive local/window associations motivate a separately prospective robust-fitting investigation; they neither prove a cause nor justify changing acceptance or selecting frames."
+}

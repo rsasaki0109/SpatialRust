@@ -19,6 +19,17 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a fixed complete room drift audit over both frozen native trajectories.
+  Reproduce all original scores, preserve 1,360 rows/1,330 planned 1s pairs per
+  model, and compare original gauges, adjacent motion, eight fixed bins and
+  descriptive raw-statistic associations. Room remains outside both limits;
+  model differences are only 2.008mm/0.0602 degrees RMS, while absolute errors
+  remain about 0.379m/12.8 degrees. Source images/archives and estimators are
+  unused. Forty-one final math/IO checks and 1,310 SDK passes with three old
+  skips; optional dependencies isolated in a new dedicated CI job. Retain 15.3MB
+  metadata/figures, reclaim 561MB passing scratch, preserve 437 JSON/39 native
+  artifacts and all production crates. See `docs/ROOM_DRIFT_AUDIT.md`.
+
 - Add explicit reference-precision dense RGB-D fitting with float32 intermediate
   images/XYZ, checked f64 equations and proper left Euler increments. Preserve
   every old selector/default, CPU ownership and original raw final gates.
