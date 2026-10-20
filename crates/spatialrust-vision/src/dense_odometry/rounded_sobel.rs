@@ -398,7 +398,7 @@ mod tests {
         let mut hole = level(8, 8);
         hole.depth[2 * 8 + 2] = f64::NAN;
         assert!(!downsample(&hole).depth[5].is_finite());
-        assert!(!gaussian3(&hole, true).depth[1 * 8 + 1].is_finite());
+        assert!(!gaussian3(&hole, true).depth[9].is_finite());
     }
 
     #[test]
@@ -545,9 +545,7 @@ mod tests {
         .unwrap();
         let depth = Image::<f32, 1>::try_new(width, height, vec![2.0; width * height]).unwrap();
         let frame = DenseRgbdFrame::try_new(gray.view(), depth.view()).unwrap();
-        let camera = CameraMatrix3::from_intrinsics(
-            crate::CameraIntrinsics::try_new(64.0, 64.0, 48.0, 36.0, width, height).unwrap(),
-        );
+        let camera = CameraMatrix3::try_from_pinhole(64.0, 64.0, 48.0, 36.0).unwrap();
         let options = DenseRgbdOdometryOptions::default();
         let result = estimate_dense_rgbd_odometry_with_model(
             frame,
