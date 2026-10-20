@@ -81,6 +81,8 @@ impl ScanOdometry {
     /// selected record must use the same frame and clock domain. The first
     /// scan is the graph root; each matcher result becomes the edge
     /// `current_T_previous` and is composed using the pose-graph convention.
+    /// Stored trajectory isometries are `current_T_first_scan`; explicitly
+    /// invert them when transforming a current cloud into the first scan frame.
     pub fn estimate<M: ScanMatcher>(
         &self,
         episode: &MemoryEpisode,
@@ -310,6 +312,43 @@ mod tests {
         assert_eq!(result.frame_id, FrameId::new("lidar"));
         assert!((result.trajectory.samples()[1].pose.isometry.translation().x - 1.0).abs() < 1e-5);
         assert_eq!(result.pose_graph.edges().len(), 1);
+    }
+
+    #[test]
+    fn scan_graph_preserves_current_from_first_rotation_direction() {
+        use spatialrust_math::TransformPoint;
+
+        struct QuarterTurnMatcher;
+        impl ScanMatcher for QuarterTurnMatcher {
+            fn match_scans(
+                &self,
+                _previous: &PointCloud,
+                _current: &PointCloud,
+            ) -> super::MappingResult<Isometry3<f32>> {
+                Ok(Isometry3::new(
+                    Quat::from_axis_angle(Vec3::new(0.0, 0.0, 1.0), std::f32::consts::FRAC_PI_2),
+                    Vec3::new(1.0, 0.0, 0.0),
+                ))
+            }
+        }
+
+        let topic = TopicId::new("/lidar");
+        let episode = MemoryEpisode::from_records(vec![
+            scan(topic.as_str(), 10, "lidar"),
+            scan(topic.as_str(), 20, "lidar"),
+            scan(topic.as_str(), 30, "lidar"),
+        ]);
+        let result = ScanOdometry::try_new(ScanOdometryConfig::new(3, 3))
+            .unwrap()
+            .estimate(&episode, &topic, &QuarterTurnMatcher)
+            .unwrap();
+        let first = result.trajectory.samples()[1].pose.isometry;
+        let basis = first.transform_point(Vec3::new(1.0, 0.0, 0.0));
+        assert!((basis.x - 1.0).abs() < 1e-5 && (basis.y - 1.0).abs() < 1e-5);
+        let second = result.trajectory.samples()[2].pose.isometry;
+        let origin = second.transform_point(Vec3::new(0.0, 0.0, 0.0));
+        assert!((origin.x - 1.0).abs() < 1e-5 && (origin.y - 1.0).abs() < 1e-5);
+        assert_eq!(result.trajectory.samples()[2].stamp.as_nanos(), 30);
     }
 
     #[test]
