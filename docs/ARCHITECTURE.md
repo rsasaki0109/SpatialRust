@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Incremental scan collection](SCAN_COLLECTION_BUDGET.md) shares one bounded
+episode builder across both sensors. Completed scans plus pending owned chunks
+pass checked record/point/allocated-column admission before an explicit CPU
+clone is retained. Source leases, assembly requests and final capacity validation
+stay separate; this is not a process-RSS bound. Safe private example helpers
+preserve metadata, dtype/order, calibration gates and sensor transport; core,
+libraries, GPU and dependencies stay unchanged. Message identity remains open.
+
 [Mapping sensor transport](MAPPING_SENSOR_TRANSPORT.md) explicitly inverts scan
 odometry into the fixed first-body volume gauge and conjugates front motion
 through the shared body before carrying other sensor extrinsics. One private
