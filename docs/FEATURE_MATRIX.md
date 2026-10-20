@@ -122,6 +122,13 @@ capacity success. Nineteen new IO cases and exact privileged old-tree counts
 validate this script-only correction; native models and motion acceptance remain
 unchanged.
 
+The [synthetic precision/update audit](DENSE_PRECISION_AUDIT.md) reuses both
+frozen CPU modules: six actual one-step pairs match independent source-modeled
+predictions to <=1.11e-16, with distinct proper rotation retractions and float32
+image/point arithmetic. All 24 public Gaussian byte observations match. Runtime
+Jacobians are unobserved; no new native model or real-data accuracy acceptance
+is introduced.
+
 `filter-mls-gpu` exposes `MlsSmoothing::{smoothed_positions_with_gpu,filter_with_gpu}`
 with a supplied runtime and self-inclusive neighborhood capacity. Radius search,
 weighted local frames and constant/linear/quadratic fits run on GPU; CPU tree

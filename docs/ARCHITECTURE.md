@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+A [source-bound synthetic precision audit](DENSE_PRECISION_AUDIT.md) compares
+independent f64/native and float32/reference equations and proper left pose
+retractions with frozen CPU public one-step results. Observed public transforms,
+source-constructed image operators and modeled internal equations stay explicit;
+unexposed runtime Jacobians remain unobserved. Production models/core/dependencies
+and CPU/GPU ownership/transfers are unchanged; real accuracy remains separate.
+
 Offline fixed-source acquisition uses a standard-library [complete file
 inventory](REGULAR_FILE_INVENTORY.md) before network admission. Immutable logical
 counts require every directory/stat operation to succeed; filename filters do
