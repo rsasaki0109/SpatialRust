@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add the explicit reference-precision Huber dense RGB-D model with fixed scalar
+  IRLS thresholds, unchanged unweighted raw final admission and all six legacy
+  choices. Independent math/native/Python/wheel checks and full four-scene
+  development evidence retain original gates; passing scenes: xyz.
+  Reuse sensor payloads by hard link and reclaim 723MB passing
+  scratch under fixed storage bounds. See
+  [the fixed validation](docs/HUBER_DENSE_RGBD_VALIDATION.md).
+
 - Add a fixed complete room drift audit over both frozen native trajectories.
   Reproduce all original scores, preserve 1,360 rows/1,330 planned 1s pairs per
   model, and compare original gauges, adjacent motion, eight fixed bins and
