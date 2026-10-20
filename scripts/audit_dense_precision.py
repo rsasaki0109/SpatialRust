@@ -54,6 +54,12 @@ def proper_pose(value,tolerance=1e-10):
         raise ValueError('proper rotation required')
     return value
 
+def pose_from_rt(rotation,translation):
+    rotation=np.asarray(rotation,dtype=np.float64);translation=np.asarray(translation,dtype=np.float64)
+    if rotation.shape!=(3,3) or translation.shape!=(3,):raise ValueError('native rotation 3x3 and translation 3 required')
+    pose=np.eye(4);pose[:3,:3]=rotation;pose[:3,3]=translation
+    return proper_pose(pose)
+
 def retract(initial,delta,kind):
     delta=np.asarray(delta,dtype=float)
     if delta.shape!=(6,) or not np.all(np.isfinite(delta)) or kind not in ('vector','euler'):
@@ -178,9 +184,9 @@ def observe(plan,payloads,role):
         try:
             data=arrays(payload,config);initial=proper_pose(payload['initial']);fx,fy,cx,cy=camera(config)
             if role=='native':
-                transform,inverse,report=backend.estimate_dense_rgbd_odometry(*data,fx,fy,cx,cy,initial=initial,fitting_model='rounded-sobel',**plan['controls'])
-                proper_pose(inverse)
-                if np.max(np.abs(np.asarray(transform)@inverse-np.eye(4)))>1e-10 or report['iterations']!=1 or report['fitting_model']!='rounded-sobel':raise ValueError('native one-step receipt invalid')
+                rotation,translation,report=backend.estimate_dense_rgbd_odometry(*data,fx,fy,cx,cy,initial=initial,fitting_model='rounded-sobel',**plan['controls'])
+                transform=pose_from_rt(rotation,translation)
+                if report['iterations']!=1 or report['fitting_model']!='rounded-sobel':raise ValueError('native one-step receipt invalid')
                 item['native_receipt']=report
             else:
                 def rgbd(gray,depth):

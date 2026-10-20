@@ -109,3 +109,20 @@ def test_case_omission_is_rejected_before_comparison():
     plan=audit.load_plan();inputs=audit.make_inputs(plan)
     with pytest.raises(ValueError,match='all fixed'):
         audit.audit(plan,inputs,dict(cases=[]),dict(cases=[]))
+
+
+def test_native_rotation_translation_contract_has_proper_point_action():
+    rotation=np.array([[0,-1,0],[1,0,0],[0,0,1]],float);translation=np.array([1.,2.,3.])
+    pose=audit.pose_from_rt(rotation,translation)
+    point=np.array([4.,5.,6.]);assert np.array_equal(pose[:3,:3]@point+pose[:3,3],[-4.,6.,9.])
+
+
+@pytest.mark.parametrize('change',['rotation-shape','translation-shape','missing-translation','nan','reflection'])
+def test_native_rotation_translation_contract_rejects_invalid_outputs(change):
+    r=np.eye(3);t=np.zeros(3)
+    if change=='rotation-shape':r=np.eye(4)
+    elif change=='translation-shape':t=np.zeros((3,1))
+    elif change=='missing-translation':t=np.zeros(2)
+    elif change=='nan':t[0]=np.nan
+    else:r[0,0]=-1
+    with pytest.raises(ValueError):audit.pose_from_rt(r,t)
