@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.render-test-runtime-plan.v1",
+  "slice": "146AP",
+  "parent_merge": "e43e0c6928ba3724b6a6188de5c445a911baed1c",
+  "purpose": "Remove redundant independent GPU initialization from native renderer tests while retaining parallel execution, and require bounded repeated real-adapter conformance on Linux CI.",
+  "contract": {
+    "fixture": "The three native GPU renderer tests reuse WgpuRuntime::shared instead of independently constructing devices. Keep renderer/buffer ownership, image/pick/transfer assertions and pure tests. Preserve the prior wasm test construction path. Production constructors, runtime ownership, device transfers and APIs do not change.",
+    "concurrency": "Add four synchronized native callers of the shared fixture. Verify one Arc runtime, distinct renderer identities and completed explicit uploads/recycling. No global test serialization, backend override or production locking.",
+    "ci": "Linux Visual conformance repeats the complete renderer unit binary in three separate four-thread processes. Require all four actual GPU completion markers; missing adapters and skipped GPU paths cannot pass repeated conformance. Stop on any failing process; no automatic retry or suppression. Keep fresh bounded logs and upload them on failure or success.",
+    "evidence": "Preserve the original PR 329 SIGSEGV and same-head retry. The exact crashing test, driver root cause and causal relationship to concurrent initialization remain unproven. Local WSL cannot mount its registered virtual disk; Linux acceptance is CI evidence, not a local Linux or physical hardware claim.",
+    "preservation": "Preserve scientific JSON, all frozen native binaries, previous camera outputs, resolved Cargo.lock and raw WASM. Cargo selects renderer library tests only, never rebuilds frozen examples, and runs locked/offline locally. No sensor/model/toolchain acquisition or changes to production Rust, core/GPU/math or dependencies."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/render-test-runtime-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 67108864,
+    "positive_cache_growth_max_bytes": 536870912,
+    "combined_new_and_positive_cache_growth_max_bytes": 603979776,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "test_threads": 4,
+    "repeat_processes": 3,
+    "command_timeout_seconds": 900,
+    "sampling_seconds": 5,
+    "new_sensor_payload_downloads": 0,
+    "new_sdk_model_acquisition_bytes": 0,
+    "strategy": "Reuse installed Rust and existing dependency artifacts. Write new logs/evidence on E:, permit at most 512MiB positive native-cache growth, retain all earlier evidence and failures. Repeated tests reuse the same built executable; no additional full workspace builds locally."
+  },
+  "remaining_80_percent": "Physical calibration/timing, independent motion, full-room accuracy, qualifying Linux hardware and integrated acceptance remain open."
+}
