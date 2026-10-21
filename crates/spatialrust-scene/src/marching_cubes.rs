@@ -95,6 +95,10 @@ pub(crate) fn tetrahedra() -> &'static [[usize; 4]; 6] {
 }
 
 #[cfg(test)]
+#[path = "marching_topology_tests.rs"]
+mod topology_tests;
+
+#[cfg(test)]
 mod tests {
     use super::polygonise_tet;
     use spatialrust_math::Vec3;
