@@ -1,0 +1,413 @@
+{
+  "schema": "spatialrust.public-tsdf-grid-receipt.v1",
+  "slice": "146AF",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-21T01:52:35.060408+00:00",
+  "protocol_commit": "750da53e5d2fda84064baf556604057acb8e6960",
+  "tested_source_commit": "c0b90c3dc706cc948bc0646e52319ad3bd7737e8",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\tsdf-grid-plan.json",
+    "bytes": 3912,
+    "sha256": "561affd065419810b6615b01d0eb8ee2f147b18a2d0e532875585590d4e736a1"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\tsdf-grid-preflight.json",
+    "bytes": 115900,
+    "sha256": "e04648004c45537a78a7fe661c939295225408c00d35b265455bc0d7186bfd72"
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/tsdf-grid-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned sources and completed room outputs. Reuse the cache, preserve failed logs and never rebuild frozen binaries. No real sensor read/download/copy or real-motion fit. Synthetic SQLite/JSON fixtures stay in the owned external temp directory."
+  },
+  "validation": {
+    "scene-default": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\scene-default.command.json",
+        "bytes": 21911,
+        "sha256": "b6c74bebe8454a5ae8146ef0a9fded63950c18fb52ec1f522580e10a5a4061eb"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\scene-default.log",
+        "bytes": 3534,
+        "sha256": "5e29d14eaef6eab1db4edcc09693fecb296b3a0ce6543a5bb7adb86c42f6e999"
+      }
+    },
+    "scene-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\scene-all.command.json",
+        "bytes": 21937,
+        "sha256": "cfeb6059d71ff1fba035d9ff1f4994585e0069ca191e051cd88309b191f6e532"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\scene-all.log",
+        "bytes": 3652,
+        "sha256": "b6a0523ddae0494be75bec6c4e412b7f7e28eafb80b705a5bfce05090d433906"
+      }
+    },
+    "scene-clippy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\scene-clippy.command.json",
+        "bytes": 22003,
+        "sha256": "7a6c4bb52d863613acb18f33c0a4de32e4f937bd5c45d44a88398cb8ac5428b5"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\scene-clippy.log",
+        "bytes": 174,
+        "sha256": "b41577a29163c0f06ba033d1d1f6819d4a05d25fb89a50fa80b06912539b461a"
+      }
+    },
+    "full-bag": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\full-bag.command.json",
+        "bytes": 22248,
+        "sha256": "0143b1732e47f0cd5357522f22175fdb8ec33f961c96fd2fd65ce5341a76b0c8"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\full-bag.log",
+        "bytes": 11404,
+        "sha256": "4859184928154946f48ac0e450c1454fc6c6e794b95d556d9b5a5e86720a960f"
+      }
+    },
+    "e2e": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\e2e.command.json",
+        "bytes": 21989,
+        "sha256": "0d09f8939faa1a2317c057077f705ce77f95b033799c1177a631578ca1613bc4"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\e2e.log",
+        "bytes": 1671,
+        "sha256": "36b6e7266d50eff6797052c8c56ae7cd01e2b993bf68164fe41beaad8203f855"
+      }
+    },
+    "ros2-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\ros2-all.command.json",
+        "bytes": 22420,
+        "sha256": "5026c5880cfd94f9f066be363ccbfe8de5cb43133016e15f0df10e6912ae8386"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\ros2-all.log",
+        "bytes": 825,
+        "sha256": "a24275852afebc5a56a87c8c56c92854085d5dc7c799ee9343aee186c632eca7"
+      }
+    },
+    "mapping-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\mapping-all.command.json",
+        "bytes": 21944,
+        "sha256": "9fb918eb1a5f710859ac631b8fdb183e4751ef18b642aae85e9769d8d406344c"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\mapping-all.log",
+        "bytes": 2230,
+        "sha256": "296d105c166c5b47f58b55a6af83e5f5da51235cc71c0dda31c0a601452301ad"
+      }
+    },
+    "viewer-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\viewer-all.command.json",
+        "bytes": 22182,
+        "sha256": "4b54214a6846264e40d74798b6a79b6a8f78fea895670fb99ef32e7a1ada6587"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\viewer-all.log",
+        "bytes": 7289,
+        "sha256": "1f5b13bbe5442d419d160ece477c435152ce2ec7367281cc6f90f04272088371"
+      }
+    },
+    "calibration": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\calibration.command.json",
+        "bytes": 21963,
+        "sha256": "72ee09ef940e393c45ec093ca99257788448231ed3966cf0c622d17d21574375"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\calibration.log",
+        "bytes": 997,
+        "sha256": "5b9d4f02173d56cf7b10ef2b3f5af72f039d93b40078145e71572f9cfe51e586"
+      }
+    },
+    "examples-clippy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\examples-clippy.command.json",
+        "bytes": 22248,
+        "sha256": "24ec89be9ebd3be9f920222156160051f77b8d9d35b68d0755f3cf2f983cb780"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\examples-clippy.log",
+        "bytes": 492,
+        "sha256": "f2aeac1252eeb21740d6f1bbddcc0794b7532fd5f9c7b3afe9f52c086bc8cb66"
+      }
+    },
+    "format": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\format.command.json",
+        "bytes": 22122,
+        "sha256": "81cb589396cf8b82bf565c83613ef5e264cc08d313a3a5b1d79cfe9c23e71621"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\format.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "tests": {
+    "scene-default": {
+      "passed": 43,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "scene-all": {
+      "passed": 45,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "full-bag": {
+      "passed": 128,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    },
+    "e2e": {
+      "passed": 17,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    },
+    "ros2-all": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "mapping-all": {
+      "passed": 24,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 3
+    },
+    "viewer-all": {
+      "passed": 81,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "calibration": {
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    }
+  },
+  "original_regressions": {
+    "source_commit": "759adcea5c54419993462a4ee52053140b3492cf",
+    "passed": 36,
+    "failed": 9,
+    "failed_names": [
+      "tsdf::grid_tests::rejects_dimension_product_overflow",
+      "tsdf::grid_tests::rejects_field_byte_limit",
+      "tsdf::grid_tests::rejects_field_byte_overflow",
+      "tsdf::grid_tests::rejects_first_center_overflow",
+      "tsdf::grid_tests::rejects_last_center_overflow",
+      "tsdf::grid_tests::rejects_nan_origins",
+      "tsdf::grid_tests::rejects_negative_infinite_origins",
+      "tsdf::grid_tests::rejects_overflowing_f32_offset",
+      "tsdf::grid_tests::rejects_positive_infinite_origins"
+    ],
+    "production_prefix_unchanged": true,
+    "command": {
+      "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\baseline.command.json",
+      "bytes": 21957,
+      "sha256": "968a8288d643d043a23ef79c644184fb12d37f391eaa29e61e3bda95034207ad"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\baseline.log",
+      "bytes": 7175,
+      "sha256": "859ed29dab2466b4275ccdf78fcd6f63bec76309326d39cbb71c454b6a7795b6"
+    }
+  },
+  "new_cases": 17,
+  "unchanged_contracts": {
+    "public_fields_and_signatures": true,
+    "valid_initial_fields_and_layout": true,
+    "all_integration_methods": true,
+    "ray_and_field_math": true,
+    "overlap_loop_order": true,
+    "cloud_counts_are_submitted_samples": true,
+    "meshing": true,
+    "all_other_crates": true,
+    "dependencies": true,
+    "source_calibration_and_device_ownership": true
+  },
+  "scope": "Reject non-finite origins and last-center f32 arithmetic, overflowing dimension products and unrepresentable field bytes before allocation. Fallibly reserve both fields before initialization with existing error types. Preserve finite rounded centers and valid field/integration semantics. No arbitrary volume cap, physical OOM test, overcommit/RSS guarantee, physical accuracy or latency claim.",
+  "preserved_scientific_json_count": 493,
+  "preserved_native_file_count": 42,
+  "previous_completed_room_outputs": {
+    "schema": "spatialrust.huber-preserved-room-outputs.v1",
+    "files": [
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\audit.json",
+        "bytes": 14612178,
+        "sha256": "3f518a2d8d5b1aba5858a934ab88429cb8868b27aae01ad0329ea148c29eb3ec"
+      },
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\drift.svg",
+        "bytes": 382828,
+        "sha256": "e8fd81a07172126d592ffccb451a3ae090422680ef030d55efdb3ed780afb03c"
+      },
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\preview.png",
+        "bytes": 226821,
+        "sha256": "3ccd937a5c35be51af3bf3b6c9958d6fc062304363085546df80bc706bd19f99"
+      }
+    ],
+    "manifest_sha256": "75468b4a7e65a0edce8ff8e60c2f7f831c97589eefda66a243198cdacf7f6745"
+  },
+  "reference_sources": {
+    "upstream_repository": "https://github.com/isl-org/Open3D",
+    "ref": "v0.19.0",
+    "commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+    "files": [
+      {
+        "upstream_path": "cpp/open3d/geometry/ImageFactory.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\ImageFactory.cpp",
+        "bytes": 6267,
+        "sha256": "e447d9f17c725b243fbc291aa32ac2238dd4eaa46edc3a17f2f4d08a3ae4fbf1"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImageFactory.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImageFactory.cpp",
+        "bytes": 4464,
+        "sha256": "4f95c4b284fb8c22bf537bf66f53fe0c79723efb8971a0f4e357fdd7d7f079fc"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.h",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.h",
+        "bytes": 4570,
+        "sha256": "1a35f4370aaae08d693a2efd5913266f85dc71879c5e09c538429a2446760d57"
+      },
+      {
+        "upstream_path": "cpp/open3d/pipelines/odometry/RGBDOdometryJacobian.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDOdometryJacobian.cpp",
+        "bytes": 5924,
+        "sha256": "47640145004e4cca41ad70744ea0216935f57383c6b3d8a5a44561c6293a3830"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.cpp",
+        "bytes": 2554,
+        "sha256": "bf3d07e1d09be85dd448c216a7a0fddea019f5331e39fa52df8be99b39008d47"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/Image.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Image.cpp",
+        "bytes": 14366,
+        "sha256": "bef45e1facc2f25a63623e6e6aa9289127fbc9aa7ac9df9fe87393a014bbcd0c"
+      },
+      {
+        "upstream_path": "cpp/open3d/pipelines/odometry/Odometry.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Odometry.cpp",
+        "bytes": 23556,
+        "sha256": "be75e58413b6d2f7ee575b526fc0d68b228e5eeb2cab27f246f7c8e8dd34d0fb"
+      }
+    ],
+    "sensor_payload_downloads": 0
+  },
+  "sensor_downloads": 0,
+  "sensor_payload_copies": 0,
+  "real_sensor_payload_reads": 0,
+  "new_real_motion_fits": 0,
+  "new_frozen_native_artifacts": 0,
+  "operational_80_percent_proven": false,
+  "remaining": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Successful record-submission traceability does not establish these requirements.",
+  "calibration_filter_scope": "Eight unchanged name-filtered controls; no physical calibration experiment.",
+  "preserved_code_trees": {
+    "crates/spatialrust-ai": "d31d645b342426b254a9a96e79d727ca44cd50eb",
+    "crates/spatialrust-arrow": "ee8bdcaf7eac74c0d3f478e0d3b9c6ac7cdb6a19",
+    "crates/spatialrust-camera": "5914c1973c9f6ff429aaaca82f7b1526322a8df3",
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-distribute": "56443b23fc0ca9ca872bc05bc0b6a32b05a67fcf",
+    "crates/spatialrust-episode": "518861925082b0b9bcc245ada6a3f31546560ebb",
+    "crates/spatialrust-features": "2d3cb963e6a5ea37fb36961a99b72ad9a2e37ca6",
+    "crates/spatialrust-filtering": "3edaa2b89bf495051e5066e2f9d3c8d9f9d97e0f",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96",
+    "crates/spatialrust-image-io": "8828408f6425b9c61ec02a7890f27ed15c4b67cd",
+    "crates/spatialrust-image": "67fc04869008415610300839e01238503da57cb0",
+    "crates/spatialrust-interchange": "0d77937fbee6e6df14ab5f512199b46cd68dace3",
+    "crates/spatialrust-io": "4bc68834e50b40aaf649dd58624402ec4d3d05a7",
+    "crates/spatialrust-lod": "8888e90af85ba74f5fe57fe2fabb7f912aea3f1c",
+    "crates/spatialrust-mapping": "6550a941f5349e098a27cfb1e0f9751504a58594",
+    "crates/spatialrust-math": "1b2b0d359494c807a71caf508c5a8abd8c52aa2b",
+    "crates/spatialrust-metrics": "6fc36e1c5a60d06d56356b8a102380a5fb662751",
+    "crates/spatialrust-pipeline": "0a9f594402ed150d23b70c1e9a4f3ff7cb92d324",
+    "crates/spatialrust-platform": "144bb0c186970e209675f3f1b99426df65c70ba4",
+    "crates/spatialrust-py": "cd89ecbd3325df100591467ee84b5f32bc71e8df",
+    "crates/spatialrust-records": "7236d93b95dcff9d80d668bc03935f7442b1c1c6",
+    "crates/spatialrust-registration": "dcb1ef386d492f682af45d42e82bc9e61e037764",
+    "crates/spatialrust-render-wgpu": "e3a8843d1f8eccf077ed6dad1a7bda13e209c2e1",
+    "crates/spatialrust-ros2": "0eb0a7c262a420dee1971ada442927f4104b2dd3",
+    "crates/spatialrust-runtime": "aa7ac019c57b6aa719a218ec224c5b08d30d0784",
+    "crates/spatialrust-search": "f88b69bda15eb9a32fb37d0d2b330fac8f3c34a4",
+    "crates/spatialrust-segmentation": "c3131c7eb6a4ad38da15f038cc86beac80c357e9",
+    "crates/spatialrust-semantic": "c25ca616934e1879252a5bf496dc39be6e9deebf",
+    "crates/spatialrust-sync": "8c27cb7d73ee1f04bbad232e9421b48dec483657",
+    "crates/spatialrust-tensor": "4d9325a12632d2ff2be7e07114601ffcea1a2523",
+    "crates/spatialrust-transform": "f34539db58d4892eda672160dc090c95bcc9d206",
+    "crates/spatialrust-viewer": "1f48266dafd364cb0a834f07163a9f3e1e7e3222",
+    "crates/spatialrust-vision": "763c04fcef8c92c2eec5a165e2f385cf567e00a7",
+    "crates/spatialrust-viz": "b1f190e9f2b696cbe29df15a3104a2ea348fbccb",
+    "crates/spatialrust-voxelize": "86ee90b0dc6d2d11c5a143657bf44d1dac60ceaa",
+    "crates/spatialrust-web": "cab49f5703dbe04e5d695963718d33c74edd5d2d",
+    "crates/spatialrust": "c997cdb52b8222d3aab1302c8076e5c963d28c40",
+    "crates/spatialrust-scene/Cargo.toml": "7e55cc71437ba2b979ad9b455122155a99d6c0c7",
+    "crates/spatialrust-scene/src/lib.rs": "b0afc98ab557055cf792cb40efd6c148212a01bc",
+    "crates/spatialrust-scene/src/marching_cubes.rs": "caefde35ce84c6a10f3d07801c9215a17440d645",
+    "crates/spatialrust-scene/src/mesh.rs": "6555cabe88805b1341fa91a9be01a25743649f8e",
+    "crates/spatialrust-scene/src/surfel.rs": "be900f6de83110c2151507ce122deefe1e291fa2",
+    "crates/spatialrust-scene/src/gaussian.rs": "cd99f755346d9066853eb5e275976f3a1d6127fc",
+    "crates/spatialrust-scene/src/error.rs": "0e3910339cc6cb26075e246403c42e55d3f2429b",
+    "crates/spatialrust-scene/src/tsdf_support_tests.rs": "8d4782ebe1b2eec61689b8757822c104ea1fd9bd",
+    "Cargo.toml": "071f537437a8d7b77cbe4dff7ae28e6a5479ed66"
+  },
+  "source_formatting_preparation": {
+    "command": {
+      "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\format-preparation.json",
+      "bytes": 1029,
+      "sha256": "899c35c85270848195495e7e1e6f41c3188724015fdead87bfa3cb9d15d2e530"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\tsdf-grid-v1\\format-preparation.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "cargo_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118041,
+    "sha256": "6b7bc5c64861ec82eed78b683e8a05269175fdd5a4ecd397833090a34d5c3f8d"
+  },
+  "storage": {
+    "owned_metadata_bytes": 306342,
+    "cache_bytes": 10960756047,
+    "positive_cache_growth_bytes": 26781833,
+    "combined_bytes": 27088175,
+    "free_bytes": {
+      "C": 74991173632,
+      "E": 878248779776
+    }
+  }
+}

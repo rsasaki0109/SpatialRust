@@ -19,6 +19,12 @@ pub struct TsdfVolume {
 
 impl TsdfVolume {
     /// Creates an empty TSDF volume initialized to truncation distance.
+    ///
+    /// Rejects non-finite origins or voxel centers, invalid scales/dimensions
+    /// and field capacities that cannot be represented. Both fields are
+    /// reserved fallibly before initialization; reservation failures return
+    /// [`SceneError::InvalidConfiguration`]. This does not impose a memory
+    /// budget or guarantee recovery from operating-system overcommit.
     pub fn try_new(
         origin: Vec3<f32>,
         voxel_size: f32,
@@ -34,15 +40,37 @@ impl TsdfVolume {
         if dims.contains(&0) {
             return Err(SceneError::InvalidConfiguration("dims must be non-zero".into()));
         }
-        let len = dims[0].saturating_mul(dims[1]).saturating_mul(dims[2]);
-        Ok(Self {
-            origin,
-            voxel_size,
-            dims,
-            distance: vec![truncation; len],
-            weight: vec![0.0; len],
-            truncation,
-        })
+        if ![origin.x, origin.y, origin.z].into_iter().all(f32::is_finite) {
+            return Err(SceneError::InvalidConfiguration("origin must be finite".into()));
+        }
+        let len = dims[0]
+            .checked_mul(dims[1])
+            .and_then(|count| count.checked_mul(dims[2]))
+            .filter(|&count| count <= isize::MAX as usize / std::mem::size_of::<f32>())
+            .ok_or_else(|| {
+                SceneError::InvalidConfiguration("TSDF field capacity is not representable".into())
+            })?;
+        for (coordinate, dim) in [origin.x, origin.y, origin.z].into_iter().zip(dims) {
+            // Match index_to_world's f32 evaluation, including intermediate
+            // offset overflow. Positive offsets are monotonic on each axis.
+            let last_center = coordinate + ((dim - 1) as f32 + 0.5) * voxel_size;
+            if !last_center.is_finite() {
+                return Err(SceneError::InvalidConfiguration(
+                    "voxel centers must be finite".into(),
+                ));
+            }
+        }
+        let mut distance = Vec::new();
+        let mut weight = Vec::new();
+        distance.try_reserve_exact(len).map_err(|_| {
+            SceneError::InvalidConfiguration("unable to reserve TSDF distance storage".into())
+        })?;
+        weight.try_reserve_exact(len).map_err(|_| {
+            SceneError::InvalidConfiguration("unable to reserve TSDF weight storage".into())
+        })?;
+        distance.resize(len, truncation);
+        weight.resize(len, 0.0);
+        Ok(Self { origin, voxel_size, dims, distance, weight, truncation })
     }
 
     /// Returns voxel dimensions `[nx, ny, nz]`.
@@ -222,6 +250,10 @@ const CORNER_OFFSETS: [[usize; 3]; 8] =
 #[cfg(test)]
 #[path = "tsdf_support_tests.rs"]
 mod support_tests;
+
+#[cfg(test)]
+#[path = "tsdf_grid_tests.rs"]
+mod grid_tests;
 
 #[cfg(test)]
 mod tests {

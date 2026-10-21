@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Validate TSDF origins, f32 voxel centers and checked field capacities before
+  allocating. Reserve distance and weight storage fallibly before initialization,
+  returning the existing scene error for invalid grids or reported reservation
+  failures. Preserve valid initial fields/layout, integration and public types.
+  Seventeen tiny controls reproduce nine original failures; scene default/all
+  features pass 43/45 tests. See [the contract and evidence](docs/TSDF_GRID_ADMISSION.md).
+
 - Reject fully disjoint TSDF sample support before clamping it to volume edges,
   preventing outside samples from changing boundary voxels or creating a false
   mesh. Preserve overlapping field math, quantization, public APIs and submitted

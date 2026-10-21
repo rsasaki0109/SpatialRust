@@ -1,0 +1,28 @@
+{
+  "schema": "spatialrust.tsdf-grid-plan.v1",
+  "slice": "146AF",
+  "parent_merge": "3ac0fd056a3fda7edc12c2ea761878e477fd8c50",
+  "purpose": "Reject invalid dense TSDF lattice geometry and unrepresentable field capacities before allocation; report allocator reservation failures through the existing scene error type.",
+  "fixed_contract": {
+    "geometry": "Require all origin components finite, existing positive finite voxel size/truncation and nonzero dimensions. Check each last voxel center with exactly the existing f32 origin + ((dim-1) as f32 + 0.5) * voxel_size expression and reject non-finite results. Positive offsets are monotonic, so finite endpoints bound all centers. Preserve finite rounded or coincident centers; no stricter spacing or physical-grid policy.",
+    "capacity": "Use checked dimension multiplication and reject counts above isize::MAX / size_of::<f32>() for either field before allocator access. Reserve both distance and weight vectors with try_reserve_exact before initializing either; map reservation failure into the existing InvalidConfiguration variant. No new arbitrary grid-size cap, public signature, error variant or dependency. Fallible reservation is not an operating-system overcommit, allocator abort, RSS or global memory-budget guarantee.",
+    "compatibility": "Preserve all volume fields, public method signatures, valid initial distance/weight values and x/y/z layout. All integration, support admission, meshing and submitted-cloud counters stay unchanged, as do core/GPU/ROS2 libraries, dependencies, explicit device ownership and physical calibration/accuracy gates.",
+    "verification": "Commit this protocol before native execution, then commit small invalid-geometry and safe unrepresentable-capacity regression cases with parent production unchanged. Capacity tests catch original capacity panics and only request mathematically impossible Vec capacities; never request a large representable allocation or simulate physical OOM. Preserve the failing baseline. Cover every origin axis, first/last centers, overflowing intermediate f32 offsets, product/capacity bounds, existing invalid scalars/zero shapes and accepted extreme/subnormal/tiny/non-cubic layouts. Verify all non-constructor production methods are unchanged."
+  },
+  "verification": "Use the existing bounded owned offline scene baseline, default/all-feature suites and Clippy; full-bag/E2E, ROS2/mapping/viewer all features, calibration controls, ROS2 all-target Clippy and formatting. Existing three-OS scene all-feature coverage and all 131 named CI checks gate merge. Bind each completed command and preserve every failure log. No frozen binary rebuild, sensor payload read/acquisition/copy or real-motion fit.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/tsdf-grid-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned sources and completed room outputs. Reuse the cache, preserve failed logs and never rebuild frozen binaries. No real sensor read/download/copy or real-motion fit. Synthetic SQLite/JSON fixtures stay in the owned external temp directory."
+  },
+  "remaining_80_percent": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Successful record-submission traceability does not establish these requirements."
+}
