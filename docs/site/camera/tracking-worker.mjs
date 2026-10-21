@@ -1,5 +1,7 @@
 import initRust, { BrowserCameraTracker } from "./pkg/spatialrust_web.js";
 
+import { personMask } from "./person-mask.mjs";
+
 let session = 0;
 let initialized = false;
 let segmenter = null;
@@ -20,7 +22,7 @@ self.onmessage = async ({ data }) => {
         const { FilesetResolver, ImageSegmenter } = await import("./vendor/vision_bundle.mjs");
         const files = await FilesetResolver.forVisionTasks(new URL("./vendor/wasm", import.meta.url).href, true);
         const modelAssetPath = new URL("./vendor/selfie_segmenter.tflite", import.meta.url).href;
-        const options = { outputCategoryMask: true, outputConfidenceMasks: false, runningMode: "VIDEO" };
+        const options = { outputCategoryMask: false, outputConfidenceMasks: true, runningMode: "VIDEO" };
         try {
           segmenter = await ImageSegmenter.createFromOptions(files, {
             ...options, canvas: new OffscreenCanvas(256, 256), baseOptions: { modelAssetPath, delegate: "GPU" },
@@ -31,7 +33,7 @@ self.onmessage = async ({ data }) => {
           backend = "CPU";
         }
         const labels = segmenter.getLabels().map((label) => label.toLowerCase());
-        if (labels[0] !== "background" || labels[1] !== "person") throw new Error("人物モデルのラベルが想定と異なります。");
+        if (labels.length !== 1 || labels[0] !== "selfie") throw new Error("人物モデルのラベルが想定と異なります。");
       }
       self.postMessage({ kind: "ready", session, backend });
     } catch (error) { failure(error); }
@@ -60,15 +62,11 @@ self.onmessage = async ({ data }) => {
     let mask = new Uint8Array(0);
     if (segmenter) {
       segmenter.segmentForVideo(pixels, data.timestampMs, (result) => {
-        const category = result.categoryMask;
-        if (!category) throw new Error("人物マスクが返りませんでした。");
-        // Explicit mask readback and bounded resampling before the callback releases it.
-        const source = category.getAsUint8Array();
-        mask = new Uint8Array(width * height);
-        for (let y = 0; y < height; y++) {
-          const row = Math.min(category.height - 1, Math.floor(y * category.height / height)) * category.width;
-          for (let x = 0; x < width; x++) mask[y * width + x] = source[row + Math.min(category.width - 1, Math.floor(x * category.width / width))] === 1 ? 1 : 0;
-        }
+        const confidence = result.confidenceMasks;
+        if (confidence?.length !== 1) throw new Error("人物マスクが返りませんでした。");
+        // Explicit float-mask readback before the callback releases the SDK result.
+        const foreground = confidence[0];
+        mask = personMask(foreground.getAsFloat32Array(), foreground.width, foreground.height, width, height);
       });
     }
     const report = JSON.parse(tracker.track_gray_copy(gray, mask, data.timestampMs));

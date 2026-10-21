@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "docs" / "site" / "camera"
 MAX_BYTES = 64 * 1024 * 1024
 HOSTS = {"cdn.jsdelivr.net", "storage.googleapis.com", "raw.githubusercontent.com"}
-APP_FILES = ("index.html", "camera.css", "app.mjs", "session.mjs", "tracking-worker.mjs", "assets.json")
+APP_FILES = ("index.html", "camera.css", "app.mjs", "session.mjs", "tracking-worker.mjs", "person-mask.mjs", "assets.json")
 
 
 def digest(path):

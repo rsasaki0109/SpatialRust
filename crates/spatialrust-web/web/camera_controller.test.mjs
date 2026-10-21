@@ -50,3 +50,17 @@ test("stop before the acquisition microtask does not prompt for a camera", async
 test("worker failure after ready also cancels an unfinished onReady", async () => {
  const h=harness();const gate=deferred();h.session.onReady=()=>gate.promise;const p=h.session.start("sample");h.send(h.workers[0],"ready");await Promise.resolve();await Promise.resolve();h.send(h.workers[0],"error",{message:"late startup"});gate.resolve();assert.equal(await p,false);assert.equal(h.errors.length,1);assert.equal(h.session.token,0);
 });
+
+// Confidence-to-binary conversion is independent of SDK-specific category IDs.
+import { personMask } from "../../../docs/site/camera/person-mask.mjs";
+test("person confidence uses a strict finite half threshold", () => {
+  assert.deepEqual([...personMask(new Float32Array([0, .49, .5, .51, 1]), 5, 1, 5, 1)], [0, 0, 0, 1, 1]);
+});
+test("person confidence resamples rows and columns without transposition", () => {
+  assert.deepEqual([...personMask(new Float32Array([1, 0, 0, 1]), 2, 2, 4, 2)], [1, 1, 0, 0, 0, 0, 1, 1]);
+});
+test("person confidence rejects malformed shape and nonfinite values", () => {
+  for (const values of [[NaN], [Infinity], [-.1], [1.1]]) assert.throws(() => personMask(new Float32Array(values), 1, 1, 1, 1));
+  for (const dimensions of [[0, 1, 1, 1], [1, 1, 321, 1], [1.5, 1, 1, 1], [2, 1, 1, 1]]) assert.throws(() => personMask(new Float32Array([0]), ...dimensions));
+  assert.throws(() => personMask(new Uint8Array([1]), 1, 1, 1, 1));
+});
