@@ -224,6 +224,10 @@ const CORNER_OFFSETS: [[usize; 3]; 8] =
 mod support_tests;
 
 #[cfg(test)]
+#[path = "tsdf_grid_tests.rs"]
+mod grid_tests;
+
+#[cfg(test)]
 mod tests {
     use super::TsdfVolume;
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};
