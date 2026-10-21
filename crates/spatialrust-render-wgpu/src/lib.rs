@@ -25,3 +25,19 @@ pub use render::{
 };
 #[cfg(feature = "wgpu")]
 pub use runtime::WgpuRenderer;
+
+// Native GPU tests share device initialization while keeping distinct renderers.
+// Retain the previous construction path for wasm test compilation.
+#[cfg(all(test, feature = "wgpu"))]
+fn test_runtime() -> Result<std::sync::Arc<spatialrust_gpu::WgpuRuntime>, String> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        spatialrust_gpu::WgpuRuntime::shared().map_err(|error| error.to_string())
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        spatialrust_gpu::WgpuRuntime::new_headless()
+            .map(std::sync::Arc::new)
+            .map_err(|error| error.to_string())
+    }
+}

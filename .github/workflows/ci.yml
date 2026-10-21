@@ -545,6 +545,29 @@ jobs:
           cargo test -p spatialrust-platform visual
           cargo run -p spatialrust --no-default-features --features render-wgpu --example visual_headless_conformance
           cargo run -p spatialrust --no-default-features --features platform --example visual_release_gate
+      - name: Repeat native renderer with actual Linux GPU coverage
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/render-runtime-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir "$evidence"
+          for attempt in 1 2 3; do
+            printf 'SPATIALRUST_RENDER_REPEAT_BEGIN:%s\n' "$attempt"
+            timeout 180s cargo test -p spatialrust-render-wgpu --features wgpu --lib --locked -- --test-threads=4 --nocapture 2>&1 | tee "$evidence/repeat-$attempt.log"
+            for marker in upload runtime-identity render shared-concurrency; do
+              grep -Fq "SPATIALRUST_RENDER_GPU_COMPLETED:$marker" "$evidence/repeat-$attempt.log"
+            done
+            printf 'SPATIALRUST_RENDER_REPEAT_END:%s\n' "$attempt"
+          done
+      - name: Preserve renderer repeat logs
+        if: always() && runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/render-runtime-${{ github.run_id }}-${{ github.run_attempt }}/*.log
+          retention-days: 7
+          if-no-files-found: ignore
 
   visual-web-conformance:
     name: Visual Web/WASM browser conformance

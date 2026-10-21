@@ -18,6 +18,7 @@
     "combined_new_and_positive_cache_growth_max_bytes": 603979776,
     "minimum_free_bytes": 21474836480,
     "workers": 1,
+    "build_jobs": 2,
     "test_threads": 4,
     "repeat_processes": 3,
     "command_timeout_seconds": 900,

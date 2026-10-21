@@ -365,7 +365,6 @@ fn checked_u32(value: usize, label: &str) -> RenderResult<u32> {
 mod tests {
     use std::sync::Arc;
 
-    use spatialrust_gpu::WgpuRuntime;
     use spatialrust_viz::{
         PointCloudView, PositionColumns3, Rgb8Columns, ScalarColumn, TriangleMeshView,
         VisualPrimitive, VisualResidency,
@@ -383,11 +382,11 @@ mod tests {
 
     #[test]
     fn explicit_upload_receipt_and_recycling() {
-        let Ok(runtime) = WgpuRuntime::new_headless() else {
+        let Ok(runtime) = crate::test_runtime() else {
             eprintln!("skipping GPU upload test: no headless adapter");
             return;
         };
-        let renderer = WgpuRenderer::new(Arc::new(runtime));
+        let renderer = WgpuRenderer::new(runtime);
         let positions = PositionColumns3::try_new(&[1.0, 2.0], &[3.0, 4.0], &[5.0, 6.0]).unwrap();
         let rgb = Rgb8Columns::try_new(&[1, 2], &[3, 4], &[5, 6], 2).unwrap();
         let scalar = ScalarColumn::try_new("intensity", &[0.25, 0.75], 2).unwrap();
@@ -429,20 +428,72 @@ mod tests {
         assert_eq!(triangle_receipt.total_bytes().unwrap(), 48);
         assert_eq!(triangle_receipt.events().len(), 2);
         triangles.recycle(&renderer).unwrap();
+        eprintln!("SPATIALRUST_RENDER_GPU_COMPLETED:upload");
     }
 
     #[test]
     fn recycle_rejects_another_renderer() {
-        let Ok(runtime) = WgpuRuntime::new_headless() else {
+        let Ok(runtime) = crate::test_runtime() else {
             eprintln!("skipping GPU runtime identity test: no headless adapter");
             return;
         };
-        let runtime = Arc::new(runtime);
         let first = WgpuRenderer::new(Arc::clone(&runtime));
         let second = WgpuRenderer::new(runtime);
         let positions = PositionColumns3::try_new(&[0.0], &[0.0], &[0.0]).unwrap();
         let points = PointCloudView::positions_only(positions);
         let (geometry, _) = first.upload(VisualPrimitive::Points(points)).unwrap();
         assert!(geometry.recycle(&second).is_err());
+        eprintln!("SPATIALRUST_RENDER_GPU_COMPLETED:runtime-identity");
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn native_gpu_tests_share_one_runtime_with_distinct_renderers() {
+        use std::collections::BTreeSet;
+        use std::sync::Barrier;
+
+        let barrier = Arc::new(Barrier::new(4));
+        let workers: Vec<_> = (0..4)
+            .map(|_| {
+                let barrier = Arc::clone(&barrier);
+                std::thread::spawn(move || {
+                    barrier.wait();
+                    let runtime = crate::test_runtime().ok()?;
+                    let renderer = WgpuRenderer::new(Arc::clone(&runtime));
+                    let positions = PositionColumns3::try_new(&[0.0], &[0.0], &[0.0]).unwrap();
+                    let (geometry, receipt) = renderer
+                        .upload(VisualPrimitive::Points(PointCloudView::positions_only(positions)))
+                        .unwrap();
+                    runtime.queue().submit(std::iter::empty());
+                    runtime.wait_idle();
+                    geometry.recycle(&renderer).unwrap();
+                    Some((runtime, renderer.id, receipt.total_bytes().unwrap()))
+                })
+            })
+            .collect();
+        let results: Vec<_> = workers
+            .into_iter()
+            .map(|worker| worker.join().expect("shared renderer test thread panicked"))
+            .collect();
+        let Some((first, _, _)) = results[0].as_ref() else {
+            assert!(results.iter().all(Option::is_none));
+            eprintln!("skipping shared renderer test: no headless adapter");
+            return;
+        };
+        let mut identities = BTreeSet::new();
+        for result in &results {
+            let (runtime, identity, bytes) =
+                result.as_ref().expect("shared initialization disagreed");
+            assert!(Arc::ptr_eq(first, runtime));
+            assert_eq!(*bytes, 12);
+            identities.insert(*identity);
+        }
+        assert_eq!(identities.len(), 4);
+        eprintln!(
+            "SPATIALRUST_RENDER_DEVICE:backend={} type={}",
+            first.adapter_info().backend,
+            first.adapter_info().device_type
+        );
+        eprintln!("SPATIALRUST_RENDER_GPU_COMPLETED:shared-concurrency");
     }
 }
