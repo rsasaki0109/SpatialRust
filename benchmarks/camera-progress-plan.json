@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.camera-progress-plan.v1",
+  "slice": "146AM",
+  "parent_merge": "61b8330c6a41021278802e9a5df70b4ea2b32368",
+  "purpose": "Stop a live camera session whose usable video time has not changed for five seconds, clear stale results and permit explicit restart.",
+  "contract": {
+    "progress": "Per-session constant-size state observes current video time and usable metadata before capture/result backpressure. Stop at the next visible animation step after 5000ms without observed time change or usable frames. Changed time, including a timeline reset, counts as progress. Stationary image content is not compared.",
+    "ownership": "Use existing source/session cleanup and a specific restart hint. Late results cannot revive a stalled session or alter replacement state. A new camera start owns a new progress clock; there is no automatic permission request or restart.",
+    "verification": "Reproduce retained stale presentation on the parent for a paused but live actual browser stream, with and without a held real worker result. Validate clock admission, exact deadline, readiness, timeline reset, clean restart and a live advancing source while a result is held. Retain real WASM/model, timing, presets, geometry and CSP controls. No physical freeze or exposure-clock qualification.",
+    "preservation": "Preserve scientific JSON, frozen native binaries, prior camera outputs, resolved Cargo.lock and release WASM. No Rust/native/core/GPU changes, compiler runs, sensor acquisition or new SDK/model acquisition."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-progress-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Hard-link existing hash-identical vendor files into a fresh E: site. Reuse the release WASM, matching bindgen and installed browser/runtime; keep all evidence and failures.",
+    "public_verification_stream_max_bytes": 33554432,
+    "asset_download_scope": "Zero covers local SDK/model acquisition. After publication bounded HTTPS checks may stream up to 32MiB without persisting vendor payloads."
+  },
+  "remaining_80_percent": "Measured canonical calibration/timing and independent motion, full-room accuracy, qualifying Linux hardware and integrated acceptance remain open."
+}
