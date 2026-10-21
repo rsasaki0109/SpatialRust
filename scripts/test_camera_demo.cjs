@@ -50,6 +50,7 @@ async function instrument(context) {
     window.__cameraReports = [];
     window.__holdNextResult = false;
     window.__submittedFrames = [];
+    window.__submittedFrameSequence = 0;
     window.__timedSubmissions = [];
     window.__cspViolations = [];
     document.addEventListener("securitypolicyviolation", (e) => window.__cspViolations.push({ directive: e.effectiveDirective, uri: e.blockedURI }));
@@ -69,7 +70,7 @@ async function instrument(context) {
         this.addEventListener("error", (e) => window.__workerErrors.push({ message: e.message, filename: e.filename, line: e.lineno })); }
       postMessage(data, transfer) {
         if (data.kind === "frame") { window.__timedSubmissions.push({ sentAt: performance.now(), timestampMs: data.timestampMs });if (window.__timedSubmissions.length > 64) window.__timedSubmissions.shift(); }
-        if (data.kind === "frame") { window.__submittedFrames.push([data.bitmap.width, data.bitmap.height]);if (window.__submittedFrames.length > (window.__cameraFrameHistoryLimit ?? 64)) window.__submittedFrames.shift(); }
+        if (data.kind === "frame") { window.__submittedFrames.push({ sequence: ++window.__submittedFrameSequence, width: data.bitmap.width, height: data.bitmap.height });if (window.__submittedFrames.length > (window.__cameraFrameHistoryLimit ?? 64)) window.__submittedFrames.shift(); }
         return super.postMessage(data, transfer);
       }
       terminate() { window.__terminatedWorkers++;return super.terminate(); }
@@ -296,7 +297,7 @@ async function lightPreset(context, origin) {
   await page.locator("#stop").click();await stopped(page);await page.close();
 }
 
-async function intrinsicRotation(context, origin, longEdge = 256, historyLimit = 64) {
+async function intrinsicRotation(context, origin, longEdge = 256, historyLimit = 8) {
   const page = await context.newPage(); activePage = page;
   await page.addInitScript((limit) => { window.__cameraFrameHistoryLimit = limit; }, historyLimit);
   await page.addInitScript(() => {
@@ -352,15 +353,16 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   await page.evaluate(() => { window.__holdNextCapture = true; });
   await page.waitForFunction(() => typeof window.__releaseCapture === "function");
   const portraitFrames = await frameCount(page);
-  const submitted = await page.evaluate(() => window.__submittedFrames.length);
+  const submitted = await page.evaluate(() => window.__submittedFrameSequence);
   await page.evaluate(() => { window.__syntheticCamera.width = 320;window.__syntheticCamera.height = 240; });
   await page.waitForFunction(() => document.querySelector("video").videoWidth === 320);
   await page.evaluate(() => { const release = window.__releaseCapture;delete window.__releaseCapture;release(); });
   await waitFrames(page, portraitFrames + 2);
-  const history = await page.evaluate((n) => ({ cursor: n, retained: window.__submittedFrames.slice(), after: window.__submittedFrames.slice(n), width: document.querySelector("#overlay").width, height: document.querySelector("#overlay").height }), submitted);
+  const history = await page.evaluate((n) => ({ cursor: n, sequence: window.__submittedFrameSequence, retained: window.__submittedFrames.slice(), after: window.__submittedFrames.filter((f) => f.sequence > n), width: document.querySelector("#overlay").width, height: document.querySelector("#overlay").height }), submitted);
   (report.rotationHistory ??= []).push({ longEdge, ...history });
   const afterResize = history.after;
-  assert.ok(afterResize.length > 0 && afterResize.every(([w,h]) => w === longEdge && h === shortEdge), "bitmap captured in obsolete geometry was submitted");
+  assert.ok(history.sequence > submitted && afterResize.length === history.sequence - submitted, "rotation frame history is incomplete");check("rotation-history-window-is-complete");
+  assert.ok(afterResize.every(({width,height}) => width === longEdge && height === shortEdge), "bitmap captured in obsolete geometry was submitted");
   check("capture-from-old-geometry-is-dropped");
   assert.equal(await page.locator("#overlay").evaluate((c) => c.width), longEdge);
   assert.equal(await page.locator("#overlay").evaluate((c) => c.height), shortEdge);
