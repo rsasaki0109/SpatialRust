@@ -11,7 +11,7 @@ bounded image-space tracker in the browser/WASM crate. Explicit image and mask
 readbacks/copies feed existing FAST and forward/backward LK; person exclusion
 uses a pinned local confidence model. One worker and one in-flight bitmap per
 session have cancellation-safe camera cleanup. The existing GitHub Pages build
-self-hosts hashed AI assets and a restrictive inherited worker CSP. This
+self-hosts hashed AI assets and a restrictive inherited worker CSP. The
 camera presenter checks the session after video startup and changes its bounded
 frame geometry only when no capture/result is pending. The existing worker
 reconstructs the tracker for new dimensions while retaining AI initialization.

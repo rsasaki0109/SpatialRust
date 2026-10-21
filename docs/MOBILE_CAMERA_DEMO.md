@@ -148,3 +148,29 @@ the combined amount is about **2.115GB**, within the fixed bounds. No toolchain,
 browser or sensor payload download was needed; SDK/model assets are static web
 dependencies. Public deployment and exact-head CI are checked after the receipt
 commit, with their records kept separately.
+
+## Intrinsic geometry delivery evidence (146AI)
+
+The [geometry receipt](receipts/2026-10-21_camera_geometry.json) binds eight
+terminal commands, two reproduced parent-browser failures, **21 JS controls**,
+**six asset controls** and **22 browser checks**. The tests use the actual Rust
+WASM and pinned AI model. They retain a real worker result during a synthetic
+portrait transition, hold a bitmap while changing back, and verify fresh tracker
+warming, obsolete-capture rejection and one AI worker throughout. Late startup
+is checked against both a stopped page and a replacement sample session.
+
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-geometry-plan.json`.
+Existing vendor payloads (**41,087,603 bytes**) are hard-linked into a separate
+E-drive site after hash checks; they are not fetched or copied again. The same
+release WASM, resolved lockfile, 493 scientific JSON, 42 frozen native artifacts
+and all 111 previous camera files remain hash-protected. No Rust source,
+dependency, native algorithm or transfer API changes, and no local Cargo
+compilation is needed. Final pre-release logical owned size is about **44.6MB**,
+including the shared vendor payload; non-shared owned files are about **3.5MB**
+and compiler-cache growth is **zero**. Post-deployment verification has its own
+32MiB streaming limit and does not retain downloaded vendor payload files.
+
+These are software-browser checks of changing intrinsic frame dimensions,
+not physical device, iOS Safari or real-motion accuracy acceptance. Exact-head
+CI and the matching Pages deployment are verified after the receipt commit.
