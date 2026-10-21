@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[TSDF support admission](TSDF_SUPPORT_ADMISSION.md) intersects the original raw
+inclusive support-cell ranges with the grid before endpoint clamping. Disjoint
+samples leave the volume unchanged; overlapping samples retain original field
+math, ordering and submission counters. Fixed stack checks preserve public APIs,
+source/calibration/transport, device ownership and dependencies. Synthetic cell
+support evidence remains separate from real geometric accuracy qualification.
+
 [Canonical fusion readback](FUSION_READBACK.md) compares the producer-owned saved
 coverage bytes against the independently completed ledger before parent success.
 Fixed read/compare/write buffers and a pre-buffer byte limit reject malformed,
