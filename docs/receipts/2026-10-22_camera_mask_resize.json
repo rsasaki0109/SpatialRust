@@ -1,0 +1,5149 @@
+{
+  "schema": "spatialrust.camera-mask-resize-receipt.v1",
+  "slice": "146AT",
+  "date": "2026-10-22",
+  "recorded_at_utc": "2026-10-21T22:39:13.179398+00:00",
+  "parent_merge": "4ad75f001a501592afeeaeb52656c90e9c2f397c",
+  "protocol_commit": "016c893c90151bd7ed16207dad4bde9a64c2ab14",
+  "tested_source_commit": "4d2093e20c4475c69ac0482263faf47ba36b1e23",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\camera-mask-resize-plan.json",
+    "bytes": 3552,
+    "sha256": "b34a4c9100ac782f6b1e5cb880b1f0db12222fed9b7e201212471e0e301a0144"
+  },
+  "pair_plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\camera-mask-resize-pair-plan.json",
+    "bytes": 1132,
+    "sha256": "a5643fd020a12c0ee1d4137356dd7bd39ceefc824c200bbd1c7670c3154f999e"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-mask-resize-preflight.json",
+    "bytes": 697657,
+    "sha256": "232f46e0e8414d09066a5be607cbc72d07f32106eb2884b6f98f72752efa9b8c"
+  },
+  "audit_script": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\audit-camera-mask-resize.py",
+    "bytes": 11589,
+    "sha256": "58f7bbeda9536b6b34284aacfed7c1c9432b79abf3ccbb9edfddb1f93ed9caa3"
+  },
+  "commands": {
+    "assets": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\assets.command.json",
+        "bytes": 4371,
+        "sha256": "3e845ab90fb4e30847c94606b2275932e593a8f65946a7bff63e6b481fb5a11c"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\assets.log",
+        "bytes": 109,
+        "sha256": "59753171660350c6735ee4b12925f50e7f8606c102caf33752e5551608bad819"
+      },
+      "source_head": "e26f360a5ff9d497f9b86a0c93807119460bad58",
+      "child_exit_status": 0
+    },
+    "baseline-unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\baseline-unit.command.json",
+        "bytes": 4344,
+        "sha256": "f143a0e744c5237f57cd154c0f8f1d0aba641beccd4009cfbce19a288cc6cbb2"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\baseline-unit.log",
+        "bytes": 7334,
+        "sha256": "2613f0af88b937930021de215d06aeedc5a50fa9a7f53d830b2062695593dfb1"
+      },
+      "source_head": "016c893c90151bd7ed16207dad4bde9a64c2ab14",
+      "child_exit_status": 0
+    },
+    "browser": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser.command.json",
+        "bytes": 9013,
+        "sha256": "8d022528a28bb77f690cfa01025511f022e2566f945c3a904d977e65a53ad8f0"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser.log",
+        "bytes": 5776,
+        "sha256": "0d286c8ab8f6840f47022b46f630b3a718ed4dc8422539708c4c07bc29b821c5"
+      },
+      "source_head": "e26f360a5ff9d497f9b86a0c93807119460bad58",
+      "child_exit_status": 0
+    },
+    "build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\build.command.json",
+        "bytes": 4614,
+        "sha256": "9b9f214e42e0ac06493b4801dc15ebe6c8757ede379b1b40fd34ebee9466878c"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\build.log",
+        "bytes": 135,
+        "sha256": "c6e430763e07ed22e4c1d09d83c4f638da352aef0a0981a5c35a6027f4b9c4e1"
+      },
+      "source_head": "e26f360a5ff9d497f9b86a0c93807119460bad58",
+      "child_exit_status": 0
+    },
+    "measure-baseline-1": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\measure-baseline-1.command.json",
+        "bytes": 4515,
+        "sha256": "8f4e2ff251fb0b06b776170f9e7a438ea150818ee344d916d8409f47bcca06f3"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\measure-baseline-1.log",
+        "bytes": 3537,
+        "sha256": "1ce250204dd121190d1eec667a223bb45b6224382791d30d27c7f1901e4d06b2"
+      },
+      "source_head": "e26f360a5ff9d497f9b86a0c93807119460bad58",
+      "child_exit_status": 0
+    },
+    "measure-baseline-2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\measure-baseline-2.command.json",
+        "bytes": 4516,
+        "sha256": "3b4aba7b35ae4901f058ce7e6acd8ccfdbdc5487bf21e46f5e6c35edcb1ef97d"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\measure-baseline-2.log",
+        "bytes": 3540,
+        "sha256": "a1338f7798a72757375908e76d7fb1e097334ed0018a25c4fd489e8f330f3763"
+      },
+      "source_head": "e26f360a5ff9d497f9b86a0c93807119460bad58",
+      "child_exit_status": 0
+    },
+    "measure-candidate-1": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\measure-candidate-1.command.json",
+        "bytes": 4524,
+        "sha256": "bcf6eeb26a206c334ba17e1c65778167991fd4de6dea75a8c8cb841006879090"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\measure-candidate-1.log",
+        "bytes": 3520,
+        "sha256": "437d38013ddf6c393645e097a2786f7fb576324d6c66192984d5aa0616489bb4"
+      },
+      "source_head": "e26f360a5ff9d497f9b86a0c93807119460bad58",
+      "child_exit_status": 0
+    },
+    "measure-candidate-2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\measure-candidate-2.command.json",
+        "bytes": 4524,
+        "sha256": "c6c1b40fe64361b9e32fc523333e1c8f6f5425fc91d4a8063b1642ac5dc6e4b4"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\measure-candidate-2.log",
+        "bytes": 3534,
+        "sha256": "27c360b76ac2cca5dff0c347a4113d167cf77426f973c5b8d2f5ee578134c556"
+      },
+      "source_head": "e26f360a5ff9d497f9b86a0c93807119460bad58",
+      "child_exit_status": 0
+    },
+    "pair-1": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\pair-1.command.json",
+        "bytes": 6103,
+        "sha256": "9da7a8bbc852cfd6526ae3689188dcfde2e5d352053146b895021361acea73db"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\pair-1.log",
+        "bytes": 17486,
+        "sha256": "fa4620597e5c7b4884ab1fb89c0ba753c8e8838914ad2102fa418af4dd2f873e"
+      },
+      "source_head": "4d2093e20c4475c69ac0482263faf47ba36b1e23",
+      "child_exit_status": 0
+    },
+    "pair-2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\pair-2.command.json",
+        "bytes": 6103,
+        "sha256": "07af1f85cdc2c6b6c851e824b488c2d5e90c2c559e816c22e8dd648634306ada"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\pair-2.log",
+        "bytes": 17467,
+        "sha256": "13816c48a45c56e5d75e5f47bb66e13b20ecd58169352fea615325fb80be6089"
+      },
+      "source_head": "4d2093e20c4475c69ac0482263faf47ba36b1e23",
+      "child_exit_status": 0
+    },
+    "unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\unit.command.json",
+        "bytes": 4335,
+        "sha256": "a2ac12c44449337d8a4a38b3a32bc64a874f0785e8a55e7977350b17dd380f14"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\unit.log",
+        "bytes": 7336,
+        "sha256": "c453aff78a09cf50aa8a94e83e23b2923e6e024b1f1a2d9b1898950202d174ae"
+      },
+      "source_head": "e26f360a5ff9d497f9b86a0c93807119460bad58",
+      "child_exit_status": 0
+    }
+  },
+  "owned_commands": 11,
+  "successful_guarded_commands": 11,
+  "all_commands_terminal": true,
+  "retained_prelaunch_failure": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-mask-resize-pair-launch-failure.json",
+    "bytes": 994,
+    "sha256": "4e68d5474f675ac9146516fb8910cc5b2e0799bba134a492d1b2a1d9ed1abcb7"
+  },
+  "prelaunch_node_child_started": false,
+  "baseline_unit_tests": 92,
+  "unit_tests": 92,
+  "additional_unit_controls": 8,
+  "horizontal_size_pairs": 102400,
+  "asset_controls": 6,
+  "browser_controls": 86,
+  "browser_mask_cases": 42,
+  "browser_mask_invalid_calls": 5,
+  "browser_report": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\report.json",
+    "bytes": 12541,
+    "sha256": "01fe65e8bd623326137ef56436f21fe0843fdc0d06d7b5a610ff0d8b45c08bf5"
+  },
+  "screenshots": [
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-idle.png",
+      "bytes": 218678,
+      "sha256": "95637b49b81d23999c2b29f148f317a79a4c021b31648a9f1e0617df49aeb38c"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-tracking.png",
+      "bytes": 283400,
+      "sha256": "21244b7b5908f319992a1ff2904c9c1ce8b2a7d2416adc8d9c772a73c0e1a41b"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-ai.png",
+      "bytes": 284546,
+      "sha256": "99b38691987818ddda31a84e75c990f0d7870e71f011e29eb0070b521c878ff3"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\desktop-idle.png",
+      "bytes": 437103,
+      "sha256": "bb4e7619a7b023d0f18c9324a7d3db7d42ae7e51274401ddc37d4bd9a99b9ecb"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-portrait-camera-256.png",
+      "bytes": 186890,
+      "sha256": "03fa3ddc55c02395bddf71b90cccbb23abcd11e319eaca5201c44f4109733da4"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-light-sample.png",
+      "bytes": 273071,
+      "sha256": "9ce132728b286326aa340d7b6ba9fa143331faeb3d695c3559104200ce0cce87"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-portrait-camera-192.png",
+      "bytes": 187494,
+      "sha256": "0919f86480867d724d2ae032348c93991a3252045cdc10f888889ed701a29834"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-capture-rate.png",
+      "bytes": 263316,
+      "sha256": "7b070551158fe1358c2ee11d7b1d4397be16fe3bc6500811154efb801bd54a1d"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-source-recovery.png",
+      "bytes": 272921,
+      "sha256": "7322bd771a4ad1288e80187ac4b91af2c302ca6602c96a0f653bbae90ee4f2c5"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-progress-timeout.png",
+      "bytes": 223512,
+      "sha256": "407f9fb64a39dead84be64b1b9a775af2abb7673109358c3f38c00e5de3cb0d2"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-progress-restart.png",
+      "bytes": 174280,
+      "sha256": "b1733679d4f1047614770d4d07cacf19bb68daed42e609aeff08869e8bda858f"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-result-timeout.png",
+      "bytes": 223214,
+      "sha256": "981db1fb413285c2533c220e7085bebff51c52f0c22087672feb191ea07027ff"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-result-restart.png",
+      "bytes": 175579,
+      "sha256": "0e451ac29f0a37452fcffdbb16ea62fb4cfb4079d9bcd9b8e9d7dbb2e754faad"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-capture-timeout.png",
+      "bytes": 223848,
+      "sha256": "5273760ba0ae3cba6823fd84cdb5bf0fb91b79a7809b95e5aee417482670cf14"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\browser-artifacts\\mobile-capture-restart.png",
+      "bytes": 175333,
+      "sha256": "407fa803a62bb6e5c3b5f989c8a431a481d737e46078d2de326b488e908a344c"
+    }
+  ],
+  "site_build": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\site\\camera\\build.json",
+    "bytes": 4192,
+    "sha256": "de51b40fe274b189cfe51baa33b8270ca43e6436b3d100dea01758522f875113"
+  },
+  "baseline_module": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-resize-v1\\baseline\\person-mask.mjs",
+    "bytes": 876,
+    "sha256": "7d6e222a88c49610cd6e7dfa8ae8690b65e1c5edc4d334fe4af1cddc7e36d323"
+  },
+  "unchanged_current_wasm": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\cargo\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1029275,
+    "sha256": "a397a70417941766400276c3580f1cd53808ed76690cdecb9ad73b3e6068d74a"
+  },
+  "unchanged_shared_original_wasm": {
+    "path": "E:\\SpatialRustBuild\\maturity-80-target\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1030227,
+    "sha256": "660461f1760aab0a96b8bd72baa265196107ae4ece8cf3e17dfa929a30c1dc6e"
+  },
+  "unchanged_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118086,
+    "sha256": "e9d0a244c69b4ea193c7ebcd61e404de8071a53b71ff269c2c8dbe0f506484cc"
+  },
+  "rust_compilation": false,
+  "runtime": {
+    "node": "v24.19.0",
+    "v8": "13.6.233.17-node.51"
+  },
+  "benchmark_order": [
+    "measure-baseline-1",
+    "measure-candidate-1",
+    "measure-candidate-2",
+    "measure-baseline-2"
+  ],
+  "benchmark_rows": [
+    {
+      "source_width": 256,
+      "source_height": 256,
+      "width": 192,
+      "height": 144,
+      "source_sha256": "da3f14efdc3fa712ca000827700301e9a828344614be9abaafe7dc2f8d453450",
+      "mask_bytes": 27648,
+      "mask_sha256": "9c7c778c039cd2349ba50e82bb20741a825b80c3de3a02681f6ff8237a83d308",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            18632000,
+            24382600,
+            24181500,
+            23516400,
+            23346900,
+            24699100,
+            23000300
+          ],
+          "candidate_samples_ns": [
+            15914100,
+            19433700,
+            18700900,
+            18504000,
+            22193900,
+            26244100,
+            24157200
+          ],
+          "baseline_median_ns": 23516400,
+          "candidate_median_ns": 19433700,
+          "candidate_over_baseline": 0.8263892432515181
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            32948500,
+            33189200,
+            28207400,
+            32040400,
+            30007000,
+            27469300,
+            27015800
+          ],
+          "candidate_samples_ns": [
+            28058800,
+            32317800,
+            45005800,
+            29983200,
+            48971200,
+            43261600,
+            49610800
+          ],
+          "baseline_median_ns": 30007000,
+          "candidate_median_ns": 43261600,
+          "candidate_over_baseline": 1.4417169327156996
+        }
+      ]
+    },
+    {
+      "source_width": 256,
+      "source_height": 256,
+      "width": 256,
+      "height": 192,
+      "source_sha256": "da3f14efdc3fa712ca000827700301e9a828344614be9abaafe7dc2f8d453450",
+      "mask_bytes": 49152,
+      "mask_sha256": "9f9c5c3a9cf090643153cde74424baee1bbdf539351a768d12c003a2a2e0a738",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            28198300,
+            28648100,
+            25780700,
+            28094200,
+            31822600,
+            28065700,
+            30411000
+          ],
+          "candidate_samples_ns": [
+            32138500,
+            25898100,
+            26706300,
+            28905100,
+            24989000,
+            22404300,
+            28770600
+          ],
+          "baseline_median_ns": 28198300,
+          "candidate_median_ns": 26706300,
+          "candidate_over_baseline": 0.9470890089118847
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            43282500,
+            49429100,
+            42639200,
+            39715300,
+            37152500,
+            43977300,
+            54917100
+          ],
+          "candidate_samples_ns": [
+            57499300,
+            46986000,
+            35277500,
+            39303300,
+            35439600,
+            34833700,
+            35248600
+          ],
+          "baseline_median_ns": 43282500,
+          "candidate_median_ns": 35439600,
+          "candidate_over_baseline": 0.8187974354531277
+        }
+      ]
+    },
+    {
+      "source_width": 256,
+      "source_height": 256,
+      "width": 144,
+      "height": 192,
+      "source_sha256": "da3f14efdc3fa712ca000827700301e9a828344614be9abaafe7dc2f8d453450",
+      "mask_bytes": 27648,
+      "mask_sha256": "4a5edb42fc8becc4ab471f99b5ca5cb489477b327df45fc1332a53b22692008c",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            23884900,
+            24337400,
+            21682700,
+            20629900,
+            21159200,
+            25199100,
+            24406400
+          ],
+          "candidate_samples_ns": [
+            19808400,
+            20370400,
+            23033600,
+            23555000,
+            22877400,
+            25951800,
+            22394900
+          ],
+          "baseline_median_ns": 23884900,
+          "candidate_median_ns": 22877400,
+          "candidate_over_baseline": 0.9578185380721711
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            35904600,
+            32963000,
+            31273400,
+            28419900,
+            22353300,
+            23161900,
+            25261100
+          ],
+          "candidate_samples_ns": [
+            41835500,
+            36585200,
+            43025500,
+            40086700,
+            42249400,
+            43050800,
+            53041600
+          ],
+          "baseline_median_ns": 28419900,
+          "candidate_median_ns": 42249400,
+          "candidate_over_baseline": 1.4866132533893504
+        }
+      ]
+    },
+    {
+      "source_width": 256,
+      "source_height": 256,
+      "width": 192,
+      "height": 256,
+      "source_sha256": "da3f14efdc3fa712ca000827700301e9a828344614be9abaafe7dc2f8d453450",
+      "mask_bytes": 49152,
+      "mask_sha256": "34e02b7d6181497bec240f414ecbf9e8f05de42b23e7592129e2e1b73ea7cd9f",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            28654000,
+            23596800,
+            27050100,
+            29160900,
+            26359600,
+            30223600,
+            24436200
+          ],
+          "candidate_samples_ns": [
+            26363600,
+            29824900,
+            26482000,
+            27612000,
+            26884200,
+            26322400,
+            22362600
+          ],
+          "baseline_median_ns": 27050100,
+          "candidate_median_ns": 26482000,
+          "candidate_over_baseline": 0.978998229211722
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            29976300,
+            30918600,
+            32713900,
+            38678100,
+            45336100,
+            32455400,
+            31042300
+          ],
+          "candidate_samples_ns": [
+            54012700,
+            50442700,
+            49980000,
+            41877900,
+            42533900,
+            39963600,
+            37433100
+          ],
+          "baseline_median_ns": 32455400,
+          "candidate_median_ns": 42533900,
+          "candidate_over_baseline": 1.3105338402854378
+        }
+      ]
+    },
+    {
+      "source_width": 320,
+      "source_height": 320,
+      "width": 320,
+      "height": 320,
+      "source_sha256": "65943aab7a8f789966de638c4cfda8c45ed6b9185b3fc2d65f3ed49a296c17cb",
+      "mask_bytes": 102400,
+      "mask_sha256": "0a2137656a11f43544beaec002b9abe57f5fea5f0cf29175835d4b0030945a2e",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            45268100,
+            47770700,
+            47527900,
+            41904200,
+            57166700,
+            51363100,
+            48665900
+          ],
+          "candidate_samples_ns": [
+            44735500,
+            39416300,
+            38281900,
+            39946400,
+            34596900,
+            35853700,
+            39286900
+          ],
+          "baseline_median_ns": 47770700,
+          "candidate_median_ns": 39286900,
+          "candidate_over_baseline": 0.8224057842987438
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            229812500,
+            173552000,
+            102194600,
+            92916900,
+            193875700,
+            176947800,
+            122140300
+          ],
+          "candidate_samples_ns": [
+            175389600,
+            50784000,
+            49982400,
+            48241800,
+            43037500,
+            48688000,
+            54672400
+          ],
+          "baseline_median_ns": 173552000,
+          "candidate_median_ns": 49982400,
+          "candidate_over_baseline": 0.28799668110998433
+        }
+      ]
+    },
+    {
+      "source_width": 320,
+      "source_height": 320,
+      "width": 64,
+      "height": 64,
+      "source_sha256": "65943aab7a8f789966de638c4cfda8c45ed6b9185b3fc2d65f3ed49a296c17cb",
+      "mask_bytes": 4096,
+      "mask_sha256": "6a6312d1e9059680505ee926bb3eb75f607ff3d054242c7ace86e88b9ca89d37",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            22150300,
+            21258100,
+            21356400,
+            20846900,
+            22531400,
+            23581400,
+            25639500
+          ],
+          "candidate_samples_ns": [
+            26535300,
+            26108500,
+            28943400,
+            32731700,
+            24856700,
+            22293800,
+            20360400
+          ],
+          "baseline_median_ns": 22150300,
+          "candidate_median_ns": 26108500,
+          "candidate_over_baseline": 1.1786973539861763
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            39984800,
+            51180400,
+            47315700,
+            39447400,
+            46004800,
+            47474800,
+            43423600
+          ],
+          "candidate_samples_ns": [
+            39289900,
+            40727500,
+            36779400,
+            36689600,
+            37847400,
+            42402800,
+            44199200
+          ],
+          "baseline_median_ns": 46004800,
+          "candidate_median_ns": 39289900,
+          "candidate_over_baseline": 0.8540391437415227
+        }
+      ]
+    },
+    {
+      "source_width": 64,
+      "source_height": 64,
+      "width": 320,
+      "height": 320,
+      "source_sha256": "c66b62f1f48ed1389ee609bfff7498e53188ba67607501c89c3dee1f8273eab4",
+      "mask_bytes": 102400,
+      "mask_sha256": "ea86e37852086a6a8f60d13cffa4a6cac35ba88c81817054cc8132cb3516134b",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            12997300,
+            23281300,
+            23466000,
+            38337700,
+            47054100,
+            18331400,
+            15962000
+          ],
+          "candidate_samples_ns": [
+            10008200,
+            8076300,
+            8289100,
+            8959400,
+            8325400,
+            8058100,
+            8962000
+          ],
+          "baseline_median_ns": 23281300,
+          "candidate_median_ns": 8325400,
+          "candidate_over_baseline": 0.35760030582484653
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            17925300,
+            17040800,
+            15259000,
+            16894500,
+            18236200,
+            17956700,
+            20893600
+          ],
+          "candidate_samples_ns": [
+            19561200,
+            17511600,
+            13814600,
+            11605100,
+            18900000,
+            22793800,
+            16263900
+          ],
+          "baseline_median_ns": 17925300,
+          "candidate_median_ns": 17511600,
+          "candidate_over_baseline": 0.976920888353333
+        }
+      ]
+    },
+    {
+      "source_width": 3,
+      "source_height": 2,
+      "width": 5,
+      "height": 7,
+      "source_sha256": "bb104ea243e11c6d5087aeeb77e469a2c885983856efcbf04e5b88eff978bed8",
+      "mask_bytes": 35,
+      "mask_sha256": "39532c0f6d0ff3df1124dfbd0c9868114c9b514204f0f64452e79c5988a482e7",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            13400,
+            11500,
+            15600,
+            11100,
+            11200,
+            11300,
+            12200
+          ],
+          "candidate_samples_ns": [
+            6600,
+            5900,
+            5900,
+            5800,
+            211100,
+            5900,
+            5900
+          ],
+          "baseline_median_ns": 11500,
+          "candidate_median_ns": 5900,
+          "candidate_over_baseline": 0.5130434782608696
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            16200,
+            107800,
+            13300,
+            16300,
+            97000,
+            58200,
+            21600
+          ],
+          "candidate_samples_ns": [
+            13400,
+            12100,
+            11700,
+            16300,
+            11700,
+            11600,
+            11900
+          ],
+          "baseline_median_ns": 21600,
+          "candidate_median_ns": 11900,
+          "candidate_over_baseline": 0.5509259259259259
+        }
+      ]
+    },
+    {
+      "source_width": 320,
+      "source_height": 1,
+      "width": 192,
+      "height": 1,
+      "source_sha256": "3ee9c65296331b431e8b10bf784f344bb169d8dc4d1d612ed5bad15edfffcdca",
+      "mask_bytes": 192,
+      "mask_sha256": "740936c9ed7869bcd5bf39bfd76f6a8c293ef5f61cb5ab7271a6d4339ecacc77",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            191900,
+            142800,
+            82300,
+            112000,
+            166800,
+            358700,
+            119900
+          ],
+          "candidate_samples_ns": [
+            94800,
+            90800,
+            88300,
+            75700,
+            77900,
+            77600,
+            79100
+          ],
+          "baseline_median_ns": 142800,
+          "candidate_median_ns": 79100,
+          "candidate_over_baseline": 0.553921568627451
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            111500,
+            182900,
+            83700,
+            66700,
+            66100,
+            73700,
+            97700
+          ],
+          "candidate_samples_ns": [
+            88600,
+            110000,
+            81800,
+            93500,
+            130900,
+            96900,
+            92900
+          ],
+          "baseline_median_ns": 83700,
+          "candidate_median_ns": 93500,
+          "candidate_over_baseline": 1.1170848267622462
+        }
+      ]
+    },
+    {
+      "source_width": 1,
+      "source_height": 320,
+      "width": 1,
+      "height": 320,
+      "source_sha256": "3ee9c65296331b431e8b10bf784f344bb169d8dc4d1d612ed5bad15edfffcdca",
+      "mask_bytes": 320,
+      "mask_sha256": "96940cfdadf73b39844b65a581cc54376190c493b1c3ff068fec916479249b7e",
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            352000,
+            210300,
+            267400,
+            165100,
+            154000,
+            138000,
+            148200
+          ],
+          "candidate_samples_ns": [
+            110200,
+            118000,
+            110200,
+            110500,
+            110100,
+            132700,
+            113000
+          ],
+          "baseline_median_ns": 165100,
+          "candidate_median_ns": 110500,
+          "candidate_over_baseline": 0.6692913385826772
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            463800,
+            212400,
+            237800,
+            207300,
+            212000,
+            201200,
+            196200
+          ],
+          "candidate_samples_ns": [
+            117300,
+            113700,
+            256600,
+            268000,
+            281700,
+            269000,
+            202600
+          ],
+          "baseline_median_ns": 212000,
+          "candidate_median_ns": 256600,
+          "candidate_over_baseline": 1.210377358490566
+        }
+      ]
+    }
+  ],
+  "paired_benchmark_rows": [
+    {
+      "source_width": 256,
+      "source_height": 256,
+      "width": 192,
+      "height": 144,
+      "source_sha256": "da3f14efdc3fa712ca000827700301e9a828344614be9abaafe7dc2f8d453450",
+      "mask_bytes": 27648,
+      "mask_sha256": "9c7c778c039cd2349ba50e82bb20741a825b80c3de3a02681f6ff8237a83d308",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 15952100
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 14622500
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 14854700
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 17505400
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 17477400
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 14158200
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 14126900
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 16437200
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 16401000
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 14178400
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 14152100
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 16430000
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 16548800
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 14969600
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 15652500
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 19393600
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 19164000
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 14613700
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 14540100
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 17141200
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 17997200
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 16291300
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 15515100
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 16886900
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 16861200
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 15323000
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 15636200
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 17837100
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 16648000
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 16170200
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 14741800
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 17787000
+            }
+          ],
+          "baseline_samples_ns": [
+            15952100,
+            17505400,
+            17477400,
+            16437200,
+            16401000,
+            16430000,
+            16548800,
+            19393600,
+            19164000,
+            17141200,
+            17997200,
+            16886900,
+            16861200,
+            17837100,
+            16648000,
+            17787000
+          ],
+          "candidate_samples_ns": [
+            14622500,
+            14854700,
+            14158200,
+            14126900,
+            14178400,
+            14152100,
+            14969600,
+            15652500,
+            14613700,
+            14540100,
+            16291300,
+            15515100,
+            15323000,
+            15636200,
+            16170200,
+            14741800
+          ],
+          "baseline_median_ns": 17014050.0,
+          "candidate_median_ns": 14798250.0,
+          "candidate_over_baseline": 0.8697664577217065
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 18553400
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 16761300
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 16019300
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 20987100
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 18081800
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 15642600
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 16307100
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 18255700
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 17969300
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 15860800
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 17084100
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 21170600
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 21064600
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 17697800
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 18156600
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 21410300
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 22688900
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 20731800
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 17078300
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 20264400
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 20944800
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 18491300
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 18427100
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 21558300
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 22182100
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 16869100
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 17509200
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 19698100
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 19622900
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 15887900
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 17542600
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 22277100
+            }
+          ],
+          "baseline_samples_ns": [
+            18553400,
+            20987100,
+            18081800,
+            18255700,
+            17969300,
+            21170600,
+            21064600,
+            21410300,
+            22688900,
+            20264400,
+            20944800,
+            21558300,
+            22182100,
+            19698100,
+            19622900,
+            22277100
+          ],
+          "candidate_samples_ns": [
+            16761300,
+            16019300,
+            15642600,
+            16307100,
+            15860800,
+            17084100,
+            17697800,
+            18156600,
+            20731800,
+            17078300,
+            18491300,
+            18427100,
+            16869100,
+            17509200,
+            15887900,
+            17542600
+          ],
+          "baseline_median_ns": 20965950.0,
+          "candidate_median_ns": 17081200.0,
+          "candidate_over_baseline": 0.8147114726497011
+        }
+      ]
+    },
+    {
+      "source_width": 256,
+      "source_height": 256,
+      "width": 256,
+      "height": 192,
+      "source_sha256": "da3f14efdc3fa712ca000827700301e9a828344614be9abaafe7dc2f8d453450",
+      "mask_bytes": 49152,
+      "mask_sha256": "9f9c5c3a9cf090643153cde74424baee1bbdf539351a768d12c003a2a2e0a738",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 23098700
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 20470900
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 18652100
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 23522300
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 24400700
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 19806700
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 22878300
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 28560900
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 27291600
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 21177100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 21291400
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 27773200
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 30474400
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 24528600
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 25450200
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 26241500
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 26900200
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 26968900
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 24104600
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 28797900
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 29945600
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 24342100
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 24326100
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 29508600
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 36553500
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 23900300
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 22716900
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 27600900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 26838900
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 24365200
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 24073900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 30742400
+            }
+          ],
+          "baseline_samples_ns": [
+            23098700,
+            23522300,
+            24400700,
+            28560900,
+            27291600,
+            27773200,
+            30474400,
+            26241500,
+            26900200,
+            28797900,
+            29945600,
+            29508600,
+            36553500,
+            27600900,
+            26838900,
+            30742400
+          ],
+          "candidate_samples_ns": [
+            20470900,
+            18652100,
+            19806700,
+            22878300,
+            21177100,
+            21291400,
+            24528600,
+            25450200,
+            26968900,
+            24104600,
+            24342100,
+            24326100,
+            23900300,
+            22716900,
+            24365200,
+            24073900
+          ],
+          "baseline_median_ns": 27687050.0,
+          "candidate_median_ns": 23987100.0,
+          "candidate_over_baseline": 0.8663653224160753
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 29615500
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 21480000
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 20531200
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 25946000
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 24332900
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 25183000
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 25056100
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 31921400
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 31021100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 26700600
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 25714000
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 26619900
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 26562800
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 18650600
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 18530400
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 23527200
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 23129800
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 21149200
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 22984900
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 26653800
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 23771900
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 18902800
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 18908400
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 24091300
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 23716500
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 21316400
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 22788400
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 29446900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 27124100
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 20615500
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 19047400
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 24211900
+            }
+          ],
+          "baseline_samples_ns": [
+            29615500,
+            25946000,
+            24332900,
+            31921400,
+            31021100,
+            26619900,
+            26562800,
+            23527200,
+            23129800,
+            26653800,
+            23771900,
+            24091300,
+            23716500,
+            29446900,
+            27124100,
+            24211900
+          ],
+          "candidate_samples_ns": [
+            21480000,
+            20531200,
+            25183000,
+            25056100,
+            26700600,
+            25714000,
+            18650600,
+            18530400,
+            21149200,
+            22984900,
+            18902800,
+            18908400,
+            21316400,
+            22788400,
+            20615500,
+            19047400
+          ],
+          "baseline_median_ns": 26254400.0,
+          "candidate_median_ns": 21232800.0,
+          "candidate_over_baseline": 0.8087330123712597
+        }
+      ]
+    },
+    {
+      "source_width": 256,
+      "source_height": 256,
+      "width": 144,
+      "height": 192,
+      "source_sha256": "da3f14efdc3fa712ca000827700301e9a828344614be9abaafe7dc2f8d453450",
+      "mask_bytes": 27648,
+      "mask_sha256": "4a5edb42fc8becc4ab471f99b5ca5cb489477b327df45fc1332a53b22692008c",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 19877600
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 17786300
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 18928300
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 20608200
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 20263800
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 17245500
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 18810700
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 19988600
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 19820400
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 17227200
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 17168900
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 18510300
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 18936400
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 22711100
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 19829100
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 24189700
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 24749700
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 20277900
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 20542800
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 21379400
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 22224500
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 18492800
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 17174500
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 20499500
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 23545500
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 20972200
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 19822900
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 22799000
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 21439200
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 19487000
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 18947700
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 23778900
+            }
+          ],
+          "baseline_samples_ns": [
+            19877600,
+            20608200,
+            20263800,
+            19988600,
+            19820400,
+            18510300,
+            18936400,
+            24189700,
+            24749700,
+            21379400,
+            22224500,
+            20499500,
+            23545500,
+            22799000,
+            21439200,
+            23778900
+          ],
+          "candidate_samples_ns": [
+            17786300,
+            18928300,
+            17245500,
+            18810700,
+            17227200,
+            17168900,
+            22711100,
+            19829100,
+            20277900,
+            20542800,
+            18492800,
+            17174500,
+            20972200,
+            19822900,
+            19487000,
+            18947700
+          ],
+          "baseline_median_ns": 20993800.0,
+          "candidate_median_ns": 18938000.0,
+          "candidate_over_baseline": 0.9020758509655231
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 19878300
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 17620600
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 17604500
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 20286800
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 20005700
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 17364700
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 17600400
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 20054600
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 20071300
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 17309100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 17290500
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 19922400
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 20001700
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 17616100
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 17475700
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 19975700
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 20002100
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 14488600
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 17170700
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 20345000
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 19195500
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 17160200
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 17424300
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 20018000
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 18481900
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 17320300
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 16185100
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 19757600
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 19942600
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 17289900
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 17639500
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 20010700
+            }
+          ],
+          "baseline_samples_ns": [
+            19878300,
+            20286800,
+            20005700,
+            20054600,
+            20071300,
+            19922400,
+            20001700,
+            19975700,
+            20002100,
+            20345000,
+            19195500,
+            20018000,
+            18481900,
+            19757600,
+            19942600,
+            20010700
+          ],
+          "candidate_samples_ns": [
+            17620600,
+            17604500,
+            17364700,
+            17600400,
+            17309100,
+            17290500,
+            17616100,
+            17475700,
+            14488600,
+            17170700,
+            17160200,
+            17424300,
+            17320300,
+            16185100,
+            17289900,
+            17639500
+          ],
+          "baseline_median_ns": 20001900.0,
+          "candidate_median_ns": 17342500.0,
+          "candidate_over_baseline": 0.8670426309500597
+        }
+      ]
+    },
+    {
+      "source_width": 256,
+      "source_height": 256,
+      "width": 192,
+      "height": 256,
+      "source_sha256": "da3f14efdc3fa712ca000827700301e9a828344614be9abaafe7dc2f8d453450",
+      "mask_bytes": 49152,
+      "mask_sha256": "34e02b7d6181497bec240f414ecbf9e8f05de42b23e7592129e2e1b73ea7cd9f",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 26684600
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 24504700
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 22395400
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 24021500
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 25094500
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 20679700
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 19487200
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 24132200
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 23549200
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 19119300
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 20625800
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 26474800
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 24943500
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 19269600
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 19496200
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 28538700
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 29284400
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 21601700
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 20216300
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 27171400
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 26348900
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 20806000
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 21291700
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 26460400
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 26366200
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 21304200
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 19368800
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 24177500
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 24055800
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 19279400
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 19579500
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 24240100
+            }
+          ],
+          "baseline_samples_ns": [
+            26684600,
+            24021500,
+            25094500,
+            24132200,
+            23549200,
+            26474800,
+            24943500,
+            28538700,
+            29284400,
+            27171400,
+            26348900,
+            26460400,
+            26366200,
+            24177500,
+            24055800,
+            24240100
+          ],
+          "candidate_samples_ns": [
+            24504700,
+            22395400,
+            20679700,
+            19487200,
+            19119300,
+            20625800,
+            19269600,
+            19496200,
+            21601700,
+            20216300,
+            20806000,
+            21291700,
+            21304200,
+            19368800,
+            19279400,
+            19579500
+          ],
+          "baseline_median_ns": 25721700.0,
+          "candidate_median_ns": 20421050.0,
+          "candidate_over_baseline": 0.7939230299708029
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 28971600
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 24632600
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 18081000
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 25250300
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 25376900
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 20700300
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 24808000
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 34246000
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 31517100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 23937000
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 23290700
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 27637700
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 27025000
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 21094900
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 28827800
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 33634600
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 30443500
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 22481700
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 23053500
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 27876700
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 29796000
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 21456200
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 21512300
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 26373000
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 24993400
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 20638500
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 21220100
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 25290500
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 27808100
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 20424000
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 21582200
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 28088800
+            }
+          ],
+          "baseline_samples_ns": [
+            28971600,
+            25250300,
+            25376900,
+            34246000,
+            31517100,
+            27637700,
+            27025000,
+            33634600,
+            30443500,
+            27876700,
+            29796000,
+            26373000,
+            24993400,
+            25290500,
+            27808100,
+            28088800
+          ],
+          "candidate_samples_ns": [
+            24632600,
+            18081000,
+            20700300,
+            24808000,
+            23937000,
+            23290700,
+            21094900,
+            28827800,
+            22481700,
+            23053500,
+            21456200,
+            21512300,
+            20638500,
+            21220100,
+            20424000,
+            21582200
+          ],
+          "baseline_median_ns": 27842400.0,
+          "candidate_median_ns": 21547250.0,
+          "candidate_over_baseline": 0.7739005976496279
+        }
+      ]
+    },
+    {
+      "source_width": 320,
+      "source_height": 320,
+      "width": 320,
+      "height": 320,
+      "source_sha256": "65943aab7a8f789966de638c4cfda8c45ed6b9185b3fc2d65f3ed49a296c17cb",
+      "mask_bytes": 102400,
+      "mask_sha256": "0a2137656a11f43544beaec002b9abe57f5fea5f0cf29175835d4b0030945a2e",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 45796100
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 33743600
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 37834900
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 46046100
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 60545600
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 41811800
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 39243000
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 58869000
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 48967100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 42896600
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 42367700
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 56375200
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 53559800
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 51325100
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 45295100
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 60351500
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 59345100
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 39882000
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 34593000
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 44076600
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 47893000
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 37272100
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 38731800
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 53690100
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 48586500
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 50678000
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 40474000
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 49983300
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 50807200
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 32391300
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 33270900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 44589900
+            }
+          ],
+          "baseline_samples_ns": [
+            45796100,
+            46046100,
+            60545600,
+            58869000,
+            48967100,
+            56375200,
+            53559800,
+            60351500,
+            59345100,
+            44076600,
+            47893000,
+            53690100,
+            48586500,
+            49983300,
+            50807200,
+            44589900
+          ],
+          "candidate_samples_ns": [
+            33743600,
+            37834900,
+            41811800,
+            39243000,
+            42896600,
+            42367700,
+            51325100,
+            45295100,
+            39882000,
+            34593000,
+            37272100,
+            38731800,
+            50678000,
+            40474000,
+            32391300,
+            33270900
+          ],
+          "baseline_median_ns": 50395250.0,
+          "candidate_median_ns": 39562500.0,
+          "candidate_over_baseline": 0.785044225398227
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 43014500
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 35786200
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 28482300
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 45428500
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 47278800
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 35702100
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 38300200
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 61921000
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 50853100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 36967700
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 36371100
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 64065100
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 63137600
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 33508100
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 33030000
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 43231400
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 42350700
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 32726200
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 32485700
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 43775600
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 44029900
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 33191600
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 33943900
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 43259300
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 43455200
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 30030800
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 32834500
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 44605700
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 45100100
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 31646100
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 31910000
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 43360300
+            }
+          ],
+          "baseline_samples_ns": [
+            43014500,
+            45428500,
+            47278800,
+            61921000,
+            50853100,
+            64065100,
+            63137600,
+            43231400,
+            42350700,
+            43775600,
+            44029900,
+            43259300,
+            43455200,
+            44605700,
+            45100100,
+            43360300
+          ],
+          "candidate_samples_ns": [
+            35786200,
+            28482300,
+            35702100,
+            38300200,
+            36967700,
+            36371100,
+            33508100,
+            33030000,
+            32726200,
+            32485700,
+            33191600,
+            33943900,
+            30030800,
+            32834500,
+            31646100,
+            31910000
+          ],
+          "baseline_median_ns": 44317800.0,
+          "candidate_median_ns": 33110800.0,
+          "candidate_over_baseline": 0.7471219239222163
+        }
+      ]
+    },
+    {
+      "source_width": 320,
+      "source_height": 320,
+      "width": 64,
+      "height": 64,
+      "source_sha256": "65943aab7a8f789966de638c4cfda8c45ed6b9185b3fc2d65f3ed49a296c17cb",
+      "mask_bytes": 4096,
+      "mask_sha256": "6a6312d1e9059680505ee926bb3eb75f607ff3d054242c7ace86e88b9ca89d37",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 22600800
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 22907300
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 23376200
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 24566200
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 25119100
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 24640000
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 21768300
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 20876600
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 18459700
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 20326400
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 21632800
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 22560200
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 21523000
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 24571700
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 25742900
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 26926600
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 29698200
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 26746400
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 21370200
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 22137800
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 22184100
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 21794800
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 25500000
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 21451500
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 27290300
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 28104100
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 35284300
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 96815800
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 28379900
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 26505500
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 23340500
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 23482100
+            }
+          ],
+          "baseline_samples_ns": [
+            22600800,
+            24566200,
+            25119100,
+            20876600,
+            18459700,
+            22560200,
+            21523000,
+            26926600,
+            29698200,
+            22137800,
+            22184100,
+            21451500,
+            27290300,
+            96815800,
+            28379900,
+            23482100
+          ],
+          "candidate_samples_ns": [
+            22907300,
+            23376200,
+            24640000,
+            21768300,
+            20326400,
+            21632800,
+            24571700,
+            25742900,
+            26746400,
+            21370200,
+            21794800,
+            25500000,
+            28104100,
+            35284300,
+            26505500,
+            23340500
+          ],
+          "baseline_median_ns": 23041450.0,
+          "candidate_median_ns": 23973950.0,
+          "candidate_over_baseline": 1.0404705433034813
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 23209700
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 22460700
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 23653900
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 25067800
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 22940700
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 29397000
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 26827500
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 23993900
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 22042700
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 22597200
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 26258700
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 22641700
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 22061700
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 21392000
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 22464600
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 26207400
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 22192900
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 23137800
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 21709800
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 21422800
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 22891500
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 22095400
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 22178200
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 22527500
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 22450900
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 21942100
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 21862400
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 21552300
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 19787100
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 22690800
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 22648700
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 24743000
+            }
+          ],
+          "baseline_samples_ns": [
+            23209700,
+            25067800,
+            22940700,
+            23993900,
+            22042700,
+            22641700,
+            22061700,
+            26207400,
+            22192900,
+            21422800,
+            22891500,
+            22527500,
+            22450900,
+            21552300,
+            19787100,
+            24743000
+          ],
+          "candidate_samples_ns": [
+            22460700,
+            23653900,
+            29397000,
+            26827500,
+            22597200,
+            26258700,
+            21392000,
+            22464600,
+            23137800,
+            21709800,
+            22095400,
+            22178200,
+            21942100,
+            21862400,
+            22690800,
+            22648700
+          ],
+          "baseline_median_ns": 22584600.0,
+          "candidate_median_ns": 22530900.0,
+          "candidate_over_baseline": 0.997622273584655
+        }
+      ]
+    },
+    {
+      "source_width": 64,
+      "source_height": 64,
+      "width": 320,
+      "height": 320,
+      "source_sha256": "c66b62f1f48ed1389ee609bfff7498e53188ba67607501c89c3dee1f8273eab4",
+      "mask_bytes": 102400,
+      "mask_sha256": "ea86e37852086a6a8f60d13cffa4a6cac35ba88c81817054cc8132cb3516134b",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 14023800
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 8333300
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 7529400
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 13975500
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 16270400
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 10154500
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 8174100
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 13870600
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 13451200
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 8376400
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 8730800
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 15387900
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 16770400
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 6552500
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 7035800
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 14238000
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 14046000
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 6949700
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 8578700
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 13846300
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 13883900
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 6738800
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 7033000
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 14021500
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 15105000
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 6903000
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 6807000
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 14136900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 14164000
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 7961900
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 7024500
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 14959000
+            }
+          ],
+          "baseline_samples_ns": [
+            14023800,
+            13975500,
+            16270400,
+            13870600,
+            13451200,
+            15387900,
+            16770400,
+            14238000,
+            14046000,
+            13846300,
+            13883900,
+            14021500,
+            15105000,
+            14136900,
+            14164000,
+            14959000
+          ],
+          "candidate_samples_ns": [
+            8333300,
+            7529400,
+            10154500,
+            8174100,
+            8376400,
+            8730800,
+            6552500,
+            7035800,
+            6949700,
+            8578700,
+            6738800,
+            7033000,
+            6903000,
+            6807000,
+            7961900,
+            7024500
+          ],
+          "baseline_median_ns": 14091450.0,
+          "candidate_median_ns": 7282600.0,
+          "candidate_over_baseline": 0.516809838590067
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 16583700
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 7888700
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 8180300
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 18269600
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 18337300
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 9239400
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 8244000
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 17251900
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 17400100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 8264400
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 9819900
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 14940800
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 15254900
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 7551800
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 7848900
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 14487500
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 14034200
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 6458200
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 6789600
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 16050400
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 15069200
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 6972400
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 7072900
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 14476000
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 14439800
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 9575200
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 8261000
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 15292900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 15415500
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 7116600
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 7011800
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 14976700
+            }
+          ],
+          "baseline_samples_ns": [
+            16583700,
+            18269600,
+            18337300,
+            17251900,
+            17400100,
+            14940800,
+            15254900,
+            14487500,
+            14034200,
+            16050400,
+            15069200,
+            14476000,
+            14439800,
+            15292900,
+            15415500,
+            14976700
+          ],
+          "candidate_samples_ns": [
+            7888700,
+            8180300,
+            9239400,
+            8244000,
+            8264400,
+            9819900,
+            7551800,
+            7848900,
+            6458200,
+            6789600,
+            6972400,
+            7072900,
+            9575200,
+            8261000,
+            7116600,
+            7011800
+          ],
+          "baseline_median_ns": 15273900.0,
+          "candidate_median_ns": 7868800.0,
+          "candidate_over_baseline": 0.5151794891939845
+        }
+      ]
+    },
+    {
+      "source_width": 3,
+      "source_height": 2,
+      "width": 5,
+      "height": 7,
+      "source_sha256": "bb104ea243e11c6d5087aeeb77e469a2c885983856efcbf04e5b88eff978bed8",
+      "mask_bytes": 35,
+      "mask_sha256": "39532c0f6d0ff3df1124dfbd0c9868114c9b514204f0f64452e79c5988a482e7",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 8000
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 7100
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 6600
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 8500
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 7300
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 6500
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 6500
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 7200
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 7100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 6500
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 6500
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 7200
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 7200
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 7000
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 6800
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 7000
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 7100
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 7600
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 6600
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 7500
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 7000
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 6400
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 6300
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 7100
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 7200
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 6400
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 6800
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 7100
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 7200
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 6300
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 6400
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 7300
+            }
+          ],
+          "baseline_samples_ns": [
+            8000,
+            8500,
+            7300,
+            7200,
+            7100,
+            7200,
+            7200,
+            7000,
+            7100,
+            7500,
+            7000,
+            7100,
+            7200,
+            7100,
+            7200,
+            7300
+          ],
+          "candidate_samples_ns": [
+            7100,
+            6600,
+            6500,
+            6500,
+            6500,
+            6500,
+            7000,
+            6800,
+            7600,
+            6600,
+            6400,
+            6300,
+            6400,
+            6800,
+            6300,
+            6400
+          ],
+          "baseline_median_ns": 7200.0,
+          "candidate_median_ns": 6500.0,
+          "candidate_over_baseline": 0.9027777777777778
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 9000
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 7200
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 6800
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 7600
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 7600
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 6900
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 8000
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 7500
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 7500
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 7100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 6800
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 7400
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 7700
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 8300
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 6900
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 7800
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 7500
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 6900
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 6900
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 8000
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 7700
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 7400
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 7100
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 7600
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 8900
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 6700
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 6900
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 7700
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 7700
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 7000
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 6900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 7700
+            }
+          ],
+          "baseline_samples_ns": [
+            9000,
+            7600,
+            7600,
+            7500,
+            7500,
+            7400,
+            7700,
+            7800,
+            7500,
+            8000,
+            7700,
+            7600,
+            8900,
+            7700,
+            7700,
+            7700
+          ],
+          "candidate_samples_ns": [
+            7200,
+            6800,
+            6900,
+            8000,
+            7100,
+            6800,
+            8300,
+            6900,
+            6900,
+            6900,
+            7400,
+            7100,
+            6700,
+            6900,
+            7000,
+            6900
+          ],
+          "baseline_median_ns": 7700.0,
+          "candidate_median_ns": 6900.0,
+          "candidate_over_baseline": 0.8961038961038961
+        }
+      ]
+    },
+    {
+      "source_width": 320,
+      "source_height": 1,
+      "width": 192,
+      "height": 1,
+      "source_sha256": "3ee9c65296331b431e8b10bf784f344bb169d8dc4d1d612ed5bad15edfffcdca",
+      "mask_bytes": 192,
+      "mask_sha256": "740936c9ed7869bcd5bf39bfd76f6a8c293ef5f61cb5ab7271a6d4339ecacc77",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 47100
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 54800
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 81800
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 58000
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 127200
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 125600
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 143300
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 105500
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 84000
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 109400
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 110500
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 87100
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 82200
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 111000
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 94500
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 86400
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 76800
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 99000
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 87400
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 117500
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 115600
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 146200
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 123800
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 120300
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 116100
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 123000
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 125300
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 118200
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 119900
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 124700
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 137700
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 153200
+            }
+          ],
+          "baseline_samples_ns": [
+            47100,
+            58000,
+            127200,
+            105500,
+            84000,
+            87100,
+            82200,
+            86400,
+            76800,
+            117500,
+            115600,
+            120300,
+            116100,
+            118200,
+            119900,
+            153200
+          ],
+          "candidate_samples_ns": [
+            54800,
+            81800,
+            125600,
+            143300,
+            109400,
+            110500,
+            111000,
+            94500,
+            99000,
+            87400,
+            146200,
+            123800,
+            123000,
+            125300,
+            124700,
+            137700
+          ],
+          "baseline_median_ns": 110550.0,
+          "candidate_median_ns": 117000.0,
+          "candidate_over_baseline": 1.0583446404341927
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 62800
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 69800
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 66500
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 62100
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 59900
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 80600
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 66300
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 71100
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 70900
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 89100
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 90100
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 59500
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 67900
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 77200
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 73700
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 68500
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 56600
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 77400
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 75700
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 58900
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 56400
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 76000
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 86800
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 58600
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 56500
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 67600
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 83500
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 59900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 57500
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 92600
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 64600
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 60100
+            }
+          ],
+          "baseline_samples_ns": [
+            62800,
+            62100,
+            59900,
+            71100,
+            70900,
+            59500,
+            67900,
+            68500,
+            56600,
+            58900,
+            56400,
+            58600,
+            56500,
+            59900,
+            57500,
+            60100
+          ],
+          "candidate_samples_ns": [
+            69800,
+            66500,
+            80600,
+            66300,
+            89100,
+            90100,
+            77200,
+            73700,
+            77400,
+            75700,
+            76000,
+            86800,
+            67600,
+            83500,
+            92600,
+            64600
+          ],
+          "baseline_median_ns": 59900.0,
+          "candidate_median_ns": 76600.0,
+          "candidate_over_baseline": 1.2787979966611018
+        }
+      ]
+    },
+    {
+      "source_width": 1,
+      "source_height": 320,
+      "width": 1,
+      "height": 320,
+      "source_sha256": "3ee9c65296331b431e8b10bf784f344bb169d8dc4d1d612ed5bad15edfffcdca",
+      "mask_bytes": 320,
+      "mask_sha256": "96940cfdadf73b39844b65a581cc54376190c493b1c3ff068fec916479249b7e",
+      "surveys": [
+        {
+          "survey": 1,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 213100
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 196400
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 134500
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 199500
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 117600
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 95900
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 90100
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 147600
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 214500
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 160300
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 138800
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 127100
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 126600
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 229600
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 184300
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 204300
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 175500
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 209700
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 145000
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 181200
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 182800
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 136500
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 149400
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 169000
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 178400
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 136600
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 134700
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 174900
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 168600
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 135900
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 135600
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 221300
+            }
+          ],
+          "baseline_samples_ns": [
+            213100,
+            199500,
+            117600,
+            147600,
+            214500,
+            127100,
+            126600,
+            204300,
+            175500,
+            181200,
+            182800,
+            169000,
+            178400,
+            174900,
+            168600,
+            221300
+          ],
+          "candidate_samples_ns": [
+            196400,
+            134500,
+            95900,
+            90100,
+            160300,
+            138800,
+            229600,
+            184300,
+            209700,
+            145000,
+            136500,
+            149400,
+            136600,
+            134700,
+            135900,
+            135600
+          ],
+          "baseline_median_ns": 176950.0,
+          "candidate_median_ns": 137700.0,
+          "candidate_over_baseline": 0.7781859282283131
+        },
+        {
+          "survey": 2,
+          "ordered_samples": [
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 189700
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 163400
+            },
+            {
+              "round": 0,
+              "flavor": "candidate",
+              "ns": 155400
+            },
+            {
+              "round": 0,
+              "flavor": "baseline",
+              "ns": 183500
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 179900
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 168000
+            },
+            {
+              "round": 1,
+              "flavor": "candidate",
+              "ns": 235800
+            },
+            {
+              "round": 1,
+              "flavor": "baseline",
+              "ns": 264400
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 296500
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 215600
+            },
+            {
+              "round": 2,
+              "flavor": "candidate",
+              "ns": 364400
+            },
+            {
+              "round": 2,
+              "flavor": "baseline",
+              "ns": 222600
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 193100
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 172500
+            },
+            {
+              "round": 3,
+              "flavor": "candidate",
+              "ns": 180000
+            },
+            {
+              "round": 3,
+              "flavor": "baseline",
+              "ns": 361500
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 218000
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 177600
+            },
+            {
+              "round": 4,
+              "flavor": "candidate",
+              "ns": 144400
+            },
+            {
+              "round": 4,
+              "flavor": "baseline",
+              "ns": 192800
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 172100
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 160500
+            },
+            {
+              "round": 5,
+              "flavor": "candidate",
+              "ns": 148500
+            },
+            {
+              "round": 5,
+              "flavor": "baseline",
+              "ns": 185200
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 221000
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 208000
+            },
+            {
+              "round": 6,
+              "flavor": "candidate",
+              "ns": 207300
+            },
+            {
+              "round": 6,
+              "flavor": "baseline",
+              "ns": 199500
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 188200
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 158200
+            },
+            {
+              "round": 7,
+              "flavor": "candidate",
+              "ns": 165600
+            },
+            {
+              "round": 7,
+              "flavor": "baseline",
+              "ns": 188900
+            }
+          ],
+          "baseline_samples_ns": [
+            189700,
+            183500,
+            179900,
+            264400,
+            296500,
+            222600,
+            193100,
+            361500,
+            218000,
+            192800,
+            172100,
+            185200,
+            221000,
+            199500,
+            188200,
+            188900
+          ],
+          "candidate_samples_ns": [
+            163400,
+            155400,
+            168000,
+            235800,
+            215600,
+            364400,
+            172500,
+            180000,
+            177600,
+            144400,
+            160500,
+            148500,
+            208000,
+            207300,
+            158200,
+            165600
+          ],
+          "baseline_median_ns": 192950.0,
+          "candidate_median_ns": 170250.0,
+          "candidate_over_baseline": 0.8823529411764706
+        }
+      ]
+    }
+  ],
+  "benchmark_output_bytes_equal": true,
+  "timed_outputs_checked": 4480,
+  "warmup_outputs_checked": 5120,
+  "paired_timed_outputs_checked": 10240,
+  "paired_warmup_outputs_checked": 40960,
+  "initial_timing_summary": {
+    "paired_rows": 20,
+    "lower_candidate_median_rows": 14,
+    "higher_candidate_median_rows": 6,
+    "minimum_ratio": 0.28799668110998433,
+    "maximum_ratio": 1.4866132533893504
+  },
+  "timing_summary": {
+    "paired_rows": 20,
+    "lower_candidate_median_rows": 17,
+    "higher_candidate_median_rows": 3,
+    "minimum_ratio": 0.5151794891939845,
+    "maximum_ratio": 1.2787979966611018
+  },
+  "timing_scope": "Retain the initial four-process order-reversing observations. Two added Node processes interleave baseline/candidate/candidate/baseline eight times per shape after 1024 checked warmups per function, 16 calls per sample. All output bytes checked outside timing. Affinity, frequency, host load and GC uncontrolled; no confidence intervals or physical-phone/GPU/AI/end-to-end speed claim.",
+  "extra_logical_index_bytes_max": 640,
+  "retained_index_caches": 0,
+  "storage": {
+    "owned_metadata_bytes": 45422738,
+    "cache_bytes": 13386648799,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 45422738,
+    "free_bytes": {
+      "C": 67867594752,
+      "E": 875509911552
+    }
+  },
+  "vendor_hardlink_bytes": 41087603,
+  "non_shared_owned_file_bytes": 4335135,
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 2354,
+  "forbidden_adapter_matches": 0,
+  "sdk_model_acquisition_bytes": 0,
+  "sensor_downloads": 0,
+  "real_user_camera_reads": 0,
+  "physical_phone_tested": false,
+  "ios_safari_tested": false,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head CI, merge and matching public Pages/browser checks are recorded after this local receipt."
+}

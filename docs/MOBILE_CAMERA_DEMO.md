@@ -555,3 +555,19 @@ native timing surveys retain all 18 conditions each, including slower rows.
 Builds use a capped isolated E-drive target; the shared cache, raw baseline WASM,
 786 earlier camera/renderer files and scientific/native evidence are preserved.
 Physical phone/Safari and operational 80% qualification remain open.
+
+## Confidence-mask resize evidence (146AT)
+
+[Confidence-mask resize](CAMERA_MASK_RESIZE.md) replaces repeated horizontal
+nearest-neighbor calculations with a bounded per-call lookup, using exact
+column identity when widths agree. The strict threshold, validation of every
+source confidence, fresh transferable mask storage, model and explicit readbacks
+remain. Temporary indices need at most 640 logical bytes and are not retained.
+
+The [receipt](receipts/2026-10-22_camera_mask_resize.json) binds 92 parent/candidate
+JS controls, six asset checks and 86 real WASM/model browser controls, including
+42 exact browser mask cases. Two interleaved native Node surveys supplement
+the retained order-reversing four-process measurements; all slower rows remain.
+Reuse the current tested Rust WASM and vendor hardlinks without compilation or
+shared-cache growth. Preserve 2,354 earlier files and all scientific/native
+evidence. Physical phone/Safari and operational 80% qualification remain open.

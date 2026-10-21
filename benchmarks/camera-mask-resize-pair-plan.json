@@ -1,0 +1,15 @@
+{
+  "schema": "spatialrust.camera-mask-resize-pair-plan.v1",
+  "slice": "146AT",
+  "candidate_source": "e26f360",
+  "reason": "The retained initial four-process surveys show order-dependent reversals. Add prospective in-process interleaving and longer checked warmup before drawing mask-only timing conclusions.",
+  "source_plan": "benchmarks/camera-mask-resize-plan.json",
+  "processes": 2,
+  "warmup_calls_per_function_per_shape": 1024,
+  "rounds_per_shape": 8,
+  "order_per_round": ["baseline", "candidate", "candidate", "baseline"],
+  "calls_per_sample": 16,
+  "samples_per_function_per_shape": 16,
+  "resource_limits": "Use the existing 128MiB owned root, zero shared-cache growth, one owned command, 900-second deadline and maximum 16 retained timed outputs. No new acquisition or compilation.",
+  "admission": "Preserve all initial measurements. Require exact masks and unchanged source data in both new processes. Publish every sample and shape, including adverse rows. Affinity, clock frequency, host load and GC remain uncontrolled; no confidence intervals, physical-phone, GPU, AI-inference or end-to-end speed claim."
+}
