@@ -1008,7 +1008,6 @@ struct VertexOutput { @builtin(position) position: vec4<f32>, @location(0) color
 mod tests {
     use std::sync::Arc;
 
-    use spatialrust_gpu::WgpuRuntime;
     use spatialrust_math::Vec3;
     use spatialrust_viz::{
         Camera, ColorMap, LineListView, LinearRgba, PointCloudView, PointColor, PointStyle,
@@ -1042,11 +1041,10 @@ mod tests {
 
     #[test]
     fn renders_all_topologies_and_point_color_modes() {
-        let Ok(runtime) = WgpuRuntime::new_headless() else {
+        let Ok(runtime) = crate::test_runtime() else {
             eprintln!("skipping headless render test: no adapter");
             return;
         };
-        let runtime = Arc::new(runtime);
         let renderer = WgpuRenderer::new(Arc::clone(&runtime));
         let other_renderer = WgpuRenderer::new(runtime);
         let positions = PositionColumns3::try_new(&[0.0, 0.5], &[0.0, 0.0], &[0.0, 0.0]).unwrap();
@@ -1146,5 +1144,6 @@ mod tests {
         );
         renderer.runtime.wait_idle();
         assert_eq!(renderer.initialized_render_pipeline_count(), 6);
+        eprintln!("SPATIALRUST_RENDER_GPU_COMPLETED:render");
     }
 }

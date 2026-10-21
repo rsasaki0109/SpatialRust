@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse the shared native GPU runtime in renderer tests while keeping renderer
+  ownership and parallel execution. Add synchronized shared-runtime/independent
+  renderer coverage and three Linux CI processes that require actual GPU
+  completion markers. Preserve the earlier SIGSEGV evidence without claiming its
+  driver cause is established. See [renderer test ownership](docs/RENDER_TEST_RUNTIME.md).
+
 - Bound camera/sample bitmap acquisition to five seconds and abort its wait on
   Stop or session failure. Close eventual late bitmaps without submission and
   consume late native rejection; preserve replacement capture ownership, timing

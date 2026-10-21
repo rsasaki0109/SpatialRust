@@ -1,0 +1,242 @@
+{
+  "schema": "spatialrust.render-test-runtime-receipt.v1",
+  "slice": "146AP",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-21T11:45:21.681733+00:00",
+  "protocol_commit": "1f9d5ecba118c57a525d1ff22c9a884bbba2b405",
+  "tested_source_commit": "ec6cae08a45518892272a6363fb36b2836435b11",
+  "parent_merge": "e43e0c6928ba3724b6a6188de5c445a911baed1c",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\render-test-runtime-plan.json",
+    "bytes": 2998,
+    "sha256": "7b32c88b453e57a159395681dde37c2355b3e2d23910f6577ccfa46bd7d90bec"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\render-test-runtime-preflight.json",
+    "bytes": 247054,
+    "sha256": "1ec108270846bf36f8bee61456aa194a0609f57b09337f41feeb99f2793f2d8c"
+  },
+  "owned_commands": 8,
+  "all_commands_terminal": true,
+  "successful_commands": 7,
+  "retained_sampling_failure": {
+    "command": {
+      "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\base.command.json",
+      "bytes": 129216,
+      "sha256": "4be5ac5d5acb5597f13eaa8eb7498c009b1cf84207cdb11e998d3a316f9afc3b"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\base.log",
+      "bytes": 207,
+      "sha256": "6b2ada5ef652d7a9c1440807427b6aa571f02c637898faa14b0212ffdbba729e"
+    },
+    "source_head": "ec6cae08a45518892272a6363fb36b2836435b11",
+    "exit_status": 1,
+    "child_exit_status": 1
+  },
+  "commands": {
+    "base-v2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\base-v2.command.json",
+        "bytes": 129492,
+        "sha256": "89b846fe06959d06974618332b27bc7fbc21e98d27ba646fca37bd26c1d7a5e0"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\base-v2.log",
+        "bytes": 422,
+        "sha256": "7882cb37e9f2f24d6cf330f9ab81e56d22fd4eeb85264c39af2a171e80a33d3a"
+      },
+      "source_head": "ec6cae08a45518892272a6363fb36b2836435b11",
+      "exit_status": 0,
+      "child_exit_status": 0
+    },
+    "base": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\base.command.json",
+        "bytes": 129216,
+        "sha256": "4be5ac5d5acb5597f13eaa8eb7498c009b1cf84207cdb11e998d3a316f9afc3b"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\base.log",
+        "bytes": 207,
+        "sha256": "6b2ada5ef652d7a9c1440807427b6aa571f02c637898faa14b0212ffdbba729e"
+      },
+      "source_head": "ec6cae08a45518892272a6363fb36b2836435b11",
+      "exit_status": 1,
+      "child_exit_status": 1
+    },
+    "baseline": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\baseline.command.json",
+        "bytes": 136635,
+        "sha256": "d1203e5d0f89e6f5b3404d6b4debf87f89f8a493c6c9bebb3aeab525b02afca5"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\baseline.log",
+        "bytes": 2052,
+        "sha256": "e58362ee1bce90e79e5423c2609940c303bfe2ffb3ed2d3aacd69ef8420283d1"
+      },
+      "source_head": "1f9d5ecba118c57a525d1ff22c9a884bbba2b405",
+      "exit_status": 0,
+      "child_exit_status": 0
+    },
+    "clippy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\clippy.command.json",
+        "bytes": 131340,
+        "sha256": "22c5565e0cead825090cfb86083e54fc929c5418b97f319647c2781b8732a610"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\clippy.log",
+        "bytes": 2436,
+        "sha256": "b78a5e42430a66c5aa16e8ef2d007d6bf90992f618177b919ece29276bc4fc56"
+      },
+      "source_head": "ec6cae08a45518892272a6363fb36b2836435b11",
+      "exit_status": 0,
+      "child_exit_status": 0
+    },
+    "current": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\current.command.json",
+        "bytes": 131964,
+        "sha256": "566d970e4429229ec96da9282520f20fb039315f26a172130f659fbc5c6a062a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\current.log",
+        "bytes": 1076,
+        "sha256": "f5d2487c22126e15270dbec3588f7681cf628955ab7b4e1bfc83986ee79d53bc"
+      },
+      "source_head": "ec6cae08a45518892272a6363fb36b2836435b11",
+      "exit_status": 0,
+      "child_exit_status": 0
+    },
+    "fmt": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\fmt.command.json",
+        "bytes": 129650,
+        "sha256": "be802b3ef1fc04d3f13a4baded2d6f406a9ed01e8147c4c0d36504b4a10e945a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\fmt.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_head": "ec6cae08a45518892272a6363fb36b2836435b11",
+      "exit_status": 0,
+      "child_exit_status": 0
+    },
+    "repeat-v2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\repeat-v2.command.json",
+        "bytes": 129621,
+        "sha256": "aa6e890b100f8e9b8229876e731e25003cda4c83e277a138677c28f7b1ec48c7"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\repeat-v2.log",
+        "bytes": 961,
+        "sha256": "b8876ea10820355984820737315560769f2609c8f1e386739ae8cc16fd1b4703"
+      },
+      "source_head": "ec6cae08a45518892272a6363fb36b2836435b11",
+      "exit_status": 0,
+      "child_exit_status": 0
+    },
+    "repeat-v3": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\repeat-v3.command.json",
+        "bytes": 129621,
+        "sha256": "23e0c7254f807fc590ef4175724f922cc372fab5aa14e20645cc78075166daab"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\repeat-v3.log",
+        "bytes": 961,
+        "sha256": "42ae3aab0c7b6309d24baefb00ae5685209f354562a80f1c04b2c302a74d4525"
+      },
+      "source_head": "ec6cae08a45518892272a6363fb36b2836435b11",
+      "exit_status": 0,
+      "child_exit_status": 0
+    }
+  },
+  "baseline": {
+    "source_head": "1f9d5ecba118c57a525d1ff22c9a884bbba2b405",
+    "cache_artifact_path": "E:\\SpatialRustBuild\\maturity-80-target\\release\\deps\\spatialrust_render_wgpu-4bf117f0914d5780.exe",
+    "executable": {
+      "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\baseline-render-tests.exe",
+      "bytes": 5597184,
+      "sha256": "bba0abae8a3072f70a70037313e80218863b4440bb5342804d84cddca46314ec"
+    },
+    "tests": 5,
+    "actual_gpu_tests": 3
+  },
+  "candidate_executable": {
+    "path": "E:\\SpatialRustBuild\\render-test-runtime-v1\\current-render-tests.exe",
+    "bytes": 5595648,
+    "sha256": "29d5ea5f64f1c8cc05eb2f8cd7259f6616e41655feed6608488d25f2879a297f"
+  },
+  "candidate_processes": 3,
+  "tests_per_process": 6,
+  "actual_gpu_cases_per_process": 4,
+  "completed_gpu_case_markers": 12,
+  "device_conditions": [
+    {
+      "backend": "Vulkan",
+      "device_type": "DiscreteGpu"
+    },
+    {
+      "backend": "Vulkan",
+      "device_type": "DiscreteGpu"
+    },
+    {
+      "backend": "Vulkan",
+      "device_type": "DiscreteGpu"
+    }
+  ],
+  "related_clippy_passed": true,
+  "base_feature_compilation_passed": true,
+  "format_passed": true,
+  "inventory_sampler_controls": 4,
+  "inventory_sampler_output": "Snapshot inventory: four admission/retry controls passed\n",
+  "private_sampler": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\render_snapshot_inventory.py",
+    "bytes": 1382,
+    "sha256": "ee853c49e2c19598f2ff131537d0594d2db91b92b625f70e1f83a7ddd3cfdde2"
+  },
+  "command_scripts": [
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\render-test-runtime-command.py",
+      "bytes": 3121,
+      "sha256": "82eec90642d11c4f2a12057c7c80d59366c0c7030f8cec836382acf8c17298dd"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\render-test-runtime-command-v2.py",
+      "bytes": 1246,
+      "sha256": "e4e64d476dc9562e34ef8694465c5d544d5b7364847349a10074cf50a81689d6"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\render-test-runtime-command-v3.py",
+      "bytes": 911,
+      "sha256": "608fd54cd0ee9f1bf2ff7f4a0488d3891cfb55a31d91d47248c6a37b52418afa"
+    }
+  ],
+  "storage": {
+    "owned_metadata_bytes": 12248486,
+    "cache_bytes": 13386648799,
+    "positive_cache_growth_bytes": 328528020,
+    "combined_bytes": 340776506,
+    "free_bytes": {
+      "C": 69243506688,
+      "E": 876008247296
+    }
+  },
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 594,
+  "forbidden_adapter_matches": 0,
+  "sensor_acquisition_bytes": 0,
+  "sdk_model_acquisition_bytes": 0,
+  "production_runtime_changed": false,
+  "local_linux_tested": false,
+  "local_linux_unavailable_reason": "Registered WSL virtual disk path cannot be mounted",
+  "previous_sigsegv_root_cause_proven": false,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head named CI and three Linux repeated processes are verified before merge."
+}
