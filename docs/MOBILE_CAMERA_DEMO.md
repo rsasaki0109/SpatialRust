@@ -85,6 +85,29 @@ camera; the image is never stretched to make its short side fit. The procedural
 sample scales its title and motion with the selected size. No real person mask
 is claimed for that sample scene.
 
+## Submission cadence and displayed frequency
+
+The presenter admits a frame using the current monotonic clock and waits at
+least 125ms after the previous successful bitmap transfer returns. Async bitmap
+preparation cannot consume that next interval. One capture/result remains in
+flight. Each frame carries the monotonic time immediately before bitmap creation;
+the existing Rust report echoes it. This is an application capture-invocation
+clock, without physical sensor-clock or exposure-time calibration.
+
+The displayed frequency uses timestamps of completed images, with an inclusive
+two-second window and at most 17 retained samples. It divides image intervals by
+their elapsed time, showing one decimal place. Worker result arrival jitter is
+excluded from that calculation. First samples after Start, geometry reset or a
+gap exceeding the window show **—** until a second image is available. Stop and
+geometry changes clear the retained rate. Invalid/non-increasing timestamps fail
+before the rate state changes; nonfinite arithmetic is never displayed.
+
+The **処理 / ms** value remains the worker's combined image/AI/tracking time.
+Frequency, combined worker time, camera capture FPS and model-only throughput
+have different meanings; these displays do not establish physical GPU or phone
+performance. The existing Rust gap admission, native algorithm, AI model and
+explicit transfer/readback ownership remain unchanged.
+
 ## Static distribution and privacy
 
 `docs/site/camera/assets.json` pins MediaPipe Tasks Vision **1.1.1**, model revision
@@ -171,6 +194,25 @@ the combined amount is about **2.115GB**, within the fixed bounds. No toolchain,
 browser or sensor payload download was needed; SDK/model assets are static web
 dependencies. Public deployment and exact-head CI are checked after the receipt
 commit, with their records kept separately.
+
+## Timing delivery evidence (146AK)
+
+The [timing receipt](receipts/2026-10-21_camera_timing.json) binds seven terminal
+commands and both reproduced parent-browser failures: a delayed bitmap consumed
+the next submission interval, and delayed result delivery inflated displayed
+frequency. Final checks pass **31 JS**, **six asset** and **36 browser** controls,
+including actual WASM capture-time echoes, 125ms submission separation after a
+600ms held bitmap, and frequency derived from completed image timestamps after
+a held real worker result. Existing model, rotation, presets and lifecycle/CSP
+controls remain. The saved capture is synthetic, without real user camera reads.
+
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-timing-plan.json`.
+Reuse the release WASM and **41,087,603** hard-linked vendor bytes; compiler-cache
+growth is **zero**. Local build/log/screenshots add about **3.19MB** beyond shared
+vendor files. Preserve all **230** prior camera files, 493 scientific JSON,
+42 frozen native artifacts and the resolved lockfile. Physical camera clocks,
+phone/Safari performance and the original operational 80% gates remain open.
 
 ## Light preset delivery evidence (146AJ)
 

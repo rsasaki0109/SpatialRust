@@ -18,6 +18,11 @@ reconstructs the tracker for new dimensions while retaining AI initialization.
 An explicit stopped-only 192-pixel light preset reduces tracked image work from
 the default 256-pixel long edge, preserving aspect and the same AI model. The
 chosen size is fixed per session and displayed; it is not a hardware speed claim.
+Submission admission reads the current monotonic clock and starts its next
+interval after a successful transfer returns. Completed capture-invocation
+timestamps drive a bounded two-second frequency display, independent of result
+arrival jitter; geometry and Stop reset the rate. Sensor exposure timing remains
+uncalibrated.
 This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 

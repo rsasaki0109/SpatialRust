@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.camera-timing-plan.v1",
+  "slice": "146AK",
+  "parent_merge": "32b27eef96db987280ad766a955db3a18a3d8ab7",
+  "purpose": "Keep submission cadence and displayed processed-image frequency independent of asynchronous capture and worker delivery delays.",
+  "contract": {
+    "cadence": "Use current monotonic time at admission, timestamp capture immediately before bitmap creation, and anchor the 125ms gate after a successful transfer. A delayed capture cannot spend the next submission interval.",
+    "frequency": "Compute frequency from increasing capture timestamps echoed by completed Rust reports over at most two seconds and 17 retained samples. Initial, reset or post-gap single samples display no rate. Result delivery jitter must not appear as increased capture throughput.",
+    "verification": "Reproduce delayed-capture submission bunching and delayed-result rate inflation on the parent with real WASM and synthetic sample input. Unit-test time admission, rolling rate and reset; retain all existing actual model, geometry, preset, lifecycle and CSP controls. No physical camera clock, speed, pose or hardware qualification.",
+    "preservation": "Preserve scientific JSON, frozen native binaries, prior camera outputs, resolved Cargo.lock and release WASM. No Rust/native/core/GPU changes, compiler runs, sensor acquisition or new SDK/model acquisition."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-timing-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Hard-link existing hash-identical vendor files into a fresh E: site. Reuse the release WASM, matching bindgen and installed browser/runtime; keep all evidence and failures.",
+    "public_verification_stream_max_bytes": 33554432,
+    "asset_download_scope": "Zero covers local SDK/model acquisition. After publication bounded HTTPS checks may stream up to 32MiB without persisting vendor payloads."
+  },
+  "remaining_80_percent": "Measured canonical calibration/timing and independent motion, full-room accuracy, qualifying Linux hardware and integrated acceptance remain open."
+}
