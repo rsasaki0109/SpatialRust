@@ -2,6 +2,48 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CameraSession } from "../../../docs/site/camera/session.mjs";
 import { FrameRate } from "../../../docs/site/camera/frame-rate.mjs";
+import { CameraProgress } from "../../../docs/site/camera/camera-progress.mjs";
+
+test("camera progress expires at the exact five-second boundary", () => {
+  const progress = new CameraProgress(100);assert.equal(progress.stalled(1, 100), false);
+  assert.equal(progress.stalled(1, 5099.999), false);assert.equal(progress.stalled(1, 5100), true);
+});
+
+test("advancing video time renews progress without any pixel comparison", () => {
+  const progress = new CameraProgress(0);
+  for (let i = 0; i < 20; i++) assert.equal(progress.stalled(i / 24, i * 4999), false);
+});
+
+test("a video timeline reset also renews observed progress", () => {
+  const progress = new CameraProgress(0);progress.stalled(120, 0);
+  assert.equal(progress.stalled(0, 4999), false);assert.equal(progress.stalled(0, 9998), false);assert.equal(progress.stalled(0, 9999), true);
+});
+
+test("unusable video data cannot renew the progress clock", () => {
+  const progress = new CameraProgress(0);assert.equal(progress.stalled(NaN, 4999, false), false);
+  assert.equal(progress.stalled(100, 5000, false), true);
+  const recovery = new CameraProgress(0);recovery.stalled(NaN, 4998, false);
+  assert.equal(recovery.stalled(0, 4999), false);assert.equal(recovery.stalled(0, 9998), false);assert.equal(recovery.stalled(0, 9999), true);
+});
+
+test("the first usable frame establishes its own progress deadline", () => {
+  const progress = new CameraProgress(100);assert.equal(progress.stalled(0, 1000), false);
+  assert.equal(progress.stalled(0, 5999), false);assert.equal(progress.stalled(0, 6000), true);
+});
+
+test("invalid progress clocks reject before any retained state changes", () => {
+  for (const value of [-1, NaN, Infinity, "0", null]) assert.throws(() => new CameraProgress(value), RangeError);
+  const progress = new CameraProgress(100);progress.stalled(1, 100);
+  for (const args of [[1, 99], [1, NaN], [1, Infinity], [1, "200"], [NaN, 6000], [-1, 6000], [1, 6000, "true"]]) assert.throws(() => progress.stalled(...args), RangeError);
+  assert.equal(progress.stalled(1, 5099), false);assert.equal(progress.stalled(1, 5100), true);
+});
+
+test("a replacement session owns a fresh progress clock", () => {
+  const old = new CameraProgress(0);old.stalled(2, 0);assert.equal(old.stalled(2, 5000), true);
+  const current = new CameraProgress(10000);assert.equal(current.stalled(2, 10000), false);
+  assert.equal(current.stalled(2, 14999), false);assert.equal(current.stalled(3, 15000), false);
+  assert.equal(old.stalled(2, 15000), true);assert.equal(current.stalled(3, 19999), false);
+});
 
 test("frame rate starts without an invented rate and averages image intervals", () => {
   const rate = new FrameRate();assert.equal(rate.observe(0), null);

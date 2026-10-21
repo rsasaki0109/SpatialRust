@@ -1,0 +1,234 @@
+{
+  "schema": "spatialrust.public-camera-progress-receipt.v1",
+  "slice": "146AM",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-21T08:19:44.013167+00:00",
+  "protocol_commit": "5557b5c7f4d887f7c18a28ce22351d0430b48080",
+  "tested_source_commit": "b9858741b6af6413c5b3f9e4d8c28480ffdd0688",
+  "parent_merge": "61b8330c6a41021278802e9a5df70b4ea2b32368",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\camera-progress-plan.json",
+    "bytes": 2682,
+    "sha256": "e31d60564d1ab54b56cbcf24c6ff9266c81991d06f6cd7166a6b178002e01bdc"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-progress-preflight.json",
+    "bytes": 195544,
+    "sha256": "f03cf17ae70ecc3b3ac700f21d7c114261559b2b23553243be1bd98e3a54cfba"
+  },
+  "owned_commands": 7,
+  "all_commands_terminal": true,
+  "commands": {
+    "assets": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\assets.command.json",
+        "bytes": 3811,
+        "sha256": "7493015a99c963fce2b5bf920f106b4925fa9bef4f88e9331035593479a30ad4"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\assets.log",
+        "bytes": 109,
+        "sha256": "59753171660350c6735ee4b12925f50e7f8606c102caf33752e5551608bad819"
+      },
+      "source_head": "b9858741b6af6413c5b3f9e4d8c28480ffdd0688",
+      "child_exit_status": 0
+    },
+    "baseline-progress-busy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\baseline-progress-busy.command.json",
+        "bytes": 4116,
+        "sha256": "2440ee83f84a3e54e89f72f60c7fd5d954f9cecf4f1d90e2e516f8de2ccbb176"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\baseline-progress-busy.log",
+        "bytes": 587,
+        "sha256": "5ca4fa3af5e0cde0658a8755e76a03fd9c9a08b2a137c22b03dfb48a1740aacb"
+      },
+      "source_head": "29b6a0c084728807e18e812ac2b169c3d0e4db73",
+      "child_exit_status": 1
+    },
+    "baseline-progress-idle": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\baseline-progress-idle.command.json",
+        "bytes": 4116,
+        "sha256": "e312da36e9cf45b3cb45c3bd9beaae2279628432452d2ea454ac696bd087f72a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\baseline-progress-idle.log",
+        "bytes": 587,
+        "sha256": "dcdaf28fa7225007b87f9d672735c86ff53d2add47d0780a96bb5c7ea834bb18"
+      },
+      "source_head": "29b6a0c084728807e18e812ac2b169c3d0e4db73",
+      "child_exit_status": 1
+    },
+    "browser": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser.command.json",
+        "bytes": 5917,
+        "sha256": "bfa9a72d78ec0d80a3e603dcf6b94b49fea70cb5062645ce5ce5afb5803c13ec"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser.log",
+        "bytes": 3095,
+        "sha256": "a9c90427af737f495d405e9aba3dc54dab1366684bce007f19f82fbf2b6bc458"
+      },
+      "source_head": "b9858741b6af6413c5b3f9e4d8c28480ffdd0688",
+      "child_exit_status": 0
+    },
+    "build-v2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\build-v2.command.json",
+        "bytes": 4043,
+        "sha256": "2a24f09df381d91cdb1cfef396ec11a484b43830d439e4f8aae7715b05be9095"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\build-v2.log",
+        "bytes": 132,
+        "sha256": "10515c5d3e0303a85f1c9620857be9ec80ab060a06b2ddc7e5c49203212c5e57"
+      },
+      "source_head": "b9858741b6af6413c5b3f9e4d8c28480ffdd0688",
+      "child_exit_status": 0
+    },
+    "build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\build.command.json",
+        "bytes": 3882,
+        "sha256": "bd0da0655690c5c9df78ca0d2bc45f427eb9d20e43add92e33bb1ecf48ccf8b0"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\build.log",
+        "bytes": 132,
+        "sha256": "65f41a09df30bfc48a930e99535f7932d7e914850fcc214e2fa2d9b3c7275e9a"
+      },
+      "source_head": "29b6a0c084728807e18e812ac2b169c3d0e4db73",
+      "child_exit_status": 0
+    },
+    "unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\unit.command.json",
+        "bytes": 3775,
+        "sha256": "8eff844b22dfcd454384eb44edf8cc33783161062198520e83a5b466f9dab778"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-progress-v1\\unit.log",
+        "bytes": 3467,
+        "sha256": "1036c91ef2ab276d5ef6753fc02e793f25dc1b0a59d1bb8d3e1119e1b0ce95f6"
+      },
+      "source_head": "b9858741b6af6413c5b3f9e4d8c28480ffdd0688",
+      "child_exit_status": 0
+    }
+  },
+  "unit_tests": 46,
+  "asset_controls": 6,
+  "browser_controls": 47,
+  "software_graphics_delegate": true,
+  "browser_report": {
+    "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\report.json",
+    "bytes": 5032,
+    "sha256": "a7930131ce68fa8e563f6f1ac64c55c9aac57bb9aeb0d7ab32ca02962aa50733"
+  },
+  "screenshots": [
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-idle.png",
+      "bytes": 215946,
+      "sha256": "09af275dbbbf781c8282d08536c4c45bb7ddde9bd62fbe34a726f694fe5aaffd"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-tracking.png",
+      "bytes": 280705,
+      "sha256": "a75ccd9bdd0c8ab5f91ea3237eec792e0682672eca7930c3dda955a989f73548"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-ai.png",
+      "bytes": 281393,
+      "sha256": "f1b4481988de12992c9da8abf7ad21c3f4136d25bac280b5cc002afcb2831009"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\desktop-idle.png",
+      "bytes": 434619,
+      "sha256": "c7fd0d3ba97efcb8c2cc401dc5e129db5473a7420223facb352c87d2ed2377f5"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-portrait-camera-256.png",
+      "bytes": 184272,
+      "sha256": "6c93e52630ac769c544f5d57b82de5156719104170fd7118d5f9876ec2c0f7e0"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-light-sample.png",
+      "bytes": 270427,
+      "sha256": "ec7ea4912d763fd0c54dea1521cce8e35690355c739af9f3f9ee3bfa60f35211"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-portrait-camera-192.png",
+      "bytes": 184967,
+      "sha256": "9eff7fc647fc25db1725de933666de25be843935bc80b83ae4de16623bc027b0"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-capture-rate.png",
+      "bytes": 260760,
+      "sha256": "c6529fb3be3b2ea6cffdd6107ffd30d19ea741f32b49cd6e7c7c8c987f63e26b"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-source-recovery.png",
+      "bytes": 270226,
+      "sha256": "627e241afe255d7afc3622eb0cb8586cea018c7bd54a7e12cc598d597abf5743"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-progress-timeout.png",
+      "bytes": 220991,
+      "sha256": "b60eb7b2293bee3337c8d8c1055fa46f306d72fad430efb431e4b67ce7b368b5"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-progress-v1\\browser-artifacts\\mobile-progress-restart.png",
+      "bytes": 174405,
+      "sha256": "a84594ac60df226a41306b2d9a08bd2eb9b1e12e6923b5500fad4f8c46bd5d9f"
+    }
+  ],
+  "site_build": {
+    "path": "E:\\SpatialRustBuild\\camera-progress-v1\\site\\camera\\build.json",
+    "bytes": 4033,
+    "sha256": "513101ffaedfdcf6e7851ff0cf470fc3126b4db131553f21911e0451566648a3"
+  },
+  "unchanged_wasm": {
+    "path": "E:\\SpatialRustBuild\\maturity-80-target\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1030227,
+    "sha256": "660461f1760aab0a96b8bd72baa265196107ae4ece8cf3e17dfa929a30c1dc6e"
+  },
+  "unchanged_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118086,
+    "sha256": "e9d0a244c69b4ea193c7ebcd61e404de8071a53b71ff269c2c8dbe0f506484cc"
+  },
+  "vendor_hardlink_bytes": 41087603,
+  "sdk_model_acquisition_bytes": 0,
+  "storage": {
+    "owned_metadata_bytes": 44836304,
+    "cache_bytes": 13058120779,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 44836304,
+    "free_bytes": {
+      "C": 64907763712,
+      "E": 876355432448
+    }
+  },
+  "non_shared_owned_file_bytes": 3748701,
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 358,
+  "forbidden_adapter_matches": 0,
+  "physical_phone_tested": false,
+  "ios_safari_tested": false,
+  "new_sensor_payload_downloads": 0,
+  "real_user_camera_reads": 0,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head CI, merge and live Pages checks are recorded after this source-bound receipt.",
+  "parent_regressions_reproduced": [
+    "live paused video retained stale presentation",
+    "live paused video retained stale presentation while a result was held"
+  ],
+  "baseline_site_build": {
+    "path": "E:\\SpatialRustBuild\\camera-progress-v1\\baseline-build.json",
+    "bytes": 3875,
+    "sha256": "22ce2cd7d4f1df6c13ce5266f33c24e6cd112cc666325f85202fac5e1ac11ee3"
+  }
+}
