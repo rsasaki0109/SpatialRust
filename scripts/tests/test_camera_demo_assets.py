@@ -19,7 +19,7 @@ class CameraAssetAdmissionTests(unittest.TestCase):
         self.assertEqual(len(MODULE.validate_assets(self.manifest())), 1)
 
     def test_rejects_traversal_or_absolute_paths(self):
-        for name in ["../a", "vendor/../a", "vendor/./a", "/vendor/a", "vendor\\a"]:
+        for name in ["../a", "vendor/../a", "vendor/./a", "vendor//a", "vendor/a/", "/vendor/a", "vendor\\a"]:
             document = self.manifest();document["assets"][0]["path"] = name
             with self.subTest(name=name), self.assertRaises(ValueError): MODULE.validate_assets(document)
 

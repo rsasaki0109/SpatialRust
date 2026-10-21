@@ -18,7 +18,7 @@ self.onmessage = async ({ data }) => {
       await initRust();
       if (data.ai) {
         const { FilesetResolver, ImageSegmenter } = await import("./vendor/vision_bundle.mjs");
-        const files = await FilesetResolver.forVisionTasks(new URL("./vendor/wasm", import.meta.url).href);
+        const files = await FilesetResolver.forVisionTasks(new URL("./vendor/wasm", import.meta.url).href, true);
         const modelAssetPath = new URL("./vendor/selfie_segmenter.tflite", import.meta.url).href;
         const options = { outputCategoryMask: true, outputConfidenceMasks: false, runningMode: "VIDEO" };
         try {
