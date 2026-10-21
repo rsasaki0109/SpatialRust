@@ -39,6 +39,29 @@ if initialization falls back. SwiftShader evidence is software execution and is
 not a physical GPU benchmark. An inference failure stops processing; it cannot
 silently present unmasked tracking as AI-enabled.
 
+## Camera startup and changing frame geometry
+
+A camera start commits presentation only while its session is current, including
+after awaiting `video.play()`. A late completion after Stop or replacement cannot
+restore the old canvas, label, size or backend. Stream/worker cleanup remains
+owned by the existing session controller.
+
+During capture the page derives its processing size from current intrinsic video
+dimensions. It retains a 256-pixel long edge and admits rounded short sides of at
+least 64 pixels. Unsupported extreme ratios fail with an explanation instead of
+stretching the short side. Geometry changes happen only after the in-flight
+result is consumed, so its image-space coordinates remain valid. An async bitmap
+whose source dimensions changed is closed without submission. Resizing clears
+old vectors and timing; the worker's existing dimension branch reconstructs the
+Rust tracker and returns a warming report while retaining its AI instance.
+
+These controls follow intrinsic image size changes, including portrait/landscape
+transitions reported by a browser. They do not qualify every phone's orientation
+behavior. Chromium tests resize an actual synthetic `canvas.captureStream`, hold
+an actual worker result across rotation, then hold a bitmap across rotation back.
+Another test delays `play()` while retaining metadata to check Stop and a
+replacement sample session. Physical phone and iOS Safari remain untested.
+
 ## Static distribution and privacy
 
 `docs/site/camera/assets.json` pins MediaPipe Tasks Vision **1.1.1**, model revision

@@ -112,7 +112,24 @@ async function staleStartup(context, origin) {
   assert.equal(await page.locator("#overlay").isHidden(), true);
   assert.equal(await page.locator("#mode-label").textContent(), "CAMERA OFF");
   await stopped(page);check("stale-video-play-does-not-restore-stopped-presentation");
-  await page.close();
+  await page.evaluate(() => { window.__gateNextPlay = true;window.__playReleased = false;delete window.__releasePlay; });
+  await page.locator("#start").click();
+  await page.waitForFunction(() => typeof window.__releasePlay === "function");
+  await page.locator("#stop").click();await page.locator("#sample").click();await waitFrames(page, 2);
+  const before = await frameCount(page);
+  await page.evaluate(() => {
+    const video = document.querySelector("video");
+    Object.defineProperty(video, "videoWidth", { configurable: true, get: () => 480 });
+    Object.defineProperty(video, "videoHeight", { configurable: true, get: () => 640 });
+    window.__releasePlay();
+  });
+  await page.waitForFunction(() => window.__playReleased);await waitFrames(page, before + 1);
+  assert.equal(await page.locator("#overlay").evaluate((c) => c.width), 256);
+  assert.equal(await page.locator("#overlay").evaluate((c) => c.height), 192);
+  assert.ok((await page.locator("#mode-label").textContent()).startsWith("SAMPLE"));
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.sessionState), "running");
+  check("stale-camera-start-preserves-replacement-sample");
+  await page.locator("#stop").click();await stopped(page);await page.close();
 }
 
 async function intrinsicRotation(context, origin) {

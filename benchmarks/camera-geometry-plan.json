@@ -22,7 +22,9 @@
     "asset_download_max_bytes": 0,
     "sensor_downloads": 0,
     "new_sensor_payload_copies": 0,
-    "strategy": "Hard-link unchanged vendor assets from the completed local camera site, generate a separate site using the existing release WASM and matching bindgen CLI; no Cargo compilation, package/browser install or local static asset downloads."
+    "strategy": "Hard-link unchanged vendor assets from the completed local camera site, generate a separate site using the existing release WASM and matching bindgen CLI; no Cargo compilation, package/browser install or local static asset downloads.",
+    "public_verification_stream_max_bytes": 33554432,
+    "asset_download_scope": "The zero asset_download_max_bytes budget covers new SDK/model acquisition for local builds. Separate post-deployment HTTPS checks may stream up to 32MiB without retaining vendor payload files; no new source/model acquisition is allowed."
   },
   "remaining_80_percent": "Canonical measured calibration/timing and independent motion, full-room accuracy, qualifying Linux hardware and integrated mapping/semantic/Viewer/interchange acceptance remain open."
 }

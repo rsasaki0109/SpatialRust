@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Keep the camera playground's presentation tied to the active session after
+  asynchronous video startup. Adapt to intrinsic portrait/landscape size changes
+  after pending results finish, discard obsolete captures and reseed the existing
+  tracker without reloading AI. Admit bounded aspect-preserving frame sizes and
+  reject extreme ratios. Synthetic browser regressions reproduce the two parent
+  failures; physical phone/Safari qualification remains open. See
+  [camera geometry and lifecycle](docs/MOBILE_CAMERA_DEMO.md).
+
 - Add an opt-in mobile camera playground to the existing GitHub Pages site:
   real Rust/WASM FAST/LK background flow, local AI person exclusion, labeled
   sample playback and explicit camera/worker cleanup. Self-host size/SHA-pinned

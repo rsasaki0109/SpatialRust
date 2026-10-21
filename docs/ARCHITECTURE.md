@@ -12,7 +12,10 @@ readbacks/copies feed existing FAST and forward/backward LK; person exclusion
 uses a pinned local confidence model. One worker and one in-flight bitmap per
 session have cancellation-safe camera cleanup. The existing GitHub Pages build
 self-hosts hashed AI assets and a restrictive inherited worker CSP. This
-experimental browser boundary preserves core and vision algorithms; physical
+camera presenter checks the session after video startup and changes its bounded
+frame geometry only when no capture/result is pending. The existing worker
+reconstructs the tracker for new dimensions while retaining AI initialization.
+This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 
 [Marching-tetrahedra topology](MESH_SURFACE_TOPOLOGY.md) orders quadrilateral
