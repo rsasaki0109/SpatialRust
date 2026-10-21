@@ -9,7 +9,7 @@ function argument(name) { const i = process.argv.indexOf(name); if (i < 0 || !pr
 const site = argument("--site"), output = argument("--output");
 if (fs.existsSync(output)) throw new Error("fresh browser evidence directory required");
 fs.mkdirSync(output, { recursive: true });
-const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [] };
+const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [], failedRequests: [], httpErrors: [], workerErrors: [], cspViolations: [] };
 const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".mjs": "text/javascript", ".js": "text/javascript", ".wasm": "application/wasm", ".json": "application/json", ".txt": "text/plain" };
 const server = http.createServer((req, res) => {
   if (req.method !== "GET" && req.method !== "HEAD") { report.nonGetRequests.push(req.method);res.writeHead(405);res.end();return; }
@@ -29,7 +29,10 @@ const server = http.createServer((req, res) => {
 
 let browser, activePage;
 const check = (name) => report.checks.push(name);
-const waitFrames = (page, before = 0) => page.waitForFunction((n) => Number(document.documentElement.dataset.trackedFrames ?? 0) > n, before, { timeout: 120000 });
+async function waitFrames(page, before = 0) {
+  await page.waitForFunction((n) => document.documentElement.dataset.sessionState === "error" || Number(document.documentElement.dataset.trackedFrames ?? 0) > n, before, { timeout: 120000 });
+  assert.notEqual(await page.evaluate(() => document.documentElement.dataset.sessionState), "error", await page.locator("#status").textContent());
+}
 const frameCount = (page) => page.evaluate(() => Number(document.documentElement.dataset.trackedFrames ?? 0));
 async function screenshot(page, name) { const file = path.join(output, name + ".png"); await page.screenshot({ path: file, fullPage: true });report.screenshots.push(file); }
 async function stopped(page) {
@@ -39,6 +42,13 @@ async function stopped(page) {
 }
 async function instrument(context) {
   await context.addInitScript(() => {
+    window.__workerErrors = [];
+    window.__cspViolations = [];
+    document.addEventListener("securitypolicyviolation", (e) => window.__cspViolations.push({ directive: e.effectiveDirective, uri: e.blockedURI }));
+    const OriginalWorker = window.Worker;
+    window.Worker = class extends OriginalWorker {
+      constructor(...args) { super(...args); this.addEventListener("error", (e) => window.__workerErrors.push({ message: e.message, filename: e.filename, line: e.lineno })); }
+    };
     window.__cameraCalls = [];
     window.__cameraStreams = [];
     const original = navigator.mediaDevices?.getUserMedia.bind(navigator.mediaDevices);
@@ -59,7 +69,8 @@ async function instrument(context) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await instrument(context);
   const page = await context.newPage(); activePage = page;
-  page.on("response", (r) => { if (/^https?:/.test(r.url()) && !r.url().startsWith(origin + "/")) report.externalResponses.push(r.url()); });
+  page.on("requestfailed", (r) => report.failedRequests.push({ url: r.url(), failure: r.failure() }));
+  page.on("response", (r) => { if (r.status() >= 400) report.httpErrors.push({ url: r.url(), status: r.status() }); if (/^https?:/.test(r.url()) && !r.url().startsWith(origin + "/")) report.externalResponses.push(r.url()); });
   page.on("console", (m) => { if (m.type() === "error") report.consoleErrors.push(m.text()); });
   page.on("pageerror", (e) => report.consoleErrors.push(e.message));
   await page.goto(origin + "/camera/", { waitUntil: "networkidle" });
@@ -68,7 +79,8 @@ async function instrument(context) {
   await screenshot(page, "mobile-idle");
   await page.locator("#ai").uncheck();
   await page.locator("#sample").click();
-  await page.waitForFunction(() => document.documentElement.dataset.trackingStatus === "tracking", null, { timeout: 120000 });
+  await page.waitForFunction(() => document.documentElement.dataset.sessionState === "error" || document.documentElement.dataset.trackingStatus === "tracking", null, { timeout: 120000 });
+  assert.notEqual(await page.evaluate(() => document.documentElement.dataset.sessionState), "error", await page.locator("#status").textContent());
   assert.equal(await page.evaluate(() => window.__cameraCalls.length), 0);
   assert.equal(await page.locator("#backend").textContent(), "OFF");check("real-wasm-sample-motion-without-camera");
   await screenshot(page, "mobile-tracking");
@@ -113,6 +125,8 @@ async function instrument(context) {
 })().catch(async (error) => {
   report.passed = false;report.error = error.stack || String(error);process.exitCode = 1;
   if (activePage && !activePage.isClosed()) {
+    report.workerErrors = await activePage.evaluate(() => window.__workerErrors ?? []).catch(() => []);
+    report.cspViolations = await activePage.evaluate(() => window.__cspViolations ?? []).catch(() => []);
     report.lastStatus = await activePage.locator("#status").textContent().catch(() => "unavailable");
     await screenshot(activePage, "failure").catch(() => {});
   }

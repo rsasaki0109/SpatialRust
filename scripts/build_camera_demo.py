@@ -49,7 +49,7 @@ def validate_assets(document):
         url = urllib.parse.urlsplit(asset.get("url", ""))
         count = asset.get("bytes")
         if (not path.startswith("vendor/") or "\\" in path or parts.is_absolute()
-                or any(value in {".", ".."} for value in path.split("/")) or path in seen):
+                or any(value in {"", ".", ".."} for value in path.split("/")) or path in seen):
             raise ValueError("invalid or duplicate asset path")
         if url.scheme != "https" or url.hostname not in HOSTS or url.username or url.password or url.fragment:
             raise ValueError("asset origin must be an approved HTTPS publisher")
