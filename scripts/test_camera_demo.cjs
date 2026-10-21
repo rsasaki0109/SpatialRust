@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
 function argument(name) { const i = process.argv.indexOf(name); if (i < 0 || !process.argv[i + 1]) throw new Error(`missing ${name}`); return path.resolve(process.argv[i + 1]); }
 const site = argument("--site"), output = argument("--output");
 const caseIndex = process.argv.indexOf("--regression-case"), regressionCase = caseIndex < 0 ? null : process.argv[caseIndex + 1];
-if (regressionCase && !["startup", "rotation", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy"].includes(regressionCase)) throw new Error("unknown regression case");
+if (regressionCase && !["startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy"].includes(regressionCase)) throw new Error("unknown regression case");
 if (fs.existsSync(output)) throw new Error("fresh browser evidence directory required");
 fs.mkdirSync(output, { recursive: true });
 const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [], failedRequests: [], httpErrors: [], workerErrors: [], cspViolations: [] };
@@ -69,7 +69,7 @@ async function instrument(context) {
         this.addEventListener("error", (e) => window.__workerErrors.push({ message: e.message, filename: e.filename, line: e.lineno })); }
       postMessage(data, transfer) {
         if (data.kind === "frame") { window.__timedSubmissions.push({ sentAt: performance.now(), timestampMs: data.timestampMs });if (window.__timedSubmissions.length > 64) window.__timedSubmissions.shift(); }
-        if (data.kind === "frame") { window.__submittedFrames.push([data.bitmap.width, data.bitmap.height]);if (window.__submittedFrames.length > 64) window.__submittedFrames.shift(); }
+        if (data.kind === "frame") { window.__submittedFrames.push([data.bitmap.width, data.bitmap.height]);if (window.__submittedFrames.length > (window.__cameraFrameHistoryLimit ?? 64)) window.__submittedFrames.shift(); }
         return super.postMessage(data, transfer);
       }
       terminate() { window.__terminatedWorkers++;return super.terminate(); }
@@ -296,8 +296,9 @@ async function lightPreset(context, origin) {
   await page.locator("#stop").click();await stopped(page);await page.close();
 }
 
-async function intrinsicRotation(context, origin, longEdge = 256) {
+async function intrinsicRotation(context, origin, longEdge = 256, historyLimit = 64) {
   const page = await context.newPage(); activePage = page;
+  await page.addInitScript((limit) => { window.__cameraFrameHistoryLimit = limit; }, historyLimit);
   await page.addInitScript(() => {
     const originalBitmap = globalThis.createImageBitmap;
     globalThis.createImageBitmap = async (...args) => {
@@ -347,6 +348,7 @@ async function intrinsicRotation(context, origin, longEdge = 256) {
   assert.equal(await page.evaluate(() => window.__workerCount), workers);check("rotation-keeps-initialized-ai-worker");
   assert.ok(["GPU", "CPU"].includes(await page.locator("#backend").textContent()));
   await screenshot(page, `mobile-portrait-camera-${longEdge}`);
+  if (historyLimit < 64) await page.waitForFunction((limit) => window.__submittedFrames.length === limit, historyLimit);
   await page.evaluate(() => { window.__holdNextCapture = true; });
   await page.waitForFunction(() => typeof window.__releaseCapture === "function");
   const portraitFrames = await frameCount(page);
@@ -355,7 +357,9 @@ async function intrinsicRotation(context, origin, longEdge = 256) {
   await page.waitForFunction(() => document.querySelector("video").videoWidth === 320);
   await page.evaluate(() => { const release = window.__releaseCapture;delete window.__releaseCapture;release(); });
   await waitFrames(page, portraitFrames + 2);
-  const afterResize = await page.evaluate((n) => window.__submittedFrames.slice(n), submitted);
+  const history = await page.evaluate((n) => ({ cursor: n, retained: window.__submittedFrames.slice(), after: window.__submittedFrames.slice(n), width: document.querySelector("#overlay").width, height: document.querySelector("#overlay").height }), submitted);
+  (report.rotationHistory ??= []).push({ longEdge, ...history });
+  const afterResize = history.after;
   assert.ok(afterResize.length > 0 && afterResize.every(([w,h]) => w === longEdge && h === shortEdge), "bitmap captured in obsolete geometry was submitted");
   check("capture-from-old-geometry-is-dropped");
   assert.equal(await page.locator("#overlay").evaluate((c) => c.width), longEdge);
@@ -375,6 +379,7 @@ async function intrinsicRotation(context, origin, longEdge = 256) {
   if (regressionCase) {
     if (regressionCase === "startup") await staleStartup(context, origin);
     else if (regressionCase === "rotation") await intrinsicRotation(context, origin);
+    else if (regressionCase === "history") await intrinsicRotation(context, origin, 192, 8);
     else if (regressionCase === "cadence") await captureCadence(context, origin);
     else if (regressionCase.startsWith("source-")) await sourceTermination(context, origin, regressionCase.slice(7));
     else if (regressionCase.startsWith("progress-")) await videoProgress(context, origin, regressionCase === "progress-busy");
