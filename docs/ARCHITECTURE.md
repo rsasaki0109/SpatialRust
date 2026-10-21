@@ -15,6 +15,9 @@ self-hosts hashed AI assets and a restrictive inherited worker CSP. The
 camera presenter checks the session after video startup and changes its bounded
 frame geometry only when no capture/result is pending. The existing worker
 reconstructs the tracker for new dimensions while retaining AI initialization.
+An explicit stopped-only 192-pixel light preset reduces tracked image work from
+the default 256-pixel long edge, preserving aspect and the same AI model. The
+chosen size is fixed per session and displayed; it is not a hardware speed claim.
 This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 

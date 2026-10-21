@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.camera-light-plan.v1",
+  "slice": "146AJ",
+  "parent_merge": "b59a198d336eccffc9d3f76e2950ffddb7b98a72",
+  "purpose": "Let a mobile visitor explicitly reduce tracking image work while preserving aspect, session ownership and honest AI/backend reporting.",
+  "contract": {
+    "presets": "Standard retains a 256-pixel long edge; light uses 192. Select only while stopped, freeze the chosen size for a session, apply it to camera and sample frames and follow intrinsic rotations. Admit 64-pixel minimum sides and reject unsupported ratios or presets without stretching.",
+    "claims": "At a 4:3 aspect ratio light has 27,648 rather than 49,152 image pixels, a 43.75% reduction in copied/tracked pixel count. The pinned AI model and rate cap remain unchanged; no AI inference, physical speed, power, memory or accuracy improvement is asserted.",
+    "verification": "Exercise both presets and actual WASM sample tracking, real pinned-model mask geometry in light portrait/landscape synthetic capture, stopped-only settings, no camera permission for samples and existing lifecycle/CSP controls. No physical-phone or Safari qualification.",
+    "preservation": "Preserve scientific JSON, frozen native binaries, prior camera outputs, resolved Cargo.lock and release WASM. No Rust/native/core/GPU changes, compiler runs, sensor acquisition or new SDK/model acquisition."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-light-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Hard-link existing hash-identical vendor files into a fresh E: site. Reuse the release WASM, matching bindgen and installed browser/runtime; keep all evidence and failures.",
+    "public_verification_stream_max_bytes": 33554432,
+    "asset_download_scope": "Zero covers local SDK/model acquisition. After publication bounded HTTPS checks may stream up to 32MiB without persisting vendor payloads."
+  },
+  "remaining_80_percent": "Measured canonical calibration/timing and independent motion, full-room accuracy, qualifying Linux hardware and integrated acceptance remain open."
+}
