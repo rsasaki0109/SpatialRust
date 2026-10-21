@@ -1,0 +1,482 @@
+{
+  "schema": "spatialrust.public-mesh-topology-receipt.v1",
+  "slice": "146AG",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-21T02:32:46.259095+00:00",
+  "protocol_commit": "e578e87e1ab33bff4d349a70438a08fa17be2037",
+  "tested_source_commit": "f635482c5befc4f91e05c030c15faeca3ea39941",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\mesh-topology-plan.json",
+    "bytes": 3645,
+    "sha256": "4e326fed037476556bbf597f4acdd2ba3f6879897faf4e51b67e5cc8d4ea0983"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\mesh-topology-preflight.json",
+    "bytes": 115908,
+    "sha256": "db65070a659fd41b3eae6dce3da8839f643dc1cbda12c6cd391c695c2b540775"
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/mesh-topology-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned sources and completed room outputs. Reuse the cache, preserve failed logs and never rebuild frozen binaries. No real sensor read/download/copy or real-motion fit. Synthetic SQLite/JSON fixtures stay in the owned external temp directory."
+  },
+  "validation": {
+    "scene-default": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\scene-default-v2.command.json",
+        "bytes": 22278,
+        "sha256": "4d70a74d57463c03646d8bfcae43b26e32a01754384ac75264907edb2ac3e4bb"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\scene-default-v2.log",
+        "bytes": 4996,
+        "sha256": "efd60eaf8831962f2235c10f1dfdcd5a614198ec3a968237755cf8590642a12b"
+      }
+    },
+    "scene-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\scene-all.command.json",
+        "bytes": 22294,
+        "sha256": "0767fa51103469816b76ee0fa2f32e8e1c89cfe46e7dc0ba95896d4793fad8e4"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\scene-all.log",
+        "bytes": 5114,
+        "sha256": "b9022ae415f795986a88678a326d062d16a2bd15686f2978740fcea34fb9baa8"
+      }
+    },
+    "scene-clippy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\scene-clippy.command.json",
+        "bytes": 22360,
+        "sha256": "5a47411e3d7ced9caa8cf4cc7b8abb8207f48e5a019d8b91d6fa25efce027f82"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\scene-clippy.log",
+        "bytes": 174,
+        "sha256": "c9522b02da6edfcdfa8c3c6f0ee99ac8cfd48f694aedf732183fc3a57c131bd7"
+      }
+    },
+    "full-bag": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\full-bag.command.json",
+        "bytes": 22590,
+        "sha256": "3cbf1e8458c432a1c310420a4ac4be2f04003f3462d462cf437567deb897e732"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\full-bag.log",
+        "bytes": 11404,
+        "sha256": "f57e80a437b7828947f1e749bcea74f62d92a67fd09fd337334fae7f67877904"
+      }
+    },
+    "e2e": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\e2e.command.json",
+        "bytes": 22344,
+        "sha256": "9503946f7a1903e46209289eb2237078a4bb5e85563abe6fc677d8f02f0de99a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\e2e.log",
+        "bytes": 1671,
+        "sha256": "78242fca77412a90d3eec6b786d3157ad7cf39e6894fb06202e8e6e3114d4de4"
+      }
+    },
+    "ros2-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\ros2-all.command.json",
+        "bytes": 22763,
+        "sha256": "a78af2dfe23e7ff00f2f0f2d33cf5905aecc211cc73caaaa6bd45c4e4f889eeb"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\ros2-all.log",
+        "bytes": 825,
+        "sha256": "cc8d34ec81aecfc84fa9f1ea2cb5fc08b935a96db1b6f1f6606c99af8232ffae"
+      }
+    },
+    "mapping-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\mapping-all.command.json",
+        "bytes": 22298,
+        "sha256": "8ec5e491f4c2c48c9fa3a5ce2c0036f7b01bef2461776b6559be59c3a87d1579"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\mapping-all.log",
+        "bytes": 2230,
+        "sha256": "546cdb2494411172ef863e1e8b6203ee62eb8be535930c7b7148f16678236a1a"
+      }
+    },
+    "viewer-all": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\viewer-all.command.json",
+        "bytes": 22537,
+        "sha256": "e2566e85db44413bdc24bb1ad2526786821394f765ea9a465d3ece4ebe7e9fcd"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\viewer-all.log",
+        "bytes": 7289,
+        "sha256": "7af9e1358ffde452d32216606dc1962cf63f98239b23f1af013e2637be5cee52"
+      }
+    },
+    "calibration": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\calibration.command.json",
+        "bytes": 22316,
+        "sha256": "792596dd9e4e7b2187be2d0d7e1087d98e5788895b405437bee9fed61ce698d2"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\calibration.log",
+        "bytes": 997,
+        "sha256": "8ea9dbf2f04ced32b5d0e024e2ee2fcc1a766f128b420b020edd1864f69415dd"
+      }
+    },
+    "examples-clippy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\examples-clippy.command.json",
+        "bytes": 22362,
+        "sha256": "4fc51d5671f5539cbe4ae76d81892314e234cdfcd3fb0d0b10e7ac99d00e5032"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\examples-clippy.log",
+        "bytes": 492,
+        "sha256": "d16bf91cb8bc64cdde9b571841a2f3f945f59cc1fea37084b409841e1fd18445"
+      }
+    },
+    "format": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\format-v2.command.json",
+        "bytes": 22479,
+        "sha256": "548ccfc4066670a2f1f7e0ed00c7e813bec32c8325257ab377241f07cccb8f81"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\format-v2.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "tests": {
+    "scene-default": {
+      "passed": 63,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "scene-all": {
+      "passed": 65,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "full-bag": {
+      "passed": 128,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    },
+    "e2e": {
+      "passed": 17,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    },
+    "ros2-all": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "mapping-all": {
+      "passed": 24,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 3
+    },
+    "viewer-all": {
+      "passed": 81,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 2
+    },
+    "calibration": {
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "suites": 1
+    }
+  },
+  "original_regressions": {
+    "source_commit": "7f722a168f482c80a0fc7b2389ffdfb80b272fc6",
+    "passed": 48,
+    "failed": 17,
+    "failed_names": [
+      "marching_cubes::topology_tests::all_cube_tetrahedra_have_consistent_surface_topology",
+      "marching_cubes::topology_tests::all_sixteen_masks_cover_their_cut_polygon",
+      "marching_cubes::topology_tests::complementary_fields_reverse_surface_normals",
+      "marching_cubes::topology_tests::outside_corner_two_has_outward_winding",
+      "marching_cubes::topology_tests::quad_0011",
+      "marching_cubes::topology_tests::quad_0101",
+      "marching_cubes::topology_tests::quad_0110",
+      "marching_cubes::topology_tests::quad_1001",
+      "marching_cubes::topology_tests::quad_1010",
+      "marching_cubes::topology_tests::quad_1100",
+      "marching_cubes::topology_tests::translated_scaled_tetrahedra_and_shifted_isolevel",
+      "marching_cubes::topology_tests::unequal_edge_magnitudes_cover_their_cut_polygon",
+      "tsdf::mesh_tests::extracts_complete_x_plane",
+      "tsdf::mesh_tests::extracts_complete_y_plane",
+      "tsdf::mesh_tests::extracts_complete_z_plane",
+      "tsdf::mesh_tests::reversed_plane_fields_reverse_every_triangle",
+      "tsdf::mesh_tests::translated_scaled_planes_keep_area_and_shared_edges"
+    ],
+    "production_prefix_unchanged": true,
+    "command": {
+      "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\baseline-v2.command.json",
+      "bytes": 22339,
+      "sha256": "5bfdee528289e7f3e74d3946060664efd8088f67fec9ed28b8a4ac0340a7bbcd"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\baseline-v2.log",
+      "bytes": 11120,
+      "sha256": "f267447e7d4a28383fdb69ac4be7fd87079273a0c1dc81db7150920726fb90f7"
+    }
+  },
+  "new_cases": 20,
+  "changed_case_rows": 7,
+  "independent_affine_case_checks": 499,
+  "analytic_plane_volumes": 12,
+  "unchanged_contracts": {
+    "public_apis_and_fields": true,
+    "tsdf_constructor_and_integration": true,
+    "support_and_cloud_submission_counts": true,
+    "cube_tetrahedra": true,
+    "interpolation_and_epsilon": true,
+    "other_seven_nonempty_case_rows": true,
+    "triangle_append_layout": true,
+    "all_other_crates": true,
+    "dependencies_and_device_ownership": true
+  },
+  "scope": "Correct six quadrilateral boundary cycles and the 1011 winding only. Preserve interpolation, cube decomposition, TSDF fields/integration and public APIs. Independent affine-cut and tiny analytic-plane controls do not qualify global watertightness, physical accuracy or operational 80%.",
+  "preserved_scientific_json_count": 493,
+  "preserved_native_file_count": 42,
+  "previous_completed_room_outputs": {
+    "schema": "spatialrust.huber-preserved-room-outputs.v1",
+    "files": [
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\audit.json",
+        "bytes": 14612178,
+        "sha256": "3f518a2d8d5b1aba5858a934ab88429cb8868b27aae01ad0329ea148c29eb3ec"
+      },
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\drift.svg",
+        "bytes": 382828,
+        "sha256": "e8fd81a07172126d592ffccb451a3ae090422680ef030d55efdb3ed780afb03c"
+      },
+      {
+        "path": "E:\\SpatialRustData\\maturity-80\\room-drift-audit-v1\\audit\\preview.png",
+        "bytes": 226821,
+        "sha256": "3ccd937a5c35be51af3bf3b6c9958d6fc062304363085546df80bc706bd19f99"
+      }
+    ],
+    "manifest_sha256": "75468b4a7e65a0edce8ff8e60c2f7f831c97589eefda66a243198cdacf7f6745"
+  },
+  "reference_sources": {
+    "upstream_repository": "https://github.com/isl-org/Open3D",
+    "ref": "v0.19.0",
+    "commit": "1e7b17438687a0b0c1e5a7187321ac7044afe275",
+    "files": [
+      {
+        "upstream_path": "cpp/open3d/geometry/ImageFactory.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\ImageFactory.cpp",
+        "bytes": 6267,
+        "sha256": "e447d9f17c725b243fbc291aa32ac2238dd4eaa46edc3a17f2f4d08a3ae4fbf1"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImageFactory.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImageFactory.cpp",
+        "bytes": 4464,
+        "sha256": "4f95c4b284fb8c22bf537bf66f53fe0c79723efb8971a0f4e357fdd7d7f079fc"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.h",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.h",
+        "bytes": 4570,
+        "sha256": "1a35f4370aaae08d693a2efd5913266f85dc71879c5e09c538429a2446760d57"
+      },
+      {
+        "upstream_path": "cpp/open3d/pipelines/odometry/RGBDOdometryJacobian.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDOdometryJacobian.cpp",
+        "bytes": 5924,
+        "sha256": "47640145004e4cca41ad70744ea0216935f57383c6b3d8a5a44561c6293a3830"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/RGBDImage.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\RGBDImage.cpp",
+        "bytes": 2554,
+        "sha256": "bf3d07e1d09be85dd448c216a7a0fddea019f5331e39fa52df8be99b39008d47"
+      },
+      {
+        "upstream_path": "cpp/open3d/geometry/Image.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Image.cpp",
+        "bytes": 14366,
+        "sha256": "bef45e1facc2f25a63623e6e6aa9289127fbc9aa7ac9df9fe87393a014bbcd0c"
+      },
+      {
+        "upstream_path": "cpp/open3d/pipelines/odometry/Odometry.cpp",
+        "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\pair-mean-reference-source-v1\\Odometry.cpp",
+        "bytes": 23556,
+        "sha256": "be75e58413b6d2f7ee575b526fc0d68b228e5eeb2cab27f246f7c8e8dd34d0fb"
+      }
+    ],
+    "sensor_payload_downloads": 0
+  },
+  "sensor_downloads": 0,
+  "sensor_payload_copies": 0,
+  "real_sensor_payload_reads": 0,
+  "new_real_motion_fits": 0,
+  "new_frozen_native_artifacts": 0,
+  "operational_80_percent_proven": false,
+  "remaining": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Successful record-submission traceability does not establish these requirements.",
+  "calibration_filter_scope": "Eight unchanged name-filtered controls; no physical calibration experiment.",
+  "preserved_code_trees": {
+    "crates/spatialrust-ai": "d31d645b342426b254a9a96e79d727ca44cd50eb",
+    "crates/spatialrust-arrow": "ee8bdcaf7eac74c0d3f478e0d3b9c6ac7cdb6a19",
+    "crates/spatialrust-camera": "5914c1973c9f6ff429aaaca82f7b1526322a8df3",
+    "crates/spatialrust-core": "b5621e744f11109cdba54fa2b3bffec92b7c71f0",
+    "crates/spatialrust-distribute": "56443b23fc0ca9ca872bc05bc0b6a32b05a67fcf",
+    "crates/spatialrust-episode": "518861925082b0b9bcc245ada6a3f31546560ebb",
+    "crates/spatialrust-features": "2d3cb963e6a5ea37fb36961a99b72ad9a2e37ca6",
+    "crates/spatialrust-filtering": "3edaa2b89bf495051e5066e2f9d3c8d9f9d97e0f",
+    "crates/spatialrust-gpu": "ff36dfe2d716c46e6beda65d044a4a9993034e96",
+    "crates/spatialrust-image-io": "8828408f6425b9c61ec02a7890f27ed15c4b67cd",
+    "crates/spatialrust-image": "67fc04869008415610300839e01238503da57cb0",
+    "crates/spatialrust-interchange": "0d77937fbee6e6df14ab5f512199b46cd68dace3",
+    "crates/spatialrust-io": "4bc68834e50b40aaf649dd58624402ec4d3d05a7",
+    "crates/spatialrust-lod": "8888e90af85ba74f5fe57fe2fabb7f912aea3f1c",
+    "crates/spatialrust-mapping": "6550a941f5349e098a27cfb1e0f9751504a58594",
+    "crates/spatialrust-math": "1b2b0d359494c807a71caf508c5a8abd8c52aa2b",
+    "crates/spatialrust-metrics": "6fc36e1c5a60d06d56356b8a102380a5fb662751",
+    "crates/spatialrust-pipeline": "0a9f594402ed150d23b70c1e9a4f3ff7cb92d324",
+    "crates/spatialrust-platform": "144bb0c186970e209675f3f1b99426df65c70ba4",
+    "crates/spatialrust-py": "cd89ecbd3325df100591467ee84b5f32bc71e8df",
+    "crates/spatialrust-records": "7236d93b95dcff9d80d668bc03935f7442b1c1c6",
+    "crates/spatialrust-registration": "dcb1ef386d492f682af45d42e82bc9e61e037764",
+    "crates/spatialrust-render-wgpu": "e3a8843d1f8eccf077ed6dad1a7bda13e209c2e1",
+    "crates/spatialrust-ros2": "0eb0a7c262a420dee1971ada442927f4104b2dd3",
+    "crates/spatialrust-runtime": "aa7ac019c57b6aa719a218ec224c5b08d30d0784",
+    "crates/spatialrust-search": "f88b69bda15eb9a32fb37d0d2b330fac8f3c34a4",
+    "crates/spatialrust-segmentation": "c3131c7eb6a4ad38da15f038cc86beac80c357e9",
+    "crates/spatialrust-semantic": "c25ca616934e1879252a5bf496dc39be6e9deebf",
+    "crates/spatialrust-sync": "8c27cb7d73ee1f04bbad232e9421b48dec483657",
+    "crates/spatialrust-tensor": "4d9325a12632d2ff2be7e07114601ffcea1a2523",
+    "crates/spatialrust-transform": "f34539db58d4892eda672160dc090c95bcc9d206",
+    "crates/spatialrust-viewer": "1f48266dafd364cb0a834f07163a9f3e1e7e3222",
+    "crates/spatialrust-vision": "763c04fcef8c92c2eec5a165e2f385cf567e00a7",
+    "crates/spatialrust-viz": "b1f190e9f2b696cbe29df15a3104a2ea348fbccb",
+    "crates/spatialrust-voxelize": "86ee90b0dc6d2d11c5a143657bf44d1dac60ceaa",
+    "crates/spatialrust-web": "cab49f5703dbe04e5d695963718d33c74edd5d2d",
+    "crates/spatialrust": "c997cdb52b8222d3aab1302c8076e5c963d28c40",
+    "crates/spatialrust-scene/Cargo.toml": "7e55cc71437ba2b979ad9b455122155a99d6c0c7",
+    "crates/spatialrust-scene/src/lib.rs": "b0afc98ab557055cf792cb40efd6c148212a01bc",
+    "crates/spatialrust-scene/src/mesh.rs": "6555cabe88805b1341fa91a9be01a25743649f8e",
+    "crates/spatialrust-scene/src/surfel.rs": "be900f6de83110c2151507ce122deefe1e291fa2",
+    "crates/spatialrust-scene/src/gaussian.rs": "cd99f755346d9066853eb5e275976f3a1d6127fc",
+    "crates/spatialrust-scene/src/error.rs": "0e3910339cc6cb26075e246403c42e55d3f2429b",
+    "crates/spatialrust-scene/src/tsdf_support_tests.rs": "8d4782ebe1b2eec61689b8757822c104ea1fd9bd",
+    "crates/spatialrust-scene/src/tsdf_grid_tests.rs": "5616c1f6aed816d27ee4633a5a7ca1198a550826",
+    ".github/workflows": "f57e7b3d58a06ebe5d8df57bbe1f27e786a55a77",
+    "Cargo.toml": "071f537437a8d7b77cbe4dff7ae28e6a5479ed66"
+  },
+  "development_failure": {
+    "reason": "Test fixture used unsupported Vec3 scalar multiplication; corrected only component scaling before genuine regression reproduction.",
+    "source_head": "c4870e8905fcc7a7848608c5841014b711af066c",
+    "command": {
+      "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\baseline.command.json",
+      "bytes": 22316,
+      "sha256": "40b6cc6cb3829c87ac23cdaeae8e6114ad91566a961b1792983ffc0b5dcbce37"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\baseline.log",
+      "bytes": 916,
+      "sha256": "50fb840158a53922b678c92ffc96a9ade3a251f2964733da1ddf1e9f8a9924e1"
+    }
+  },
+  "superseded_validation": {
+    "format": {
+      "source_head": "5d2cd10edbccf5e53ec86052d22673bddca4aac0",
+      "exit_status": 0,
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\format.command.json",
+        "bytes": 22464,
+        "sha256": "7adc4e864be9418f93468d7beff828a0b23a960477b1ef3a707ce71204c412bc"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\format.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "scene-default": {
+      "source_head": "5d2cd10edbccf5e53ec86052d22673bddca4aac0",
+      "exit_status": 101,
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\scene-default.command.json",
+        "bytes": 22270,
+        "sha256": "18478697202fd5f7006d96899708e986a6127f2d28c7bc8c4bef8d3f8db746fd"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\scene-default.log",
+        "bytes": 8404,
+        "sha256": "3f7ae29ac4e1c66395350fdf8b7e86a298e12b15d0e6fcc5d54cefafaf65a0e9"
+      }
+    }
+  },
+  "source_formatting_preparation": [
+    {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\format-preparation.json",
+        "bytes": 1722,
+        "sha256": "6471e447ffb3becbab631ab3d7d48bbd4e02928a91bdf0e38b2db6009f2099cd"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\format-preparation.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\format-correction.json",
+        "bytes": 586,
+        "sha256": "bd782c04c1a6f1d57fa41189af0b9fa39b49c6f5f5498dcf5b49810234ff3211"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\mesh-topology-v1\\format-correction.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "cargo_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118041,
+    "sha256": "6b7bc5c64861ec82eed78b683e8a05269175fdd5a4ecd397833090a34d5c3f8d"
+  },
+  "storage": {
+    "owned_metadata_bytes": 394900,
+    "cache_bytes": 10990554622,
+    "positive_cache_growth_bytes": 29798575,
+    "combined_bytes": 30193475,
+    "free_bytes": {
+      "C": 71167459328,
+      "E": 878364418048
+    }
+  }
+}
