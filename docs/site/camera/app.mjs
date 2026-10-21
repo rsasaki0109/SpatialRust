@@ -1,4 +1,5 @@
 import { CameraSession } from "./session.mjs";
+import { cameraFrameSize } from "./frame-size.mjs";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video"), sample = $("sample-frame"), overlay = $("overlay");
@@ -24,17 +25,17 @@ const session = new CameraSession({
     } catch (error) { URL.revokeObjectURL(url); throw error; }
   },
   onReady: async (run) => {
-    mode = run.mode;
-    if (mode === "camera") {
+    if (session.run !== run) return;
+    let size = { width: 256, height: 192 };
+    if (run.mode === "camera") {
       video.srcObject = run.stream;
       await video.play();
-      if (!video.videoWidth || !video.videoHeight) throw new Error("カメラの映像を読み取れませんでした。");
-      const scale = 256 / Math.max(video.videoWidth, video.videoHeight);
-      width = Math.max(64, Math.round(video.videoWidth * scale));
-      height = Math.max(64, Math.round(video.videoHeight * scale));
-    } else { width = 256; height = 192; }
-    for (const canvas of [sample, overlay]) { canvas.width = width; canvas.height = height; }
-    $("stage").style.aspectRatio = `${width}/${height}`;
+      // Stop or a replacement session may win while play() is pending.
+      if (session.run !== run) return;
+      size = cameraFrameSize(video.videoWidth, video.videoHeight);
+    }
+    mode = run.mode;
+    applyGeometry(size);
     video.hidden = mode !== "camera";
     sample.hidden = mode !== "sample";
     overlay.hidden = false;
@@ -63,7 +64,7 @@ const session = new CameraSession({
     $("fps").textContent = lastResult ? `${Math.min(99, Math.round(1000 / (now - lastResult)))} fps` : "—";
     lastResult = now;
     $("person").textContent = backend === "OFF" ? "オフ" : `${Math.round(report.person_fraction * 100)} %`;
-    $("engine").textContent = `Rust / ${Math.round(elapsedMs)} ms`;
+    $("engine").textContent = `処理 / ${Math.round(elapsedMs)} ms`;
     $("backend").textContent = backend;
     const messages = { tracking: "背景を追跡中です。ゆっくり動かしてみてください。", warming: "背景の特徴点を準備しています。", reseeded: "間隔が空いたため、特徴点を取り直しています。", lost: "模様のある背景に向け、ゆっくり動かしてください。" };
     setStatus(messages[report.status] ?? messages.lost);
@@ -81,7 +82,7 @@ const session = new CameraSession({
   },
   onError: (error) => {
     const denied = error.name === "NotAllowedError" || /permission|denied/i.test(error.message);
-    setStatus(denied ? "カメラの使用が許可されていません。ブラウザの権限を確認するか、サンプルでお試しください。" : `開始できませんでした。${error.message} AIをオフにして試すこともできます。`);
+    setStatus(denied ? "カメラの使用が許可されていません。ブラウザの権限を確認するか、サンプルでお試しください。" : `開始できませんでした。${error.message}${error.name === "RangeError" ? "" : " AIをオフにして試すこともできます。"}`);
   },
   onStop: () => {
     cancelAnimationFrame(frameHandle); frameHandle = 0;
@@ -110,15 +111,32 @@ async function pump(now) {
   frameHandle = requestAnimationFrame(pump);
   if (session.busy || capturingToken === token || now - lastSubmitted < 125) return;
   if (mode === "camera" && (video.readyState < 2 || video.currentTime === lastVideoTime)) return;
+  const sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
+  if (mode === "camera" && (!sourceWidth || !sourceHeight)) return;
   capturingToken = token;
   try {
+    if (mode === "camera") {
+      const size = cameraFrameSize(sourceWidth, sourceHeight);
+      // One in-flight result is fully consumed before its coordinate system changes.
+      if (size.width !== width || size.height !== height) applyGeometry(size);
+    }
     const source = mode === "sample" ? renderSample() : video;
     const bitmap = await createImageBitmap(source, { resizeWidth: width, resizeHeight: height, resizeQuality: "low" });
-    if (session.token !== token) { bitmap.close(); return; }
+    if (session.token !== token || (mode === "camera" && (video.videoWidth !== sourceWidth || video.videoHeight !== sourceHeight))) { bitmap.close(); return; }
     lastVideoTime = video.currentTime; lastSubmitted = now;
     session.submit(bitmap, now);
   } catch (error) { session.fail(run, error); }
   finally { if (capturingToken === token) capturingToken = 0; }
+}
+
+function applyGeometry(size) {
+  width = size.width; height = size.height;
+  for (const canvas of [sample, overlay]) { canvas.width = width; canvas.height = height; }
+  $("stage").style.aspectRatio = `${width}/${height}`;
+  for (const id of ["points", "fps", "person"]) $(id).textContent = "—";
+  lastResult = 0; lastVideoTime = -1;
+  delete document.documentElement.dataset.trackingStatus;
+  drawMotion(null);
 }
 
 function renderSample() {

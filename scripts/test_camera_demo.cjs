@@ -48,6 +48,7 @@ async function instrument(context) {
     window.__workerCount = 0;
     window.__cameraReports = [];
     window.__holdNextResult = false;
+    window.__submittedFrames = [];
     window.__cspViolations = [];
     document.addEventListener("securitypolicyviolation", (e) => window.__cspViolations.push({ directive: e.effectiveDirective, uri: e.blockedURI }));
     const OriginalWorker = window.Worker;
@@ -64,6 +65,10 @@ async function instrument(context) {
           }
         });
         this.addEventListener("error", (e) => window.__workerErrors.push({ message: e.message, filename: e.filename, line: e.lineno })); }
+      postMessage(data, transfer) {
+        if (data.kind === "frame") { window.__submittedFrames.push([data.bitmap.width, data.bitmap.height]);if (window.__submittedFrames.length > 64) window.__submittedFrames.shift(); }
+        return super.postMessage(data, transfer);
+      }
     };
     window.__cameraCalls = [];
     window.__cameraStreams = [];
@@ -113,6 +118,15 @@ async function staleStartup(context, origin) {
 async function intrinsicRotation(context, origin) {
   const page = await context.newPage(); activePage = page;
   await page.addInitScript(() => {
+    const originalBitmap = globalThis.createImageBitmap;
+    globalThis.createImageBitmap = async (...args) => {
+      const bitmap = await originalBitmap(...args);
+      if (window.__holdNextCapture) {
+        window.__holdNextCapture = false;
+        await new Promise((resolve) => { window.__releaseCapture = resolve; });
+      }
+      return bitmap;
+    };
     navigator.mediaDevices.getUserMedia = async (constraints) => {
       window.__cameraCalls.push(constraints);
       const canvas = document.createElement("canvas");canvas.width = 320;canvas.height = 240;
@@ -148,10 +162,17 @@ async function intrinsicRotation(context, origin) {
   assert.equal(await page.evaluate(() => window.__workerCount), workers);check("rotation-keeps-initialized-ai-worker");
   assert.ok(["GPU", "CPU"].includes(await page.locator("#backend").textContent()));
   await screenshot(page, "mobile-portrait-camera");
+  await page.evaluate(() => { window.__holdNextCapture = true; });
+  await page.waitForFunction(() => typeof window.__releaseCapture === "function");
   const portraitFrames = await frameCount(page);
+  const submitted = await page.evaluate(() => window.__submittedFrames.length);
   await page.evaluate(() => { window.__syntheticCamera.width = 320;window.__syntheticCamera.height = 240; });
   await page.waitForFunction(() => document.querySelector("video").videoWidth === 320);
+  await page.evaluate(() => { const release = window.__releaseCapture;delete window.__releaseCapture;release(); });
   await waitFrames(page, portraitFrames + 2);
+  const afterResize = await page.evaluate((n) => window.__submittedFrames.slice(n), submitted);
+  assert.ok(afterResize.length > 0 && afterResize.every(([w,h]) => w === 256 && h === 192), "bitmap captured in obsolete geometry was submitted");
+  check("capture-from-old-geometry-is-dropped");
   assert.equal(await page.locator("#overlay").evaluate((c) => c.width), 256);
   assert.equal(await page.locator("#overlay").evaluate((c) => c.height), 192);
   assert.equal(await page.evaluate(() => window.__workerCount), workers);check("landscape-resize-recovers-without-ai-reload");
