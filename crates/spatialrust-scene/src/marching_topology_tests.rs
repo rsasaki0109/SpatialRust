@@ -219,7 +219,10 @@ fn translated_scaled_tetrahedra_and_shifted_isolevel() {
         [(0.25, Vec3::new(-2., 1., -3.)), (2., Vec3::new(3., -4., 2.)), (1., Vec3::new(0., 0., 0.))]
     {
         for tet in tetrahedra() {
-            let corners = tet.map(|i| cube()[i] * scale + offset);
+            let corners = tet.map(|i| {
+                let p = cube()[i];
+                Vec3::new(p.x * scale + offset.x, p.y * scale + offset.y, p.z * scale + offset.z)
+            });
             for mask in 0..16 {
                 verify(corners, values(mask, [0.5, 1., 2., 0.25]).map(|v| v + 4.), 4.);
             }
