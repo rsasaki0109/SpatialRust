@@ -263,6 +263,28 @@ browser or sensor payload download was needed; SDK/model assets are static web
 dependencies. Public deployment and exact-head CI are checked after the receipt
 commit, with their records kept separately.
 
+## Result deadline delivery evidence (146AN)
+
+The [result receipt](receipts/2026-10-21_camera_result.json) binds seven terminal
+commands and both reproduced parent failures: a held actual worker result left
+camera and sample sessions running beyond fifteen seconds. Final checks pass
+**56 JS**, **six asset** and **59 browser** controls. Deterministic clocks check
+the exact boundary, idle/startup separation, per-frame renewal, cancellation,
+transfer/worker/presentation errors and old session/frame messages. Real browser
+cases keep one frame pending below the limit, verify healthy advancing input,
+check released resources and cleared presentation, then restart and replay old,
+duplicate and obsolete-frame results while a new request is pending. Existing
+model, rotation/history, timing, presets, source/progress and CSP controls pass.
+
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-result-plan.json`.
+Reuse the release WASM and **41,087,603** hard-linked vendor bytes with **zero**
+compiler-cache growth. Local site/log/screenshots add about **4.28MB** beyond
+shared vendor files. Preserve **445** prior camera files, 493 scientific JSON,
+42 frozen native artifacts and the resolved lockfile. Exact-head CI, merge and
+live Pages verification follow the source-bound receipt. Physical phone/Safari,
+real GPU hangs and operational 80% qualification remain open.
+
 ## Video progress delivery evidence (146AM)
 
 The [progress receipt](receipts/2026-10-21_camera_progress.json) binds seven
