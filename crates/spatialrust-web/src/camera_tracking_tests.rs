@@ -170,9 +170,15 @@ fn brute_support(width: usize, height: usize, mask: &[u8], x: f64, y: f64) -> bo
 }
 fn support_queries(width: usize, height: usize, mask: &[u8], points: &[(f64, f64)]) {
     let tracker = CameraTracker::try_new(width, height).unwrap();
+    let support = MaskSupport::from_validated(
+        mask,
+        width,
+        height,
+        mask.iter().filter(|&&value| value == 1).count(),
+    );
     for &(x, y) in points {
         assert_eq!(
-            tracker.background(mask, x, y),
+            tracker.background(&support, x, y),
             brute_support(width, height, mask, x, y),
             "{width}x{height} at ({x},{y})"
         );
@@ -258,5 +264,65 @@ fn changing_caller_mask_does_not_change_retained_support() {
     assert_eq!(
         a.track_gray_copy(&image, &caller, 125.).unwrap(),
         b.track_gray_copy(&image, &caller, 125.).unwrap()
+    );
+}
+
+#[test]
+fn uniform_support_needs_no_prefix_storage() {
+    for (mask, count, empty) in
+        [(vec![], 0, true), (vec![0; W * H], 0, true), (vec![1; W * H], W * H, false)]
+    {
+        let support = MaskSupport::from_validated(&mask, W, H, count);
+        assert!(if empty {
+            matches!(support, MaskSupport::Empty)
+        } else {
+            matches!(support, MaskSupport::Full)
+        });
+    }
+}
+
+#[test]
+fn largest_mixed_prefix_keeps_zero_border_and_exact_pixel_mass() {
+    let (w, h) = (MAX_AXIS, MAX_AXIS);
+    let mut mask = vec![1; w * h];
+    mask[0] = 0;
+    let MaskSupport::Prefix { stride, sums } = MaskSupport::from_validated(&mask, w, h, w * h - 1)
+    else {
+        panic!("mixed mask requires prefix storage");
+    };
+    assert_eq!(stride, 321);
+    assert_eq!(sums.len() * std::mem::size_of::<u32>(), 412_164);
+    assert!(sums[..stride].iter().all(|&value| value == 0));
+    assert!((0..=h).all(|row| sums[row * stride] == 0));
+    for row in 1..=h {
+        for column in 1..=w {
+            assert_eq!(sums[row * stride + column], (row * column - 1) as u32);
+        }
+    }
+}
+
+#[test]
+fn rejected_mask_or_clock_keeps_mixed_support_and_reset_releases_it() {
+    let image = texture(0, 0);
+    let mask: Vec<_> = (0..W * H).map(|i| u8::from(i % W >= W / 2)).collect();
+    let mut actual = CameraTracker::try_new(W, H).unwrap();
+    let mut control = CameraTracker::try_new(W, H).unwrap();
+    actual.track_gray_copy(&image, &mask, 0.).unwrap();
+    control.track_gray_copy(&image, &mask, 0.).unwrap();
+    let mut invalid_mask = vec![0; W * H];
+    invalid_mask[W * H - 1] = 2;
+    assert!(actual.track_gray_copy(&image, &invalid_mask, 125.).is_err());
+    assert!(actual.track_gray_copy(&image, &vec![1; W * H], f64::NAN).is_err());
+    assert!(matches!(actual.previous_mask, MaskSupport::Prefix { .. }));
+    assert_eq!(
+        actual.track_gray_copy(&image, &[], 125.).unwrap(),
+        control.track_gray_copy(&image, &[], 125.).unwrap()
+    );
+    actual.track_gray_copy(&image, &mask, 250.).unwrap();
+    actual.reset();
+    assert!(matches!(actual.previous_mask, MaskSupport::Empty));
+    assert_eq!(
+        actual.track_gray_copy(&image, &[], 0.).unwrap().status,
+        CameraTrackingStatus::Warming
     );
 }
