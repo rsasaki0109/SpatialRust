@@ -68,6 +68,13 @@ FAST/LK math and explicit CPU/GPU ownership remain. Frozen native and actual
 WASM comparisons verify report parity; timing includes all adverse conditions.
 Physical-phone and operational accuracy qualification remain separate.
 
+[Confidence-mask resize](CAMERA_MASK_RESIZE.md) reuses exact horizontal sampling
+indices across rows and skips identity-width coordinate math. Complete source
+validation, strict threshold and fresh transferable results remain. Temporary
+indices need at most 640 logical bytes with no retained cache; frozen byte,
+ownership and actual-browser controls accompany both retained and interleaved
+timing observations. Device readbacks, model and Rust tracking stay unchanged.
+
 [Marching-tetrahedra topology](MESH_SURFACE_TOPOLOGY.md) orders quadrilateral
 cut vertices around their boundary and orients all changed cases toward
 increasing field values for the existing positive-oriented cube tetrahedra.

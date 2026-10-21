@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse exact horizontal confidence-mask indices across rows and skip identity
+  width transforms in the camera demo. Preserve complete confidence validation,
+  strict threshold and independent transferable output. Add exhaustive size,
+  byte and ownership comparisons plus interleaved timing evidence; retain adverse
+  initial observations. See [mask resize](docs/CAMERA_MASK_RESIZE.md).
+
 - Summarize optional camera person-mask support once per frame, replacing repeated
   inclusive 45x45 scans with exact bounded prefix queries and uniform-mask fast
   paths. Preserve public reports and caller ownership; record frozen native and
