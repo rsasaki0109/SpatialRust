@@ -19,6 +19,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Settle camera/sample startup promises after Stop, replacement, failure or the
+  preparation deadline even while camera acquisition or video playback remains
+  pending. Preserve late-response cleanup and replacement ownership; native
+  browser work is not cancelled. Add exact-deadline and real-browser controls.
+
 - Reuse the shared native GPU runtime in renderer tests while keeping renderer
   ownership and parallel execution. Add synchronized shared-runtime/independent
   renderer coverage and three Linux CI processes that require actual GPU

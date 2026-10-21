@@ -46,6 +46,19 @@ after awaiting `video.play()`. A late completion after Stop or replacement canno
 restore the old canvas, label, size or backend. Stream/worker cleanup remains
 owned by the existing session controller.
 
+Each start also owns an application cancellation completion. Stop, startup
+failure, replacement and the existing 45-second preparation deadline settle
+`CameraSession.start()` with `false`, even when the worker is already ready and
+camera permission or `video.play()` remains pending. Successful startup retains
+`true`. Both readiness and presenter waits observe the same run cancellation;
+settling the start releases its cancellation callback. Late native rejection
+stays observed, and a late acquired stream stops every track without changing
+the replacement session.
+
+This settles the application promise; it does not cancel native `getUserMedia`
+or `video.play()`, promise that the browser dismisses a permission prompt, or
+bound physical memory for unfinished native work across repeated restarts.
+
 During capture the page derives its processing size from current intrinsic video
 dimensions. It retains a 256-pixel long edge and admits rounded short sides of at
 least 64 pixels. Unsupported extreme ratios fail with an explanation instead of
@@ -454,3 +467,25 @@ runner's temporary directory with the workflow run ID and attempt in its name.
 The fresh-output invariant remains enforced; previous cached evidence is kept.
 Application code and the successful local geometry controls are unchanged by
 this CI path correction.
+
+## Startup completion evidence (146AQ)
+
+The [startup receipt](receipts/2026-10-21_camera_startup_completion.json) binds
+seven terminal local commands and both reproduced parent-browser failures. A
+ready worker plus pending camera acquisition, and a pending native playback
+completion, each left the old `start()` promise unsettled after Stop. The final
+checks pass **77 JS**, **six asset** and **73 browser** controls. Eleven new unit
+cases cover cancellation, the exact startup deadline, failure, replacement,
+late success/rejection and synchronous creation failure. Browser checks hold
+real fake-camera operations, require `false` before releasing them, and verify
+late-track cleanup and replacement sample progress. All existing model,
+geometry, capture/result/progress, timing and CSP checks remain.
+
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-startup-completion-plan.json`.
+Reuse the existing release WASM and **41,087,603** hard-linked vendor bytes,
+with no Rust compilation or new SDK/model/sensor acquisition. Preserve **613**
+prior camera/renderer files, 493 scientific JSON, 42 frozen native artifacts
+and the resolved lockfile. Physical phone/Safari behavior, native operation
+cancellation and operational 80% qualification remain open. Exact-source CI,
+merge and the matching public Pages checks are verified after the local receipt.
