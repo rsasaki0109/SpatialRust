@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.camera-worker-transport-plan.v1",
+  "slice": "146AR",
+  "parent_merge": "f46e7e9c4f23957341a434f9a3574cd8fa1c536f",
+  "purpose": "Own initialization-send and worker message-deserialization failures through the same session cancellation and cleanup boundary.",
+  "contract": {
+    "completion": "Worker readiness resolves on readiness or session cleanup; worker/application errors go through the existing fail/cancel boundary. An initialization postMessage exception must not leak an unhandled readiness rejection or prompt for a camera.",
+    "ownership": "A worker messageerror fails the current run immediately during startup or processing, clears timers, aborts capture, stops owned tracks and terminates/disposes the worker. Late events/results cannot fail a replacement; restart remains explicit.",
+    "verification": "Reproduce native structured-clone initialization failure leaking an unhandled rejection and a synthetic messageerror retaining a running session. Retain real WASM/model and all earlier controls. Unit checks cover both initial modes, readiness, acquisition, presenter, result/capture waits, cleanup, exact timer inactivity and late callbacks. Browser fault injection does not qualify physical phone deserialization or OS failure behavior.",
+    "preservation": "Preserve prior camera/renderer evidence, scientific JSON, frozen native artifacts, resolved lock and release WASM. No Rust/core/GPU/dependency change, compilation, sensor or new SDK/model/toolchain acquisition."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-worker-transport-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Fresh E: site with hash-checked vendor hardlinks and reused release WASM. All local command inputs are source-bound; preserve previous outputs and failures.",
+    "public_verification_stream_max_bytes": 41943040,
+    "asset_download_scope": "No new local SDK/model acquisition. Expanded public failure/restart controls may stream up to 40MiB without retaining vendor payloads."
+  },
+  "remaining_80_percent": "Canonical calibration/timing, independent real motion, full-room accuracy, qualifying physical Linux hardware and integrated operational acceptance remain open."
+}
