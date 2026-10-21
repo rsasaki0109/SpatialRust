@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Native rendering tests](RENDER_TEST_RUNTIME.md) share the existing GPU runtime
+while retaining independent renderer identities and buffer/pipeline ownership.
+Four synchronized callers verify shared device identity and distinct renderers.
+Linux CI repeats all assertions in three four-thread processes and requires
+actual GPU completion markers. Production initialization/transfers and wasm test
+construction stay unchanged. The earlier native SIGSEGV's cause is unproven;
+software CI repetition does not qualify physical Linux hardware or performance.
+
 [Mobile AI-assisted camera tracking](MOBILE_CAMERA_DEMO.md) adds an optional
 bounded image-space tracker in the browser/WASM crate. Explicit image and mask
 readbacks/copies feed existing FAST and forward/backward LK; person exclusion
