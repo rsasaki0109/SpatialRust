@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.camera-startup-completion-plan.v1",
+  "slice": "146AQ",
+  "parent_merge": "fde55df103a72aaea0b557dccfe2557c83d11362",
+  "purpose": "Settle cancelled camera/sample start calls even when native acquisition or presenter startup remains pending, retaining late-resource cleanup and replacement-session ownership.",
+  "contract": {
+    "completion": "Each run owns a cancellation completion. Stop, failure and the unchanged startup deadline release the application start wait with false; successful startup returns true. Cancellation applies both before worker/camera readiness and while awaiting onReady.",
+    "ownership": "Native getUserMedia and video.play cannot be cancelled by settling the application wait. Their eventual completion/rejection remains observed; late acquired streams stop all tracks, and presenter epoch checks retain replacement ownership. No claim of native cancellation or physical memory bounds across restarts.",
+    "verification": "Reproduce parent start waits remaining unsettled after Stop with a ready worker and pending acquisition, and with pending video.play. Deterministic unit controls exercise Stop, exact startup timeout, failure, replacement, late success/rejection and synchronous failure. Browser controls hold real fake-camera acquisition or video playback, require application completion before release, and verify cleanup plus replacement sample progress. Retain all existing real WASM/model, geometry, capture/result/progress, CSP and privacy assertions.",
+    "preservation": "No Rust/core/GPU/dependency change or compilation. Preserve scientific JSON, frozen native outputs, prior camera and renderer evidence, resolved lockfile and release WASM. Reuse installed runtime/browser, matching bindgen and pinned vendor hardlinks."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-startup-completion-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Fresh E: site with hash-checked vendor hardlinks and reused release WASM. All local command inputs are source-bound; preserve previous outputs and failures.",
+    "public_verification_stream_max_bytes": 33554432,
+    "asset_download_scope": "No new local SDK/model acquisition. Bounded public HTTPS verification streams without retaining vendor payloads."
+  },
+  "remaining_80_percent": "Canonical calibration/timing, independent real motion, full-room accuracy, qualifying physical Linux hardware and integrated operational acceptance remain open."
+}
