@@ -70,7 +70,7 @@ self.onmessage = async ({ data }) => {
       });
     }
     const report = JSON.parse(tracker.track_gray_copy(gray, mask, data.timestampMs));
-    self.postMessage({ kind: "result", session, report, backend, elapsedMs: performance.now() - started, mask: mask.buffer }, [mask.buffer]);
+    self.postMessage({ kind: "result", session, frameId: data.frameId, report, backend, elapsedMs: performance.now() - started, mask: mask.buffer }, [mask.buffer]);
   } catch (error) { failure(error); }
   finally { bitmap?.close(); }
 };

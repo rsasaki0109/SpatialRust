@@ -82,13 +82,13 @@ test("frame rate never reports an infinite numerical result", () => {
 });
 
 function deferred() { let resolve, reject; const promise = new Promise((a,b) => { resolve=a; reject=b; }); return { promise, resolve, reject }; }
-function harness(acquire = async () => ({ getTracks: () => [] })) {
+function harness(acquire = async () => ({ getTracks: () => [] }), options = {}) {
   const workers = [], states = [], errors = [], results = [];
   const session = new CameraSession({ acquire, createWorker() {
     const w = { messages: [], terminated: false, disposed: false, postMessage(m) { this.messages.push(m); }, terminate() { this.terminated=true; }, dispose() { this.disposed=true; } };
     workers.push(w); return w;
-  }, onState: (s) => states.push(s), onError: (e) => errors.push(e), onResult: (r) => results.push(r), timeoutMs: 5000 });
-  function send(w, kind, extra={}) { w.onmessage({ data: { kind, session: w.messages[0].session, ...extra } }); }
+  }, onState: (s) => states.push(s), onError: (e) => errors.push(e), onResult: (r) => results.push(r), timeoutMs: 5000, ...options });
+  function send(w, kind, extra={}) { w.onmessage({ data: { kind, session: w.messages[0].session, frameId: w.messages.findLast((m) => m.kind === "frame")?.frameId, ...extra } }); }
   return { session, workers, states, errors, results, send };
 }
 
@@ -128,6 +128,92 @@ test("stop before the acquisition microtask does not prompt for a camera", async
 });
 test("worker failure after ready also cancels an unfinished onReady", async () => {
  const h=harness();const gate=deferred();h.session.onReady=()=>gate.promise;const p=h.session.start("sample");h.send(h.workers[0],"ready");await Promise.resolve();await Promise.resolve();h.send(h.workers[0],"error",{message:"late startup"});gate.resolve();assert.equal(await p,false);assert.equal(h.errors.length,1);assert.equal(h.session.token,0);
+});
+
+test("a sample frame expires exactly fifteen seconds after submission, never while idle", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness(), p = h.session.start("sample", false);h.send(h.workers[0], "ready");await p;
+  t.mock.timers.tick(30000);assert.equal(h.session.run.started, true);assert.equal(h.errors.length, 0);
+  h.session.submit({ close() {} }, 1);t.mock.timers.tick(14999);assert.equal(h.session.busy, true);assert.equal(h.errors.length, 0);
+  t.mock.timers.tick(1);assert.equal(h.session.run, null);assert.equal(h.workers[0].terminated, true);assert.equal(h.workers[0].disposed, true);
+  assert.equal(h.errors.length, 1);assert.equal(h.errors[0].name, "FrameResultTimeoutError");t.mock.timers.tick(30000);assert.equal(h.errors.length, 1);
+});
+
+test("a missing camera result stops all tracks and removes source listeners", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const s = cameraSource(), h = harness(async () => s.stream), p = h.session.start("camera");h.send(h.workers[0], "ready");await p;
+  h.session.submit({ close() {} }, 1);t.mock.timers.tick(15000);
+  assert.ok(s.tracks.every((track) => track.stops === 1));assert.ok(s.signals.every((signal) => signal.aborted));
+  assert.equal(h.workers[0].terminated, true);assert.equal(h.errors[0].name, "FrameResultTimeoutError");
+});
+
+test("a matching result cancels its deadline and the next frame gets a full interval", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness(), p = h.session.start("sample");h.send(h.workers[0], "ready");await p;
+  h.session.submit({ close() {} }, 1);t.mock.timers.tick(14999);h.send(h.workers[0], "result");assert.equal(h.session.busy, false);
+  h.session.submit({ close() {} }, 2);t.mock.timers.tick(1);assert.equal(h.errors.length, 0);assert.equal(h.session.busy, true);
+  t.mock.timers.tick(14998);assert.equal(h.errors.length, 0);t.mock.timers.tick(1);assert.equal(h.errors.length, 1);
+});
+
+test("Stop cancels the pending deadline and a replacement gets its own timer", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness(), p = h.session.start("sample");h.send(h.workers[0], "ready");await p;
+  h.session.submit({ close() {} }, 1);t.mock.timers.tick(14999);h.session.stop();
+  const next = h.session.start("sample");h.send(h.workers[1], "ready");await next;h.session.submit({ close() {} }, 2);
+  t.mock.timers.tick(1);assert.equal(h.errors.length, 0);assert.equal(h.workers[1].terminated, false);
+  t.mock.timers.tick(14999);assert.equal(h.errors.length, 1);assert.equal(h.workers[1].terminated, true);
+});
+
+test("an expired session result cannot complete a replacement frame with the same sequence", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness(), p = h.session.start("sample");h.send(h.workers[0], "ready");await p;
+  h.session.submit({ close() {} }, 1);t.mock.timers.tick(15000);
+  const next = h.session.start("sample");h.send(h.workers[1], "ready");await next;h.session.submit({ close() {} }, 2);
+  h.send(h.workers[0], "result");assert.equal(h.results.length, 0);assert.equal(h.session.busy, true);
+  t.mock.timers.tick(15000);assert.equal(h.errors.length, 2);
+});
+
+test("unsolicited, duplicate and obsolete-frame results cannot release current ownership", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness(), p = h.session.start("sample");h.send(h.workers[0], "ready");await p;
+  h.send(h.workers[0], "result", { frameId: 1 });assert.equal(h.results.length, 0);
+  h.session.submit({ close() {} }, 1);assert.equal(h.workers[0].messages.at(-1).frameId, 1);
+  for (const frameId of [undefined, null, "1", 0, 2]) h.send(h.workers[0], "result", { frameId });
+  assert.equal(h.results.length, 0);assert.equal(h.session.busy, true);
+  h.send(h.workers[0], "result");h.send(h.workers[0], "result");assert.equal(h.results.length, 1);
+  h.session.submit({ close() {} }, 2);assert.equal(h.workers[0].messages.at(-1).frameId, 2);
+  t.mock.timers.tick(14999);h.send(h.workers[0], "result", { frameId: 1 });assert.equal(h.results.length, 1);assert.equal(h.session.busy, true);
+  t.mock.timers.tick(1);assert.equal(h.errors.length, 1);
+});
+
+test("worker and presentation errors each cancel their pending result timer", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  for (const kind of ["worker", "presentation"]) {
+    const h = harness(), p = h.session.start("sample");h.send(h.workers[0], "ready");await p;h.session.submit({ close() {} }, 1);
+    if (kind === "worker") h.send(h.workers[0], "error", { message: "failure" });
+    else { h.session.onResult = () => { throw new Error("presentation"); };h.send(h.workers[0], "result"); }
+    assert.equal(h.errors.length, 1);assert.equal(h.workers[0].disposed, true);t.mock.timers.tick(30000);assert.equal(h.errors.length, 1);
+  }
+});
+
+test("a transfer error clears the newly installed result timer", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness(), p = h.session.start("sample");h.send(h.workers[0], "ready");await p;
+  h.workers[0].postMessage = () => { throw new Error("transfer"); };let closed = 0;
+  assert.equal(h.session.submit({ close() { closed++; } }, 1), false);assert.equal(closed, 1);assert.equal(h.errors.length, 1);
+  t.mock.timers.tick(30000);assert.equal(h.errors.length, 1);assert.equal(h.session.run, null);
+});
+
+test("result timeout configuration rejects clamped or disabled timer durations", () => {
+  for (const resultTimeoutMs of [0, -1, 1.5, NaN, Infinity, "15000", null, 2147483648]) assert.throws(() => harness(undefined, { resultTimeoutMs }), RangeError);
+  for (const resultTimeoutMs of [1, 15000, 2147483647]) assert.equal(harness(undefined, { resultTimeoutMs }).session.resultTimeoutMs, resultTimeoutMs);
+});
+
+test("initialization time does not consume a submitted frame's result deadline", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness(), p = h.session.start("sample");t.mock.timers.tick(4999);h.send(h.workers[0], "ready");await p;
+  h.session.submit({ close() {} }, 1);t.mock.timers.tick(14999);assert.equal(h.errors.length, 0);
+  h.send(h.workers[0], "result");t.mock.timers.tick(30000);assert.equal(h.errors.length, 0);assert.equal(h.results.length, 1);h.session.stop();
 });
 
 function cameraSource() {

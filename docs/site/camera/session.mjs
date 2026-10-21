@@ -1,17 +1,18 @@
 // Own one camera/worker epoch. Late async completions never reopen a stopped session.
 export class CameraSession {
-  constructor({ acquire, createWorker, onReady = async () => {}, onResult = () => {}, onState = () => {}, onError = () => {}, onStop = () => {}, timeoutMs = 45000 }) {
-    Object.assign(this, { acquire, createWorker, onReady, onResult, onState, onError, onStop, timeoutMs });
+  constructor({ acquire, createWorker, onReady = async () => {}, onResult = () => {}, onState = () => {}, onError = () => {}, onStop = () => {}, timeoutMs = 45000, resultTimeoutMs = 15000 }) {
+    if (!Number.isInteger(resultTimeoutMs) || resultTimeoutMs <= 0 || resultTimeoutMs > 2147483647) throw new RangeError("invalid result timeout");
+    Object.assign(this, { acquire, createWorker, onReady, onResult, onState, onError, onStop, timeoutMs, resultTimeoutMs });
     this.epoch = 0;
     this.run = null;
   }
 
   get token() { return this.run?.token ?? 0; }
-  get busy() { return !this.run?.started || this.run.inFlight; }
+  get busy() { return !this.run?.started || !!this.run.inFlight; }
 
   async start(mode, ai = true) {
     this.stop();
-    const run = { token: ++this.epoch, mode, ai, worker: null, stream: null, started: false, inFlight: false };
+    const run = { token: ++this.epoch, mode, ai, worker: null, stream: null, started: false, inFlight: null, frameId: 0 };
     this.run = run;
     this.onState("loading");
     try {
@@ -21,8 +22,9 @@ export class CameraSession {
         run.worker.onmessage = ({ data }) => {
           if (this.run !== run || data.session !== run.token) return;
           if (data.kind === "ready") { run.backend = data.backend; resolve(); }
-          else if (data.kind === "result" && run.started) {
-            run.inFlight = false;
+          else if (data.kind === "result" && run.started && run.inFlight && data.frameId === run.inFlight.frameId) {
+            clearTimeout(run.inFlight.timer);
+            run.inFlight = null;
             try { this.onResult(data); } catch (error) { this.fail(run, error); }
           } else if (data.kind === "error") {
             const error = new Error(data.message || "処理を開始できませんでした。");
@@ -80,8 +82,15 @@ export class CameraSession {
     const run = this.run;
     if (!run?.started || run.inFlight) { bitmap.close(); return false; }
     try {
-      run.inFlight = true;
-      run.worker.postMessage({ kind: "frame", session: run.token, bitmap, timestampMs }, [bitmap]);
+      const pending = { frameId: ++run.frameId, timer: null };
+      run.inFlight = pending;
+      pending.timer = setTimeout(() => {
+        if (this.run !== run || run.inFlight !== pending) return;
+        const error = new Error(`処理結果が${this.resultTimeoutMs / 1000}秒間返らなかったため停止しました。もう一度「カメラ開始」か「サンプル再生」を押してください。`);
+        error.name = "FrameResultTimeoutError";
+        this.fail(run, error);
+      }, this.resultTimeoutMs);
+      run.worker.postMessage({ kind: "frame", session: run.token, frameId: pending.frameId, bitmap, timestampMs }, [bitmap]);
       return true;
     } catch (error) {
       bitmap.close();
@@ -103,6 +112,7 @@ export class CameraSession {
     ++this.epoch;
     if (run) {
       clearTimeout(run.timer);
+      clearTimeout(run.inFlight?.timer);
       run.rejectReady?.(new Error("stopped"));
       run.cameraEvents?.abort();
       stopTracks(run.stream);
