@@ -213,6 +213,10 @@ const CORNER_OFFSETS: [[usize; 3]; 8] =
     [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]];
 
 #[cfg(test)]
+#[path = "tsdf_support_tests.rs"]
+mod support_tests;
+
+#[cfg(test)]
 mod tests {
     use super::TsdfVolume;
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};
