@@ -1,0 +1,221 @@
+{
+  "schema": "spatialrust.public-camera-geometry-receipt.v1",
+  "slice": "146AI",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-21T05:07:45.783631+00:00",
+  "protocol_commit": "469b0feedc36a02a34b5f7c2b7338a67c4f3858e",
+  "tested_source_commit": "4da9367bf55b50a4107ff92fcbab14fdb42af903",
+  "parent_merge": "7412c705dcbffa311ff08eaaef32692c45097923",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\camera-geometry-plan.json",
+    "bytes": 2741,
+    "sha256": "0bee6623d4b1ee7c980fbbbdcefaa5e943311eb2121b09e7d12b5a885390be66"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-geometry-preflight.json",
+    "bytes": 142747,
+    "sha256": "5aea0c8ed62d0bc3e4be3fe99ac273eab82cd70e6f55530966ed3d6321c3b585"
+  },
+  "owned_commands": 8,
+  "all_commands_terminal": true,
+  "commands": {
+    "assets": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\assets.command.json",
+        "bytes": 3500,
+        "sha256": "f575b9b9f0eb1df67103a5a03bdb353897a0eea959c72670e413453102477af6"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\assets.log",
+        "bytes": 109,
+        "sha256": "59753171660350c6735ee4b12925f50e7f8606c102caf33752e5551608bad819"
+      },
+      "source_head": "4d4e7a2873b312ec8bc784152443827fd34518fe",
+      "child_exit_status": 0,
+      "expected_parent_regression_reproduced": false
+    },
+    "baseline-rotation": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\baseline-rotation.command.json",
+        "bytes": 3794,
+        "sha256": "c682d6832f1afeff6806f510946c4d715170ffba4d1e36198a9efad3acb4c7d8"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\baseline-rotation.log",
+        "bytes": 570,
+        "sha256": "b707b5600ca42a5a5ffc807b112405bc25cdfdde58d11404a91b06f738359b1c"
+      },
+      "source_head": "469b0feedc36a02a34b5f7c2b7338a67c4f3858e",
+      "child_exit_status": 1,
+      "expected_parent_regression_reproduced": true
+    },
+    "baseline-startup": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\baseline-startup.command.json",
+        "bytes": 3539,
+        "sha256": "9192d6d068a0da5e1b5b32447f7774d1dd5e0871a84695b77183fb63425bf7f8"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\baseline-startup.log",
+        "bytes": 563,
+        "sha256": "e0200579b8cd40beb4d61d1422c33688c3a35713731fb94f87f11a97093b4c2a"
+      },
+      "source_head": "469b0feedc36a02a34b5f7c2b7338a67c4f3858e",
+      "child_exit_status": 1,
+      "expected_parent_regression_reproduced": true
+    },
+    "browser-v2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser-v2.command.json",
+        "bytes": 4347,
+        "sha256": "a687869f35f602c2c770d45ac82d12df375f058412d4dfa0a814903202d6b68a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser-v2.log",
+        "bytes": 1340,
+        "sha256": "86bddcea2b2629f948828ff7207cddf5bab992acced5fa6f751f6bb828aeda4e"
+      },
+      "source_head": "4da9367bf55b50a4107ff92fcbab14fdb42af903",
+      "child_exit_status": 0,
+      "expected_parent_regression_reproduced": false
+    },
+    "browser": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser.command.json",
+        "bytes": 4341,
+        "sha256": "d9f9e8a39aa4448857b7feb79a76f6c3eaa6a35b7e9f16c9d283223a2c76e5b5"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser.log",
+        "bytes": 1275,
+        "sha256": "bbd4209b9cdefd1b71ddd5684a3696da6ad3dd089f899f91f995fde7f1caed71"
+      },
+      "source_head": "4d4e7a2873b312ec8bc784152443827fd34518fe",
+      "child_exit_status": 0,
+      "expected_parent_regression_reproduced": false
+    },
+    "build-v2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\build-v2.command.json",
+        "bytes": 3732,
+        "sha256": "99616aab97d478db9a488549095a8051e7ce78f7a8db6a92e709b166e03cdabf"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\build-v2.log",
+        "bytes": 132,
+        "sha256": "582f5580a904903fc9b4f937f99c596aad183025bcf89ced47d0b73693095db2"
+      },
+      "source_head": "4d4e7a2873b312ec8bc784152443827fd34518fe",
+      "child_exit_status": 0,
+      "expected_parent_regression_reproduced": false
+    },
+    "build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\build.command.json",
+        "bytes": 3576,
+        "sha256": "251fedc8aad3fb8589b5939ed030c7d4f3b878702bf7d820792d8744073df388"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\build.log",
+        "bytes": 132,
+        "sha256": "73162f73c39cc749bfb45b27d27c39d8c1abbb4977238bfac309aa90ebe2785b"
+      },
+      "source_head": "469b0feedc36a02a34b5f7c2b7338a67c4f3858e",
+      "child_exit_status": 0,
+      "expected_parent_regression_reproduced": false
+    },
+    "unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\unit.command.json",
+        "bytes": 3464,
+        "sha256": "55374db011216cda9543dec17ad8831ce1ed6e3de58bd69b969a1aa16197ce9e"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\unit.log",
+        "bytes": 1590,
+        "sha256": "dca2716c3714d6817514813d37fdaecce03831b2a84772470085c864463cea7e"
+      },
+      "source_head": "4d4e7a2873b312ec8bc784152443827fd34518fe",
+      "child_exit_status": 0,
+      "expected_parent_regression_reproduced": false
+    }
+  },
+  "parent_regressions_reproduced": [
+    "stopped presentation restored by late video.play",
+    "intrinsic portrait dimensions ignored"
+  ],
+  "unit_tests": 21,
+  "asset_controls": 6,
+  "browser_controls": 22,
+  "software_graphics_delegate": true,
+  "browser_report": {
+    "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser-v2-artifacts\\report.json",
+    "bytes": 1778,
+    "sha256": "1f163bcdab9c9da232c4981c2da2efad4b03697e05247295a7cec4a08f6e21a4"
+  },
+  "screenshots": [
+    {
+      "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser-v2-artifacts\\mobile-idle.png",
+      "bytes": 191537,
+      "sha256": "1a54dc48b8b2b71d3894c4aca51d704499a69775f9d2c6c0a56bb6dcf23f065e"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser-v2-artifacts\\mobile-tracking.png",
+      "bytes": 255945,
+      "sha256": "9049ae3dc3e643baa9f6ac2d8961648576944fe91804d13b2edebaa2c5c3b745"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser-v2-artifacts\\mobile-ai.png",
+      "bytes": 256759,
+      "sha256": "208e04680763b8a5baa2f18b667009fb0276876a54a19c781150b3f3465edf3e"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser-v2-artifacts\\desktop-idle.png",
+      "bytes": 411138,
+      "sha256": "51fa63415c9cbdb930a50937ff67ea136bebfdd7b8cf9a6c8c3d4f2de3623e07"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\browser-v2-artifacts\\mobile-portrait-camera.png",
+      "bytes": 159465,
+      "sha256": "9a476aa003eaa5cf249e0fbbedfe49df797aed8f4118a70cd3e9444b09d68337"
+    }
+  ],
+  "site_build": {
+    "path": "E:\\SpatialRustBuild\\camera-geometry-v1\\site\\camera\\build.json",
+    "bytes": 3722,
+    "sha256": "6d1809ddff8d35c9588ad36a66abe6b2b1baece84cb9139b201a186909075af4"
+  },
+  "unchanged_wasm": {
+    "path": "E:\\SpatialRustBuild\\maturity-80-target\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1030227,
+    "sha256": "660461f1760aab0a96b8bd72baa265196107ae4ece8cf3e17dfa929a30c1dc6e"
+  },
+  "unchanged_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118086,
+    "sha256": "e9d0a244c69b4ea193c7ebcd61e404de8071a53b71ff269c2c8dbe0f506484cc"
+  },
+  "vendor_hardlink_bytes": 41087603,
+  "sdk_model_acquisition_bytes": 0,
+  "storage": {
+    "owned_metadata_bytes": 44601295,
+    "cache_bytes": 13058120779,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 44601295,
+    "free_bytes": {
+      "C": 73200459776,
+      "E": 876373716992
+    }
+  },
+  "non_shared_owned_file_bytes": 3513692,
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 111,
+  "forbidden_adapter_matches": 0,
+  "physical_phone_tested": false,
+  "ios_safari_tested": false,
+  "new_sensor_payload_downloads": 0,
+  "real_user_camera_reads": 0,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head CI, merge and live Pages checks are recorded after this source-bound receipt."
+}

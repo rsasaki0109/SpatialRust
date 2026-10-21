@@ -64,3 +64,34 @@ test("person confidence rejects malformed shape and nonfinite values", () => {
   for (const dimensions of [[0, 1, 1, 1], [1, 1, 321, 1], [1.5, 1, 1, 1], [2, 1, 1, 1]]) assert.throws(() => personMask(new Float32Array([0]), ...dimensions));
   assert.throws(() => personMask(new Uint8Array([1]), 1, 1, 1, 1));
 });
+
+import { cameraFrameSize } from "../../../docs/site/camera/frame-size.mjs";
+test("camera dimensions follow landscape and portrait source coordinates", () => {
+  assert.deepEqual(cameraFrameSize(640, 480), { width: 256, height: 192 });
+  assert.deepEqual(cameraFrameSize(480, 640), { width: 192, height: 256 });
+});
+test("camera dimensions preserve widescreen and square proportions", () => {
+  assert.deepEqual(cameraFrameSize(1920, 1080), { width: 256, height: 144 });
+  assert.deepEqual(cameraFrameSize(1080, 1920), { width: 144, height: 256 });
+  assert.deepEqual(cameraFrameSize(720, 720), { width: 256, height: 256 });
+});
+test("camera dimensions round pixel coordinates consistently", () => {
+  assert.deepEqual(cameraFrameSize(1001, 777), { width: 256, height: 199 });
+  assert.deepEqual(cameraFrameSize(777, 1001), { width: 199, height: 256 });
+});
+test("camera dimensions admit the minimum tracker side", () => {
+  assert.deepEqual(cameraFrameSize(1024, 256), { width: 256, height: 64 });
+  assert.deepEqual(cameraFrameSize(256, 1024), { width: 64, height: 256 });
+});
+test("camera dimensions reject invalid or unsafe intrinsic numbers", () => {
+  for (const n of [0, -1, NaN, Infinity, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => cameraFrameSize(n, 480), RangeError);
+    assert.throws(() => cameraFrameSize(640, n), RangeError);
+  }
+});
+test("camera dimensions reject extreme ratios without stretching", () => {
+  for (const pair of [[1000, 100], [100, 1000], [256, 63], [63, 256]]) assert.throws(() => cameraFrameSize(...pair), RangeError);
+});
+test("camera dimensions remain bounded for large valid metadata", () => {
+  assert.deepEqual(cameraFrameSize(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER), { width: 256, height: 256 });
+});

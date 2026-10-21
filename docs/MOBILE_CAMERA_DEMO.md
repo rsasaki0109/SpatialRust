@@ -39,6 +39,29 @@ if initialization falls back. SwiftShader evidence is software execution and is
 not a physical GPU benchmark. An inference failure stops processing; it cannot
 silently present unmasked tracking as AI-enabled.
 
+## Camera startup and changing frame geometry
+
+A camera start commits presentation only while its session is current, including
+after awaiting `video.play()`. A late completion after Stop or replacement cannot
+restore the old canvas, label, size or backend. Stream/worker cleanup remains
+owned by the existing session controller.
+
+During capture the page derives its processing size from current intrinsic video
+dimensions. It retains a 256-pixel long edge and admits rounded short sides of at
+least 64 pixels. Unsupported extreme ratios fail with an explanation instead of
+stretching the short side. Geometry changes happen only after the in-flight
+result is consumed, so its image-space coordinates remain valid. An async bitmap
+whose source dimensions changed is closed without submission. Resizing clears
+old vectors and timing; the worker's existing dimension branch reconstructs the
+Rust tracker and returns a warming report while retaining its AI instance.
+
+These controls follow intrinsic image size changes, including portrait/landscape
+transitions reported by a browser. They do not qualify every phone's orientation
+behavior. Chromium tests resize an actual synthetic `canvas.captureStream`, hold
+an actual worker result across rotation, then hold a bitmap across rotation back.
+Another test delays `play()` while retaining metadata to check Stop and a
+replacement sample session. Physical phone and iOS Safari remain untested.
+
 ## Static distribution and privacy
 
 `docs/site/camera/assets.json` pins MediaPipe Tasks Vision **1.1.1**, model revision
@@ -125,3 +148,36 @@ the combined amount is about **2.115GB**, within the fixed bounds. No toolchain,
 browser or sensor payload download was needed; SDK/model assets are static web
 dependencies. Public deployment and exact-head CI are checked after the receipt
 commit, with their records kept separately.
+
+## Intrinsic geometry delivery evidence (146AI)
+
+The [geometry receipt](receipts/2026-10-21_camera_geometry.json) binds eight
+terminal commands, two reproduced parent-browser failures, **21 JS controls**,
+**six asset controls** and **22 browser checks**. The tests use the actual Rust
+WASM and pinned AI model. They retain a real worker result during a synthetic
+portrait transition, hold a bitmap while changing back, and verify fresh tracker
+warming, obsolete-capture rejection and one AI worker throughout. Late startup
+is checked against both a stopped page and a replacement sample session.
+
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-geometry-plan.json`.
+Existing vendor payloads (**41,087,603 bytes**) are hard-linked into a separate
+E-drive site after hash checks; they are not fetched or copied again. The same
+release WASM, resolved lockfile, 493 scientific JSON, 42 frozen native artifacts
+and all 111 previous camera files remain hash-protected. No Rust source,
+dependency, native algorithm or transfer API changes, and no local Cargo
+compilation is needed. Final pre-release logical owned size is about **44.6MB**,
+including the shared vendor payload; non-shared owned files are about **3.5MB**
+and compiler-cache growth is **zero**. Post-deployment verification has its own
+32MiB streaming limit and does not retain downloaded vendor payload files.
+
+These are software-browser checks of changing intrinsic frame dimensions,
+not physical device, iOS Safari or real-motion accuracy acceptance. Exact-head
+CI and the matching Pages deployment are verified after the receipt commit.
+
+The first CI attempt correctly refused to overwrite an existing browser evidence
+folder restored with the Rust target cache. Browser evidence now uses the
+runner's temporary directory with the workflow run ID and attempt in its name.
+The fresh-output invariant remains enforced; previous cached evidence is kept.
+Application code and the successful local geometry controls are unchanged by
+this CI path correction.
