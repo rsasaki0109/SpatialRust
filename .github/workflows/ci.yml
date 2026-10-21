@@ -541,6 +541,7 @@ jobs:
           cargo test -p spatialrust-viewer --features serde
           cargo test -p spatialrust-viewer --all-features
           cargo test -p spatialrust-lod --all-features
+          cargo test -p spatialrust-web --features camera-tracking --locked
           cargo test -p spatialrust-platform visual
           cargo run -p spatialrust --no-default-features --features render-wgpu --example visual_headless_conformance
           cargo run -p spatialrust --no-default-features --features platform --example visual_release_gate
@@ -557,6 +558,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - name: Build WebGPU and browser WASM surfaces
         run: |
           cargo check -p spatialrust-web --target wasm32-unknown-unknown --features wasm,webgpu
@@ -564,6 +568,7 @@ jobs:
           cargo check -p spatialrust-vision --target wasm32-unknown-unknown --features imgproc-analysis
           cargo check -p spatialrust-mapping --target wasm32-unknown-unknown --all-features
           cargo build -p spatialrust-web --target wasm32-unknown-unknown --features wasm
+          cargo build -p spatialrust-web --release --target wasm32-unknown-unknown --features wasm,camera-tracking --locked
           python -m unittest discover -s scripts/tests -p 'test_*.py'
           wasm_bindgen_version=$(python scripts/wasm_bindgen_version.py Cargo.lock)
           cargo install wasm-bindgen-cli --version "$wasm_bindgen_version" --locked --force
@@ -571,6 +576,7 @@ jobs:
             --target web \
             --out-dir crates/spatialrust-web/web/pkg \
             target/wasm32-unknown-unknown/debug/spatialrust_web.wasm
+          python scripts/build_camera_demo.py --output target/camera-site/camera --wasm target/wasm32-unknown-unknown/release/spatialrust_web.wasm
       - name: Run real headless-browser smoke
         run: |
           set -euo pipefail
@@ -593,6 +599,15 @@ jobs:
             --dump-dom \
             http://127.0.0.1:8765/browser_smoke.html >browser-smoke-dom.txt
           grep -F '<pre id="status">SpatialRust Web viewer smoke: PASS</pre>' browser-smoke-dom.txt
+      - name: Test camera lifecycle, real AI/WASM and mobile layouts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+          NODE_PATH: ${{ runner.temp }}/camera-browser/node_modules
+        run: |
+          npm install --prefix "$RUNNER_TEMP/camera-browser" --no-save --ignore-scripts playwright@1.62.1
+          export CAMERA_CHROMIUM_PATH="$(command -v google-chrome)"
+          node --test crates/spatialrust-web/web/camera_controller.test.mjs
+          node scripts/test_camera_demo.cjs --site target/camera-site --output target/camera-browser-evidence
 
   bench:
     name: Benchmark compile

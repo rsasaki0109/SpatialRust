@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="スマホのカメラでSpatialRustの特徴点追跡とAI人物マスクを試す、端末内処理のデモ。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Camera playground · SpatialRust</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="camera.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body class="camera-page">
+  <header><nav class="wrap"><a class="brand" href="../index.html">SpatialRust <span class="nav-tag">PLAYGROUND</span></a><a href="https://github.com/rsasaki0109/SpatialRust">GitHub ↗</a></nav></header>
+  <main class="wrap playground">
+    <section class="intro">
+      <div class="eyebrow">Camera tracking · experimental</div>
+      <h1>いつもの景色を、<br class="mobile-break">追いかけよう。</h1>
+      <p>カメラをゆっくり動かすと、背景の特徴点が動き出します。<br class="desktop-break">AIで人物を避けながら、端末内のRustが背景を追跡します。</p>
+    </section>
+    <div class="toolbar" aria-label="再生操作">
+      <button id="start" class="primary" type="button">カメラ開始</button>
+      <button id="sample" type="button">サンプル再生</button>
+      <button id="stop" class="stop" type="button" disabled>停止</button>
+    </div>
+    <div class="workspace">
+      <section class="view-panel" aria-label="カメラ映像と追跡結果">
+        <div class="stage" id="stage">
+          <video id="video" playsinline muted aria-label="カメラ映像" hidden></video>
+          <canvas id="sample-frame" aria-label="サンプル映像" hidden></canvas>
+          <canvas id="overlay" aria-label="背景特徴点とAI人物マスク" hidden></canvas>
+          <div class="placeholder" id="placeholder"><span class="viewfinder" aria-hidden="true"></span><p>カメラはオフです</p><small>開始ボタンを押して、模様のある背景へ。</small></div>
+          <span id="mode-label" class="mode-label">CAMERA OFF</span>
+        </div>
+        <div class="legend"><span><i class="track-dot"></i>背景の特徴点</span><span><i class="person-dot"></i>AIが除外した人物</span></div>
+        <p id="status" role="status" aria-live="polite">サンプルならカメラを許可せずに試せます。</p>
+        <div class="settings">
+          <label class="ai-choice"><input id="ai" type="checkbox" checked> AIで人物を除外</label>
+          <label class="camera-choice"><span>カメラ</span><select id="facing"><option value="environment">背面</option><option value="user">前面</option></select></label>
+        </div>
+      </section>
+      <aside class="result-panel" aria-label="追跡の状態">
+        <div class="panel-heading"><span>TRACKING SIGNAL</span><span id="engine" class="engine">待機中</span></div>
+        <div class="motion"><canvas id="motion" width="220" height="150" aria-label="背景の代表的な2D移動方向"></canvas><span id="motion-label">背景の動きを待っています</span></div>
+        <div class="stats">
+          <div><span>追跡した点</span><output id="points">—</output></div>
+          <div><span>処理頻度</span><output id="fps">—</output></div>
+          <div><span>人物領域</span><output id="person">—</output></div>
+          <div><span>AIの実行先</span><output id="backend">—</output></div>
+        </div>
+        <p class="explanation">矢印は画像の中の背景の動きです。距離・3D位置・カメラの姿勢を測るものではありません。</p>
+        <div class="tip"><strong>うまく追跡するには</strong><p>明るい場所で、文字や模様のある背景へ。カメラをゆっくり動かしてみてください。</p></div>
+      </aside>
+    </div>
+    <section class="privacy"><span aria-hidden="true">◈</span><div><strong>映像は、あなたの端末の中で。</strong><p>録画・アップロードはしません。初回は、このサイトから約14MBのAI用ファイルを読み込みます。タブを離れるとカメラと処理を停止します。</p></div></section>
+    <details><summary>このデモについて</summary><p>背景追跡はSpatialRustのFAST・Lucas–KanadeをWASMで実行し、人物領域はMediaPipe SelfieSegmenterで推定します。AIが使えない場合は停止して案内します。AIをオフにして試すこともできます。マスクは完全ではなく、人以外の動く物体は除外しません。</p><p>スマホ実機・ブラウザにより速度と対応状況が異なる実験デモです。iOS Safariでの動作は実機未検証です。</p><p><a href="vendor/MEDIAPIPE-LICENSE.txt">MediaPipe license</a> · <a href="https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter">Model / documentation</a> · <a href="../spatialrust_web/index.html">Rust API</a></p></details>
+    <noscript><p class="notice">このデモを使うにはJavaScriptを有効にしてください。カメラは自動では起動しません。</p></noscript>
+  </main>
+  <footer><div class="wrap">SpatialRust · <a href="../index.html">ドキュメントへ戻る</a></div></footer>
+</body>
+</html>

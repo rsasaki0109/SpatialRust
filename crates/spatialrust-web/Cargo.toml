@@ -13,6 +13,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
+camera-tracking = ["dep:spatialrust-image", "dep:spatialrust-vision"]
 webgpu = [
     "dep:spatialrust-gpu",
     "dep:spatialrust-render-wgpu",
@@ -32,6 +33,8 @@ serde.workspace = true
 serde_json.workspace = true
 spatialrust-gpu = { workspace = true, optional = true }
 spatialrust-math = { workspace = true, features = ["serde"] }
+spatialrust-image = { workspace = true, optional = true }
+spatialrust-vision = { workspace = true, optional = true, features = ["odometry"] }
 spatialrust-render-wgpu = { workspace = true, optional = true }
 spatialrust-viewer = { workspace = true, features = ["serde"] }
 spatialrust-viz = { workspace = true, features = ["serde"] }

@@ -1,0 +1,31 @@
+{
+  "schema": "spatialrust.mobile-camera-plan.v1",
+  "slice": "146AH",
+  "parent_merge": "6f563321ad7b9801f49b45f52f4392141411f54c",
+  "purpose": "Publish an opt-in mobile camera playground on the existing GitHub Pages site: actual Rust/WASM background feature flow, on-device AI person masking, and a labeled procedural sample mode.",
+  "fixed_contract": {
+    "product": "Rear-camera preferred, no microphone, explicit Start/Stop and sample mode, responsive touch controls. AI segmentation excludes person neighborhoods from previous/current FAST plus forward/backward LK tracks. Show image-space median background motion and retained features; do not claim metric distance, 6DoF pose, SLAM or physical tracking accuracy.",
+    "architecture": "Add optional camera-tracking dependencies only in spatialrust-web. Reuse existing vision FAST, grid selection and forward/backward LK unchanged. Safe native bounded frame reducer plus explicit copy-named WASM wrapper. Maximum 320 pixels per axis/102400 pixels, 80 retained points, bounded report and two retained gray/mask frames. Reject malformed input and non-monotonic times before mutation; gaps reseed. No core/GPU/vision algorithm changes.",
+    "lifecycle": "Single in-flight transferable bitmap, close all bitmaps and inference masks; use a worker for AI and Rust work. Epoch-guard every async camera/worker/frame completion. Stop tracks and terminate workers on Stop, failure, hidden page and pagehide. Late permission resolves are stopped. No camera on load or sample mode. Disabled AI is explicit; AI failure cannot masquerade as active masking.",
+    "privacy": "Self-host SHA256/size-pinned MediaPipe 1.1.1 SDK/WASM, model revision 1 and license during Pages build; no remote runtime imports or media uploads. Restrictive CSP including self-only connections; blob module workers inherit it. No recording, analytics or persisted frames. Static asset downloads only. Preserve SDK/model attribution and disclose the mask purpose and limitations.",
+    "verification": "Characterize original web tests before implementation, then native dimensions/input/translation/stationary/masking/loss/gap/reset controls; real wasm and model inference in headless Chromium with fake capture only. Test sample and camera startup/stop/denial/late completion, narrow/wide layouts, same-origin asset requests and CSP. Three desktop OS CI plus browser job and Pages deployment provide release evidence; no physical phone or iOS Safari claim without actual device evidence."
+  },
+  "verification": "Bound owned offline native tests/checks/Clippy/fmt and real release WASM package, reuse installed matching wasm-bindgen CLI, JS unit/lifecycle tests and headless-browser screenshots. Add camera controls to the existing browser conformance job without changing the 131 required names. Commit/push/PR/merge after all checks; verify Pages deployment and live assets before reporting the public demo ready.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/mobile-camera-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 268435456,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2415919104,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Preserve all 493 prior scientific JSON, 42 frozen native artifacts, pinned references and room outputs. Reuse E-drive Cargo cache; no frozen binary rebuild, sensor payload read/acquisition/copy or real-motion fit. AI SDK/model static assets total approximately 41.1MB, bounded and hash-pinned; no browser download or toolchain install is expected.",
+    "asset_download_max_bytes": 67108864,
+    "real_sensor_payload_downloads": 0
+  },
+  "remaining_80_percent": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Successful record-submission traceability does not establish these requirements."
+}
