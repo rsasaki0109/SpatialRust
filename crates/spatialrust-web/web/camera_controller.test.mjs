@@ -88,6 +88,80 @@ test("worker failure after ready also cancels an unfinished onReady", async () =
  const h=harness();const gate=deferred();h.session.onReady=()=>gate.promise;const p=h.session.start("sample");h.send(h.workers[0],"ready");await Promise.resolve();await Promise.resolve();h.send(h.workers[0],"error",{message:"late startup"});gate.resolve();assert.equal(await p,false);assert.equal(h.errors.length,1);assert.equal(h.session.token,0);
 });
 
+function cameraSource() {
+  const signals = [], callbacks = [];
+  const tracks = ["video", "audio"].map((kind) => {
+    const track = new EventTarget();track.kind = kind;track.readyState = "live";track.stops = 0;
+    track.stop = () => { track.stops++;track.readyState = "ended"; };
+    const add = track.addEventListener.bind(track);
+    track.addEventListener = (kind, fn, options) => { signals.push(options.signal);callbacks.push(fn);add(kind, fn, options); };
+    return track;
+  });
+  const stream = new EventTarget();stream.getTracks = () => tracks;
+  Object.defineProperty(stream, "active", { configurable: true, get: () => tracks.some((t) => t.readyState === "live") });
+  return { stream, video: tracks[0], audio: tracks[1], tracks, signals, callbacks };
+}
+const settleSource = () => new Promise((resolve) => setImmediate(resolve));
+
+test("ended video releases the current worker and every owned track", async () => {
+  const s = cameraSource(), h = harness(async () => s.stream), p = h.session.start("camera");
+  h.send(h.workers[0], "ready");assert.equal(await p, true);
+  s.video.readyState = "ended";s.video.dispatchEvent(new Event("ended"));
+  assert.equal(h.session.run, null);assert.equal(h.workers[0].terminated, true);assert.equal(h.workers[0].disposed, true);
+  assert.ok(s.tracks.every((t) => t.stops === 1));assert.ok(s.signals.every((signal) => signal.aborted));
+  assert.equal(h.errors.length, 1);assert.equal(h.errors[0].name, "CameraEndedError");
+});
+
+test("an inactive source releases its worker even with live track metadata", async () => {
+  const s = cameraSource(), h = harness(async () => s.stream), p = h.session.start("camera");h.send(h.workers[0], "ready");await p;
+  Object.defineProperty(s.stream, "active", { get: () => false });s.stream.dispatchEvent(new Event("inactive"));
+  assert.equal(h.session.run, null);assert.equal(h.errors[0].name, "CameraEndedError");assert.ok(s.tracks.every((t) => t.stops === 1));
+});
+
+test("already ended or inactive acquisition cannot reach onReady", async () => {
+  for (const condition of ["ended", "inactive"]) {
+    const s = cameraSource();if (condition === "ended") s.video.readyState = "ended";
+    else Object.defineProperty(s.stream, "active", { get: () => false });
+    const h = harness(async () => s.stream);let ready = 0;h.session.onReady = () => { ready++; };
+    const p = h.session.start("camera");h.send(h.workers[0], "ready");assert.equal(await p, false);
+    assert.equal(ready, 0);assert.equal(h.workers[0].terminated, true);assert.equal(h.errors.length, 1);
+  }
+});
+
+test("source termination cancels pending worker initialization", async () => {
+  const s = cameraSource(), h = harness(async () => s.stream), p = h.session.start("camera");await settleSource();
+  assert.equal(h.session.run.stream, s.stream);s.video.readyState = "ended";s.video.dispatchEvent(new Event("ended"));
+  assert.equal(await p, false);assert.equal(h.workers[0].terminated, true);assert.equal(h.errors.length, 1);
+});
+
+test("a source ending during onReady cannot finish startup", async () => {
+  const s = cameraSource(), h = harness(async () => s.stream), gate = deferred();h.session.onReady = () => gate.promise;
+  const p = h.session.start("camera");h.send(h.workers[0], "ready");await settleSource();
+  s.video.readyState = "ended";s.video.dispatchEvent(new Event("ended"));assert.equal(h.workers[0].terminated, true);
+  gate.resolve();assert.equal(await p, false);assert.notEqual(h.states.at(-1), "running");
+});
+
+test("stopped source callbacks and state checks cannot affect a replacement", async () => {
+  const s = cameraSource(), h = harness(async () => s.stream), p = h.session.start("camera");h.send(h.workers[0], "ready");await p;
+  const old = h.session.run;h.session.stop();const sample = h.session.start("sample", false);h.send(h.workers[1], "ready");await sample;
+  s.video.dispatchEvent(new Event("ended"));s.stream.dispatchEvent(new Event("inactive"));for (const callback of s.callbacks) callback();
+  assert.equal(h.session.checkCamera(old), false);assert.equal(h.session.run.mode, "sample");assert.equal(h.errors.length, 0);
+  assert.equal(h.workers[1].terminated, false);assert.ok(s.signals.every((signal) => signal.aborted));h.session.stop();
+});
+
+test("state polling clears a silently ended video while a result is pending", async () => {
+  const s = cameraSource(), h = harness(async () => s.stream), p = h.session.start("camera");h.send(h.workers[0], "ready");await p;
+  const run = h.session.run;h.session.submit({ close() {} }, 1);assert.equal(h.session.busy, true);
+  s.video.readyState = "ended";assert.equal(h.session.checkCamera(run), false);
+  assert.equal(h.session.run, null);assert.equal(h.workers[0].terminated, true);assert.equal(h.errors.length, 1);
+});
+
+test("an audio-only ended event does not stop a healthy video source", async () => {
+  const s = cameraSource(), h = harness(async () => s.stream), p = h.session.start("camera");h.send(h.workers[0], "ready");await p;
+  s.audio.readyState = "ended";s.audio.dispatchEvent(new Event("ended"));
+  assert.equal(h.session.checkCamera(h.session.run), true);assert.equal(h.errors.length, 0);assert.equal(h.workers[0].terminated, false);h.session.stop();
+});
+
 // Confidence-to-binary conversion is independent of SDK-specific category IDs.
 import { personMask } from "../../../docs/site/camera/person-mask.mjs";
 test("person confidence uses a strict finite half threshold", () => {
