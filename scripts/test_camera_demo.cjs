@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
 function argument(name) { const i = process.argv.indexOf(name); if (i < 0 || !process.argv[i + 1]) throw new Error(`missing ${name}`); return path.resolve(process.argv[i + 1]); }
 const site = argument("--site"), output = argument("--output");
 const caseIndex = process.argv.indexOf("--regression-case"), regressionCase = caseIndex < 0 ? null : process.argv[caseIndex + 1];
-if (regressionCase && !["startup", "rotation"].includes(regressionCase)) throw new Error("unknown regression case");
+if (regressionCase && !["startup", "rotation", "cadence", "rate"].includes(regressionCase)) throw new Error("unknown regression case");
 if (fs.existsSync(output)) throw new Error("fresh browser evidence directory required");
 fs.mkdirSync(output, { recursive: true });
 const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [], failedRequests: [], httpErrors: [], workerErrors: [], cspViolations: [] };
@@ -49,6 +49,7 @@ async function instrument(context) {
     window.__cameraReports = [];
     window.__holdNextResult = false;
     window.__submittedFrames = [];
+    window.__timedSubmissions = [];
     window.__cspViolations = [];
     document.addEventListener("securitypolicyviolation", (e) => window.__cspViolations.push({ directive: e.effectiveDirective, uri: e.blockedURI }));
     const OriginalWorker = window.Worker;
@@ -57,7 +58,7 @@ async function instrument(context) {
         this.addEventListener("message", (event) => {
           if (event.data.kind !== "result") return;
           const r = event.data.report;
-          window.__cameraReports.push({ width: r.width, height: r.height, status: r.status, motion: r.background_flow_px, maskBytes: event.data.mask.byteLength });
+          window.__cameraReports.push({ width: r.width, height: r.height, status: r.status, motion: r.background_flow_px, maskBytes: event.data.mask.byteLength, timestampMs: r.timestamp_ms });
           if (window.__cameraReports.length > 32) window.__cameraReports.shift();
           if (window.__holdNextResult) {
             window.__holdNextResult = false; event.stopImmediatePropagation();
@@ -66,6 +67,7 @@ async function instrument(context) {
         });
         this.addEventListener("error", (e) => window.__workerErrors.push({ message: e.message, filename: e.filename, line: e.lineno })); }
       postMessage(data, transfer) {
+        if (data.kind === "frame") { window.__timedSubmissions.push({ sentAt: performance.now(), timestampMs: data.timestampMs });if (window.__timedSubmissions.length > 64) window.__timedSubmissions.shift(); }
         if (data.kind === "frame") { window.__submittedFrames.push([data.bitmap.width, data.bitmap.height]);if (window.__submittedFrames.length > 64) window.__submittedFrames.shift(); }
         return super.postMessage(data, transfer);
       }
@@ -130,6 +132,54 @@ async function staleStartup(context, origin) {
   assert.equal(await page.evaluate(() => document.documentElement.dataset.sessionState), "running");
   check("stale-camera-start-preserves-replacement-sample");
   await page.locator("#stop").click();await stopped(page);await page.close();
+}
+
+async function captureCadence(context, origin) {
+  const page = await context.newPage(); activePage = page;
+  await page.addInitScript(() => {
+    const original = globalThis.createImageBitmap;
+    globalThis.createImageBitmap = async (...args) => {
+      const started = performance.now(), bitmap = await original(...args);
+      if (window.__delayCapture) {
+        window.__delayCapture = false;window.__captureStarted = started;
+        await new Promise((resolve) => { window.__releaseTimedCapture = resolve; });
+      }
+      return bitmap;
+    };
+  });
+  await page.goto(origin + "/camera/");await page.locator("#ai").uncheck();await page.locator("#resolution").selectOption("192");
+  await page.evaluate(() => { window.__delayCapture = true; });await page.locator("#sample").click();
+  await page.waitForFunction(() => typeof window.__releaseTimedCapture === "function");
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 600)));
+  await page.evaluate(() => window.__releaseTimedCapture());
+  await page.waitForFunction(() => window.__timedSubmissions.length >= 3);
+  const snapshot = await page.evaluate(() => ({ submissions: window.__timedSubmissions.slice(0, 3), captureStarted: window.__captureStarted }));
+  for (let i = 1; i < snapshot.submissions.length; i++) assert.ok(snapshot.submissions[i].sentAt - snapshot.submissions[i - 1].sentAt >= 125, "capture delay consumed submission interval");
+  check("delayed-capture-preserves-submission-interval");
+  assert.ok(Math.abs(snapshot.submissions[0].timestampMs - snapshot.captureStarted) < 2, "capture timestamp came from an old animation callback");
+  const frames = await frameCount(page);await waitFrames(page, frames);
+  const reports = await page.evaluate(() => window.__cameraReports);
+  assert.ok(reports.some((r) => r.timestampMs === snapshot.submissions[0].timestampMs));check("capture-start-time-survives-rust-report");
+  await page.locator("#stop").click();await stopped(page);await page.close();
+}
+
+async function captureRate(context, origin) {
+  const page = await context.newPage(); activePage = page;
+  await page.goto(origin + "/camera/");await page.locator("#ai").uncheck();await page.locator("#resolution").selectOption("192");
+  await page.evaluate(() => { window.__holdNextResult = true; });await page.locator("#sample").click();
+  await page.waitForFunction(() => typeof window.__heldResult === "function");
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 600)));
+  await page.evaluate(() => { const release = window.__heldResult;delete window.__heldResult;release(); });
+  await waitFrames(page, 1);
+  const snapshot = await page.evaluate(() => ({ fps: document.querySelector("#fps").textContent, completed: window.__cameraReports.map((r) => r.timestampMs), submissions: window.__timedSubmissions }));
+  const completed = new Set(snapshot.completed), newest = Math.max(...snapshot.completed);
+  const stamps = snapshot.submissions.map((r) => r.timestampMs).filter((t) => completed.has(t) && t >= newest - 2000).slice(-17);
+  assert.ok(stamps.length >= 2);
+  const expected = 1000 * (stamps.length - 1) / (stamps.at(-1) - stamps[0]);
+  assert.ok(Math.abs(Number.parseFloat(snapshot.fps) - expected) <= .051, "result delivery jitter inflated displayed capture frequency");
+  check("completion-jitter-does-not-inflate-capture-rate");await screenshot(page, "mobile-capture-rate");
+  await page.locator("#stop").click();await stopped(page);
+  assert.equal(await page.locator("#fps").textContent(), "—");check("stop-clears-capture-rate");await page.close();
 }
 
 async function lightPreset(context, origin) {
@@ -236,7 +286,9 @@ async function intrinsicRotation(context, origin, longEdge = 256) {
   await instrument(context);
   if (regressionCase) {
     if (regressionCase === "startup") await staleStartup(context, origin);
-    else await intrinsicRotation(context, origin);
+    else if (regressionCase === "rotation") await intrinsicRotation(context, origin);
+    else if (regressionCase === "cadence") await captureCadence(context, origin);
+    else await captureRate(context, origin);
     report.passed = true;return;
   }
   const page = await context.newPage(); activePage = page;
@@ -297,6 +349,8 @@ async function intrinsicRotation(context, origin, longEdge = 256) {
   await intrinsicRotation(context, origin);
   await lightPreset(context, origin);
   await intrinsicRotation(context, origin, 192);
+  await captureCadence(context, origin);
+  await captureRate(context, origin);
   assert.equal(report.externalResponses.length, 0);assert.equal(report.nonGetRequests.length, 0);check("same-origin-static-get-responses-only");
   report.passed = true;
 })().catch(async (error) => {
