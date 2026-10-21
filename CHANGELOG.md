@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Correct camera playground timing when bitmap creation or worker result delivery
+  is delayed: start the next 125ms interval after a successful transfer, timestamp
+  capture invocation and derive displayed frequency from completed image clocks
+  over a bounded two-second window. Reset rate on Stop/geometry changes and show
+  no invented first-frame rate. Real browser controls reproduce both parent
+  regressions; physical sensor clocks and mobile speed remain unqualified. See
+  [camera timing](docs/MOBILE_CAMERA_DEMO.md#submission-cadence-and-displayed-frequency).
+
 - Add a stopped-only light setting to the camera playground, with a 192-pixel
   tracking long edge beside the default 256. Both camera and procedural sample
   retain aspect and the selected size through rotation; show current processing
