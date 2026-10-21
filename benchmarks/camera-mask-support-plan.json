@@ -1,0 +1,67 @@
+{
+  "schema": "spatialrust.camera-mask-support-plan.v1",
+  "slice": "146AS",
+  "parent_merge": "10e329f695493e50ffba48f90bdc5354c7fb4c06",
+  "purpose": "Replace repeated inclusive 45x45 binary-mask support scans with exact owned occupancy summaries and constant-time summed-area queries in the optional camera tracker.",
+  "contract": {
+    "math": "Retain finite/strict margin admission, positive-coordinate truncation and the exact inclusive 22-pixel square. Empty/all-zero masks admit interior support; full masks reject. Mixed masks use a zero-bordered u32 summed-area table; query equality uses bounded integer sums. Mask labels, shape and clock validation retain ordering and reject before observable tracker mutation.",
+    "ownership": "Public tracker/report/WASM APIs, gray copies and explicit JS mask/image readbacks stay unchanged. Derived mask summaries are CPU-owned and independent of caller storage. At most two (321*321)*4 tables are live, 824328 logical prefix bytes; this excludes other tracker inputs and is not an RSS guarantee. No core/GPU/native accuracy-gate or dependency change.",
+    "verification": "Check every new predicate against the frozen brute-force square with finite/fractional/border controls, masks and dimensions. Preserve parent native tests/executable and baseline WASM, compare full public JSON reports in two balanced parent/candidate benchmark surveys, and require browser parent/candidate WASM report parity plus all existing actual WASM/model controls. Keep adverse timings; no hardware or speed claim without measured evidence.",
+    "preservation": "Preserve all prior camera/renderer files, 493 scientific JSON, 42 frozen native artifacts, room/reference outputs, shared cache, resolved lock and shared raw WASM. Compile only the small optional web feature in an isolated E: target, offline with installed toolchains. No sensor, SDK/model or toolchain acquisition."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-mask-support-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 1073741824,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 1082130432,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "cargo_jobs": 2,
+    "command_timeout_seconds": 900,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "asset_download_max_bytes": 0,
+    "new_sensor_payload_copies": 0,
+    "public_verification_stream_max_bytes": 41943040,
+    "strategy": "Fresh isolated Cargo target; no hardlinks to shared compiler outputs. Hash-check old artifacts and vendor hardlinks. Preserve all failures and executable versions. Retry complete storage snapshots up to three times only for vanished entries inside the owned live Cargo target.",
+    "asset_download_scope": "Zero new local assets; up to 40MiB of public verification streams without persisted vendor payloads."
+  },
+  "benchmark": {
+    "shapes": [
+      [
+        192,
+        144
+      ],
+      [
+        256,
+        192
+      ],
+      [
+        320,
+        240
+      ]
+    ],
+    "masks": [
+      "disabled",
+      "zero",
+      "full",
+      "half",
+      "sparse",
+      "checker"
+    ],
+    "frames": 7,
+    "samples": 6,
+    "warmup_sequences": 1,
+    "surveys": 2,
+    "order": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline"
+    ],
+    "host_workers": 1,
+    "comparison": "All report fields/serialized floats must match exactly. Publish every timing row and both survey ratios, including adverse or inconclusive results; make no physical-phone or GPU performance claim."
+  },
+  "remaining_80_percent": "Canonical measured calibration/timing and independent motion, full-room accuracy, qualifying physical Linux hardware and integrated operational acceptance remain open."
+}
