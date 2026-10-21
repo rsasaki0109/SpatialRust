@@ -172,6 +172,23 @@ browser or sensor payload download was needed; SDK/model assets are static web
 dependencies. Public deployment and exact-head CI are checked after the receipt
 commit, with their records kept separately.
 
+## Light preset delivery evidence (146AJ)
+
+The [light preset receipt](receipts/2026-10-21_camera_light.json) binds five terminal
+commands, **25 JS**, **six asset** and **32 browser** controls. Both preset sizes
+run real WASM tracking; both intrinsic rotations run the pinned AI model and
+validate mask dimensions. Tests also check default size, frozen active settings,
+restart at standard size, cleanup and existing CSP/lifecycle controls. Software
+Chromium captures are synthetic; physical phones and Safari remain unqualified.
+
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-light-plan.json`.
+The local build hard-links the existing **41,087,603 vendor bytes**, preserves
+all **173** prior camera files, 493 scientific JSON, 42 frozen native artifacts,
+the release WASM and resolved lockfile. Compiler-cache growth is **zero**; the
+local site, logs and screenshots add about **4.15MB** beyond the shared vendor
+files. No model/browser/toolchain/sensor acquisition or Rust compilation occurs.
+
 ## Intrinsic geometry delivery evidence (146AI)
 
 The [geometry receipt](receipts/2026-10-21_camera_geometry.json) binds eight

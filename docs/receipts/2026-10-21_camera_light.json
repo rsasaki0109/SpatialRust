@@ -1,0 +1,177 @@
+{
+  "schema": "spatialrust.public-camera-light-receipt.v1",
+  "slice": "146AJ",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-21T06:25:58.709007+00:00",
+  "protocol_commit": "f1e136b1a52f0fcccf71b7d967100fab7c82918e",
+  "tested_source_commit": "cfc60e038145c176ffde30338725886df8554eea",
+  "parent_merge": "b59a198d336eccffc9d3f76e2950ffddb7b98a72",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\camera-light-plan.json",
+    "bytes": 2497,
+    "sha256": "06739234bfc892e2f2e6c4176b0a8f512050dd33abbc7592e993584980f78864"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-light-preflight.json",
+    "bytes": 156013,
+    "sha256": "eab12bbfcfebb2a2f87e7285848fdbb9215504fb6241f62468af5f2fd370fe24"
+  },
+  "owned_commands": 5,
+  "all_commands_terminal": true,
+  "commands": {
+    "assets": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\assets.command.json",
+        "bytes": 3494,
+        "sha256": "a4afe2f0da1513dcf8b0d28143f8ba4c51398fd29294b8840a80a10295ab0a6a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\assets.log",
+        "bytes": 109,
+        "sha256": "59753171660350c6735ee4b12925f50e7f8606c102caf33752e5551608bad819"
+      },
+      "source_head": "da8888a6f1d8486a8bcba09cf5672f34d82f1e4f",
+      "child_exit_status": 0
+    },
+    "browser-v2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2.command.json",
+        "bytes": 4588,
+        "sha256": "2fdb1b7f82822da4a644f7ce7e471601db6faafa34c7b4beaaace7f9050cc009"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2.log",
+        "bytes": 1927,
+        "sha256": "1edba5b29a50c2125cfb8d2d12dada583e1539821201da5f9f3c5ff17785219d"
+      },
+      "source_head": "cfc60e038145c176ffde30338725886df8554eea",
+      "child_exit_status": 0
+    },
+    "browser": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser.command.json",
+        "bytes": 4835,
+        "sha256": "739f81b96f07195347bc83f01bfceddb0da1140ad3e233c5347b55a6e51bd1da"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser.log",
+        "bytes": 1906,
+        "sha256": "910c4e87ea6290935fb0f7a7b01b3be352bd636cf40dbf85a8d588922b499cde"
+      },
+      "source_head": "da8888a6f1d8486a8bcba09cf5672f34d82f1e4f",
+      "child_exit_status": 0
+    },
+    "build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\build.command.json",
+        "bytes": 3720,
+        "sha256": "39c4a88f34c5178c02046ced6bccc5216280bd13326f9f95d5bf59294d69b9ba"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\build.log",
+        "bytes": 129,
+        "sha256": "b6e3be4faa20ac241b8b80588c1cdca317495464c0a1ac57665d9578dc0042b3"
+      },
+      "source_head": "da8888a6f1d8486a8bcba09cf5672f34d82f1e4f",
+      "child_exit_status": 0
+    },
+    "unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\unit.command.json",
+        "bytes": 3458,
+        "sha256": "0b7d9668af03d169eff9abd19b915ee2b68d054635b2bade3a38ec35f73e648b"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-light-v1\\unit.log",
+        "bytes": 1893,
+        "sha256": "cbdf70bda83ea24300bcc0aa447e6a8f68ad0941372b910d30749ab671188536"
+      },
+      "source_head": "da8888a6f1d8486a8bcba09cf5672f34d82f1e4f",
+      "child_exit_status": 0
+    }
+  },
+  "unit_tests": 25,
+  "asset_controls": 6,
+  "browser_controls": 32,
+  "software_graphics_delegate": true,
+  "browser_report": {
+    "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2-artifacts\\report.json",
+    "bytes": 2425,
+    "sha256": "3e286fd5111ed7e17d644231db2e2febfeeea23ad70400491a2997d03b2f9e4b"
+  },
+  "screenshots": [
+    {
+      "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2-artifacts\\mobile-idle.png",
+      "bytes": 203398,
+      "sha256": "d170f002634019ac157a2b0996c55a82b420e999d3644bb1cdc7f29a3b3b5cea"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2-artifacts\\mobile-tracking.png",
+      "bytes": 268041,
+      "sha256": "af0d7469bceb147697b457fb593aa23a367b34dcc630bb38242223535fe40a1a"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2-artifacts\\mobile-ai.png",
+      "bytes": 268768,
+      "sha256": "421c34d90da381b60e898f1db8cb0c2ce175acbfb289dc0b72cd81eb2360823e"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2-artifacts\\desktop-idle.png",
+      "bytes": 422531,
+      "sha256": "ddb70c2a460315b544a97561f87c432bcbbfa9bab853bdfe840400d26657f906"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2-artifacts\\mobile-portrait-camera-256.png",
+      "bytes": 171273,
+      "sha256": "c222f1c981cbdeff51d050ebc07798c688612d99b456dc3069fdfbba85bfbac8"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2-artifacts\\mobile-light-sample.png",
+      "bytes": 257214,
+      "sha256": "b3dca9f0ef9b756f5cd95e435189caf866ec1be01d72da0d2d7b8fb602574f44"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-light-v1\\browser-v2-artifacts\\mobile-portrait-camera-192.png",
+      "bytes": 171967,
+      "sha256": "39a21d68c4c1cacad3b3b385acb2aae82120da031e352c70493436d5e67ddbc0"
+    }
+  ],
+  "site_build": {
+    "path": "E:\\SpatialRustBuild\\camera-light-v1\\site\\camera\\build.json",
+    "bytes": 3722,
+    "sha256": "0befcfbcf482ee55671a18f883fcc439ee1f050baa454a2d1e1d98af778479ef"
+  },
+  "unchanged_wasm": {
+    "path": "E:\\SpatialRustBuild\\maturity-80-target\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1030227,
+    "sha256": "660461f1760aab0a96b8bd72baa265196107ae4ece8cf3e17dfa929a30c1dc6e"
+  },
+  "unchanged_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118086,
+    "sha256": "e9d0a244c69b4ea193c7ebcd61e404de8071a53b71ff269c2c8dbe0f506484cc"
+  },
+  "vendor_hardlink_bytes": 41087603,
+  "sdk_model_acquisition_bytes": 0,
+  "storage": {
+    "owned_metadata_bytes": 45230442,
+    "cache_bytes": 13058120779,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 45230442,
+    "free_bytes": {
+      "C": 73762832384,
+      "E": 876369305600
+    }
+  },
+  "non_shared_owned_file_bytes": 4142839,
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 173,
+  "forbidden_adapter_matches": 0,
+  "physical_phone_tested": false,
+  "ios_safari_tested": false,
+  "new_sensor_payload_downloads": 0,
+  "real_user_camera_reads": 0,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head CI, merge and live Pages checks are recorded after this source-bound receipt."
+}
