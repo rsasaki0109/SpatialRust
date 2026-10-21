@@ -242,7 +242,7 @@ commit, with their records kept separately.
 
 The [progress receipt](receipts/2026-10-21_camera_progress.json) binds seven
 terminal commands and two parent failures with a paused but still-live browser
-stream, both normally and while a real worker result is held. Final results pass
+stream, both normally and while a real worker result is held. Initial local results pass
 **46 JS**, **six asset** and **47 browser** controls. Unit cases cover the exact
 5000ms boundary, readiness, timeline reset, atomic input admission and isolated
 replacement clocks. Browser cases check cleared results/resources, explicit
@@ -258,6 +258,16 @@ shared vendor files. Preserve **358** prior camera files, 493 scientific JSON,
 42 frozen native artifacts and the resolved lockfile. Advancing-time pixel
 repetition, worker deadlines, physical phone/Safari behavior and operational 80%
 qualification remain open.
+
+The [CI correction receipt](receipts/2026-10-21_camera_progress_ci.json) retains
+the first browser CI failure and an independently reproduced bounded-history
+failure. A full eight-entry history contained correct landscape frames, but
+slicing it using its previous array length produced an empty inspection window.
+The original CI log did not retain those detailed history values. Corrected
+controls use monotonic frame sequence numbers, require complete post-cursor
+coverage and force history wrap in both rotation cases. All **49 browser checks**
+pass locally, with nine terminal owned commands in total. Production camera
+sources are unchanged by this correction; the failed logs/reports remain intact.
 
 ## Source termination delivery evidence (146AL)
 

@@ -19,6 +19,10 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Bind camera rotation test history to monotonic frame sequence numbers and
+  require complete inspection windows across bounded-log wrap. Retain the first
+  CI failure and a forced false-rejection reproduction with correct image sizes.
+
 - Stop camera playground sessions after five seconds without observed usable
   video-time progress, including while a result is pending. Clear stale output,
   release capture/worker ownership and offer explicit restart with a new clock.
