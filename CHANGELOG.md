@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Release interrupted camera playground sessions on video-track end or stream
+  inactivity, including startup and pending worker results. Poll source state
+  before backpressure, clear stale presentation, remove listeners on Stop and
+  offer explicit camera/sample restart. Late source events and results cannot
+  disturb replacement sessions. Three parent browser regressions are reproduced;
+  physical device removal and still-live freezes remain separate. See
+  [camera source termination](docs/MOBILE_CAMERA_DEMO.md#camera-source-termination).
+
 - Correct camera playground timing when bitmap creation or worker result delivery
   is delayed: start the next 125ms interval after a successful transfer, timestamp
   capture invocation and derive displayed frequency from completed image clocks
