@@ -181,6 +181,59 @@ function harness(acquire = async () => ({ getTracks: () => [] }), options = {}) 
   return { session, workers, states, errors, results, send };
 }
 
+
+// Completion must not depend on releasing either native operation.
+for (const phase of ["acquire", "presenter"]) for (const action of ["stop", "timeout", "failure", "replacement"]) {
+  test(`${action} settles startup while ${phase} stays pending`, async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const gate = deferred(), entered = deferred();let stopped = 0;
+    const stream = { getTracks: () => [{ stop() { stopped++; } }] };
+    const h = harness(() => {
+      if (phase === "acquire") { entered.resolve();return gate.promise; }
+      return stream;
+    }, { onReady: (run) => { if (phase === "presenter" && run.mode === "camera") { entered.resolve();return gate.promise; } } });
+    const pending = h.session.start("camera");h.send(h.workers[0], "ready");await entered.promise;
+    let settled = false, value;pending.then((result) => { settled = true;value = result; });
+    t.mock.timers.tick(4999);await Promise.resolve();assert.equal(settled, false);
+    let replacement;
+    if (action === "stop") h.session.stop();
+    else if (action === "timeout") t.mock.timers.tick(1);
+    else if (action === "failure") h.send(h.workers[0], "error", { message: "startup failed" });
+    else { replacement = h.session.start("sample");h.send(h.workers[1], "ready");assert.equal(await replacement, true); }
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(settled, true, "cancelled start remained pending");assert.equal(value, false);
+    assert.equal(h.workers[0].terminated, true);assert.equal(h.workers[0].disposed, true);
+    assert.equal(h.errors.length, ["timeout", "failure"].includes(action) ? 1 : 0);
+    const current = h.session.run;gate.resolve(phase === "acquire" ? stream : undefined);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(stopped, 1);assert.equal(h.session.run, current);assert.equal(await pending, false);
+    if (action === "replacement") { assert.equal(current.started, true);assert.equal(h.workers[1].terminated, false); }
+    else assert.equal(h.session.run, null);
+    h.session.stop();t.mock.timers.tick(30000);
+    assert.equal(h.errors.length, ["timeout", "failure"].includes(action) ? 1 : 0);
+  });
+}
+
+for (const phase of ["acquire", "presenter"]) test(`late ${phase} rejection is consumed after cancelled startup settles`, async () => {
+  const gate = deferred(), entered = deferred();
+  const h = harness(() => {
+    if (phase === "acquire") { entered.resolve();return gate.promise; }
+    return { getTracks: () => [] };
+  }, { onReady: (run) => { if (phase === "presenter" && run.mode === "camera") { entered.resolve();return gate.promise; } } });
+  const pending = h.session.start("camera");h.send(h.workers[0], "ready");await entered.promise;h.session.stop();
+  let settled = false;pending.then(() => { settled = true; });await new Promise((resolve) => setImmediate(resolve));assert.equal(settled, true);
+  const next = h.session.start("sample");h.send(h.workers[1], "ready");assert.equal(await next, true);
+  gate.reject(new Error("late native rejection"));await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(h.errors.length, 0);assert.equal(h.session.run.started, true);assert.equal(h.workers[1].terminated, false);h.session.stop();
+});
+
+test("synchronous worker creation failure settles startup and allows a fresh run", async () => {
+  const h = harness(), create = h.session.createWorker;
+  h.session.createWorker = () => { throw new Error("worker creation failed"); };
+  assert.equal(await h.session.start("camera"), false);assert.equal(h.session.run, null);assert.equal(h.errors.length, 1);
+  h.session.createWorker = create;const next = h.session.start("sample");h.send(h.workers[0], "ready");assert.equal(await next, true);h.session.stop();
+});
+
 test("sample mode never requests a camera", async () => {
   let requested=0;const h=harness(async () => { requested++; throw new Error("camera"); });
   const p=h.session.start("sample",false);h.send(h.workers[0],"ready",{backend:"OFF"});assert.equal(await p,true);assert.equal(requested,0);h.session.stop();
