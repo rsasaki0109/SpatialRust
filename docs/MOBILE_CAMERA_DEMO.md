@@ -538,3 +538,20 @@ native Worker probe observed no exposed property, zero property callbacks and
 one standard event-listener callback. Production now uses `addEventListener`
 with the per-run abort signal; unit workers use real `EventTarget` dispatch.
 The final repeat retains both the initial failure and all prior evidence.
+
+## Mask support evidence (146AS)
+
+[Camera mask support](CAMERA_MASK_SUPPORT.md) replaces repeated 45x45 exclusion
+scans with exact owned empty/full summaries or four-entry prefix queries. It
+preserves the support region, validation order, public reports, FAST/LK math and
+explicit image/mask readbacks. Uniform masks allocate no prefix table; two mixed
+prefixes need at most 824,328 logical bytes, excluding other tracker/browser
+memory. This CPU optimization does not establish GPU or phone performance.
+
+The [receipt](receipts/2026-10-22_camera_mask_support.json) records 24 native tests,
+84 JS, six asset and 82 existing real WASM/model browser controls, plus 252 exact
+parent/candidate WASM reports and 84 matching invalid-call errors. Two balanced
+native timing surveys retain all 18 conditions each, including slower rows.
+Builds use a capped isolated E-drive target; the shared cache, raw baseline WASM,
+786 earlier camera/renderer files and scientific/native evidence are preserved.
+Physical phone/Safari and operational 80% qualification remain open.

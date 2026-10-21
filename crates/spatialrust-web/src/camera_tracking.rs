@@ -14,6 +14,40 @@ const MAX_AXIS: usize = 320;
 const MAX_POINTS: usize = 80;
 const PATCH_MARGIN: usize = 22;
 
+#[derive(Default)]
+enum MaskSupport {
+    #[default]
+    Empty,
+    Full,
+    Prefix {
+        stride: usize,
+        sums: Vec<u32>,
+    },
+}
+
+impl MaskSupport {
+    // Dimensions and binary labels are validated before construction. With at
+    // most 320*320 pixels, both prefix entries and query sums fit in u32.
+    fn from_validated(mask: &[u8], width: usize, height: usize, person_pixels: usize) -> Self {
+        if person_pixels == 0 {
+            return Self::Empty;
+        }
+        if person_pixels == width * height {
+            return Self::Full;
+        }
+        let stride = width + 1;
+        let mut sums = vec![0; stride * (height + 1)];
+        for row in 0..height {
+            let mut row_sum = 0;
+            for column in 0..width {
+                row_sum += u32::from(mask[row * width + column]);
+                sums[(row + 1) * stride + column + 1] = sums[row * stride + column + 1] + row_sum;
+            }
+        }
+        Self::Prefix { stride, sums }
+    }
+}
+
 /// Whether a frame pair provides usable image-space motion.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -63,13 +97,13 @@ pub struct CameraTrackReport {
 /// Small owned frame-pair tracker for an opt-in camera playground.
 ///
 /// Reuses FAST, grid selection and forward/backward LK. It retains one previous
-/// gray frame and mask; caller data is explicitly copied by `track_gray_copy`.
+/// gray frame and owned mask support; `track_gray_copy` retains no caller storage.
 /// This estimates 2D background flow, not camera translation, distance or 6DoF.
 pub struct CameraTracker {
     width: usize,
     height: usize,
     previous: Option<Image<u8, 1>>,
-    previous_mask: Vec<u8>,
+    previous_mask: MaskSupport,
     points: Vec<Vec2<f64>>,
     timestamp: Option<f64>,
 }
@@ -84,7 +118,7 @@ impl CameraTracker {
             width,
             height,
             previous: None,
-            previous_mask: Vec::new(),
+            previous_mask: MaskSupport::Empty,
             points: Vec::new(),
             timestamp: None,
         })
@@ -98,12 +132,12 @@ impl CameraTracker {
     /// Drops retained pixels, mask, features and clock state.
     pub fn reset(&mut self) {
         self.previous = None;
-        self.previous_mask.clear();
+        self.previous_mask = MaskSupport::Empty;
         self.points.clear();
         self.timestamp = None;
     }
 
-    /// Explicitly copies a packed gray frame and optional binary person mask.
+    /// Copies a packed gray frame and derives owned binary-mask support.
     ///
     /// An empty mask disables exclusion; otherwise `1` marks person and `0`
     /// background at the exact frame resolution. Both endpoints and their
@@ -119,8 +153,12 @@ impl CameraTracker {
         if gray.len() != pixels || (!mask.is_empty() && mask.len() != pixels) {
             return Err(invalid("gray/mask lengths must match processing dimensions"));
         }
-        if mask.iter().any(|&value| value > 1) {
-            return Err(invalid("person mask must contain only 0 or 1"));
+        let mut person_pixels = 0;
+        for &value in mask {
+            if value > 1 {
+                return Err(invalid("person mask must contain only 0 or 1"));
+            }
+            person_pixels += usize::from(value);
         }
         if !timestamp_ms.is_finite()
             || timestamp_ms < 0.
@@ -130,6 +168,8 @@ impl CameraTracker {
                 "frame timestamps must be finite, non-negative and strictly increasing",
             ));
         }
+        let current_mask =
+            MaskSupport::from_validated(mask, self.width, self.height, person_pixels);
         let current = Image::try_new(self.width, self.height, gray.to_vec()).map_err(invalid)?;
         let gap = self.timestamp.is_some_and(|old| timestamp_ms - old > 500.);
         let mut tracks = Vec::with_capacity(MAX_POINTS);
@@ -155,7 +195,7 @@ impl CameraTracker {
                 let to = result.next_points()[i];
                 if result.status()[i]
                     && self.background(&self.previous_mask, from.x, from.y)
-                    && self.background(mask, to.x, to.y)
+                    && self.background(&current_mask, to.x, to.y)
                 {
                     tracks.push(CameraTrack { from: [from.x, from.y], to: [to.x, to.y] });
                 }
@@ -166,7 +206,7 @@ impl CameraTracker {
                 .map_err(invalid)?;
         let candidates: Vec<_> = candidates
             .into_iter()
-            .filter(|p| self.background(mask, f64::from(p.x()), f64::from(p.y())))
+            .filter(|p| self.background(&current_mask, f64::from(p.x()), f64::from(p.y())))
             .collect();
         let candidates = select_keypoints_grid(
             &candidates,
@@ -212,16 +252,16 @@ impl CameraTracker {
             background_flow_px,
             tracks,
             seeded_features: next_points.len(),
-            person_fraction: mask.iter().filter(|&&v| v == 1).count() as f64 / pixels as f64,
+            person_fraction: person_pixels as f64 / pixels as f64,
         };
         self.previous = Some(current);
-        self.previous_mask = mask.to_vec();
+        self.previous_mask = current_mask;
         self.points = next_points;
         self.timestamp = Some(timestamp_ms);
         Ok(report)
     }
 
-    fn background(&self, mask: &[u8], x: f64, y: f64) -> bool {
+    fn background(&self, mask: &MaskSupport, x: f64, y: f64) -> bool {
         let margin = PATCH_MARGIN as f64;
         if !x.is_finite()
             || !y.is_finite()
@@ -232,15 +272,19 @@ impl CameraTracker {
         {
             return false;
         }
-        if mask.is_empty() {
-            return true;
+        match mask {
+            MaskSupport::Empty => true,
+            MaskSupport::Full => false,
+            MaskSupport::Prefix { stride, sums } => {
+                let (x, y) = (x as usize, y as usize);
+                let (left, right) = (x - PATCH_MARGIN, x + PATCH_MARGIN + 1);
+                let (top, bottom) = (y - PATCH_MARGIN, y + PATCH_MARGIN + 1);
+                // Equal diagonals mean no person pixel in the inclusive square.
+                // Addition avoids unsigned underflow in a subtraction chain.
+                sums[bottom * stride + right] + sums[top * stride + left]
+                    == sums[top * stride + right] + sums[bottom * stride + left]
+            }
         }
-        let (x, y) = (x as usize, y as usize);
-        (y - PATCH_MARGIN..=y + PATCH_MARGIN).all(|row| {
-            mask[row * self.width + x - PATCH_MARGIN..=row * self.width + x + PATCH_MARGIN]
-                .iter()
-                .all(|&v| v == 0)
-        })
     }
 }
 

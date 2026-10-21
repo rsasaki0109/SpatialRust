@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Summarize optional camera person-mask support once per frame, replacing repeated
+  inclusive 45x45 scans with exact bounded prefix queries and uniform-mask fast
+  paths. Preserve public reports and caller ownership; record frozen native and
+  actual WASM parity plus both timing surveys, including adverse results. See
+  [camera mask support](docs/CAMERA_MASK_SUPPORT.md).
+
 - Release camera/sample sessions immediately on worker message-deserialization
   errors and preserve replacement ownership. Route readiness cleanup through
   run cancellation so initial message-send exceptions cannot leak an unhandled
