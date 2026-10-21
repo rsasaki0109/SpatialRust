@@ -1,6 +1,7 @@
 import { CameraSession } from "./session.mjs";
 import { cameraFrameSize } from "./frame-size.mjs";
 import { FrameRate } from "./frame-rate.mjs";
+import { CameraProgress } from "./camera-progress.mjs";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video"), sample = $("sample-frame"), overlay = $("overlay");
@@ -35,6 +36,7 @@ const session = new CameraSession({
       // Stop or a replacement session may win while play() is pending.
       if (session.run !== run) return;
       size = cameraFrameSize(video.videoWidth, video.videoHeight, longEdge);
+      run.progress = new CameraProgress(performance.now());
     }
     mode = run.mode;
     applyGeometry(size);
@@ -82,7 +84,7 @@ const session = new CameraSession({
     if (state === "running") { setStatus("映像から特徴点を探しています。"); frameHandle = requestAnimationFrame(pump); }
   },
   onError: (error) => {
-    if (error.name === "CameraEndedError") { setStatus(error.message);return; }
+    if (error.name === "CameraEndedError" || error.name === "CameraStalledError") { setStatus(error.message);return; }
     const denied = error.name === "NotAllowedError" || /permission|denied/i.test(error.message);
     setStatus(denied ? "カメラの使用が許可されていません。ブラウザの権限を確認するか、サンプルでお試しください。" : `開始できませんでした。${error.message}${error.name === "RangeError" ? "" : " AIをオフにして試すこともできます。"}`);
   },
@@ -116,6 +118,10 @@ async function pump() {
   if (!token || !mode) return;
   frameHandle = requestAnimationFrame(pump);
   if (mode === "camera" && !session.checkCamera(run)) return;
+  if (mode === "camera" && run.progress.stalled(video.currentTime, performance.now(), video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0)) {
+    const error = new Error("カメラ映像の更新が5秒間止まったため停止しました。もう一度「カメラ開始」を押すか、サンプルをお試しください。");
+    error.name = "CameraStalledError";session.fail(run, error);return;
+  }
   if (session.busy || capturingToken === token || performance.now() - lastSubmitted < 125) return;
   if (mode === "camera" && (video.readyState < 2 || video.currentTime === lastVideoTime)) return;
   const sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
