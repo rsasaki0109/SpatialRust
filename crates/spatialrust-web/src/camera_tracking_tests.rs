@@ -232,7 +232,9 @@ fn support_matches_deterministic_mixed_masks_and_subpixel_queries() {
             .collect();
         for divisor in [2, 19, 997, usize::MAX] {
             let mask: Vec<_> = (0..w * h)
-                .map(|i| u8::from(i.wrapping_mul(1103515245).wrapping_add(12345) % divisor == 0))
+                .map(|i: usize| {
+                    u8::from(i.wrapping_mul(1103515245).wrapping_add(12345) % divisor == 0)
+                })
                 .collect();
             support_queries(w, h, &mask, &points);
         }
