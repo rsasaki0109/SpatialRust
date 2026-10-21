@@ -1,0 +1,28 @@
+{
+  "schema": "spatialrust.tsdf-support-plan.v1",
+  "slice": "146AE",
+  "parent_merge": "5fc9a23c780560207a444e4a95a8eaa5ba1cc081",
+  "purpose": "Prevent fully disjoint TSDF sample support from being clamped onto boundary voxels. Preserve the existing discretized cube, overlapping-support arithmetic and submitted-point counters.",
+  "fixed_contract": {
+    "support": "For the existing point +/- truncation cube, use the original f32 subtraction/division/floor and saturating signed-index conversion. Intersect its inclusive raw per-axis index ranges with [0,dims-1] before clamping. If any axis is disjoint, return before mutating distance/weight. Keep partially intersecting and upper-inclusive floor quantization exactly as before; do not replace it with center-membership, radial, projective or ray-marching semantics.",
+    "compatibility": "Preserve TSDF volume fields, public method signatures, constructor and allocation policy, valid-overlap voxel visitation order, signed-distance equation/clamp, weighted update and meshing. Existing non-finite/degenerate depth handling stays. integrate_cloud and integrate_cloud_with_pose still return submitted cloud.len(), not accepted-point or voxel counts. Core/GPU/ROS2 libraries and dependencies, explicit CPU/GPU transfers and calibration/accuracy gates remain unchanged.",
+    "bounds": "The new support check uses fixed three-element stack arrays and O(1) extra work per sample, with no point payload copy, new heap scratch, thread, dependency or unsafe. Tiny synthetic test volumes only. Existing constructor overflow/non-finite-origin and broader extreme-value numerical hardening are outside this focused change; no general process-memory, physical scene or latency guarantee is claimed.",
+    "verification": "Commit protocol and reserve slice before native execution. Commit independent support-cell enumeration, hand-checked face/edge/boundary cases and a frozen copy of the original integrator for overlap parity while production remains unchanged. Reproduce all six disjoint-face failures against the parent. Then cover far signed-index saturation, partial overlap, exact endpoints, dyadic exhaustive grids, invalid/depth compatibility, mixed/posed cloud and interleaved routes, visit counts, repeated updates and spurious-mesh rejection. No real data run, physical calibration or accuracy claim."
+  },
+  "verification": "Use bounded owned offline commands: original all-feature scene regression baseline, scene default/all and Clippy, full-bag/E2E and ROS2 all-feature/all-target Clippy, mapping/viewer-all/calibration controls and formatting. Add explicit scene all-feature tests to the existing Linux/Windows/macOS mapping job without changing the 131 required check names. Preserve baseline and every failed log, bind final code and all terminal commands, then commit/push/PR/merge after all checks.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/tsdf-support-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned sources and completed room outputs. Reuse the cache, preserve failed logs and never rebuild frozen binaries. No real sensor read/download/copy or real-motion fit. Synthetic SQLite/JSON fixtures stay in the owned external temp directory."
+  },
+  "remaining_80_percent": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Successful record-submission traceability does not establish these requirements."
+}
