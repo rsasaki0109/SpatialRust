@@ -102,8 +102,33 @@ that condition alone does not trip the input-progress check.
 This is an application-observed time-progress heuristic, not an exposure-time
 measurement, a hard real-time watchdog or pixel comparison. A stationary scene
 with advancing video time remains valid. Repeated/frozen pixels whose video
-time continues advancing, and a worker that stalls with healthy input, require
-separate detection. No device behavior or physical phone performance is qualified.
+time continues advancing require separate detection. A worker with healthy input
+has the independent result deadline below. No device behavior or physical phone
+performance is qualified.
+
+## Worker result deadline
+
+Each submitted camera or sample frame owns a **15000ms** result timer. A matching
+result must identify both its session and its pending frame sequence before it
+can clear the timer, release backpressure or update the display. Unsolicited,
+duplicate, obsolete-frame and obsolete-session results are ignored. There is no
+result timer while idle or waiting for the next capture. The 45-second startup
+limit and five-second input-progress clock have separate owners.
+
+Normal completion, Stop and any failure clear the pending timer. Every new frame
+and explicit restart gets a full new interval. The timeout callback checks its
+exact session and pending request before stopping. Missing results clear old
+vectors/mask/stats, end camera tracks, terminate the worker and restore controls.
+A specific message offers **カメラ開始** or **サンプル再生**; no automatic restart
+or camera permission request occurs. The notice also explains the fifteen-second
+limit. Positive integral configurable intervals are bounded by the browser timer
+range, avoiding a clamped or disabled deadline.
+
+The timer is an application responsiveness policy, not a hard real-time or
+physical GPU watchdog. A blocked main thread can delay its callback. Browser
+regressions withhold actual WASM-worker result messages while input stays healthy;
+they do not claim a physical device hang. Phone/Safari performance and frozen
+pixels with advancing video time remain separate qualification work.
 
 ## Processing size
 

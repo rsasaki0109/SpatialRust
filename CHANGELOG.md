@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Stop camera and sample playground sessions when a submitted frame has no
+  matching worker result for fifteen seconds. Clear stale output and resources,
+  permit explicit restart and match session/frame sequences so duplicate or old
+  results cannot release another request. Keep the startup and input-progress
+  deadlines independent. See [worker result deadline](docs/MOBILE_CAMERA_DEMO.md#worker-result-deadline).
+
 - Bind camera rotation test history to monotonic frame sequence numbers and
   require complete inspection windows across bounded-log wrap. Retain the first
   CI failure and a forced false-rejection reproduction with correct image sizes.

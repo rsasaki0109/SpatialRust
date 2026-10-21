@@ -30,7 +30,11 @@ tracks. Late source events/results cannot affect replacement sessions. A separat
 per-run constant-size clock observes usable video-time progress before
 backpressure; 5000ms without it reuses session cleanup and explicit restart.
 Changed video time, including a reset, renews the deadline. This heuristic does
-not compare pixels or time out a worker while input video keeps advancing.
+not compare pixels. Independently, each submitted camera or sample bitmap owns
+a 15000ms result timer. Only the current session's matching frame sequence can
+release that pending frame and update presentation. Completion, Stop and failure
+clear the timer; old timers/results cannot affect another frame or session.
+Result timeout reuses cleanup and offers explicit restart without acquisition.
 This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 
