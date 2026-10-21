@@ -75,6 +75,23 @@ an actual worker result across rotation, then hold a bitmap across rotation back
 Another test delays `play()` while retaining metadata to check Stop and a
 replacement sample session. Physical phone and iOS Safari remain untested.
 
+## Worker transport failures
+
+Worker readiness completes on successful readiness or session cleanup. Errors
+use the same run failure/cancellation boundary, so an initialization
+`postMessage` exception cannot leave a rejected readiness promise unobserved.
+The original initialization error is reported once; failed initial sending
+releases the worker/blob URL without requesting a camera.
+
+A worker `messageerror` immediately stops its current run during preparation or
+processing. Cleanup clears preparation/result timers, aborts any bitmap wait,
+stops owned camera tracks, terminates the worker and releases its blob URL. A
+specific communication message offers explicit camera/sample restart. Old
+message-error callbacks and results cannot affect the replacement session.
+The per-run abort signal removes the receive-error listener on Stop.
+Normal ready/result handling, frame identities, deadlines and transfers retain
+their contracts. This does not cancel unfinished native browser operations.
+
 ## Camera source termination
 
 The session watches acquired video tracks for `ended` and their stream for
@@ -489,3 +506,35 @@ prior camera/renderer files, 493 scientific JSON, 42 frozen native artifacts
 and the resolved lockfile. Physical phone/Safari behavior, native operation
 cancellation and operational 80% qualification remain open. Exact-source CI,
 merge and the matching public Pages checks are verified after the local receipt.
+
+## Worker transport evidence (146AR)
+
+The [transport receipt](receipts/2026-10-22_camera_worker_transport.json) binds
+eleven terminal guarded local commands and a completed native event probe. A
+real native structured-clone failure during
+initialization reproduced the parent's unhandled `stopped` rejection; a
+synthetic worker `messageerror` reproduced retained running presentation.
+Final checks pass **84 JS**, **six asset** and **82 browser** controls. Seven
+new unit cases cover both initial modes and five pending lifecycle stages,
+timer/capture cleanup, late completion and replacement ownership. Browser
+controls verify worker/blob cleanup without acquisition, explicit recovery,
+and message-error cleanup during startup, camera and sample processing.
+Existing real WASM/model, geometry, timing, progress, deadlines and CSP controls
+remain. Message-error events are injected; physical deserialization faults,
+phones, iOS Safari and operational 80% qualification remain open.
+
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-worker-transport-plan.json`.
+Reuse release WASM and **41,087,603** hard-linked vendor bytes with no Rust
+compilation or new SDK/model/sensor acquisition. Preserve **692** prior camera/
+renderer files, 493 scientific JSON, 42 frozen native artifacts and the resolved
+lockfile. Public fault/restart coverage has a prospective **40MiB** streaming
+limit and retains no downloaded vendor payloads. Exact-source CI, merge and
+the matching public Pages evidence are verified after the local receipt.
+
+The first candidate browser run is preserved: assigning an `onmessageerror`
+property did not register a handler in the installed Chromium. An independent
+native Worker probe observed no exposed property, zero property callbacks and
+one standard event-listener callback. Production now uses `addEventListener`
+with the per-run abort signal; unit workers use real `EventTarget` dispatch.
+The final repeat retains both the initial failure and all prior evidence.

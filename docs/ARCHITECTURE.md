@@ -51,6 +51,11 @@ camera readiness and presenter startup. Stop, failure and the unchanged startup
 deadline return false without requiring a native acquisition/play promise to
 settle. Late continuations remain observed and retain their epoch/track cleanup;
 this does not cancel native browser work or dismiss permission prompts.
+Worker readiness also completes during cleanup, with worker errors using run
+cancellation. Initial send exceptions retain their error without an unobserved
+readiness rejection. Worker message-deserialization errors fail the active run
+immediately; the same cleanup clears timers/capture/tracks/worker/blob ownership,
+while late callbacks cannot affect replacement sessions.
 Native browser bitmap creation itself is not cancellable, so this policy does
 not claim cancellation or a physical memory bound for unfinished native work.
 This experimental browser boundary preserves core and vision algorithms; physical
