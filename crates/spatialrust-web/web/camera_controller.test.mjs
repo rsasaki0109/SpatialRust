@@ -1,6 +1,43 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CameraSession } from "../../../docs/site/camera/session.mjs";
+import { FrameRate } from "../../../docs/site/camera/frame-rate.mjs";
+
+test("frame rate starts without an invented rate and averages image intervals", () => {
+  const rate = new FrameRate();assert.equal(rate.observe(0), null);
+  assert.equal(rate.observe(125), 8);assert.equal(rate.observe(250), 8);
+  assert.equal(rate.observe(500), 6);
+});
+
+test("frame rate uses an inclusive two-second image window", () => {
+  const rate = new FrameRate();rate.observe(0);rate.observe(1000);
+  assert.equal(rate.observe(2000), 1);
+  assert.equal(rate.observe(2001), 2000 / 1001);
+});
+
+test("frame rate retains at most seventeen timestamps", () => {
+  const rate = new FrameRate();for (const t of [0, 100, 200, 300]) rate.observe(t);
+  for (let t = 301; t < 317; t++) rate.observe(t);
+  assert.equal(rate.observe(317), 1000);
+});
+
+test("a long image gap and an explicit reset need fresh rate samples", () => {
+  const rate = new FrameRate();rate.observe(10);rate.observe(135);
+  assert.equal(rate.observe(3000), null);assert.equal(rate.observe(3250), 4);
+  rate.reset();assert.equal(rate.observe(1), null);assert.equal(rate.observe(501), 2);
+});
+
+test("invalid frame clocks reject without changing retained rate state", () => {
+  const rate = new FrameRate();rate.observe(0);rate.observe(100);
+  for (const t of [NaN, Infinity, -Infinity, -1, 0, 50, 100, "200", null, undefined]) assert.throws(() => rate.observe(t), RangeError);
+  assert.equal(rate.observe(200), 10);
+});
+
+test("frame rate never reports an infinite numerical result", () => {
+  const rate = new FrameRate();rate.observe(0);
+  assert.equal(rate.observe(Number.MIN_VALUE), null);
+  assert.equal(rate.observe(Number.MAX_VALUE), null);
+});
 
 function deferred() { let resolve, reject; const promise = new Promise((a,b) => { resolve=a; reject=b; }); return { promise, resolve, reject }; }
 function harness(acquire = async () => ({ getTracks: () => [] })) {

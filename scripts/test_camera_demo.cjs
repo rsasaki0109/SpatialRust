@@ -154,9 +154,10 @@ async function captureCadence(context, origin) {
   await page.evaluate(() => window.__releaseTimedCapture());
   await page.waitForFunction(() => window.__timedSubmissions.length >= 3);
   const snapshot = await page.evaluate(() => ({ submissions: window.__timedSubmissions.slice(0, 3), captureStarted: window.__captureStarted }));
+  report.cadence = snapshot;
   for (let i = 1; i < snapshot.submissions.length; i++) assert.ok(snapshot.submissions[i].sentAt - snapshot.submissions[i - 1].sentAt >= 125, "capture delay consumed submission interval");
   check("delayed-capture-preserves-submission-interval");
-  assert.ok(Math.abs(snapshot.submissions[0].timestampMs - snapshot.captureStarted) < 2, "capture timestamp came from an old animation callback");
+  assert.ok(snapshot.submissions[0].timestampMs <= snapshot.captureStarted && snapshot.captureStarted - snapshot.submissions[0].timestampMs < 125, "capture timestamp came from an old animation callback");
   const frames = await frameCount(page);await waitFrames(page, frames);
   const reports = await page.evaluate(() => window.__cameraReports);
   assert.ok(reports.some((r) => r.timestampMs === snapshot.submissions[0].timestampMs));check("capture-start-time-survives-rust-report");
@@ -176,6 +177,7 @@ async function captureRate(context, origin) {
   const stamps = snapshot.submissions.map((r) => r.timestampMs).filter((t) => completed.has(t) && t >= newest - 2000).slice(-17);
   assert.ok(stamps.length >= 2);
   const expected = 1000 * (stamps.length - 1) / (stamps.at(-1) - stamps[0]);
+  report.captureRate = { ...snapshot, expected };
   assert.ok(Math.abs(Number.parseFloat(snapshot.fps) - expected) <= .051, "result delivery jitter inflated displayed capture frequency");
   check("completion-jitter-does-not-inflate-capture-rate");await screenshot(page, "mobile-capture-rate");
   await page.locator("#stop").click();await stopped(page);

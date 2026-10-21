@@ -1,11 +1,13 @@
 import { CameraSession } from "./session.mjs";
 import { cameraFrameSize } from "./frame-size.mjs";
+import { FrameRate } from "./frame-rate.mjs";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video"), sample = $("sample-frame"), overlay = $("overlay");
 const ctx = overlay.getContext("2d"), sampleCtx = sample.getContext("2d");
 const motionCtx = $("motion").getContext("2d");
-let frameHandle = 0, capturingToken = 0, lastSubmitted = -Infinity, lastVideoTime = -1, lastResult = 0, phase = 0;
+const frameRate = new FrameRate();
+let frameHandle = 0, capturingToken = 0, lastSubmitted = -Infinity, lastVideoTime = -1, phase = 0;
 let mode = null, width = 256, height = 192, longEdge = 256;
 
 const session = new CameraSession({
@@ -59,10 +61,9 @@ const session = new CameraSession({
       ctx.beginPath(); ctx.moveTo(...track.from); ctx.lineTo(...track.to); ctx.stroke();
       ctx.beginPath(); ctx.arc(...track.to, 1.5, 0, Math.PI * 2); ctx.fill();
     }
-    const now = performance.now();
+    const rate = frameRate.observe(report.timestamp_ms);
     $("points").textContent = `${report.tracks.length} 点`;
-    $("fps").textContent = lastResult ? `${Math.min(99, Math.round(1000 / (now - lastResult)))} fps` : "—";
-    lastResult = now;
+    $("fps").textContent = rate === null ? "—" : `${rate.toFixed(1)} fps`;
     $("person").textContent = backend === "OFF" ? "オフ" : `${Math.round(report.person_fraction * 100)} %`;
     $("engine").textContent = `処理 / ${Math.round(elapsedMs)} ms`;
     $("backend").textContent = backend;
@@ -90,7 +91,7 @@ const session = new CameraSession({
     video.hidden = sample.hidden = overlay.hidden = true;
     $("placeholder").hidden = false; $("mode-label").textContent = "CAMERA OFF";
     ctx.clearRect(0, 0, overlay.width, overlay.height);
-    mode = null; capturingToken = 0; lastResult = 0; lastSubmitted = -Infinity; lastVideoTime = -1;
+    mode = null; capturingToken = 0; frameRate.reset(); lastSubmitted = -Infinity; lastVideoTime = -1;
     for (const id of ["points", "fps", "person", "backend", "frame-size"]) $(id).textContent = "—";
     $("engine").textContent = "待機中"; drawMotion(null);
     delete document.documentElement.dataset.trackingStatus;
@@ -108,12 +109,12 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) { ses
 window.addEventListener("pagehide", () => session.stop());
 drawMotion(null);
 
-async function pump(now) {
+async function pump() {
   const run = session.run;
   const token = run?.token;
   if (!token || !mode) return;
   frameHandle = requestAnimationFrame(pump);
-  if (session.busy || capturingToken === token || now - lastSubmitted < 125) return;
+  if (session.busy || capturingToken === token || performance.now() - lastSubmitted < 125) return;
   if (mode === "camera" && (video.readyState < 2 || video.currentTime === lastVideoTime)) return;
   const sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
   if (mode === "camera" && (!sourceWidth || !sourceHeight)) return;
@@ -125,10 +126,13 @@ async function pump(now) {
       if (size.width !== width || size.height !== height) applyGeometry(size);
     }
     const source = mode === "sample" ? renderSample() : video;
+    // This is capture invocation time, not a physical camera/sensor timestamp.
+    const timestampMs = performance.now();
     const bitmap = await createImageBitmap(source, { resizeWidth: width, resizeHeight: height, resizeQuality: "low" });
     if (session.token !== token || (mode === "camera" && (video.videoWidth !== sourceWidth || video.videoHeight !== sourceHeight))) { bitmap.close(); return; }
-    lastVideoTime = video.currentTime; lastSubmitted = now;
-    session.submit(bitmap, now);
+    lastVideoTime = video.currentTime;
+    // Async capture cannot consume the next successful transfer's rate interval.
+    if (session.submit(bitmap, timestampMs)) lastSubmitted = performance.now();
   } catch (error) { session.fail(run, error); }
   finally { if (capturingToken === token) capturingToken = 0; }
 }
@@ -139,7 +143,7 @@ function applyGeometry(size) {
   $("stage").style.aspectRatio = `${width}/${height}`;
   $("frame-size").textContent = `${width} × ${height} px`;
   for (const id of ["points", "fps", "person"]) $(id).textContent = "—";
-  lastResult = 0; lastVideoTime = -1;
+  frameRate.reset(); lastVideoTime = -1;
   delete document.documentElement.dataset.trackingStatus;
   drawMotion(null);
 }
