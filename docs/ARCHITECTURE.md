@@ -6,6 +6,15 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Mobile AI-assisted camera tracking](MOBILE_CAMERA_DEMO.md) adds an optional
+bounded image-space tracker in the browser/WASM crate. Explicit image and mask
+readbacks/copies feed existing FAST and forward/backward LK; person exclusion
+uses a pinned local confidence model. One worker and one in-flight bitmap per
+session have cancellation-safe camera cleanup. The existing GitHub Pages build
+self-hosts hashed AI assets and a restrictive inherited worker CSP. This
+experimental browser boundary preserves core and vision algorithms; physical
+phone, metric pose and full-room accuracy qualification remain separate.
+
 [Marching-tetrahedra topology](MESH_SURFACE_TOPOLOGY.md) orders quadrilateral
 cut vertices around their boundary and orients all changed cases toward
 increasing field values for the existing positive-oriented cube tetrahedra.

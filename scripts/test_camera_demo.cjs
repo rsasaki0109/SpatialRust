@@ -97,7 +97,9 @@ async function instrument(context) {
   await stopped(page);check("hidden-event-stops-tracks-and-worker");
   await page.evaluate(() => { delete document.hidden; });
   await page.locator("#ai").check();frames = await frameCount(page);
-  await page.locator("#sample").click();await waitFrames(page, frames);
+  await page.locator("#sample").click();await waitFrames(page, frames + 2);
+  report.aiFramesProcessed = (await frameCount(page)) - frames;
+  assert.ok(report.aiFramesProcessed >= 3);
   report.aiBackend = await page.locator("#backend").textContent();
   assert.ok(["GPU", "CPU"].includes(report.aiBackend));check("pinned-real-model-inference-and-mask-through-wasm");
   await screenshot(page, "mobile-ai");await page.locator("#stop").click();await stopped(page);

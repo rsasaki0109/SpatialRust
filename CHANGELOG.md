@@ -19,6 +19,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add an opt-in mobile camera playground to the existing GitHub Pages site:
+  real Rust/WASM FAST/LK background flow, local AI person exclusion, labeled
+  sample playback and explicit camera/worker cleanup. Self-host size/SHA-pinned
+  model/SDK assets under a connection-restricting CSP. Optional web dependencies
+  preserve core and existing vision algorithms. Three-OS native checks and real
+  browser/model tests cover correctness, lifecycle and responsive layouts;
+  physical phone/iOS Safari and metric tracking accuracy remain unverified.
+  See [the camera contract and usage](docs/MOBILE_CAMERA_DEMO.md).
+
 - Correct six marching-tetrahedra quadrilateral cycles and one three-inside
   winding, preventing overlapping/incomplete cut faces and reversed triangles.
   Preserve interpolation, cube decomposition, TSDF integration and public APIs.
