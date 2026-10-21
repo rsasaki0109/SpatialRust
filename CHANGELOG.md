@@ -19,6 +19,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Release camera/sample sessions immediately on worker message-deserialization
+  errors and preserve replacement ownership. Route readiness cleanup through
+  run cancellation so initial message-send exceptions cannot leak an unhandled
+  rejection; retain explicit restart and native-operation limits.
+
 - Settle camera/sample startup promises after Stop, replacement, failure or the
   preparation deadline even while camera acquisition or video playback remains
   pending. Preserve late-response cleanup and replacement ownership; native

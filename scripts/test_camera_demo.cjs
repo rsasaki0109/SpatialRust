@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
 function argument(name) { const i = process.argv.indexOf(name); if (i < 0 || !process.argv[i + 1]) throw new Error(`missing ${name}`); return path.resolve(process.argv[i + 1]); }
 const site = argument("--site"), output = argument("--output");
 const caseIndex = process.argv.indexOf("--regression-case"), regressionCase = caseIndex < 0 ? null : process.argv[caseIndex + 1];
-if (regressionCase && !["startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy", "result-camera", "result-sample", "capture-camera", "capture-sample", "start-acquire", "start-play"].includes(regressionCase)) throw new Error("unknown regression case");
+if (regressionCase && !["startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy", "result-camera", "result-sample", "capture-camera", "capture-sample", "start-acquire", "start-play", "transport-init", "transport-message"].includes(regressionCase)) throw new Error("unknown regression case");
 if (fs.existsSync(output)) throw new Error("fresh browser evidence directory required");
 fs.mkdirSync(output, { recursive: true });
 const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [], failedRequests: [], httpErrors: [], workerErrors: [], cspViolations: [] };
@@ -87,6 +87,80 @@ async function instrument(context) {
       return stream;
     };
   });
+}
+
+async function workerTransport(context, origin, kind) {
+  const page = await context.newPage();activePage = page;
+  const pageErrors = [];page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto(origin + "/camera/");await page.locator("#ai").uncheck();
+  await page.evaluate(() => {
+    window.__transportWorkers = [];window.__transportUnhandled = [];window.__transportRevoked = 0;
+    window.addEventListener("unhandledrejection", (event) => window.__transportUnhandled.push(String(event.reason)));
+    const revoke = URL.revokeObjectURL.bind(URL);URL.revokeObjectURL = (url) => { window.__transportRevoked++;return revoke(url); };
+    const Original = window.Worker;
+    window.Worker = class extends Original {
+      constructor(...args) { super(...args);window.__transportWorkers.push(this); }
+      postMessage(data, transfer) {
+        if (data.kind === "init" && window.__breakInitClone) {
+          window.__breakInitClone = false;
+          // Exercise the real native structured-clone exception before delivery.
+          return super.postMessage({ ...data, uncloneable: () => {} }, transfer);
+        }
+        const result = super.postMessage(data, transfer);
+        if (data.kind === "init" && window.__messageErrorOnInit) {
+          window.__messageErrorOnInit = false;this.dispatchEvent(new MessageEvent("messageerror"));
+        }
+        return result;
+      }
+    };
+  });
+  const settledTasks = () => page.evaluate(() => new Promise((resolve) => setTimeout(() => setTimeout(resolve, 0), 0)));
+  if (kind === "init") {
+    await page.evaluate(() => { window.__breakInitClone = true; });await page.locator("#start").click();
+    await page.waitForFunction(() => document.documentElement.dataset.sessionState === "error");await settledTasks();
+    const unhandled = await page.evaluate(() => window.__transportUnhandled);
+    (report.workerTransportCases ??= []).push({ kind, unhandled, pageErrors: [...pageErrors] });
+    assert.deepEqual(unhandled, [], "initialization failure leaked an unhandled rejection");assert.deepEqual(pageErrors, []);
+    check("native-init-clone-failure-has-no-unhandled-rejection");
+    assert.equal(await page.evaluate(() => window.__cameraCalls.length), 0);
+    assert.equal(await page.evaluate(() => window.__terminatedWorkers), 1);assert.equal(await page.evaluate(() => window.__transportRevoked), 1);
+    assert.equal(await page.locator("#overlay").isHidden(), true);check("init-send-failure-disposes-worker-without-camera-acquisition");
+    await page.locator("#sample").click();await waitFrames(page);
+    await page.evaluate(() => window.__transportWorkers[0].dispatchEvent(new ErrorEvent("error", { message: "late init failure" })));
+    const before = await frameCount(page);await waitFrames(page, before);check("init-send-failure-allows-explicit-sample-restart");
+    await page.locator("#stop").click();await stopped(page);
+  } else {
+    for (const phase of ["camera", "startup", "sample"]) {
+      const prior = await page.evaluate(() => ({ terminated: window.__terminatedWorkers, revoked: window.__transportRevoked, calls: window.__cameraCalls.length }));
+      if (phase === "startup") await page.evaluate(() => { window.__messageErrorOnInit = true; });
+      const before = await frameCount(page);await page.locator(phase === "sample" ? "#sample" : "#start").click();
+      if (phase !== "startup") {
+        await waitFrames(page, before);await page.evaluate(() => { window.__holdNextResult = true; });
+        await page.waitForFunction(() => typeof window.__heldResult === "function");
+        await page.evaluate(() => window.__transportWorkers.at(-1).dispatchEvent(new MessageEvent("messageerror")));
+      }
+      await settledTasks();
+      assert.equal(await page.evaluate(() => document.documentElement.dataset.sessionState), "error", "worker messageerror retained an active session");
+      assert.equal(await page.evaluate(() => document.querySelector("video").srcObject), null);
+      assert.equal(await page.evaluate(() => window.__cameraStreams.every((stream) => stream.getTracks().every((track) => track.readyState === "ended"))), true);
+      assert.equal(await page.evaluate(() => window.__terminatedWorkers), prior.terminated + 1);assert.equal(await page.evaluate(() => window.__transportRevoked), prior.revoked + 1);
+      for (const id of ["points", "fps", "person", "backend", "frame-size"]) assert.equal(await page.locator("#" + id).textContent(), "—");
+      const status = await page.locator("#status").textContent();assert.ok(status.includes("通信") && status.includes("もう一度") && !status.includes("AIをオフ"));
+      assert.equal(await page.evaluate(() => window.__cameraCalls.length), prior.calls + (phase === "camera" ? 1 : 0));
+      check(`${phase}-messageerror-releases-current-session-immediately`);
+      const current = await frameCount(page);await page.locator("#sample").click();await waitFrames(page, current + 1);
+      await page.evaluate(() => {
+        const workers = window.__transportWorkers;workers[workers.length - 2].dispatchEvent(new MessageEvent("messageerror"));
+        window.__heldResult?.();delete window.__heldResult;
+      });
+      const replacement = await frameCount(page);await waitFrames(page, replacement + 1);
+      assert.equal(await page.evaluate(() => window.__terminatedWorkers), prior.terminated + 1);
+      check(`${phase}-late-transport-events-preserve-replacement-sample`);
+      await page.locator("#stop").click();await stopped(page);
+    }
+  }
+  await settledTasks();assert.deepEqual(await page.evaluate(() => window.__transportUnhandled), []);assert.deepEqual(pageErrors, []);
+  await page.close();
 }
 
 async function cancelledStartup(context, origin, phase) {
@@ -541,7 +615,8 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await instrument(context);
   if (regressionCase) {
-    if (regressionCase.startsWith("start-")) await cancelledStartup(context, origin, regressionCase.slice(6));
+    if (regressionCase.startsWith("transport-")) await workerTransport(context, origin, regressionCase.slice(10));
+    else if (regressionCase.startsWith("start-")) await cancelledStartup(context, origin, regressionCase.slice(6));
     else if (regressionCase === "startup") await staleStartup(context, origin);
     else if (regressionCase === "rotation") await intrinsicRotation(context, origin);
     else if (regressionCase === "history") await intrinsicRotation(context, origin, 192, 8);
@@ -607,6 +682,7 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   assert.ok((await denied.locator("#status").textContent()).includes("許可されていません"));check("camera-denial-shows-recovery");
   await denied.locator("#sample").click();await waitFrames(denied);check("sample-works-after-denial");await denied.locator("#stop").click();
   await deniedContext.close();
+  for (const kind of ["init", "message"]) await workerTransport(context, origin, kind);
   for (const phase of ["acquire", "play"]) await cancelledStartup(context, origin, phase);
   await staleStartup(context, origin);
   await intrinsicRotation(context, origin);
