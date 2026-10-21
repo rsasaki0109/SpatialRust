@@ -13,6 +13,48 @@ fn js_error(error: impl core::fmt::Display) -> JsValue {
     JsValue::from_str(&error.to_string())
 }
 
+/// Explicit CPU byte-copy adapter for the bounded camera-flow demo.
+#[cfg(feature = "camera-tracking")]
+#[wasm_bindgen]
+pub struct BrowserCameraTracker {
+    tracker: crate::CameraTracker,
+}
+
+#[cfg(feature = "camera-tracking")]
+#[wasm_bindgen]
+impl BrowserCameraTracker {
+    /// Creates a 64..=320 pixel-per-axis frame tracker.
+    #[wasm_bindgen(constructor)]
+    pub fn new(width: usize, height: usize) -> Result<BrowserCameraTracker, JsValue> {
+        Ok(Self { tracker: crate::CameraTracker::try_new(width, height).map_err(js_error)? })
+    }
+
+    /// Checks lengths, explicitly copies JS gray/mask bytes, and returns a bounded report.
+    pub fn track_gray_copy(
+        &mut self,
+        gray: &Uint8Array,
+        person_mask: &Uint8Array,
+        timestamp_ms: f64,
+    ) -> Result<String, JsValue> {
+        let [width, height] = self.tracker.dimensions();
+        let pixels = (width * height) as u32;
+        if gray.length() != pixels || (person_mask.length() != 0 && person_mask.length() != pixels)
+        {
+            return Err(js_error("camera arrays must match processing dimensions"));
+        }
+        let report = self
+            .tracker
+            .track_gray_copy(&gray.to_vec(), &person_mask.to_vec(), timestamp_ms)
+            .map_err(js_error)?;
+        serde_json::to_string(&report).map_err(js_error)
+    }
+
+    /// Drops retained frame and clock state.
+    pub fn reset(&mut self) {
+        self.tracker.reset();
+    }
+}
+
 /// Browser-visible cooperative cancellation backed by `AbortController`.
 #[wasm_bindgen]
 pub struct BrowserRangeAbort {
