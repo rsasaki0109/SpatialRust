@@ -38,11 +38,11 @@ export class CameraSession {
           const error = new Error(event.message || "ワーカーを起動できませんでした。");
           this.fail(run, error);
         };
-        run.worker.onmessageerror = () => {
+        run.worker.addEventListener("messageerror", () => {
           const error = new Error("処理との通信に失敗しました。もう一度「カメラ開始」か「サンプル再生」を押してください。");
           error.name = "WorkerMessageError";
           this.fail(run, error);
-        };
+        }, { signal: run.captureAbort.signal });
       });
       run.timer = setTimeout(() => this.fail(run, new Error("準備に時間がかかっています。通信を確認して、もう一度お試しください。")), this.timeoutMs);
       run.worker.postMessage({ kind: "init", session: run.token, ai });

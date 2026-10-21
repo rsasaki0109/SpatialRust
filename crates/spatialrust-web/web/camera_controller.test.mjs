@@ -174,7 +174,7 @@ function deferred() { let resolve, reject; const promise = new Promise((a,b) => 
 function harness(acquire = async () => ({ getTracks: () => [] }), options = {}) {
   const workers = [], states = [], errors = [], results = [];
   const session = new CameraSession({ acquire, createWorker() {
-    const w = { messages: [], terminated: false, disposed: false, postMessage(m) { this.messages.push(m); }, terminate() { this.terminated=true; }, dispose() { this.disposed=true; } };
+    const w = Object.assign(new EventTarget(), { messages: [], terminated: false, disposed: false, postMessage(m) { this.messages.push(m); }, terminate() { this.terminated=true; }, dispose() { this.disposed=true; } });
     workers.push(w); return w;
   }, onState: (s) => states.push(s), onError: (e) => errors.push(e), onResult: (r) => results.push(r), timeoutMs: 5000, ...options });
   function send(w, kind, extra={}) { w.onmessage({ data: { kind, session: w.messages[0].session, frameId: w.messages.findLast((m) => m.kind === "frame")?.frameId, ...extra } }); }
@@ -242,7 +242,7 @@ for (const mode of ["camera", "sample"]) test(`${mode} init-send failure is full
   const old = h.workers[0];assert.equal(old.terminated, true);assert.equal(old.disposed, true);
   assert.equal(h.session.run, null);assert.equal(acquired, 0);assert.deepEqual(h.errors, [failure]);
   h.session.createWorker = create;const next = h.session.start("sample");h.send(h.workers[1], "ready");assert.equal(await next, true);
-  old.onerror({ message: "late failed initialization" });old.onmessageerror();await settleSource();
+  old.onerror({ message: "late failed initialization" });old.dispatchEvent(new Event("messageerror"));await settleSource();
   assert.equal(h.errors.length, 1);assert.equal(h.workers[1].terminated, false);h.session.stop();
 });
 
@@ -264,14 +264,14 @@ for (const phase of ["waiting-ready", "pending-camera", "pending-presenter", "pe
     let capture;
     if (phase === "pending-result") assert.equal(h.session.submit({ close() {} }, 1), true);
     if (phase === "pending-capture") capture = assert.rejects(captureBitmap(() => gate.promise, { signal: run.captureAbort.signal }), { name: "AbortError" });
-    old.onmessageerror();await capture;await settleSource();
+    old.dispatchEvent(new Event("messageerror"));await capture;await settleSource();
     assert.equal(await pending, ["pending-result", "pending-capture"].includes(phase));
     assert.equal(h.session.run, null);assert.equal(run.captureAbort.signal.aborted, true);
     assert.equal(old.terminated, true);assert.equal(old.disposed, true);assert.equal(h.errors.length, 1);assert.equal(h.errors[0].name, "WorkerMessageError");
     if (phase !== "pending-camera") assert.ok(source.tracks.every((track) => track.stops === 1));
     assert.ok(source.signals.every((signal) => signal.aborted));
     const next = h.session.start("sample");h.send(h.workers[1], "ready");assert.equal(await next, true);
-    const current = h.session.run;old.onmessageerror();old.onerror({ message: "late error" });h.send(old, "ready");h.send(old, "result");
+    const current = h.session.run;old.dispatchEvent(new Event("messageerror"));old.onerror({ message: "late error" });h.send(old, "ready");h.send(old, "result");
     gate.resolve(phase === "pending-camera" ? source.stream : phase === "pending-capture" ? { close() { closed++; } } : undefined);
     await settleSource();t.mock.timers.tick(90000);await settleSource();
     assert.equal(h.session.run, current);assert.equal(h.workers[1].terminated, false);assert.equal(h.errors.length, 1);assert.equal(h.results.length, 0);
