@@ -1,0 +1,40 @@
+{
+  "schema": "spatialrust.camera-mask-resize-plan.v1",
+  "slice": "146AT",
+  "parent_merge": "4ad75f001a501592afeeaeb52656c90e9c2f397c",
+  "purpose": "Hoist repeated nearest-neighbor horizontal confidence-mask indices out of the row loop, with an identity-width path and exact mask/admission parity.",
+  "contract": {
+    "math": "Preserve strict >0.5 threshold, floor(x*sourceWidth/width), floor(y*sourceHeight/height), binary bytes, all 1..320 dimensions, Float32Array checks and complete source finite/range validation before output allocation. Identity width uses the exact x index; other widths compute one Uint16 horizontal map per call. No retained map cache; at most 640 additional logical index bytes.",
+    "ownership": "Every result remains a fresh Uint8Array with caller-independent storage that can be transferred/detached. No signature, SDK/model/worker protocol, Rust tracker, gray conversion, explicit GPU/CPU readback or dependency change.",
+    "verification": "Run new independent frozen-parent mask controls on parent and candidate, exhaustive horizontal size pairs, small one-hot supports, strict float boundaries, unsampled invalid values and buffer transfer/ownership. Keep all existing browser/WASM/model controls and add actual-browser module parity controls. Compare all mask bytes and all timing rows in two balanced Node surveys, retaining adverse results and making no physical-phone, GPU or end-to-end speed claim.",
+    "preservation": "Preserve all previous camera/renderer files including the completed isolated Cargo target, 493 scientific JSON, 42 frozen native artifacts, room/reference outputs, shared raw WASM/cache, current tracker WASM and resolved lock. No Rust compilation, sensor reads/acquisition, vendor/model/browser/toolchain downloads or payload copies."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-mask-resize-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 0,
+    "combined_new_and_positive_cache_growth_max_bytes": 134217728,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 900,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "public_verification_stream_max_bytes": 41943040,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Reuse the exact tested current Rust WASM and nine hash-checked vendor hardlinks. Fresh owned E-drive site/logs only. Strict read-only inventory and hash-preserve all prior roots; fail closed on storage or source changes."
+  },
+  "benchmark": {
+    "shapes": [[256,256,192,144],[256,256,256,192],[256,256,144,192],[256,256,192,256],[320,320,320,320],[320,320,64,64],[64,64,320,320],[3,2,5,7],[320,1,192,1],[1,320,1,320]],
+    "samples": 7,
+    "calls_per_sample": 16,
+    "warmup_calls": 128,
+    "surveys": 2,
+    "order": ["baseline", "candidate", "candidate", "baseline"],
+    "host_workers": 1,
+    "retained_timed_output_bytes_max": 1638400,
+    "comparison": "Use one fixed confidence pattern including exact/adjacent Float32 threshold values. Check every timed output against the independent frozen parent outside the timer. Publish all raw samples, both survey ratios and adverse rows. No affinity, frequency, other-host-load or GC control and no confidence intervals."
+  },
+  "remaining_80_percent": "Measured calibration/timing and independent motion, full-room accuracy, qualifying physical Linux hardware and integrated operational acceptance remain open."
+}

@@ -31,6 +31,32 @@ const server = http.createServer((req, res) => {
 
 let browser, activePage;
 const check = (name) => report.checks.push(name);
+async function maskResizeParity(context, origin) {
+  const page = await context.newPage();activePage = page;await page.goto(origin + "/camera/");
+  const result = await page.evaluate(async () => {
+    const { personMask } = await import("./person-mask.mjs");
+    const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+    const brute = (source, sw, sh, w, h) => Uint8Array.from({ length: w * h }, (_, i) => Number(source[Math.floor(Math.floor(i / w) * sh / h) * sw + Math.floor((i % w) * sw / w)] > .5));
+    let cases = 0;
+    for (const [sw, sh, w, h] of [[1,1,1,1],[2,3,3,2],[3,2,2,3],[64,79,192,144],[256,256,192,144],[256,256,256,192],[320,320,320,320]]) for (let kind = 0; kind < 6; kind++) {
+      const source = Float32Array.from({ length: sw * sh }, (_, i) => [0, 1, .5, .5000000596046448, .4999999701976776, ((Math.imul(i, 73) ^ (i >>> 3)) >>> 0) % 101 / 100][kind]);
+      if (!same(personMask(source, sw, sh, w, h), brute(source, sw, sh, w, h))) throw new Error("mask resize parity differs");cases++;
+    }
+    const edge = personMask(new Float32Array([0,.4999999701976776,.5,.5000000596046448,1]), 5, 1, 5, 1);
+    if (!same(edge, new Uint8Array([0,0,0,1,1]))) throw new Error("mask threshold differs");
+    let rejected = 0;
+    for (const value of [NaN, Infinity, -Infinity, -.01, 1.01]) { const source = new Float32Array(12);source[11] = value;try { personMask(source, 4, 3, 1, 1); } catch (error) { if (error.message === "人物マスクの値が範囲外です。") rejected++; } }
+    if (rejected !== 5) throw new Error("unsampled mask values accepted");
+    const source = new Float32Array([1,0,0,1]), a = personMask(source, 2, 2, 5, 7), expected = a.slice();
+    const moved = structuredClone(a.buffer, { transfer: [a.buffer] }), b = personMask(source, 2, 2, 5, 7);
+    if (a.byteLength !== 0 || !same(new Uint8Array(moved), expected) || !same(b, expected)) throw new Error("mask transfer ownership differs");
+    b.fill(0);if (source[0] !== 1 || !same(new Uint8Array(moved), expected)) throw new Error("mask results alias");
+    return { cases, rejected, cameraCalls: window.__cameraCalls.length };
+  });
+  assert.equal(result.cases, 42);assert.equal(result.cameraCalls, 0);check("mask-resize-exact-42-browser-cases");
+  check("mask-resize-strict-float-boundary");assert.equal(result.rejected, 5);check("mask-resize-unsampled-invalid-values-rejected");
+  check("mask-resize-fresh-transferable-result-storage");report.maskResizeParity = result;await page.close();
+}
 async function waitFrames(page, before = 0) {
   await page.waitForFunction((n) => document.documentElement.dataset.sessionState === "error" || Number(document.documentElement.dataset.trackedFrames ?? 0) > n, before, { timeout: 120000 });
   assert.notEqual(await page.evaluate(() => document.documentElement.dataset.sessionState), "error", await page.locator("#status").textContent());
@@ -682,6 +708,7 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   assert.ok((await denied.locator("#status").textContent()).includes("許可されていません"));check("camera-denial-shows-recovery");
   await denied.locator("#sample").click();await waitFrames(denied);check("sample-works-after-denial");await denied.locator("#stop").click();
   await deniedContext.close();
+  await maskResizeParity(context, origin);
   for (const kind of ["init", "message"]) await workerTransport(context, origin, kind);
   for (const phase of ["acquire", "play"]) await cancelledStartup(context, origin, phase);
   await staleStartup(context, origin);

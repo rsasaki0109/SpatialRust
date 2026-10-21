@@ -5,6 +5,79 @@ import { FrameRate } from "../../../docs/site/camera/frame-rate.mjs";
 import { CameraProgress } from "../../../docs/site/camera/camera-progress.mjs";
 import { captureBitmap } from "../../../docs/site/camera/capture-bitmap.mjs";
 
+// Frozen parent predicate: validate every source pixel before sampling.
+function frozenPersonMask(source, sourceWidth, sourceHeight, width, height) {
+  if (!(source instanceof Float32Array) || ![sourceWidth, sourceHeight, width, height].every((n) => Number.isInteger(n) && n > 0 && n <= 320) || source.length !== sourceWidth * sourceHeight) throw new Error("人物マスクのサイズが想定と異なります。");
+  for (const value of source) if (!Number.isFinite(value) || value < 0 || value > 1) throw new Error("人物マスクの値が範囲外です。");
+  const mask = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    const row = Math.floor(y * sourceHeight / height) * sourceWidth;
+    for (let x = 0; x < width; x++) mask[y * width + x] = source[row + Math.floor(x * sourceWidth / width)] > 0.5 ? 1 : 0;
+  }
+  return mask;
+}
+
+test("mask resize preserves all bytes across production and irregular shapes", () => {
+  for (const [sw, sh, w, h] of [[1,1,1,1],[2,3,3,2],[3,2,2,3],[64,79,192,144],[256,256,192,144],[256,256,256,192],[320,320,320,320]]) {
+    for (let kind = 0; kind < 6; kind++) {
+      const source = Float32Array.from({ length: sw * sh }, (_, i) => [0, 1, .5, .5000000596046448, .4999999701976776, ((Math.imul(i, 73) ^ (i >>> 3)) >>> 0) % 101 / 100][kind]);
+      assert.deepEqual(personMask(source, sw, sh, w, h), frozenPersonMask(source, sw, sh, w, h));
+    }
+  }
+});
+
+test("mask resize covers every admitted horizontal source/destination size pair", () => {
+  let pairs = 0;
+  for (let sw = 1; sw <= 320; sw++) for (let w = 1; w <= 320; w++) {
+    const source = Float32Array.from({ length: sw }, (_, x) => ((Math.imul(x, 73) ^ (x >>> 2)) & 255) / 255);
+    assert.deepEqual(personMask(source, sw, 1, w, 2), frozenPersonMask(source, sw, 1, w, 2), `${sw}->${w}`);
+    pairs++;
+  }
+  assert.equal(pairs, 102400);
+});
+
+test("mask resize maps small single-pixel supports exactly in both axes", () => {
+  for (let sw = 1; sw <= 8; sw++) for (let sh = 1; sh <= 5; sh++) for (let w = 1; w <= 9; w++) for (let h = 1; h <= 7; h++) {
+    for (let pixel = 0; pixel < sw * sh; pixel++) {
+      const source = new Float32Array(sw * sh);source[pixel] = 1;
+      assert.deepEqual(personMask(source, sw, sh, w, h), frozenPersonMask(source, sw, sh, w, h));
+    }
+  }
+});
+
+test("mask resize retains the strict Float32 threshold including adjacent values", () => {
+  const source = new Float32Array([-0, 0, 1.401298464324817e-45, .4999999701976776, .5, .5000000596046448, 1]);
+  assert.deepEqual([...personMask(source, 7, 1, 7, 1)], [0,0,0,0,0,1,1]);
+});
+
+test("mask resize rejects invalid confidence even when its pixel is never sampled", () => {
+  for (const value of [NaN, Infinity, -Infinity, -.01, 1.01]) for (const pixel of [1, 11]) {
+    const source = new Float32Array(12);source[pixel] = value;
+    assert.throws(() => personMask(source, 4, 3, 1, 1), { message: "人物マスクの値が範囲外です。" });
+  }
+});
+
+test("mask resize output storage is fresh and independent across repeated geometry", () => {
+  const source = new Float32Array([1, 0, 0, 1]), frozen = source.slice();
+  const a = personMask(source, 2, 2, 5, 7), old = a.slice(), b = personMask(source, 2, 2, 5, 7);
+  assert.notEqual(a.buffer, b.buffer);a.fill(0);assert.deepEqual(source, frozen);assert.deepEqual(b, old);
+  source.fill(0);assert.deepEqual(personMask(source, 2, 2, 5, 7), new Uint8Array(35));assert.deepEqual(b, old);
+});
+
+test("transferring a mask does not detach or overwrite another result", () => {
+  const source = new Float32Array([1, 0, 0, 1]);
+  const a = personMask(source, 2, 2, 192, 144), expected = a.slice();
+  const moved = structuredClone(a.buffer, { transfer: [a.buffer] });assert.equal(a.byteLength, 0);
+  const b = personMask(source, 2, 2, 192, 144);assert.deepEqual(new Uint8Array(moved), expected);assert.deepEqual(b, expected);
+});
+
+test("mask resize preserves shape/type error priority without changing caller input", () => {
+  const source = new Float32Array([NaN, 1]);
+  for (const dimensions of [[0,1,1,1],[1.5,1,1,1],[1,1,321,1],[1,1,1,1]]) assert.throws(() => personMask(source, ...dimensions), { message: "人物マスクのサイズが想定と異なります。" });
+  for (const source of [new Float64Array([1]), new Uint8Array([1]), [1], null]) assert.throws(() => personMask(source, 1, 1, 1, 1), { message: "人物マスクのサイズが想定と異なります。" });
+  assert.ok(Number.isNaN(source[0]));assert.equal(source[1], 1);
+});
+
 test("a completed bitmap remains caller-owned after its deadline or signal abort", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const c = new AbortController();let closed = 0;const bitmap = { close() { closed++; } };
