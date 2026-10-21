@@ -62,6 +62,27 @@ an actual worker result across rotation, then hold a bitmap across rotation back
 Another test delays `play()` while retaining metadata to check Stop and a
 replacement sample session. Physical phone and iOS Safari remain untested.
 
+## Camera source termination
+
+The session watches acquired video tracks for `ended` and their stream for
+`inactive`, including during worker initialization and video startup. It also
+checks already ended/inactive state on acquisition, after startup, and before
+each running camera animation step. This check precedes the busy-frame gate, so
+an interrupted source can release resources while a worker result is pending.
+
+Termination stops the worker and every owned stream track, clears old vectors,
+mask, frequency and dimensions, restores the camera-off presentation and enables
+Start, sample and settings. The message asks the visitor to start the camera
+again or try a sample. It does not suggest changing AI for a source interruption.
+There is no automatic permission request or camera restart.
+
+Stream listeners belong to the session's abort controller. Stop removes them
+before stopping tracks; queued old callbacks and late worker results cannot
+affect a replacement session. Source-state polling covers a silent track stop
+without relying solely on the browser's event delivery. Transient muting is not
+treated as termination. A still-live source with frozen pixels or stalled
+decoding remains outside this termination check; this is not a freshness timer.
+
 ## Processing size
 
 While stopped, choose **処理サイズ → 軽量 · 192px** to reduce the tracking image.
@@ -194,6 +215,26 @@ the combined amount is about **2.115GB**, within the fixed bounds. No toolchain,
 browser or sensor payload download was needed; SDK/model assets are static web
 dependencies. Public deployment and exact-head CI are checked after the receipt
 commit, with their records kept separately.
+
+## Source termination delivery evidence (146AL)
+
+The [source receipt](receipts/2026-10-21_camera_source.json) binds eight terminal
+commands and three parent failures: ended, inactive and silently stopped sources
+retained the running presentation. Final results pass **39 JS**, **six asset**
+and **42 browser** controls. Unit cases include already dead acquisition, worker
+initialization, pending video startup, cleanup, late callbacks and an unrelated
+audio event. Browser cases hold an actual worker result, stop actual fake-camera
+tracks, check released resources/cleared fields/restart controls, then deliver
+old source events and the held result into a replacement sample session.
+
+Browser source events are synthetic; this does not qualify physical device
+removal. The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-source-plan.json`.
+Reuse the release WASM and **41,087,603** hard-linked vendor bytes with **zero**
+compiler-cache growth. Local site/log/screenshots add about **3.44MB** beyond
+shared vendor files. Preserve **291** prior camera files, 493 scientific JSON,
+42 frozen native artifacts and the resolved lockfile. Live-source freezes,
+physical phone/Safari behavior and operational 80% qualification remain open.
 
 ## Timing delivery evidence (146AK)
 

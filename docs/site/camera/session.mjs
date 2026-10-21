@@ -42,12 +42,19 @@ export class CameraSession {
         if (!stream) return null;
         if (this.run !== run) { stopTracks(stream); return null; }
         run.stream = stream;
+        run.cameraEvents = new AbortController();
+        const onEnd = () => this.checkCamera(run);
+        const options = { signal: run.cameraEvents.signal };
+        stream.addEventListener?.("inactive", onEnd, options);
+        for (const track of stream.getTracks()) if (track.kind === "video") track.addEventListener("ended", onEnd, options);
+        if (!this.checkCamera(run)) return null;
         return stream;
       }) : Promise.resolve(null);
       await Promise.all([ready, camera]);
       if (this.run !== run) return false;
       await this.onReady(run);
       if (this.run !== run) return false;
+      if (mode === "camera" && !this.checkCamera(run)) return false;
       clearTimeout(run.timer);
       run.started = true;
       this.onState("running", run);
@@ -56,6 +63,17 @@ export class CameraSession {
       if (this.run === run) this.fail(run, error);
       return false;
     }
+  }
+
+  checkCamera(run) {
+    if (this.run !== run || !run?.stream) return false;
+    if (run.stream.active === false || run.stream.getTracks().some((track) => track.kind === "video" && track.readyState === "ended")) {
+      const error = new Error("カメラ映像が終了しました。もう一度「カメラ開始」を押すか、サンプルをお試しください。");
+      error.name = "CameraEndedError";
+      this.fail(run, error);
+      return false;
+    }
+    return true;
   }
 
   submit(bitmap, timestampMs) {
@@ -86,6 +104,7 @@ export class CameraSession {
     if (run) {
       clearTimeout(run.timer);
       run.rejectReady?.(new Error("stopped"));
+      run.cameraEvents?.abort();
       stopTracks(run.stream);
       run.worker?.terminate();
       run.worker?.dispose?.();

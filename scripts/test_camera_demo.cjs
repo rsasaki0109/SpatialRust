@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
 function argument(name) { const i = process.argv.indexOf(name); if (i < 0 || !process.argv[i + 1]) throw new Error(`missing ${name}`); return path.resolve(process.argv[i + 1]); }
 const site = argument("--site"), output = argument("--output");
 const caseIndex = process.argv.indexOf("--regression-case"), regressionCase = caseIndex < 0 ? null : process.argv[caseIndex + 1];
-if (regressionCase && !["startup", "rotation", "cadence", "rate"].includes(regressionCase)) throw new Error("unknown regression case");
+if (regressionCase && !["startup", "rotation", "cadence", "rate", "source-ended", "source-inactive", "source-silent"].includes(regressionCase)) throw new Error("unknown regression case");
 if (fs.existsSync(output)) throw new Error("fresh browser evidence directory required");
 fs.mkdirSync(output, { recursive: true });
 const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [], failedRequests: [], httpErrors: [], workerErrors: [], cspViolations: [] };
@@ -46,6 +46,7 @@ async function instrument(context) {
   await context.addInitScript(() => {
     window.__workerErrors = [];
     window.__workerCount = 0;
+    window.__terminatedWorkers = 0;
     window.__cameraReports = [];
     window.__holdNextResult = false;
     window.__submittedFrames = [];
@@ -71,6 +72,7 @@ async function instrument(context) {
         if (data.kind === "frame") { window.__submittedFrames.push([data.bitmap.width, data.bitmap.height]);if (window.__submittedFrames.length > 64) window.__submittedFrames.shift(); }
         return super.postMessage(data, transfer);
       }
+      terminate() { window.__terminatedWorkers++;return super.terminate(); }
     };
     window.__cameraCalls = [];
     window.__cameraStreams = [];
@@ -131,6 +133,43 @@ async function staleStartup(context, origin) {
   assert.ok((await page.locator("#mode-label").textContent()).startsWith("SAMPLE"));
   assert.equal(await page.evaluate(() => document.documentElement.dataset.sessionState), "running");
   check("stale-camera-start-preserves-replacement-sample");
+  await page.locator("#stop").click();await stopped(page);await page.close();
+}
+
+async function sourceTermination(context, origin, kind) {
+  const page = await context.newPage(); activePage = page;
+  await page.goto(origin + "/camera/");await page.locator("#ai").uncheck();await page.locator("#resolution").selectOption("192");
+  await page.locator("#start").click();await waitFrames(page, 1);
+  await page.evaluate(() => { window.__holdNextResult = true; });
+  await page.waitForFunction(() => typeof window.__heldResult === "function");
+  await page.evaluate((kind) => {
+    const stream = window.__cameraStreams.at(-1), track = stream.getVideoTracks()[0];
+    window.__oldSource = { stream, track };track.stop();
+    // stop() itself does not emit ended; these cases model external source events.
+    if (kind === "ended") track.dispatchEvent(new Event("ended"));
+    if (kind === "inactive") stream.dispatchEvent(new Event("inactive"));
+  }, kind);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.sessionState), "error", "terminated source left stale camera presentation");
+  assert.equal(await page.evaluate(() => document.querySelector("video").srcObject), null);
+  assert.equal(await page.evaluate(() => window.__cameraStreams.every((s) => s.getTracks().every((t) => t.readyState === "ended"))), true);
+  assert.equal(await page.evaluate(() => window.__terminatedWorkers), 1);
+  assert.equal(await page.locator("#overlay").isHidden(), true);assert.equal(await page.locator("#placeholder").isVisible(), true);
+  for (const id of ["points", "fps", "person", "backend", "frame-size"]) assert.equal(await page.locator("#" + id).textContent(), "—");
+  for (const id of ["start", "sample", "ai", "facing", "resolution"]) assert.equal(await page.locator("#" + id).isEnabled(), true);
+  const status = await page.locator("#status").textContent();assert.ok(status.includes("カメラ") && status.includes("もう一度"));assert.ok(!status.includes("AIをオフ"));
+  check(`source-${kind}-releases-capture-worker-and-stale-presentation`);
+  const before = await frameCount(page);await page.locator("#sample").click();await waitFrames(page, before + 1);
+  const late = await page.evaluate(() => {
+    const before = document.documentElement.dataset.trackedFrames;
+    window.__oldSource.track.dispatchEvent(new Event("ended"));window.__oldSource.stream.dispatchEvent(new Event("inactive"));
+    const release = window.__heldResult;delete window.__heldResult;release();
+    return { before, after: document.documentElement.dataset.trackedFrames, state: document.documentElement.dataset.sessionState };
+  });
+  assert.equal(late.after, late.before);assert.equal(late.state, "running");
+  assert.ok((await page.locator("#mode-label").textContent()).startsWith("SAMPLE"));assert.equal(await page.evaluate(() => window.__cameraCalls.length), 1);
+  await waitFrames(page, await frameCount(page));check(`source-${kind}-late-events-cannot-stop-replacement-sample`);
+  if (kind === "ended") await screenshot(page, "mobile-source-recovery");
   await page.locator("#stop").click();await stopped(page);await page.close();
 }
 
@@ -290,6 +329,7 @@ async function intrinsicRotation(context, origin, longEdge = 256) {
     if (regressionCase === "startup") await staleStartup(context, origin);
     else if (regressionCase === "rotation") await intrinsicRotation(context, origin);
     else if (regressionCase === "cadence") await captureCadence(context, origin);
+    else if (regressionCase.startsWith("source-")) await sourceTermination(context, origin, regressionCase.slice(7));
     else await captureRate(context, origin);
     report.passed = true;return;
   }
@@ -353,6 +393,7 @@ async function intrinsicRotation(context, origin, longEdge = 256) {
   await intrinsicRotation(context, origin, 192);
   await captureCadence(context, origin);
   await captureRate(context, origin);
+  for (const kind of ["ended", "inactive", "silent"]) await sourceTermination(context, origin, kind);
   assert.equal(report.externalResponses.length, 0);assert.equal(report.nonGetRequests.length, 0);check("same-origin-static-get-responses-only");
   report.passed = true;
 })().catch(async (error) => {

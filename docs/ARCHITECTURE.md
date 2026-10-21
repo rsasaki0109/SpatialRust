@@ -23,6 +23,11 @@ interval after a successful transfer returns. Completed capture-invocation
 timestamps drive a bounded two-second frequency display, independent of result
 arrival jitter; geometry and Stop reset the rate. Sensor exposure timing remains
 uncalibrated.
+Per-session camera listeners watch video-track end and stream inactivity. Source
+state checks also run before the busy-frame gate; termination clears presentation
+and releases capture/worker ownership. Stop aborts listeners before stopping
+tracks. Late source events/results cannot affect replacement sessions. Live
+source freezing remains separate from this termination boundary.
 This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 
