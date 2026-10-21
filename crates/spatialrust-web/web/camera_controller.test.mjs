@@ -3,6 +3,95 @@ import assert from "node:assert/strict";
 import { CameraSession } from "../../../docs/site/camera/session.mjs";
 import { FrameRate } from "../../../docs/site/camera/frame-rate.mjs";
 import { CameraProgress } from "../../../docs/site/camera/camera-progress.mjs";
+import { captureBitmap } from "../../../docs/site/camera/capture-bitmap.mjs";
+
+test("a completed bitmap remains caller-owned after its deadline or signal abort", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const c = new AbortController();let closed = 0;const bitmap = { close() { closed++; } };
+  assert.equal(await captureBitmap(() => bitmap, { signal: c.signal }), bitmap);
+  c.abort();t.mock.timers.tick(10000);assert.equal(closed, 0);bitmap.close();assert.equal(closed, 1);
+});
+
+test("a capture expires at exactly five seconds and closes its eventual bitmap once", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const gate = deferred();let closed = 0, done = false;
+  const pending = captureBitmap(() => gate.promise);pending.then(() => { done = true; }, () => { done = true; });
+  const rejected = assert.rejects(pending, { name: "FrameCaptureTimeoutError" });
+  t.mock.timers.tick(4999);await Promise.resolve();assert.equal(done, false);
+  t.mock.timers.tick(1);await rejected;assert.equal(done, true);
+  gate.resolve({ close() { closed++; } });await Promise.resolve();assert.equal(closed, 1);t.mock.timers.tick(10000);assert.equal(closed, 1);
+});
+
+test("an already stopped capture never invokes native bitmap creation", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });const c = new AbortController();c.abort();let calls = 0;
+  await assert.rejects(captureBitmap(() => { calls++; }, { signal: c.signal }), { name: "AbortError" });
+  t.mock.timers.tick(10000);assert.equal(calls, 0);
+});
+
+test("Stop rejects a pending capture promptly and closes a later bitmap once", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });const c = new AbortController(), gate = deferred();let closed = 0;
+  const rejected = assert.rejects(captureBitmap(() => gate.promise, { signal: c.signal }), { name: "AbortError" });
+  t.mock.timers.tick(4999);c.abort();await rejected;gate.resolve({ close() { closed++; } });await Promise.resolve();
+  c.abort();t.mock.timers.tick(10000);assert.equal(closed, 1);
+});
+
+test("late native rejection after timeout or Stop is consumed", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  for (const kind of ["timeout", "stop"]) {
+    const c = new AbortController(), gate = deferred();const rejected = assert.rejects(captureBitmap(() => gate.promise, { signal: c.signal }));
+    if (kind === "timeout") t.mock.timers.tick(5000);else c.abort();await rejected;
+    gate.reject(new Error("late native failure"));await new Promise((resolve) => setImmediate(resolve));
+  }
+});
+
+test("synchronous and asynchronous native failures keep their error and cancel the timer", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  for (const kind of ["sync", "async"]) {
+    const failure = new Error(kind), c = new AbortController();
+    await assert.rejects(captureBitmap(() => { if (kind === "sync") throw failure;return Promise.reject(failure); }, { signal: c.signal }), (error) => error === failure);
+    c.abort();t.mock.timers.tick(10000);
+  }
+});
+
+test("each capture gets a fresh interval independent of the previous signal and deadline", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });const first = deferred(), c = new AbortController();
+  const old = captureBitmap(() => first.promise, { signal: c.signal });t.mock.timers.tick(4999);first.resolve({ close() {} });await old;
+  const next = captureBitmap(() => new Promise(() => {}));const rejected = assert.rejects(next, { name: "FrameCaptureTimeoutError" });
+  c.abort();t.mock.timers.tick(1);let done = false;next.catch(() => { done = true; });await Promise.resolve();assert.equal(done, false);
+  t.mock.timers.tick(4998);await Promise.resolve();assert.equal(done, false);t.mock.timers.tick(1);await rejected;
+});
+
+test("capture timer admission rejects invalid durations before invoking native work", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });let calls = 0;
+  for (const timeoutMs of [0, -1, 1.5, NaN, Infinity, null, "5000", 2147483648]) assert.throws(() => captureBitmap(() => { calls++; }, { timeoutMs }), RangeError);
+  assert.equal(calls, 0);assert.throws(() => captureBitmap(null), TypeError);
+  for (const timeoutMs of [1, 5000, 2147483647]) { const bitmap = { close() {} };assert.equal(await captureBitmap(() => bitmap, { timeoutMs }), bitmap); }
+});
+
+test("every capture completion path removes its abort listener", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  for (const kind of ["success", "failure", "timeout", "abort"]) {
+    const c = new AbortController(), active = new Set(), gate = deferred(), signal = c.signal;
+    const add = signal.addEventListener.bind(signal), remove = signal.removeEventListener.bind(signal);
+    signal.addEventListener = (type, fn, options) => { active.add(fn);add(type, fn, options); };
+    signal.removeEventListener = (type, fn) => { active.delete(fn);remove(type, fn); };
+    const pending = captureBitmap(() => gate.promise, { signal });assert.equal(active.size, 1);
+    const checked = kind === "success" ? pending : assert.rejects(pending);
+    if (kind === "success") gate.resolve({ close() {} });else if (kind === "failure") gate.reject(new Error("native"));else if (kind === "timeout") t.mock.timers.tick(5000);else c.abort();
+    await checked;assert.equal(active.size, 0);
+  }
+});
+
+test("session Stop and failure abort old capture ownership while replacement stays live", async () => {
+  for (const kind of ["stop", "failure"]) {
+    const h = harness(), p = h.session.start("sample");h.send(h.workers[0], "ready");await p;
+    const old = h.session.run;let aborted = 0;old.captureAbort.signal.addEventListener("abort", () => { aborted++; });
+    if (kind === "stop") h.session.stop();else h.session.fail(old, new Error("failure"));
+    const next = h.session.start("sample");h.send(h.workers[1], "ready");await next;
+    assert.equal(aborted, 1);assert.equal(old.captureAbort.signal.aborted, true);assert.equal(h.session.run.captureAbort.signal.aborted, false);
+    old.captureAbort.abort();assert.equal(h.session.run.captureAbort.signal.aborted, false);h.session.stop();
+  }
+});
 
 test("camera progress expires at the exact five-second boundary", () => {
   const progress = new CameraProgress(100);assert.equal(progress.stalled(1, 100), false);

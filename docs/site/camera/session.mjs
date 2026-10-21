@@ -12,7 +12,7 @@ export class CameraSession {
 
   async start(mode, ai = true) {
     this.stop();
-    const run = { token: ++this.epoch, mode, ai, worker: null, stream: null, started: false, inFlight: null, frameId: 0 };
+    const run = { token: ++this.epoch, mode, ai, worker: null, stream: null, started: false, inFlight: null, frameId: 0, captureAbort: new AbortController() };
     this.run = run;
     this.onState("loading");
     try {
@@ -113,6 +113,7 @@ export class CameraSession {
     if (run) {
       clearTimeout(run.timer);
       clearTimeout(run.inFlight?.timer);
+      run.captureAbort.abort();
       run.rejectReady?.(new Error("stopped"));
       run.cameraEvents?.abort();
       stopTracks(run.stream);

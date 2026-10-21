@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
 function argument(name) { const i = process.argv.indexOf(name); if (i < 0 || !process.argv[i + 1]) throw new Error(`missing ${name}`); return path.resolve(process.argv[i + 1]); }
 const site = argument("--site"), output = argument("--output");
 const caseIndex = process.argv.indexOf("--regression-case"), regressionCase = caseIndex < 0 ? null : process.argv[caseIndex + 1];
-if (regressionCase && !["startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy", "result-camera", "result-sample"].includes(regressionCase)) throw new Error("unknown regression case");
+if (regressionCase && !["startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy", "result-camera", "result-sample", "capture-camera", "capture-sample"].includes(regressionCase)) throw new Error("unknown regression case");
 if (fs.existsSync(output)) throw new Error("fresh browser evidence directory required");
 fs.mkdirSync(output, { recursive: true });
 const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [], failedRequests: [], httpErrors: [], workerErrors: [], cspViolations: [] };
@@ -181,6 +181,62 @@ async function videoProgress(context, origin, busy) {
     const frames = await frameCount(page);await page.evaluate(() => { const release = window.__heldResult;delete window.__heldResult;release(); });await waitFrames(page, frames + 1);
     await screenshot(page, "mobile-progress-restart");
   }
+  await page.locator("#stop").click();await stopped(page);await page.close();
+}
+
+async function captureDeadline(context, origin, mode) {
+  const page = await context.newPage();activePage = page;
+  await page.addInitScript(() => {
+    const original = globalThis.createImageBitmap;
+    globalThis.createImageBitmap = async (...args) => {
+      const started = performance.now(), bitmap = await original(...args);
+      if (window.__holdCapture) {
+        window.__holdCapture = false;
+        await new Promise((release) => { window.__heldCapture = { bitmap, started, release }; });
+      }
+      return bitmap;
+    };
+  });
+  await page.goto(origin + "/camera/");await page.locator("#ai").uncheck();await page.locator("#resolution").selectOption("192");
+  const start = mode === "camera" ? "#start" : "#sample";
+  const hold = async () => { await page.evaluate(() => { window.__holdCapture = true; });await page.waitForFunction(() => !!window.__heldCapture); };
+  const pendingState = () => page.evaluate(() => ({ frames: document.documentElement.dataset.trackedFrames, sequence: window.__submittedFrameSequence, state: document.documentElement.dataset.sessionState }));
+  await page.locator(start).click();await waitFrames(page, 1);await hold();
+  const pending = await page.evaluate(() => ({ started: window.__heldCapture.started, frames: document.documentElement.dataset.trackedFrames, sequence: window.__submittedFrameSequence, time: document.querySelector("video").currentTime }));
+  await page.evaluate((at) => new Promise((resolve) => setTimeout(resolve, Math.max(0, at + 1000 - performance.now()))), pending.started);
+  const slow = await pendingState();assert.equal(slow.state, "running");assert.equal(slow.sequence, pending.sequence);
+  if (mode === "camera") assert.ok(await page.evaluate((t) => document.querySelector("video").currentTime > t, pending.time));
+  check(`${mode}-slow-capture-below-deadline-preserves-backpressure`);
+  await page.evaluate((at) => new Promise((resolve) => setTimeout(resolve, Math.max(0, at + 5400 - performance.now()))), pending.started);
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.sessionState), "error", "pending bitmap capture retained running presentation");
+  assert.equal(await page.evaluate(() => document.querySelector("video").srcObject), null);
+  assert.equal(await page.evaluate(() => window.__cameraStreams.every((s) => s.getTracks().every((t) => t.readyState === "ended"))), true);
+  assert.equal(await page.evaluate(() => window.__terminatedWorkers), 1);assert.equal(await page.locator("#overlay").isHidden(), true);
+  assert.equal(await page.locator("#placeholder").isVisible(), true);
+  for (const id of ["points", "fps", "person", "backend", "frame-size"]) assert.equal(await page.locator("#" + id).textContent(), "—");
+  const status = await page.locator("#status").textContent();assert.ok(status.includes("取り込み") && status.includes("5秒") && status.includes("もう一度") && !status.includes("開始できませんでした"));
+  check(`${mode}-capture-timeout-clears-presentation-and-resources`);
+  (report.captureDeadlines ??= []).push({ mode, pending, stoppedAt: await page.evaluate(() => performance.now()), status });
+  if (mode === "camera") await screenshot(page, "mobile-capture-timeout");
+  await page.evaluate(() => { window.__expiredCapture = window.__heldCapture;delete window.__heldCapture; });
+  const before = await frameCount(page);await page.locator(start).click();await waitFrames(page, before + 1);await hold();
+  const waiting = await pendingState();await page.evaluate(() => window.__expiredCapture.release());
+  await page.waitForFunction(() => window.__expiredCapture.bitmap.width === 0 && window.__expiredCapture.bitmap.height === 0);
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 300)));
+  assert.deepEqual(await pendingState(), waiting);check(`${mode}-expired-bitmap-closes-without-releasing-replacement-capture`);
+  await page.evaluate(() => { const capture = window.__heldCapture;delete window.__heldCapture;capture.release(); });await waitFrames(page, Number(waiting.frames) + 1);
+  assert.ok((await page.locator("#mode-label").textContent()).startsWith(mode === "camera" ? "LIVE" : "SAMPLE"));
+  assert.equal(await page.evaluate(() => window.__cameraCalls.length), mode === "camera" ? 2 : 0);
+  check(`${mode}-matching-capture-and-explicit-restart-resume-processing`);
+  if (mode === "camera") await screenshot(page, "mobile-capture-restart");
+  await hold();await page.evaluate(() => { window.__stoppedCapture = window.__heldCapture;delete window.__heldCapture; });
+  await page.locator("#stop").click();await stopped(page);const stoppedFrames = await frameCount(page);
+  await page.locator("#sample").click();await waitFrames(page, stoppedFrames + 1);await hold();
+  const replacement = await pendingState();await page.evaluate(() => window.__stoppedCapture.release());
+  await page.waitForFunction(() => window.__stoppedCapture.bitmap.width === 0 && window.__stoppedCapture.bitmap.height === 0);
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 300)));assert.deepEqual(await pendingState(), replacement);
+  await page.evaluate(() => { const capture = window.__heldCapture;delete window.__heldCapture;capture.release(); });await waitFrames(page, Number(replacement.frames) + 1);
+  assert.ok((await page.locator("#mode-label").textContent()).startsWith("SAMPLE"));check(`${mode}-explicit-stop-closes-late-bitmap-and-protects-new-capture`);
   await page.locator("#stop").click();await stopped(page);await page.close();
 }
 
@@ -444,6 +500,7 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
     else if (regressionCase.startsWith("source-")) await sourceTermination(context, origin, regressionCase.slice(7));
     else if (regressionCase.startsWith("progress-")) await videoProgress(context, origin, regressionCase === "progress-busy");
     else if (regressionCase.startsWith("result-")) await resultDeadline(context, origin, regressionCase.slice(7));
+    else if (regressionCase.startsWith("capture-")) await captureDeadline(context, origin, regressionCase.slice(8));
     else await captureRate(context, origin);
     report.passed = true;return;
   }
@@ -510,6 +567,7 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   for (const kind of ["ended", "inactive", "silent"]) await sourceTermination(context, origin, kind);
   await videoProgress(context, origin, false);await videoProgress(context, origin, true);
   for (const mode of ["camera", "sample"]) await resultDeadline(context, origin, mode);
+  for (const mode of ["camera", "sample"]) await captureDeadline(context, origin, mode);
   assert.equal(report.externalResponses.length, 0);assert.equal(report.nonGetRequests.length, 0);check("same-origin-static-get-responses-only");
   report.passed = true;
 })().catch(async (error) => {

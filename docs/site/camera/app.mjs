@@ -2,6 +2,7 @@ import { CameraSession } from "./session.mjs";
 import { cameraFrameSize } from "./frame-size.mjs";
 import { FrameRate } from "./frame-rate.mjs";
 import { CameraProgress } from "./camera-progress.mjs";
+import { captureBitmap } from "./capture-bitmap.mjs";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video"), sample = $("sample-frame"), overlay = $("overlay");
@@ -84,7 +85,7 @@ const session = new CameraSession({
     if (state === "running") { setStatus("映像から特徴点を探しています。"); frameHandle = requestAnimationFrame(pump); }
   },
   onError: (error) => {
-    if (["CameraEndedError", "CameraStalledError", "FrameResultTimeoutError"].includes(error.name)) { setStatus(error.message);return; }
+    if (["CameraEndedError", "CameraStalledError", "FrameResultTimeoutError", "FrameCaptureTimeoutError"].includes(error.name)) { setStatus(error.message);return; }
     const denied = error.name === "NotAllowedError" || /permission|denied/i.test(error.message);
     setStatus(denied ? "カメラの使用が許可されていません。ブラウザの権限を確認するか、サンプルでお試しください。" : `開始できませんでした。${error.message}${error.name === "RangeError" ? "" : " AIをオフにして試すこともできます。"}`);
   },
@@ -136,7 +137,7 @@ async function pump() {
     const source = mode === "sample" ? renderSample() : video;
     // This is capture invocation time, not a physical camera/sensor timestamp.
     const timestampMs = performance.now();
-    const bitmap = await createImageBitmap(source, { resizeWidth: width, resizeHeight: height, resizeQuality: "low" });
+    const bitmap = await captureBitmap(() => createImageBitmap(source, { resizeWidth: width, resizeHeight: height, resizeQuality: "low" }), { signal: run.captureAbort.signal });
     if (session.token !== token || (mode === "camera" && (video.videoWidth !== sourceWidth || video.videoHeight !== sourceHeight))) { bitmap.close(); return; }
     lastVideoTime = video.currentTime;
     // Async capture cannot consume the next successful transfer's rate interval.

@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.camera-capture-plan.v1",
+  "slice": "146AO",
+  "parent_merge": "cedf9c8899e00a10c34d11cbad1f4aa4ac376183",
+  "purpose": "Bound each camera/sample bitmap acquisition to five seconds and release late bitmap completions after timeout or Stop without disturbing a replacement session.",
+  "contract": {
+    "deadline": "Each createImageBitmap invocation owns a 5000ms timer, independent of startup, input progress and worker-result deadlines. Normal resolution/rejection and session abort clear it and remove its listener. Validate integral positive browser timer intervals before invoking capture.",
+    "ownership": "Stop aborts the current capture wait. Timeout rejects the application wait and reuses session cleanup and an explicit restart message. An eventual late bitmap is closed, never submitted; late rejection is consumed. A replacement session owns a new abort signal and deadline. Browser-native createImageBitmap has no cancellation API: pending native operations are not claimed to be cancelled or physically memory-bounded across restarts.",
+    "verification": "Reproduce both parent modes retaining stale running presentation by delaying an actual browser bitmap completion while camera input stays healthy. Use deterministic unit clocks for exact deadlines, timer/listener cleanup and cancellation races. Browser controls cover timeout, late bitmap closure, replacement capture ownership, successful recovery and explicit Stop. Retain real WASM/model, source/progress/result deadlines, timing, rotation/history, presets and CSP checks; fake media only.",
+    "preservation": "Preserve scientific JSON, frozen native artifacts, all prior camera evidence, resolved Cargo.lock and release WASM. No Rust/native/core/GPU or dependency change, compilation, sensor downloads or new SDK/model acquisition."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-capture-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Hard-link hash-identical vendor assets into a fresh E: site. Reuse the release WASM, matching bindgen and installed browser/runtime. Preserve all earlier outputs, including failures.",
+    "public_verification_stream_max_bytes": 33554432,
+    "asset_download_scope": "Zero covers local SDK/model acquisition. Public HTTPS verification may stream up to 32MiB without persisting vendor payloads."
+  },
+  "remaining_80_percent": "Measured canonical calibration/timing and independent motion, full-room accuracy, qualifying Linux hardware and integrated acceptance remain open."
+}

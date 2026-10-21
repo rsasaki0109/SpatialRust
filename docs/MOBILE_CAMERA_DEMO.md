@@ -106,6 +106,31 @@ time continues advancing require separate detection. A worker with healthy input
 has the independent result deadline below. No device behavior or physical phone
 performance is qualified.
 
+## Bitmap capture deadline
+
+Every camera/sample `createImageBitmap` invocation owns a **5000ms** wait limit.
+Only the current session may submit its completed bitmap. Normal completion or
+rejection clears the timer and removes the abort listener. Stop, source failure,
+input stall and any other session failure abort the capture wait immediately.
+Timeout rejects the wait, reuses the session cleanup boundary, clears old output
+and offers explicit **カメラ開始** or **サンプル再生**. There is no automatic restart.
+
+A bitmap that eventually arrives after Stop or timeout is closed once instead
+of being submitted. Its late rejection is consumed. Each replacement session has
+a fresh abort signal and each capture a fresh timer; old completions cannot clear
+another capture's backpressure or update its display. Short delays below the
+deadline remain valid. The existing capture-invocation timestamp and successful
+transfer cadence are preserved. Configurable intervals must be positive integral
+values within the browser timer range before native work is invoked.
+
+This bounds the application's wait, not the browser-native operation: the browser
+offers no cancellation API for `createImageBitmap`. Restart can coexist with an
+unfinished native call. Eventual cleanup is guaranteed only when that call returns;
+this does not establish a physical memory bound across repeated restarts. A
+blocked main thread can also delay the timer callback. Browser tests delay actual
+created bitmaps, rather than claiming a real native or GPU hang. Phone/Safari
+behavior and physical exposure timing remain separate qualification work.
+
 ## Worker result deadline
 
 Each submitted camera or sample frame owns a **15000ms** result timer. A matching
@@ -262,6 +287,30 @@ the combined amount is about **2.115GB**, within the fixed bounds. No toolchain,
 browser or sensor payload download was needed; SDK/model assets are static web
 dependencies. Public deployment and exact-head CI are checked after the receipt
 commit, with their records kept separately.
+
+## Capture deadline delivery evidence (146AO)
+
+The [capture receipt](receipts/2026-10-21_camera_capture.json) binds seven terminal
+commands and both parent failures: delaying an actual browser bitmap completion
+left camera/sample sessions running beyond five seconds. Final checks pass
+**66 JS**, **six asset** and **69 browser** controls. Deterministic clocks cover
+the exact boundary, interval admission, success/failure/abort cleanup, listener
+removal and late native completion/rejection. Browser tests retain an actual
+bitmap, verify timeout cleanup, restart with a different capture held, and then
+prove that the expired bitmap closes without releasing the new capture. Both
+modes also test explicit Stop, a replacement sample and late bitmap closure.
+Existing WASM/model, timing, result/source/progress, rotation/history, presets
+and CSP checks pass. Captures and source interruption remain synthetic.
+
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-capture-plan.json`.
+Reuse the release WASM and **41,087,603** hard-linked vendor bytes with **zero**
+compiler-cache growth. Local site/log/screenshots add about **4.70MB** beyond
+shared vendor files. Preserve **517** prior camera files, 493 scientific JSON,
+42 frozen native artifacts and the resolved lockfile. Exact-head CI, merge and
+live Pages verification follow the source-bound receipt. Browser-native work
+cannot be cancelled; physical memory bounds across repeated restarts, phone/Safari
+and operational 80% qualification remain open.
 
 ## Result deadline delivery evidence (146AN)
 

@@ -35,6 +35,11 @@ a 15000ms result timer. Only the current session's matching frame sequence can
 release that pending frame and update presentation. Completion, Stop and failure
 clear the timer; old timers/results cannot affect another frame or session.
 Result timeout reuses cleanup and offers explicit restart without acquisition.
+Each bitmap creation also owns a separate 5000ms wait deadline. Session Stop
+aborts that wait; completion, rejection, abort and timeout clear its timer and
+listener. A bitmap arriving after cancellation is closed without submission.
+Native browser bitmap creation itself is not cancellable, so this policy does
+not claim cancellation or a physical memory bound for unfinished native work.
 This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 
