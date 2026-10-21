@@ -40,12 +40,7 @@ fn rejects_first_center_overflow() {
     for axis in 0..3 {
         let mut coordinates = [0.; 3];
         coordinates[axis] = f32::MAX;
-        rejected(
-            Vec3::new(coordinates[0], coordinates[1], coordinates[2]),
-            f32::MAX,
-            [1; 3],
-            0.5,
-        );
+        rejected(Vec3::new(coordinates[0], coordinates[1], coordinates[2]), f32::MAX, [1; 3], 0.5);
     }
 }
 
@@ -69,12 +64,7 @@ fn rejects_overflowing_f32_offset() {
         coordinates[axis] = -f32::MAX;
         let mut dims = [1; 3];
         dims[axis] = 2;
-        rejected(
-            Vec3::new(coordinates[0], coordinates[1], coordinates[2]),
-            f32::MAX,
-            dims,
-            0.5,
-        );
+        rejected(Vec3::new(coordinates[0], coordinates[1], coordinates[2]), f32::MAX, dims, 0.5);
     }
 }
 
@@ -127,11 +117,9 @@ fn rejects_zero_dimensions() {
 
 #[test]
 fn zero_dimensions_reject_before_capacity() {
-    for dims in [
-        [0, usize::MAX, usize::MAX],
-        [usize::MAX, 0, usize::MAX],
-        [usize::MAX, usize::MAX, 0],
-    ] {
+    for dims in
+        [[0, usize::MAX, usize::MAX], [usize::MAX, 0, usize::MAX], [usize::MAX, usize::MAX, 0]]
+    {
         rejected(origin(), 1., dims, 0.5);
     }
 }
