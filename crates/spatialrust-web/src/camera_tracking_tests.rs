@@ -87,7 +87,7 @@ fn current_person_mask_rejects_arriving_track_neighborhoods() {
     let mask: Vec<_> = (0..W * H).map(|i| u8::from(i % W >= W / 2)).collect();
     let r = t.track_gray_copy(&p, &mask, 100.).unwrap();
     assert!(!r.tracks.is_empty());
-    assert!(r.tracks.iter().all(|p| p.to[0] + 14. < (W / 2) as f64));
+    assert!(r.tracks.iter().all(|p| p.to[0] + 22. < (W / 2) as f64));
     assert_eq!(r.person_fraction, 0.5);
 }
 
@@ -99,7 +99,7 @@ fn source_mask_is_kept_until_the_next_pair() {
     t.track_gray_copy(&p, &mask, 0.).unwrap();
     let r = t.track_gray_copy(&p, &[], 100.).unwrap();
     assert!(!r.tracks.is_empty());
-    assert!(r.tracks.iter().all(|p| p.from[0] + 14. < (W / 2) as f64));
+    assert!(r.tracks.iter().all(|p| p.from[0] + 22. < (W / 2) as f64));
 }
 
 #[test]

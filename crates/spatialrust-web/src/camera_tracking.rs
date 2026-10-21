@@ -12,7 +12,7 @@ use crate::{WebError, WebResult};
 
 const MAX_AXIS: usize = 320;
 const MAX_POINTS: usize = 80;
-const PATCH_MARGIN: usize = 14;
+const PATCH_MARGIN: usize = 22;
 
 /// Whether a frame pair provides usable image-space motion.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -107,7 +107,7 @@ impl CameraTracker {
     ///
     /// An empty mask disables exclusion; otherwise `1` marks person and `0`
     /// background at the exact frame resolution. Both endpoints and their
-    /// 14-pixel neighborhoods must be background. Invalid shape, labels or
+    /// 22-pixel neighborhoods must be background. Invalid shape, labels or
     /// non-monotonic/non-finite timestamps reject before retained state changes.
     pub fn track_gray_copy(
         &mut self,
@@ -136,10 +136,10 @@ impl CameraTracker {
         if let Some(previous) = self.previous.as_ref().filter(|_| !gap && !self.points.is_empty()) {
             let options = RobustTrackOptions {
                 lucas_kanade: LucasKanadeOptions {
-                    window_radius: 3,
+                    window_radius: 5,
                     pyramid_levels: 3,
-                    max_iterations: 12,
-                    epsilon: 0.01,
+                    max_iterations: 30,
+                    epsilon: 0.001,
                     min_eigenvalue: 1e-4,
                 },
                 max_forward_backward_error: 1.,
