@@ -23,6 +23,9 @@ const MAX_LABEL_BYTES: usize = 1024;
 const MAX_HEADER_BYTES: usize = 8192;
 const WRITE_BUFFER_BYTES: usize = 16 * 1024;
 
+#[path = "fusion_readback.rs"]
+mod readback;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct InputIdentity {
@@ -282,7 +285,7 @@ fn metadata_bytes(records: usize, associations: usize, scratch: usize) -> Result
             n.checked_add(
                 3 * (size_of::<Context>() + MAX_HEADER_BYTES)
                     + size_of::<Coverage>()
-                    + WRITE_BUFFER_BYTES,
+                    + 3 * WRITE_BUFFER_BYTES,
             )
         })
         .ok_or_else(|| "coverage metadata size overflow".into())
@@ -660,6 +663,17 @@ fn temp_path(path: &Path) -> PathBuf {
 }
 
 impl CompletedCoverage {
+    pub(super) fn verified_receipt(&self, path: &Path) -> Result<FileReceipt> {
+        let verified_bytes = readback::verify_file(&self.0, path)?;
+        // The existing checksum pass operates on this producer-owned artifact.
+        // Canonical readback is bounded separately and never trusts file fields.
+        let receipt = FileReceipt::from_path(ReceiptRole::Output, path)?;
+        if receipt.size_bytes != Some(verified_bytes) {
+            return Err("coverage size changed between readback and checksum".into());
+        }
+        Ok(receipt)
+    }
+
     pub(super) fn publish(&self, path: &Path) -> Result<()> {
         let temporary = temp_path(path);
         let file = OpenOptions::new().write(true).create_new(true).open(&temporary)?;

@@ -206,7 +206,7 @@ fn run_config(config: Config) -> Result<(), Box<dyn Error>> {
     let coverage_path = config.output_dir.join(COVERAGE_FILE);
     if let Some(result) = &execution {
         result.coverage.publish(&coverage_path)?;
-        let coverage_receipt = FileReceipt::from_path(ReceiptRole::Output, &coverage_path)?;
+        let coverage_receipt = result.coverage.verified_receipt(&coverage_path)?;
         artifacts.push(replay_artifact("fusion-coverage", &coverage_receipt)?);
         fs::write(&mesh_path, format!("{}\n", result.mesh_json))?;
         let mesh_receipt = FileReceipt::from_path(ReceiptRole::Output, &mesh_path)?;

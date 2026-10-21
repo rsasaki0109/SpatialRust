@@ -1,5 +1,8 @@
 //! Synthetic traceability controls; no measured calibration or accuracy claim.
 
+#[path = "fusion_readback_tests.rs"]
+mod readback_tests;
+
 use super::super::coverage_characterization::{episode, sample};
 use super::*;
 

@@ -6,6 +6,14 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Canonical fusion readback](FUSION_READBACK.md) compares the producer-owned saved
+coverage bytes against the independently completed ledger before parent success.
+Fixed read/compare/write buffers and a pre-buffer byte limit reject malformed,
+changed, truncated or appended data without untrusted JSON allocations. Existing
+checksums follow exact byte verification; schema/public APIs, source/calibration,
+geometry and explicit CPU/GPU ownership remain. This is a producer readback gate,
+not an authenticated filesystem transaction or physical accuracy qualification.
+
 [Portable mapping receipt consistency](MAPPING_RECEIPT_CONSISTENCY.md) binds
 completed source counts/time bounds and front trajectory totals, topic, frames
 and corrected clock to existing source/calibration state. TSDF roots agree with

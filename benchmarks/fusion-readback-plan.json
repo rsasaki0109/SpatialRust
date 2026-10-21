@@ -1,0 +1,29 @@
+{
+  "schema": "spatialrust.fusion-readback-plan.v1",
+  "slice": "146AD",
+  "parent_merge": "cc492d624f8ec78dd187714a2dc33b9c45fc6a04",
+  "purpose": "Verify the producer-owned persisted coverage artifact against its independently completed in-memory ledger before a parent success state is written, without parsing untrusted JSON or changing canonical serialization.",
+  "fixed_contract": {
+    "trust": "Use the sealed CompletedCoverage from the original episode/context validation as the expected value. Regenerate the same compact serde JSON and final newline into a bounded comparator; never derive expected fields from the saved file. Compare exact producer bytes, rejecting even semantically equivalent reformatting. This is a private producer readback gate, not a standalone arbitrary-JSON reader or authenticated/concurrent-filesystem transaction.",
+    "bounds": "Open only the supplied regular artifact file. Keep the existing 65,536-record and 8MiB ledger metadata limits. Account conservatively for three fixed 16KiB read/compare/write buffers in that metadata budget. Stream at most the configured JSON limit (never above 32MiB) plus one explicit trailing-byte probe; cap underlying reads before buffering. No untrusted string/vector allocation, complete JSON string, point payload clone, new dependency, thread or unsafe.",
+    "errors": "Reject missing/directory, truncation, byte differences, missing newline, appended data, configured limit overflow and read errors. Handle short reads and Interrupted normally. After a comparator error, retry/drop must not read further. Verification is read-only and never removes or repairs the artifact or an existing temporary file.",
+    "publication": "Keep the existing atomic no-clobber publication and schema 1 bytes. Before artifact admission and the parent success state, require canonical readback, then the existing FileReceipt checksum and an exact checked size match. Existing hashing/manifest IO and producer-owned-file assumptions remain separate from the bounded comparison pass. Preserve blocked-run diagnostics without coverage artifacts.",
+    "unchanged": "Keep all public library APIs/dependencies, source/calibration/frame/clock admission, nearest-neighbor/tie/reuse policy, scan transport, odometry/TSDF geometry and physical acceptance gates unchanged. Submission counts do not prove physical messages, voxel contributions, accuracy or operational 80%."
+  },
+  "verification": "Commit this plan and reserve 146AD before native execution. First pass the original 100-case full-bag suite against unchanged production as a characterization, with no fabricated failing legacy verifier. Then add canonical identity, field/context/association/count forgery, truncation/newline/trailing/reformatting, missing/non-file, read-only behavior, short/Interrupted/error/poisoned reads, exact limit/probe and fixed-buffer controls. Reuse synthetic SQLite full-run publication/blocked controls. Run full-bag/E2E, ROS2 default/all, records/sync/mapping/viewer-all/calibration controls, ROS2 all-target Clippy and formatting, then the existing 131-check three-OS CI gate. Preserve all failed logs and every terminal command.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/fusion-readback-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned sources and completed room outputs. Reuse the cache, preserve failed logs and never rebuild frozen binaries. No real sensor read/download/copy or real-motion fit. Synthetic SQLite/JSON fixtures stay in the owned external temp directory."
+  },
+  "remaining_80_percent": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Successful record-submission traceability does not establish these requirements."
+}

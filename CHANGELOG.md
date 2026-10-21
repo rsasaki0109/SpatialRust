@@ -19,6 +19,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Verify persisted fusion coverage against the independently completed ledger
+  before parent success. Compare canonical bytes through fixed buffers without
+  decoding untrusted JSON; reject corruption, truncation, appended content and
+  read errors, then bind the existing file checksum and exact size. Preserve
+  schemas, publication, matching, geometry and dependencies. Twenty-eight new
+  controls expand full-bag coverage to 128 passes, with original 100-case
+  characterization and related IO/feature/Clippy checks. See
+  [the bounded readback evidence](docs/FUSION_READBACK.md).
+
 - Add a bounded, source/calibration-bound fusion submission ledger to the
   full-bag example. Track stable episode indices, exact replay associations,
   successful TSDF calls, unmatched records and rear reuse without copying point

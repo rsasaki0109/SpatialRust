@@ -7,6 +7,11 @@ The [prospective contract](../benchmarks/fusion-coverage-plan.json) was committe
 before native execution. The [receipt](receipts/2026-10-21_fusion_coverage.json)
 binds the tested source, command logs and preservation checks.
 
+The subsequent [canonical readback gate](FUSION_READBACK.md) checks saved producer
+bytes against this independently completed ledger before parent success. Its
+three fixed IO buffers are budgeted inside the same 8MiB metadata cap. The
+100-case results below describe the original 146AC implementation.
+
 ## Identity and meaning
 
 Each descriptor names its immutable sorted `MemoryEpisode` index, front/rear
