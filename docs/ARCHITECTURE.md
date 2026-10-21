@@ -6,6 +6,12 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Fallible TSDF grid construction](TSDF_GRID_ADMISSION.md) validates finite
+origins/voxel centers and checked field capacities before allocator access.
+Both fields reserve fallibly before initialization, using existing scene errors.
+Valid initial values/layout, integration, public APIs and dependencies remain;
+there is no implicit device copy or new physical memory/accuracy guarantee.
+
 [TSDF support admission](TSDF_SUPPORT_ADMISSION.md) intersects the original raw
 inclusive support-cell ranges with the grid before endpoint clamping. Disjoint
 samples leave the volume unchanged; overlapping samples retain original field
