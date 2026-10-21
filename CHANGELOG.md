@@ -19,6 +19,15 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reject fully disjoint TSDF sample support before clamping it to volume edges,
+  preventing outside samples from changing boundary voxels or creating a false
+  mesh. Preserve overlapping field math, quantization, public APIs and submitted
+  cloud counts. Twenty-one synthetic controls reproduce 18 original failures;
+  scene default/all features pass 26/28 cases, with 729 independent support
+  enumerations and 343 frozen-parent update comparisons. Related mapping/Clippy
+  checks and three-OS scene coverage retain physical acceptance requirements.
+  See [the fixed contract and results](docs/TSDF_SUPPORT_ADMISSION.md).
+
 - Verify persisted fusion coverage against the independently completed ledger
   before parent success. Compare canonical bytes through fixed buffers without
   decoding untrusted JSON; reject corruption, truncation, appended content and

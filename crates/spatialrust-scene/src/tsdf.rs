@@ -53,8 +53,10 @@ impl TsdfVolume {
 
     /// Integrates one metric depth sample at a world-space point.
     ///
-    /// Updates every voxel whose center lies within the truncation band, using
-    /// a view-ray signed distance so the field has zero crossings for meshing.
+    /// Updates valid cells in the inclusive floor-index range of the cube
+    /// `point +/- truncation`, using a view-ray signed distance for meshing.
+    /// Fully disjoint support is ignored; partial overlap is clipped to the
+    /// grid. This retains the discretized cube rather than a spherical band.
     pub fn integrate_point(&mut self, point: Vec3<f32>, sensor_origin: Vec3<f32>) {
         let depth = (point - sensor_origin).length();
         if !(depth.is_finite() && depth > 1e-5) {
@@ -64,8 +66,17 @@ impl TsdfVolume {
         let radius = self.truncation;
         let min = point - Vec3::new(radius, radius, radius);
         let max = point + Vec3::new(radius, radius, radius);
-        let i0 = self.world_to_index_clamped(min);
-        let i1 = self.world_to_index_clamped(max);
+        let i0 = self.world_to_index(min);
+        let i1 = self.world_to_index(max);
+        // Reject disjoint raw ranges before either endpoint is clamped onto
+        // a boundary cell. Keep the original quantization for every overlap.
+        if (0..3).any(|axis| i1[axis] < 0 || i0[axis] >= self.dims[axis] as isize) {
+            return;
+        }
+        let i0: [usize; 3] =
+            std::array::from_fn(|axis| i0[axis].clamp(0, self.dims[axis] as isize - 1) as usize);
+        let i1: [usize; 3] =
+            std::array::from_fn(|axis| i1[axis].clamp(0, self.dims[axis] as isize - 1) as usize);
         for z in i0[2]..=i1[2] {
             for y in i0[1]..=i1[1] {
                 for x in i0[0]..=i1[0] {
@@ -185,15 +196,11 @@ impl TsdfVolume {
         }
     }
 
-    fn world_to_index_clamped(&self, point: Vec3<f32>) -> [usize; 3] {
+    fn world_to_index(&self, point: Vec3<f32>) -> [isize; 3] {
         let ix = ((point.x - self.origin.x) / self.voxel_size).floor() as isize;
         let iy = ((point.y - self.origin.y) / self.voxel_size).floor() as isize;
         let iz = ((point.z - self.origin.z) / self.voxel_size).floor() as isize;
-        [
-            ix.clamp(0, self.dims[0] as isize - 1) as usize,
-            iy.clamp(0, self.dims[1] as isize - 1) as usize,
-            iz.clamp(0, self.dims[2] as isize - 1) as usize,
-        ]
+        [ix, iy, iz]
     }
 
     fn index_to_world(&self, index: [usize; 3]) -> Vec3<f32> {
@@ -211,6 +218,10 @@ impl TsdfVolume {
 
 const CORNER_OFFSETS: [[usize; 3]; 8] =
     [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]];
+
+#[cfg(test)]
+#[path = "tsdf_support_tests.rs"]
+mod support_tests;
 
 #[cfg(test)]
 mod tests {
