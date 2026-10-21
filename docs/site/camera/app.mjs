@@ -6,7 +6,7 @@ const video = $("video"), sample = $("sample-frame"), overlay = $("overlay");
 const ctx = overlay.getContext("2d"), sampleCtx = sample.getContext("2d");
 const motionCtx = $("motion").getContext("2d");
 let frameHandle = 0, capturingToken = 0, lastSubmitted = -Infinity, lastVideoTime = -1, lastResult = 0, phase = 0;
-let mode = null, width = 256, height = 192;
+let mode = null, width = 256, height = 192, longEdge = 256;
 
 const session = new CameraSession({
   acquire: () => {
@@ -26,13 +26,13 @@ const session = new CameraSession({
   },
   onReady: async (run) => {
     if (session.run !== run) return;
-    let size = { width: 256, height: 192 };
+    let size = cameraFrameSize(4, 3, longEdge);
     if (run.mode === "camera") {
       video.srcObject = run.stream;
       await video.play();
       // Stop or a replacement session may win while play() is pending.
       if (session.run !== run) return;
-      size = cameraFrameSize(video.videoWidth, video.videoHeight);
+      size = cameraFrameSize(video.videoWidth, video.videoHeight, longEdge);
     }
     mode = run.mode;
     applyGeometry(size);
@@ -75,7 +75,7 @@ const session = new CameraSession({
   onState: (state) => {
     const active = state === "loading" || state === "running";
     $("start").disabled = active; $("sample").disabled = active;
-    $("stop").disabled = !active; $("ai").disabled = active; $("facing").disabled = active;
+    $("stop").disabled = !active; $("ai").disabled = active; $("facing").disabled = active; $("resolution").disabled = active;
     document.documentElement.dataset.sessionState = state;
     if (state === "loading") setStatus("準備しています。初回はAI用ファイルを読み込みます。停止はいつでもできます。");
     if (state === "running") { setStatus("映像から特徴点を探しています。"); frameHandle = requestAnimationFrame(pump); }
@@ -91,14 +91,18 @@ const session = new CameraSession({
     $("placeholder").hidden = false; $("mode-label").textContent = "CAMERA OFF";
     ctx.clearRect(0, 0, overlay.width, overlay.height);
     mode = null; capturingToken = 0; lastResult = 0; lastSubmitted = -Infinity; lastVideoTime = -1;
-    for (const id of ["points", "fps", "person", "backend"]) $(id).textContent = "—";
+    for (const id of ["points", "fps", "person", "backend", "frame-size"]) $(id).textContent = "—";
     $("engine").textContent = "待機中"; drawMotion(null);
     delete document.documentElement.dataset.trackingStatus;
   },
 });
 
-$("start").addEventListener("click", () => session.start("camera", $("ai").checked));
-$("sample").addEventListener("click", () => session.start("sample", $("ai").checked));
+function start(mode) {
+  longEdge = Number($("resolution").value);
+  session.start(mode, $("ai").checked);
+}
+$("start").addEventListener("click", () => start("camera"));
+$("sample").addEventListener("click", () => start("sample"));
 $("stop").addEventListener("click", () => { session.stop(); setStatus("停止しました。カメラも処理もオフです。"); });
 document.addEventListener("visibilitychange", () => { if (document.hidden) { session.stop(); setStatus("画面を離れたため停止しました。再開するには開始ボタンを押してください。"); } });
 window.addEventListener("pagehide", () => session.stop());
@@ -116,7 +120,7 @@ async function pump(now) {
   capturingToken = token;
   try {
     if (mode === "camera") {
-      const size = cameraFrameSize(sourceWidth, sourceHeight);
+      const size = cameraFrameSize(sourceWidth, sourceHeight, longEdge);
       // One in-flight result is fully consumed before its coordinate system changes.
       if (size.width !== width || size.height !== height) applyGeometry(size);
     }
@@ -133,6 +137,7 @@ function applyGeometry(size) {
   width = size.width; height = size.height;
   for (const canvas of [sample, overlay]) { canvas.width = width; canvas.height = height; }
   $("stage").style.aspectRatio = `${width}/${height}`;
+  $("frame-size").textContent = `${width} × ${height} px`;
   for (const id of ["points", "fps", "person"]) $(id).textContent = "—";
   lastResult = 0; lastVideoTime = -1;
   delete document.documentElement.dataset.trackingStatus;
@@ -140,7 +145,8 @@ function applyGeometry(size) {
 }
 
 function renderSample() {
-  const dx = Math.round(8 * Math.sin(phase * .09)), dy = Math.round(5 * Math.cos(phase * .075));
+  const scale = width / 256;
+  const dx = Math.round(8 * scale * Math.sin(phase * .09)), dy = Math.round(5 * scale * Math.cos(phase * .075));
   phase++;
   const image = sampleCtx.createImageData(width, height);
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
@@ -155,8 +161,8 @@ function renderSample() {
     image.data[i + 3] = 255;
   }
   sampleCtx.putImageData(image, 0, 0);
-  sampleCtx.fillStyle = "#061a29b0"; sampleCtx.fillRect(50 + dx, 64 + dy, 156, 57);
-  sampleCtx.fillStyle = "#e9fff8"; sampleCtx.font = "bold 20px system-ui"; sampleCtx.fillText("SpatialRust", 68 + dx, 98 + dy);
+  sampleCtx.fillStyle = "#061a29b0"; sampleCtx.fillRect(50 * scale + dx, 64 * scale + dy, 156 * scale, 57 * scale);
+  sampleCtx.fillStyle = "#e9fff8"; sampleCtx.font = `bold ${20 * scale}px system-ui`; sampleCtx.fillText("SpatialRust", 68 * scale + dx, 98 * scale + dy);
   return sample;
 }
 

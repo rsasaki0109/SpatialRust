@@ -36,6 +36,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 .settings label { display: flex; align-items: center; gap: .55rem; min-height: 44px; }
 input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
 select { min-height: 38px; font-size: .8rem; padding: .35rem .5rem; max-width: 8rem; }
+.setting-help { margin: -.3rem 1rem 1rem; color: var(--muted); font-size: .72rem; line-height: 1.65; }
+.frame-info { color: var(--muted); font-size: .7rem; margin: -.2rem 0 .8rem; }
+.frame-info output { color: var(--text); font-variant-numeric: tabular-nums; }
 .result-panel { padding: 1.1rem; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .62rem; letter-spacing: .1em; color: var(--muted); }
 .engine { color: var(--accent); font-size: .62rem; letter-spacing: 0; }
@@ -59,7 +62,7 @@ details p { max-width: 760px; }
 @media (max-width: 800px) {
   .workspace { grid-template-columns: 1fr; }
   .result-panel { display: grid; grid-template-columns: 1fr 1fr; gap: .2rem 1rem; }
-  .panel-heading, .explanation, .tip { grid-column: 1 / -1; }
+  .panel-heading, .frame-info, .explanation, .tip { grid-column: 1 / -1; }
   .motion { border-bottom: 0; padding: .3rem 0; }
   .motion canvas { max-width: 170px; }
   .stats { align-content: center; padding: .5rem 0; }

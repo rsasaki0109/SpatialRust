@@ -95,3 +95,34 @@ test("camera dimensions reject extreme ratios without stretching", () => {
 test("camera dimensions remain bounded for large valid metadata", () => {
   assert.deepEqual(cameraFrameSize(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER), { width: 256, height: 256 });
 });
+
+test("light preset preserves camera and sample proportions in both orientations", () => {
+  for (const [w, h, expected] of [
+    [640, 480, { width: 192, height: 144 }], [480, 640, { width: 144, height: 192 }],
+    [1920, 1080, { width: 192, height: 108 }], [1080, 1920, { width: 108, height: 192 }],
+    [4, 3, { width: 192, height: 144 }], [720, 720, { width: 192, height: 192 }],
+  ]) assert.deepEqual(cameraFrameSize(w, h, 192), expected);
+});
+
+test("light preset rounds and admits the minimum tracker side", () => {
+  assert.deepEqual(cameraFrameSize(1001, 777, 192), { width: 192, height: 149 });
+  assert.deepEqual(cameraFrameSize(777, 1001, 192), { width: 149, height: 192 });
+  assert.deepEqual(cameraFrameSize(3, 1, 192), { width: 192, height: 64 });
+  assert.deepEqual(cameraFrameSize(1, 3, 192), { width: 64, height: 192 });
+  assert.deepEqual(cameraFrameSize(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, 192), { width: 192, height: 192 });
+});
+
+test("light preset rejects unsupported aspect without stretching", () => {
+  for (const pair of [[4, 1], [1, 4], [192, 63], [63, 192]]) assert.throws(() => cameraFrameSize(...pair, 192), RangeError);
+  for (const n of [0, -1, NaN, Infinity, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => cameraFrameSize(n, 480, 192), RangeError);
+    assert.throws(() => cameraFrameSize(640, n, 192), RangeError);
+  }
+});
+
+test("only explicit bounded processing presets are admitted", () => {
+  for (const n of [0, 64, 128, 193, 320, NaN, Infinity, null, "192", {}]) assert.throws(() => cameraFrameSize(640, 480, n), RangeError);
+  const light = cameraFrameSize(640, 480, 192), standard = cameraFrameSize(640, 480);
+  assert.equal(light.width * light.height, 27648);
+  assert.equal(1 - light.width * light.height / (standard.width * standard.height), .4375);
+});

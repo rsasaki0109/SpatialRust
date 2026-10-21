@@ -38,7 +38,9 @@
         <div class="settings">
           <label class="ai-choice"><input id="ai" type="checkbox" checked> AIで人物を除外</label>
           <label class="camera-choice"><span>カメラ</span><select id="facing"><option value="environment">背面</option><option value="user">前面</option></select></label>
+          <label><span>処理サイズ</span><select id="resolution" aria-describedby="resolution-help"><option value="256">標準 · 256px</option><option value="192">軽量 · 192px</option></select></label>
         </div>
+        <p id="resolution-help" class="setting-help">動作が重いときは、停止して「軽量」をお試しください。追跡の細かさは下がります。</p>
       </section>
       <aside class="result-panel" aria-label="追跡の状態">
         <div class="panel-heading"><span>TRACKING SIGNAL</span><span id="engine" class="engine">待機中</span></div>
@@ -49,6 +51,7 @@
           <div><span>人物領域</span><output id="person">—</output></div>
           <div><span>AIの実行先</span><output id="backend">—</output></div>
         </div>
+        <p class="frame-info">追跡画像 <output id="frame-size">—</output></p>
         <p class="explanation">矢印は画像の中の背景の動きです。距離・3D位置・カメラの姿勢を測るものではありません。</p>
         <div class="tip"><strong>うまく追跡するには</strong><p>明るい場所で、文字や模様のある背景へ。カメラをゆっくり動かしてみてください。</p></div>
       </aside>

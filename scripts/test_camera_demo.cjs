@@ -57,7 +57,7 @@ async function instrument(context) {
         this.addEventListener("message", (event) => {
           if (event.data.kind !== "result") return;
           const r = event.data.report;
-          window.__cameraReports.push({ width: r.width, height: r.height, status: r.status, motion: r.background_flow_px });
+          window.__cameraReports.push({ width: r.width, height: r.height, status: r.status, motion: r.background_flow_px, maskBytes: event.data.mask.byteLength });
           if (window.__cameraReports.length > 32) window.__cameraReports.shift();
           if (window.__holdNextResult) {
             window.__holdNextResult = false; event.stopImmediatePropagation();
@@ -132,7 +132,32 @@ async function staleStartup(context, origin) {
   await page.locator("#stop").click();await stopped(page);await page.close();
 }
 
-async function intrinsicRotation(context, origin) {
+async function lightPreset(context, origin) {
+  const page = await context.newPage(); activePage = page;
+  await page.goto(origin + "/camera/");await page.locator("#ai").uncheck();
+  assert.equal(await page.locator("#resolution").inputValue(), "256");check("standard-processing-default");
+  await page.locator("#resolution").selectOption("192");await page.locator("#sample").click();
+  assert.equal(await page.locator("#resolution").isDisabled(), true);
+  await page.waitForFunction(() => document.documentElement.dataset.trackingStatus === "tracking", null, { timeout: 120000 });
+  assert.equal(await page.locator("#frame-size").textContent(), "192 × 144 px");
+  assert.ok(Number.parseInt(await page.locator("#points").textContent()) >= 8);
+  assert.equal(await page.evaluate(() => window.__cameraCalls.length), 0);check("light-sample-real-wasm-motion-without-camera");
+  const before = await frameCount(page);
+  // Even programmatic edits to a disabled control cannot change active coordinates.
+  await page.locator("#resolution").evaluate((select) => { select.value = "256"; });await waitFrames(page, before + 2);
+  assert.equal(await page.locator("#overlay").evaluate((c) => c.width), 192);
+  assert.equal(await page.locator("#frame-size").textContent(), "192 × 144 px");check("processing-size-is-frozen-during-session");
+  await screenshot(page, "mobile-light-sample");await page.locator("#stop").click();await stopped(page);
+  assert.equal(await page.locator("#resolution").isEnabled(), true);
+  assert.equal(await page.locator("#frame-size").textContent(), "—");check("stop-reenables-processing-preset-and-clears-size");
+  await page.locator("#sample").click();
+  await page.waitForFunction(() => document.documentElement.dataset.trackingStatus === "tracking", null, { timeout: 120000 });
+  assert.equal(await page.locator("#frame-size").textContent(), "256 × 192 px");
+  assert.equal(await page.evaluate(() => window.__cameraCalls.length), 0);check("standard-preset-restarts-after-light-session");
+  await page.locator("#stop").click();await stopped(page);await page.close();
+}
+
+async function intrinsicRotation(context, origin, longEdge = 256) {
   const page = await context.newPage(); activePage = page;
   await page.addInitScript(() => {
     const originalBitmap = globalThis.createImageBitmap;
@@ -162,6 +187,7 @@ async function intrinsicRotation(context, origin) {
     };
   });
   await page.goto(origin + "/camera/");
+  await page.locator("#resolution").selectOption(String(longEdge));
   await page.locator("#start").click();await waitFrames(page, 2);
   const workers = await page.evaluate(() => window.__workerCount);
   await page.evaluate(() => { window.__holdNextResult = true; });
@@ -169,16 +195,19 @@ async function intrinsicRotation(context, origin) {
   const before = await frameCount(page);
   await page.evaluate(() => { window.__syntheticCamera.width = 240;window.__syntheticCamera.height = 320; });
   await page.waitForFunction(() => document.querySelector("video").videoWidth === 240 && document.querySelector("video").videoHeight === 320);
-  assert.equal(await page.locator("#overlay").evaluate((c) => c.width), 256, "in-flight geometry changed before its result");
+  assert.equal(await page.locator("#overlay").evaluate((c) => c.width), longEdge, "in-flight geometry changed before its result");
   await page.evaluate(() => { const release = window.__heldResult;delete window.__heldResult;release(); });
   await waitFrames(page, before + 2);
-  assert.equal(await page.locator("#overlay").evaluate((c) => c.width), 192, "camera width did not follow intrinsic resize");
-  assert.equal(await page.locator("#overlay").evaluate((c) => c.height), 256);
-  const firstPortrait = await page.evaluate(() => window.__cameraReports.find((r) => r.width === 192 && r.height === 256));
+  const shortEdge = longEdge * 3 / 4;
+  assert.equal(await page.locator("#overlay").evaluate((c) => c.width), shortEdge, "camera width did not follow intrinsic resize");
+  assert.equal(await page.locator("#overlay").evaluate((c) => c.height), longEdge);
+  assert.equal(await page.locator("#frame-size").textContent(), `${shortEdge} × ${longEdge} px`);
+  const firstPortrait = await page.evaluate(([w, h]) => window.__cameraReports.find((r) => r.width === w && r.height === h), [shortEdge, longEdge]);
+  assert.equal(firstPortrait.maskBytes, shortEdge * longEdge);
   assert.equal(firstPortrait.status, "warming");assert.equal(firstPortrait.motion, null);check("portrait-reseeds-after-in-flight-result");
   assert.equal(await page.evaluate(() => window.__workerCount), workers);check("rotation-keeps-initialized-ai-worker");
   assert.ok(["GPU", "CPU"].includes(await page.locator("#backend").textContent()));
-  await screenshot(page, "mobile-portrait-camera");
+  await screenshot(page, `mobile-portrait-camera-${longEdge}`);
   await page.evaluate(() => { window.__holdNextCapture = true; });
   await page.waitForFunction(() => typeof window.__releaseCapture === "function");
   const portraitFrames = await frameCount(page);
@@ -188,10 +217,10 @@ async function intrinsicRotation(context, origin) {
   await page.evaluate(() => { const release = window.__releaseCapture;delete window.__releaseCapture;release(); });
   await waitFrames(page, portraitFrames + 2);
   const afterResize = await page.evaluate((n) => window.__submittedFrames.slice(n), submitted);
-  assert.ok(afterResize.length > 0 && afterResize.every(([w,h]) => w === 256 && h === 192), "bitmap captured in obsolete geometry was submitted");
+  assert.ok(afterResize.length > 0 && afterResize.every(([w,h]) => w === longEdge && h === shortEdge), "bitmap captured in obsolete geometry was submitted");
   check("capture-from-old-geometry-is-dropped");
-  assert.equal(await page.locator("#overlay").evaluate((c) => c.width), 256);
-  assert.equal(await page.locator("#overlay").evaluate((c) => c.height), 192);
+  assert.equal(await page.locator("#overlay").evaluate((c) => c.width), longEdge);
+  assert.equal(await page.locator("#overlay").evaluate((c) => c.height), shortEdge);
   assert.equal(await page.evaluate(() => window.__workerCount), workers);check("landscape-resize-recovers-without-ai-reload");
   await page.locator("#stop").click();await stopped(page);check("rotated-synthetic-stream-stops");
   await page.close();
@@ -265,6 +294,8 @@ async function intrinsicRotation(context, origin) {
   await deniedContext.close();
   await staleStartup(context, origin);
   await intrinsicRotation(context, origin);
+  await lightPreset(context, origin);
+  await intrinsicRotation(context, origin, 192);
   assert.equal(report.externalResponses.length, 0);assert.equal(report.nonGetRequests.length, 0);check("same-origin-static-get-responses-only");
   report.passed = true;
 })().catch(async (error) => {
