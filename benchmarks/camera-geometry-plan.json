@@ -1,0 +1,28 @@
+{
+  "schema": "spatialrust.camera-geometry-plan.v1",
+  "slice": "146AI",
+  "parent_merge": "7412c705dcbffa311ff08eaaef32692c45097923",
+  "purpose": "Keep camera presentation tied to the active session and follow real intrinsic frame-size changes at an idle frame boundary.",
+  "contract": {
+    "startup": "No presentation commit after an obsolete video.play completion; Stop and replacement sessions retain their own UI.",
+    "geometry": "Resize from current intrinsic video dimensions with a 256-pixel long edge, rounded sides 64..256; reject unsupported extreme ratios instead of stretching the short side. Defer geometry changes until no bitmap/result is in flight; worker resets the existing Rust tracker when bitmap dimensions change while retaining AI initialization. Drop a bitmap if source dimensions change during async capture.",
+    "verification": "Reproduce stale-play and intrinsic-resize failures on the parent application with real browser synthetic streams. Test bounded aspect math, lifecycle/masks, actual WASM and AI, pause/backpressure, portrait/landscape and final public deployment. No physical-phone, Safari or metric-pose qualification.",
+    "preservation": "Preserve prior 493 scientific JSON, 42 frozen native artifacts, completed room/references, prior camera artifacts and resolved Cargo.lock. No Rust/GPU/native binary changes, sensor payload processing/download or fitting."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-geometry-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Hard-link unchanged vendor assets from the completed local camera site, generate a separate site using the existing release WASM and matching bindgen CLI; no Cargo compilation, package/browser install or local static asset downloads."
+  },
+  "remaining_80_percent": "Canonical measured calibration/timing and independent motion, full-room accuracy, qualifying Linux hardware and integrated mapping/semantic/Viewer/interchange acceptance remain open."
+}
