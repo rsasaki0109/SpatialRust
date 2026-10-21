@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Stop camera playground sessions after five seconds without observed usable
+  video-time progress, including while a result is pending. Clear stale output,
+  release capture/worker ownership and offer explicit restart with a new clock.
+  Preserve stationary scenes with advancing video time; do not classify a slow
+  result alone as an input stall. Parent paused-live-stream cases reproduce the
+  stale presentation. Physical freeze behavior and advancing-time pixel repetition
+  remain separate. See [live video progress](docs/MOBILE_CAMERA_DEMO.md#live-video-progress).
+
 - Release interrupted camera playground sessions on video-track end or stream
   inactivity, including startup and pending worker results. Poll source state
   before backpressure, clear stale presentation, remove listeners on Stop and

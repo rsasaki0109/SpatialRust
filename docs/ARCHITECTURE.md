@@ -26,8 +26,11 @@ uncalibrated.
 Per-session camera listeners watch video-track end and stream inactivity. Source
 state checks also run before the busy-frame gate; termination clears presentation
 and releases capture/worker ownership. Stop aborts listeners before stopping
-tracks. Late source events/results cannot affect replacement sessions. Live
-source freezing remains separate from this termination boundary.
+tracks. Late source events/results cannot affect replacement sessions. A separate
+per-run constant-size clock observes usable video-time progress before
+backpressure; 5000ms without it reuses session cleanup and explicit restart.
+Changed video time, including a reset, renews the deadline. This heuristic does
+not compare pixels or time out a worker while input video keeps advancing.
 This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 

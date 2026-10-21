@@ -80,8 +80,30 @@ Stream listeners belong to the session's abort controller. Stop removes them
 before stopping tracks; queued old callbacks and late worker results cannot
 affect a replacement session. Source-state polling covers a silent track stop
 without relying solely on the browser's event delivery. Transient muting is not
-treated as termination. A still-live source with frozen pixels or stalled
-decoding remains outside this termination check; this is not a freshness timer.
+treated as termination. The separate progress check below admits stalled video
+time; this source-termination check itself has no freshness timer.
+
+## Live video progress
+
+After video startup, each camera run owns a new constant-size progress clock.
+Before capture/result backpressure, the presenter observes current video time
+with usable metadata (`readyState >= 2` and positive intrinsic dimensions).
+Unchanged usable time or unavailable video data for **5000ms** stops the session
+on the next visible animation step. First usable data and any changed video time,
+including a timeline reset, renew the clock. Invalid clocks/usable times reject
+before retained state changes. A replacement camera owns a separate deadline.
+
+The existing Stop boundary clears vectors/mask/stats and releases camera tracks
+and the worker. A specific message offers camera/sample restart; there is no
+automatic acquisition. An old result cannot revive a stopped run or alter its
+replacement. A worker result may be pending while live video keeps advancing;
+that condition alone does not trip the input-progress check.
+
+This is an application-observed time-progress heuristic, not an exposure-time
+measurement, a hard real-time watchdog or pixel comparison. A stationary scene
+with advancing video time remains valid. Repeated/frozen pixels whose video
+time continues advancing, and a worker that stalls with healthy input, require
+separate detection. No device behavior or physical phone performance is qualified.
 
 ## Processing size
 
@@ -216,6 +238,27 @@ browser or sensor payload download was needed; SDK/model assets are static web
 dependencies. Public deployment and exact-head CI are checked after the receipt
 commit, with their records kept separately.
 
+## Video progress delivery evidence (146AM)
+
+The [progress receipt](receipts/2026-10-21_camera_progress.json) binds seven
+terminal commands and two parent failures with a paused but still-live browser
+stream, both normally and while a real worker result is held. Final results pass
+**46 JS**, **six asset** and **47 browser** controls. Unit cases cover the exact
+5000ms boundary, readiness, timeline reset, atomic input admission and isolated
+replacement clocks. Browser cases check cleared results/resources, explicit
+camera restart, obsolete-result rejection and an advancing video source remaining
+valid while its actual worker result is held for over five seconds.
+
+Streams and pauses are synthetic; physical camera freezes are not qualified.
+The fixed contract is
+`C:/Users/rsasa/Workspace/SpatialRust/benchmarks/camera-progress-plan.json`.
+Reuse the release WASM and **41,087,603** hard-linked vendor bytes with **zero**
+compiler-cache growth. Local site/log/screenshots add about **3.75MB** beyond
+shared vendor files. Preserve **358** prior camera files, 493 scientific JSON,
+42 frozen native artifacts and the resolved lockfile. Advancing-time pixel
+repetition, worker deadlines, physical phone/Safari behavior and operational 80%
+qualification remain open.
+
 ## Source termination delivery evidence (146AL)
 
 The [source receipt](receipts/2026-10-21_camera_source.json) binds eight terminal
@@ -233,8 +276,9 @@ removal. The fixed contract is
 Reuse the release WASM and **41,087,603** hard-linked vendor bytes with **zero**
 compiler-cache growth. Local site/log/screenshots add about **3.44MB** beyond
 shared vendor files. Preserve **291** prior camera files, 493 scientific JSON,
-42 frozen native artifacts and the resolved lockfile. Live-source freezes,
-physical phone/Safari behavior and operational 80% qualification remain open.
+42 frozen native artifacts and the resolved lockfile. Video-time progress is
+handled by slice 146AM above; physical phone/Safari behavior, advancing-time pixel
+repetition and operational 80% qualification remain open.
 
 ## Timing delivery evidence (146AK)
 
