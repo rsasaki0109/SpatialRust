@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.camera-source-plan.v1",
+  "slice": "146AL",
+  "parent_merge": "dc4df8e5e9c5fc63d13378b8a36466fe873af3b0",
+  "purpose": "Release a terminated camera source and its worker promptly, clear stale tracking presentation and offer an explicit restart.",
+  "contract": {
+    "source": "Bind ended listeners to acquired video tracks and inactive to their stream for the current session. Reject already ended/inactive sources; check source state before each running camera pump, including while a result is pending. Stop aborts listeners before stopping owned tracks; late events cannot affect replacement sessions.",
+    "presentation": "Source termination clears old vectors/stats, ends all owned capture tracks and the worker, enables Start/sample/settings and explains camera restart without an unrelated AI fallback hint. A fresh sample remains available without camera permission.",
+    "verification": "Reproduce stale source presentation on the parent with synthetic ended/inactive events on actual browser streams and a silently stopped track. Unit-test startup/running termination, cancellation, listeners and stale events. Retain real WASM/model, timing, geometry, presets and CSP checks; no physical device-removal qualification.",
+    "preservation": "Preserve scientific JSON, frozen native binaries, prior camera outputs, resolved Cargo.lock and release WASM. No Rust/native/core/GPU changes, compiler runs, sensor acquisition or new SDK/model acquisition."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-source-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Hard-link existing hash-identical vendor files into a fresh E: site. Reuse the release WASM, matching bindgen and installed browser/runtime; keep all evidence and failures.",
+    "public_verification_stream_max_bytes": 33554432,
+    "asset_download_scope": "Zero covers local SDK/model acquisition. After publication bounded HTTPS checks may stream up to 32MiB without persisting vendor payloads."
+  },
+  "remaining_80_percent": "Measured canonical calibration/timing and independent motion, full-room accuracy, qualifying Linux hardware and integrated acceptance remain open."
+}
