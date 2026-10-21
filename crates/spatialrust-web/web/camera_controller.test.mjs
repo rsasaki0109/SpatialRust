@@ -234,6 +234,51 @@ test("synchronous worker creation failure settles startup and allows a fresh run
   h.session.createWorker = create;const next = h.session.start("sample");h.send(h.workers[0], "ready");assert.equal(await next, true);h.session.stop();
 });
 
+for (const mode of ["camera", "sample"]) test(`${mode} init-send failure is fully observed and releases the worker`, async () => {
+  let acquired = 0;const h = harness(async () => { acquired++;return { getTracks: () => [] }; });
+  const create = h.session.createWorker, failure = new DOMException("cannot clone initialization", "DataCloneError");
+  h.session.createWorker = () => { const worker = create();worker.postMessage = () => { throw failure; };return worker; };
+  assert.equal(await h.session.start(mode), false);await settleSource();
+  const old = h.workers[0];assert.equal(old.terminated, true);assert.equal(old.disposed, true);
+  assert.equal(h.session.run, null);assert.equal(acquired, 0);assert.deepEqual(h.errors, [failure]);
+  h.session.createWorker = create;const next = h.session.start("sample");h.send(h.workers[1], "ready");assert.equal(await next, true);
+  old.onerror({ message: "late failed initialization" });old.onmessageerror();await settleSource();
+  assert.equal(h.errors.length, 1);assert.equal(h.workers[1].terminated, false);h.session.stop();
+});
+
+for (const phase of ["waiting-ready", "pending-camera", "pending-presenter", "pending-result", "pending-capture"]) {
+  test(`messageerror cleans ${phase} and cannot affect its replacement`, async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const source = cameraSource(), gate = deferred(), entered = deferred();let closed = 0;
+    const h = harness(() => {
+      if (phase === "pending-camera") { entered.resolve();return gate.promise; }
+      return source.stream;
+    }, { onReady: (run) => { if (phase === "pending-presenter" && run.mode === "camera") { entered.resolve();return gate.promise; } } });
+    const pending = h.session.start("camera"), run = h.session.run, old = h.workers[0];
+    if (phase === "waiting-ready") await settleSource();
+    else {
+      h.send(old, "ready");
+      if (["pending-camera", "pending-presenter"].includes(phase)) await entered.promise;
+      else assert.equal(await pending, true);
+    }
+    let capture;
+    if (phase === "pending-result") assert.equal(h.session.submit({ close() {} }, 1), true);
+    if (phase === "pending-capture") capture = assert.rejects(captureBitmap(() => gate.promise, { signal: run.captureAbort.signal }), { name: "AbortError" });
+    old.onmessageerror();await capture;await settleSource();
+    assert.equal(await pending, ["pending-result", "pending-capture"].includes(phase));
+    assert.equal(h.session.run, null);assert.equal(run.captureAbort.signal.aborted, true);
+    assert.equal(old.terminated, true);assert.equal(old.disposed, true);assert.equal(h.errors.length, 1);assert.equal(h.errors[0].name, "WorkerMessageError");
+    if (phase !== "pending-camera") assert.ok(source.tracks.every((track) => track.stops === 1));
+    assert.ok(source.signals.every((signal) => signal.aborted));
+    const next = h.session.start("sample");h.send(h.workers[1], "ready");assert.equal(await next, true);
+    const current = h.session.run;old.onmessageerror();old.onerror({ message: "late error" });h.send(old, "ready");h.send(old, "result");
+    gate.resolve(phase === "pending-camera" ? source.stream : phase === "pending-capture" ? { close() { closed++; } } : undefined);
+    await settleSource();t.mock.timers.tick(90000);await settleSource();
+    assert.equal(h.session.run, current);assert.equal(h.workers[1].terminated, false);assert.equal(h.errors.length, 1);assert.equal(h.results.length, 0);
+    assert.ok(source.tracks.every((track) => track.stops === 1));assert.equal(closed, phase === "pending-capture" ? 1 : 0);h.session.stop();
+  });
+}
+
 test("sample mode never requests a camera", async () => {
   let requested=0;const h=harness(async () => { requested++; throw new Error("camera"); });
   const p=h.session.start("sample",false);h.send(h.workers[0],"ready",{backend:"OFF"});assert.equal(await p,true);assert.equal(requested,0);h.session.stop();

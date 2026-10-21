@@ -19,8 +19,9 @@ export class CameraSession {
     this.onState("loading");
     try {
       run.worker = this.createWorker();
-      const ready = new Promise((resolve, reject) => {
-        run.rejectReady = reject;
+      const ready = new Promise((resolve) => {
+        // Cleanup resolves readiness; errors follow run cancellation.
+        run.resolveReady = resolve;
         run.worker.onmessage = ({ data }) => {
           if (this.run !== run || data.session !== run.token) return;
           if (data.kind === "ready") { run.backend = data.backend; resolve(); }
@@ -30,13 +31,16 @@ export class CameraSession {
             try { this.onResult(data); } catch (error) { this.fail(run, error); }
           } else if (data.kind === "error") {
             const error = new Error(data.message || "処理を開始できませんでした。");
-            reject(error);
             this.fail(run, error);
           }
         };
         run.worker.onerror = (event) => {
           const error = new Error(event.message || "ワーカーを起動できませんでした。");
-          reject(error);
+          this.fail(run, error);
+        };
+        run.worker.onmessageerror = () => {
+          const error = new Error("処理との通信に失敗しました。もう一度「カメラ開始」か「サンプル再生」を押してください。");
+          error.name = "WorkerMessageError";
           this.fail(run, error);
         };
       });
@@ -66,7 +70,7 @@ export class CameraSession {
     } catch (error) {
       if (this.run === run) this.fail(run, error);
       return false;
-    } finally { run.cancelStart = null; }
+    } finally { run.cancelStart = null;run.resolveReady = null; }
   }
 
   checkCamera(run) {
@@ -117,7 +121,7 @@ export class CameraSession {
       clearTimeout(run.timer);
       clearTimeout(run.inFlight?.timer);
       run.captureAbort.abort();
-      run.rejectReady?.(new Error("stopped"));
+      run.resolveReady?.();
       run.cameraEvents?.abort();
       stopTracks(run.stream);
       run.worker?.terminate();
