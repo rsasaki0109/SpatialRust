@@ -1,0 +1,1415 @@
+{
+  "schema": "spatialrust.camera-mask-support-receipt.v1",
+  "slice": "146AS",
+  "date": "2026-10-22",
+  "recorded_at_utc": "2026-10-21T18:52:55.156043+00:00",
+  "parent_merge": "10e329f695493e50ffba48f90bdc5354c7fb4c06",
+  "baseline_source_commit": "22434c1b7e7aee5df8a22b64996a06d794986cd9",
+  "tested_source_commit": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\camera-mask-support-plan.json",
+    "bytes": 3902,
+    "sha256": "e7923f9b91cab3ca1393853c9710e28e86f2b310d3cce8605c443e04a90f57e0"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-mask-support-preflight.json",
+    "bytes": 290078,
+    "sha256": "87b73eaf35243d7bf507eebdf6af5ee1c30027b70c340f183bcb2619134a2e4c"
+  },
+  "audit_script": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\audit-camera-mask-support.py",
+    "bytes": 10565,
+    "sha256": "f2b38b62d896e1895a13d42b31ded9b397bd91c554e6e567154238bebcabec0a"
+  },
+  "commands": {
+    "assets": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\assets.command.json",
+        "bytes": 194154,
+        "sha256": "acbc877b124a1544257c00a7e2ba359334277be2ef160d07928bdf8d2a099614"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\assets.log",
+        "bytes": 109,
+        "sha256": "59753171660350c6735ee4b12925f50e7f8606c102caf33752e5551608bad819"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "base": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\base.command.json",
+        "bytes": 194897,
+        "sha256": "ddf59d331bab23430df7ca3526f77e2a0f415ffe315a1a5157b78de32dd55b7b"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\base.log",
+        "bytes": 809,
+        "sha256": "c9fc92e1d66671e51994bfddbc8b8d3925ecde758d81f44e66172d62ea8dd6ae"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "baseline-bindgen": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-bindgen.command.json",
+        "bytes": 194268,
+        "sha256": "d509d9fcc122464d43c28510cd39e1584ab266adfbab5d071f341c83b75c378c"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-bindgen.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_head": "22434c1b7e7aee5df8a22b64996a06d794986cd9",
+      "child_exit_status": 0
+    },
+    "baseline-build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-build.command.json",
+        "bytes": 196489,
+        "sha256": "a930fa32db6c52989e9e57ccc47337f8e1584286d4680f1fafb60905e72dc9c9"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-build.log",
+        "bytes": 1865,
+        "sha256": "614acbb4503d4ee2b72360e74c36b7d7d90dc4f5668477b741898850364c5d1f"
+      },
+      "source_head": "22434c1b7e7aee5df8a22b64996a06d794986cd9",
+      "child_exit_status": 0
+    },
+    "baseline-native-v2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-native-v2.command.json",
+        "bytes": 194977,
+        "sha256": "90e9802f55870380b249119e7527ef825b80f288b6a9c235eb004ba308045d1d"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-native-v2.log",
+        "bytes": 2133,
+        "sha256": "e88431827314410fcfc9b03b1f77d2634a437655a9b54b07d9faad332137e01c"
+      },
+      "source_head": "22434c1b7e7aee5df8a22b64996a06d794986cd9",
+      "child_exit_status": 0
+    },
+    "baseline-native": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-native.command.json",
+        "bytes": 195570,
+        "sha256": "950a6f599397255b4ee12ba6fb882eac6cdba042eb4387e2a365bd0f6cf2db10"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-native.log",
+        "bytes": 2206,
+        "sha256": "3d6ee870e13189d970d19a1bd3b51d4f033d61bb422afd0c819e20d7c06e7a35"
+      },
+      "source_head": "972b24698cf0ee477a60613f8c94379b9392569f",
+      "child_exit_status": 101
+    },
+    "browser": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser.command.json",
+        "bytes": 198834,
+        "sha256": "ab75b45f15ad97af5fea85b23a968c628f6010d6bbfc1aedaee4e15a40dbc430"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser.log",
+        "bytes": 5622,
+        "sha256": "d9bbbde94487a37162e9c07ec6a66611c0b18e5e18caa167f03ae4360c78d337"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\build.command.json",
+        "bytes": 194398,
+        "sha256": "4d72216b4f7156ef8b75d296e0c402bd65295e83bf42a81536cb3e4553d85895"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\build.log",
+        "bytes": 136,
+        "sha256": "6ec7efba865dacc32dbd50b539642cac51121118d9724d46612a97e7b8be23f7"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "candidate-build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\candidate-build.command.json",
+        "bytes": 194961,
+        "sha256": "cd34d1fb4e78dbe355c06cc21520fa626671680eeda5ec011264ac3f5de62145"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\candidate-build.log",
+        "bytes": 576,
+        "sha256": "5bad5336cdefea1a134d85de5a542b268b1b0cb677b3c1a714c046f7327c02e2"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "clippy": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\clippy.command.json",
+        "bytes": 194492,
+        "sha256": "18cb24cc88be2322af30736ebafbf419f199aa668b165afc12040a7aee701cb0"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\clippy.log",
+        "bytes": 1450,
+        "sha256": "51bda39456767eb4374e47c3cdeb1b00ca2777a9168151651627d186f393dbbf"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "fmt": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\fmt.command.json",
+        "bytes": 194294,
+        "sha256": "8dc72628187c6662e911a78b6ca5aa5bb19e0f028f589514a70993afe8118183"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\fmt.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "measure-baseline-1": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\measure-baseline-1.command.json",
+        "bytes": 197664,
+        "sha256": "2a061337e8e04a9288018091bc8c71944ef566ea1398acca19a491a5b8b7300b"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\measure-baseline-1.log",
+        "bytes": 115350,
+        "sha256": "7974a3efcc10f2337c8561dc5120039fdab98780971ad6a37a0c45f9a2c219fe"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "measure-baseline-2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\measure-baseline-2.command.json",
+        "bytes": 197409,
+        "sha256": "0cae5001f903875f76e02a66a1a459a8621aa3c47c7ea5f60e07bce529ff11be"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\measure-baseline-2.log",
+        "bytes": 115327,
+        "sha256": "4e4fca104289c90b4cb60525bdf571b51d69ba36e51acc8b12303ce61e857736"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "measure-candidate-1": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\measure-candidate-1.command.json",
+        "bytes": 197412,
+        "sha256": "337c1e54ed8ba08048439e2318e9ea3e506179b7863fe5b8e23c9984a57d8873"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\measure-candidate-1.log",
+        "bytes": 115322,
+        "sha256": "5d60a5b918807c8edf4a9dffa4a95f3da174c928d6d09b13fdda02a0399118d0"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "measure-candidate-2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\measure-candidate-2.command.json",
+        "bytes": 197157,
+        "sha256": "4651689a0e5b3e60ef72f6e469baa5e8f0c7c4b3cc28d2bfd1fb8df73d89b1d3"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\measure-candidate-2.log",
+        "bytes": 115320,
+        "sha256": "7ebf77ced97949cd07f8a1fe8a41917cb9b273f628eeb36b165b93c017e0eeb2"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "native": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\native.command.json",
+        "bytes": 194965,
+        "sha256": "b86533375aa58c8046fc5468338d90a0f508d3051fd8f1656ad0bb920529791b"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\native.log",
+        "bytes": 2406,
+        "sha256": "a489bd2732fa29d08ca18db641d91dc46f47bca85456f3a01f514badf561d5a7"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "parity": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\parity.command.json",
+        "bytes": 195264,
+        "sha256": "9391ff45f264d1855cc1526fd1f0a5def79ec1249de3860825d1b69227e7e632"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\parity.log",
+        "bytes": 59,
+        "sha256": "2d8b0352f4d8c13a1a0dc3b0a33f52dd7378fcfd5179dcbc291c9171436380cf"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\unit.command.json",
+        "bytes": 194118,
+        "sha256": "0f321e105e783ada6463099e8551aabcdebc6a3b8466b2cacc4529a41c9ec3d1"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\unit.log",
+        "bytes": 6622,
+        "sha256": "6281b605a9014f98e1e20d716326739473ca6c820c3c61437eb8f4b6b7c115da"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    },
+    "wasm": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\wasm.command.json",
+        "bytes": 197289,
+        "sha256": "87784296d68e662106fdb9f5e00a982430669189ee5a7686b484bd4a2efc42fe"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\wasm.log",
+        "bytes": 2249,
+        "sha256": "79672133dbb396d6ee029a19d009b91be7af9fb6af5d1fbaab83499f2626922c"
+      },
+      "source_head": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+      "child_exit_status": 0
+    }
+  },
+  "owned_commands": 19,
+  "successful_guarded_commands": 18,
+  "all_commands_terminal": true,
+  "retained_fixture_compile_failure": {
+    "command": {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-native.command.json",
+      "bytes": 195570,
+      "sha256": "950a6f599397255b4ee12ba6fb882eac6cdba042eb4387e2a365bd0f6cf2db10"
+    },
+    "log": {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-native.log",
+      "bytes": 2206,
+      "sha256": "3d6ee870e13189d970d19a1bd3b51d4f033d61bb422afd0c819e20d7c06e7a35"
+    },
+    "source_head": "972b24698cf0ee477a60613f8c94379b9392569f",
+    "child_exit_status": 101
+  },
+  "baseline_native_tests": 21,
+  "native_tests": 24,
+  "base_tests": 5,
+  "unit_tests": 84,
+  "asset_controls": 6,
+  "browser_controls": 82,
+  "wasm_report_comparisons": 252,
+  "wasm_rejection_comparisons": 84,
+  "wasm_cases": 42,
+  "wasm_parity_report": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\parity-artifacts\\report.json",
+    "bytes": 9299,
+    "sha256": "988a78badccbb1ddc819aceed0d8cfe06bc0c29ae9457304eda35783dcfd7f43"
+  },
+  "browser_report": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\report.json",
+    "bytes": 12295,
+    "sha256": "ec1e891a39aa2ba534ffe2758dbc038ce560aad991ba1246f130dfa133c85777"
+  },
+  "screenshots": [
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-idle.png",
+      "bytes": 218678,
+      "sha256": "95637b49b81d23999c2b29f148f317a79a4c021b31648a9f1e0617df49aeb38c"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-tracking.png",
+      "bytes": 283248,
+      "sha256": "1392ee9960026bc25cfc9f36acf326f42fc2af12eb4f9986c60549da195e659b"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-ai.png",
+      "bytes": 284314,
+      "sha256": "0058ac0b24422589a70e628fc3375ac2a202f46c3a72031acb86eed07dd88b79"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\desktop-idle.png",
+      "bytes": 437103,
+      "sha256": "bb4e7619a7b023d0f18c9324a7d3db7d42ae7e51274401ddc37d4bd9a99b9ecb"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-portrait-camera-256.png",
+      "bytes": 186744,
+      "sha256": "d35d1263f46eed46e1ccf26a59aef73219466e13f39a5ba2a2c21ad80817b296"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-light-sample.png",
+      "bytes": 272909,
+      "sha256": "1b9cc955e29c5de095501682b847892def4288cf414db97d02fa667103910590"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-portrait-camera-192.png",
+      "bytes": 187591,
+      "sha256": "f2cebf5c1a70e67bb26ed667cfbc1d6e3620ea63320b1604cf6d7d26fb34abe8"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-capture-rate.png",
+      "bytes": 263389,
+      "sha256": "7923de78e67f767badfa0dcd46a94bca097e9e3cb3e2c09c6f52308ce5e587d6"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-source-recovery.png",
+      "bytes": 272903,
+      "sha256": "7f2e2b9b48c53007d1243c71e63a006aa605b12255f19fa802bb63a65217877f"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-progress-timeout.png",
+      "bytes": 223512,
+      "sha256": "407f9fb64a39dead84be64b1b9a775af2abb7673109358c3f38c00e5de3cb0d2"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-progress-restart.png",
+      "bytes": 174303,
+      "sha256": "e4d978a57080ba93cdbe8a10289dff96146b4b71920873eb48770d57b6b4c700"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-result-timeout.png",
+      "bytes": 223214,
+      "sha256": "981db1fb413285c2533c220e7085bebff51c52f0c22087672feb191ea07027ff"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-result-restart.png",
+      "bytes": 175304,
+      "sha256": "76e639dee56ef93cc13f8772a6172ebefd2b9a0f2a9434076263f80752c0fb91"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-capture-timeout.png",
+      "bytes": 223848,
+      "sha256": "5273760ba0ae3cba6823fd84cdb5bf0fb91b79a7809b95e5aee417482670cf14"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\browser-artifacts\\mobile-capture-restart.png",
+      "bytes": 175323,
+      "sha256": "ab1f01fbd079b999d9d99b21b5d09399809898e9121643f06c3f849ab50bc187"
+    }
+  ],
+  "site_build": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\site\\camera\\build.json",
+    "bytes": 4191,
+    "sha256": "39b256c123fecf2eeb78328176225ad2ae7104554c80fcd80c4caf3125569257"
+  },
+  "baseline_executable": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\baseline-camera-mask-support.exe",
+    "bytes": 303104,
+    "sha256": "30843e6d886e97907dcad3512915fc53c98edd7f1675eff0bd9736bacc9f9dc8"
+  },
+  "candidate_executable": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\candidate-camera-mask-support.exe",
+    "bytes": 302080,
+    "sha256": "9953ff64c0b3d35b978a6e7e2b567b7356869c9b608b6c2752a16c062cd74a08"
+  },
+  "baseline_raw_wasm": {
+    "path": "E:\\SpatialRustBuild\\maturity-80-target\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1030227,
+    "sha256": "660461f1760aab0a96b8bd72baa265196107ae4ece8cf3e17dfa929a30c1dc6e"
+  },
+  "candidate_raw_wasm": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\cargo\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1029275,
+    "sha256": "a397a70417941766400276c3580f1cd53808ed76690cdecb9ad73b3e6068d74a"
+  },
+  "unchanged_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118086,
+    "sha256": "e9d0a244c69b4ea193c7ebcd61e404de8071a53b71ff269c2c8dbe0f506484cc"
+  },
+  "benchmark_order": [
+    "measure-baseline-1",
+    "measure-candidate-1",
+    "measure-candidate-2",
+    "measure-baseline-2"
+  ],
+  "benchmark_rows": [
+    {
+      "width": 192,
+      "height": 144,
+      "mask": "disabled",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            545105600,
+            547819600,
+            517633000,
+            557619700,
+            621015300,
+            953077800
+          ],
+          "candidate_samples_ns": [
+            513903500,
+            509247600,
+            513226300,
+            514353500,
+            548010700,
+            815835900
+          ],
+          "baseline_median_ns": 552719650.0,
+          "candidate_median_ns": 514128500.0,
+          "candidate_over_baseline": 0.9301795222948922
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            502467900,
+            487478800,
+            488147700,
+            467366000,
+            473379800,
+            1000602600
+          ],
+          "candidate_samples_ns": [
+            595959300,
+            517874600,
+            515286600,
+            507011900,
+            573446500,
+            708315900
+          ],
+          "baseline_median_ns": 487813250.0,
+          "candidate_median_ns": 545660550.0,
+          "candidate_over_baseline": 1.1185849297861425
+        }
+      ]
+    },
+    {
+      "width": 192,
+      "height": 144,
+      "mask": "zero",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            973947100,
+            931452200,
+            873717100,
+            876041500,
+            884862300,
+            825117300
+          ],
+          "candidate_samples_ns": [
+            709334800,
+            671288600,
+            801630600,
+            1022976100,
+            908422500,
+            912045000
+          ],
+          "baseline_median_ns": 880451900.0,
+          "candidate_median_ns": 855026550.0,
+          "candidate_over_baseline": 0.9711223861292139
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            807675700,
+            901381700,
+            902607200,
+            916905000,
+            879027600,
+            861096200
+          ],
+          "candidate_samples_ns": [
+            637044900,
+            579108300,
+            892777000,
+            771403700,
+            556934500,
+            713078100
+          ],
+          "baseline_median_ns": 890204650.0,
+          "candidate_median_ns": 675061500.0,
+          "candidate_over_baseline": 0.7583216960279864
+        }
+      ]
+    },
+    {
+      "width": 192,
+      "height": 144,
+      "mask": "full",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            86549600,
+            79693600,
+            85825800,
+            79722100,
+            74593300,
+            75754600
+          ],
+          "candidate_samples_ns": [
+            83431000,
+            80198600,
+            77383100,
+            66758500,
+            66704500,
+            70139000
+          ],
+          "baseline_median_ns": 79707850.0,
+          "candidate_median_ns": 73761050.0,
+          "candidate_over_baseline": 0.9253925428925758
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            66055500,
+            65326800,
+            63910200,
+            71029200,
+            64398400,
+            58659000
+          ],
+          "candidate_samples_ns": [
+            63110800,
+            63924100,
+            62111300,
+            58618800,
+            62109400,
+            57480000
+          ],
+          "baseline_median_ns": 64862600.0,
+          "candidate_median_ns": 62110350.0,
+          "candidate_over_baseline": 0.9575679975825823
+        }
+      ]
+    },
+    {
+      "width": 192,
+      "height": 144,
+      "mask": "half",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            516539000,
+            498151400,
+            595670000,
+            524249500,
+            486808200,
+            506983400
+          ],
+          "candidate_samples_ns": [
+            494954600,
+            484399400,
+            532566300,
+            569849000,
+            544661200,
+            522588400
+          ],
+          "baseline_median_ns": 511761200.0,
+          "candidate_median_ns": 527577350.0,
+          "candidate_over_baseline": 1.0309053324089439
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            450149100,
+            509417400,
+            527950300,
+            526116200,
+            491552400,
+            463200100
+          ],
+          "candidate_samples_ns": [
+            299667100,
+            350976400,
+            372625700,
+            383298300,
+            371594800,
+            370241700
+          ],
+          "baseline_median_ns": 500484900.0,
+          "candidate_median_ns": 370918250.0,
+          "candidate_over_baseline": 0.7411177639924801
+        }
+      ]
+    },
+    {
+      "width": 192,
+      "height": 144,
+      "mask": "sparse",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            903055600,
+            829491800,
+            837520500,
+            817883800,
+            886684700,
+            831642100
+          ],
+          "candidate_samples_ns": [
+            958371400,
+            992293200,
+            977911400,
+            969566700,
+            1029551100,
+            715902900
+          ],
+          "baseline_median_ns": 834581300.0,
+          "candidate_median_ns": 973739050.0,
+          "candidate_over_baseline": 1.1667395974484451
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            878377500,
+            885580700,
+            781040100,
+            960550500,
+            875076900,
+            874417800
+          ],
+          "candidate_samples_ns": [
+            872197200,
+            703066300,
+            630392500,
+            606229900,
+            658358300,
+            589817200
+          ],
+          "baseline_median_ns": 876727200.0,
+          "candidate_median_ns": 644375400.0,
+          "candidate_over_baseline": 0.7349782235568829
+        }
+      ]
+    },
+    {
+      "width": 192,
+      "height": 144,
+      "mask": "checker",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            80896100,
+            81648100,
+            87779700,
+            83320200,
+            88396800,
+            83371900
+          ],
+          "candidate_samples_ns": [
+            78689800,
+            70037900,
+            65516500,
+            62155000,
+            63354600,
+            62998100
+          ],
+          "baseline_median_ns": 83346050.0,
+          "candidate_median_ns": 64435550.0,
+          "candidate_over_baseline": 0.773108623624035
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            72740900,
+            75825800,
+            71385100,
+            69007200,
+            70772300,
+            75263700
+          ],
+          "candidate_samples_ns": [
+            68047200,
+            69686600,
+            68691700,
+            63489400,
+            67915800,
+            68987400
+          ],
+          "baseline_median_ns": 72063000.0,
+          "candidate_median_ns": 68369450.0,
+          "candidate_over_baseline": 0.9487455420951112
+        }
+      ]
+    },
+    {
+      "width": 256,
+      "height": 192,
+      "mask": "disabled",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            1091521500,
+            1054767200,
+            1039870600,
+            1087942600,
+            952040900,
+            1026592300
+          ],
+          "candidate_samples_ns": [
+            827843500,
+            733001800,
+            711039600,
+            751430200,
+            981957000,
+            822390700
+          ],
+          "baseline_median_ns": 1047318900.0,
+          "candidate_median_ns": 786910450.0,
+          "candidate_over_baseline": 0.7513570603948807
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            938021500,
+            882891800,
+            911215600,
+            955504100,
+            887976900,
+            790772800
+          ],
+          "candidate_samples_ns": [
+            813420000,
+            911092800,
+            957842000,
+            784959000,
+            775555800,
+            927948000
+          ],
+          "baseline_median_ns": 899596250.0,
+          "candidate_median_ns": 862256400.0,
+          "candidate_over_baseline": 0.9584926571225703
+        }
+      ]
+    },
+    {
+      "width": 256,
+      "height": 192,
+      "mask": "zero",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            1137474300,
+            1092848100,
+            1084876700,
+            1091700500,
+            935380000,
+            1087097400
+          ],
+          "candidate_samples_ns": [
+            775487400,
+            779340300,
+            917936800,
+            885345800,
+            1091253400,
+            883146900
+          ],
+          "baseline_median_ns": 1089398950.0,
+          "candidate_median_ns": 884246350.0,
+          "candidate_over_baseline": 0.8116827632337997
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            752343500,
+            667465300,
+            784273400,
+            826174700,
+            1018550900,
+            878151000
+          ],
+          "candidate_samples_ns": [
+            973650500,
+            947539600,
+            985826900,
+            982720000,
+            1001955900,
+            1012934800
+          ],
+          "baseline_median_ns": 805224050.0,
+          "candidate_median_ns": 984273450.0,
+          "candidate_over_baseline": 1.2223597270846542
+        }
+      ]
+    },
+    {
+      "width": 256,
+      "height": 192,
+      "mask": "full",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            126326500,
+            138411600,
+            150447200,
+            155200300,
+            155994800,
+            160809000
+          ],
+          "candidate_samples_ns": [
+            112528900,
+            113161000,
+            113216300,
+            110158600,
+            114442800,
+            117669000
+          ],
+          "baseline_median_ns": 152823750.0,
+          "candidate_median_ns": 113188650.0,
+          "candidate_over_baseline": 0.7406482958309818
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            113468200,
+            108355200,
+            120087400,
+            116676200,
+            107261300,
+            128371000
+          ],
+          "candidate_samples_ns": [
+            120624000,
+            115220600,
+            118751800,
+            124204100,
+            111590000,
+            127102700
+          ],
+          "baseline_median_ns": 115072200.0,
+          "candidate_median_ns": 119687900.0,
+          "candidate_over_baseline": 1.0401113387942527
+        }
+      ]
+    },
+    {
+      "width": 256,
+      "height": 192,
+      "mask": "half",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            981964300,
+            1037757600,
+            1046566700,
+            1027246200,
+            1011563500,
+            995751700
+          ],
+          "candidate_samples_ns": [
+            739648300,
+            687057200,
+            691823000,
+            830802300,
+            870804100,
+            827586100
+          ],
+          "baseline_median_ns": 1019404850.0,
+          "candidate_median_ns": 783617200.0,
+          "candidate_over_baseline": 0.768700678636167
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            673264700,
+            661800600,
+            614594600,
+            656808700,
+            906897100,
+            608142800
+          ],
+          "candidate_samples_ns": [
+            786134600,
+            652848800,
+            692326700,
+            649245000,
+            616722900,
+            635832300
+          ],
+          "baseline_median_ns": 659304650.0,
+          "candidate_median_ns": 651046900.0,
+          "candidate_over_baseline": 0.9874750617942707
+        }
+      ]
+    },
+    {
+      "width": 256,
+      "height": 192,
+      "mask": "sparse",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            1086778900,
+            1097925000,
+            1089828000,
+            1108917600,
+            1034142000,
+            1059866300
+          ],
+          "candidate_samples_ns": [
+            694854600,
+            730130500,
+            978732600,
+            808438600,
+            1055187300,
+            797277000
+          ],
+          "baseline_median_ns": 1088303450.0,
+          "candidate_median_ns": 802857800.0,
+          "candidate_over_baseline": 0.7377150187293811
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            682000700,
+            775535700,
+            669136300,
+            700654700,
+            728419700,
+            982831700
+          ],
+          "candidate_samples_ns": [
+            822416200,
+            854296100,
+            696396300,
+            632743700,
+            667742400,
+            660984200
+          ],
+          "baseline_median_ns": 714537200.0,
+          "candidate_median_ns": 682069350.0,
+          "candidate_over_baseline": 0.9545610081602469
+        }
+      ]
+    },
+    {
+      "width": 256,
+      "height": 192,
+      "mask": "checker",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            132206300,
+            129775900,
+            120482000,
+            134266300,
+            137680100,
+            138290700
+          ],
+          "candidate_samples_ns": [
+            119961800,
+            116358100,
+            111450900,
+            124020000,
+            121970300,
+            117114800
+          ],
+          "baseline_median_ns": 133236300.0,
+          "candidate_median_ns": 118538300.0,
+          "candidate_over_baseline": 0.8896847180535635
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            130922100,
+            120025200,
+            143013800,
+            128359800,
+            119896800,
+            132681100
+          ],
+          "candidate_samples_ns": [
+            107185500,
+            115937700,
+            107662900,
+            102883700,
+            108612200,
+            105490200
+          ],
+          "baseline_median_ns": 129640950.0,
+          "candidate_median_ns": 107424200.0,
+          "candidate_over_baseline": 0.8286286084759483
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "height": 240,
+      "mask": "disabled",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            937660300,
+            991161500,
+            1032568300,
+            1023511300,
+            1033523800,
+            863954500
+          ],
+          "candidate_samples_ns": [
+            844928700,
+            804607500,
+            981920700,
+            963705500,
+            891802100,
+            967160600
+          ],
+          "baseline_median_ns": 1007336400.0,
+          "candidate_median_ns": 927753800.0,
+          "candidate_over_baseline": 0.9209969976266121
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            799327400,
+            879203400,
+            878475100,
+            779645600,
+            1157837700,
+            846651500
+          ],
+          "candidate_samples_ns": [
+            1102038100,
+            1031955800,
+            802985200,
+            899609500,
+            959475400,
+            790413600
+          ],
+          "baseline_median_ns": 862563300.0,
+          "candidate_median_ns": 929542450.0,
+          "candidate_over_baseline": 1.07765128657804
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "height": 240,
+      "mask": "zero",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            1068955500,
+            1091207000,
+            1134162100,
+            1110248400,
+            918881300,
+            1206380300
+          ],
+          "candidate_samples_ns": [
+            929682400,
+            1192957900,
+            975850500,
+            1286992100,
+            1093782100,
+            1095680900
+          ],
+          "baseline_median_ns": 1100727700.0,
+          "candidate_median_ns": 1094731500.0,
+          "candidate_over_baseline": 0.994552512851271
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            907569200,
+            1040098000,
+            1041743700,
+            976083000,
+            959450900,
+            1068941600
+          ],
+          "candidate_samples_ns": [
+            888331200,
+            832641400,
+            679513000,
+            902823900,
+            777017300,
+            894011500
+          ],
+          "baseline_median_ns": 1008090500.0,
+          "candidate_median_ns": 860486300.0,
+          "candidate_over_baseline": 0.8535804077114109
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "height": 240,
+      "mask": "full",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            206579100,
+            237211000,
+            199121500,
+            209272700,
+            187067200,
+            205311000
+          ],
+          "candidate_samples_ns": [
+            178829900,
+            190332400,
+            192016200,
+            183109400,
+            171731600,
+            197832200
+          ],
+          "baseline_median_ns": 205945050.0,
+          "candidate_median_ns": 186720900.0,
+          "candidate_over_baseline": 0.9066539836718581
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            181278100,
+            194058500,
+            189831200,
+            192323000,
+            204959300,
+            211732900
+          ],
+          "candidate_samples_ns": [
+            192377600,
+            189683900,
+            189267700,
+            195944100,
+            206669800,
+            222956000
+          ],
+          "baseline_median_ns": 193190750.0,
+          "candidate_median_ns": 194160850.0,
+          "candidate_over_baseline": 1.0050214619488769
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "height": 240,
+      "mask": "half",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            1145948300,
+            1191226200,
+            1051016200,
+            1212799400,
+            1055046900,
+            1140027500
+          ],
+          "candidate_samples_ns": [
+            946366400,
+            933433200,
+            962259800,
+            1064418100,
+            891993000,
+            959999800
+          ],
+          "baseline_median_ns": 1142987900.0,
+          "candidate_median_ns": 953183100.0,
+          "candidate_over_baseline": 0.8339397993627055
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            1004990800,
+            1067718800,
+            1138682600,
+            1086604500,
+            1122290700,
+            1083287800
+          ],
+          "candidate_samples_ns": [
+            927105300,
+            1048920100,
+            1089541400,
+            1020248700,
+            898012000,
+            1090286400
+          ],
+          "baseline_median_ns": 1084946150.0,
+          "candidate_median_ns": 1034584400.0,
+          "candidate_over_baseline": 0.9535813367327033
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "height": 240,
+      "mask": "sparse",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            1125970300,
+            1096866000,
+            1056287000,
+            1046269100,
+            893346100,
+            832519800
+          ],
+          "candidate_samples_ns": [
+            833438100,
+            839930600,
+            893466800,
+            878931100,
+            904808700,
+            1018224900
+          ],
+          "baseline_median_ns": 1051278050.0,
+          "candidate_median_ns": 886198950.0,
+          "candidate_over_baseline": 0.8429729413640854
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            1330931000,
+            950564700,
+            1107518400,
+            907928200,
+            992329700,
+            1027391200
+          ],
+          "candidate_samples_ns": [
+            868376600,
+            914481000,
+            932770200,
+            924771800,
+            969250000,
+            774136600
+          ],
+          "baseline_median_ns": 1009860450.0,
+          "candidate_median_ns": 919626400.0,
+          "candidate_over_baseline": 0.9106470106835058
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "height": 240,
+      "mask": "checker",
+      "frames_per_sequence": 7,
+      "surveys": [
+        {
+          "survey": 1,
+          "baseline_samples_ns": [
+            187333900,
+            192830500,
+            197358300,
+            192863100,
+            181380200,
+            194275600
+          ],
+          "candidate_samples_ns": [
+            205830200,
+            206992300,
+            211056700,
+            214517900,
+            221383200,
+            193504600
+          ],
+          "baseline_median_ns": 192846800.0,
+          "candidate_median_ns": 209024500.0,
+          "candidate_over_baseline": 1.083888869299361
+        },
+        {
+          "survey": 2,
+          "baseline_samples_ns": [
+            192564400,
+            186600100,
+            183415400,
+            199676200,
+            196351900,
+            175055700
+          ],
+          "candidate_samples_ns": [
+            177203300,
+            182355600,
+            211160400,
+            219565400,
+            234035200,
+            246964200
+          ],
+          "baseline_median_ns": 189582250.0,
+          "candidate_median_ns": 215362900.0,
+          "candidate_over_baseline": 1.1359866232202644
+        }
+      ]
+    }
+  ],
+  "benchmark_report_sets_equal": true,
+  "native_reports_per_survey": 126,
+  "timing_summary": {
+    "paired_rows": 36,
+    "lower_candidate_median_rows": 27,
+    "higher_candidate_median_rows": 9,
+    "minimum_ratio": 0.7349782235568829,
+    "maximum_ratio": 1.2223597270846542
+  },
+  "timing_scope": "One native Windows host worker, release, fixed synthetic data, six timed seven-frame sequences after one warmup. Ratios below 1 favor candidate; all adverse rows retained. Not a GPU, physical-phone, AI-inference or end-to-end browser speed claim.",
+  "logical_prefix_bytes_per_table_max": 412164,
+  "simultaneous_prefix_bytes_max": 824328,
+  "retained_prefix_tables_max": 1,
+  "storage": {
+    "owned_metadata_bytes": 566246541,
+    "cache_bytes": 13386648799,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 566246541,
+    "free_bytes": {
+      "C": 68837724160,
+      "E": 875517415424
+    }
+  },
+  "vendor_hardlink_bytes": 41087603,
+  "non_shared_owned_file_bytes": 525158938,
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 786,
+  "forbidden_adapter_matches": 0,
+  "sdk_model_acquisition_bytes": 0,
+  "sensor_downloads": 0,
+  "real_user_camera_reads": 0,
+  "physical_phone_tested": false,
+  "ios_safari_tested": false,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head CI, merge and matching Pages/public browser checks are recorded after this source-bound receipt."
+}

@@ -61,6 +61,13 @@ not claim cancellation or a physical memory bound for unfinished native work.
 This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 
+[Camera mask support](CAMERA_MASK_SUPPORT.md) summarizes validated binary masks
+once into owned empty/full states or a bounded u32 summed-area table. Exact
+inclusive support queries use four entries; public reports, validation order,
+FAST/LK math and explicit CPU/GPU ownership remain. Frozen native and actual
+WASM comparisons verify report parity; timing includes all adverse conditions.
+Physical-phone and operational accuracy qualification remain separate.
+
 [Marching-tetrahedra topology](MESH_SURFACE_TOPOLOGY.md) orders quadrilateral
 cut vertices around their boundary and orients all changed cases toward
 increasing field values for the existing positive-oriented cube tetrahedra.
