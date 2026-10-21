@@ -11,7 +11,7 @@ person neighborhoods from background feature tracks. The arrow shows median
 Open the page over HTTPS, press **カメラ開始**, grant camera permission, and move
 slowly toward a textured scene. **サンプル再生** works without camera permission.
 **停止**, hiding the document and leaving the page stop capture and terminate
-processing. Camera selection and AI masking can be changed while stopped. The
+processing. Camera selection, AI masking and processing size can be changed while stopped. The
 browser never requests a microphone, records a clip or persists a frame.
 
 ## Boundary and ownership
@@ -23,7 +23,7 @@ copy-named WASM method validates lengths before copying JavaScript input. Invali
 sizes, mask labels and nonfinite or non-increasing times fail before retained
 state changes; a gap over 500ms reseeds. Missing/lost tracking returns no motion.
 
-The demo resizes to a 256-pixel long edge, transfers one `ImageBitmap` at a time,
+The demo resizes to a 256-pixel long edge by default (192 in light mode), transfers one `ImageBitmap` at a time,
 and performs tracking in a worker. CPU image readback, grayscale conversion,
 AI mask readback and the Rust input copy are explicit in the implementation.
 There are no implicit production device transfers. Person exclusion covers both
@@ -61,6 +61,29 @@ behavior. Chromium tests resize an actual synthetic `canvas.captureStream`, hold
 an actual worker result across rotation, then hold a bitmap across rotation back.
 Another test delays `play()` while retaining metadata to check Stop and a
 replacement sample session. Physical phone and iOS Safari remain untested.
+
+## Processing size
+
+While stopped, choose **処理サイズ → 軽量 · 192px** to reduce the tracking image.
+Standard uses a 256-pixel long edge; light uses 192, for camera and sample alike.
+The choice is captured at Start and stays fixed through loading and processing.
+Stopping enables the control again and clears the displayed image size. Rotation
+retains the chosen long edge, preserves aspect and warms a fresh tracker after
+the previous result. The current processing dimensions appear below the stats.
+
+For a 4:3 scene the image changes from **256×192 (49,152 pixels)** to
+**192×144 (27,648 pixels)**, a **43.75% reduction in copied/tracked pixel count**.
+This reduces grayscale/readback/mask image work; it is not a measured runtime,
+power or accuracy gain. The AI model, its inference size, transfer ownership and
+eight-frame-per-second submission cap remain unchanged. Light mode trades image
+detail for less image work; it does not promise to fix tracking gaps over 500ms.
+
+Each axis must still contain at least 64 pixels. At the presets' nominal sizes,
+standard admits ratios up to 4:1, light up to 3:1 (with the same pixel rounding).
+Unsupported ratios are rejected with a suggestion to try standard or another
+camera; the image is never stretched to make its short side fit. The procedural
+sample scales its title and motion with the selected size. No real person mask
+is claimed for that sample scene.
 
 ## Static distribution and privacy
 

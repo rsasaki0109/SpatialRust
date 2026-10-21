@@ -142,12 +142,13 @@ async function lightPreset(context, origin) {
   assert.equal(await page.locator("#frame-size").textContent(), "192 × 144 px");
   assert.ok(Number.parseInt(await page.locator("#points").textContent()) >= 8);
   assert.equal(await page.evaluate(() => window.__cameraCalls.length), 0);check("light-sample-real-wasm-motion-without-camera");
+  await screenshot(page, "mobile-light-sample");
   const before = await frameCount(page);
   // Even programmatic edits to a disabled control cannot change active coordinates.
   await page.locator("#resolution").evaluate((select) => { select.value = "256"; });await waitFrames(page, before + 2);
   assert.equal(await page.locator("#overlay").evaluate((c) => c.width), 192);
   assert.equal(await page.locator("#frame-size").textContent(), "192 × 144 px");check("processing-size-is-frozen-during-session");
-  await screenshot(page, "mobile-light-sample");await page.locator("#stop").click();await stopped(page);
+  await page.locator("#stop").click();await stopped(page);
   assert.equal(await page.locator("#resolution").isEnabled(), true);
   assert.equal(await page.locator("#frame-size").textContent(), "—");check("stop-reenables-processing-preset-and-clears-size");
   await page.locator("#sample").click();

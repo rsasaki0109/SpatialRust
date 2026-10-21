@@ -19,6 +19,13 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add a stopped-only light setting to the camera playground, with a 192-pixel
+  tracking long edge beside the default 256. Both camera and procedural sample
+  retain aspect and the selected size through rotation; show current processing
+  dimensions. A 4:3 image has 43.75% fewer copied/tracked pixels. AI inference and
+  physical mobile speed/accuracy remain separate. See
+  [camera processing size](docs/MOBILE_CAMERA_DEMO.md#processing-size).
+
 - Keep the camera playground's presentation tied to the active session after
   asynchronous video startup. Adapt to intrinsic portrait/landscape size changes
   after pending results finish, discard obsolete captures and reseed the existing
