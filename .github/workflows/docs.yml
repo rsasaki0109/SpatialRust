@@ -23,9 +23,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Build documentation
         run: cargo doc --workspace --no-deps --all-features
+      - name: Build the mobile AI camera playground
+        shell: bash
+        run: |
+          cargo build -p spatialrust-web --release --target wasm32-unknown-unknown --features wasm,camera-tracking --locked
+          wasm_bindgen_version=$(python scripts/wasm_bindgen_version.py Cargo.lock)
+          cargo install wasm-bindgen-cli --version "$wasm_bindgen_version" --locked
+          python scripts/build_camera_demo.py --output target/doc/camera --wasm target/wasm32-unknown-unknown/release/spatialrust_web.wasm
       - name: Add the project guide
         shell: bash
         run: |
