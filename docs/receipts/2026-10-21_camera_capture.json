@@ -1,0 +1,254 @@
+{
+  "schema": "spatialrust.public-camera-capture-receipt.v1",
+  "slice": "146AO",
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-21T10:33:55.255868+00:00",
+  "protocol_commit": "10a033a3097a1fd1b62afafb73e5ebaaeefabd99",
+  "tested_source_commit": "7322cc30cff8d2e0a9ae08431b30103628aae8ba",
+  "parent_merge": "cedf9c8899e00a10c34d11cbad1f4aa4ac376183",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\camera-capture-plan.json",
+    "bytes": 2944,
+    "sha256": "3f9114efee3f75707cb9bafd0b06b113382b866df519b960fcff044ae758b979"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-capture-preflight.json",
+    "bytes": 230063,
+    "sha256": "058c2182fcbf3f05f0e6c17fdf5474702101051d8972706ea97635900edf618b"
+  },
+  "owned_commands": 7,
+  "all_commands_terminal": true,
+  "commands": {
+    "assets": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\assets.command.json",
+        "bytes": 3966,
+        "sha256": "f634908df5291ca00f7dee19ba292882a5cd36685c6cd79449711f15e024a2b8"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\assets.log",
+        "bytes": 109,
+        "sha256": "59753171660350c6735ee4b12925f50e7f8606c102caf33752e5551608bad819"
+      },
+      "source_head": "7322cc30cff8d2e0a9ae08431b30103628aae8ba",
+      "child_exit_status": 0
+    },
+    "baseline-capture-camera": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\baseline-capture-camera.command.json",
+        "bytes": 4273,
+        "sha256": "acab3349068968d223752c315987cc34801cd7b0290c8191c237df0c49c4d706"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\baseline-capture-camera.log",
+        "bytes": 650,
+        "sha256": "631a4e85cfd1d57dcdf983956269f7b82bc92d6594fe1230607a20052c857dc5"
+      },
+      "source_head": "3ece3ba5c68d13e6c3d0b8295b1476b3728a890f",
+      "child_exit_status": 1
+    },
+    "baseline-capture-sample": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\baseline-capture-sample.command.json",
+        "bytes": 4273,
+        "sha256": "aff739bb6708a461308490160a99d74bfa8c7e252d2e62c7702f9c7d890a04e3"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\baseline-capture-sample.log",
+        "bytes": 650,
+        "sha256": "3d2bda767d37b5a3fe0a98584fcf5036637d59df0ac3ecd3a52cc1d314c24653"
+      },
+      "source_head": "3ece3ba5c68d13e6c3d0b8295b1476b3728a890f",
+      "child_exit_status": 1
+    },
+    "browser": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser.command.json",
+        "bytes": 8598,
+        "sha256": "954f2736c41d81d1b4fd6b1fbcb5f09737606b133e01827a91a15950ff56a7ea"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser.log",
+        "bytes": 4766,
+        "sha256": "c977494a90e53d0c728bbaeebb94854bdb59e04ea8c4d65f499e50773beb0457"
+      },
+      "source_head": "7322cc30cff8d2e0a9ae08431b30103628aae8ba",
+      "child_exit_status": 0
+    },
+    "build-v2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\build-v2.command.json",
+        "bytes": 4197,
+        "sha256": "5233aae6e9dcb14fe85d1a12a1950fb993896d7d9ba073b66d2f580a19956252"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\build-v2.log",
+        "bytes": 131,
+        "sha256": "8ca06bfdbe03d691b47aa1a20dcae7e00832132b7750e0909cde4ba5e66f576f"
+      },
+      "source_head": "7322cc30cff8d2e0a9ae08431b30103628aae8ba",
+      "child_exit_status": 0
+    },
+    "build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\build.command.json",
+        "bytes": 4037,
+        "sha256": "870696e6449b9d30c1a6579941f2528d22c4947e711b15bf5ca0feb2b4dbf57a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\build.log",
+        "bytes": 131,
+        "sha256": "0910af88debf28332cf0d7337851c391462fea9d52513f6f904b9a5a478e720b"
+      },
+      "source_head": "3ece3ba5c68d13e6c3d0b8295b1476b3728a890f",
+      "child_exit_status": 0
+    },
+    "unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\unit.command.json",
+        "bytes": 3930,
+        "sha256": "392e7cd1fbbb12d0b8954e7296e13072e290314902450a0c2f1a5fa1bed0f125"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\camera-capture-v1\\unit.log",
+        "bytes": 5240,
+        "sha256": "c98d8c30841c24d0f65e2caf1a4136b1c5470afdd1844641ac4b2547950d93d0"
+      },
+      "source_head": "7322cc30cff8d2e0a9ae08431b30103628aae8ba",
+      "child_exit_status": 0
+    }
+  },
+  "unit_tests": 66,
+  "asset_controls": 6,
+  "browser_controls": 69,
+  "software_graphics_delegate": true,
+  "browser_report": {
+    "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\report.json",
+    "bytes": 11212,
+    "sha256": "d21e56cef8a37b7d51c7b1cad5d3fc84c30240a2c53b2ed8174001532b26fe02"
+  },
+  "screenshots": [
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-idle.png",
+      "bytes": 218678,
+      "sha256": "95637b49b81d23999c2b29f148f317a79a4c021b31648a9f1e0617df49aeb38c"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-tracking.png",
+      "bytes": 283291,
+      "sha256": "11966dead7c532d07c98334bfcaa185440a7a4a968847589c912743da55da6b5"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-ai.png",
+      "bytes": 284239,
+      "sha256": "2a2872e3a0acdaa7050e0b6294028a8c3da130457f2ad99e8c5173fe075a1c83"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\desktop-idle.png",
+      "bytes": 437103,
+      "sha256": "bb4e7619a7b023d0f18c9324a7d3db7d42ae7e51274401ddc37d4bd9a99b9ecb"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-portrait-camera-256.png",
+      "bytes": 186824,
+      "sha256": "a2ae1cd31b121cc5e5f23a3e607ecba1d1304f79779907b73f7ff310883807ba"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-light-sample.png",
+      "bytes": 273034,
+      "sha256": "911f3add79d7d90fff35e77b2bdd6bc55371d0cdfa6808589acfe7ad97ef1d51"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-portrait-camera-192.png",
+      "bytes": 187749,
+      "sha256": "64d19c67ffe64a4bb8f8b98878b61fa2b1567c50814451ead5ace02b13d4aa40"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-capture-rate.png",
+      "bytes": 263341,
+      "sha256": "70b7176ba64ea3b317dc13c459140c9c65f969a51a6efcf39463e94fde61a4b9"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-source-recovery.png",
+      "bytes": 272916,
+      "sha256": "fd1a3caa302c0cae66df7698556c90a06cf63ca8542fffe3fb8c900680037413"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-progress-timeout.png",
+      "bytes": 223512,
+      "sha256": "407f9fb64a39dead84be64b1b9a775af2abb7673109358c3f38c00e5de3cb0d2"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-progress-restart.png",
+      "bytes": 174280,
+      "sha256": "b1733679d4f1047614770d4d07cacf19bb68daed42e609aeff08869e8bda858f"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-result-timeout.png",
+      "bytes": 223214,
+      "sha256": "981db1fb413285c2533c220e7085bebff51c52f0c22087672feb191ea07027ff"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-result-restart.png",
+      "bytes": 175619,
+      "sha256": "745417da37963a72b362d71cc72e42b8c3a566c4d887adbd41100f9b5903209c"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-capture-timeout.png",
+      "bytes": 223848,
+      "sha256": "5273760ba0ae3cba6823fd84cdb5bf0fb91b79a7809b95e5aee417482670cf14"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\camera-capture-v1\\browser-artifacts\\mobile-capture-restart.png",
+      "bytes": 175372,
+      "sha256": "5f1f176b36b3b367277bafda90cde448be2c884a60f30a4db65831d3934c7782"
+    }
+  ],
+  "site_build": {
+    "path": "E:\\SpatialRustBuild\\camera-capture-v1\\site\\camera\\build.json",
+    "bytes": 4191,
+    "sha256": "d9cfc11ce783ea67db1786ff0a2244356c65291497a57fffe66f850697f81a7f"
+  },
+  "unchanged_wasm": {
+    "path": "E:\\SpatialRustBuild\\maturity-80-target\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1030227,
+    "sha256": "660461f1760aab0a96b8bd72baa265196107ae4ece8cf3e17dfa929a30c1dc6e"
+  },
+  "unchanged_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118086,
+    "sha256": "e9d0a244c69b4ea193c7ebcd61e404de8071a53b71ff269c2c8dbe0f506484cc"
+  },
+  "vendor_hardlink_bytes": 41087603,
+  "sdk_model_acquisition_bytes": 0,
+  "storage": {
+    "owned_metadata_bytes": 45792124,
+    "cache_bytes": 13058120779,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 45792124,
+    "free_bytes": {
+      "C": 69440208896,
+      "E": 876345995264
+    }
+  },
+  "non_shared_owned_file_bytes": 4704521,
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 517,
+  "forbidden_adapter_matches": 0,
+  "physical_phone_tested": false,
+  "ios_safari_tested": false,
+  "new_sensor_payload_downloads": 0,
+  "real_user_camera_reads": 0,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head CI, merge and live Pages checks are recorded after this source-bound receipt.",
+  "parent_regressions_reproduced": [
+    "pending camera bitmap capture retained running presentation",
+    "pending sample bitmap capture retained running presentation"
+  ],
+  "baseline_site_build": {
+    "path": "E:\\SpatialRustBuild\\camera-capture-v1\\baseline-build.json",
+    "bytes": 4033,
+    "sha256": "f23d439aea2881f44336be46a06fdc0e0ac7d096fbf5b1b23077a3772b1b155d"
+  }
+}

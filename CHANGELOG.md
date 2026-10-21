@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Bound camera/sample bitmap acquisition to five seconds and abort its wait on
+  Stop or session failure. Close eventual late bitmaps without submission and
+  consume late native rejection; preserve replacement capture ownership, timing
+  and explicit restart. Native browser work itself is not cancellable. See
+  [bitmap capture deadline](docs/MOBILE_CAMERA_DEMO.md#bitmap-capture-deadline).
+
 - Stop camera and sample playground sessions when a submitted frame has no
   matching worker result for fifteen seconds. Clear stale output and resources,
   permit explicit restart and match session/frame sequences so duplicate or old
