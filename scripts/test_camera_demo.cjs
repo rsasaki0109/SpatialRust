@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
 function argument(name) { const i = process.argv.indexOf(name); if (i < 0 || !process.argv[i + 1]) throw new Error(`missing ${name}`); return path.resolve(process.argv[i + 1]); }
 const site = argument("--site"), output = argument("--output");
 const caseIndex = process.argv.indexOf("--regression-case"), regressionCase = caseIndex < 0 ? null : process.argv[caseIndex + 1];
-if (regressionCase && !["startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy"].includes(regressionCase)) throw new Error("unknown regression case");
+if (regressionCase && !["startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy", "result-camera", "result-sample"].includes(regressionCase)) throw new Error("unknown regression case");
 if (fs.existsSync(output)) throw new Error("fresh browser evidence directory required");
 fs.mkdirSync(output, { recursive: true });
 const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [], failedRequests: [], httpErrors: [], workerErrors: [], cspViolations: [] };
@@ -181,6 +181,64 @@ async function videoProgress(context, origin, busy) {
     const frames = await frameCount(page);await page.evaluate(() => { const release = window.__heldResult;delete window.__heldResult;release(); });await waitFrames(page, frames + 1);
     await screenshot(page, "mobile-progress-restart");
   }
+  await page.locator("#stop").click();await stopped(page);await page.close();
+}
+
+async function resultDeadline(context, origin, mode) {
+  const page = await context.newPage();activePage = page;
+  await page.goto(origin + "/camera/");await page.locator("#ai").uncheck();await page.locator("#resolution").selectOption("192");
+  const start = mode === "camera" ? "#start" : "#sample";
+  await page.locator(start).click();await waitFrames(page, 1);
+  await page.evaluate(() => { window.__holdNextResult = true; });
+  await page.waitForFunction(() => typeof window.__heldResult === "function");
+  const pending = await page.evaluate(() => ({ sentAt: window.__timedSubmissions.at(-1).sentAt, sequence: window.__submittedFrameSequence, frames: Number(document.documentElement.dataset.trackedFrames), time: document.querySelector("video").currentTime }));
+  // A slow result below its own deadline is valid, including with advancing video.
+  await page.evaluate((sentAt) => new Promise((resolve) => setTimeout(resolve, Math.max(0, sentAt + 6500 - performance.now()))), pending.sentAt);
+  const waiting = await page.evaluate(() => ({ state: document.documentElement.dataset.sessionState, sequence: window.__submittedFrameSequence, time: document.querySelector("video").currentTime }));
+  assert.equal(waiting.state, "running");assert.equal(waiting.sequence, pending.sequence);
+  if (mode === "camera") assert.ok(waiting.time > pending.time);
+  check(`${mode}-slow-result-below-deadline-keeps-one-frame-pending`);
+  await page.evaluate((sentAt) => new Promise((resolve) => setTimeout(resolve, Math.max(0, sentAt + 15400 - performance.now()))), pending.sentAt);
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.sessionState), "error", "missing worker result retained running presentation");
+  assert.equal(await page.evaluate(() => document.querySelector("video").srcObject), null);
+  assert.equal(await page.evaluate(() => window.__cameraStreams.every((s) => s.getTracks().every((t) => t.readyState === "ended"))), true);
+  assert.equal(await page.evaluate(() => window.__terminatedWorkers), 1);assert.equal(await page.locator("#overlay").isHidden(), true);
+  assert.equal(await page.locator("#placeholder").isVisible(), true);assert.equal(await frameCount(page), pending.frames);
+  for (const id of ["points", "fps", "person", "backend", "frame-size"]) assert.equal(await page.locator("#" + id).textContent(), "—");
+  const status = await page.locator("#status").textContent();assert.ok(status.includes("処理結果") && status.includes("15秒") && status.includes("もう一度") && !status.includes("開始できませんでした"));
+  check(`${mode}-missing-result-clears-presentation-and-resources`);
+  (report.resultDeadlines ??= []).push({ mode, pending, waiting, stoppedAt: await page.evaluate(() => performance.now()), status });
+  if (mode === "camera") await screenshot(page, "mobile-result-timeout");
+  await page.evaluate(() => { window.__expiredResult = window.__heldResult;delete window.__heldResult; });
+  const frames = await frameCount(page);await page.locator(start).click();await waitFrames(page, frames + 1);
+  await page.evaluate(() => { window.__holdNextResult = true; });await page.waitForFunction(() => typeof window.__heldResult === "function");
+  const stale = await page.evaluate(() => {
+    const before = document.documentElement.dataset.trackedFrames;window.__expiredResult();delete window.__expiredResult;
+    return { before, after: document.documentElement.dataset.trackedFrames, state: document.documentElement.dataset.sessionState };
+  });
+  assert.equal(stale.after, stale.before);assert.equal(stale.state, "running");
+  check(`${mode}-late-result-cannot-complete-replacement-frame`);
+  const duplicate = await page.evaluate(() => {
+    window.__previousResult = window.__heldResult;delete window.__heldResult;
+    const before = Number(document.documentElement.dataset.trackedFrames);window.__previousResult();window.__previousResult();
+    window.__holdNextResult = true;
+    return { before, after: Number(document.documentElement.dataset.trackedFrames) };
+  });
+  assert.equal(duplicate.after, duplicate.before + 1, "duplicate result changed presentation");
+  await page.waitForFunction(() => typeof window.__heldResult === "function");
+  const oldFrame = await page.evaluate(() => {
+    const before = document.documentElement.dataset.trackedFrames;window.__previousResult();delete window.__previousResult;
+    return { before, after: document.documentElement.dataset.trackedFrames, sequence: window.__submittedFrameSequence };
+  });
+  assert.equal(oldFrame.after, oldFrame.before);
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 300)));
+  assert.equal(await page.evaluate(() => window.__submittedFrameSequence), oldFrame.sequence, "old result released a different pending frame");
+  check(`${mode}-duplicate-and-obsolete-frame-results-keep-current-ownership`);
+  const before = await frameCount(page);await page.evaluate(() => { const release = window.__heldResult;delete window.__heldResult;release(); });await waitFrames(page, before + 1);
+  assert.ok((await page.locator("#mode-label").textContent()).startsWith(mode === "camera" ? "LIVE" : "SAMPLE"));
+  assert.equal(await page.evaluate(() => window.__cameraCalls.length), mode === "camera" ? 2 : 0);
+  check(`${mode}-matching-result-and-explicit-restart-resume-processing`);
+  if (mode === "camera") await screenshot(page, "mobile-result-restart");
   await page.locator("#stop").click();await stopped(page);await page.close();
 }
 
@@ -385,6 +443,7 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
     else if (regressionCase === "cadence") await captureCadence(context, origin);
     else if (regressionCase.startsWith("source-")) await sourceTermination(context, origin, regressionCase.slice(7));
     else if (regressionCase.startsWith("progress-")) await videoProgress(context, origin, regressionCase === "progress-busy");
+    else if (regressionCase.startsWith("result-")) await resultDeadline(context, origin, regressionCase.slice(7));
     else await captureRate(context, origin);
     report.passed = true;return;
   }
@@ -450,6 +509,7 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   await captureRate(context, origin);
   for (const kind of ["ended", "inactive", "silent"]) await sourceTermination(context, origin, kind);
   await videoProgress(context, origin, false);await videoProgress(context, origin, true);
+  for (const mode of ["camera", "sample"]) await resultDeadline(context, origin, mode);
   assert.equal(report.externalResponses.length, 0);assert.equal(report.nonGetRequests.length, 0);check("same-origin-static-get-responses-only");
   report.passed = true;
 })().catch(async (error) => {

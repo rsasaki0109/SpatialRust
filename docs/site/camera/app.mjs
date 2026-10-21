@@ -84,7 +84,7 @@ const session = new CameraSession({
     if (state === "running") { setStatus("映像から特徴点を探しています。"); frameHandle = requestAnimationFrame(pump); }
   },
   onError: (error) => {
-    if (error.name === "CameraEndedError" || error.name === "CameraStalledError") { setStatus(error.message);return; }
+    if (["CameraEndedError", "CameraStalledError", "FrameResultTimeoutError"].includes(error.name)) { setStatus(error.message);return; }
     const denied = error.name === "NotAllowedError" || /permission|denied/i.test(error.message);
     setStatus(denied ? "カメラの使用が許可されていません。ブラウザの権限を確認するか、サンプルでお試しください。" : `開始できませんでした。${error.message}${error.name === "RangeError" ? "" : " AIをオフにして試すこともできます。"}`);
   },

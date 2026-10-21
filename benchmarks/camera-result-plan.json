@@ -1,0 +1,30 @@
+{
+  "schema": "spatialrust.camera-result-plan.v1",
+  "slice": "146AN",
+  "parent_merge": "b3396fc95fea7591cfb67a6b937ff3936d5ab127",
+  "purpose": "Stop camera and sample sessions when a submitted frame has no matching worker result for fifteen seconds; clear stale output and permit explicit restart.",
+  "contract": {
+    "deadline": "Each transferred frame owns a 15000ms result timer, independent of the five-second video progress clock and the startup deadline. No pending frame means no result deadline. Completion, failure or Stop releases the timer.",
+    "ownership": "Results must match both the active session and the pending frame sequence. Unsolicited, duplicate, obsolete-frame and obsolete-session results cannot clear the current deadline or update presentation. A new submission and an explicit restart each own a fresh deadline. No automatic restart or camera permission request.",
+    "verification": "Reproduce retained running presentation on the parent by withholding an actual worker result in both camera and sample modes. Use deterministic unit clocks for exact deadlines, cancellation and message races; retain real browser/WASM/model, input-progress, geometry, timing, preset and CSP controls. Fake media only; no physical phone or sensor-clock qualification.",
+    "preservation": "Preserve scientific JSON, frozen native binaries, all prior camera evidence, resolved Cargo.lock and release WASM. No Rust/native/core/GPU changes, compiler runs, sensor downloads or new SDK/model acquisition."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-result-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 100663296,
+    "positive_cache_growth_max_bytes": 8388608,
+    "combined_new_and_positive_cache_growth_max_bytes": 109051904,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "command_timeout_seconds": 300,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Hard-link existing hash-identical vendor files into a fresh E: site. Reuse the release WASM, matching bindgen and installed browser/runtime; keep all previous evidence and failed reports.",
+    "public_verification_stream_max_bytes": 33554432,
+    "asset_download_scope": "Zero covers local SDK/model acquisition. Post-publication HTTPS checks may stream up to 32MiB without persisting vendor payloads."
+  },
+  "remaining_80_percent": "Measured canonical calibration/timing and independent motion, full-room accuracy, qualifying Linux hardware and integrated acceptance remain open."
+}
