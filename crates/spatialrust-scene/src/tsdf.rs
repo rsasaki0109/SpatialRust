@@ -256,6 +256,10 @@ mod support_tests;
 mod grid_tests;
 
 #[cfg(test)]
+#[path = "tsdf_mesh_tests.rs"]
+mod mesh_tests;
+
+#[cfg(test)]
 mod tests {
     use super::TsdfVolume;
     use spatialrust_core::{PointCloudBuilder, StandardSchemas};

@@ -6,6 +6,13 @@ North star: **Rust-native spatial intelligence: capture, understand, reconstruct
 
 ## Core decisions
 
+[Marching-tetrahedra topology](MESH_SURFACE_TOPOLOGY.md) orders quadrilateral
+cut vertices around their boundary and orients all changed cases toward
+increasing field values for the existing positive-oriented cube tetrahedra.
+Seven static rows change; interpolation, cube split, TSDF integration, public
+APIs and explicit device ownership remain. Independent affine and planar
+controls establish local geometry properties, with physical acceptance separate.
+
 [Fallible TSDF grid construction](TSDF_GRID_ADMISSION.md) validates finite
 origins/voxel centers and checked field capacities before allocator access.
 Both fields reserve fallibly before initialization, using existing scene errors.

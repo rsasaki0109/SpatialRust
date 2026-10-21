@@ -19,6 +19,14 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Correct six marching-tetrahedra quadrilateral cycles and one three-inside
+  winding, preventing overlapping/incomplete cut faces and reversed triangles.
+  Preserve interpolation, cube decomposition, TSDF integration and public APIs.
+  Twenty controls reproduce 17 original failures; scene default/all features
+  pass 63/65 tests, with 499 independent case checks and 12 analytic plane
+  volumes checking area, orientation, shared edges and perimeter. See
+  [the geometry contract and evidence](docs/MESH_SURFACE_TOPOLOGY.md).
+
 - Validate TSDF origins, f32 voxel centers and checked field capacities before
   allocating. Reserve distance and weight storage fallibly before initialization,
   returning the existing scene error for invalid grids or reported reservation

@@ -1,0 +1,27 @@
+{
+  "schema": "spatialrust.mesh-topology-plan.v1",
+  "slice": "146AG",
+  "parent_merge": "0fc423121be10f56a24c56310e8ac081e50b0523",
+  "purpose": "Correct marching-tetrahedra quadrilateral cycles and one reversed three-inside winding so ordinary TSDF cut surfaces cover their polygon without overlapping triangles or missing area.",
+  "fixed_contract": {
+    "surface": "Keep the existing positive-oriented six tetrahedra per cube and strict value < isolevel classification. Every nondegenerate finite affine cut emits the complete triangular/quadrilateral polygon, consistently wound toward increasing field values. For four cut edges, traverse their boundary cycle before fan triangulation: the shared triangle edge joins disjoint tetrahedron edges, while each polygon boundary edge lies on one tetrahedron face. Correct only the six two-inside rows and the three-inside 1011 winding.",
+    "compatibility": "Preserve interpolation arithmetic/epsilon/endpoints, cube tetrahedralization, output layout and append/index order within each emitted triangle. Preserve all other case rows, public APIs, volume construction, TSDF integration/support/weights/submission counters, core/GPU/ROS2 libraries, dependencies and explicit device ownership. No welding, degenerate filtering, new normals, projective fusion or generalized extreme/NaN interpolation policy.",
+    "verification": "Commit protocol before native execution. Commit independent edge intersections, affine gradients, polygon area and boundary/diagonal incidence controls while production stays unchanged, then reproduce all six quadrilateral failures and the 1011 winding regression. Cover all 16 masks, unequal endpoint magnitudes, complementary signs, all six cube tetrahedra, dyadic transforms, unchanged triangular/empty and interpolation cases, append offsets, and tiny full-volume planar cuts on all axes. Use direct tiny synthetic fields only; no physical accuracy or global watertightness guarantee."
+  },
+  "verification": "Use bounded owned offline baseline/scene default/all and Clippy, full-bag/E2E and ROS2/mapping/viewer all features, calibration-filtered controls, ROS2 all-target Clippy and formatting. Existing three-OS scene all-feature CI and all 131 named checks gate merge. Keep original failures and source-bound terminal records, preserve 493 scientific JSON/42 frozen native artifacts, pinned references and room outputs. No sensor payload read/acquisition/copy or real-motion fit.",
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/mesh-topology-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 2147483648,
+    "combined_new_and_positive_cache_growth_max_bytes": 2281701376,
+    "minimum_free_bytes": 21474836480,
+    "workers": 4,
+    "command_timeout_seconds": 1800,
+    "sampling_seconds": 5,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "preservation": "Hash-protect prior scientific JSON, all 42 frozen native artifacts, pinned sources and completed room outputs. Reuse the cache, preserve failed logs and never rebuild frozen binaries. No real sensor read/download/copy or real-motion fit. Synthetic SQLite/JSON fixtures stay in the owned external temp directory."
+  },
+  "remaining_80_percent": "Native full-room accuracy and genuinely unobserved motion; both qualifying raw Linux hardware classes; matching canonical measured clock uncertainty and physical frame accuracy; complete canonical mapping/semantic/Viewer/interchange/release acceptance. Successful record-submission traceability does not establish these requirements."
+}
