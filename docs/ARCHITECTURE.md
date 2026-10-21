@@ -46,6 +46,11 @@ Result timeout reuses cleanup and offers explicit restart without acquisition.
 Each bitmap creation also owns a separate 5000ms wait deadline. Session Stop
 aborts that wait; completion, rejection, abort and timeout clear its timer and
 listener. A bitmap arriving after cancellation is closed without submission.
+Start calls also observe a per-run cancellation completion through both worker/
+camera readiness and presenter startup. Stop, failure and the unchanged startup
+deadline return false without requiring a native acquisition/play promise to
+settle. Late continuations remain observed and retain their epoch/track cleanup;
+this does not cancel native browser work or dismiss permission prompts.
 Native browser bitmap creation itself is not cancellable, so this policy does
 not claim cancellation or a physical memory bound for unfinished native work.
 This experimental browser boundary preserves core and vision algorithms; physical

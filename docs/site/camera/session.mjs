@@ -14,6 +14,8 @@ export class CameraSession {
     this.stop();
     const run = { token: ++this.epoch, mode, ai, worker: null, stream: null, started: false, inFlight: null, frameId: 0, captureAbort: new AbortController() };
     this.run = run;
+    // Release the application wait even if native camera/play work never settles.
+    const cancelled = new Promise((resolve) => { run.cancelStart = resolve; });
     this.onState("loading");
     try {
       run.worker = this.createWorker();
@@ -52,9 +54,9 @@ export class CameraSession {
         if (!this.checkCamera(run)) return null;
         return stream;
       }) : Promise.resolve(null);
-      await Promise.all([ready, camera]);
+      await Promise.race([Promise.all([ready, camera]), cancelled]);
       if (this.run !== run) return false;
-      await this.onReady(run);
+      await Promise.race([this.onReady(run), cancelled]);
       if (this.run !== run) return false;
       if (mode === "camera" && !this.checkCamera(run)) return false;
       clearTimeout(run.timer);
@@ -64,7 +66,7 @@ export class CameraSession {
     } catch (error) {
       if (this.run === run) this.fail(run, error);
       return false;
-    }
+    } finally { run.cancelStart = null; }
   }
 
   checkCamera(run) {
@@ -111,6 +113,7 @@ export class CameraSession {
     this.run = null;
     ++this.epoch;
     if (run) {
+      run.cancelStart?.();
       clearTimeout(run.timer);
       clearTimeout(run.inFlight?.timer);
       run.captureAbort.abort();
