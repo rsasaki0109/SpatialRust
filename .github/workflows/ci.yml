@@ -29,8 +29,9 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo generate-lockfile
-      - name: Check mapping transport, fusion coverage and bounded readback
+      - name: Check TSDF support, mapping transport and fusion coverage
         run: |
+          cargo test -p spatialrust-scene --all-features --locked
           cargo test -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_full_bag_mapping --locked
           cargo test -p spatialrust-ros2 --features rosbag2-sqlite --example rosbag2_e2e --locked
           cargo test -p spatialrust-ros2 --all-features --locked
