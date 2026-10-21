@@ -1,0 +1,39 @@
+{
+  "schema": "spatialrust.camera-geometry-ci-correction.v1",
+  "failed_source_commit": "a2b4cafd6246557222c228991976700916c71a1f",
+  "failed_job_url": "https://github.com/rsasaki0109/SpatialRust/actions/runs/39547949080/job/119050293608",
+  "cause": "Rust target cache restored target/camera-browser-evidence; the fresh-output check rejected it before browser execution.",
+  "correction": "Use RUNNER_TEMP/camera-browser-evidence-GITHUB_RUN_ID-GITHUB_RUN_ATTEMPT; retain old evidence and keep fresh-output rejection.",
+  "application_changes_in_correction": false,
+  "local_validation_reused": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\docs\\receipts\\2026-10-21_camera_geometry.json",
+  "failed_owner": {
+    "Pid": 49964,
+    "ProcessStartUtc": "2026-10-21T05:10:42.5207055Z",
+    "StartedAtUtc": "2026-10-21T05:10:58.5296285Z",
+    "GuardPath": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-geometry-ci-merge.ps1",
+    "GuardSha256": "62b1d00153eca67372657f7b13dc31e3f2e96888325eb2278904e6aef4240c93"
+  },
+  "failed_terminal": {
+    "Pid": 49964,
+    "GuardSha256": "62b1d00153eca67372657f7b13dc31e3f2e96888325eb2278904e6aef4240c93",
+    "ExitStatus": 1,
+    "FinishedAtUtc": "2026-10-21T05:15:19.6809249Z"
+  },
+  "retained_logs": [
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-geometry-ci-job-logs.txt",
+      "bytes": 88872,
+      "sha256": "4217ab69518665216b28d67ab36bb626d5b8406260a8e764f449b0dc0dcd10aa"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-geometry-ci-merge.log",
+      "bytes": 22934,
+      "sha256": "eb9f8c8185c9796f18c01e1d407849da7f59bf440104fde6b1311792c959519b"
+    },
+    {
+      "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\camera-geometry-ci-failed.log",
+      "bytes": 82,
+      "sha256": "f32c1b3b932c0f05c97be74000fe6d972a5f46ea6abb26db0d7c66be896244c9"
+    }
+  ]
+}

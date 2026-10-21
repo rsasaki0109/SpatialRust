@@ -607,7 +607,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/camera-browser" --no-save --ignore-scripts playwright@1.62.1
           export CAMERA_CHROMIUM_PATH="$(command -v google-chrome)"
           node --test crates/spatialrust-web/web/camera_controller.test.mjs
-          node scripts/test_camera_demo.cjs --site target/camera-site --output target/camera-browser-evidence
+          node scripts/test_camera_demo.cjs --site target/camera-site --output "$RUNNER_TEMP/camera-browser-evidence-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
   bench:
     name: Benchmark compile

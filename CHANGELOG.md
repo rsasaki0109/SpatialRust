@@ -22,7 +22,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - Keep the camera playground's presentation tied to the active session after
   asynchronous video startup. Adapt to intrinsic portrait/landscape size changes
   after pending results finish, discard obsolete captures and reseed the existing
-  tracker without reloading AI. Admit bounded aspect-preserving frame sizes and
+  tracker without reloading AI. Keep browser evidence outside the Rust target
+  cache in a run-specific temporary directory. Admit bounded aspect-preserving frame sizes and
   reject extreme ratios. Synthetic browser regressions reproduce the two parent
   failures; physical phone/Safari qualification remains open. See
   [camera geometry and lifecycle](docs/MOBILE_CAMERA_DEMO.md).

@@ -174,3 +174,10 @@ and compiler-cache growth is **zero**. Post-deployment verification has its own
 These are software-browser checks of changing intrinsic frame dimensions,
 not physical device, iOS Safari or real-motion accuracy acceptance. Exact-head
 CI and the matching Pages deployment are verified after the receipt commit.
+
+The first CI attempt correctly refused to overwrite an existing browser evidence
+folder restored with the Rust target cache. Browser evidence now uses the
+runner's temporary directory with the workflow run ID and attempt in its name.
+The fresh-output invariant remains enforced; previous cached evidence is kept.
+Application code and the successful local geometry controls are unchanged by
+this CI path correction.
