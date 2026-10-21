@@ -108,3 +108,20 @@ receipt binds successful checks as well as these failures. Native binaries and
 493 prior scientific JSON/42 frozen artifacts remain hash-protected. The 80%
 operational maturity gates for canonical sensor calibration, independent motion,
 full-room accuracy, Linux hardware and integrated acceptance remain open.
+
+The [source-bound delivery receipt](receipts/2026-10-21_mobile_camera.json) records
+26 terminal owned commands and preserves all six development failures. Final
+results are web default/camera/all **5/17/18**, vision **83 passed/two existing
+ignored**, **14 JS**, **six asset** and **15 browser** controls, plus WASM,
+Clippy and formatting checks. The final browser processes three AI frames and
+shows actual feature tracking; the graphics delegate is software-backed.
+
+All builds use the E-drive cache. A fixed 2GiB positive-cache guard stopped one
+all-feature build; a path/time/hash-recorded reclamation removed **598,117,517
+bytes** of newly generated debug symbols and incremental cache. It retained
+binaries, failed logs and frozen evidence. Final positive cache growth is
+**2,067,566,157 bytes**, with approximately **47.2MB** of owned site/log/screenshots;
+the combined amount is about **2.115GB**, within the fixed bounds. No toolchain,
+browser or sensor payload download was needed; SDK/model assets are static web
+dependencies. Public deployment and exact-head CI are checked after the receipt
+commit, with their records kept separately.
