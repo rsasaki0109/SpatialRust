@@ -55,3 +55,7 @@ web-sys = { workspace = true, optional = true, features = [
 [[example]]
 name = "camera_mask_support"
 required-features = ["camera-tracking"]
+
+[[example]]
+name = "lk_pyramid_reuse"
+required-features = ["camera-tracking"]

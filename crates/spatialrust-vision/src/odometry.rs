@@ -273,6 +273,10 @@ pub fn estimate_rgbd_odometry<T: crate::PixelComponent>(
 }
 
 #[cfg(test)]
+#[path = "odometry_pair_tests.rs"]
+mod pair_tests;
+
+#[cfg(test)]
 mod tests {
     use super::{
         estimate_rgbd_odometry, select_keypoints_grid, GridSelectionOptions, RgbdOdometryOptions,
