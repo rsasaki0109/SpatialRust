@@ -1,0 +1,42 @@
+{
+  "schema": "spatialrust.camera-person-sample-plan.v1",
+  "slice": "146AW",
+  "parent_merge": "70f295843b6937be222d5bb5d2b95c58fd9bcbb2",
+  "scope": "Opt-in public-photo sample for actual local person masking and Rust/WASM background flow; retain procedural sample and camera behavior.",
+  "photo": {
+    "path": "vendor/person-sample.png",
+    "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+    "bytes": 791555,
+    "sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+    "width": 512,
+    "height": 512,
+    "source": "https://scikit-image.org/docs/stable/api/skimage.data.html#skimage.data.astronaut",
+    "license_description": "NASA image, documented by scikit-image as public domain; retain attribution.",
+    "presentation": "Unmodified photo drawn on the existing generated texture; only presentation motion is synthetic. No new sensor capture."
+  },
+  "acceptance": [
+    "Explicit person-sample button; no image download on idle, camera or procedural sample paths.",
+    "Actual pinned model yields a nonempty person mask and actual Rust/WASM background tracks in standard and light modes.",
+    "AI-off photo playback remains usable and reports AI off without a person mask.",
+    "Image errors and wrong dimensions fail clearly; Stop during loading and late image events cannot affect replacement sessions.",
+    "Existing lifecycle, mask, geometry, cadence and browser controls pass; all requests stay same-origin GETs without a real camera or microphone.",
+    "Pinned image is self-hosted by the existing builder; nine previous vendor pins, raw WASM, production Rust sources and lockfile remain unchanged.",
+    "Exact-head CI, merge, matching Pages manifest and public browser photo checks are required before delivery."
+  ],
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/camera-person-sample-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 134217728,
+    "positive_cache_growth_max_bytes": 0,
+    "combined_new_and_positive_cache_growth_max_bytes": 134217728,
+    "minimum_free_bytes": 8589934592,
+    "command_timeout_seconds": 900,
+    "sampling_seconds": 5,
+    "new_source_download_max_bytes": 1048576,
+    "new_model_sdk_browser_toolchain_downloads": 0,
+    "native_or_wasm_compilations": 0,
+    "reused_vendor_bytes": 41087603,
+    "public_stream_max_bytes": 41943040
+  },
+  "limits": "A public photograph with synthesized motion is a demo and smoke input, not a calibrated video sequence, person-segmentation accuracy benchmark, GPU speed claim, physical-phone/Safari qualification, metric pose or operational 80% acceptance."
+}
