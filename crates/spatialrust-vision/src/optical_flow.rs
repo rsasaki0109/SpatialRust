@@ -90,57 +90,85 @@ pub fn track_points_lucas_kanade<T: PixelComponent>(
     points: &[Vec2<f64>],
     options: LucasKanadeOptions,
 ) -> VisionResult<TrackedPoints> {
-    let options = options.validate()?;
-    if previous.width() != next.width() || previous.height() != next.height() {
-        return Err(VisionError::ShapeMismatch(
-            "Lucas–Kanade frames must share width and height".into(),
-        ));
+    let pair = LucasKanadePair::try_new(previous, next, options)?;
+    Ok(pair.track(points, false))
+}
+
+/// Owns the immutable CPU pyramids for one pair of frames.
+pub(crate) struct LucasKanadePair {
+    previous_pyramid: Vec<Image<f32, 1>>,
+    next_pyramid: Vec<Image<f32, 1>>,
+    options: LucasKanadeOptions,
+}
+
+impl LucasKanadePair {
+    pub(crate) fn try_new<T: PixelComponent>(
+        previous: ImageView<'_, T, 1>,
+        next: ImageView<'_, T, 1>,
+        options: LucasKanadeOptions,
+    ) -> VisionResult<Self> {
+        let options = options.validate()?;
+        if previous.width() != next.width() || previous.height() != next.height() {
+            return Err(VisionError::ShapeMismatch(
+                "Lucas–Kanade frames must share width and height".into(),
+            ));
+        }
+        if previous.width() < 3 || previous.height() < 3 {
+            return Err(VisionError::InvalidDimensions(
+                "Lucas–Kanade requires at least 3x3 images".into(),
+            ));
+        }
+        let previous_pyramid = build_pyramid(previous, options.pyramid_levels)?;
+        let next_pyramid = build_pyramid(next, options.pyramid_levels)?;
+        Ok(Self { previous_pyramid, next_pyramid, options })
     }
-    if previous.width() < 3 || previous.height() < 3 {
-        return Err(VisionError::InvalidDimensions(
-            "Lucas–Kanade requires at least 3x3 images".into(),
-        ));
-    }
-    let previous_pyramid = build_pyramid(previous, options.pyramid_levels)?;
-    let next_pyramid = build_pyramid(next, options.pyramid_levels)?;
-    let mut next_points = points.to_vec();
-    let mut status = vec![true; points.len()];
-    let scale = 1.0 / f64::from(1u32 << (options.pyramid_levels.saturating_sub(1) as u32));
-    for point in &mut next_points {
-        point.x *= scale;
-        point.y *= scale;
-    }
-    let mut previous_guess = next_points.clone();
-    for level in (0..options.pyramid_levels).rev() {
-        let level_scale = 1.0 / f64::from(1u32 << (level as u32));
-        for (index, previous_point) in points.iter().enumerate() {
-            if !status[index] {
-                continue;
-            }
-            let mut guess = previous_guess[index];
-            let target =
-                Vec2 { x: previous_point.x * level_scale, y: previous_point.y * level_scale };
-            match track_one_level(
-                previous_pyramid[level].view(),
-                next_pyramid[level].view(),
-                target,
-                guess,
-                options,
-            ) {
-                Ok(updated) => {
-                    guess = updated;
-                    status[index] = true;
+
+    pub(crate) fn track(&self, points: &[Vec2<f64>], reverse: bool) -> TrackedPoints {
+        let options = self.options;
+        let (previous_pyramid, next_pyramid) = if reverse {
+            (&self.next_pyramid, &self.previous_pyramid)
+        } else {
+            (&self.previous_pyramid, &self.next_pyramid)
+        };
+        let mut next_points = points.to_vec();
+        let mut status = vec![true; points.len()];
+        let scale = 1.0 / f64::from(1u32 << (options.pyramid_levels.saturating_sub(1) as u32));
+        for point in &mut next_points {
+            point.x *= scale;
+            point.y *= scale;
+        }
+        let mut previous_guess = next_points.clone();
+        for level in (0..options.pyramid_levels).rev() {
+            let level_scale = 1.0 / f64::from(1u32 << (level as u32));
+            for (index, previous_point) in points.iter().enumerate() {
+                if !status[index] {
+                    continue;
                 }
-                Err(_) => status[index] = false,
-            }
-            previous_guess[index] = guess;
-            if level > 0 {
-                previous_guess[index].x *= 2.0;
-                previous_guess[index].y *= 2.0;
+                let mut guess = previous_guess[index];
+                let target =
+                    Vec2 { x: previous_point.x * level_scale, y: previous_point.y * level_scale };
+                match track_one_level(
+                    previous_pyramid[level].view(),
+                    next_pyramid[level].view(),
+                    target,
+                    guess,
+                    options,
+                ) {
+                    Ok(updated) => {
+                        guess = updated;
+                        status[index] = true;
+                    }
+                    Err(_) => status[index] = false,
+                }
+                previous_guess[index] = guess;
+                if level > 0 {
+                    previous_guess[index].x *= 2.0;
+                    previous_guess[index].y *= 2.0;
+                }
             }
         }
+        TrackedPoints { next_points: previous_guess, status }
     }
-    Ok(TrackedPoints { next_points: previous_guess, status })
 }
 
 fn track_one_level(
