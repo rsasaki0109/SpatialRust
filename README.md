@@ -38,8 +38,9 @@ present the saved outputs; playback speed is independent of processing latency.
 </p>
 
 **[Try camera tracking on your phone →](https://rsasaki0109.github.io/SpatialRust/camera/)**
-Use sample playback or opt in to your camera, with optional local AI person
-masking. The GIF uses synthetic frames and the actual CPU Rust/WASM tracker,
+Choose **人物サンプル** to see local AI person masking on a public photo without
+camera permission, or use procedural playback / opt in to your camera.
+The GIF uses synthetic frames and the actual CPU Rust/WASM tracker,
 with AI off. Experimental 2D image motion; [usage and device limits](docs/MOBILE_CAMERA_DEMO.md).
 
 ## Why SpatialRust?

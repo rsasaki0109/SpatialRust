@@ -1,7 +1,8 @@
 # Mobile AI-assisted camera playground
 
 The [GitHub Pages camera playground](https://rsasaki0109.github.io/SpatialRust/camera/)
-lets a visitor explicitly start their camera or play a labeled procedural sample.
+lets a visitor explicitly start their camera or play labeled procedural and
+[public-photo samples](CAMERA_PERSON_SAMPLE.md).
 It uses SpatialRust FAST features and forward/backward Lucas-Kanade in real Rust
 WASM. A pinned MediaPipe SelfieSegmenter runs locally and excludes predicted
 person neighborhoods from background feature tracks. The arrow shows median
@@ -10,6 +11,9 @@ person neighborhoods from background feature tracks. The arrow shows median
 
 Open the page over HTTPS, press **カメラ開始**, grant camera permission, and move
 slowly toward a textured scene. **サンプル再生** works without camera permission.
+**人物サンプル** uses a pinned public NASA/scikit-image photograph with synthesized
+motion, so the AI person mask can be seen without using a camera. The original
+procedural sample remains available; only the photo button requests the image.
 **停止**, hiding the document and leaving the page stop capture and terminate
 processing. Camera selection, AI masking and processing size can be changed while stopped. The
 browser never requests a microphone, records a clip or persists a frame.
