@@ -1,0 +1,68 @@
+{
+  "schema": "spatialrust.lk-template-reuse-plan.v1",
+  "slice": "146AV",
+  "parent_merge": "b3ac5274490a03981f97fa550079727a96ed0eff",
+  "purpose": "Reuse exact previous-image samples and gradients within each CPU LK point/level iteration loop.",
+  "contract": {
+    "math": "Retain validation, in-bounds decisions on both frames in every iteration, sampling formulas, row-major accumulation and update/convergence order. Lazily save only previous-image center/gradient f64 values when a sample is first admitted. Radius at most 5 and more than one configured iteration use the bounded cache; other calls retain the original expressions. Keep the pyramid pair, custom conversions, public APIs, dependencies, core and explicit transfers unchanged.",
+    "ownership": "One call-local fixed optional array of at most 121 slots, each three f64 values, for one point/level. No heap allocation or cache across calls. Assert the array representation is at most 4096 bytes on each tested target; this excludes other stack/frame/runtime memory and is not an RSS guarantee.",
+    "verification": "Freeze the complete parent LK module, excluding its tests, before implementation. Compare exact coordinate/status/error bits across public one-way and robust APIs, dtypes, boundaries, changing support, strided images, options and non-finite inputs. Retain independent parent camera executable and actual parent/candidate WASM comparisons. In-process frozen-parent versus candidate measurements retain both stationary and translated cases, all samples and adverse rows.",
+    "preservation": "Preserve all prior camera/renderer files, isolated Cargo target, 493 scientific JSON, 42 frozen native artifacts, room/reference outputs, both existing raw WASM files and resolved lock. Build only feature-scoped vision/web code in a fresh isolated E-drive target with locked/offline installed toolchains. No sensor/model/SDK/browser/toolchain acquisition or sensor payload copies."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/lk-template-reuse-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 1073741824,
+    "positive_cache_growth_max_bytes": 0,
+    "combined_new_and_positive_cache_growth_max_bytes": 1073741824,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "cargo_jobs": 2,
+    "command_timeout_seconds": 900,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "public_verification_stream_max_bytes": 41943040,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Fresh isolated Cargo outputs, no compiler-output hardlinks. Reuse hash-checked vendor and parent package files. Sample bytes and preserve old artifacts before/after each owned command. Retry only transient vanished entries in the owned live Cargo subtree, at most three complete snapshots; fail on unrelated/persistent errors."
+  },
+  "benchmark": {
+    "shapes": [
+      [
+        192,
+        144
+      ],
+      [
+        256,
+        192
+      ],
+      [
+        320,
+        240
+      ]
+    ],
+    "point_counts": [
+      0,
+      8,
+      80
+    ],
+    "surveys": 2,
+    "warmup_calls_per_function": 4,
+    "rounds": 4,
+    "order_per_round": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline"
+    ],
+    "samples_per_function": 8,
+    "options": "radius 5, levels 3, 30 iterations, epsilon 0.001, minimum eigenvalue 0.0001, round-trip threshold 1",
+    "host_workers": 1,
+    "comparison": "Frozen complete parent LK module with its existing shared-pyramid robust call graph versus candidate robust API, interleaved in the same native release process. Compare full coordinate/status/error bit snapshots outside timing. Two fresh process surveys, fixed shape/point/motion order, all samples and adverse rows retained. Affinity/frequency, other host load and allocation effects are uncontrolled; no physical-phone, GPU or end-to-end claim.",
+    "motions": [
+      "stationary",
+      "translated"
+    ]
+  },
+  "remaining_80_percent": "Measured calibration/timing and independent motion, full-room accuracy, qualifying physical Linux hardware and integrated operational acceptance remain open."
+}

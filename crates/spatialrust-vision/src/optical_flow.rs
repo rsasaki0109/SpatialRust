@@ -316,6 +316,10 @@ fn in_bounds(image: ImageView<'_, f32, 1>, x: f64, y: f64, margin: f64) -> bool 
 }
 
 #[cfg(test)]
+#[path = "optical_flow_template_tests.rs"]
+mod template_tests;
+
+#[cfg(test)]
 mod tests {
     use super::{track_points_lucas_kanade, LucasKanadeOptions};
     use spatialrust_image::Image;
