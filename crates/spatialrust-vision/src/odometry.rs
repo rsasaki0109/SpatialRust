@@ -125,9 +125,27 @@ pub fn track_points_forward_backward<T: crate::PixelComponent>(
             "forward/backward threshold must be finite and non-negative".into(),
         ));
     }
-    let forward = track_points_lucas_kanade(previous, next, points, options.lucas_kanade)?;
-    let backward =
-        track_points_lucas_kanade(next, previous, forward.next_points(), options.lucas_kanade)?;
+    // Custom components may observe conversion calls; keep their original flow.
+    let scalar = std::any::TypeId::of::<T>();
+    let built_in = [
+        std::any::TypeId::of::<u8>(),
+        std::any::TypeId::of::<u16>(),
+        std::any::TypeId::of::<f32>(),
+        std::any::TypeId::of::<f64>(),
+    ]
+    .contains(&scalar);
+    let (forward, backward) = if built_in {
+        let pair =
+            crate::optical_flow::LucasKanadePair::try_new(previous, next, options.lucas_kanade)?;
+        let forward = pair.track(points, false);
+        let backward = pair.track(forward.next_points(), true);
+        (forward, backward)
+    } else {
+        let forward = track_points_lucas_kanade(previous, next, points, options.lucas_kanade)?;
+        let backward =
+            track_points_lucas_kanade(next, previous, forward.next_points(), options.lucas_kanade)?;
+        (forward, backward)
+    };
     let mut status = Vec::with_capacity(points.len());
     let mut errors = Vec::with_capacity(points.len());
     for (index, point) in points.iter().enumerate() {
@@ -271,6 +289,10 @@ pub fn estimate_rgbd_odometry<T: crate::PixelComponent>(
         rejected_depth_count: rejected,
     })
 }
+
+#[cfg(test)]
+#[path = "odometry_pair_tests.rs"]
+mod pair_tests;
 
 #[cfg(test)]
 mod tests {

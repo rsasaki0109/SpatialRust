@@ -1,0 +1,42 @@
+{
+  "schema": "spatialrust.lk-pyramid-reuse-plan.v1",
+  "slice": "146AU",
+  "parent_merge": "fcdb9d6acb34cffd0c033db94960c45db67b4bd9",
+  "purpose": "Build each CPU LK image pyramid once and reuse the owned pair across forward/backward tracking for built-in scalar components.",
+  "contract": {
+    "math": "Keep option/shape/threshold error ordering, scalar conversion, floor-halved box pyramid, per-point LK arithmetic/order, guesses, status and round-trip hypot/threshold unchanged. Reuse only u8/u16/f32/f64; user-defined PixelComponent conversions keep the original two public calls and conversion observations. No public API, dependency, core, GPU or transfer change.",
+    "ownership": "A private owned pair retains two immutable f32 pyramids through both directions. No cross-call cache or caller alias. Four pyramid constructions become two for built-in robust calls; peak pyramid payload remains two. This is CPU preparation reuse, not a GPU kernel or RSS guarantee.",
+    "verification": "Characterize new two-public-call references before implementation; require exact coordinate/error bits and statuses across built-in dtypes, options, non-finite/duplicate/empty points, strided subviews, errors and observable custom conversions. Compare actual parent/candidate WASM complete reports and retain all existing browser/model controls. Use in-process interleaved frozen two-call versus candidate measurements, publish every row including adverse results, and verify independent parent executable camera reports.",
+    "preservation": "Preserve all prior camera/renderer files, isolated Cargo target, 493 scientific JSON, 42 frozen native artifacts, room/reference outputs, both existing raw WASM files and resolved lock. Build only feature-scoped vision/web code in a fresh isolated E-drive target with locked/offline installed toolchains. No sensor/model/SDK/browser/toolchain acquisition or sensor payload copies."
+  },
+  "resources": {
+    "build_root": "E:/SpatialRustBuild/lk-pyramid-reuse-v1",
+    "cargo_cache": "E:/SpatialRustBuild/maturity-80-target",
+    "build_max_bytes": 1073741824,
+    "positive_cache_growth_max_bytes": 0,
+    "combined_new_and_positive_cache_growth_max_bytes": 1073741824,
+    "minimum_free_bytes": 21474836480,
+    "workers": 1,
+    "cargo_jobs": 2,
+    "command_timeout_seconds": 900,
+    "sampling_seconds": 5,
+    "asset_download_max_bytes": 0,
+    "public_verification_stream_max_bytes": 41943040,
+    "sensor_downloads": 0,
+    "new_sensor_payload_copies": 0,
+    "strategy": "Fresh isolated Cargo outputs, no compiler-output hardlinks. Reuse hash-checked vendor and parent package files. Sample bytes and preserve old artifacts before/after each owned command. Retry only transient vanished entries in the owned live Cargo subtree, at most three complete snapshots; fail on unrelated/persistent errors."
+  },
+  "benchmark": {
+    "shapes": [[192,144],[256,192],[320,240]],
+    "point_counts": [0,8,80],
+    "surveys": 2,
+    "warmup_calls_per_function": 4,
+    "rounds": 4,
+    "order_per_round": ["baseline","candidate","candidate","baseline"],
+    "samples_per_function": 8,
+    "options": "radius 5, levels 3, 30 iterations, epsilon 0.001, minimum eigenvalue 0.0001, round-trip threshold 1",
+    "host_workers": 1,
+    "comparison": "Frozen original two-public-call flow and candidate robust API in the same process; compare complete coordinates/status/error bits outside timing. Keep all samples and adverse rows. CPU affinity/frequency, other host load and allocation effects are uncontrolled. No physical-phone, GPU or end-to-end speed claim."
+  },
+  "remaining_80_percent": "Measured calibration/timing and independent motion, full-room accuracy, qualifying physical Linux hardware and integrated operational acceptance remain open."
+}

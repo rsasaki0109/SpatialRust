@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse one owned CPU image-pyramid pair across robust LK forward/backward
+  passes for standard pixel types. Preserve custom conversion observations,
+  exact tracking math, validation and public APIs. Add parent characterization,
+  frozen native/WASM parity and interleaved CPU timing evidence. See
+  [LK pyramid reuse](docs/LK_PYRAMID_REUSE.md).
+
 - Reuse exact horizontal confidence-mask indices across rows and skip identity
   width transforms in the camera demo. Preserve complete confidence validation,
   strict threshold and independent transferable output. Add exhaustive size,
