@@ -1,7 +1,7 @@
 """Render README animations from SpatialRust results; no downloads or GPU claims.
 
 Requires the SpatialRust Python extension, NumPy and Pillow. Supply the public
-PCL table_scene_lms400.pcd and reports from readme_tracking_data.mjs explicitly.
+PCL table_scene_lms400.pcd and the pinned real TUM RGB movie explicitly.
 Only the nine opening GIFs and a small provenance receipt are written to --output.
 Frames are encoded in memory, without a temporary image sequence on disk.
 """
@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import math
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -24,8 +25,8 @@ CYAN = "#61dfef"
 MINT = "#79f2bd"
 ORANGE = "#ffbb79"
 COLORS = [CYAN, ORANGE, MINT, "#bd9bff", "#ff89b1", "#fae17a"]
-NAMES = ("readme_hero.gif", "clusters_rotating.gif", "voxelize_rotating.gif", "camera_tracking.gif",
-         "scan_reveal.gif", "voxel_filter.gif", "plane_segmentation.gif", "spatial_slice.gif", "tracking_flow.gif")
+NAMES = ("readme_hero.gif", "clusters_rotating.gif", "voxelize_rotating.gif", "real_orb_features.gif",
+         "scan_reveal.gif", "voxel_filter.gif", "plane_segmentation.gif", "plane_removal.gif", "real_dense_flow.gif")
 MAX_GIF_BYTES = 1_500_000
 MAX_TOTAL_BYTES = 3_000_000
 
@@ -98,7 +99,7 @@ def card(accent=CYAN):
 
 
 def gallery(output, xyz, small, plane, outliers, faces):
-    """Visualize saved Rust outputs; sweep and orbit are presentation effects."""
+    """Visualize actual Rust output membership; orbit is a presentation effect."""
     bounds = np.array([xyz.min(axis=0), xyz.max(axis=0)])
     zmin, zmax = bounds[:, 2]
     depth = ((xyz[:, 2] - zmin) / max(zmax-zmin, 1e-9)).clip(0, 1)
@@ -107,7 +108,7 @@ def gallery(output, xyz, small, plane, outliers, faces):
         (NAMES[4], "01 / CAPTURE", "A scene, in points", f"{len(xyz):,} public scan samples", CYAN),
         (NAMES[5], "02 / SIMPLIFY", "Keep the structure", f"{len(xyz):,} points  >  {len(small):,} centroids", MINT),
         (NAMES[6], "03 / SEGMENT", "Find the surface", f"{len(plane):,} RANSAC plane inliers", ORANGE),
-        (NAMES[7], "06 / EXPLORE", "Look inside the scan", "Depth slice / geometric illustration", "#bd9bff"),
+        (NAMES[7], "06 / REMOVE PLANE", "Keep the objects", f"{len(small):,} centroids > {len(outliers):,} outliers", "#bd9bff"),
     ]
     for name, eyebrow, title, detail, accent in entries:
         frames=[]
@@ -123,10 +124,8 @@ def gallery(output, xyz, small, plane, outliers, faces):
                 pts=np.concatenate((plane,outliers))
                 colors=[CYAN]*len(plane)+[ORANGE]*len(outliers)
             else:
-                center=.5+.38*math.sin(phase)
-                selected=np.abs(depth-center)<.12
-                pts=xyz[selected]
-                colors=[depth_colors[j] for j in np.flatnonzero(selected)]
+                pts=small if i<16 else outliers
+                colors=CYAN if i<16 else ORANGE
             image=card(accent)
             image.paste(cloud_view(pts,colors,(424,211),phase,1 if len(pts)>10000 else 2,bounds=bounds),(20,76))
             d=ImageDraw.Draw(image)
@@ -137,6 +136,8 @@ def gallery(output, xyz, small, plane, outliers, faces):
                 pill(d,(296,76),"INPUT" if i<16 else "FILTERED",faces[12],colors)
             elif name==NAMES[6]:
                 pill(d,(22,76),"PLANE + OBJECTS",faces[12],ORANGE)
+            elif name==NAMES[7]:
+                pill(d,(296,76),"INPUT" if i<16 else "PLANE OUT",faces[12],colors)
             for j in range(32):
                 d.rectangle((22+j*13,333,31+j*13,335),fill=accent if j<=i else PANEL)
             frames.append(image)
@@ -153,8 +154,15 @@ def palette():
     return p
 
 
-def save_gif(path, frames, duration):
+def save_gif(path, frames, duration, photographic=False):
     p = palette()
+    if photographic:
+        # One shared palette learned from the complete real clip, never one
+        # independently chosen palette per frame. Preserve natural image tones.
+        sample = Image.new("RGB", (128, 96 * len(frames)))
+        for index, frame in enumerate(frames):
+            sample.paste(frame.resize((128, 96)), (0, index * 96))
+        p = sample.quantize(colors=128, method=Image.Quantize.MEDIANCUT)
     indexed = [im.quantize(palette=p, dither=Image.Dither.NONE) for im in frames]
     indexed[0].save(path, save_all=True, append_images=indexed[1:], duration=duration,
                     loop=0, optimize=False, disposal=1)
@@ -162,18 +170,10 @@ def save_gif(path, frames, duration):
         raise ValueError(f"GIF exceeds {MAX_GIF_BYTES} bytes: {path.name}")
 
 
-def texture(width, height, shift):
-    yy, xx = np.indices((height, width), dtype=np.uint32)
-    sx = xx + np.uint32(32 - shift[0])
-    sy = yy + np.uint32(32 - shift[1])
-    h = (sx * np.uint32(73856093)) ^ (sy * np.uint32(19349663))
-    return (np.where(((sx >> 4) + (sy >> 4)) % 2, 125, 35) + ((h ^ (h >> 13)) & 31)).astype(np.uint8)
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
-    parser.add_argument("--tracking", type=Path, required=True)
+    parser.add_argument("--video", type=Path, required=True)
     parser.add_argument("--font", type=Path, required=True, help="TrueType/OpenType sans font")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -261,77 +261,28 @@ def main():
         save_gif(args.output / name, frames, 150)
 
     gallery(args.output, xyz, small, plane, outliers, faces)
-    tracking = json.loads(args.tracking.read_text(encoding="utf-8"))
-    if tracking["schema"] != "spatialrust.readme-tracking.v1" or not tracking["synthetic_only"] or tracking["ai_enabled"]:
-        raise ValueError("expected synthetic unmasked actual-WASM reports")
-    frames = []
-    for f in tracking["frames"]:
-        gray = texture(tracking["width"], tracking["height"], f["shift"])
-        if hashlib.sha256(gray.tobytes()).hexdigest() != f["gray_sha256"]:
-            raise ValueError("rendered image differs from actual WASM input")
-        rgb = np.stack((gray // 3, (gray.astype(np.uint16) * 1.1).clip(0, 255).astype(np.uint8), gray), axis=-1)
-        scene = Image.fromarray(rgb).resize((384, 288), Image.Resampling.NEAREST)
-        image = Image.new("RGB", (464, 400), BG)
-        image.paste(scene, (40, 64))
-        d = ImageDraw.Draw(image)
-        text(d, (22, 16), "Track image motion", faces[24])
-        for t in f["report"]["tracks"]:
-            a = (40 + t["from"][0] * 1.5, 64 + t["from"][1] * 1.5)
-            b = (40 + t["to"][0] * 1.5, 64 + t["to"][1] * 1.5)
-            d.line((a, b), fill=MINT, width=2)
-            d.ellipse((b[0]-2, b[1]-2, b[0]+2, b[1]+2), fill=INK)
-        text(d, (22, 363), f"{len(f['report']['tracks']):02d} tracks / Rust + WASM", faces[14], MINT)
-        flow = f["report"]["background_flow_px"]
-        if flow is not None:
-            text(d, (282, 363), f"dx {flow[0]:+.1f} px", faces[14], MUTED)
-        pill(d, (282, 18), "SYNTHETIC / AI OFF", faces[12], ORANGE)
-        frames.append(image)
-    save_gif(args.output / NAMES[3], frames, tracking["frame_duration_ms"])
-
-    frames = []
-    for f in tracking["frames"][1:]:
-        image=card(MINT)
-        d=ImageDraw.Draw(image)
-        text(d,(22,12),"08 / MEASURE",faces[12],MINT)
-        text(d,(20,32),"Follow the flow",faces[24])
-        # Arrows are magnified only for readability; numeric labels stay in px.
-        for t in f["report"]["tracks"]:
-            a=np.array([40+t["from"][0]*1.5,78+t["from"][1]*1.02])
-            delta=(np.asarray(t["to"])-np.asarray(t["from"]))*7
-            b=a+delta
-            d.line((tuple(a),tuple(b)),fill=CYAN,width=2)
-            d.ellipse((a[0]-2,a[1]-2,a[0]+2,a[1]+2),fill=MINT)
-            norm=np.linalg.norm(delta)
-            if norm>1e-6:
-                u=delta/norm;v=np.array([-u[1],u[0]])
-                d.polygon([tuple(b),tuple(b-u*6+v*3),tuple(b-u*6-v*3)],fill=MINT)
-        flow=f["report"]["background_flow_px"]
-        pill(d,(310,38),f"{len(f['report']['tracks'])} TRACKS",faces[12],MINT)
-        value="Initializing" if flow is None else f"dx {flow[0]:+.2f} / dy {flow[1]:+.2f} px"
-        text(d,(32,300),value,faces[14],MINT)
-        text(d,(22,272),"ACTUAL WASM / SYNTHETIC INPUT / ARROWS x7",faces[12],MUTED)
-        frames.append(image)
-    save_gif(args.output/NAMES[8],frames,tracking["frame_duration_ms"])
+    from readme_real_video import render_video
+    video_receipt = render_video(args.video, args.output, faces, sys.modules[__name__])
 
     assets = [{"path": name, "bytes": (args.output/name).stat().st_size, "sha256": sha(args.output/name)} for name in NAMES]
     if sum(a["bytes"] for a in assets) > MAX_TOTAL_BYTES:
         raise ValueError("hero group exceeds 3 MB budget")
     extensions = list(Path(sr.__file__).parent.glob("*.pyd")) + list(Path(sr.__file__).parent.glob("*.so"))
-    receipt = dict(schema="spatialrust.readme-heroes.v1", assets=assets,
+    receipt = dict(schema="spatialrust.readme-heroes.v2", assets=assets,
                    public_input=dict(file=args.input.name, sha256=sha(args.input), points=len(source), sampled_points=len(xyz)),
-                   execution="SpatialRust Python bindings (voxel policy cpu); CPU Rust/WASM camera tracker",
+                   execution="SpatialRust Python bindings (voxel policy cpu); CPU Rust ORB and dense flow on real recorded frames",
                    spatialrust_version=sr.__version__, resolved_policies=policies,
                    python_extension_sha256=sha(extensions[0]) if len(extensions) == 1 else None,
                    generator_sha256=sha(__file__),
-                   tracking_generator_sha256=sha(Path(__file__).with_name("readme_tracking_data.mjs")),
+                   video_renderer_sha256=sha(Path(__file__).with_name("readme_real_video.py")),
                    numpy_version=np.__version__, pillow_version=pillow_version,
                    font_sha256=sha(args.font),
                    pipeline=dict(voxel_leaf_m=.03, plane_distance_m=.025, cluster_tolerance_m=.06,
                                  min_cluster_size=8, downsampled_points=len(small),
                                  plane_inliers=len(plane), cluster_count=result.cluster_count,
                                  occupancy_cell_m=.08, occupied_cells=len(centers)),
-                   tracking_wasm_sha256=tracking["wasm_sha256"], tracking_frames=len(tracking["frames"]),
-                   claims="Illustrations of actual outputs; orbit, depth sweep and stage switching are presentation effects, not processing latency. Synthetic tracking has AI disabled; flow arrows are magnified x7.")
+                   real_video=video_receipt,
+                   claims="Actual Rust outputs on real public scan and recorded camera frames. Orbit and stage switching are presentation effects; movie playback is slowed. No synthetic motion, GPU speed, metric pose or SLAM accuracy claim.")
     (args.output / "readme_heroes.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(receipt, indent=2))
 

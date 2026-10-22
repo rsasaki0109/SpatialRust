@@ -1,81 +1,91 @@
 # README opening animations
 
-The opening group is rendered from actual SpatialRust results in a shared dark
-palette, with readable labels and a link to the mobile camera playground.
-`readme_hero.gif` presents the pipeline; the smaller animations show Euclidean
-cluster labels, occupied voxel cells and Rust/WASM image-space feature tracking.
-Nine GIFs form a full-width banner and eight gallery cards: depth-colored scan,
-voxel filtering, plane segmentation, clusters, occupancy, depth slicing, image
-tracks and image flow. Depth slicing is a geometric illustration over the same
-scan, not an additional query API. Flow arrows are enlarged seven times for
-legibility; numeric motion stays in original pixels.
-The renderer limits each GIF to 1.5 MB and the group to 3 MB. It holds bounded
-frame sequences in memory instead of writing intermediate frames to disk.
+The nine opening GIFs use actual SpatialRust processing on a real public PCL
+scan and a real TUM camera recording. A full-width pipeline banner is followed
+by eight cards: scan input, voxel centroids, RANSAC membership, Euclidean
+clusters, occupied cells, plane removal, ORB detections and dense image flow.
+No synthetic image input, fabricated image motion or interpolated movie frames
+are used in this opening group. Viewpoint animation presents the saved point
+cloud outputs; it is not the algorithm's execution progress or latency.
 
-## Inputs and meaning
+## Point cloud input and execution
 
-- Point clouds: the public PCL
-  [`table_scene_lms400.pcd`](https://github.com/PointCloudLibrary/data/blob/master/tutorials/table_scene_lms400.pcd)
-  scan (460,400 points, 5,649,007 bytes). SHA256:
-  `e285d415641e0d9de695b611db874cc8fe995e8089b77a50d6056d24d8cbcc58`.
-  The renderer selects every sixth finite point (76,734 points), runs the Rust
-  pipeline through the Python extension and uses its returned downsampled and
-  labeled clouds. Exact output membership identifies removed plane points;
-  the renderer does not fit its own plane or invent cluster labels. Occupied
-  8 cm cells are returned by `spatialrust.voxelize`.
-- Execution: voxel policy is explicitly `cpu`. The installed extension used
-  for these assets does not expose resolved stage policies; its receipt records
-  `null` and its binary hash. The visuals make no GPU execution or speed claim.
-  Build the current extension to reproduce with current stage-policy receipts.
-- Tracking: 48 generated 256×192 gray frames are passed to the actual
-  `BrowserCameraTracker` WASM API at logical 125 ms intervals. All 47 frames
-  after initialization track successfully. The renderer reconstructs the
-  same input and checks every frame's byte hash before drawing returned tracks.
-  No camera, person model, upload or physical-phone capture is involved; the
-  animation is visibly marked **SYNTHETIC / AI OFF**. The playground separately
-  offers opt-in camera use and optional local AI person masking.
+The public PCL [table_scene_lms400.pcd](https://github.com/PointCloudLibrary/data/blob/master/tutorials/table_scene_lms400.pcd)
+contains 460,400 measured points (5,649,007 bytes), SHA256
+`e285d415641e0d9de695b611db874cc8fe995e8089b77a50d6056d24d8cbcc58`.
+The renderer selects every sixth finite point (76,734 points) and invokes the
+Rust pipeline through the Python extension with voxel policy explicitly `cpu`.
+The returned voxel centroids, plane membership and Euclidean labels drive the
+visuals. Plane removal displays the actual complement of the inlier plane.
+Occupied 8 cm cells come from `spatialrust.voxelize`. The capture card shows the
+input; depth colors and rotating viewpoints are display choices.
 
-Viewpoint movement and GIF playback are presentation choices. They do not show
-live processing latency, GPU acceleration, metric pose or SLAM qualification.
+The installed extension used here does not expose resolved stage policies;
+the receipt records `null` and its binary hash. These assets make no claim of
+GPU execution or speed. Build the current extension to reproduce with its
+current policy receipts.
 
-## Regeneration
+## Real camera recording and processing
+
+Source: [TUM RGB-D benchmark, freiburg1_xyz](https://cvg.cit.tum.de/data/datasets/rgbd-dataset/download#freiburg1_xyz),
+[official RGB movie](https://webshare.cvg.cit.tum.de/g/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz-rgb.avi).
+The original 640x480, 30 fps movie is 8,059,298 bytes, SHA256
+`1820b52939af2a2e7afdf78f6398cfbc7816399c8809b3836a9ba8da9bef8022`.
+
+Attribution: J. Sturm, N. Engelhard, F. Endres, W. Burgard and D. Cremers,
+*A Benchmark for the Evaluation of RGB-D SLAM Systems*, IROS 2012.
+The recording is [CC BY 4.0](https://cvg.cit.tum.de/data/datasets/rgbd-dataset#license).
+The GIFs reduce, annotate and slow the recording. The image content remains
+third-party CC BY 4.0 material; it is not relicensed under the SDK's license.
+
+- Decode original frames 0 through 63, in order, with OpenCV's AVI decoder.
+  OpenCV performs no feature extraction, optical flow or tracking.
+- Reduce each original RGB frame to 192x144 with Pillow BOX and convert to L8.
+- Invoke actual `spatialrust.dense_flow_image` on all 63 original adjacent pairs
+  with block radius 2 and search radius 3.
+- On frames 1, 3, ..., 63, invoke actual `spatialrust.orb_features(max_features=80)`.
+  Render these 32 images at 125 ms each. Each displayed flow result still uses
+  its immediately preceding original frame, not the preceding displayed frame.
+- Draw returned ORB coordinates and sample returned flow vectors on a fixed
+  grid, skipping all non-finite flow pixels (also counted in the receipt).
+  Vector coordinates use exactly the same 1.5x display scale (192x144 input shown at 288x216) as the image;
+  no extra motion amplification or smoothing is applied.
+- Record each source frame number, decoded RGB and actual grayscale hashes,
+  preceding grayscale hash, full dense-flow hash, actual ORB coordinate count
+  and hash (little-endian float64 Nx2), and descriptor hash in
+  `assets/readme_heroes.json`, alongside the native extension,
+  decoder and renderer identities. No fabricated detections or fitted arrows.
+
+ORB detections are independent per frame, not persistent object IDs. Dense flow
+is raw integer block matching with no confidence filtering; its arrows are not
+validated correspondences. Movie frame rate is not a calibrated sensor clock.
+These are visual processing examples, not accuracy measurements or proof of
+metric camera pose, SLAM, AI inference or physical-phone performance. The linked
+phone playground uses a separate Rust/WASM tracker and optional person model.
+`real_orb_features.gif` and `real_dense_flow.gif` identify these two processing paths.
+
+## Regeneration and limits
 
 Use a built SpatialRust Python extension (`maturin develop --release` from
-`crates/spatialrust-py`), NumPy, Pillow and Node.js. Reuse a built camera package
-from `scripts/build_camera_demo.py`, or generate only its Rust/WASM package:
+`crates/spatialrust-py`), NumPy, Pillow and OpenCV for AVI decoding. Obtain the
+pinned public inputs explicitly and keep them outside tracked directories.
+Neither renderer downloads data or installs dependencies.
 
 ```sh
-cargo build --release -p spatialrust-web --target wasm32-unknown-unknown
-wasm-bindgen --target web --out-dir target/readme-camera-pkg target/wasm32-unknown-unknown/release/spatialrust_web.wasm
+python scripts/render_readme_heroes.py --input /absolute/path/table_scene_lms400.pcd --video /absolute/path/rgbd_dataset_freiburg1_xyz-rgb.avi --font /absolute/path/sans.ttf --output docs/assets
 ```
 
-Use the wasm-bindgen CLI version matching Cargo's wasm-bindgen version. Keep
-the input scan and the generated tracking report outside tracked directories.
-The exporter and renderer perform no downloads. Then run from the repo root:
+The renderer writes nine named GIFs and their provenance receipt. It processes
+only 64 decoded video frames and keeps bounded frame sequences in memory;
+intermediate PNGs, input movies, raw scans and native binaries are not committed.
+Each GIF is limited to 1.5 MB and the complete group to 3 MB. Reuse a local font
+such as DejaVu Sans or Segoe UI; its hash is included in the receipt. Different
+fonts, decoders or native builds may change pixels and hashes.
 
-```sh
-node scripts/readme_tracking_data.mjs --pkg target/readme-camera-pkg --output target/readme-tracking.json
-python scripts/render_readme_heroes.py --input /absolute/path/table_scene_lms400.pcd --tracking target/readme-tracking.json --font /absolute/path/sans.ttf --output docs/assets
-```
+Decode every GIF frame, check meaningful changes, looping and sizes, validate
+receipt/source/output hashes, and inspect both processing results and input
+images at desktop and phone widths. Verify source-frame indices and that the
+video processing used Rust, independently of the display annotations.
 
-The exporter requires a fresh output file. The renderer updates only the nine
-opening GIFs and `docs/assets/readme_heroes.json`; it does not modify other README
-visuals. Use a local sans font such as DejaVu Sans or Segoe UI. The font hash,
-Python extension hash, WASM hash, generator hashes, dependency versions, pipeline
-parameters and asset hashes are recorded in that provenance receipt. Different
-fonts or builds can change pixels and hashes; rerun the visual checks after
-regeneration. No font binary, scan, WASM package or sensor data is committed.
-
-The older `readme_mvp_preview` and `make_gifs.py` examples also write some of
-these filenames. Run the opening-group renderer last when regenerating all
-README media.
-
-## Verification
-
-The prior four-GIF group was about 1.54 MB. The expanded nine-GIF gallery stays
-under the same 3 MB cap; exact sizes are in `assets/readme_heroes.json`.
-Decode every frame, verify image
-dimensions, looping, meaningful frame changes, the provenance hashes and the
-combined size. Inspect all four pipeline phases and all eight cards at
-desktop and phone widths. Check that the tracking link points to the playground
-and that the synthetic/AI-off label and experimental 2D description remain visible.
+The older synthetic `readme_tracking_data.mjs` exporter and other GIF examples
+remain available for their own tests. They are not inputs to the opening gallery.

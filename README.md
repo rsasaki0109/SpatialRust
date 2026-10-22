@@ -27,7 +27,7 @@ present the saved outputs; playback speed is independent of processing latency.
 | --- | --- | --- | --- |
 | explicit wgpu voxel and normal kernels, automatic CPU fallback | **bounds + LOD** partial reads straight off disk — no full-tile load | no C++ / FFI binding layer to fight | one MVP crate: **IO → filter → segment → register** |
 
-<p align="center"><strong>One scene. Many ways to understand it.</strong></p>
+<p align="center"><strong>Real data. Actual Rust results.</strong></p>
 
 <p align="center">
   <img src="docs/assets/scan_reveal.gif" alt="01 Capture: public PCL point cloud colored by depth, shown from animated viewpoints" width="464">
@@ -39,19 +39,23 @@ present the saved outputs; playback speed is independent of processing latency.
 </p>
 <p align="center">
   <img src="docs/assets/voxelize_rotating.gif" alt="05 Structure: occupied 8 cm cells computed by SpatialRust from the public scan" width="464">
-  <img src="docs/assets/spatial_slice.gif" alt="06 Explore: an illustrated depth window sweeps through the same public point cloud" width="464">
+  <img src="docs/assets/plane_removal.gif" alt="06 Remove plane: actual Rust plane removal compares centroids before and outliers after RANSAC" width="464">
 </p>
 <p align="center">
-  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/camera_tracking.gif" alt="07 Track: synthetic textured frames with actual Rust/WASM feature tracks; AI off" width="464"></a>
-  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/tracking_flow.gif" alt="08 Measure: actual Rust/WASM image motion on synthetic input; arrows magnified seven times, labels in original pixels; AI off" width="464"></a>
+  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/real_orb_features.gif" alt="07 Features: actual SpatialRust ORB keypoints detected on a real TUM RGB-D camera recording" width="464"></a>
+  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/real_dense_flow.gif" alt="08 Motion: actual SpatialRust dense integer optical flow between adjacent real TUM camera frames; arrows use the image display scale" width="464"></a>
 </p>
-<p align="center"><sub>Actual Rust outputs · public scan + synthetic image input · animated presentation, not a speed benchmark.<br>Depth slicing is a geometric illustration. Flow arrows are enlarged ×7. <a href="docs/README_VISUALS.md">Sources &amp; regeneration</a>.</sub></p>
+<p align="center"><sub>Actual Rust outputs · public PCL scan + real TUM camera recording · playback is not a speed benchmark.<br>TUM RGB-D: Sturm et al., IROS 2012 · CC BY 4.0; reduced and annotated. <a href="docs/README_VISUALS.md">Sources &amp; regeneration</a>.</sub></p>
 
 **[Try camera tracking on your phone →](https://rsasaki0109.github.io/SpatialRust/camera/)**
 Choose **人物サンプル** to see local AI person masking on a public photo without
 camera permission, or use procedural playback / opt in to your camera.
-The GIF uses synthetic frames and the actual CPU Rust/WASM tracker,
-with AI off. Experimental 2D image motion; [usage and device limits](docs/MOBILE_CAMERA_DEMO.md).
+The image GIFs show **actual CPU Rust ORB detections and dense optical flow**
+on the [TUM RGB-D benchmark](https://cvg.cit.tum.de/data/datasets/rgbd-dataset)
+recording, using 64 original consecutive frames and showing every second result.
+ORB points are independent detections; flow arrows are raw block matches.
+The playground uses a separate experimental 2D Rust/WASM tracker;
+[usage and device limits](docs/MOBILE_CAMERA_DEMO.md).
 
 ## Why SpatialRust?
 
@@ -832,9 +836,9 @@ See also `crates/spatialrust-py/examples/make_gifs.py` and `examples/ml_preproce
 
 ## README visuals
 
-The four opening GIFs share a bounded renderer, actual Rust outputs and a
+The nine opening GIFs share a bounded renderer, actual Rust outputs and a
 3 MB combined budget. [Generation instructions and provenance](docs/README_VISUALS.md)
-cover the public scan, execution settings, synthetic tracking and current asset hashes.
+cover the public scan, pinned real TUM recording, Rust processing settings and per-frame output hashes.
 
 The other README pipeline visuals use the public PCL [`table_scene_lms400.pcd`](https://github.com/PointCloudLibrary/data/blob/master/tutorials/table_scene_lms400.pcd) sample, cached under `target/readme-data/` at generation time rather than committed to the repository. Regenerate them with:
 
