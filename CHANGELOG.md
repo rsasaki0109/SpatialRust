@@ -22,7 +22,8 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 - Replace synthetic opening image GIFs with actual Rust ORB detections and dense
   block flow on a pinned real TUM camera recording. Replace the illustrative
   depth sweep with actual RANSAC plane removal; record frame-level input/output
-  hashes, source attribution and playback limits.
+  hashes, source attribution and playback limits. Synchronize both intrinsic
+  dimensions in the camera-rotation browser fixture before releasing capture.
 
 - Expand the README opening into nine coordinated animations: a pipeline hero
   and eight cards covering public-cloud processing and synthetic Rust/WASM
