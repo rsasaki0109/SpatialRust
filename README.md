@@ -29,22 +29,24 @@ present the saved outputs; playback speed is independent of processing latency.
 
 <p align="center"><strong>Real data. Actual Rust results.</strong></p>
 
-<p align="center">
-  <img src="docs/assets/scan_reveal.gif" alt="01 Capture: public PCL point cloud colored by depth, shown from animated viewpoints" width="464">
-  <img src="docs/assets/voxel_filter.gif" alt="02 Simplify: actual 76,734 input samples alternate with 4,561 Rust voxel centroids" width="464">
-</p>
-<p align="center">
-  <img src="docs/assets/plane_segmentation.gif" alt="03 Segment: actual Rust RANSAC plane in cyan and remaining objects in orange" width="464">
-  <img src="docs/assets/clusters_rotating.gif" alt="04 Group: actual Euclidean cluster labels from the public PCL scan" width="464">
-</p>
-<p align="center">
-  <img src="docs/assets/voxelize_rotating.gif" alt="05 Structure: occupied 8 cm cells computed by SpatialRust from the public scan" width="464">
-  <img src="docs/assets/plane_removal.gif" alt="06 Remove plane: actual Rust plane removal compares centroids before and outliers after RANSAC" width="464">
-</p>
-<p align="center">
-  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/real_orb_features.gif" alt="07 Features: actual SpatialRust ORB keypoints detected on a real TUM RGB-D camera recording" width="464"></a>
-  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/real_dense_flow.gif" alt="08 Motion: actual SpatialRust dense integer optical flow between adjacent real TUM camera frames; arrows use the image display scale" width="464"></a>
-</p>
+<table width="100%">
+  <tr>
+    <td width="33%" align="center" valign="top"><a href="docs/assets/scan_reveal.gif"><img src="docs/assets/scan_reveal.gif" alt="01 Capture: public PCL point cloud colored by depth, shown from animated viewpoints" width="100%"></a></td>
+    <td width="33%" align="center" valign="top"><a href="docs/assets/voxel_filter.gif"><img src="docs/assets/voxel_filter.gif" alt="02 Simplify: actual 76,734 input samples alternate with 4,561 Rust voxel centroids" width="100%"></a></td>
+    <td width="33%" align="center" valign="top"><a href="docs/assets/plane_segmentation.gif"><img src="docs/assets/plane_segmentation.gif" alt="03 Segment: actual Rust RANSAC plane in cyan and remaining objects in orange" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="33%" align="center" valign="top"><a href="docs/assets/clusters_rotating.gif"><img src="docs/assets/clusters_rotating.gif" alt="04 Group: actual Euclidean cluster labels from the public PCL scan" width="100%"></a></td>
+    <td width="33%" align="center" valign="top"><a href="docs/assets/voxelize_rotating.gif"><img src="docs/assets/voxelize_rotating.gif" alt="05 Structure: occupied 8 cm cells computed by SpatialRust from the public scan" width="100%"></a></td>
+    <td width="33%" align="center" valign="top"><a href="docs/assets/plane_removal.gif"><img src="docs/assets/plane_removal.gif" alt="06 Remove plane: actual Rust plane removal compares centroids before and outliers after RANSAC" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="33%" align="center" valign="top"><a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/real_orb_features.gif" alt="07 Features: actual SpatialRust ORB keypoints detected on a real TUM RGB-D camera recording" width="100%"></a></td>
+    <td width="33%" align="center" valign="top"><a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/real_dense_flow.gif" alt="08 Motion: actual SpatialRust dense integer optical flow between adjacent real TUM camera frames; arrows use the image display scale" width="100%"></a></td>
+    <td width="33%"></td>
+  </tr>
+</table>
+
 <p align="center"><sub>Actual Rust outputs · public PCL scan + real TUM camera recording · playback is not a speed benchmark.<br>TUM RGB-D: Sturm et al., IROS 2012 · CC BY 4.0; reduced and annotated. <a href="docs/README_VISUALS.md">Sources &amp; regeneration</a>.</sub></p>
 
 **[Try camera tracking on your phone →](https://rsasaki0109.github.io/SpatialRust/camera/)**

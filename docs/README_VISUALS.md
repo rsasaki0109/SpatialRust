@@ -2,7 +2,7 @@
 
 The nine opening GIFs use actual SpatialRust processing on a real public PCL
 scan and a real TUM camera recording. A full-width pipeline banner is followed
-by eight cards: scan input, voxel centroids, RANSAC membership, Euclidean
+by eight cards in a three-column table (3 / 3 / 2): scan input, voxel centroids, RANSAC membership, Euclidean
 clusters, occupied cells, plane removal, ORB detections and dense image flow.
 No synthetic image input, fabricated image motion or interpolated movie frames
 are used in this opening group. Viewpoint animation presents the saved point
