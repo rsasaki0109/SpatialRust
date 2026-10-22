@@ -3,8 +3,8 @@
   "assets": [
     {
       "path": "readme_hero.gif",
-      "bytes": 296115,
-      "sha256": "6567c15b48f102ecdc5595c6c1eae614de5af0545f65c1510d8658f74bca2548"
+      "bytes": 314049,
+      "sha256": "d61de6c74fbee60741cf31c9c589b50ca7606b9a41d9160e3dfedeb988fb81d1"
     },
     {
       "path": "clusters_rotating.gif",
@@ -20,6 +20,31 @@
       "path": "camera_tracking.gif",
       "bytes": 968718,
       "sha256": "3ea5d14be5c99d2168c6f75afefd0efc05f5a43b0eb76826f3930f468dbd67c7"
+    },
+    {
+      "path": "scan_reveal.gif",
+      "bytes": 153915,
+      "sha256": "d687f1dfbff90ed87449b06659f4e4ce1d19fe6cb988a5a983d847910f2fb3fe"
+    },
+    {
+      "path": "voxel_filter.gif",
+      "bytes": 109962,
+      "sha256": "8c328448d6b6abd8d3a9c1ab618fe879b5e338c7edbf94123f887d1eaf811dee"
+    },
+    {
+      "path": "plane_segmentation.gif",
+      "bytes": 101381,
+      "sha256": "a0c0680ae35fc80c9fcd8116adcfe318140898cc4f44e1cd8b9f4373c85d8cb3"
+    },
+    {
+      "path": "spatial_slice.gif",
+      "bytes": 92746,
+      "sha256": "e4575fa48f45d45a201de16ce0488fac0fc35c7c8dde91e5d2f41047a1ce97a9"
+    },
+    {
+      "path": "tracking_flow.gif",
+      "bytes": 285598,
+      "sha256": "64137af7c02b64d307c0fe2dbc3e3aa14c0313dfd69932cf92c206dc0a958b98"
     }
   ],
   "public_input": {
@@ -32,7 +57,7 @@
   "spatialrust_version": "1.0.0",
   "resolved_policies": null,
   "python_extension_sha256": "cba594925d83a3b495db4f1ecb97434df72767b7075fccf0380c559477e62c5c",
-  "generator_sha256": "d3b13cc87501d4e9f1c6ad6c8dc24ad0cedafa26e09e4c1cc0a6468932c120ec",
+  "generator_sha256": "b852697eba0ab43f51dd56a1964cf31aeeb57df03d0d973ce8d5a2e3012a6468",
   "tracking_generator_sha256": "0ab17ebc391cd054e1c607ed6fbf42bccab39a026c8516e09b86faee4d78c9cb",
   "numpy_version": "2.3.4",
   "pillow_version": "12.3.0",
@@ -50,5 +75,5 @@
   },
   "tracking_wasm_sha256": "f99c2ba94abe68021b880ba2141c087b5758d638011b04b1ea5d0b47b00493ad",
   "tracking_frames": 48,
-  "claims": "Illustrations of actual outputs; animation playback is not a throughput benchmark. Synthetic tracking has AI disabled."
+  "claims": "Illustrations of actual outputs; orbit, depth sweep and stage switching are presentation effects, not processing latency. Synthetic tracking has AI disabled; flow arrows are magnified x7."
 }

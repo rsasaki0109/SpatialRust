@@ -27,15 +27,25 @@ present the saved outputs; playback speed is independent of processing latency.
 | --- | --- | --- | --- |
 | explicit wgpu voxel and normal kernels, automatic CPU fallback | **bounds + LOD** partial reads straight off disk — no full-tile load | no C++ / FFI binding layer to fight | one MVP crate: **IO → filter → segment → register** |
 
-<p align="center">
-  <img src="docs/assets/clusters_rotating.gif" alt="Actual Euclidean cluster labels from the public PCL scan, rendered from changing viewpoints" width="464">
-  <img src="docs/assets/voxelize_rotating.gif" alt="Occupied 8 cm cells computed by SpatialRust from the same public scan" width="464">
-</p>
-<p align="center"><sub>Public point-cloud data · Rust outputs · Euclidean clustering and occupancy cells.</sub></p>
+<p align="center"><strong>One scene. Many ways to understand it.</strong></p>
 
 <p align="center">
-  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/camera_tracking.gif" alt="Synthetic textured image playback with actual forward/backward-consistent feature tracks from the Rust/WASM camera tracker; AI is off in this recording" width="464"></a>
+  <img src="docs/assets/scan_reveal.gif" alt="01 Capture: public PCL point cloud colored by depth, shown from animated viewpoints" width="464">
+  <img src="docs/assets/voxel_filter.gif" alt="02 Simplify: actual 76,734 input samples alternate with 4,561 Rust voxel centroids" width="464">
 </p>
+<p align="center">
+  <img src="docs/assets/plane_segmentation.gif" alt="03 Segment: actual Rust RANSAC plane in cyan and remaining objects in orange" width="464">
+  <img src="docs/assets/clusters_rotating.gif" alt="04 Group: actual Euclidean cluster labels from the public PCL scan" width="464">
+</p>
+<p align="center">
+  <img src="docs/assets/voxelize_rotating.gif" alt="05 Structure: occupied 8 cm cells computed by SpatialRust from the public scan" width="464">
+  <img src="docs/assets/spatial_slice.gif" alt="06 Explore: an illustrated depth window sweeps through the same public point cloud" width="464">
+</p>
+<p align="center">
+  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/camera_tracking.gif" alt="07 Track: synthetic textured frames with actual Rust/WASM feature tracks; AI off" width="464"></a>
+  <a href="https://rsasaki0109.github.io/SpatialRust/camera/"><img src="docs/assets/tracking_flow.gif" alt="08 Measure: actual Rust/WASM image motion on synthetic input; arrows magnified seven times, labels in original pixels; AI off" width="464"></a>
+</p>
+<p align="center"><sub>Actual Rust outputs · public scan + synthetic image input · animated presentation, not a speed benchmark.<br>Depth slicing is a geometric illustration. Flow arrows are enlarged ×7. <a href="docs/README_VISUALS.md">Sources &amp; regeneration</a>.</sub></p>
 
 **[Try camera tracking on your phone →](https://rsasaki0109.github.io/SpatialRust/camera/)**
 Choose **人物サンプル** to see local AI person masking on a public photo without

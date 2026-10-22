@@ -2,7 +2,7 @@
 
 Requires the SpatialRust Python extension, NumPy and Pillow. Supply the public
 PCL table_scene_lms400.pcd and reports from readme_tracking_data.mjs explicitly.
-Only these four GIFs and a small provenance receipt are written to --output.
+Only the nine opening GIFs and a small provenance receipt are written to --output.
 Frames are encoded in memory, without a temporary image sequence on disk.
 """
 from __future__ import annotations
@@ -24,7 +24,8 @@ CYAN = "#61dfef"
 MINT = "#79f2bd"
 ORANGE = "#ffbb79"
 COLORS = [CYAN, ORANGE, MINT, "#bd9bff", "#ff89b1", "#fae17a"]
-NAMES = ("readme_hero.gif", "clusters_rotating.gif", "voxelize_rotating.gif", "camera_tracking.gif")
+NAMES = ("readme_hero.gif", "clusters_rotating.gif", "voxelize_rotating.gif", "camera_tracking.gif",
+         "scan_reveal.gif", "voxel_filter.gif", "plane_segmentation.gif", "spatial_slice.gif", "tracking_flow.gif")
 MAX_GIF_BYTES = 1_500_000
 MAX_TOTAL_BYTES = 3_000_000
 
@@ -48,17 +49,18 @@ def pill(draw, xy, value, face, color=CYAN):
     text(draw, (x + 12, y + 4), value, face, color)
 
 
-def cloud_view(points, colors, size, phase, radius=1, voxel_size=None):
+def cloud_view(points, colors, size, phase, radius=1, voxel_size=None, bounds=None):
     """Orthographic view of original XYZ, using the scan's camera-like Y axis."""
     w, h = size
-    center = (points.min(axis=0) + points.max(axis=0)) * .5
+    reference = points if bounds is None else bounds
+    center = (reference.min(axis=0) + reference.max(axis=0)) * .5
     p = points - center
     yaw = .28 + .20 * math.sin(phase)
     depth = -math.sin(yaw) * p[:, 0] + math.cos(yaw) * p[:, 2]
     x = math.cos(yaw) * p[:, 0] + math.sin(yaw) * p[:, 2]
     y = .94 * p[:, 1] - .34 * depth
     # One fixed scale derived from XYZ extents: no per-stage zoom or cropping.
-    extent = np.ptp(points, axis=0)
+    extent = np.ptp(reference, axis=0)
     scale = min((w - 40) / (extent[0] + .5 * extent[2]), (h - 32) / (extent[1] + .4 * extent[2]))
     xy = np.column_stack((w * .5 + x * scale, h * .5 + y * scale)).round().astype(int)
     view = Image.new("RGB", size, BG)
@@ -80,6 +82,65 @@ def cloud_view(points, colors, size, phase, radius=1, voxel_size=None):
         else:
             d.ellipse((int(px-radius), int(py-radius), int(px+radius), int(py+radius)), fill=color)
     return view
+
+
+def card(accent=CYAN):
+    image = Image.new("RGB", (464, 340), BG)
+    d = ImageDraw.Draw(image)
+    # A quiet technical grid frames the data without obscuring it.
+    for x in range(20, 464, 28):
+        d.line((x, 67, x, 283), fill="#101d30")
+    for y in range(67, 284, 28):
+        d.line((20, y, 444, y), fill="#101d30")
+    d.rounded_rectangle((18, 292, 446, 326), radius=8, fill=PANEL)
+    d.rectangle((18, 292, 21, 326), fill=accent)
+    return image
+
+
+def gallery(output, xyz, small, plane, outliers, faces):
+    """Visualize saved Rust outputs; sweep and orbit are presentation effects."""
+    bounds = np.array([xyz.min(axis=0), xyz.max(axis=0)])
+    zmin, zmax = bounds[:, 2]
+    depth = ((xyz[:, 2] - zmin) / max(zmax-zmin, 1e-9)).clip(0, 1)
+    depth_colors = [COLORS[min(int(v*5), 5)] for v in depth]
+    entries = [
+        (NAMES[4], "01 / CAPTURE", "A scene, in points", f"{len(xyz):,} public scan samples", CYAN),
+        (NAMES[5], "02 / SIMPLIFY", "Keep the structure", f"{len(xyz):,} points  >  {len(small):,} centroids", MINT),
+        (NAMES[6], "03 / SEGMENT", "Find the surface", f"{len(plane):,} RANSAC plane inliers", ORANGE),
+        (NAMES[7], "06 / EXPLORE", "Look inside the scan", "Depth slice / geometric illustration", "#bd9bff"),
+    ]
+    for name, eyebrow, title, detail, accent in entries:
+        frames=[]
+        for i in range(32):
+            phase=i/32*math.tau
+            if name==NAMES[4]:
+                pts,colors=xyz,depth_colors
+            elif name==NAMES[5]:
+                # Alternation compares actual input and actual centroids.
+                pts=xyz if i<16 else small
+                colors=CYAN if i<16 else MINT
+            elif name==NAMES[6]:
+                pts=np.concatenate((plane,outliers))
+                colors=[CYAN]*len(plane)+[ORANGE]*len(outliers)
+            else:
+                center=.5+.38*math.sin(phase)
+                selected=np.abs(depth-center)<.12
+                pts=xyz[selected]
+                colors=[depth_colors[j] for j in np.flatnonzero(selected)]
+            image=card(accent)
+            image.paste(cloud_view(pts,colors,(424,211),phase,1 if len(pts)>10000 else 2,bounds=bounds),(20,76))
+            d=ImageDraw.Draw(image)
+            text(d,(22,12),eyebrow,faces[12],accent)
+            text(d,(20,32),title,faces[24])
+            text(d,(32,300),detail,faces[14],accent)
+            if name==NAMES[5]:
+                pill(d,(296,76),"INPUT" if i<16 else "FILTERED",faces[12],colors)
+            elif name==NAMES[6]:
+                pill(d,(22,76),"PLANE + OBJECTS",faces[12],ORANGE)
+            for j in range(32):
+                d.rectangle((22+j*13,333,31+j*13,335),fill=accent if j<=i else PANEL)
+            frames.append(image)
+        save_gif(output/name,frames,125)
 
 
 def palette():
@@ -154,10 +215,11 @@ def main():
         stage = i // 12
         image = Image.new("RGB", (960, 420), BG)
         d = ImageDraw.Draw(image)
-        text(d, (32, 27), "SPATIAL COMPUTING / RUST", faces[12], CYAN)
+        d.rectangle((0, 0, 959, 3), fill=COLORS[stage])
+        text(d, (32, 27), "CAPTURE / UNDERSTAND / BUILD", faces[12], CYAN)
         text(d, (30, 71), "SpatialRust", faces[42])
-        text(d, (32, 141), "From sensor data", faces[24])
-        text(d, (32, 174), "to spatial intelligence.", faces[24])
+        text(d, (32, 141), "Make space", faces[32])
+        text(d, (32, 183), "computable.", faces[32], COLORS[stage])
         text(d, (32, 225), "Point clouds. Images. Robotics.", faces[16], MUTED)
         pill(d, (32, 270), "RUST", faces[12])
         pill(d, (112, 270), "wgpu", faces[12], MINT)
@@ -171,7 +233,7 @@ def main():
         view = cloud_view(np.concatenate((pts, padding)), colors, (570, 302), i / 48 * math.tau, 1 if stage == 0 else 2)
         image.paste(view, (378, 32))
         d = ImageDraw.Draw(image)
-        text(d, (404, 26), stage_names[stage], faces[14], CYAN)
+        text(d, (404, 26), f"0{stage+1} / {stage_names[stage]}", faces[14], COLORS[stage])
         text(d, (404, 324), counts[stage], faces[16])
         text(d, (404, 352), "Rust pipeline / animated viewpoint", faces[12], MUTED)
         for j, name in enumerate(["SCAN", "FILTER", "SEGMENT", "CLUSTER"]):
@@ -198,6 +260,7 @@ def main():
             frames.append(image)
         save_gif(args.output / name, frames, 150)
 
+    gallery(args.output, xyz, small, plane, outliers, faces)
     tracking = json.loads(args.tracking.read_text(encoding="utf-8"))
     if tracking["schema"] != "spatialrust.readme-tracking.v1" or not tracking["synthetic_only"] or tracking["ai_enabled"]:
         raise ValueError("expected synthetic unmasked actual-WASM reports")
@@ -225,6 +288,31 @@ def main():
         frames.append(image)
     save_gif(args.output / NAMES[3], frames, tracking["frame_duration_ms"])
 
+    frames = []
+    for f in tracking["frames"][1:]:
+        image=card(MINT)
+        d=ImageDraw.Draw(image)
+        text(d,(22,12),"08 / MEASURE",faces[12],MINT)
+        text(d,(20,32),"Follow the flow",faces[24])
+        # Arrows are magnified only for readability; numeric labels stay in px.
+        for t in f["report"]["tracks"]:
+            a=np.array([40+t["from"][0]*1.5,78+t["from"][1]*1.02])
+            delta=(np.asarray(t["to"])-np.asarray(t["from"]))*7
+            b=a+delta
+            d.line((tuple(a),tuple(b)),fill=CYAN,width=2)
+            d.ellipse((a[0]-2,a[1]-2,a[0]+2,a[1]+2),fill=MINT)
+            norm=np.linalg.norm(delta)
+            if norm>1e-6:
+                u=delta/norm;v=np.array([-u[1],u[0]])
+                d.polygon([tuple(b),tuple(b-u*6+v*3),tuple(b-u*6-v*3)],fill=MINT)
+        flow=f["report"]["background_flow_px"]
+        pill(d,(310,38),f"{len(f['report']['tracks'])} TRACKS",faces[12],MINT)
+        value="Initializing" if flow is None else f"dx {flow[0]:+.2f} / dy {flow[1]:+.2f} px"
+        text(d,(32,300),value,faces[14],MINT)
+        text(d,(22,272),"ACTUAL WASM / SYNTHETIC INPUT / ARROWS x7",faces[12],MUTED)
+        frames.append(image)
+    save_gif(args.output/NAMES[8],frames,tracking["frame_duration_ms"])
+
     assets = [{"path": name, "bytes": (args.output/name).stat().st_size, "sha256": sha(args.output/name)} for name in NAMES]
     if sum(a["bytes"] for a in assets) > MAX_TOTAL_BYTES:
         raise ValueError("hero group exceeds 3 MB budget")
@@ -243,7 +331,7 @@ def main():
                                  plane_inliers=len(plane), cluster_count=result.cluster_count,
                                  occupancy_cell_m=.08, occupied_cells=len(centers)),
                    tracking_wasm_sha256=tracking["wasm_sha256"], tracking_frames=len(tracking["frames"]),
-                   claims="Illustrations of actual outputs; animation playback is not a throughput benchmark. Synthetic tracking has AI disabled.")
+                   claims="Illustrations of actual outputs; orbit, depth sweep and stage switching are presentation effects, not processing latency. Synthetic tracking has AI disabled; flow arrows are magnified x7.")
     (args.output / "readme_heroes.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(receipt, indent=2))
 
