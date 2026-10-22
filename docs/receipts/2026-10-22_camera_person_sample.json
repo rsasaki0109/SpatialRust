@@ -1,0 +1,158 @@
+{
+  "schema": "spatialrust.camera-person-sample.v1",
+  "verified_at_utc": "2026-10-22T04:05:21.880867+00:00",
+  "parent_merge": "70f295843b6937be222d5bb5d2b95c58fd9bcbb2",
+  "source_head": "45861f60513877770091e77f4958c0ff2d33dec0",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\camera-person-sample-plan.json",
+    "bytes": 2690,
+    "sha256": "4f68ab9201b4c5d2d68a3bcc15cd3060860c8f3ea581c5ec9aefd3ff788331a8"
+  },
+  "commands": [
+    {
+      "phase": "unit",
+      "source_head": "45861f60513877770091e77f4958c0ff2d33dec0",
+      "exit_status": 0,
+      "evidence": {
+        "path": "E:\\SpatialRustBuild\\camera-person-sample-v1\\unit.command.json",
+        "bytes": 4472,
+        "sha256": "3cc147f4490e19ef1bcdd6dce7d01c34dddde835f95c73eadfb693e1b608d7af"
+      }
+    },
+    {
+      "phase": "assets",
+      "source_head": "45861f60513877770091e77f4958c0ff2d33dec0",
+      "exit_status": 0,
+      "evidence": {
+        "path": "E:\\SpatialRustBuild\\camera-person-sample-v1\\assets.command.json",
+        "bytes": 4508,
+        "sha256": "92b2cb7aa48f563699807fb68fb88b6cf8eef1b241b62cee918f627dc7bc0c44"
+      }
+    },
+    {
+      "phase": "build-site",
+      "source_head": "45861f60513877770091e77f4958c0ff2d33dec0",
+      "exit_status": 0,
+      "evidence": {
+        "path": "E:\\SpatialRustBuild\\camera-person-sample-v1\\build-site.command.json",
+        "bytes": 4756,
+        "sha256": "52104ef1e392ed37b666e4bc41005d544c71ed30161acc12d1fe5e860d155474"
+      }
+    },
+    {
+      "phase": "photo",
+      "source_head": "45861f60513877770091e77f4958c0ff2d33dec0",
+      "exit_status": 0,
+      "evidence": {
+        "path": "E:\\SpatialRustBuild\\camera-person-sample-v1\\photo.command.json",
+        "bytes": 5142,
+        "sha256": "172b6dc90384ac99be3d6509de8a87f14ab698d8678824eb1a934ef98e015b4b"
+      }
+    },
+    {
+      "phase": "browser",
+      "source_head": "45861f60513877770091e77f4958c0ff2d33dec0",
+      "exit_status": 0,
+      "evidence": {
+        "path": "E:\\SpatialRustBuild\\camera-person-sample-v1\\browser.command.json",
+        "bytes": 9659,
+        "sha256": "449a0e3bb104685b8dd7512bf02ba9e000422f35f58dbccdbdaf91674cd68d60"
+      }
+    }
+  ],
+  "unit_tests": 99,
+  "asset_tests": 6,
+  "targeted_browser_controls": 20,
+  "full_browser_controls": 106,
+  "photo_samples": {
+    "targeted": [
+      {
+        "width": 256,
+        "height": 192,
+        "personFraction": 0.19685872395833334,
+        "personPixels": 9676,
+        "maskBytes": 49152,
+        "tracks": 78,
+        "maskedTracks": 0,
+        "backend": "GPU",
+        "mode": "PHOTO SAMPLE \u00b7 \u52d5\u304d\u306f\u5408\u6210"
+      },
+      {
+        "width": 192,
+        "height": 144,
+        "personFraction": 0.16304976851851852,
+        "personPixels": 4508,
+        "maskBytes": 27648,
+        "tracks": 29,
+        "maskedTracks": 0,
+        "backend": "GPU",
+        "mode": "PHOTO SAMPLE \u00b7 \u52d5\u304d\u306f\u5408\u6210"
+      }
+    ],
+    "full": [
+      {
+        "width": 256,
+        "height": 192,
+        "personFraction": 0.19685872395833334,
+        "personPixels": 9676,
+        "maskBytes": 49152,
+        "tracks": 78,
+        "maskedTracks": 0,
+        "backend": "GPU",
+        "mode": "PHOTO SAMPLE \u00b7 \u52d5\u304d\u306f\u5408\u6210"
+      },
+      {
+        "width": 192,
+        "height": 144,
+        "personFraction": 0.16304976851851852,
+        "personPixels": 4508,
+        "maskBytes": 27648,
+        "tracks": 29,
+        "maskedTracks": 0,
+        "backend": "GPU",
+        "mode": "PHOTO SAMPLE \u00b7 \u52d5\u304d\u306f\u5408\u6210"
+      }
+    ]
+  },
+  "public_photo": {
+    "path": "vendor/person-sample.png",
+    "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+    "bytes": 791555,
+    "sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+    "width": 512,
+    "height": 512,
+    "source": "https://scikit-image.org/docs/stable/api/skimage.data.html#skimage.data.astronaut",
+    "license_description": "NASA image, documented by scikit-image as public domain; retain attribution.",
+    "presentation": "Unmodified photo drawn on the existing generated texture; only presentation motion is synthetic. No new sensor capture."
+  },
+  "site_files": 26,
+  "site_asset_bytes": 41879158,
+  "unchanged_vendor_files": 9,
+  "reused_vendor_bytes": 41087603,
+  "unchanged_raw_wasm": {
+    "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\cargo\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1029628,
+    "sha256": "245c92b8ac1a36bf5928b7b00fa9ddb28c5775096e1dc87a801b8c4cc9a987aa"
+  },
+  "unchanged_wasm_source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+  "prior_files_preserved": 2615,
+  "scientific_json_preserved": 493,
+  "native_artifacts_preserved": 42,
+  "final_usage": {
+    "owned_metadata_bytes": 47597741,
+    "cache_bytes": 13386648799,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 47597741,
+    "free_bytes": {
+      "C": 69074173952,
+      "E": 873972318208
+    }
+  },
+  "peak_owned_logical_bytes": 65293826,
+  "public_source_download_bytes": 791555,
+  "new_sdk_model_browser_toolchain_downloads": 0,
+  "rust_compilations": 0,
+  "local_adapter_name_violations": 0,
+  "physical_phone_tested": false,
+  "limits": "Public photograph with synthetic presentation motion; software-WebGL GPU-delegate label is not physical-GPU qualification. No segmentation accuracy, metric-pose, throughput or operational-80% claim."
+}

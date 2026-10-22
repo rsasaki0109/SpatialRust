@@ -8,11 +8,11 @@ const { chromium } = require("playwright");
 function argument(name) { const i = process.argv.indexOf(name); if (i < 0 || !process.argv[i + 1]) throw new Error(`missing ${name}`); return path.resolve(process.argv[i + 1]); }
 const site = argument("--site"), output = argument("--output");
 const caseIndex = process.argv.indexOf("--regression-case"), regressionCase = caseIndex < 0 ? null : process.argv[caseIndex + 1];
-if (regressionCase && !["startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy", "result-camera", "result-sample", "capture-camera", "capture-sample", "start-acquire", "start-play", "transport-init", "transport-message"].includes(regressionCase)) throw new Error("unknown regression case");
+if (regressionCase && !["photo", "startup", "rotation", "history", "cadence", "rate", "source-ended", "source-inactive", "source-silent", "progress-idle", "progress-busy", "result-camera", "result-sample", "capture-camera", "capture-sample", "start-acquire", "start-play", "transport-init", "transport-message"].includes(regressionCase)) throw new Error("unknown regression case");
 if (fs.existsSync(output)) throw new Error("fresh browser evidence directory required");
 fs.mkdirSync(output, { recursive: true });
 const report = { schema: "spatialrust.camera-browser.v1", syntheticCaptureOnly: true, physicalPhoneTested: false, checks: [], screenshots: [], externalResponses: [], nonGetRequests: [], consoleErrors: [], failedRequests: [], httpErrors: [], workerErrors: [], cspViolations: [] };
-const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".mjs": "text/javascript", ".js": "text/javascript", ".wasm": "application/wasm", ".json": "application/json", ".txt": "text/plain" };
+const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".mjs": "text/javascript", ".js": "text/javascript", ".wasm": "application/wasm", ".json": "application/json", ".txt": "text/plain", ".png": "image/png" };
 const server = http.createServer((req, res) => {
   if (req.method !== "GET" && req.method !== "HEAD") { report.nonGetRequests.push(req.method);res.writeHead(405);res.end();return; }
   try {
@@ -75,6 +75,16 @@ async function instrument(context) {
     window.__workerReadyCount = 0;
     window.__terminatedWorkers = 0;
     window.__cameraReports = [];
+    window.__photoResults = [];
+    window.__photoImages = [];
+    window.__photoDimensions = [];
+    const OriginalImage = window.Image;
+    window.Image = function (...args) {
+      const image = new OriginalImage(...args);window.__photoImages.push(image);
+      image.addEventListener("load", () => { window.__photoDimensions.push([image.naturalWidth,image.naturalHeight]);if (window.__photoDimensions.length > 4) window.__photoDimensions.shift(); }, { once:true });
+      return image;
+    };
+    window.Image.prototype = OriginalImage.prototype;
     window.__holdNextResult = false;
     window.__submittedFrames = [];
     window.__submittedFrameSequence = 0;
@@ -88,6 +98,10 @@ async function instrument(context) {
           if (event.data.kind === "ready") window.__workerReadyCount++;
           if (event.data.kind !== "result") return;
           const r = event.data.report;
+          if (window.__inspectPhotoMask) {
+            window.__photoResults.push({ report: r, mask: new Uint8Array(event.data.mask).slice() });
+            if (window.__photoResults.length > 2) window.__photoResults.shift();
+          }
           window.__cameraReports.push({ width: r.width, height: r.height, status: r.status, motion: r.background_flow_px, maskBytes: event.data.mask.byteLength, timestampMs: r.timestamp_ms });
           if (window.__cameraReports.length > 32) window.__cameraReports.shift();
           if (window.__holdNextResult) {
@@ -633,6 +647,76 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   await page.close();
 }
 
+async function publicPhotoSample(context, origin) {
+  const url = "**/vendor/person-sample.png";
+  const observe = (page) => {
+    const state = { photos: 0, external: [], nonGet: [], errors: [] };
+    page.on("request", (r) => { if (r.url().endsWith("/vendor/person-sample.png")) state.photos++;if (/^https?:/.test(r.url()) && !r.url().startsWith(origin + "/")) state.external.push(r.url());if (r.method() !== "GET") state.nonGet.push(r.method()); });
+    page.on("pageerror", (e) => state.errors.push(e.message));
+    return state;
+  };
+  const noLeaks = async (page, state) => {
+    assert.deepEqual(state.external, []);assert.deepEqual(state.nonGet, []);assert.deepEqual(state.errors, []);
+    assert.equal(await page.evaluate(() => window.__cameraCalls.length), 0);
+    assert.equal(await page.locator("video").evaluate((v) => v.srcObject), null);
+  };
+  for (const edge of [256, 192]) {
+    const page = await context.newPage();activePage = page;const state = observe(page);
+    await page.goto(origin + "/camera/");await page.locator("#resolution").selectOption(String(edge));
+    assert.equal(state.photos, 0);check(`photo-${edge}-not-loaded-before-explicit-start`);
+    await page.evaluate(() => { window.__inspectPhotoMask = true; });
+    await page.locator("#person-sample").click();await waitFrames(page, 3);
+    await page.waitForFunction(() => document.documentElement.dataset.trackingStatus === "tracking", null, { timeout: 120000 });
+    const result = await page.evaluate(() => {
+      const { report: r, mask } = window.__photoResults.at(-1);
+      let personPixels = 0, maskedTracks = 0;
+      for (const value of mask) personPixels += value;
+      for (const t of r.tracks) if (mask[Math.floor(t.to[1]) * r.width + Math.floor(t.to[0])]) maskedTracks++;
+      return { width: r.width, height: r.height, personFraction: r.person_fraction, personPixels, maskBytes: mask.length,
+        tracks: r.tracks.length, maskedTracks, backend: document.querySelector("#backend").textContent, mode: document.querySelector("#mode-label").textContent };
+    });
+    assert.deepEqual([result.width, result.height], [edge, edge * 3 / 4]);
+    assert.ok(["GPU", "CPU"].includes(result.backend));assert.ok(result.personPixels > 0 && result.personPixels < result.maskBytes);
+    assert.equal(result.personFraction, result.personPixels / result.maskBytes);assert.ok(result.tracks >= 8);assert.equal(result.maskedTracks, 0);
+    assert.ok(result.mode.includes("動きは合成"));assert.equal(state.photos, 1);
+    (report.photoSamples ??= []).push(result);check(`photo-${edge}-real-person-mask-and-rust-background-tracks`);
+    assert.equal(await page.locator("#person-sample").isDisabled(), true);check(`photo-${edge}-prevents-overlapping-start`);
+    await screenshot(page, `mobile-photo-ai-${edge}`);await page.locator("#stop").click();await stopped(page);
+    assert.equal(await page.evaluate(() => window.__photoImages.every((im) => im.getAttribute("src") === "")), true);check(`photo-${edge}-stop-releases-image-source`);
+    await page.locator("#ai").uncheck();let before = await frameCount(page);await page.locator("#sample").click();await waitFrames(page, before + 1);
+    assert.equal(state.photos, 1);check(`photo-${edge}-procedural-playback-does-not-fetch-photo`);
+    await page.locator("#stop").click();await stopped(page);
+    before = await frameCount(page);await page.locator("#person-sample").click();await waitFrames(page, before + 1);
+    const off = await page.evaluate(() => { const {report:r,mask}=window.__photoResults.at(-1);return { backend: document.querySelector("#backend").textContent, person:r.person_fraction,maskBytes:mask.length,status:r.status }; });
+    assert.deepEqual(off, { backend:"OFF",person:0,maskBytes:0,status:"tracking" });check(`photo-${edge}-ai-off-still-tracks`);
+    await page.locator("#stop").click();await stopped(page);await noLeaks(page,state);await page.close();
+  }
+  for (const kind of ["http", "decode", "dimensions"]) {
+    const page = await context.newPage();activePage=page;const state=observe(page);
+    await page.route(url, (route) => route.fulfill(kind === "http" ? { status:404,body:"missing public sample" } : {
+      status:200,contentType:"image/png",body:kind === "decode" ? Buffer.from("invalid png") : Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC","base64") }));
+    await page.goto(origin+"/camera/");await page.locator("#ai").uncheck();await page.locator("#person-sample").click();
+    await page.waitForFunction(() => document.documentElement.dataset.sessionState === "error");
+    assert.ok((await page.locator("#status").textContent()).includes("人物サンプルを読み込めませんでした"));
+    if (kind === "dimensions") assert.deepEqual(await page.evaluate(() => window.__photoDimensions.at(-1)), [1,1]);
+    assert.equal(await page.locator("#person-sample").isEnabled(),true);check(`photo-${kind}-failure-stops-and-offers-restart`);
+    await page.locator("#sample").click();await waitFrames(page,1);await page.locator("#stop").click();await stopped(page);
+    await noLeaks(page,state);check(`photo-${kind}-failure-allows-procedural-recovery`);await page.close();
+  }
+  const page=await context.newPage();activePage=page;const state=observe(page);let held;
+  await page.route(url,(route)=>{ held=route; });
+  await page.goto(origin+"/camera/");await page.locator("#ai").uncheck();
+  const requested=page.waitForRequest((r)=>r.url().endsWith("/vendor/person-sample.png"));
+  await page.locator("#person-sample").click();await requested;
+  assert.equal(await page.evaluate(()=>document.documentElement.dataset.sessionState),"loading");
+  await page.locator("#stop").click();await stopped(page);check("photo-stop-aborts-pending-image-startup");
+  await page.locator("#sample").click();await waitFrames(page,1);
+  await page.evaluate(()=>{ const old=window.__photoImages[0];old.dispatchEvent(new Event("load"));old.dispatchEvent(new Event("error")); });
+  await waitFrames(page,await frameCount(page));
+  assert.equal(await page.locator("#mode-label").textContent(),"SAMPLE · サンプル映像");check("photo-late-image-events-preserve-replacement-session");
+  await held?.abort().catch(()=>{});await page.locator("#stop").click();await stopped(page);await noLeaks(page,state);await page.close();
+}
+
 (async () => {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
@@ -641,7 +725,8 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await instrument(context);
   if (regressionCase) {
-    if (regressionCase.startsWith("transport-")) await workerTransport(context, origin, regressionCase.slice(10));
+    if (regressionCase === "photo") await publicPhotoSample(context, origin);
+    else if (regressionCase.startsWith("transport-")) await workerTransport(context, origin, regressionCase.slice(10));
     else if (regressionCase.startsWith("start-")) await cancelledStartup(context, origin, regressionCase.slice(6));
     else if (regressionCase === "startup") await staleStartup(context, origin);
     else if (regressionCase === "rotation") await intrinsicRotation(context, origin);
@@ -689,6 +774,7 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   report.aiBackend = await page.locator("#backend").textContent();
   assert.ok(["GPU", "CPU"].includes(report.aiBackend));check("pinned-real-model-inference-and-mask-through-wasm");
   await screenshot(page, "mobile-ai");await page.locator("#stop").click();await stopped(page);
+  await publicPhotoSample(context, origin);
   const blocked = await page.evaluate(() => new Promise((resolve, reject) => {
     const code = `self.addEventListener('securitypolicyviolation',e=>self.postMessage({directive:e.effectiveDirective,uri:e.blockedURI}));fetch('https://example.invalid/camera-network-must-be-blocked').catch(()=>{});`;
     const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));

@@ -3,6 +3,7 @@ import { cameraFrameSize } from "./frame-size.mjs";
 import { FrameRate } from "./frame-rate.mjs";
 import { CameraProgress } from "./camera-progress.mjs";
 import { captureBitmap } from "./capture-bitmap.mjs";
+import { loadPersonSample } from "./person-sample.mjs";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video"), sample = $("sample-frame"), overlay = $("overlay");
@@ -11,6 +12,7 @@ const motionCtx = $("motion").getContext("2d");
 const frameRate = new FrameRate();
 let frameHandle = 0, capturingToken = 0, lastSubmitted = -Infinity, lastVideoTime = -1, phase = 0;
 let mode = null, width = 256, height = 192, longEdge = 256;
+let personSample = null;
 
 const session = new CameraSession({
   acquire: () => {
@@ -39,13 +41,18 @@ const session = new CameraSession({
       size = cameraFrameSize(video.videoWidth, video.videoHeight, longEdge);
       run.progress = new CameraProgress(performance.now());
     }
+    if (run.mode === "photo") {
+      const image = await loadPersonSample({ signal: run.captureAbort.signal });
+      if (session.run !== run) { image.src = "";return; }
+      personSample = image;
+    }
     mode = run.mode;
     applyGeometry(size);
     video.hidden = mode !== "camera";
-    sample.hidden = mode !== "sample";
+    sample.hidden = mode === "camera";
     overlay.hidden = false;
     $("placeholder").hidden = true;
-    $("mode-label").textContent = mode === "sample" ? "SAMPLE · サンプル映像" : "LIVE · カメラ映像";
+    $("mode-label").textContent = mode === "camera" ? "LIVE · カメラ映像" : mode === "photo" ? "PHOTO SAMPLE · 動きは合成" : "SAMPLE · サンプル映像";
     $("backend").textContent = run.backend;
     phase = 0;
   },
@@ -78,20 +85,21 @@ const session = new CameraSession({
   },
   onState: (state) => {
     const active = state === "loading" || state === "running";
-    $("start").disabled = active; $("sample").disabled = active;
+    $("start").disabled = active; $("sample").disabled = active; $("person-sample").disabled = active;
     $("stop").disabled = !active; $("ai").disabled = active; $("facing").disabled = active; $("resolution").disabled = active;
     document.documentElement.dataset.sessionState = state;
     if (state === "loading") setStatus("準備しています。初回はAI用ファイルを読み込みます。停止はいつでもできます。");
     if (state === "running") { setStatus("映像から特徴点を探しています。"); frameHandle = requestAnimationFrame(pump); }
   },
   onError: (error) => {
-    if (["CameraEndedError", "CameraStalledError", "FrameResultTimeoutError", "FrameCaptureTimeoutError", "WorkerMessageError"].includes(error.name)) { setStatus(error.message);return; }
+    if (["CameraEndedError", "CameraStalledError", "FrameResultTimeoutError", "FrameCaptureTimeoutError", "WorkerMessageError", "SampleImageError"].includes(error.name)) { setStatus(error.message);return; }
     const denied = error.name === "NotAllowedError" || /permission|denied/i.test(error.message);
     setStatus(denied ? "カメラの使用が許可されていません。ブラウザの権限を確認するか、サンプルでお試しください。" : `開始できませんでした。${error.message}${error.name === "RangeError" ? "" : " AIをオフにして試すこともできます。"}`);
   },
   onStop: () => {
     cancelAnimationFrame(frameHandle); frameHandle = 0;
     video.pause(); video.srcObject = null;
+    if (personSample) { personSample.src = "";personSample = null; }
     video.hidden = sample.hidden = overlay.hidden = true;
     $("placeholder").hidden = false; $("mode-label").textContent = "CAMERA OFF";
     ctx.clearRect(0, 0, overlay.width, overlay.height);
@@ -108,6 +116,7 @@ function start(mode) {
 }
 $("start").addEventListener("click", () => start("camera"));
 $("sample").addEventListener("click", () => start("sample"));
+$("person-sample").addEventListener("click", () => start("photo"));
 $("stop").addEventListener("click", () => { session.stop(); setStatus("停止しました。カメラも処理もオフです。"); });
 document.addEventListener("visibilitychange", () => { if (document.hidden) { session.stop(); setStatus("画面を離れたため停止しました。再開するには開始ボタンを押してください。"); } });
 window.addEventListener("pagehide", () => session.stop());
@@ -134,7 +143,7 @@ async function pump() {
       // One in-flight result is fully consumed before its coordinate system changes.
       if (size.width !== width || size.height !== height) applyGeometry(size);
     }
-    const source = mode === "sample" ? renderSample() : video;
+    const source = mode === "camera" ? video : renderSample();
     // This is capture invocation time, not a physical camera/sensor timestamp.
     const timestampMs = performance.now();
     const bitmap = await captureBitmap(() => createImageBitmap(source, { resizeWidth: width, resizeHeight: height, resizeQuality: "low" }), { signal: run.captureAbort.signal });
@@ -174,8 +183,12 @@ function renderSample() {
     image.data[i + 3] = 255;
   }
   sampleCtx.putImageData(image, 0, 0);
-  sampleCtx.fillStyle = "#061a29b0"; sampleCtx.fillRect(50 * scale + dx, 64 * scale + dy, 156 * scale, 57 * scale);
-  sampleCtx.fillStyle = "#e9fff8"; sampleCtx.font = `bold ${20 * scale}px system-ui`; sampleCtx.fillText("SpatialRust", 68 * scale + dx, 98 * scale + dy);
+  if (mode === "photo") {
+    sampleCtx.drawImage(personSample, 104 * scale + dx, 28 * scale + dy, 136 * scale, 136 * scale);
+  } else {
+    sampleCtx.fillStyle = "#061a29b0"; sampleCtx.fillRect(50 * scale + dx, 64 * scale + dy, 156 * scale, 57 * scale);
+    sampleCtx.fillStyle = "#e9fff8"; sampleCtx.font = `bold ${20 * scale}px system-ui`; sampleCtx.fillText("SpatialRust", 68 * scale + dx, 98 * scale + dy);
+  }
   return sample;
 }
 

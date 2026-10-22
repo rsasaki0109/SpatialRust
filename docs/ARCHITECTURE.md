@@ -61,6 +61,14 @@ not claim cancellation or a physical memory bound for unfinished native work.
 This experimental browser boundary preserves core and vision algorithms; physical
 phone, metric pose and full-room accuracy qualification remain separate.
 
+An explicit [public-photo sample](CAMERA_PERSON_SAMPLE.md) exercises the existing
+person model and Rust/WASM background tracker without camera permission. The
+size/hash-pinned same-origin image loads within the existing abort/startup epoch;
+Stop releases its source and late image events cannot affect replacement runs.
+The existing canvas/bitmap/readback boundaries and original camera/procedural
+paths remain. Presentation motion is synthesized, with physical qualification
+and metric motion separate.
+
 [Camera mask support](CAMERA_MASK_SUPPORT.md) summarizes validated binary masks
 once into owned empty/full states or a bounded u32 summed-area table. Exact
 inclusive support queries use four entries; public reports, validation order,

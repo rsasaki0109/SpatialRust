@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Add an opt-in public-photo sample to the mobile camera playground so visitors
+  can try local AI person masking and Rust/WASM background flow without camera
+  permission. Pin and self-host the attributed image, cancel loading on Stop and
+  retain original camera/procedural behavior. Add positive-model, AI-off, image
+  failure and stale-event controls. See [public-photo sample](docs/CAMERA_PERSON_SAMPLE.md).
+
 - Refresh the README's opening animations with a shared visual style, actual
   public-cloud results and synthetic Rust/WASM feature tracking. Link the
   tracking animation to the mobile playground and record bounded generation

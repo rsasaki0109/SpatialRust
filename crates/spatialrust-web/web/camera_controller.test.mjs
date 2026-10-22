@@ -4,6 +4,63 @@ import { CameraSession } from "../../../docs/site/camera/session.mjs";
 import { FrameRate } from "../../../docs/site/camera/frame-rate.mjs";
 import { CameraProgress } from "../../../docs/site/camera/camera-progress.mjs";
 import { captureBitmap } from "../../../docs/site/camera/capture-bitmap.mjs";
+import { loadPersonSample } from "../../../docs/site/camera/person-sample.mjs";
+
+class SampleImage extends EventTarget {
+  constructor() { super(); this.src = "";this.naturalWidth = 512;this.naturalHeight = 512;this.listeners = 0; }
+  addEventListener(...args) { this.listeners++;super.addEventListener(...args); }
+  removeEventListener(...args) { this.listeners--;super.removeEventListener(...args); }
+}
+
+test("photo loader does not construct or request an image after cancellation", async () => {
+  const controller = new AbortController();controller.abort();
+  await assert.rejects(loadPersonSample({ signal: controller.signal, createImage: () => { throw new Error("must not create"); } }), { name: "AbortError" });
+});
+
+test("photo loader resolves the complete public image and releases listeners", async () => {
+  const image = new SampleImage(), controller = new AbortController();
+  const ready = loadPersonSample({ signal: controller.signal, createImage: () => image });
+  assert.ok(image.src.endsWith("/vendor/person-sample.png"));
+  image.dispatchEvent(new Event("load"));assert.equal(await ready, image);assert.equal(image.listeners, 0);
+  controller.abort();assert.notEqual(image.src, "");
+});
+
+test("photo loader cancellation releases the source and consumes late image events", async () => {
+  const image = new SampleImage(), controller = new AbortController();
+  const ready = loadPersonSample({ signal: controller.signal, createImage: () => image });
+  controller.abort();await assert.rejects(ready, { name: "AbortError" });
+  assert.equal(image.src, "");assert.equal(image.listeners, 0);
+  image.dispatchEvent(new Event("load"));image.dispatchEvent(new Event("error"));
+});
+
+test("photo decode failure releases the source and gives explicit recovery", async () => {
+  const image = new SampleImage();
+  const ready = loadPersonSample({ createImage: () => image });
+  image.dispatchEvent(new Event("error"));
+  await assert.rejects(ready, { name: "SampleImageError", message: /サンプル再生/ });
+  assert.equal(image.src, "");assert.equal(image.listeners, 0);
+});
+
+test("photo loader rejects zero, partial and unexpected decoded dimensions", async () => {
+  for (const [w,h] of [[0,0],[512,0],[0,512],[511,512],[512,513],[1024,1024]]) {
+    const image = new SampleImage();image.naturalWidth = w;image.naturalHeight = h;
+    const ready = loadPersonSample({ createImage: () => image });image.dispatchEvent(new Event("load"));
+    await assert.rejects(ready, { name: "SampleImageError" });assert.equal(image.src, "");assert.equal(image.listeners, 0);
+  }
+});
+
+test("photo loader construction failures stay observed by its returned promise", async () => {
+  await assert.rejects(loadPersonSample({ createImage: () => { throw new Error("decoder unavailable"); } }), /decoder unavailable/);
+});
+
+test("old photo cancellation cannot clear a replacement image", async () => {
+  const a = new SampleImage(), b = new SampleImage(), controller = new AbortController();
+  const old = loadPersonSample({ signal: controller.signal, createImage: () => a });
+  const next = loadPersonSample({ createImage: () => b });
+  controller.abort();await assert.rejects(old, { name: "AbortError" });
+  a.dispatchEvent(new Event("load"));b.dispatchEvent(new Event("load"));
+  assert.equal(await next, b);assert.notEqual(b.src, "");assert.equal(a.src, "");
+});
 
 // Frozen parent predicate: validate every source pixel before sampling.
 function frozenPersonMask(source, sourceWidth, sourceHeight, width, height) {

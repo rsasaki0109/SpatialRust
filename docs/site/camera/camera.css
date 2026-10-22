@@ -69,6 +69,7 @@ details p { max-width: 760px; }
   .playground { padding-top: 1.7rem; }
 }
 @media (max-width: 440px) {
+  .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mobile-break { display: initial; }
   .desktop-break { display: none; }
   .nav-tag { font-size: .55rem; margin-left: .4rem; }
