@@ -629,9 +629,13 @@ async function intrinsicRotation(context, origin, longEdge = 256, historyLimit =
   await page.evaluate(() => { window.__holdNextCapture = true; });
   await page.waitForFunction(() => typeof window.__releaseCapture === "function");
   const portraitFrames = await frameCount(page);
-  const submitted = await page.evaluate(() => window.__submittedFrameSequence);
-  await page.evaluate(() => { window.__syntheticCamera.width = 320;window.__syntheticCamera.height = 240; });
-  await page.waitForFunction(() => document.querySelector("video").videoWidth === 320);
+  const submitted = await page.evaluate(() => {
+    const sequence = window.__submittedFrameSequence;
+    window.__syntheticCamera.width = 320;window.__syntheticCamera.height = 240;
+    return sequence;
+  });
+  // Both intrinsic dimensions must reach the target before releasing capture.
+  await page.waitForFunction(() => document.querySelector("video").videoWidth === 320 && document.querySelector("video").videoHeight === 240);
   await page.evaluate(() => { const release = window.__releaseCapture;delete window.__releaseCapture;release(); });
   await waitFrames(page, portraitFrames + 2);
   const history = await page.evaluate((n) => ({ cursor: n, sequence: window.__submittedFrameSequence, retained: window.__submittedFrames.slice(), after: window.__submittedFrames.filter((f) => f.sequence > n), width: document.querySelector("#overlay").width, height: document.querySelector("#overlay").height }), submitted);
