@@ -75,6 +75,13 @@ indices need at most 640 logical bytes with no retained cache; frozen byte,
 ownership and actual-browser controls accompany both retained and interleaved
 timing observations. Device readbacks, model and Rust tracking stay unchanged.
 
+[Forward/backward LK pyramid reuse](LK_PYRAMID_REUSE.md) owns two immutable
+f32 pyramids per call and borrows them in both directions for built-in scalar
+pixels. Custom components retain original conversion observations. Validation,
+per-point numerical operations and public APIs remain; no cross-call cache or
+implicit device copy is added. Frozen native and actual WASM reports establish
+parity; CPU timing retains all conditions with physical qualification separate.
+
 [Marching-tetrahedra topology](MESH_SURFACE_TOPOLOGY.md) orders quadrilateral
 cut vertices around their boundary and orients all changed cases toward
 increasing field values for the existing positive-oriented cube tetrahedra.

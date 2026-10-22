@@ -1,0 +1,2110 @@
+{
+  "schema": "spatialrust.lk-pyramid-reuse-receipt.v1",
+  "slice": "146AU",
+  "date": "2026-10-22",
+  "recorded_at_utc": "2026-10-22T00:32:07.837589+00:00",
+  "parent_merge": "fcdb9d6acb34cffd0c033db94960c45db67b4bd9",
+  "baseline_source_commit": "cd3d0fb566214c13d78a25a4692c81c7df1ac5df",
+  "tested_source_commit": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\lk-pyramid-reuse-plan.json",
+    "bytes": 3793,
+    "sha256": "ebf8664a80fd5e6089a4d658726e5796e4f8d111f632a15173b9888a3a279cb4"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\lk-pyramid-reuse-preflight.json",
+    "bytes": 716796,
+    "sha256": "0d6acd3607c94ae12a66b88c03abcd34c0a340052fd4ede052c4f1c1f87b9981"
+  },
+  "audit_script": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\audit-lk-pyramid-reuse.py",
+    "bytes": 11328,
+    "sha256": "2bf82d9744786d115edb2a1146d5ca25eea3d36a615c358d855534aae39d30ca"
+  },
+  "commands": {
+    "assets": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\assets.command.json",
+        "bytes": 194254,
+        "sha256": "9312bea16f4554d6b8ca5e633119d65d01a8f62ed56ec871e318742be5a34c91"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\assets.log",
+        "bytes": 109,
+        "sha256": "59753171660350c6735ee4b12925f50e7f8606c102caf33752e5551608bad819"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "base": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\base.command.json",
+        "bytes": 195532,
+        "sha256": "c231dea2385ce1b3fbbd82c580c66689705e914f4f804540354184509e32f0fc"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\base.log",
+        "bytes": 536,
+        "sha256": "ebeddabeae77284228351c8380d233ca96500d0a9a0400c5d0f87504e0568a2e"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "baseline-vision": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\baseline-vision.command.json",
+        "bytes": 200672,
+        "sha256": "689460cceb83886c483815e55ba00b927f9cac5b06baddcfe3a693adac0e4323"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\baseline-vision.log",
+        "bytes": 10632,
+        "sha256": "ec1f4c6696bdb734ae0af5414678ba6a10cdf3335ef5fc5898ba2e7a0faa35a3"
+      },
+      "source_head": "cd3d0fb566214c13d78a25a4692c81c7df1ac5df",
+      "child_exit_status": 0
+    },
+    "benchmark-1": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\benchmark-1.command.json",
+        "bytes": 194594,
+        "sha256": "feca2a454de92da3b4afc57060dfa3daa4219ede2e588f2e90861910120f0329"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\benchmark-1.log",
+        "bytes": 26642,
+        "sha256": "682198200503fd469ebd2968763f960c955d15b598147dd428b2a350d6ad65f0"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "benchmark-2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\benchmark-2.command.json",
+        "bytes": 194594,
+        "sha256": "782d86a25b3b4d3d08b2221d2f4c777284ff7f48dba0f29ffc511fc01f283c74"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\benchmark-2.log",
+        "bytes": 26651,
+        "sha256": "ba37d753a098d8dd05466c063fc52ff1ddbb262dc603a12bfa992ea38079ac39"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "browser": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser.command.json",
+        "bytes": 198673,
+        "sha256": "33181b4e26b5f20a56b9b51b6ba0765baabc2dd538a9989514c385b8321b5cf4"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser.log",
+        "bytes": 5746,
+        "sha256": "f80e3ea095f6f4f201fb135838cc77a11eb1e0e27aad9b3add93175ed333aab2"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "build-site": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\build-site.command.json",
+        "bytes": 194497,
+        "sha256": "53504e906f30ac4600608fedfb711587bee0f3c8456cd3d5087243db4377cd28"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\build-site.log",
+        "bytes": 133,
+        "sha256": "7e3e94d14c4cbf44d3f394bae8a059dff69dadd818ddb00458998f16fc0d4042"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\build.command.json",
+        "bytes": 196052,
+        "sha256": "04454135c5c4a1db281b4f4b1f5d949491b7014165372f4d692234c1db7e4381"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\build.log",
+        "bytes": 1859,
+        "sha256": "4dca8628e2c7a302b619621cde094203b2459c811b18fe2684f056e3fd305208"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "camera-build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\camera-build.command.json",
+        "bytes": 194535,
+        "sha256": "386de22cbdaef8f76c0b52855cb1d3d81792b18bb3287cfea35a1ee7264759a8"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\camera-build.log",
+        "bytes": 569,
+        "sha256": "9059fea4c988dbe03231699b2cf8b930e04ca0c48274f3c007b4b675d774c778"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "candidate-camera": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\candidate-camera.command.json",
+        "bytes": 196900,
+        "sha256": "b0ac3b2106152108ad445a70c9e75c434dfcd44dc5ca9c5aac72526129e76f98"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\candidate-camera.log",
+        "bytes": 115316,
+        "sha256": "eef10d0736b70d90722997692108c6e754d7f8ed6114e5d4251636009774b5a6"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "clippy-vision": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\clippy-vision.command.json",
+        "bytes": 195357,
+        "sha256": "bdebdb15f6d04a1437bfba7a54aae393a8b91dc1d751ae608e68b11489ed70e7"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\clippy-vision.log",
+        "bytes": 2607,
+        "sha256": "7bb2028f37630929efac5c9cbc077315e47bdfdf00294d75be74c6c3363976bc"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "clippy-web": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\clippy-web.command.json",
+        "bytes": 194596,
+        "sha256": "a24d942687c716d09a0ce6ab844133b302c3747478531187990790c5a4c194be"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\clippy-web.log",
+        "bytes": 1450,
+        "sha256": "f6e2c9d759cef3e7033c32c761434706d8ae789dc7169f1ec00e9c7b4b8a8a40"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "fmt": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\fmt.command.json",
+        "bytes": 194394,
+        "sha256": "d92c8df1497ac72187e8b4bd9dcca7a92fb42f6154af849d8bb6583294b55dc4"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\fmt.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "native": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\native.command.json",
+        "bytes": 196591,
+        "sha256": "240a436c6cee523ad4579a9be1e5061e44c25edf6368dbbfc0c4b8a9025a06c9"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\native.log",
+        "bytes": 7910,
+        "sha256": "b2b97d94ce4fd70955e199536a635d3fbf28e8d22ca89d926a5bdb7adc4f5da3"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "parent-camera": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\parent-camera.command.json",
+        "bytes": 196923,
+        "sha256": "9802643d41c09c042f980a632896e10b0fabb48d4b8b9600d8a135d7a6d85d6d"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\parent-camera.log",
+        "bytes": 115312,
+        "sha256": "6b5626babaaaa0615b8fd4b1293467bb021581d08b04f30ab375027cfdf2db17"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "parity": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\parity.command.json",
+        "bytes": 195103,
+        "sha256": "c433d67d8e792fdb398cfc7bb2096f4ec8eacaa5a8e0e889d90f7303328af65f"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\parity.log",
+        "bytes": 59,
+        "sha256": "2d8b0352f4d8c13a1a0dc3b0a33f52dd7378fcfd5179dcbc291c9171436380cf"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\unit.command.json",
+        "bytes": 194218,
+        "sha256": "149ae0f21df687ce6f4b322048515d99b5682d292a4cb2a6e4fcd7e5b7847019"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\unit.log",
+        "bytes": 7330,
+        "sha256": "00cabe3ec516f0613e421862861d72706ca801cf7619d0de21b3c946b2c7c1a1"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "wasm": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\wasm.command.json",
+        "bytes": 197134,
+        "sha256": "9b979f4e17c35c936ce0855e5aa06b251bf06eefa567807bbebbc0ef1b35ed8a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\wasm.log",
+        "bytes": 2249,
+        "sha256": "4fed338dd044739d1444dfd741e3108a7179d6871494b5875e0d87e136f2a372"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    },
+    "web": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\web.command.json",
+        "bytes": 195827,
+        "sha256": "69fb43117b1a84d69b4a3150532fd58565c8b1e0b1b15954d5b4081c433818fc"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\web.log",
+        "bytes": 3448,
+        "sha256": "d354e2d1af4d8b955985843ac941940a4592102e1603318d636773d0b868bb1d"
+      },
+      "source_head": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+      "child_exit_status": 0
+    }
+  },
+  "owned_commands": 19,
+  "successful_guarded_commands": 19,
+  "all_commands_terminal": true,
+  "retained_prelaunch_failure": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\lk-pyramid-reuse-launch-failure.json",
+    "bytes": 566,
+    "sha256": "a8fee5385bbb7d8217f6808843fe79669bacc64ed792adc797c188593300d7bd"
+  },
+  "baseline_vision_tests": 90,
+  "vision_tests": 90,
+  "web_tests": 24,
+  "base_tests": 0,
+  "new_parent_characterization_tests": 7,
+  "unit_tests": 92,
+  "asset_controls": 6,
+  "browser_controls": 86,
+  "wasm_report_comparisons": 252,
+  "wasm_rejection_comparisons": 84,
+  "wasm_cases": 42,
+  "wasm_parity_report": {
+    "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\parity-artifacts\\report.json",
+    "bytes": 9299,
+    "sha256": "3c296a4293d02c71c1011122b608ee3d776de6fa9245dad82f0e24272fd39dc1"
+  },
+  "browser_report": {
+    "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\report.json",
+    "bytes": 12535,
+    "sha256": "b1d06c573c9084b398ae2e744342934f82368de20078e9ba515e60d46c4b0503"
+  },
+  "screenshots": [
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-idle.png",
+      "bytes": 218678,
+      "sha256": "95637b49b81d23999c2b29f148f317a79a4c021b31648a9f1e0617df49aeb38c"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-tracking.png",
+      "bytes": 283371,
+      "sha256": "e9bc9dec91c2761332014e3c02dd1b6ce759fc511ea388cb81310605f6476c06"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-ai.png",
+      "bytes": 284355,
+      "sha256": "91562590b7c08e7f1c4ecef9ab5d9eb4cd08d3173af00ea9b3aba9bcf8e71b8b"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\desktop-idle.png",
+      "bytes": 437103,
+      "sha256": "bb4e7619a7b023d0f18c9324a7d3db7d42ae7e51274401ddc37d4bd9a99b9ecb"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-portrait-camera-256.png",
+      "bytes": 186752,
+      "sha256": "fc1dc82a497f908b545ce574a5ef74824f49ad0df2ba97cc53a8792b5e7dc40b"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-light-sample.png",
+      "bytes": 272832,
+      "sha256": "284320d623d395c89c5a3f662d2a14d754c6ba36cb6d0f2382f8eefdd4bf3afb"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-portrait-camera-192.png",
+      "bytes": 187771,
+      "sha256": "808117113d7a962ff90032085ad1329320de18e83e7b6bb6ef848daa39940bc6"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-capture-rate.png",
+      "bytes": 263319,
+      "sha256": "b515d0b4fe97d6f22e35a51639700c0b6f97adc66eb3df84a04e0438ec8ebfd9"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-source-recovery.png",
+      "bytes": 272904,
+      "sha256": "24339d4b1a4d715037802c9ee191581f036fb7574bf4dfed89c0af7eca6367d0"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-progress-timeout.png",
+      "bytes": 223512,
+      "sha256": "407f9fb64a39dead84be64b1b9a775af2abb7673109358c3f38c00e5de3cb0d2"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-progress-restart.png",
+      "bytes": 174315,
+      "sha256": "1aca03a4f1ed4a0c774a19f37aa823da20d139aaf41fb78441380ac69fa9742c"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-result-timeout.png",
+      "bytes": 223214,
+      "sha256": "981db1fb413285c2533c220e7085bebff51c52f0c22087672feb191ea07027ff"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-result-restart.png",
+      "bytes": 175451,
+      "sha256": "3d176331ce6a412d078db2eb849f86f42a7fb13d9bc2b951ea983065781f54cc"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-capture-timeout.png",
+      "bytes": 223848,
+      "sha256": "5273760ba0ae3cba6823fd84cdb5bf0fb91b79a7809b95e5aee417482670cf14"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\browser-artifacts\\mobile-capture-restart.png",
+      "bytes": 175332,
+      "sha256": "738b3f6021db8ff275e6b795f28d9652b485837e643027972c283c78dd8249e2"
+    }
+  ],
+  "site_build": {
+    "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\site\\camera\\build.json",
+    "bytes": 4192,
+    "sha256": "cf968095b865b1ba889d1af0beaf67c3e3b22296a8cbbbb38f4e1d7ed70224ad"
+  },
+  "baseline_camera_executable": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\candidate-camera-mask-support.exe",
+    "bytes": 302080,
+    "sha256": "9953ff64c0b3d35b978a6e7e2b567b7356869c9b608b6c2752a16c062cd74a08"
+  },
+  "baseline_camera_source": "749008ca2148ede42579ea53aa10bbf7cf9c3cb3",
+  "candidate_camera_executable": {
+    "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\camera_mask_support.exe",
+    "bytes": 302080,
+    "sha256": "49101ecd1d6bb452f011f41f398fcbf8b051725b859703bfe035bdefafa134e7"
+  },
+  "native_camera_report_comparisons": 126,
+  "benchmark_executable": {
+    "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\lk_pyramid_reuse.exe",
+    "bytes": 246272,
+    "sha256": "3c7cb2f2f707469b9612358f640fbbaa4568199cfba06daf9f7b88e4867f8912"
+  },
+  "baseline_raw_wasm": {
+    "path": "E:\\SpatialRustBuild\\camera-mask-support-v1\\cargo\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1029275,
+    "sha256": "a397a70417941766400276c3580f1cd53808ed76690cdecb9ad73b3e6068d74a"
+  },
+  "candidate_raw_wasm": {
+    "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\cargo\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1028728,
+    "sha256": "e4b2be1a5c833e4ad30b3e31f6fba8cd4124b89d7dda739726177247a020800a"
+  },
+  "unchanged_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118086,
+    "sha256": "e9d0a244c69b4ea193c7ebcd61e404de8071a53b71ff269c2c8dbe0f506484cc"
+  },
+  "benchmark_rows": [
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 0,
+      "samples": [
+        {
+          "elapsed_ns": 638200,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 321600,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 330200,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 659300,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 677000,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 332100,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 328600,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 672800,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 696400,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 344800,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 350000,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 706700,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 717800,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 341200,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 326100,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 676300,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 676650.0,
+      "candidate_median_ns": 331150.0,
+      "candidate_over_baseline": 0.4893962905490283
+    },
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 8,
+      "samples": [
+        {
+          "elapsed_ns": 10581700,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 10097300,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 10222400,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 10599800,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 10791100,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 10200200,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 10114000,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 10616900,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 10527700,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 10100900,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 9877100,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 8161400,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 7994400,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 7448200,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 7631700,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 8029800,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 10554700.0,
+      "candidate_median_ns": 10099100.0,
+      "candidate_over_baseline": 0.9568343960510484
+    },
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 80,
+      "samples": [
+        {
+          "elapsed_ns": 78732800,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 86507500,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 95414500,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 75516800,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 72675000,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 75296700,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 72375000,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 79123500,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 75109500,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 74432100,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 78068300,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 86487000,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 83073500,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 73713300,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 86798700,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 73904800,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 77124800.0,
+      "candidate_median_ns": 76682500.0,
+      "candidate_over_baseline": 0.9942651390992262
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 0,
+      "samples": [
+        {
+          "elapsed_ns": 978900,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 495600,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 638800,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 1027300,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 1014700,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 480200,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 487100,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 997500,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 993700,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 500700,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 513100,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 989200,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 1019400,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 502300,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 509900,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 1019600,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 1006100.0,
+      "candidate_median_ns": 501500.0,
+      "candidate_over_baseline": 0.49845939767418745
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 8,
+      "samples": [
+        {
+          "elapsed_ns": 7815500,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 7599700,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 7523100,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 8246400,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 8034100,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 7948000,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 7625400,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 8208700,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 8146100,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 8008700,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 7607300,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 8491900,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 8186600,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 8666900,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 8277000,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 8460700,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 8197650.0,
+      "candidate_median_ns": 7786700.0,
+      "candidate_over_baseline": 0.9498697797539539
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 80,
+      "samples": [
+        {
+          "elapsed_ns": 112353500,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 93773600,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 126412500,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 100264600,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 77793500,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 92991000,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 98839200,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 85113000,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 108382400,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 85393800,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 126928000,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 104087100,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 83118700,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 101145400,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 81535600,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 86694100,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 93479350.0,
+      "candidate_median_ns": 96306400.0,
+      "candidate_over_baseline": 1.030242508104731
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 0,
+      "samples": [
+        {
+          "elapsed_ns": 1608000,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 972400,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 686000,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 1455800,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 1489300,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 700200,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 655500,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 1467200,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 1426600,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 751200,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 780400,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 1524100,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 1515000,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 681200,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 859200,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 1454600,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 1478250.0,
+      "candidate_median_ns": 725700.0,
+      "candidate_over_baseline": 0.4909183155758498
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 8,
+      "samples": [
+        {
+          "elapsed_ns": 10280600,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 8479200,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 8980300,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 10643000,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 12417600,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 10773500,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 12089400,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 13496400,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 9719300,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 11640200,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 10682700,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 11919500,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 16251900,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 11657800,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 14200500,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 12413500,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 12166500.0,
+      "candidate_median_ns": 11206850.0,
+      "candidate_over_baseline": 0.9211235770353019
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 80,
+      "samples": [
+        {
+          "elapsed_ns": 102622400,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 115520100,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 111898100,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 126214500,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 112179700,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 116153800,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 165211200,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 133010700,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 111950600,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 126728300,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 118140500,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 110556600,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 96582000,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 133268200,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 96108200,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 80576200,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 111253600.0,
+      "candidate_median_ns": 117147150.0,
+      "candidate_over_baseline": 1.0529740161217256
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 0,
+      "samples": [
+        {
+          "elapsed_ns": 684800,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 327800,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 331800,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 726000,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 643600,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 328800,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 328100,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 678500,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 659100,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 310900,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 323800,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 651000,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 655300,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 310700,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 303700,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 621000,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 657200.0,
+      "candidate_median_ns": 325800.0,
+      "candidate_over_baseline": 0.4957395009129641
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 8,
+      "samples": [
+        {
+          "elapsed_ns": 8420600,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 8842500,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 10221700,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 10369700,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 9190400,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 8862400,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 9815900,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 9751600,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 11579200,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 17906700,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 12791500,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 10850200,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 9523900,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 11076500,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 9692800,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 10788100,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 10060650.0,
+      "candidate_median_ns": 10018800.0,
+      "candidate_over_baseline": 0.995840229011048
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 80,
+      "samples": [
+        {
+          "elapsed_ns": 89387700,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 88178300,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 91829800,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 70754200,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 72565300,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 73565500,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 75943400,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 72867800,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 72949200,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 79294500,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 76763700,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 75044100,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 73346000,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 73297100,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 74732100,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 96821400,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 73147600.0,
+      "candidate_median_ns": 76353550.0,
+      "candidate_over_baseline": 1.0438285056515866
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 0,
+      "samples": [
+        {
+          "elapsed_ns": 8164100,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 1088300,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 842200,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 2029000,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 1166700,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 580100,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 587100,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 1182900,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 1119600,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 538400,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 562500,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 1171900,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 1184500,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 603200,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 612700,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 1264500,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 1183700.0,
+      "candidate_median_ns": 595150.0,
+      "candidate_over_baseline": 0.5027878685477739
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 8,
+      "samples": [
+        {
+          "elapsed_ns": 9646300,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 8541400,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 9364300,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 8704900,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 9261700,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 8088800,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 8144000,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 8846300,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 8769800,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 8847300,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 7997100,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 8711400,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 9507800,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 10382200,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 10662500,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 11286300,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 9054000.0,
+      "candidate_median_ns": 8694350.0,
+      "candidate_over_baseline": 0.9602772255356748
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 80,
+      "samples": [
+        {
+          "elapsed_ns": 138610800,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 137715800,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 203786600,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 153757100,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 128236400,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 99177200,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 179436200,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 119064000,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 102972900,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 93643900,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 81740400,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 109811000,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 121516400,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 89643000,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 140740100,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 146807100,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 124876400.0,
+      "candidate_median_ns": 118446500.0,
+      "candidate_over_baseline": 0.9485098865758462
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 0,
+      "samples": [
+        {
+          "elapsed_ns": 1539000,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 801900,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 796800,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 1745400,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 2503500,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 898500,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 794400,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 1732100,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 1666400,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 902500,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 896300,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 1752200,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 1906700,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 831900,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 941600,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 2055600,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 1748800.0,
+      "candidate_median_ns": 864100.0,
+      "candidate_over_baseline": 0.4941102470265325
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 8,
+      "samples": [
+        {
+          "elapsed_ns": 24859900,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 15550700,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 14755500,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 14201200,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 14048300,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 10894700,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 10199200,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 15309000,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 15747300,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 12322000,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 9215400,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 12085600,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 13234900,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 15791300,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 20349400,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 11457200,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 14124750.0,
+      "candidate_median_ns": 13538750.0,
+      "candidate_over_baseline": 0.9585125400449566
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 80,
+      "samples": [
+        {
+          "elapsed_ns": 144987400,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 121483800,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 88313100,
+          "flavor": "candidate",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 104322500,
+          "flavor": "baseline",
+          "round": 0
+        },
+        {
+          "elapsed_ns": 102066500,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 109181600,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 89210000,
+          "flavor": "candidate",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 109167200,
+          "flavor": "baseline",
+          "round": 1
+        },
+        {
+          "elapsed_ns": 87621000,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 80457700,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 95921100,
+          "flavor": "candidate",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 113418400,
+          "flavor": "baseline",
+          "round": 2
+        },
+        {
+          "elapsed_ns": 93499600,
+          "flavor": "baseline",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 160367500,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 98607600,
+          "flavor": "candidate",
+          "round": 3
+        },
+        {
+          "elapsed_ns": 155858900,
+          "flavor": "baseline",
+          "round": 3
+        }
+      ],
+      "baseline_median_ns": 106744850.0,
+      "candidate_median_ns": 97264350.0,
+      "candidate_over_baseline": 0.9111854108184142
+    }
+  ],
+  "timing_summary": {
+    "paired_rows": 18,
+    "lower_candidate_median_rows": 15,
+    "higher_candidate_median_rows": 3,
+    "minimum_ratio": 0.4893962905490283,
+    "maximum_ratio": 1.0529740161217256
+  },
+  "timing_scope": "Frozen original two-public-call flow and candidate robust API in the same process; compare complete coordinates/status/error bits outside timing. Keep all samples and adverse rows. CPU affinity/frequency, other host load and allocation effects are uncontrolled. No physical-phone, GPU or end-to-end speed claim.",
+  "pyramid_constructions_before": 4,
+  "pyramid_constructions_after": 2,
+  "peak_pyramids": 2,
+  "logical_pair_payload_bytes_at_320_square_three_levels": 1075200,
+  "storage": {
+    "owned_metadata_bytes": 866316622,
+    "cache_bytes": 13386648799,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 866316622,
+    "free_bytes": {
+      "C": 69269852160,
+      "E": 874743611392
+    }
+  },
+  "vendor_hardlink_bytes": 41087603,
+  "non_vendor_owned_bytes": 825229019,
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 2437,
+  "forbidden_adapter_matches": 0,
+  "sdk_model_acquisition_bytes": 0,
+  "sensor_downloads": 0,
+  "real_user_camera_reads": 0,
+  "physical_phone_tested": false,
+  "ios_safari_tested": false,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head CI, merge and matching Pages/public browser checks follow this source-bound receipt."
+}
