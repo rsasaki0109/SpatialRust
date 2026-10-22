@@ -19,7 +19,9 @@ browser never requests a microphone, records a clip or persists a frame.
 Only the optional `spatialrust-web/camera-tracking` feature adds image and vision
 odometry dependencies. Core remains unchanged; [LK preparation reuse](LK_PYRAMID_REUSE.md)
 shares the two CPU pyramids across the forward/backward passes while preserving
-tracking math, validation and public APIs. The
+tracking math, validation and public APIs. [Template reuse](LK_TEMPLATE_REUSE.md) also
+retains previous-image samples within each LK point/level, preserving the
+per-iteration bounds and numerical order. The
 native `CameraTracker` accepts 64–320 pixels per axis and at most 80 tracks. Its
 copy-named WASM method validates lengths before copying JavaScript input. Invalid
 sizes, mask labels and nonfinite or non-increasing times fail before retained

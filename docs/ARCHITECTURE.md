@@ -82,6 +82,13 @@ per-point numerical operations and public APIs remain; no cross-call cache or
 implicit device copy is added. Frozen native and actual WASM reports establish
 parity; CPU timing retains all conditions with physical qualification separate.
 
+[Exact LK template reuse](LK_TEMPLATE_REUSE.md) lazily retains previous-image
+center/gradient f64 values for small patches within one point/level call. Both
+frame bounds remain checked every iteration, preserving the admitted sample set
+and accumulation/update order. The optional array is compile-time bounded to
+4KiB with no new heap allocation or cross-call cache. Complete frozen-parent
+comparisons and actual WASM reports verify parity; all timing rows are retained.
+
 [Marching-tetrahedra topology](MESH_SURFACE_TOPOLOGY.md) orders quadrilateral
 cut vertices around their boundary and orients all changed cases toward
 increasing field values for the existing positive-oriented cube tetrahedra.

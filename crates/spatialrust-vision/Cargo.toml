@@ -113,3 +113,7 @@ required-features = ["photography"]
 [[example]]
 name = "parallel_contrast"
 required-features = ["imgproc-analysis"]
+
+[[example]]
+name = "lk_template_reuse"
+required-features = ["odometry"]

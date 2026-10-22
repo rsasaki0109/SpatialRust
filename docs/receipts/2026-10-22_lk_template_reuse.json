@@ -1,0 +1,4247 @@
+{
+  "schema": "spatialrust.lk-template-reuse-receipt.v1",
+  "slice": "146AV",
+  "date": "2026-10-22",
+  "recorded_at_utc": "2026-10-22T02:02:39.810316+00:00",
+  "parent_merge": "b3ac5274490a03981f97fa550079727a96ed0eff",
+  "baseline_source_commit": "88132e964df23749231983465003d53d5837b860",
+  "tested_source_commit": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+  "plan": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\benchmarks\\lk-template-reuse-plan.json",
+    "bytes": 4256,
+    "sha256": "e6e92c7b742ec4d80ebe61f78b31864316e4f64239beaef0fd240ea572eb8f45"
+  },
+  "preflight": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\lk-template-reuse-preflight.json",
+    "bytes": 1379418,
+    "sha256": "c689df67b3dd5252064a62b1af6cfef0d7a26d553e5e7e206a7206be9313a651"
+  },
+  "audit_script": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\target\\automation\\audit-lk-template-reuse.py",
+    "bytes": 13580,
+    "sha256": "2f464dfd4587f22500577da661fc48b9d17bde79d825a65a2ab4e65fb10a61f3"
+  },
+  "commands": {
+    "assets": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\assets.command.json",
+        "bytes": 194790,
+        "sha256": "965ec4fbf70fc540c90299b9f0024aba422cb6237648e71046c3832d6ddf1034"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\assets.log",
+        "bytes": 109,
+        "sha256": "59753171660350c6735ee4b12925f50e7f8606c102caf33752e5551608bad819"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "base": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\base.command.json",
+        "bytes": 196578,
+        "sha256": "01e14513b19697f9ee036a03b4351b50936f6187b8f44e15a8821aefb7e6dd04"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\base.log",
+        "bytes": 537,
+        "sha256": "9c7afe8d95381b2eac1dd3a889c3e716e093a3abe81cfe6539d71567b7de6fd7"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "baseline-vision": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\baseline-vision.command.json",
+        "bytes": 200700,
+        "sha256": "23d65448969c7036660cbab553865a7d0936dbdf7814574dc240aa2fc46a67bb"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\baseline-vision.log",
+        "bytes": 11253,
+        "sha256": "3ed7577b6924a822e7fbeaf6a3458519bc0abb79a53dba50a79750e9ed09e515"
+      },
+      "source_head": "88132e964df23749231983465003d53d5837b860",
+      "child_exit_status": 0
+    },
+    "benchmark-1": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\benchmark-1.command.json",
+        "bytes": 195134,
+        "sha256": "75e3a93e2152f96a26e9f496e52c17860e21663a318e127dcd54ce63d966b028"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\benchmark-1.log",
+        "bytes": 50610,
+        "sha256": "1b6dd2891c672d0685a6945539b735b8829f41869eed5f7338f89dbe42f24246"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "benchmark-2": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\benchmark-2.command.json",
+        "bytes": 195134,
+        "sha256": "d7d4074f717159c78ddf3e770699ac301b613c67749fb6d14e188805f628356b"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\benchmark-2.log",
+        "bytes": 50616,
+        "sha256": "69f4b0367593aeeabdaef364b430d8b2a6e4fa0f2ff19f0809b03f64ab9ad683"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "browser": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser.command.json",
+        "bytes": 199466,
+        "sha256": "1cff95919717d2af701409ed1c724e9017039d87a694c971f433e145629914c1"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser.log",
+        "bytes": 5761,
+        "sha256": "7820f27e856986e6f559f7ed64d78d710ff1a0cf37961fba7bd88e23c837c36e"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "build-site": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\build-site.command.json",
+        "bytes": 195034,
+        "sha256": "cb6209565f58c443851838171a3f5713cabd2958920ca8cb581a658f7f9200fe"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\build-site.log",
+        "bytes": 134,
+        "sha256": "9ae5412b5adf961d259e08f4864a69a99acdf9a65fa6d6b44b8f754243d42171"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\build.command.json",
+        "bytes": 195567,
+        "sha256": "d76b54b32848caf115e1890cbad573cefcba32a735473fc8cecc2b3a07f92b40"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\build.log",
+        "bytes": 167,
+        "sha256": "ed1496eb615c56fd566a2da477f559e535fbbdad288f76718d68c06555c282ac"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "camera-build": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\camera-build.command.json",
+        "bytes": 197367,
+        "sha256": "8e8d8a857ea2eae161d0be5c503569eb0703f8bcd7e8ca8c00c7434923c1e076"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\camera-build.log",
+        "bytes": 1861,
+        "sha256": "b9dde2fb4ee26fa305139d434a7903324eefe9c7b4c9db5804b8d3ca1f6495eb"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "candidate-camera": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\candidate-camera.command.json",
+        "bytes": 196163,
+        "sha256": "b36a15c71ba076d5a87495e0d6025a91dba20b94482a92f126485a2d5d0d30b7"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\candidate-camera.log",
+        "bytes": 115314,
+        "sha256": "1f4647ac9ca442f2aae1249d8c9a229c3b37641a799669f108502d6966573e28"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "clippy-vision": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\clippy-vision.command.json",
+        "bytes": 195912,
+        "sha256": "79940356f39390449856970a11db1fbee0ae5eede2cef79bb25f7ea1e12e2a22"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\clippy-vision.log",
+        "bytes": 2607,
+        "sha256": "6f7f67fb4384d8ea30458d7c5887ac992778c333ccde66f524691530c00e6737"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "clippy-web": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\clippy-web.command.json",
+        "bytes": 195387,
+        "sha256": "5a7427a877fe82c02adb25b705807daaa3847e6b14487e7276bcbbf65875792f"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\clippy-web.log",
+        "bytes": 1450,
+        "sha256": "50e38a9d9a2b4beb8894be48bdf8417dbd7346f2b5cac9c1ff5321a5c6a1f0d9"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "fmt": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\fmt.command.json",
+        "bytes": 194930,
+        "sha256": "2cba17bda78e16d9e7b7ef3ed6dfd755fe217bd23a3d81ea467ac9f9f0e6aed1"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\fmt.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "native": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\native.command.json",
+        "bytes": 197127,
+        "sha256": "cda22e71a8d8aac6fe0016589cfc20da87421fe56e46224b62e1472bfe56fd9f"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\native.log",
+        "bytes": 8531,
+        "sha256": "9708345820645189ea8e4614967a2fc4af063902fd4ff759f331863798855d48"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "parent-camera": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\parent-camera.command.json",
+        "bytes": 198198,
+        "sha256": "cd20f1cde6eee655e8522855152fd2b7c4c00791c9ae3c430501ebf45458d4f4"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\parent-camera.log",
+        "bytes": 115347,
+        "sha256": "2ed8bb46e2d390bdf9a475f722f77b9dfdc4273136a1ee55b57db16d17158a86"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "parity": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\parity.command.json",
+        "bytes": 195641,
+        "sha256": "95434d82f3b964e685faeeb87eb48cfb39a3d1f15e40507e2c3dc031e2db30ba"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\parity.log",
+        "bytes": 59,
+        "sha256": "2d8b0352f4d8c13a1a0dc3b0a33f52dd7378fcfd5179dcbc291c9171436380cf"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "unit": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\unit.command.json",
+        "bytes": 194754,
+        "sha256": "fa50f0a20af5c200551fb7c4fc7d55f27662dc43908944600cd81626a015f1b5"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\unit.log",
+        "bytes": 7336,
+        "sha256": "852496a3d62778fb46095dd7f4055b4a9049c3689a16a5dcef4853d06edb4b01"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "wasm": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\wasm.command.json",
+        "bytes": 197925,
+        "sha256": "c008b16ad34c98cf7fdb9563f3863f7afcbd7f763f1f5588217f2250918249a8"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\wasm.log",
+        "bytes": 2249,
+        "sha256": "749c2f67af7d7459c00b09b7094c19a5001a37da95ce4e7842ee20b34dcfb74a"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    },
+    "web": {
+      "command": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\web.command.json",
+        "bytes": 196873,
+        "sha256": "195bd252f65fa48a19a0a3bf085e42d232c97bb8ce9d2926012978558a8ca85a"
+      },
+      "log": {
+        "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\web.log",
+        "bytes": 3449,
+        "sha256": "f1f85aefc451a21de8cd59a4b2fce6934ef286b2e7179b4b7b34505d2872e3ab"
+      },
+      "source_head": "ea9dace4d7d237419afba23eee84fdd604fb7250",
+      "child_exit_status": 0
+    }
+  },
+  "owned_commands": 19,
+  "successful_guarded_commands": 19,
+  "all_commands_terminal": true,
+  "baseline_vision_tests": 96,
+  "vision_tests": 96,
+  "web_tests": 24,
+  "base_tests": 0,
+  "new_parent_characterization_tests": 6,
+  "preserved_pair_characterization_tests": 7,
+  "unit_tests": 92,
+  "asset_controls": 6,
+  "browser_controls": 86,
+  "wasm_report_comparisons": 252,
+  "wasm_rejection_comparisons": 84,
+  "wasm_cases": 42,
+  "wasm_parity_report": {
+    "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\parity-artifacts\\report.json",
+    "bytes": 9299,
+    "sha256": "9f5f0061aab135c72226ff5480a4b937ff60393165b92ad29683d5d9f7ad4019"
+  },
+  "browser_report": {
+    "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\report.json",
+    "bytes": 12453,
+    "sha256": "f9c48214760beb2a258589dcd8ac5cccde6c8ce27f69bb928b7115c435995c66"
+  },
+  "screenshots": [
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-idle.png",
+      "bytes": 218678,
+      "sha256": "95637b49b81d23999c2b29f148f317a79a4c021b31648a9f1e0617df49aeb38c"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-tracking.png",
+      "bytes": 283483,
+      "sha256": "3434898cfd85b2808eb6e49c94bf24e0f143e3eb6b5a6a6b7c9df66faac69ec6"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-ai.png",
+      "bytes": 284556,
+      "sha256": "a63796b122c541e93d07ec374d727419c279d711f2c587aa4862d1ffa896bcc6"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\desktop-idle.png",
+      "bytes": 437103,
+      "sha256": "bb4e7619a7b023d0f18c9324a7d3db7d42ae7e51274401ddc37d4bd9a99b9ecb"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-portrait-camera-256.png",
+      "bytes": 186907,
+      "sha256": "a8be6785ff3f60839561366ed02bb89c6656265e0be46fac26c8e04d78923591"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-light-sample.png",
+      "bytes": 272877,
+      "sha256": "458614fe13cb19637463da9f4b1dec663215c23952ca16f8284757a53393c6c8"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-portrait-camera-192.png",
+      "bytes": 187743,
+      "sha256": "91e575d04a64fab7269e662b42cbbae93e5df13d98d47e7a3c98b256bfbb9bef"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-capture-rate.png",
+      "bytes": 263380,
+      "sha256": "b0797beb73dc2802c46fcf25ac17981e25bb6bf0555558da31c9b501eaf6a494"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-source-recovery.png",
+      "bytes": 272910,
+      "sha256": "8cdf866335b3abfa63b81449cf17adf6ee4438f653b75e98eb320f156130e979"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-progress-timeout.png",
+      "bytes": 223512,
+      "sha256": "407f9fb64a39dead84be64b1b9a775af2abb7673109358c3f38c00e5de3cb0d2"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-progress-restart.png",
+      "bytes": 174315,
+      "sha256": "1aca03a4f1ed4a0c774a19f37aa823da20d139aaf41fb78441380ac69fa9742c"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-result-timeout.png",
+      "bytes": 223214,
+      "sha256": "981db1fb413285c2533c220e7085bebff51c52f0c22087672feb191ea07027ff"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-result-restart.png",
+      "bytes": 175247,
+      "sha256": "2c7bd925e82c7aa768f27c76e8dc1c8a34d2ff416e5c3d1147b8101360eacaad"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-capture-timeout.png",
+      "bytes": 223848,
+      "sha256": "5273760ba0ae3cba6823fd84cdb5bf0fb91b79a7809b95e5aee417482670cf14"
+    },
+    {
+      "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\browser-artifacts\\mobile-capture-restart.png",
+      "bytes": 174843,
+      "sha256": "51bbbcadcd3f2942f34fc677578755dfaad5f91c231caccfa067b9f8154ab78f"
+    }
+  ],
+  "site_build": {
+    "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\site\\camera\\build.json",
+    "bytes": 4192,
+    "sha256": "16b9a9556a1a2d945f982e134246f0d0e9189bf8924dec5d72bb5d4813e2e6b5"
+  },
+  "baseline_camera_executable": {
+    "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\camera_mask_support.exe",
+    "bytes": 302080,
+    "sha256": "49101ecd1d6bb452f011f41f398fcbf8b051725b859703bfe035bdefafa134e7"
+  },
+  "baseline_camera_source": "8b0fa1c1d7a18567d9cc61316cf1e16011e9fd78",
+  "candidate_camera_executable": {
+    "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\camera_mask_support.exe",
+    "bytes": 303104,
+    "sha256": "fb71c9a6ba849f0d865425978b395b29de7dcff019d6fe7eabfcaf8f6cef23a7"
+  },
+  "native_camera_report_comparisons": 126,
+  "benchmark_executable": {
+    "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\lk_template_reuse.exe",
+    "bytes": 195584,
+    "sha256": "853b8904ba06157a38d7c5f971655e42a89d552458a7c05bdc1b06db94ff9a5b"
+  },
+  "baseline_raw_wasm": {
+    "path": "E:\\SpatialRustBuild\\lk-pyramid-reuse-v1\\cargo\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1028728,
+    "sha256": "e4b2be1a5c833e4ad30b3e31f6fba8cd4124b89d7dda739726177247a020800a"
+  },
+  "candidate_raw_wasm": {
+    "path": "E:\\SpatialRustBuild\\lk-template-reuse-v1\\cargo\\wasm32-unknown-unknown\\release\\spatialrust_web.wasm",
+    "bytes": 1029628,
+    "sha256": "245c92b8ac1a36bf5928b7b00fa9ddb28c5775096e1dc87a801b8c4cc9a987aa"
+  },
+  "unchanged_lock": {
+    "path": "C:\\Users\\rsasa\\Workspace\\SpatialRust\\Cargo.lock",
+    "bytes": 118086,
+    "sha256": "e9d0a244c69b4ea193c7ebcd61e404de8071a53b71ff269c2c8dbe0f506484cc"
+  },
+  "benchmark_rows": [
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 0,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 327300
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 385400
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 394400
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 337700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 336900
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 393800
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 389300
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 371900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 363800
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 387100
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 413600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 359000
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 368300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 395300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 392700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 366200
+        }
+      ],
+      "baseline_median_ns": 361400.0,
+      "candidate_median_ns": 393250.0,
+      "candidate_over_baseline": 1.0881294964028776
+    },
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 0,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 352600
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 404800
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 406700
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 358700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 375400
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 421600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 461100
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 368600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 367200
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 431800
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 408800
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 362400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 367800
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 408800
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 426900
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 381000
+        }
+      ],
+      "baseline_median_ns": 367500.0,
+      "candidate_median_ns": 415200.0,
+      "candidate_over_baseline": 1.129795918367347
+    },
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 8,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 956300
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1469600
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1061300
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 983900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 958300
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1026600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1071700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 985600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 979600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1040900
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1030800
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 962000
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 946800
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1025200
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1018300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 964500
+        }
+      ],
+      "baseline_median_ns": 963250.0,
+      "candidate_median_ns": 1035850.0,
+      "candidate_over_baseline": 1.0753698416818065
+    },
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 8,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 11402200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 7941200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 5997100
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 9739600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 9464200
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 2797200
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 2753600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 8810800
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 8464200
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 2831000
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 3710200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 8897800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 10704500
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 3021400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 2770600
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 10785400
+        }
+      ],
+      "baseline_median_ns": 9601900.0,
+      "candidate_median_ns": 2926200.0,
+      "candidate_over_baseline": 0.3047521844634916
+    },
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 80,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 5722200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 6804400
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 5929300
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 5522300
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 6369600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 5451900
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 6408300
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 7378800
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 5997400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 6784400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 6667300
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 8162100
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 7500300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 5477000
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 5378600
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 5049000
+        }
+      ],
+      "baseline_median_ns": 6183500.0,
+      "candidate_median_ns": 6168800.0,
+      "candidate_over_baseline": 0.9976227055874505
+    },
+    {
+      "survey": 1,
+      "width": 192,
+      "height": 144,
+      "points": 80,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 81541700
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 23669000
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 23695000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 81623700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 75386000
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 21852800
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 22235600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 73275300
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 72029500
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 21939500
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 24201400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 137015200
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 86232000
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 21289700
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 23438800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 86501500
+        }
+      ],
+      "baseline_median_ns": 81582700.0,
+      "candidate_median_ns": 22837200.0,
+      "candidate_over_baseline": 0.27992699432600293
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 0,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 521500
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 589300
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 609800
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 523400
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 530000
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 581100
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 610700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 508000
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 535200
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 808300
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 563800
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 509200
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 481100
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 554300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 572800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 496800
+        }
+      ],
+      "baseline_median_ns": 515350.0,
+      "candidate_median_ns": 585200.0,
+      "candidate_over_baseline": 1.135538954108858
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 0,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 522400
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 601300
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 612000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 551500
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 522400
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 579100
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 504100
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 436100
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 428300
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 546600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 624200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 580400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 565300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 642600
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 649000
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 565800
+        }
+      ],
+      "baseline_median_ns": 536950.0,
+      "candidate_median_ns": 606650.0,
+      "candidate_over_baseline": 1.1298072446224043
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 8,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 1078200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1071800
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1154300
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 1109700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 1109800
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1127000
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1094700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 1060100
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 1030300
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1045900
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1060100
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 1026000
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 1022400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1739900
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1116200
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 993900
+        }
+      ],
+      "baseline_median_ns": 1045200.0,
+      "candidate_median_ns": 1105450.0,
+      "candidate_over_baseline": 1.0576444699579028
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 8,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 7737100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 2751500
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 2710000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 7834200
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 7951700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 2684600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 2711700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 8060500
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 8009900
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 2725400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 2787500
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 7904700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 8537800
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 2678300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 2684400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 7951400
+        }
+      ],
+      "baseline_median_ns": 7951550.0,
+      "candidate_median_ns": 2710850.0,
+      "candidate_over_baseline": 0.3409209525186913
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 80,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 5103100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 5462800
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 7760000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 6014100
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 6937500
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 6009000
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 6126100
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 5630000
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 5693500
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 6681000
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 6590300
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 6468200
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 6455800
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 6882900
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 6887200
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 6453000
+        }
+      ],
+      "baseline_median_ns": 6233550.0,
+      "candidate_median_ns": 6635650.0,
+      "candidate_over_baseline": 1.064505779210883
+    },
+    {
+      "survey": 1,
+      "width": 256,
+      "height": 192,
+      "points": 80,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 118206200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 36191600
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 55870100
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 210774900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 186069100
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 58775200
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 45318300
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 231838600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 120041500
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 23031700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 29904400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 112307200
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 114730400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 26652600
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 36815000
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 147606500
+        }
+      ],
+      "baseline_median_ns": 133824000.0,
+      "candidate_median_ns": 36503300.0,
+      "candidate_over_baseline": 0.27277095289335246
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 0,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 857000
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1139100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1440000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 1325600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 1414700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1241700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 907300
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 799300
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 770300
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 865600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 589600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 481000
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 480600
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 598500
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 572400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 466800
+        }
+      ],
+      "baseline_median_ns": 784800.0,
+      "candidate_median_ns": 886450.0,
+      "candidate_over_baseline": 1.1295234454638123
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 0,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 720200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 687200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 559200
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 442500
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 437900
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 658600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 973700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 1161600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 1233400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1365500
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1353200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 1202600
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 1075800
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 969400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 828200
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 758700
+        }
+      ],
+      "baseline_median_ns": 917250.0,
+      "candidate_median_ns": 898800.0,
+      "candidate_over_baseline": 0.9798855273916599
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 8,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 2822600
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 2669200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 2560700
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 2273600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 2279600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 2457100
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 2710400
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 2456400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 2417600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 2634600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 2624000
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 2283900
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 1713000
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1308200
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1373300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 2250000
+        }
+      ],
+      "baseline_median_ns": 2281750.0,
+      "candidate_median_ns": 2592350.0,
+      "candidate_over_baseline": 1.1361235893502795
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 8,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 13490000
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 4950500
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 3603500
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 9540900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 10378900
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 4108600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 7047800
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 8282200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 21455900
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 3082400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 3212200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 34695700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 47811600
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 15605400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 8611900
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 23434300
+        }
+      ],
+      "baseline_median_ns": 17472950.0,
+      "candidate_median_ns": 4529550.0,
+      "candidate_over_baseline": 0.25923212737402673
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 80,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 13166900
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 15581000
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 15905000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 6673700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 7234100
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 12786700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 11756000
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 12477400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 6544900
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 7470700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 7988600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 6484400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 10440700
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 7578900
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 13495000
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 8899800
+        }
+      ],
+      "baseline_median_ns": 8066950.0,
+      "candidate_median_ns": 12271350.0,
+      "candidate_over_baseline": 1.5211883053694395
+    },
+    {
+      "survey": 1,
+      "width": 320,
+      "height": 240,
+      "points": 80,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 167703300
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 36126000
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 34276900
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 133631700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 158573600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 134834100
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 53024400
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 144846800
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 175897700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 46598200
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 48455900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 129536300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 92931500
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 31934900
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 38290800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 136443700
+        }
+      ],
+      "baseline_median_ns": 140645250.0,
+      "candidate_median_ns": 42444500.0,
+      "candidate_over_baseline": 0.3017840986453506
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 0,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 267400
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 299100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 336800
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 292900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 292000
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 350600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 335100
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 298900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 321600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 354800
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 353100
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 314100
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 314000
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 348700
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 347700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 317800
+        }
+      ],
+      "baseline_median_ns": 306450.0,
+      "candidate_median_ns": 348200.0,
+      "candidate_over_baseline": 1.1362375591450482
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 0,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 338400
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 372700
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 376000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 332600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 327200
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 404800
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 382300
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 343000
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 350700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 394000
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 374900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 334300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 333300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 387000
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 390400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 353100
+        }
+      ],
+      "baseline_median_ns": 336350.0,
+      "candidate_median_ns": 384650.0,
+      "candidate_over_baseline": 1.1436004162330906
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 8,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 898500
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 991000
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 979900
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 928400
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 935900
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1011300
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1005300
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 955000
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 919400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1007100
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1033200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 904400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 911700
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1366400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1016500
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 948800
+        }
+      ],
+      "baseline_median_ns": 923900.0,
+      "candidate_median_ns": 1009200.0,
+      "candidate_over_baseline": 1.0923260093083667
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 8,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 9139800
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 3056900
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 3052600
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 9825200
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 9838700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 3051700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 3094000
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 9812000
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 9989800
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 3070500
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 3055100
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 9678800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 9612900
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 3082600
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 3185700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 10138700
+        }
+      ],
+      "baseline_median_ns": 9818600.0,
+      "candidate_median_ns": 3063700.0,
+      "candidate_over_baseline": 0.3120302283421262
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 80,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 4511100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 4795000
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 7946900
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 4604200
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 8084800
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 5078900
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 9519200
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 5177700
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 10145800
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 7395000
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 26984600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 27063100
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 23590300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 16159500
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 11744500
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 5845200
+        }
+      ],
+      "baseline_median_ns": 6965000.0,
+      "candidate_median_ns": 8733050.0,
+      "candidate_over_baseline": 1.2538478104809763
+    },
+    {
+      "survey": 2,
+      "width": 192,
+      "height": 144,
+      "points": 80,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 71348700
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 20609900
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 24386900
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 81405900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 67856500
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 20107100
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 21025900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 127144400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 98140700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 20412100
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 20405700
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 76287000
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 73043700
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 20408200
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 20610300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 72836100
+        }
+      ],
+      "baseline_median_ns": 74665350.0,
+      "candidate_median_ns": 20511000.0,
+      "candidate_over_baseline": 0.27470573699848727
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 0,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 461100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 519600
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 523700
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 466200
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 469600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 518200
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 531200
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 489200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 492600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 553400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 553900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 488100
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 478000
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 559200
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 535400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 478300
+        }
+      ],
+      "baseline_median_ns": 478150.0,
+      "candidate_median_ns": 533300.0,
+      "candidate_over_baseline": 1.1153403743595107
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 0,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 464300
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 520900
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 525400
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 462800
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 482400
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 535700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 428000
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 364800
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 364700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 468800
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 541600
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 473600
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 483600
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 529200
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 523300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 466300
+        }
+      ],
+      "baseline_median_ns": 465300.0,
+      "candidate_median_ns": 524350.0,
+      "candidate_over_baseline": 1.1269073715882227
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 8,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 915900
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1001300
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1009400
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 963900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 919900
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1027000
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 978800
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 903400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 896000
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1055500
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 919200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 816400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 844700
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 940300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 929800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 857500
+        }
+      ],
+      "baseline_median_ns": 899700.0,
+      "candidate_median_ns": 990050.0,
+      "candidate_over_baseline": 1.1004223630098922
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 8,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 9827200
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 3558500
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 3465200
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 10527700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 11912000
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 3577800
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 2873500
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 9669900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 7572500
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 2549700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 2466200
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 7628800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 7604400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 2527500
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 2490600
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 7857700
+        }
+      ],
+      "baseline_median_ns": 8763800.0,
+      "candidate_median_ns": 2711600.0,
+      "candidate_over_baseline": 0.3094091604098679
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 80,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 5000300
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 5337100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 5456300
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 5190800
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 5257300
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 5458100
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 5577800
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 5437400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 11352100
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 16399100
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 17130300
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 9985300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 8906200
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 6830100
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 10332700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 7315800
+        }
+      ],
+      "baseline_median_ns": 6376600.0,
+      "candidate_median_ns": 6203950.0,
+      "candidate_over_baseline": 0.9729244424928646
+    },
+    {
+      "survey": 2,
+      "width": 256,
+      "height": 192,
+      "points": 80,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 105381800
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 25562100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 27555000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 131016100
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 109835500
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 38010700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 30096500
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 150044900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 184212400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 34667700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 39107400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 130842800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 147236300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 33369300
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 32436700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 112873400
+        }
+      ],
+      "baseline_median_ns": 130929450.0,
+      "candidate_median_ns": 32903000.0,
+      "candidate_over_baseline": 0.25130327821586357
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 0,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 1355600
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1223600
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1193000
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 1157900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 1324200
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1373700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1233900
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 1028400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 774600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 972700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1138900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 983100
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 1334000
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1643100
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1663700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 1452000
+        }
+      ],
+      "baseline_median_ns": 1241050.0,
+      "candidate_median_ns": 1228750.0,
+      "candidate_over_baseline": 0.9900890375085613
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 0,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 1123400
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 916900
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 888300
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 775200
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 770900
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 943700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1070100
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 997400
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 960400
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1125900
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1016900
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 925700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 917700
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1204000
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1196300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 913200
+        }
+      ],
+      "baseline_median_ns": 921700.0,
+      "candidate_median_ns": 1043500.0,
+      "candidate_over_baseline": 1.1321471194531842
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 8,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 1479700
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1547100
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 1542500
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 1429600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 1598400
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1710300
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 1699700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 3319100
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 1780800
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1520000
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 1394700
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 1269300
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 1298600
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 1443700
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 2237500
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 1212200
+        }
+      ],
+      "baseline_median_ns": 1454650.0,
+      "candidate_median_ns": 1544800.0,
+      "candidate_over_baseline": 1.0619736706424225
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 8,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 11753400
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 7860500
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 6745300
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 17124700
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 20069700
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 5419200
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 4054800
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 15560500
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 11987900
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 3953700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 4497800
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 18617800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 23946400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 14498400
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 23612400
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 58602500
+        }
+      ],
+      "baseline_median_ns": 17871250.0,
+      "candidate_median_ns": 6082250.0,
+      "candidate_over_baseline": 0.3403371336644051
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 80,
+      "motion": "stationary",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 11913500
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 6605800
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 6380500
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 10380600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 9024500
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 7980600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 9650600
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 15357500
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 14637000
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 15079700
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 14847300
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 8301800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 7412100
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 10001500
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 5399500
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 5975100
+        }
+      ],
+      "baseline_median_ns": 9702550.0,
+      "candidate_median_ns": 8815600.0,
+      "candidate_over_baseline": 0.9085858872152166
+    },
+    {
+      "survey": 2,
+      "width": 320,
+      "height": 240,
+      "points": 80,
+      "motion": "translated",
+      "samples": [
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 137392400
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 44238700
+        },
+        {
+          "round": 0,
+          "flavor": "candidate",
+          "elapsed_ns": 43216300
+        },
+        {
+          "round": 0,
+          "flavor": "baseline",
+          "elapsed_ns": 158495800
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 156743800
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 31878600
+        },
+        {
+          "round": 1,
+          "flavor": "candidate",
+          "elapsed_ns": 29122400
+        },
+        {
+          "round": 1,
+          "flavor": "baseline",
+          "elapsed_ns": 118916500
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 248444600
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 57615300
+        },
+        {
+          "round": 2,
+          "flavor": "candidate",
+          "elapsed_ns": 54872300
+        },
+        {
+          "round": 2,
+          "flavor": "baseline",
+          "elapsed_ns": 177774700
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 156348100
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 46283100
+        },
+        {
+          "round": 3,
+          "flavor": "candidate",
+          "elapsed_ns": 36751800
+        },
+        {
+          "round": 3,
+          "flavor": "baseline",
+          "elapsed_ns": 94009100
+        }
+      ],
+      "baseline_median_ns": 156545950.0,
+      "candidate_median_ns": 43727500.0,
+      "candidate_over_baseline": 0.27932693244379686
+    }
+  ],
+  "timing_summary": {
+    "paired_rows": 36,
+    "lower_candidate_median_rows": 17,
+    "higher_candidate_median_rows": 19,
+    "minimum_ratio": 0.25130327821586357,
+    "maximum_ratio": 1.5211883053694395
+  },
+  "timing_scope": "Frozen complete parent LK module with its existing shared-pyramid robust call graph versus candidate robust API, interleaved in the same native release process. Compare full coordinate/status/error bit snapshots outside timing. Two fresh process surveys, fixed shape/point/motion order, all samples and adverse rows retained. Affinity/frequency, other host load and allocation effects are uncontrolled; no physical-phone, GPU or end-to-end claim.",
+  "cache_slots_max": 121,
+  "logical_f64_payload_bytes_max": 2904,
+  "cache_representation_upper_bound_bytes": 4096,
+  "cache_lifetime": "one point/level call",
+  "extra_heap_allocations": 0,
+  "storage": {
+    "owned_metadata_bytes": 870361727,
+    "cache_bytes": 13386648799,
+    "positive_cache_growth_bytes": 0,
+    "combined_bytes": 870361727,
+    "free_bytes": {
+      "C": 69086826496,
+      "E": 873981464576
+    }
+  },
+  "vendor_hardlink_bytes": 41087603,
+  "non_vendor_owned_bytes": 829274124,
+  "preserved_scientific_json": 493,
+  "preserved_frozen_native": 42,
+  "preserved_previous_camera_files": 5038,
+  "forbidden_adapter_matches": 0,
+  "sdk_model_acquisition_bytes": 0,
+  "sensor_downloads": 0,
+  "real_user_camera_reads": 0,
+  "physical_phone_tested": false,
+  "ios_safari_tested": false,
+  "operational_80_percent_proven": false,
+  "release_verification": "Exact-head CI, merge and matching Pages/public browser checks follow this source-bound receipt.",
+  "timing_layout_limit": "The frozen parent module is local to the benchmark executable while candidate methods call the library. Compiler placement/inlining is uncontrolled; empty-point calls never enter the modified kernel, so their timing differences cannot be attributed to template reuse.",
+  "exploratory_existing_camera_timings": {
+    "preregistered_primary_metric": false,
+    "new_timing_executions": 0,
+    "reason": "Inspect the existing independent camera outputs after observing empty-point/compiler-layout differences in the primary driver.",
+    "order": [
+      "parent-camera",
+      "candidate-camera"
+    ],
+    "interleaved": false,
+    "rows": [
+      {
+        "width": 192,
+        "height": 144,
+        "mask": "disabled",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          571132200,
+          658521500,
+          647636100,
+          564996500,
+          799038900,
+          968508600
+        ],
+        "candidate_samples_ns": [
+          274855700,
+          219366300,
+          182563800,
+          186448100,
+          199768300,
+          258767500
+        ],
+        "baseline_median_ns": 653078800.0,
+        "candidate_median_ns": 209567300.0,
+        "candidate_over_baseline": 0.32089129213810036
+      },
+      {
+        "width": 192,
+        "height": 144,
+        "mask": "zero",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          992690200,
+          1021260800,
+          923781400,
+          929052000,
+          869386200,
+          1212343400
+        ],
+        "candidate_samples_ns": [
+          178683600,
+          169133800,
+          172278300,
+          251581700,
+          265084000,
+          224184400
+        ],
+        "baseline_median_ns": 960871100.0,
+        "candidate_median_ns": 201434000.0,
+        "candidate_over_baseline": 0.20963685972031004
+      },
+      {
+        "width": 192,
+        "height": 144,
+        "mask": "full",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          88555900,
+          85364300,
+          79461200,
+          63970700,
+          76214400,
+          79358800
+        ],
+        "candidate_samples_ns": [
+          70397000,
+          84719300,
+          66406200,
+          66765300,
+          67549000,
+          131053800
+        ],
+        "baseline_median_ns": 79410000.0,
+        "candidate_median_ns": 68973000.0,
+        "candidate_over_baseline": 0.8685681904042312
+      },
+      {
+        "width": 192,
+        "height": 144,
+        "mask": "half",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          606100100,
+          688540300,
+          536221200,
+          679819000,
+          568779300,
+          481296900
+        ],
+        "candidate_samples_ns": [
+          162048200,
+          173619100,
+          169209000,
+          182705600,
+          255128100,
+          183861500
+        ],
+        "baseline_median_ns": 587439700.0,
+        "candidate_median_ns": 178162350.0,
+        "candidate_over_baseline": 0.30328619260836476
+      },
+      {
+        "width": 192,
+        "height": 144,
+        "mask": "sparse",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          1017549500,
+          1205298600,
+          1121519600,
+          1078109100,
+          1140307900,
+          993583400
+        ],
+        "candidate_samples_ns": [
+          291457200,
+          378981300,
+          270163600,
+          363032600,
+          458793200,
+          358008900
+        ],
+        "baseline_median_ns": 1099814350.0,
+        "candidate_median_ns": 360520750.0,
+        "candidate_over_baseline": 0.3278014603100969
+      },
+      {
+        "width": 192,
+        "height": 144,
+        "mask": "checker",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          79443300,
+          91938800,
+          139840100,
+          91915600,
+          79098700,
+          97052400
+        ],
+        "candidate_samples_ns": [
+          77346500,
+          68183900,
+          81564800,
+          152490900,
+          74855100,
+          71953300
+        ],
+        "baseline_median_ns": 91927200.0,
+        "candidate_median_ns": 76100800.0,
+        "candidate_over_baseline": 0.8278376802513293
+      },
+      {
+        "width": 256,
+        "height": 192,
+        "mask": "disabled",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          1143743700,
+          1289933300,
+          1065999700,
+          1252863600,
+          1061052600,
+          1104879100
+        ],
+        "candidate_samples_ns": [
+          276144600,
+          468345700,
+          333065200,
+          313079400,
+          469299900,
+          333301800
+        ],
+        "baseline_median_ns": 1124311400.0,
+        "candidate_median_ns": 333183500.0,
+        "candidate_over_baseline": 0.29634450028702014
+      },
+      {
+        "width": 256,
+        "height": 192,
+        "mask": "zero",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          1239927200,
+          1195761200,
+          1305371300,
+          1124562000,
+          1046415800,
+          939163300
+        ],
+        "candidate_samples_ns": [
+          442673700,
+          333498200,
+          441910000,
+          331711800,
+          331547100,
+          487897800
+        ],
+        "baseline_median_ns": 1160161600.0,
+        "candidate_median_ns": 387704100.0,
+        "candidate_over_baseline": 0.3341811175270755
+      },
+      {
+        "width": 256,
+        "height": 192,
+        "mask": "full",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          134376700,
+          119451900,
+          122812600,
+          123932900,
+          117268200,
+          126086800
+        ],
+        "candidate_samples_ns": [
+          141552400,
+          136220800,
+          141266000,
+          133315200,
+          213086500,
+          160403500
+        ],
+        "baseline_median_ns": 123372750.0,
+        "candidate_median_ns": 141409200.0,
+        "candidate_over_baseline": 1.1461947634303362
+      },
+      {
+        "width": 256,
+        "height": 192,
+        "mask": "half",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          910472800,
+          928840900,
+          1065256700,
+          941156900,
+          889867400,
+          827955600
+        ],
+        "candidate_samples_ns": [
+          411293900,
+          414394300,
+          341234800,
+          358435200,
+          289924400,
+          276642400
+        ],
+        "baseline_median_ns": 919656850.0,
+        "candidate_median_ns": 349835000.0,
+        "candidate_over_baseline": 0.38039731884778544
+      },
+      {
+        "width": 256,
+        "height": 192,
+        "mask": "sparse",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          820593000,
+          837836600,
+          1049788900,
+          788635300,
+          914441000,
+          1005293400
+        ],
+        "candidate_samples_ns": [
+          413064700,
+          346778100,
+          344492400,
+          471807300,
+          346116300,
+          527137200
+        ],
+        "baseline_median_ns": 876138800.0,
+        "candidate_median_ns": 379921400.0,
+        "candidate_over_baseline": 0.43363152048511033
+      },
+      {
+        "width": 256,
+        "height": 192,
+        "mask": "checker",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          138389300,
+          110444100,
+          105499700,
+          116038200,
+          113499800,
+          126514900
+        ],
+        "candidate_samples_ns": [
+          134887200,
+          139116400,
+          137005300,
+          119611700,
+          223408300,
+          145809100
+        ],
+        "baseline_median_ns": 114769000.0,
+        "candidate_median_ns": 138060850.0,
+        "candidate_over_baseline": 1.2029454817938643
+      },
+      {
+        "width": 320,
+        "height": 240,
+        "mask": "disabled",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          907209600,
+          1071784800,
+          875625300,
+          878406000,
+          874562600,
+          1049747600
+        ],
+        "candidate_samples_ns": [
+          343916200,
+          457811300,
+          327878700,
+          488022000,
+          427293600,
+          406677900
+        ],
+        "baseline_median_ns": 892807800.0,
+        "candidate_median_ns": 416985750.0,
+        "candidate_over_baseline": 0.46704985104296803
+      },
+      {
+        "width": 320,
+        "height": 240,
+        "mask": "zero",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          1107556700,
+          1078400400,
+          1075762800,
+          1021567500,
+          1031902900,
+          1035989600
+        ],
+        "candidate_samples_ns": [
+          332675800,
+          331411300,
+          490444500,
+          473679700,
+          553975700,
+          444654900
+        ],
+        "baseline_median_ns": 1055876200.0,
+        "candidate_median_ns": 459167300.0,
+        "candidate_over_baseline": 0.43486850068218225
+      },
+      {
+        "width": 320,
+        "height": 240,
+        "mask": "full",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          212130000,
+          223575300,
+          313928500,
+          230001500,
+          236820900,
+          199705500
+        ],
+        "candidate_samples_ns": [
+          225068100,
+          194294600,
+          198877400,
+          179476100,
+          295195300,
+          214571100
+        ],
+        "baseline_median_ns": 226788400.0,
+        "candidate_median_ns": 206724250.0,
+        "candidate_over_baseline": 0.911529205197444
+      },
+      {
+        "width": 320,
+        "height": 240,
+        "mask": "half",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          990999100,
+          951727200,
+          999545200,
+          1037114100,
+          1148772900,
+          1093094600
+        ],
+        "candidate_samples_ns": [
+          520485900,
+          466487800,
+          449632200,
+          398824400,
+          375972700,
+          556613800
+        ],
+        "baseline_median_ns": 1018329650.0,
+        "candidate_median_ns": 458060000.0,
+        "candidate_over_baseline": 0.449815047612529
+      },
+      {
+        "width": 320,
+        "height": 240,
+        "mask": "sparse",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          726861700,
+          994574500,
+          908173800,
+          942852500,
+          1085511200,
+          1003095100
+        ],
+        "candidate_samples_ns": [
+          601570300,
+          459839000,
+          481103000,
+          369826600,
+          472776900,
+          408307400
+        ],
+        "baseline_median_ns": 968713500.0,
+        "candidate_median_ns": 466307950.0,
+        "candidate_over_baseline": 0.48136827864998266
+      },
+      {
+        "width": 320,
+        "height": 240,
+        "mask": "checker",
+        "frames_per_sequence": 7,
+        "baseline_samples_ns": [
+          272003700,
+          210898200,
+          190568300,
+          180185100,
+          171790300,
+          272327700
+        ],
+        "candidate_samples_ns": [
+          219117400,
+          291647800,
+          227025300,
+          187411000,
+          211108100,
+          291191600
+        ],
+        "baseline_median_ns": 200733250.0,
+        "candidate_median_ns": 223071350.0,
+        "candidate_over_baseline": 1.1112825104958943
+      }
+    ],
+    "lower_candidate_median_rows": 15,
+    "higher_candidate_median_rows": 3,
+    "scope": "One process per flavor, six seven-frame samples per condition. Keep every condition and raw sample, without pooling with primary surveys. Frequency/load/process-order remain uncontrolled; no GPU/physical-phone/end-to-end browser claim."
+  }
+}
