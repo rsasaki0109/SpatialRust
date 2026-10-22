@@ -182,6 +182,12 @@ fn track_one_level(
         return Err(VisionError::InvalidParameter("Lucas–Kanade patch exceeds the image".into()));
     }
     let radius = options.window_radius as f64;
+    let mut patch_cache: LkTemplateCache =
+        if options.window_radius <= 5 && options.max_iterations > 1 {
+            Some([None; 121])
+        } else {
+            None
+        };
     for _ in 0..options.max_iterations {
         let mut gxx = 0.0;
         let mut gxy = 0.0;
@@ -200,9 +206,31 @@ fn track_one_level(
                 if !(in_bounds(previous, px, py, radius) && in_bounds(next, qx, qy, radius)) {
                     continue;
                 }
-                let ix = 0.5 * (sample(previous, px + 1.0, py)? - sample(previous, px - 1.0, py)?);
-                let iy = 0.5 * (sample(previous, px, py + 1.0)? - sample(previous, px, py - 1.0)?);
-                let it = sample(next, qx, qy)? - sample(previous, px, py)?;
+                let (ix, iy, it) = if let Some(cache) = patch_cache.as_mut() {
+                    // Only radii <= 5 enter this branch, so the row-major slot
+                    // fits 11*11 entries. Both frame bounds were checked above.
+                    let slot = (dy - start) as usize * (2 * options.window_radius + 1)
+                        + (dx - start) as usize;
+                    if let Some(saved) = cache[slot] {
+                        (saved.ix, saved.iy, sample(next, qx, qy)? - saved.value)
+                    } else {
+                        let ix = 0.5
+                            * (sample(previous, px + 1.0, py)? - sample(previous, px - 1.0, py)?);
+                        let iy = 0.5
+                            * (sample(previous, px, py + 1.0)? - sample(previous, px, py - 1.0)?);
+                        let current = sample(next, qx, qy)?;
+                        let value = sample(previous, px, py)?;
+                        cache[slot] = Some(LkTemplateSample { ix, iy, value });
+                        (ix, iy, current - value)
+                    }
+                } else {
+                    let ix =
+                        0.5 * (sample(previous, px + 1.0, py)? - sample(previous, px - 1.0, py)?);
+                    let iy =
+                        0.5 * (sample(previous, px, py + 1.0)? - sample(previous, px, py - 1.0)?);
+                    let it = sample(next, qx, qy)? - sample(previous, px, py)?;
+                    (ix, iy, it)
+                };
                 gxx += ix * ix;
                 gxy += ix * iy;
                 gyy += iy * iy;
@@ -235,6 +263,17 @@ fn track_one_level(
     }
     Ok(next_point)
 }
+
+#[derive(Clone, Copy)]
+struct LkTemplateSample {
+    ix: f64,
+    iy: f64,
+    value: f64,
+}
+
+// One point/level owns this bounded array; it never survives a tracking call.
+type LkTemplateCache = Option<[Option<LkTemplateSample>; 121]>;
+const _: () = assert!(std::mem::size_of::<LkTemplateCache>() <= 4096);
 
 fn build_pyramid<T: PixelComponent>(
     image: ImageView<'_, T, 1>,
