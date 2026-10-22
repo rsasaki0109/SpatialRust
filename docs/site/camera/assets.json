@@ -3,6 +3,12 @@
   "version": "1.1.1",
   "assets": [
     {
+      "path": "vendor/person-sample.png",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png",
+      "bytes": 791555,
+      "sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5"
+    },
+    {
       "path": "vendor/vision_bundle.mjs",
       "url": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.1/vision_bundle.mjs",
       "bytes": 156139,

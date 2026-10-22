@@ -22,6 +22,7 @@
     <div class="toolbar" aria-label="再生操作">
       <button id="start" class="primary" type="button">カメラ開始</button>
       <button id="sample" type="button">サンプル再生</button>
+      <button id="person-sample" type="button" aria-describedby="person-sample-help">人物サンプル</button>
       <button id="stop" class="stop" type="button" disabled>停止</button>
     </div>
     <div class="workspace">
@@ -41,6 +42,7 @@
           <label><span>処理サイズ</span><select id="resolution" aria-describedby="resolution-help"><option value="256">標準 · 256px</option><option value="192">軽量 · 192px</option></select></label>
         </div>
         <p id="resolution-help" class="setting-help">動作が重いときは、停止して「軽量」をお試しください。追跡の細かさは下がります。</p>
+        <p id="person-sample-help" class="setting-help">人物サンプルは<a href="https://scikit-image.org/docs/stable/api/skimage.data.html#skimage.data.astronaut">NASA / scikit-imageの公開写真</a>を使います。動きは合成です。カメラの許可なしでAI人物マスクを試せます。</p>
       </section>
       <aside class="result-panel" aria-label="追跡の状態">
         <div class="panel-heading"><span>TRACKING SIGNAL</span><span id="engine" class="engine">待機中</span></div>
