@@ -1,0 +1,54 @@
+{
+  "schema": "spatialrust.readme-heroes.v1",
+  "assets": [
+    {
+      "path": "readme_hero.gif",
+      "bytes": 296115,
+      "sha256": "6567c15b48f102ecdc5595c6c1eae614de5af0545f65c1510d8658f74bca2548"
+    },
+    {
+      "path": "clusters_rotating.gif",
+      "bytes": 92877,
+      "sha256": "f944d14e7349510b20a487d60ebb9bdf48ffc8135b6c0d37b74889c822d5f715"
+    },
+    {
+      "path": "voxelize_rotating.gif",
+      "bytes": 185226,
+      "sha256": "a7b0d05d2903cb9c809535ef67ddc2bb65c9ba5a45aabfd2c334681dbf96ce48"
+    },
+    {
+      "path": "camera_tracking.gif",
+      "bytes": 968718,
+      "sha256": "3ea5d14be5c99d2168c6f75afefd0efc05f5a43b0eb76826f3930f468dbd67c7"
+    }
+  ],
+  "public_input": {
+    "file": "table_scene_lms400.pcd",
+    "sha256": "e285d415641e0d9de695b611db874cc8fe995e8089b77a50d6056d24d8cbcc58",
+    "points": 460400,
+    "sampled_points": 76734
+  },
+  "execution": "SpatialRust Python bindings (voxel policy cpu); CPU Rust/WASM camera tracker",
+  "spatialrust_version": "1.0.0",
+  "resolved_policies": null,
+  "python_extension_sha256": "cba594925d83a3b495db4f1ecb97434df72767b7075fccf0380c559477e62c5c",
+  "generator_sha256": "d3b13cc87501d4e9f1c6ad6c8dc24ad0cedafa26e09e4c1cc0a6468932c120ec",
+  "tracking_generator_sha256": "0ab17ebc391cd054e1c607ed6fbf42bccab39a026c8516e09b86faee4d78c9cb",
+  "numpy_version": "2.3.4",
+  "pillow_version": "12.3.0",
+  "font_sha256": "8134dbcd09e7b123c9a7f229d49cffbcb01352cc72ea5e1076b65d0dca9f73cd",
+  "pipeline": {
+    "voxel_leaf_m": 0.03,
+    "plane_distance_m": 0.025,
+    "cluster_tolerance_m": 0.06,
+    "min_cluster_size": 8,
+    "downsampled_points": 4561,
+    "plane_inliers": 2179,
+    "cluster_count": 6,
+    "occupancy_cell_m": 0.08,
+    "occupied_cells": 776
+  },
+  "tracking_wasm_sha256": "f99c2ba94abe68021b880ba2141c087b5758d638011b04b1ea5d0b47b00493ad",
+  "tracking_frames": 48,
+  "claims": "Illustrations of actual outputs; animation playback is not a throughput benchmark. Synthetic tracking has AI disabled."
+}

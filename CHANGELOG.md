@@ -19,6 +19,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Refresh the README's opening animations with a shared visual style, actual
+  public-cloud results and synthetic Rust/WASM feature tracking. Link the
+  tracking animation to the mobile playground and record bounded generation
+  instructions, provenance and animation sizes.
+
 - Reuse exact previous-image samples and gradients across CPU LK iterations
   for small patches. Retain each iteration's bounds, numerical order and public
   behavior with a bounded call-local array and no new heap allocation. Add a
