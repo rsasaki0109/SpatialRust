@@ -4,6 +4,11 @@ The opening group is rendered from actual SpatialRust results in a shared dark
 palette, with readable labels and a link to the mobile camera playground.
 `readme_hero.gif` presents the pipeline; the smaller animations show Euclidean
 cluster labels, occupied voxel cells and Rust/WASM image-space feature tracking.
+Nine GIFs form a full-width banner and eight gallery cards: depth-colored scan,
+voxel filtering, plane segmentation, clusters, occupancy, depth slicing, image
+tracks and image flow. Depth slicing is a geometric illustration over the same
+scan, not an additional query API. Flow arrows are enlarged seven times for
+legibility; numeric motion stays in original pixels.
 The renderer limits each GIF to 1.5 MB and the group to 3 MB. It holds bounded
 frame sequences in memory instead of writing intermediate frames to disk.
 
@@ -53,7 +58,7 @@ node scripts/readme_tracking_data.mjs --pkg target/readme-camera-pkg --output ta
 python scripts/render_readme_heroes.py --input /absolute/path/table_scene_lms400.pcd --tracking target/readme-tracking.json --font /absolute/path/sans.ttf --output docs/assets
 ```
 
-The exporter requires a fresh output file. The renderer updates only the four
+The exporter requires a fresh output file. The renderer updates only the nine
 opening GIFs and `docs/assets/readme_heroes.json`; it does not modify other README
 visuals. Use a local sans font such as DejaVu Sans or Segoe UI. The font hash,
 Python extension hash, WASM hash, generator hashes, dependency versions, pipeline
@@ -67,9 +72,10 @@ README media.
 
 ## Verification
 
-The updated group is about 1.54 MB, versus 2.83 MB for the previous three opening
-GIFs, including the new tracking animation. Decode every frame, verify image
+The prior four-GIF group was about 1.54 MB. The expanded nine-GIF gallery stays
+under the same 3 MB cap; exact sizes are in `assets/readme_heroes.json`.
+Decode every frame, verify image
 dimensions, looping, meaningful frame changes, the provenance hashes and the
-combined size. Inspect all four pipeline phases and the smaller animations at
+combined size. Inspect all four pipeline phases and all eight cards at
 desktop and phone widths. Check that the tracking link points to the playground
 and that the synthetic/AI-off label and experimental 2D description remain visible.

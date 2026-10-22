@@ -19,6 +19,11 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Expand the README opening into nine coordinated animations: a pipeline hero
+  and eight cards covering public-cloud processing and synthetic Rust/WASM
+  tracking. Preserve result provenance, label illustrative motion and bound the
+  complete gallery to 3 MB.
+
 - Add an opt-in public-photo sample to the mobile camera playground so visitors
   can try local AI person masking and Rust/WASM background flow without camera
   permission. Pin and self-host the attributed image, cancel loading on Stop and
