@@ -19,6 +19,12 @@ removed no sooner than the next major (see `docs/API_STABILITY.md`).
 
 ## [Unreleased]
 
+- Reuse exact previous-image samples and gradients across CPU LK iterations
+  for small patches. Retain each iteration's bounds, numerical order and public
+  behavior with a bounded call-local array and no new heap allocation. Add a
+  complete frozen-parent reference, native/WASM comparisons and interleaved
+  stationary/translated timing evidence. See [LK template reuse](docs/LK_TEMPLATE_REUSE.md).
+
 - Reuse one owned CPU image-pyramid pair across robust LK forward/backward
   passes for standard pixel types. Preserve custom conversion observations,
   exact tracking math, validation and public APIs. Add parent characterization,
